@@ -27,7 +27,6 @@ import hieroglyph.*, textWidthCalculation.uniform
 
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
-import scala.deriving.*
 
 import java.util as ju
 import ju.zip as juz
@@ -118,10 +117,10 @@ trait Digestible2:
     (acc, value) => value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2, Derived[Digestible]:
-  inline def join[DerivationType: Mirror.ProductOf]: Digestible[DerivationType] = (accumulator, value) =>
+  inline def join[DerivationType: ReflectiveProduct]: Digestible[DerivationType] = (accumulator, value) =>
     product.from(value)(typeclass.digest(accumulator, param))
       
-  inline def split[DerivationType: Mirror.SumOf]: Digestible[DerivationType] = (accumulator, value) =>
+  inline def split[DerivationType: ReflectiveSum]: Digestible[DerivationType] = (accumulator, value) =>
     sum.from(value):
       int.digest(accumulator, ordinal)
       typeclass.digest(accumulator, variant)
