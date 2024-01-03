@@ -70,8 +70,8 @@ object Decoder:
   given string: Decoder[String] = _.s
   given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
-  given enumDecoder[EnumType <: Enum](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] =
-    text => Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
+  given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] = text =>
+    Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
 @capability
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
