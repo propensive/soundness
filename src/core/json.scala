@@ -198,10 +198,7 @@ object JsonEncoder extends JsonEncoder2:
   
   inline def split[DerivationType: Mirror.SumOf]: JsonEncoder[DerivationType] = value =>
     Derivation.sumOf[DerivationType, JsonEncoder](value):
-      val jsonAccess: Raises[JsonAccessError] = summonInline[Raises[JsonAccessError]]
-      locally:
-        given Raises[JsonAccessError] = jsonAccess
-        typeclass.tag(label).encode(value)
+      summonInline[Raises[JsonAccessError]].contextually(typeclass.tag(label).encode(value))
 
 trait JsonEncoder[-ValueType]:
   def omit(value: ValueType): Boolean = false
@@ -287,9 +284,7 @@ object JsonDecoder extends JsonDecoder2, Derived[JsonDecoder]:
         acc.updated(keys(index), decoder.decode(values(index), false))
   
   inline def join[DerivationType: Mirror.ProductOf]: JsonDecoder[DerivationType] = (json, missing) =>
-    val jsonAccess = summonInline[Raises[JsonAccessError]]
-    locally:
-      given Raises[JsonAccessError] = jsonAccess
+    summonInline[Raises[JsonAccessError]].contextually:
       val keyValues = json.obj
       val values = keyValues(0).zip(keyValues(1)).to(Map)
 
@@ -299,9 +294,7 @@ object JsonDecoder extends JsonDecoder2, Derived[JsonDecoder]:
         typeclass.decode(value, missing)
   
   inline def split[DerivationType: Mirror.SumOf]: JsonDecoder[DerivationType] = (json, missing) =>
-    val jsonAccess = summonInline[Raises[JsonAccessError]]
-    locally:
-      given Raises[JsonAccessError] = jsonAccess
+    summonInline[Raises[JsonAccessError]].contextually:
       val values = json.obj
       values(0).indexOf("_type") match
         case -1 =>
