@@ -2,13 +2,14 @@
 
 repo propensive/gossamer
 repo propensive/turbulence
+repo propensive/wisteria
 repo propensive/probably
 target gastronomy/test
 
 project gastronomy
   module core
     sources src/core
-    include gossamer/core turbulence/core hieroglyph/core
+    include gossamer/core turbulence/core hieroglyph/core wisteria/core
 
   module test
     sources   src/test

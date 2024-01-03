@@ -19,6 +19,7 @@ package gastronomy
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import wisteria2.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
@@ -116,7 +117,7 @@ trait Digestible2:
   given [ValueType](using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] = (acc, value) =>
     value.let(digestible.digest(acc, _))
 
-object Digestible extends Digestible2:
+object Digestible extends Digestible2, Derived[Digestible]:
   private transparent inline def deriveProduct(acc: DigestAccumulator, tuple: Tuple): Unit =
     inline tuple match
       case EmptyTuple => ()
@@ -135,18 +136,14 @@ object Digestible extends Digestible2:
         then summonInline[Digestible[head]].asInstanceOf[Digestible[DerivedType]]
         else deriveSum[tail, DerivedType](ordinal - 1)
 
-  inline given derived
-      [DerivationType]
-      (using mirror: Mirror.Of[DerivationType])
-      : Digestible[DerivationType] =
-    inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] =>
-        (acc: DigestAccumulator, value: DerivationType) => (value.asMatchable: @unchecked) match
-          case value: Product => deriveProduct(acc, Tuple.fromProductTyped(value))
-    
-      case s: Mirror.SumOf[DerivationType] =>
-        (acc: DigestAccumulator, value: DerivationType) =>
-          deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value)).digest(acc, value)
+  inline def join[DerivationType: Mirror.ProductOf]: Digestible[DerivationType] = (accumulator, value) =>
+    Derivation.product.from[DerivationType, Digestible](value)[Unit]:
+      typeclass.digest(accumulator, param)
+      
+  inline def split[DerivationType: Mirror.SumOf]: Digestible[DerivationType] = (accumulator, value) =>
+    Derivation.sum.from[DerivationType, Digestible](value)[Unit]:
+      // FIXME perhaps add ordinal value to accumulator
+      typeclass.digest(accumulator, variant)
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
     (acc, xs) => xs.foreach(summon[Digestible[ValueType]].digest(acc, _))
@@ -223,9 +220,10 @@ object ByteEncoder:
 
   given (using alphabet: HexAlphabet): ByteEncoder[Hex] = bytes =>
     val array = new Array[Char](bytes.length*2)
-    bytes.indices.foreach: idx =>
-      array(2*idx) = alphabet.chars((bytes(idx) >> 4) & 0xf)
-      array(2*idx + 1) = alphabet.chars(bytes(idx) & 0xf)
+    
+    bytes.indices.foreach: index =>
+      array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
+      array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
     
     Text(String(array))
 
