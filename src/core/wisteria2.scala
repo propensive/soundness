@@ -122,8 +122,8 @@ object Derivation:
       case EmptyTuple => EmptyTuple
 
   transparent inline def toProduct
-      [DerivationType <: Product, TypeclassType[_]]
-      (value: DerivationType)
+      [DerivationType, TypeclassType[_]]
+      (inline value: DerivationType)
       (using mirror: Mirror.ProductOf[DerivationType])
       [ResultType: ClassTag]
       (inline join: (typeclass: TypeclassType[Any], label: Text, param: Any) ?=> ResultType)
@@ -131,9 +131,12 @@ object Derivation:
     
     val array: Array[ResultType] = new Array(valueOf[Tuple.Size[mirror.MirroredElemTypes]])
     
-    product[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
-        (Tuple.fromProductTyped(value), array, 0):
-      (typeclass, label, param) => join(using typeclass, label, param)
+    inline value.asMatchable match
+      case value: Product => inline mirror match
+        case given Mirror.ProductOf[DerivationType & Product] =>
+          product[DerivationType, TypeclassType, mirror.MirroredElemTypes, mirror.MirroredElemLabels, ResultType]
+              (Tuple.fromProductTyped(value), array, 0):
+            (typeclass, label, param) => join(using typeclass, label, param)
     
     array.immutable(using Unsafe)
     
@@ -158,21 +161,13 @@ object Derivation:
 
 trait Derived[TypeclassType[_]]:
 
-  transparent inline def join[DerivationType: Mirror.ProductOf]: TypeclassType[DerivationType]
-  transparent inline def split[DerivationType: Mirror.SumOf]: TypeclassType[DerivationType]
+  inline def join[DerivationType: Mirror.ProductOf]: TypeclassType[DerivationType]
+  inline def split[DerivationType: Mirror.SumOf]: TypeclassType[DerivationType]
 
-  inline given derived2[DerivationType](using mirror: Mirror.Of[DerivationType]): TypeclassType[DerivationType] =
+  inline given derived[DerivationType](using mirror: Mirror.Of[DerivationType]): TypeclassType[DerivationType] =
     inline mirror match
       case mirror: Mirror.ProductOf[DerivationType] =>
         join[DerivationType](using mirror)
       
       case mirror: Mirror.SumOf[DerivationType] =>
         split[DerivationType](using mirror)
-
-
-// trait ProductDerivation[TypeclassType[_]]:
-//   transparent inline def join[DerivationType](inline typeclass: Typeclass[DerivationType], inline label: Text, inline param: Any): Any =
-    
-
-// trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
-//   inline def split
