@@ -143,13 +143,45 @@ trait ProductDerivation[TypeclassType[_]]:
     inline value.asMatchable match
       case value: Product => inline reflective match
         case given ReflectiveProduct[DerivationType & Product] =>
-          productRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
+          paramsRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
               (Tuple.fromProductTyped(value), array, 0):
             (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
     
     array.immutable(using Unsafe)
     
-  private transparent inline def productRecur
+  transparent inline def param
+      [DerivationType]
+      (inline value: DerivationType)
+      (index: Int)
+      (using reflective: ReflectiveProduct[DerivationType])
+      [ResultType]
+      (inline join: (typeclass: TypeclassType[Any], label: Text, ordinal: Int, param: Any) ?=> ResultType)
+      : ResultType =
+    
+    inline value.asMatchable match
+      case value: Product => inline reflective match
+        case given ReflectiveProduct[DerivationType & Product] =>
+          paramRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
+              (Tuple.fromProductTyped(value), 0, index):
+            (typeclass, label, ordinal, param) => join(using typeclass, label, ordinal, param)
+    
+  private transparent inline def paramRecur
+      [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
+      (tuple: Tuple, index: Int, target: Int)
+      (inline join: (TypeclassType[Any], Text, Int, Any) => ResultType)
+      : ResultType =
+
+    inline tuple match
+      case EmptyTuple => throw Mistake(msg"should be unreachable")
+      case cons: (paramType *: paramsType) => cons match
+        case param *: params => inline erasedValue[LabelsType] match
+          case _: (labelType *: labelsType) => inline valueOf[labelType].asMatchable match
+            case label: String =>
+              if index == target
+              then join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]], label.tt, index, param)
+              else paramRecur[DerivationType, paramsType, labelsType, ResultType](params, index + 1, target)(join)
+  
+  private transparent inline def paramsRecur
       [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple, ResultType]
       (tuple: Tuple, array: Array[ResultType], index: Int)
       (inline join: (TypeclassType[Any], Text, Int, Any) => ResultType)
@@ -164,7 +196,7 @@ trait ProductDerivation[TypeclassType[_]]:
               array(index) = join(summonInline[TypeclassType[paramType]].asInstanceOf[TypeclassType[Any]],
                   label.tt, index, param)
               
-              productRecur[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
+              paramsRecur[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
   inline def join[DerivationType: ReflectiveProduct]: TypeclassType[DerivationType]
 
