@@ -105,8 +105,8 @@ extension (json: JsonAst)
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
   
-extension [ValueType](value: ValueType)(using writer: JsonSerializer[ValueType])
-  def json: Json = Json(writer.write(value))
+extension [ValueType](value: ValueType)(using encoder: JsonEncoder[ValueType])
+  def json: Json = Json(encoder.encode(value))
 
 object Json extends Dynamic:
   
@@ -143,34 +143,34 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait FallbackJsonSerializer:
-  given [ValueType](using writer: JsonSerializer[ValueType]): JsonSerializer[Optional[ValueType]] =
-    new JsonSerializer[Optional[ValueType]]:
+trait FallbackJsonEncoder:
+  given [ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Optional[ValueType]] =
+    new JsonEncoder[Optional[ValueType]]:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
-      def write(value: Optional[ValueType]): JsonAst = value.let(writer.write(_)).or(JsonAst(null))
+      def encode(value: Optional[ValueType]): JsonAst = value.let(encoder.encode(_)).or(JsonAst(null))
 
-object JsonSerializer extends FallbackJsonSerializer:
-  given int: JsonSerializer[Int] = int => JsonAst(int.toLong)
-  given text: JsonSerializer[Text] = text => JsonAst(text.s)
-  given string: JsonSerializer[String] = JsonAst(_)
-  given double: JsonSerializer[Double] = JsonAst(_)
-  given long: JsonSerializer[Long] = JsonAst(_)
-  given byte: JsonSerializer[Byte] = byte => JsonAst(byte.toLong)
-  given short: JsonSerializer[Short] = short => JsonAst(short.toLong)
-  given boolean: JsonSerializer[Boolean] = JsonAst(_)
+object JsonEncoder extends FallbackJsonEncoder:
+  given int: JsonEncoder[Int] = int => JsonAst(int.toLong)
+  given text: JsonEncoder[Text] = text => JsonAst(text.s)
+  given string: JsonEncoder[String] = JsonAst(_)
+  given double: JsonEncoder[Double] = JsonAst(_)
+  given long: JsonEncoder[Long] = JsonAst(_)
+  given byte: JsonEncoder[Byte] = byte => JsonAst(byte.toLong)
+  given short: JsonEncoder[Short] = short => JsonAst(short.toLong)
+  given boolean: JsonEncoder[Boolean] = JsonAst(_)
 
-  given encoder[ValueType](using encoder: Encoder[ValueType]): JsonSerializer[ValueType]^{encoder} = value =>
+  given encoder[ValueType](using encoder: Encoder[ValueType]): JsonEncoder[ValueType]^{encoder} = value =>
     JsonAst(value.encode.s)
   
-  given (using jsonAccess: Raises[JsonAccessError]): JsonSerializer[Json]^{jsonAccess} = _.root
+  given (using jsonAccess: Raises[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
   
-  given nil: JsonSerializer[Nil.type] = value => JsonAst(IArray[JsonAst]())
+  given nil: JsonEncoder[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
-  given collection[CollectionType[ElementType] <: Iterable[ElementType], ElementType: JsonSerializer]
-      : JsonSerializer[CollectionType[ElementType]] = values =>
-    JsonAst(IArray.from(values.map(summon[JsonSerializer[ElementType]].write(_))))
+  given collection[CollectionType[ElementType] <: Iterable[ElementType], ElementType: JsonEncoder]
+      : JsonEncoder[CollectionType[ElementType]] = values =>
+    JsonAst(IArray.from(values.map(summon[JsonEncoder[ElementType]].encode(_))))
 
-  given map[ValueType](using serializer: JsonSerializer[ValueType]): JsonSerializer[Map[String, ValueType]] =
+  given map[ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Map[String, ValueType]] =
     map =>
       val keys = new Array[String](map.size)
       val values = new Array[JsonAst](map.size)
@@ -178,46 +178,46 @@ object JsonSerializer extends FallbackJsonSerializer:
       
       map.foreach: (key, value) =>
         keys(index) = key
-        values(index) = serializer.write(value)
+        values(index) = encoder.encode(value)
         index += 1
       
       JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
 
-  given opt[ValueType: JsonSerializer]: JsonSerializer[Option[ValueType]] with
+  given opt[ValueType: JsonEncoder]: JsonEncoder[Option[ValueType]] with
     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
     
-    def write(value: Option[ValueType]): JsonAst = value match
+    def encode(value: Option[ValueType]): JsonAst = value match
       case None        => JsonAst(null)
-      case Some(value) => summon[JsonSerializer[ValueType]].write(value)
+      case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
   inline given derived
       [DerivationType](using mirror: Mirror.Of[DerivationType])(using Raises[JsonAccessError])
-      : JsonSerializer[DerivationType] =
+      : JsonEncoder[DerivationType] =
     inline mirror match
       case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
         (value.asMatchable: @unchecked) match
           case value: Product =>
-            val labels: IArray[Text] = Derivation.productOf[DerivationType & Product, JsonSerializer](value)(label)
+            val labels: IArray[Text] = Derivation.productOf[DerivationType & Product, JsonEncoder](value)(label)
             
-            val values: IArray[JsonAst] = Derivation.productOf[DerivationType & Product, JsonSerializer](value):
-              typeclass.write(param)
+            val values: IArray[JsonAst] = Derivation.productOf[DerivationType & Product, JsonEncoder](value):
+              typeclass.encode(param)
 
             (labels, values).asInstanceOf[JsonAst]
     
       case sumMirror: Mirror.SumOf[DerivationType] =>
         (value: DerivationType) =>
-          Derivation.sumOf[DerivationType, JsonSerializer](value):
-            typeclass.tag(label).write(value)
+          Derivation.sumOf[DerivationType, JsonEncoder](value):
+            typeclass.tag(label).encode(value)
 
-trait JsonSerializer[-ValueType]:
+trait JsonEncoder[-ValueType]:
   def omit(value: ValueType): Boolean = false
-  def write(value: ValueType): JsonAst
+  def encode(value: ValueType): JsonAst
   
-  def contraMap[ValueType2](fn: ValueType2 => ValueType): JsonSerializer[ValueType2]^{this, fn} =
-    (value: ValueType2) => fn.andThen(write)(value)
+  def contraMap[ValueType2](fn: ValueType2 => ValueType): JsonEncoder[ValueType2]^{this, fn} =
+    (value: ValueType2) => fn.andThen(encode)(value)
 
-  def tag(label: Text)(using jsonAccess: Raises[JsonAccessError]): JsonSerializer[ValueType]^{jsonAccess} = (value: ValueType) =>
-    val (keys, values) = write(value).obj
+  def tag(label: Text)(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} = (value: ValueType) =>
+    val (keys, values) = encode(value).obj
     (keys :+ "_type", values :+ label.s).asInstanceOf[JsonAst]
 
 trait FallbackJsonDeserializer:
@@ -338,7 +338,6 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case -1    => raise(JsonAccessError(Reason.Label(field)))(this)
       case index => Json(root.obj(1)(index))
   
-
   override def hashCode: Int =
     def recur(value: JsonAst): Int =
       value.asMatchable match
