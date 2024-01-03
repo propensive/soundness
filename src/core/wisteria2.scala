@@ -26,11 +26,11 @@ import anticipation.*
 import scala.deriving.*
 import scala.compiletime.*
 
-case class CoproductError(variant: Text, coproduct: Text, validVariants: List[Text])
+case class SumError(variant: Text, sum: Text, validVariants: List[Text])
 extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.join(t", ")}) of
-                    coproduct $coproduct""")
+                    sum $sum""")
 
-trait Derived[TypeclassType[_]]:
+trait Derivation[TypeclassType[_]] extends ProductDerivation[TypeclassType]:
   protected object sum:
     transparent inline def of
         [DerivationType]
@@ -57,6 +57,7 @@ trait Derived[TypeclassType[_]]:
       inline reflective match
         case reflective: ReflectiveSum[DerivationType] =>
           val ordinal = reflective.ordinal(value)
+          
           sum[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](ordinal)
               (using reflective):
             label => typeclass => split(using typeclass, label, value, ordinal)
@@ -97,10 +98,14 @@ trait Derived[TypeclassType[_]]:
 
           case EmptyTuple => throw Mistake(msg"unreachable")
         case EmptyTuple =>
-          val raises = summonInline[Raises[CoproductError]]
+          val raises = summonInline[Raises[SumError]]
           val variants = constValueTuple[reflective.MirroredElemLabels].toList.map(_.toString.tt)
-          abort(CoproductError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
+          abort(SumError(variant, constValue[reflective.MirroredLabel].tt, variants))(using raises)
   
+  inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
+  
+
+trait ProductDerivation[TypeclassType[_]]:
   protected object product:
     transparent inline def of
         [DerivationType]
@@ -163,15 +168,24 @@ trait Derived[TypeclassType[_]]:
                 product[DerivationType, paramsType, labelsType, ResultType](params, array, index + 1)(join)
 
   inline def join[DerivationType: ReflectiveProduct]: TypeclassType[DerivationType]
-  inline def split[DerivationType: ReflectiveSum]: TypeclassType[DerivationType]
 
-  inline given derived[DerivationType](using reflective: Reflective[DerivationType]): TypeclassType[DerivationType] =
-    inline reflective match
-      case reflective: ReflectiveProduct[DerivationType] =>
-        join[DerivationType](using reflective)
+  inline given derived
+      [DerivationType]
+      (using reflective: Reflective[DerivationType])
+      : TypeclassType[DerivationType] =
+
+    inline this match
+      case derivation: Derivation[TypeclassType] =>
+        inline reflective match
+          case reflective: ReflectiveProduct[DerivationType] =>
+            join[DerivationType](using reflective)
+          case reflective: ReflectiveSum[DerivationType] =>
+            derivation.split[DerivationType](using reflective)
       
-      case reflective: ReflectiveSum[DerivationType] =>
-        split[DerivationType](using reflective)
+      case derivation: ProductDerivation[TypeclassType] =>
+        inline reflective match
+          case reflective: ReflectiveProduct[DerivationType] => join[DerivationType](using reflective)
+
 
 type Reflective[DerivationType] = Mirror.Of[DerivationType]
 type ReflectiveProduct[DerivationType] = Mirror.ProductOf[DerivationType]
