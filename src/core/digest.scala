@@ -119,11 +119,10 @@ trait Digestible2:
 
 object Digestible extends Digestible2, Derived[Digestible]:
   inline def join[DerivationType: Mirror.ProductOf]: Digestible[DerivationType] = (accumulator, value) =>
-    product.from[DerivationType](value)[Unit]:
-      typeclass.digest(accumulator, param)
+    product.from(value)(typeclass.digest(accumulator, param))
       
   inline def split[DerivationType: Mirror.SumOf]: Digestible[DerivationType] = (accumulator, value) =>
-    sum.from[DerivationType](value)[Unit]:
+    sum.from(value):
       int.digest(accumulator, ordinal)
       typeclass.digest(accumulator, variant)
 
