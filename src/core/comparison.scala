@@ -151,7 +151,7 @@ object Contrast extends Derivation[Contrast], Contrast2:
       def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
-  inline def join[DerivationType: ReflectiveProduct]: Contrast[DerivationType] = (left, right) =>
+  inline def join[DerivationType: ProductReflection]: Contrast[DerivationType] = (left, right) =>
     val elements = params(left):
       val leftParam = param
       label -> oneParam(right)(ordinal):
@@ -159,7 +159,7 @@ object Contrast extends Derivation[Contrast], Contrast2:
     
     Semblance.Breakdown(elements, left.debug, right.debug)
   
-  inline def split[DerivationType: ReflectiveSum]: Contrast[DerivationType] = (left, right) =>
+  inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
     variants(left):
       val leftOrdinal = ordinal
       variants(right):
