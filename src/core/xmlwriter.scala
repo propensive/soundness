@@ -22,22 +22,22 @@ import rudiments.*
 import spectacular.*
 import gossamer.*
 
-object XmlWriter extends Derivation[XmlWriter]:
-  given XmlWriter[Text] = str => Ast.Element(XmlName(t"Text"), List(Ast.Textual(str)))
-  given XmlWriter[String] = str => Ast.Element(XmlName(t"String"), List(Ast.Textual(str.show)))
+object XmlEncoder extends Derivation[XmlEncoder]:
+  given XmlEncoder[Text] = str => Ast.Element(XmlName(t"Text"), List(Ast.Textual(str)))
+  given XmlEncoder[String] = str => Ast.Element(XmlName(t"String"), List(Ast.Textual(str.show)))
 
-  // given [T](using canon: Canonical[T]): XmlWriter[T] = value =>
+  // given [T](using canon: Canonical[T]): XmlEncoder[T] = value =>
   //   Ast.Element(XmlName(t"value"), List(Ast.Textual(canon.serialize(value))))
 
-  given [T: XmlWriter, Coll[E] <: Seq[E]]: XmlWriter[Coll[T]] = xs =>
-    Ast.Element(XmlName(t"Seq"), xs.map(summon[XmlWriter[T]].write(_)))
+  given [T: XmlEncoder, Coll[E] <: Seq[E]]: XmlEncoder[Coll[T]] = xs =>
+    Ast.Element(XmlName(t"Seq"), xs.map(summon[XmlEncoder[T]].write(_)))
 
-  given XmlWriter[Int] = int =>
+  given XmlEncoder[Int] = int =>
     Ast.Element(XmlName(t"Int"), List(Ast.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()
 
-  def join[T](caseClass: CaseClass[XmlWriter, T]): XmlWriter[T] = value =>
+  def join[T](caseClass: CaseClass[XmlEncoder, T]): XmlEncoder[T] = value =>
     val elements = caseClass.params
       .filter(!_.annotations.contains(attributeAttribute))
       .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
@@ -53,7 +53,7 @@ object XmlWriter extends Derivation[XmlWriter]:
 
     Ast.Element(XmlName(tag), elements, attributes)
 
-  def split[T](sealedTrait: SealedTrait[XmlWriter, T]): XmlWriter[T] = value =>
+  def split[T](sealedTrait: SealedTrait[XmlEncoder, T]): XmlEncoder[T] = value =>
     sealedTrait.choose(value) { subtype =>
       val xml = subtype.typeclass.write(subtype.cast(value))
       Ast.Element(
@@ -67,7 +67,7 @@ object XmlWriter extends Derivation[XmlWriter]:
   private def textElements(value: Ast.Element): Text =
     value.children.collect { case Ast.Textual(txt) => txt }.join
 
-trait XmlWriter[-T]:
+trait XmlEncoder[-T]:
   def write(value: T): Ast.Element
-  def contramap[S](fn: S => T): XmlWriter[S] = value => write(fn(value))
+  def contramap[S](fn: S => T): XmlEncoder[S] = value => write(fn(value))
 
