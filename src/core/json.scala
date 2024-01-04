@@ -24,7 +24,7 @@ import gossamer.*
 import anticipation.*
 import merino.*
 import hieroglyph.*
-import wisteria2.*
+import wisteria.*
 import spectacular.*
 import perforate.*
 
