@@ -24,7 +24,7 @@ import hieroglyph.*
 import perforate.*
 import turbulence.*
 import gesticulate.*
-import wisteria2.*
+import wisteria.*
 import spectacular.*
 import eucalyptus.*
 import anticipation.*
