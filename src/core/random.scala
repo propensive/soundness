@@ -42,8 +42,9 @@ object Randomizable:
   given long: Randomizable[Long] = identity(_)
   given char: Randomizable[Char] = _.toChar
   given boolean: Randomizable[Boolean] = _ < 0L
+  given double(using distribution: Distribution): Randomizable[Double] = distribution.transform(_)
 
-// Note that `gen` is side-effecting, and is therefore not threadsafe
+// Note that `gen` is side-effecting, and is therefore not deterministic in concurrent environments
 trait Randomizable[+ValueType]:
   def from(gen: => Long): ValueType
 
@@ -58,6 +59,52 @@ class Random(private val rng: su.Random):
   def apply[ValueType]()(using randomizable: Randomizable[ValueType]): ValueType =
     randomizable.from(rng.nextLong())
 
+  def gaussian(): Double = rng.nextGaussian()
+  def unitInterval(): Double = rng.nextDouble()
+
   transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] = rng.shuffle(seq)
 
 def random[ValueType: Randomizable](): ValueType = Random.generalPurpose[ValueType]()
+
+package randomDistributions:
+  given gaussian: Distribution = Gaussian()
+  given uniformUnitInterval: Distribution = UniformDistribution(0, 1)
+  given uniformSymmetricUnitInterval: Distribution = UniformDistribution(-1, 1)
+
+trait Distribution:
+  def transform(gen: => Long): Double
+
+case class UniformDistribution(start: Double, end: Double) extends Distribution:
+  def transform(gen: => Long): Double = ((gen.toDouble/2)/Long.MaxValue)*(end - start) + (end + start)/2
+
+case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
+  def transform(gen: => Long): Double =
+    val u0 = randomDistributions.uniformUnitInterval.transform(gen)
+    val u1 = randomDistributions.uniformUnitInterval.transform(gen)
+    
+    standardDeviation*math.sqrt(-2*math.log(u0))*math.cos(2*math.Pi*u1) + mean
+    
+case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
+  def transform(gen: => Long): Double =
+    @annotation.tailrec
+    def recur(): Double =
+      val u0 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
+      val u1 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
+      val s = u0*u0 + u1*u1
+      if s >= 1 || s == 0 then recur() else standardDeviation*u0*math.sqrt(-2*math.log(s)/s) + mean
+
+    recur()
+
+case class Gamma(shape: Int, scale: Double) extends Distribution:
+  def mean: Double = shape*scale
+  def variance: Double = shape*scale*scale
+  def variationCoefficient: Double = math.pow(shape, -0.5)
+  def skewness: Double = 2.0*variationCoefficient
+
+  def transform(gen: => Long): Double =
+    def accumulate(sum: Double, count: Int): Double =
+      if count == 0 then sum*scale else
+        val gaussian = randomDistributions.gaussian.transform(gen)
+        accumulate(sum + gaussian*gaussian, count - 1)
+    
+    accumulate(0.0, shape)
