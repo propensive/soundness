@@ -19,6 +19,7 @@ package turbulence
 import rudiments.*
 import vacuous.*
 import parasite.*
+import capricious.*
 import anticipation.*
 
 import scala.collection.mutable as scm
@@ -43,7 +44,34 @@ extension (lazyList: LazyList[Bytes])
         LazyList()
       
     recur(lazyList, byteSize)
-  
+
+  def shred(mean: Double, variance: Double): LazyList[Bytes] =
+    given Distribution = Gamma.approximate(mean, variance)
+    
+    def newArray(): Array[Byte] = new Array[Byte](random[Double]().toInt.max(1))
+    
+    def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int): LazyList[Bytes] =
+      stream match
+        case LazyList() =>
+          if destPos == 0 then LazyList() else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
+        
+        case source #:: more =>
+          val ready = source.length - sourcePos
+          val free = dest.length - destPos
+
+          if ready < free then
+            System.arraycopy(source, sourcePos, dest, destPos, ready)
+            recur(more, 0, dest, destPos + ready)
+          else if free < ready then
+            System.arraycopy(source, sourcePos, dest, destPos, free)
+            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+          else // free == ready
+            System.arraycopy(source, sourcePos, dest, destPos, free)
+            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+      
+
+    recur(lazyList, 0, newArray(), 0)
+
   def take(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream match
       case head #:: tail =>

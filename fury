@@ -3,6 +3,7 @@
 
 repo propensive/parasite
 repo propensive/diuretic
+repo propensive/capricious
 repo propensive/hieroglyph
 repo propensive/probably
 
@@ -12,7 +13,7 @@ project turbulence
   module core
     compiler  scala
     sources   src/core
-    include   hieroglyph/core parasite/core diuretic/core perforate/core
+    include   hieroglyph/core parasite/core diuretic/core perforate/core capricious/core
 
   module test
     compiler  scala
