@@ -19,7 +19,7 @@ package gastronomy
 import rudiments.*
 import vacuous.*
 import fulminate.*
-import wisteria2.*
+import wisteria.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
