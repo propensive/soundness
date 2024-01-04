@@ -19,7 +19,7 @@ package chiaroscuro
 import rudiments.*
 import gossamer.*
 import dissonance.*
-import wisteria2.*
+import wisteria.*
 import escapade.*
 import iridescence.*
 import dendrology.*
