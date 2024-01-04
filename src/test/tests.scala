@@ -1,5 +1,5 @@
 /*
-    Xylophone, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Xylophone, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
