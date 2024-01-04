@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package wisteria2
+package wisteria
 
 import fulminate.*
 import gossamer.*
