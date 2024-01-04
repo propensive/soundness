@@ -95,7 +95,7 @@ object CsvDoc extends RowFormat:
     if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
 
 object CsvEncoder extends ProductDerivation[CsvEncoder]:
-  inline def join[DerivationType: ReflectiveProduct]: CsvEncoder[DerivationType] = value =>
+  inline def join[DerivationType: ProductReflection]: CsvEncoder[DerivationType] = value =>
     Csv(params(value)(typeclass.encode(param).elems).to(List).flatten*)
   
   given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
@@ -131,7 +131,7 @@ object TsvDoc extends RowFormat:
       LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
 object CsvDecoder extends ProductDerivation[CsvDecoder]:
-  inline def join[DerivationType: ReflectiveProduct]: CsvDecoder[DerivationType] =
+  inline def join[DerivationType: ProductReflection]: CsvDecoder[DerivationType] =
     new CsvDecoder[DerivationType]:
       def decode(elems: Csv): DerivationType =
         var count: Int = 0
