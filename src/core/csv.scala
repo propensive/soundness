@@ -16,7 +16,7 @@
 
 package caesura
 
-import wisteria2.*
+import wisteria.*
 import rudiments.*
 import gossamer.*
 import fulminate.*
