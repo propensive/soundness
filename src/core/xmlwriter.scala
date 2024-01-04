@@ -16,13 +16,12 @@
 
 package xylophone
 
-import wisteria.*
 import anticipation.*
 import rudiments.*
 import spectacular.*
 import gossamer.*
 
-object XmlEncoder extends Derivation[XmlEncoder]:
+object XmlEncoder:
   given XmlEncoder[Text] = text => Ast.Element(XmlName(t"Text"), List(Ast.Textual(text)))
   given XmlEncoder[String] = string => Ast.Element(XmlName(t"String"), List(Ast.Textual(string.tt)))
 
@@ -35,32 +34,32 @@ object XmlEncoder extends Derivation[XmlEncoder]:
 
   private val attributeAttribute = xmlAttribute()
 
-  def join[DerivationType](caseClass: CaseClass[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] = value =>
-    val elements = caseClass.params
-      .filter(!_.annotations.contains(attributeAttribute))
-      .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
+  // def join[DerivationType](caseClass: CaseClass[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] = value =>
+  //   val elements = caseClass.params
+  //     .filter(!_.annotations.contains(attributeAttribute))
+  //     .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
 
-    val attributes = caseClass.params
-      .filter(_.annotations.contains(attributeAttribute))
-      .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
-      .to(Map)
+  //   val attributes = caseClass.params
+  //     .filter(_.annotations.contains(attributeAttribute))
+  //     .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
+  //     .to(Map)
 
-    val tag = caseClass.annotations.collect:
-      case `xmlLabel`(name) => name.show
-    .headOption.getOrElse(caseClass.typeInfo.short.show)
+  //   val tag = caseClass.annotations.collect:
+  //     case `xmlLabel`(name) => name.show
+  //   .headOption.getOrElse(caseClass.typeInfo.short.show)
 
-    Ast.Element(XmlName(tag), elements, attributes)
+  //   Ast.Element(XmlName(tag), elements, attributes)
 
-  def split[DerivationType](sealedTrait: SealedTrait[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] =
-    value =>
-      sealedTrait.choose(value): subtype =>
-        val xml = subtype.typeclass.write(subtype.cast(value))
-        Ast.Element(
-          XmlName(Text(sealedTrait.typeInfo.short)),
-          xml.children,
-          xml.attributes.updated(XmlName(t"type"), xml.name.name),
-          xml.namespaces
-        )
+  // def split[DerivationType](sealedTrait: SealedTrait[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] =
+  //   value =>
+  //     sealedTrait.choose(value): subtype =>
+  //       val xml = subtype.typeclass.write(subtype.cast(value))
+  //       Ast.Element(
+  //         XmlName(Text(sealedTrait.typeInfo.short)),
+  //         xml.children,
+  //         xml.attributes.updated(XmlName(t"type"), xml.name.name),
+  //         xml.namespaces
+  //       )
   
   private def textElements(value: Ast.Element): Text =
     value.children.collect { case Ast.Textual(txt) => txt }.join

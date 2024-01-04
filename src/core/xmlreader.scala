@@ -16,42 +16,40 @@
 
 package xylophone
 
-import wisteria.*
 import rudiments.*
 import anticipation.*
-import gossamer.*
 import spectacular.*
 
 trait XmlDecoder[ValueType]:
   def read(xml: Seq[Ast]): Option[ValueType]
   def map[ValueType2](fn: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(fn(_))
 
-object XmlDecoder extends Derivation[XmlDecoder]:
+object XmlDecoder:
   given txt: XmlDecoder[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value => (value: @unchecked) match
     case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[ValueType])
   
-  def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
-    val elems = childElements(seq)
+  // def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
+  //   val elems = childElements(seq)
     
-    Some:
-      caseClass.construct: param =>
-        elems
-          .collect { case e: Ast.Element => e }
-          .find(_.name.name.s == param.label)
-          .flatMap { e => param.typeclass.read(Seq(e)) }.get
+  //   Some:
+  //     caseClass.construct: param =>
+  //       elems
+  //         .collect { case e: Ast.Element => e }
+  //         .find(_.name.name.s == param.label)
+  //         .flatMap { e => param.typeclass.read(Seq(e)) }.get
   
-  def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
-    seq.headOption match
-      case Some(Ast.Element(_, children, attributes, _)) =>
-        attributes
-          .get(XmlName(t"type"))
-          .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
-          .flatMap(_.typeclass.read(seq))
-      case _ =>
-        None
+  // def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
+  //   seq.headOption match
+  //     case Some(Ast.Element(_, children, attributes, _)) =>
+  //       attributes
+  //         .get(XmlName(t"type"))
+  //         .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
+  //         .flatMap(_.typeclass.read(seq))
+  //     case _ =>
+  //       None
   
   private def childElements(seq: Seq[Ast]): Seq[Ast] =
     seq.collect { case e@Ast.Element(_, children, _, _) => children }.flatten
