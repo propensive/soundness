@@ -70,6 +70,7 @@ package randomDistributions:
   given gaussian: Distribution = Gaussian()
   given uniformUnitInterval: Distribution = UniformDistribution(0, 1)
   given uniformSymmetricUnitInterval: Distribution = UniformDistribution(-1, 1)
+  given binary: Distribution = java.lang.Double.longBitsToDouble(_)
 
 trait Distribution:
   def transform(gen: => Long): Double
@@ -94,6 +95,12 @@ case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) ex
       if s >= 1 || s == 0 then recur() else standardDeviation*u0*math.sqrt(-2*math.log(s)/s) + mean
 
     recur()
+
+object Gamma:
+  def approximate(mean: Double, variance: Double): Gamma =
+    val scale: Double = variance/mean
+    val shape: Int = (mean/scale + 0.5).toInt
+    Gamma(shape, scale)
 
 case class Gamma(shape: Int, scale: Double) extends Distribution:
   def mean: Double = shape*scale
