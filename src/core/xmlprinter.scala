@@ -21,8 +21,8 @@ import anticipation.*
 import spectacular.*
 import gossamer.*
 
-trait XmlPrinter[T]:
-  def print(doc: Xml): T
+trait XmlPrinter[OutputType]:
+  def print(doc: Xml): OutputType
 
 object XmlPrinter:
   given XmlPrinter[Text] = StandardXmlPrinter(false)

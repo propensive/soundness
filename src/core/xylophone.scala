@@ -171,7 +171,11 @@ extends Xml, Dynamic:
   infix def +(other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
-  def as[T](using decoder: XmlDecoder[T]): T raises XmlAccessError | XmlReadError = apply().as[T]
+  def as
+      [ValueType]
+      (using decoder: XmlDecoder[ValueType])
+      : ValueType raises XmlAccessError raises XmlReadError =
+    apply().as[ValueType]
 
 case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)

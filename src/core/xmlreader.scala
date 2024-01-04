@@ -22,18 +22,18 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 
-trait XmlDecoder[T]:
-  def read(xml: Seq[Ast]): Option[T]
-  def map[S](fn: T => Option[S]): XmlDecoder[S] = read(_).flatMap(fn(_))
+trait XmlDecoder[ValueType]:
+  def read(xml: Seq[Ast]): Option[ValueType]
+  def map[ValueType2](fn: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(fn(_))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
   given txt: XmlDecoder[Text] =
     childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
   
-  given [T](using decoder: Decoder[T]): XmlDecoder[T] = value => (value: @unchecked) match
-    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[T])
+  given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value => (value: @unchecked) match
+    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[ValueType])
   
-  def join[T](caseClass: CaseClass[XmlDecoder, T]): XmlDecoder[T] = seq =>
+  def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
     val elems = childElements(seq)
     
     Some:
@@ -43,7 +43,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
           .find(_.name.name.s == param.label)
           .flatMap { e => param.typeclass.read(Seq(e)) }.get
   
-  def split[T](sealedTrait: SealedTrait[XmlDecoder, T]): XmlDecoder[T] = seq =>
+  def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
     seq.headOption match
       case Some(Ast.Element(_, children, attributes, _)) =>
         attributes

@@ -79,7 +79,7 @@ object XmlInterpolation:
   given Substitution[XmlInput, Text, "t"] with
     def embed(value: Text) = XmlInput.Flat(value)
 
-  given genInsert[T](using writer: XmlEncoder[T]): Insertion[XmlInput, T] = value =>
+  given genInsert[ValueType](using writer: XmlEncoder[ValueType]): Insertion[XmlInput, ValueType] = value =>
     XmlInput.Structured(writer.write(value))
 
   object XmlInterpolator extends Interpolator[XmlInput, ParseState, XmlDoc]:
