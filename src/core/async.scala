@@ -53,7 +53,7 @@ object Async:
       val promise: Promise[Int] = Promise()
       
       asyncs.zipWithIndex.foreach: (async, index) =>
-        async.foreach: result =>
+        async.each: result =>
           promise.offer(index)
       
       promise.await()
@@ -136,6 +136,9 @@ class Async
     Async(fn(async.await()))
   
   def foreach[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+    Async(fn(async.await()))
+  
+  def each[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
     Async(fn(async.await()))
   
   def flatMap

@@ -37,7 +37,7 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
 
   def cancel(): Unit =
     promise.cancel()
-    children.foreach: (id, child) =>
+    children.each: (id, child) =>
       child match
         case child: Monitor => child.cancel()
         case _              => ()
