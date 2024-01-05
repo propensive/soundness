@@ -22,7 +22,7 @@ import spectacular.*
 
 trait XmlDecoder[ValueType]:
   def read(xml: Seq[Ast]): Option[ValueType]
-  def map[ValueType2](fn: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(fn(_))
+  def map[ValueType2](lambda: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(lambda(_))
 
 object XmlDecoder:
   given txt: XmlDecoder[Text] =

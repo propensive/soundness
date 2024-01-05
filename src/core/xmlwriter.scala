@@ -66,5 +66,5 @@ object XmlEncoder:
 
 trait XmlEncoder[-ValueType]:
   def write(value: ValueType): Ast.Element
-  def contramap[ValueType2](fn: ValueType2 => ValueType): XmlEncoder[ValueType2] = value => write(fn(value))
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] = value => write(lambda(value))
 
