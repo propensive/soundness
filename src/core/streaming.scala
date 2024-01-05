@@ -62,8 +62,8 @@ object Writable:
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
-  def contramap[TargetType2](fn: TargetType2 => TargetType): Writable[TargetType2, ChunkType] =
-    (target, stream) => write(fn(target), stream)
+  def contramap[TargetType2](lambda: TargetType2 => TargetType): Writable[TargetType2, ChunkType] =
+    (target, stream) => write(lambda(target), stream)
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
@@ -110,8 +110,8 @@ trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit
   def asWritable: Writable[TargetType, ChunkType] = append(_, _)
   
-  def contramap[TargetType2](fn: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
-    (target, stream) => append(fn(target), stream)
+  def contramap[TargetType2](lambda: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
+    (target, stream) => append(lambda(target), stream)
 
 trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, ChunkType]:
 
@@ -225,8 +225,8 @@ object Readable:
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
   
-  def contramap[SourceType2](fn: SourceType2 => SourceType): Readable[SourceType2, ChunkType] = source =>
-    read(fn(source))
+  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ChunkType] = source =>
+    read(lambda(source))
 
 object Aggregable:
   given bytesBytes: Aggregable[Bytes, Bytes] = source =>
@@ -248,11 +248,11 @@ object Aggregable:
   given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
     def map
         [ResultType, ResultType2]
-        (aggregable: Aggregable[ChunkType, ResultType], fn: ResultType => ResultType2)
+        (aggregable: Aggregable[ChunkType, ResultType], lambda: ResultType => ResultType2)
         : Aggregable[ChunkType, ResultType2] =
 
       new Aggregable:
-        def aggregate(value: LazyList[ChunkType]): ResultType2 = fn(aggregable.aggregate(value))
+        def aggregate(value: LazyList[ChunkType]): ResultType2 = lambda(aggregable.aggregate(value))
       
 @capability
 trait Aggregable[-ChunkType, +ResultType]:

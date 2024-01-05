@@ -134,11 +134,11 @@ extension [ElementType](stream: LazyList[ElementType])
     
     LazyList.defer(recur(stream, Nil, 0))
 
-  def parallelMap[ElementType2](fn: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
+  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
     val out: Funnel[ElementType2] = Funnel()
     
     Async:
       stream.map: elem =>
-        Async(out.put(fn(elem)))
+        Async(out.put(lambda(elem)))
     
     out.stream
