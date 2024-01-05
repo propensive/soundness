@@ -292,7 +292,7 @@ extends Error(msg"HTTP error $status"):
 trait FailureCase
 
 object HttpStatus:
-  private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).mtwin.map(_.code -> _).to(Map)
+  private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).bi.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
   given communicable: Communicable[HttpStatus] = status => msg"${status.code} (${status.description})"
