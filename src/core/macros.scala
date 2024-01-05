@@ -35,7 +35,7 @@ object SerpentineMacro:
     val (element: String, pos: Position) = (context: @unchecked) match
       case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
     
-    patterns(TypeRepr.of[NameType]).foreach: pattern =>
+    patterns(TypeRepr.of[NameType]).each: pattern =>
       if element.matches(pattern) then pattern match
         case r"\.\*\\?$char(.)\.\*" =>
           fail(msg"a path element may not contain the character $char", pos)
