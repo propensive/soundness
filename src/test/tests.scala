@@ -37,7 +37,7 @@ object Tests extends Suite(t"Merino tests"):
     val tests2 = ji.File(ji.File(unsafely(Environment.pwd), "tests"), "test_transform")
     
     suite(t"Positive tests"):
-      (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).foreach: file =>
+      (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
         test(Text(file.getName.nn.dropRight(5))):
           JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file)))
         .check()
