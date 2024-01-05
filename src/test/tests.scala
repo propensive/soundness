@@ -158,12 +158,12 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given Writable[GeneralStore, Bytes] = (store, stream) => stream.foreach: bytes =>
-          bytes.foreach: byte =>
+        given Writable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
+          bytes.each: byte =>
             store.arrayBuffer.append(byte)
         
-        given Writable[GeneralStore, Text] = (store, texts) => texts.foreach: text =>
-          text.bytes.foreach: byte =>
+        given Writable[GeneralStore, Text] = (store, texts) => texts.each: text =>
+          text.bytes.each: byte =>
             store.arrayBuffer.append(byte)
       
       class ByteStore():
@@ -171,8 +171,8 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given Writable[ByteStore, Bytes] = (store, stream) => stream.foreach: bytes =>
-          bytes.foreach: byte =>
+        given Writable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
+          bytes.each: byte =>
             store.arrayBuffer.append(byte)
       
       class TextStore():
@@ -180,7 +180,7 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = text
       
       object TextStore:
-        given Writable[TextStore, Text] = (store, texts) => texts.foreach: text =>
+        given Writable[TextStore, Text] = (store, texts) => texts.each: text =>
           store.text = store.text + text
 
       test(t"Write Text to some reference with Text and Bytes instances"):
@@ -262,12 +262,12 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given Appendable[GeneralStore, Bytes] = (store, stream) => stream.foreach: bytes =>
-          bytes.foreach: byte =>
+        given Appendable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
+          bytes.each: byte =>
             store.arrayBuffer.append(byte)
         
-        given Appendable[GeneralStore, Text] = (store, texts) => texts.foreach: text =>
-          text.bytes.foreach: byte =>
+        given Appendable[GeneralStore, Text] = (store, texts) => texts.each: text =>
+          text.bytes.each: byte =>
             store.arrayBuffer.append(byte)
       
       class ByteStore():
@@ -275,8 +275,8 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given Appendable[ByteStore, Bytes] = (store, stream) => stream.foreach: bytes =>
-          bytes.foreach: byte =>
+        given Appendable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
+          bytes.each: byte =>
             store.arrayBuffer.append(byte)
       
       class TextStore():
@@ -284,7 +284,7 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = text
       
       object TextStore:
-        given Appendable[TextStore, Text] = (store, texts) => texts.foreach: text =>
+        given Appendable[TextStore, Text] = (store, texts) => texts.each: text =>
           store.text = store.text + text
 
       test(t"Append Text to some reference with Text and Bytes instances"):

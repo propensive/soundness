@@ -32,7 +32,7 @@ object Writable:
       (using streamCut: Raises[StreamError])
       : Writable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
-      stream.foreach: bytes =>
+      stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
       outputStream.close()
@@ -41,7 +41,7 @@ object Writable:
       (using streamCut: Raises[StreamError], encoder: CharEncoder)
       : Writable[ji.OutputStream, Text] =
     (outputStream, stream) =>
-      stream.foreach: text =>
+      stream.each: text =>
         outputStream.write(encoder.encode(text).mutable(using Unsafe))
         outputStream.flush()
       outputStream.close()
@@ -89,7 +89,7 @@ object Appendable:
       (using streamCut: Raises[StreamError])
       : Appendable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
-      stream.foreach: bytes =>
+      stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
       outputStream.close()

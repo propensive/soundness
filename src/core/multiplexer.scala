@@ -35,7 +35,7 @@ case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
   private val queue: juc.LinkedBlockingQueue[ElementType | Multiplexer.Termination.type] =
     juc.LinkedBlockingQueue()
 
-  def close(): Unit = tasks.keys.foreach(remove(_))
+  def close(): Unit = tasks.keys.each(remove(_))
 
   @tailrec
   private def pump(key: KeyType, stream: LazyList[ElementType])(using Submonitor[Unit]): Unit =

@@ -30,7 +30,7 @@ extension (lazyList: LazyList[Bytes])
   def slurp(): Bytes =
     val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
     
-    lazyList.foreach: bs =>
+    lazyList.each: bs =>
       bld.addAll(bs.mutable(using Unsafe))
     
     bld.result().immutable(using Unsafe)
@@ -89,7 +89,7 @@ extension (obj: LazyList.type)
   
   def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
     val multiplexer = Multiplexer[Any, ElemType]()
-    streams.zipWithIndex.map(_.swap).foreach(multiplexer.add)
+    streams.zipWithIndex.map(_.swap).each(multiplexer.add)
     multiplexer
 
   def defer[ElemType](lazyList: => LazyList[ElemType]): LazyList[ElemType] =
