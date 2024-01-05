@@ -306,8 +306,8 @@ trait JsonDecoder[ValueType]:
   private inline def decoder: this.type = this
   
   def decode(json: JsonAst, missing: Boolean): ValueType
-  def map[ValueType2](fn: ValueType => ValueType2): JsonDecoder[ValueType2]^{this, fn} =
-    (json, missing) => fn(decoder.decode(json, missing))
+  def map[ValueType2](lambda: ValueType => ValueType2): JsonDecoder[ValueType2]^{this, lambda} =
+    (json, missing) => lambda(decoder.decode(json, missing))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
