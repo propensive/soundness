@@ -76,48 +76,48 @@ object Tests extends Suite(t"Escapade tests"):
       
       test(t"bold text is bold"):
         boldSample.find(t"bold").vouch(using Unsafe).styles
-      .assert(_.forall(_.bold))
+      .assert(_.all(_.bold))
       
       test(t"text before bold text is not bold"):
         boldSample.find(t"This text is ").vouch(using Unsafe).styles
-      .assert(_.forall(!_.bold))
+      .assert(_.all(!_.bold))
       
       test(t"text after bold text is not bold"):
         boldSample.find(t".").vouch(using Unsafe).styles
-      .assert(_.forall(!_.bold))
+      .assert(_.all(!_.bold))
 
       test(t"nested bold/italic is both"):
         boldItalicSample.find(t"bold-italic").vouch(using Unsafe).styles
-      .assert(_.forall { style => style.bold && style.italic })
+      .assert(_.bi.all(_.bold && _.italic))
       
       test(t"nested italic is removed but not bold"):
         boldItalicSample.find(t"unitalic").vouch(using Unsafe).styles
-      .assert(_.forall { style => style.bold && !style.italic })
+      .assert(_.bi.all(_.bold && !_.italic))
       
       test(t"nested non-bold, non-italic text is neither"):
         boldItalicSample.find(t"end").vouch(using Unsafe).styles
-      .assert(_.forall { style => !style.bold && !style.italic })
+      .assert(_.bi.all(!_.bold && !_.italic))
       
       test(t"nested non-bold, non-italic text is neither"):
         boldItalicSample.find(t"end").vouch(using Unsafe).styles
-      .assert(_.forall { style => !style.bold && !style.italic })
+      .assert(_.bi.all(!_.bold && !_.italic))
       
       test(t"nested bold/italic (without intermediate characters) is both"):
         boldItalicSample2.find(t"bold-italic").vouch(using Unsafe).styles
-      .assert(_.forall { style => style.bold && style.italic })
+      .assert(_.bi.all(_.bold && _.italic))
       
       test(t"normal text following doubly-nested text (without intermediate characters) is normal"):
         boldItalicSample2.find(t"end").vouch(using Unsafe).styles
-      .assert(_.forall(_ == Style()))
+      .assert(_.all(_ == Style()))
 
       test(t"double color change uses latter"):
         pty.consume(e"$Red($Yellow(yellow))".render).buffer.find(t"yellow").vouch(using Unsafe).styles
-      .assert(_.forall(_.foreground == Yellow))
+      .assert(_.all(_.foreground == Yellow))
       
       test(t"double color change and removal of nested uses former"):
         pty.consume(e"$Red($Yellow(yellow)red)".render).buffer.find(t"red").vouch(using Unsafe).styles
-      .assert(_.forall(_.foreground == Red))
+      .assert(_.all(_.foreground == Red))
       
       test(t"double color change and removal uses default"):
         pty.consume(e"$Red($Yellow(yellow)red)default".render).buffer.find(t"default").vouch(using Unsafe).styles
-      .assert(_.forall(_.foreground == Rgb24(255, 255, 255)))
+      .assert(_.all(_.foreground == Rgb24(255, 255, 255)))
