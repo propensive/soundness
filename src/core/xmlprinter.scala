@@ -101,6 +101,6 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
       case e => ()
 
-    doc.root.content.foreach(next(_))
+    doc.root.content.each(next(_))
 
     buf.text
