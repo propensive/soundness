@@ -46,7 +46,7 @@ trait Executive:
   def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
 
 trait UnhandledErrorHandler:
-  def handle(fn: => ExitStatus)(using Stdio): ExitStatus
+  def handle(block: => ExitStatus)(using Stdio): ExitStatus
 
 package unhandledErrors:
   given silent: UnhandledErrorHandler with
