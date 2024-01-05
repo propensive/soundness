@@ -41,7 +41,7 @@ trait Functor[FunctorType[_]]:
   def map
       [ValueType, ValueType2]
       (value: FunctorType[ValueType])
-      (fn: ValueType => ValueType2)
+      (lambda: ValueType => ValueType2)
       : FunctorType[ValueType2]
 
 object Monad:
@@ -51,7 +51,7 @@ trait Monad[MonadType[_]] extends Functor[MonadType]:
   def flatMap
       [ValueType, ValueType2]
       (value: MonadType[ValueType])
-      (fn: ValueType => MonadType[ValueType2])
+      (lambda: ValueType => MonadType[ValueType2])
       : MonadType[ValueType2]
 
 object Mercator:
@@ -108,9 +108,9 @@ object Mercator:
 
         def map
             [ValueType, ValueType2]
-            (value: FunctorType[ValueType])(fn: ValueType => ValueType2): FunctorType[ValueType2] =
+            (value: FunctorType[ValueType])(lambda: ValueType => ValueType2): FunctorType[ValueType2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
-              .appliedTo('fn.asTerm).asExprOf[FunctorType[ValueType2]]}
+              .appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
     }
 
     if mapMethods.length == 1 then makeFunctor else if mapMethods.length == 0 then
@@ -135,17 +135,17 @@ object Mercator:
 
         def map
             [ValueType, ValueType2]
-            (value: MonadType[ValueType])(fn: ValueType => ValueType2): MonadType[ValueType2] =
-          ${functorExpr}.map(value)(fn)
+            (value: MonadType[ValueType])(lambda: ValueType => ValueType2): MonadType[ValueType2] =
+          ${functorExpr}.map(value)(lambda)
         
         def flatMap
             [ValueType, ValueType2]
-            (value: MonadType[ValueType])(fn: ValueType => MonadType[ValueType2])
+            (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
             : MonadType[ValueType2] =
           ${'value.asTerm
               .select(flatMapMethods(0))
               .appliedToType(TypeRepr.of[ValueType2])
-              .appliedTo('fn.asTerm)
+              .appliedTo('lambda.asTerm)
               .asExprOf[MonadType[ValueType2]]}
     }
 
@@ -156,12 +156,12 @@ object Mercator:
 
 extension [ValueType, FunctorType[_]]
     (using functor: Functor[FunctorType])(value: FunctorType[ValueType])
-  def map[ValueType2](fn: ValueType => ValueType2): FunctorType[ValueType2] = functor.map(value)(fn)
+  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] = functor.map(value)(lambda)
 
 extension [ValueType, MonadType[_]]
     (using monad: Monad[MonadType])(value: MonadType[ValueType])
-  def flatMap[ValueType2](fn: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
-    monad.flatMap(value)(fn)
+  def flatMap[ValueType2](lambda: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
+    monad.flatMap(value)(lambda)
 
 extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemType]
     (elems: CollectionType[MonadType[ElemType]])
@@ -181,7 +181,7 @@ extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemTyp
 extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
     (elems: CollectionType[ElemType])
 
-  def traverse[ElemType2, MonadType[_]](fn: ElemType => MonadType[ElemType2])
+  def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
       (using monad: Monad[MonadType],
           buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
       : MonadType[CollectionType[ElemType2]] =
@@ -190,7 +190,7 @@ extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
         (todo: Iterable[ElemType], acc: MonadType[List[ElemType2]])
         : MonadType[List[ElemType2]] =
       if todo.isEmpty then acc
-      else recur(todo.tail, acc.flatMap { xs => fn(todo.head).map(_ :: xs) })
+      else recur(todo.tail, acc.flatMap { xs => lambda(todo.head).map(_ :: xs) })
         
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
     
