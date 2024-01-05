@@ -109,7 +109,7 @@ def application
   
   def listen: LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
-    signals.foreach { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
+    signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
     funnel.stream
 
   val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine, listen)

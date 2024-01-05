@@ -179,7 +179,7 @@ package executives:
       
     def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
       case completion: CliCompletion =>
-        completion.serialize.foreach(Out.println(_)(using completion.stdio))
+        completion.serialize.each(Out.println(_)(using completion.stdio))
         ExitStatus.Ok
 
       case invocation: CliInvocation =>
