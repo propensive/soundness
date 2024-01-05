@@ -88,7 +88,7 @@ class Postable
     val sample = bytes.take(256)
     
     val string: Text =
-      if sample.forall(32.toByte <= _ <= 127.toByte) then sample.uString else sample.hex
+      if sample.all(32.toByte <= _ <= 127.toByte) then sample.uString else sample.hex
     
     if bytes.length > 128 then t"$string..." else string
 
