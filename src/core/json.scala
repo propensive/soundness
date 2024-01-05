@@ -202,8 +202,8 @@ trait JsonEncoder[-ValueType]:
   def omit(value: ValueType): Boolean = false
   def encode(value: ValueType): JsonAst
   
-  def contramap[ValueType2](fn: ValueType2 => ValueType): JsonEncoder[ValueType2]^{this, fn} =
-    (value: ValueType2) => fn.andThen(encode)(value)
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): JsonEncoder[ValueType2]^{this, lambda} =
+    encode.compose(lambda)(_)
 
   def tag(label: Text)(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} = (value: ValueType) =>
     val (keys, values) = encode(value).obj
