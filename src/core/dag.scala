@@ -36,7 +36,7 @@ object Dag:
 
 case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def keys: Set[NodeType] = edgeMap.keySet
-  def map[NodeType2](fn: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (fn(k), v.map(fn)) })
+  def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (lambda(k), v.map(lambda)) })
   def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
   def apply(key: NodeType): Set[NodeType] = edgeMap.getOrElse(key, Set())
   def descendants(key: NodeType): Dag[NodeType] = subgraph(reachable(key))
@@ -53,9 +53,9 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def remove(key: NodeType, value: NodeType): Dag[NodeType] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
-  def traversal[NodeType2](fn: (Set[NodeType2], NodeType) -> NodeType2): Map[NodeType, NodeType2] =
+  def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2): Map[NodeType, NodeType2] =
     sorted.foldLeft(Map[NodeType, NodeType2]()):
-      (map, next) => map.updated(next, fn(apply(next).map(map), next))
+      (map, next) => map.updated(next, lambda(apply(next).map(map), next))
 
   @targetName("addAll")
   infix def ++(dag: Dag[NodeType]): Dag[NodeType] =
@@ -64,10 +64,10 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   
   def add(key: NodeType, value: NodeType): Dag[NodeType] = this ++ Dag(key -> value)
 
-  def flatMap[NodeType2](fn: NodeType => Dag[NodeType2]): Dag[NodeType2] = Dag:
+  def flatMap[NodeType2](lambda: NodeType => Dag[NodeType2]): Dag[NodeType2] = Dag:
     edgeMap.flatMap:
-      case (k, v) => fn(k).edgeMap.map:
-        case (h, w) => (h, (w ++ v.flatMap(fn(_).keys)))
+      case (k, v) => lambda(k).edgeMap.map:
+        case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
   .reduction
 
   def reduction: Dag[NodeType] =
