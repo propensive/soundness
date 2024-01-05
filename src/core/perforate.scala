@@ -57,11 +57,11 @@ object Perforate:
       case Bind(_, pattern)    => exhaustive(pattern, patternType)
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
-        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
+        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).all(exhaustive) ||
             badPattern(patternType)
         
       case Unapply(Select(target, method), _, params) =>
-        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).forall(exhaustive) ||
+        params.zip(patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)).all(exhaustive) ||
             badPattern(patternType)
       
       case other =>
