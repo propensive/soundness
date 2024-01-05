@@ -126,7 +126,7 @@ object Digestible extends Digestible2, Derivation[Digestible]:
       typeclass.digest(accumulator, variant)
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
-    (acc, xs) => xs.foreach(summon[Digestible[ValueType]].digest(acc, _))
+    (acc, xs) => xs.each(summon[Digestible[ValueType]].digest(acc, _))
 
   given int: Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
@@ -146,7 +146,7 @@ object Digestible extends Digestible2, Derivation[Digestible]:
   given char: Digestible[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given text: Digestible[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
   given bytes: Digestible[Bytes] = _.append(_)
-  given iterable: Digestible[Iterable[Bytes]] = (acc, stream) => stream.foreach(acc.append(_))
+  given iterable: Digestible[Iterable[Bytes]] = (acc, stream) => stream.each(acc.append(_))
   given digest: Digestible[Digest[?]] = (acc, d) => acc.append(d.bytes)
 
 trait Digestible[-ValueType]:
@@ -201,7 +201,7 @@ object ByteEncoder:
   given (using alphabet: HexAlphabet): ByteEncoder[Hex] = bytes =>
     val array = new Array[Char](bytes.length*2)
     
-    bytes.indices.foreach: index =>
+    bytes.indices.each: index =>
       array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
       array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
     
@@ -230,7 +230,7 @@ object ByteEncoder:
   
   given ByteEncoder[Binary] = bytes =>
     val buf = StringBuilder()
-    bytes.foreach:
+    bytes.each:
       byte => buf.add(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
     buf.text
 
@@ -253,7 +253,7 @@ object ByteDecoder:
     import java.lang.Character.digit
     val data = Array.fill[Byte](value.length/2)(0)
     
-    (0 until value.length by 2).foreach:
+    (0 until value.length by 2).each:
       i =>
         try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
         catch case e: OutOfRangeError => throw Mistake(msg"every accessed element should be within range")
