@@ -284,7 +284,7 @@ class TestReport(using Environment):
 
     val summaryLines = lines.summaries
 
-    coverage.foreach: coverage =>
+    coverage.each: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Output =
@@ -328,7 +328,7 @@ class TestReport(using Environment):
         Column(e"Line"): row =>
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
         Column(e"Symbol")(_(0).juncture.symbolName)
-      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).foreach(Out.println)
+      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).each(Out.println)
       
       Out.println(e"")
     
@@ -351,7 +351,7 @@ class TestReport(using Environment):
               colors.Brown -> notCovered)
           
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
-      ).tabulate(data, columns).foreach(Out.println(_))
+      ).tabulate(data, columns).each(Out.println(_))
       
       Out.println(e"")
     
@@ -363,11 +363,11 @@ class TestReport(using Environment):
       Out.println(e"${escapes.Reset}")
       Out.println(e"$Bold($Underline(Test results))")
 
-      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).foreach(Out.println(_))
+      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
       Out.println(e" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
       Out.println(t"─"*72)
-      List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).foreach: statuses =>
+      List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).each: statuses =>
         Out.println:
           statuses.map[Output]: status =>
             gossamer.pad[Output](e"  ${status.symbol} ${status.describe}")(20)
@@ -380,7 +380,7 @@ class TestReport(using Environment):
         case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
         case _                            => Nil
     
-    benches(lines).groupBy(_.test.suite).foreach: (suite, benchmarks) =>
+    benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
       
@@ -445,7 +445,7 @@ class TestReport(using Environment):
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).foreach(Out.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).each(Out.println(_))
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
@@ -455,11 +455,11 @@ class TestReport(using Environment):
         .grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
       Out.println(t"─"*74)
 
-    details.to(List).sortBy(_(0).timestamp).foreach: (id, info) =>
+    details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.display, id.name.display))
       
-      info.foreach: debugInfo =>
+      info.each: debugInfo =>
         Out.println(t"")
         debugInfo match
           case DebugInfo.Throws(err) =>
@@ -486,7 +486,7 @@ class TestReport(using Environment):
             Table[(Text, Text), Output](
               Column(e"Expression", align = Alignment.Right)(_(0)),
               Column(e"Value")(_(1)),
-            ).tabulate(map.to(List), 140).foreach(Out.println(_))
+            ).tabulate(map.to(List), 140).each(Out.println(_))
           
           case DebugInfo.Message(text) =>
             Out.println(text)

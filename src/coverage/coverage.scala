@@ -111,7 +111,7 @@ object Coverage:
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines.to(LazyList).foreach: id =>
+    else Source.fromFile(file).getLines.to(LazyList).each: id =>
       ids(id.toInt) = true
     
     ids.to(Set)
