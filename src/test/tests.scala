@@ -28,9 +28,9 @@ import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Parasite tests"):
 
-  def async(fn: => Unit): () => Unit =
+  def thread(block: => Unit): () => Unit =
     val thread = new Thread:
-      override def run(): Unit = fn
+      override def run(): Unit = block
     
     thread.start()
 
@@ -122,7 +122,7 @@ object Tests extends Suite(t"Parasite tests"):
 
         test(t"Promise result can be awaited"):
           val promise = Promise[Int]()
-          async:
+          thread:
             sleep(100L)
             promise.fulfill(42)
           promise.await()
