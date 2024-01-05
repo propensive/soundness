@@ -40,7 +40,7 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
         case HttpBody.Data(body)    => addHeader(ResponseHeader.ContentLength.header, body.length.show)
                                        out.write(body.mutable(using Unsafe))
         case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
-                                       unsafely(body.map(_.mutable(using Unsafe)).foreach(out.write(_)))
+                                       unsafely(body.map(_.mutable(using Unsafe)).each(out.write(_)))
 
   protected def streamBody
       (request: HttpServletRequest)(using Raises[StreamError])

@@ -61,7 +61,7 @@ object Handler extends FallbackHandler:
     def process(content: Redirect, status: Int, headers: Map[Text, Text],
                     responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
-      headers.foreach(responder.addHeader)
+      headers.each(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
   given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[NotFound[ResponseType]] with
@@ -69,7 +69,7 @@ object Handler extends FallbackHandler:
         (notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
         : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
-      headers.foreach(responder.addHeader)
+      headers.each(responder.addHeader)
       responder.sendBody(404, handler.stream(notFound.content))
 
   given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[ServerError[ResponseType]] with
@@ -77,7 +77,7 @@ object Handler extends FallbackHandler:
         (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
         : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
-      headers.foreach(responder.addHeader)
+      headers.each(responder.addHeader)
       responder.sendBody(500, handler.stream(notFound.content))
 
   given SimpleHandler[Bytes](media"application/octet-stream", HttpBody.Data(_))
@@ -94,7 +94,7 @@ trait Handler[ResponseType]:
 case class SimpleHandler[ResponseType](mediaType: MediaType, stream: ResponseType => HttpBody) extends Handler[ResponseType]:
   def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
-    headers.foreach(responder.addHeader)
+    headers.each(responder.addHeader)
     responder.sendBody(status, stream(content))
 
 case class NotFound[ContentType: SimpleHandler](content: ContentType)
@@ -330,7 +330,7 @@ case class HttpServer(port: Int) extends RequestHandler:
           exchange.getResponseBody.nn.write(body.mutable(using Unsafe))
         
         case HttpBody.Chunked(body) =>
-          try body.map(_.mutable(using Unsafe)).foreach(exchange.getResponseBody.nn.write(_))
+          try body.map(_.mutable(using Unsafe)).each(exchange.getResponseBody.nn.write(_))
           catch case e: StreamError => () // FIXME: Should this be ignored?
       
       exchange.getResponseBody.nn.flush()
