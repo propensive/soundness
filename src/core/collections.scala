@@ -41,9 +41,9 @@ extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
   
-  def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
+  def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
     val map = iterable.map: value =>
-      (fn(value), value)
+      (lambda(value), value)
     
     if iterable.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
@@ -93,17 +93,17 @@ extension [K, V](map: Map[K, List[V]])
 extension [ElemType](seq: Seq[ElemType])
   def runs: List[List[ElemType]] = runsBy(identity)
 
-  def runsBy(fn: ElemType => Any): List[List[ElemType]] =
+  def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
     @tailrec
     def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
              : List[List[ElemType]] =
       if todo.isEmpty then (run.reverse :: done).reverse
       else
-        val focus = fn(todo.head)
+        val focus = lambda(todo.head)
         if current == focus then recur(current, todo.tail, todo.head :: run, done)
         else recur(focus, todo.tail, List(todo.head), run.reverse :: done)
 
-    if seq.isEmpty then Nil else recur(fn(seq.head), seq.tail, List(seq.head), Nil)
+    if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
 object Cursor:
   opaque type Cursor = Int
@@ -119,9 +119,9 @@ object Cursor:
       else Unset
 
   inline def curse
-      [ElemType, ElemType2](seq: IndexedSeq[ElemType])(inline fn: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
+      [ElemType, ElemType2](seq: IndexedSeq[ElemType])(inline block: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
       : IndexedSeq[ElemType2] =
-    seq.indices.map { index => fn(using seq, index) }
+    seq.indices.map { index => block(using seq, index) }
 
 inline def cursor
     [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): ElemType =
@@ -144,13 +144,13 @@ inline def cursorOffset
 
 extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def curse
-      [ElemType2](inline fn: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2): IndexedSeq[ElemType2] =
-    Cursor.curse(seq)(fn)
+      [ElemType2](inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2): IndexedSeq[ElemType2] =
+    Cursor.curse(seq)(block)
 
 extension (iarray: IArray.type)
-  def create[ElemType: ClassTag](size: Int)(fn: Array[ElemType] => Unit): IArray[ElemType] =
+  def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
     val array: Array[ElemType] = new Array[ElemType](size)
-    fn(array)
+    lambda(array)
     array.immutable(using Unsafe)
 
 extension (bytes: Bytes)
