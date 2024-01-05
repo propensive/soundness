@@ -38,11 +38,11 @@ extension [ValueType](optional: Optional[ValueType])
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
   def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} = or(throw UnsetValueError())
   
-  inline def lay[ValueType2](inline alternative: => ValueType2)(inline fn: ValueType => ValueType2): ValueType2 =
-    if absent then alternative else fn(vouch(using Unsafe))
+  inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2): ValueType2 =
+    if absent then alternative else lambda(vouch(using Unsafe))
 
-  inline def let[ValueType2](inline fn: ValueType => ValueType2): Optional[ValueType2] =
-    if absent then Unset else fn(vouch(using Unsafe))
+  inline def let[ValueType2](inline lambda: ValueType => ValueType2): Optional[ValueType2] =
+    if absent then Unset else lambda(vouch(using Unsafe))
 
 extension [ValueType](iterable: Iterable[Optional[ValueType]])
   transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
