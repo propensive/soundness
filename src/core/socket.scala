@@ -297,7 +297,7 @@ extension [SocketType](socket: SocketType)
       [InputType]
       (using bindable: Bindable[SocketType], monitor: Monitor)
       [ResultType]
-      (fn: bindable.Input => bindable.Output)
+      (lambda: bindable.Input => bindable.Output)
       : SocketService raises BindError =
 
     val binding = bindable.bind(socket)
@@ -306,7 +306,7 @@ extension [SocketType](socket: SocketType)
     val async = Async:
       while continue do
         val connection = bindable.connect(binding)
-        Async(bindable.transmit(binding, connection, fn(connection)))
+        Async(bindable.transmit(binding, connection, lambda(connection)))
 
     new SocketService:
       def stop(): Unit =
