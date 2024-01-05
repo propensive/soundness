@@ -35,10 +35,10 @@ trait Raises[-ErrorType <: Error] extends Pure:
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
-  def contramap[ErrorType2 <: Error](fn: ErrorType2 -> ErrorType): Raises[ErrorType2] =
+  def contramap[ErrorType2 <: Error](lambda: ErrorType2 -> ErrorType): Raises[ErrorType2] =
     new Raises[ErrorType2]:
-      def record(error: ErrorType2): Unit = raises.record(fn(error))
-      def abort(error: ErrorType2): Nothing = raises.abort(fn(error))
+      def record(error: ErrorType2): Unit = raises.record(lambda(error))
+      def abort(error: ErrorType2): Nothing = raises.abort(lambda(error))
 
 @capability
 class RaisesThrow
