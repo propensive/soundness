@@ -60,7 +60,7 @@ object Path:
   given writableBytes
       (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Writable[Path, Bytes] =
-    Writable.outputStreamBytes.contraMap: path =>
+    Writable.outputStreamBytes.contramap: path =>
       if !path.java.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.java.toFile, false))
 
@@ -516,20 +516,20 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
 
 object File:
   given readableBytes(using streamCut: Raises[StreamError], io: Raises[IoError]): Readable[File, Bytes] =
-    Readable.inputStream.contraMap: file =>
+    Readable.inputStream.contramap: file =>
       ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
   
   given writableBytes
       (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Writable[File, Bytes] =
-    Writable.outputStreamBytes.contraMap: file =>
+    Writable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, false))
 
   given appendableBytes
       (using io: Raises[IoError], streamCut: Raises[StreamError])
       : Appendable[File, Bytes] =
-    Appendable.outputStreamBytes.contraMap: file =>
+    Appendable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, true))
 
