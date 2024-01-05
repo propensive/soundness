@@ -31,19 +31,21 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
     iterable.collect { case value: FilterType => value }
 
+extension [ValueType](iterator: Iterator[ValueType])
+  inline def each(predicate: ValueType => Unit): Unit = iterator.foreach(predicate)
+  inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
+
 extension [ValueType](iterable: Iterable[ValueType])
   inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
   inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
-
-extension [ValueType](seq: Iterable[ValueType])
-  transparent inline def bi: Iterable[(ValueType, ValueType)] = seq.map { x => (x, x) }
-  transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = seq.map { x => (x, x, x) }
+  transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
+  transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
   
   def indexBy[ValueType2](fn: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
-    val map = seq.map: value =>
+    val map = iterable.map: value =>
       (fn(value), value)
     
-    if seq.size != map.size then throw DuplicateIndexError() else map.to(Map)
+    if iterable.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
   def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
     def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int): (Int, Int) =
@@ -53,7 +55,7 @@ extension [ValueType](seq: Iterable[ValueType])
           else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
         else recur(index + 1, iterable.tail, bestStart, bestLength, 0)
 
-    recur(0, seq, 0, 0, 0)
+    recur(0, iterable, 0, 0, 0)
 
 case class KeyNotFoundError(name: Text) extends Error(msg"the key $name was not found")
 
