@@ -202,7 +202,7 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
     text.where(pred, index).let(text.snip(_))
 
   def whilst(pred: Char -> Boolean): TextType = text.upto(!pred(_))
-  def mapChars(fn: Char -> Char): TextType = textual.map(text, fn)
+  def mapChars(lambda: Char -> Char): TextType = textual.map(text, lambda)
 
   inline def count(pred: Char -> Boolean): Int =
     val length: Int = text.length
@@ -271,8 +271,8 @@ extension (text: into Text)
   inline def sub(from: into Text, to: into Text): Text =
     Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
   
-  def flatMap(fn: Char => Text): Text =
-    Text(String(text.s.toCharArray.nn.flatMap(fn(_).s.toCharArray.nn.immutable(using Unsafe))))
+  def flatMap(lambda: Char => Text): Text =
+    Text(String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))))
 
   inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
   inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)

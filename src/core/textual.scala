@@ -34,7 +34,7 @@ trait Textual[TextType]:
   def length(text: TextType): Int
   def string(text: TextType): String
   def make(string: String): TextType
-  def map(text: TextType, fn: Char => Char): TextType
+  def map(text: TextType, lambda: Char => Char): TextType
   def slice(text: TextType, start: Int, end: Int): TextType
   def empty: TextType
   def concat(left: TextType, right: TextType): TextType
@@ -66,7 +66,7 @@ object Textual:
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
-    def map(text: Text, fn: Char => Char): Text = Text(text.s.map(fn))
+    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
     def slice(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
@@ -79,7 +79,7 @@ object Textual:
   //   def string(string: String): String = string
   //   def length(string: String): Int = string.length
   //   def make(string: String): String = string
-  //   def map(string: String, fn: Char -> Char): String = string.map(fn)
+  //   def map(string: String, lambda: Char -> Char): String = string.map(lambda)
   //   def slice(string: String, start: Int, end: Int): String = string.substring(start, end).nn
   //   def empty: String = ""
   //   def concat(left: String, right: String): String = left+right
