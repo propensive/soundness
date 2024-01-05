@@ -138,11 +138,11 @@ object Tests extends Suite(t"Jacinta Tests"):
         paul.json.show
       .check(_ == t"""{"person":{"name":"Paul","age":81},"_type":"Bassist"}""")
     
-      test(t"Deserialize a coproduct"):
+      test(t"Decode a coproduct"):
         Json.parse(paulCoproduct).as[Player]
       .assert(_ == Player.Bassist(paulObj))
       
-      test(t"Deserialize a coproduct as a precise subtype"):
+      test(t"Decode a coproduct as a precise subtype"):
         Json.parse(paulCoproduct).as[Player.Bassist]
       .assert(_ == Player.Bassist(paulObj))
     
@@ -156,6 +156,6 @@ object Tests extends Suite(t"Jacinta Tests"):
         newBand.json.show
       .check(_ == t"""{"members":[{"person":{"name":"Paul","age":81},"_type":"Bassist"},{"person":{"name":"Ringo","age":82},"_type":"Drummer"},{"person":{"name":"John","age":40},"_type":"Guitarist"},{"person":{"name":"George","age":58},"_type":"Guitarist"}]}""")
       
-      test(t"Deserialize a NewBand"):
+      test(t"Decode a NewBand"):
         Json.parse(newBandText).as[NewBand]
       .assert(_ == newBand)

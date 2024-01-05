@@ -41,7 +41,7 @@ erased trait DynamicJsonEnabler
 object dynamicJsonAccess:
   erased given enabled: DynamicJsonEnabler = ###
 
-given (using js: JsonPrinter): Show[JsonAst] = js.serialize(_)
+given (using js: JsonPrinter): Show[JsonAst] = js.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
@@ -411,14 +411,14 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     decoder.decode(root, false)
 
 trait JsonPrinter:
-  def serialize(json: JsonAst): Text
+  def print(json: JsonAst): Text
 
 package jsonPrinters:
-  given humanReadable: JsonPrinter = HumanReadableSerializer
-  given minimal: JsonPrinter = MinimalSerializer
+  given indented: JsonPrinter = IndentedJsonPrinter
+  given minimal: JsonPrinter = MinimalJsonPrinter
 
-object MinimalSerializer extends JsonPrinter:
-  def serialize(json: JsonAst): Text =
+object MinimalJsonPrinter extends JsonPrinter:
+  def print(json: JsonAst): Text =
     val builder: StringBuilder = StringBuilder()
     def appendString(str: String): Unit =
       str.each:
@@ -467,8 +467,8 @@ object MinimalSerializer extends JsonPrinter:
     builder.toString.show
 
 // FIXME: Implement this
-object HumanReadableSerializer extends JsonPrinter:
-  def serialize(json: JsonAst): Text =
+object IndentedJsonPrinter extends JsonPrinter:
+  def print(json: JsonAst): Text =
     val builder: StringBuilder = StringBuilder()
     
     def appendString(string: String): Unit =
