@@ -50,7 +50,7 @@ object StackTrace:
     @tailrec
     def recur(idx: Int, digits: Boolean = false): Text =
       inline def token(idx: Int, str: String, text: String, digits: Boolean = false): Text =
-        if (0 until str.length).forall { i => char(idx + i) == str(i) }
+        if (0 until str.length).all { i => char(idx + i) == str(i) }
         then
           buffer.append(text)
           recur(idx + str.length, digits)
@@ -75,7 +75,7 @@ object StackTrace:
         case _   => recur(idx, false)
       else char(idx) match
         case '<' =>
-          if (0 until 6).forall { i => char(idx + i) == "<init>"(i) }
+          if (0 until 6).all { i => char(idx + i) == "<init>"(i) }
           then
             buffer.append("ⲛ")
             recur(idx + 6)
@@ -83,7 +83,7 @@ object StackTrace:
             buffer.append("<")
             recur(idx + 1)
         case 'i' =>
-          if (0 until 8).forall { i => char(idx + i) == "initial$"(i) }
+          if (0 until 8).all { i => char(idx + i) == "initial$"(i) }
           then
             buffer.append("ι")
             recur(idx + 8)
@@ -91,7 +91,7 @@ object StackTrace:
             buffer.append("i")
             recur(idx + 1)
         case 'l' =>
-          if (0 until 7).forall { i => char(idx + i) == "lzyINIT"(i) }
+          if (0 until 7).all { i => char(idx + i) == "lzyINIT"(i) }
           then
             buffer.append("ℓ")
             recur(idx + 7, true)
@@ -99,7 +99,7 @@ object StackTrace:
             buffer.append("l")
             recur(idx + 1)
         case 's' =>
-          if (0 until 6).forall { i => char(idx + i) == "super$"(i) }
+          if (0 until 6).all { i => char(idx + i) == "super$"(i) }
           then
             buffer.append("ς")
             recur(idx + 6)
