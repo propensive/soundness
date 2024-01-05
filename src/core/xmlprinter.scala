@@ -54,10 +54,9 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
         pos = indent*2
       linebreak = false
 
-    def inline(element: Ast.Element): Boolean = element.children.forall {
+    def inline(element: Ast.Element): Boolean = element.children.all:
       case Ast.Textual(_) => true
       case _              => false
-    }
 
     def next(node: Ast): Unit = node match
       case element@Ast.Element(tagName, children, attributes, namespaces) =>
