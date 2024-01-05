@@ -214,6 +214,7 @@ order._
 
 
 
+
 ## Status
 
 Perforate is classified as __embryotic__. For reference, Scala One projects are
@@ -316,6 +317,6 @@ The logo shows three tickets, each of which has been _validated_.
 
 ## License
 
-Perforate is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and
+Perforate is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
