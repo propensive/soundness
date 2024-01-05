@@ -28,8 +28,8 @@ case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[St
   def apply[LocalizationType <: LocalizationType & Singleton] =
     ${Cosmopolite.access}
   
-  def map[ValueType2](fn: ValueType => ValueType2): Polyglot[ValueType2, LocalizationType] =
-    Polyglot(value.mapValues(fn))
+  def map[ValueType2](lambda: ValueType => ValueType2): Polyglot[ValueType2, LocalizationType] =
+    Polyglot(value.mapValues(lambda))
   
   def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
   
