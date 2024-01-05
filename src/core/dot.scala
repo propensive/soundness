@@ -93,7 +93,7 @@ object Dot:
         end = false
       else buf.add(t" ")
 
-    tokens.foreach:
+    tokens.each:
       case t""  => ()
       case t"," => buf.add(t",")
       case t"{" => whitespace(); buf.add(t"{"); indent(); newline()
