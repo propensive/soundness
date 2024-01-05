@@ -87,7 +87,7 @@ object QuantitativeMacros:
 
     def dimensionality: Dimensionality = Dimensionality(map.view.mapValues(_.power).to(Map))
     def dimensions: List[DimensionRef] = map.keys.to(List)
-    def empty: Boolean = map.values.forall(_.power == 0)
+    def empty: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
     def *(that: UnitsMap): UnitsMap = new UnitsMap(
