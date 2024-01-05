@@ -82,7 +82,7 @@ object rendering:
   given output: Show[Output] = _.render
   
 object Stylize:
-  def apply(fn: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(fn)
+  def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
 
 trait Ansi2:
   inline given display[ValueType]: Substitution[Ansi.Input, ValueType, "t"] =
@@ -204,8 +204,8 @@ object Output:
     def length(text: Output): Int = text.plain.s.length
     def make(string: String): Output = Output(Text(string))
     
-    def map(text: Output, fn: Char => Char): Output =
-      Output(Text(text.plain.s.map(fn)), text.spans, text.insertions)
+    def map(text: Output, lambda: Char => Char): Output =
+      Output(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
     def slice(text: Output, start: Int, end: Int): Output =
       text.dropChars(start).takeChars(end - start)
