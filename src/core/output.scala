@@ -327,7 +327,7 @@ case class Output
       if stack.isEmpty then
         if spans.isEmpty then
           val remaining = addText(pos, plain.length, insertions)
-          remaining.values.foreach(buf.add(_))
+          remaining.values.each(buf.add(_))
           buf.text
         else addSpan()
       else
