@@ -164,11 +164,11 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == List(5, 7))
       
       test(t"Map a List to twins"):
-        List(1, 2, 3).mtwin
+        List(1, 2, 3).bi
       .assert(_ == List((1, 1), (2, 2), (3, 3)))
       
       test(t"Map a Set to triples"):
-        Set(1, 2, 3).mtriple
+        Set(1, 2, 3).tri
       .assert(_ == Set((1, 1, 1), (2, 2, 2), (3, 3, 3)))
 
       test(t"Take a snapshot of an array"):
