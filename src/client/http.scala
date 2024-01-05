@@ -47,7 +47,7 @@ enum HttpBody:
 
 object QueryEncoder extends ProductDerivation[QueryEncoder]:
   inline def join[DerivationType: ProductReflection]: QueryEncoder[DerivationType] =
-    product.from(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
+    params(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
 
   given text: QueryEncoder[Text] = string => Params(List((t"", string)))
   given int: QueryEncoder[Int] = int => Params(List((t"", int.show)))
