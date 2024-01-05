@@ -244,8 +244,8 @@ object Tests extends Suite(t"Dissonance tests"):
       def allPermutations(n: Int): List[List[Text]] =
         if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
       
-      allPermutations(3).map(_.to(Vector)).foreach: perm1 =>
-        allPermutations(3).map(_.to(Vector)).foreach: perm2 =>
+      allPermutations(3).map(_.to(Vector)).each: perm1 =>
+        allPermutations(3).map(_.to(Vector)).each: perm2 =>
           import unsafeExceptions.canThrowAny
           val d = diff(perm1, perm2).casual
           test(t"Check differences"):
