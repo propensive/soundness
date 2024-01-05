@@ -60,7 +60,7 @@ object Denominative:
 
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = ordinal - 1
-    inline def to(inline right: Ordinal): Interval = Interval(ordinal, right)
+    inline def ~(inline right: Ordinal): Interval = Interval(ordinal, right)
 
     inline def fromZero: Int = ordinal - 1
     inline def fromOne: Int = ordinal
@@ -90,7 +90,7 @@ object Denominative:
     inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal <= end
     inline def size: Int = (end - start) max 0
 
-    inline def foreach(inline fn: Ordinal => Unit): Unit =
+    inline def each(inline fn: Ordinal => Unit): Unit =
       var i: Ordinal = start
       
       while i <= end do
@@ -130,6 +130,6 @@ trait Countable[-SequenceType]:
 extension [CountableType](inline value: CountableType)(using countable: Countable[CountableType])
   inline def ult: Ordinal = countable.ult(value)
   inline def pen: Ordinal = countable.ult(value).previous
-  inline def ante: Ordinal = countable.ult(value).previous.previous
+  inline def ante: Ordinal = countable.pen(value).previous
 
 export Denominative.{Ordinal, Interval}
