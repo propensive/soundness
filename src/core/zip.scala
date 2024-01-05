@@ -149,19 +149,19 @@ case class ZipFile(private val filename: Text):
       
     val fs: jnf.FileSystem = filesystem()
     
-    val dirs = recur(entries, Set()).flatMap(_.descent.tails.map(ZipRef(_)).to(Set)).to(List)
-    val dirs2 = dirs.map(_.render+t"/").sorted
+    val directories = recur(entries, Set()).flatMap(_.descent.tails.map(ZipRef(_)).to(Set)).to(List)
+    val directories2 = directories.map(_.render+t"/").sorted
 
-    dirs2.foreach: dir =>
-      val dirPath = fs.getPath(dir.s).nn
+    directories2.each: directory =>
+      val directoryPath = fs.getPath(directory.s).nn
       
-      if jnf.Files.notExists(dirPath) then
-        jnf.Files.createDirectory(dirPath)
-        jnf.Files.setAttribute(dirPath, "creationTime", writeTimestamp)
-        jnf.Files.setAttribute(dirPath, "lastAccessTime", writeTimestamp)
-        jnf.Files.setAttribute(dirPath, "lastModifiedTime", writeTimestamp)
+      if jnf.Files.notExists(directoryPath) then
+        jnf.Files.createDirectory(directoryPath)
+        jnf.Files.setAttribute(directoryPath, "creationTime", writeTimestamp)
+        jnf.Files.setAttribute(directoryPath, "lastAccessTime", writeTimestamp)
+        jnf.Files.setAttribute(directoryPath, "lastModifiedTime", writeTimestamp)
 
-    entries.foreach: entry =>
+    entries.each: entry =>
       val entryPath = fs.getPath(entry.ref.render.s).nn
       val in = entry.content().inputStream
       jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
@@ -173,7 +173,7 @@ case class ZipFile(private val filename: Text):
 
     //val fileOut = ji.BufferedOutputStream(ji.FileOutputStream(ji.File(filename.s)).nn)
     
-    // prefix.option.foreach: prefix =>
+    // prefix.option.each: prefix =>
     //   fileOut.write(prefix.mutable(using Unsafe))
     //   fileOut.flush()
     
