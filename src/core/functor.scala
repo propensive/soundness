@@ -24,8 +24,8 @@ extension [FunctorType[+_], ValueType](value: FunctorType[ValueType]^)(using fun
 
 extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType]^)
           (using cofunctor: Cofunctor[CofunctorType])
-  def contraMap[ValueType2](fn: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, fn} =
-    cofunctor.contraMap(value, fn)
+  def contramap[ValueType2](fn: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, fn} =
+    cofunctor.contramap(value, fn)
 
 trait Functor[FunctorType[+_]]:
   def map[ValueType, ValueType2](value: FunctorType[ValueType]^, fn: ValueType => ValueType2)
@@ -43,5 +43,5 @@ object Functor:
       option.map(fn)
 
 trait Cofunctor[CofunctorType[-_]]:
-  def contraMap[ValueType, ValueType2](value: CofunctorType[ValueType]^, fn: ValueType2 => ValueType)
+  def contramap[ValueType, ValueType2](value: CofunctorType[ValueType]^, fn: ValueType2 => ValueType)
                : CofunctorType[ValueType2]^{value, fn}
