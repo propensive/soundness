@@ -144,10 +144,10 @@ class TestReport(using Environment):
 
       case Test(testId, buf) =>
         val status =
-          if buf.forall(_.is[Outcome.Pass]) then Status.Pass
-          else if buf.forall(_.is[Outcome.Fail]) then Status.Fail
-          else if buf.forall(_.is[Outcome.Throws]) then Status.Throws
-          else if buf.forall(_.is[Outcome.CheckThrows]) then Status.CheckThrows
+          if buf.all(_.is[Outcome.Pass]) then Status.Pass
+          else if buf.all(_.is[Outcome.Fail]) then Status.Fail
+          else if buf.all(_.is[Outcome.Throws]) then Status.Throws
+          else if buf.all(_.is[Outcome.CheckThrows]) then Status.CheckThrows
           else Status.Mixed
       
         val min: Long = buf.map(_.duration).min
@@ -257,7 +257,7 @@ class TestReport(using Environment):
         case _                => char.displayWidth
     
     val table =
-      val showStats = !lines.summaries.forall(_.count < 2)
+      val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
       
       Table[Summary](

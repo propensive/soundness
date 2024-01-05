@@ -58,7 +58,7 @@ object Surface:
 
 case class Surface(juncture: Juncture, children: List[Surface]):
   def covered(hits: Set[Int]): Boolean =
-    hits.contains(juncture.id) && children.forall(_.covered(hits))
+    hits.contains(juncture.id) && children.all(_.covered(hits))
   
   def uncovered(hits: Set[Int]): Surface =
     Surface(juncture, children.filter(!_.covered(hits)).map(_.uncovered(hits)))
