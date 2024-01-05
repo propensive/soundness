@@ -59,7 +59,7 @@ object ScalaSyntax:
     val trees = Trees()
     val parser = Parsers.Parser(source)(using ctx)
     
-    parser.blockStatSeq().foreach(trees.traverse(_)(using ctx))
+    parser.blockStatSeq().each(trees.traverse(_)(using ctx))
     
     val scanner = Scanners.Scanner(source)(using ctx)
     
