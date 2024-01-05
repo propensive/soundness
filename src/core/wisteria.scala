@@ -17,7 +17,6 @@
 package wisteria
 
 import fulminate.*
-import gossamer.*
 import perforate.*
 import rudiments.*
 import vacuous.*
@@ -27,8 +26,8 @@ import scala.deriving.*
 import scala.compiletime.*
 
 case class VariantError(variant: Text, sum: Text, validVariants: List[Text])
-extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.join(t", ")}) of
-                    sum $sum""")
+extends Error(msg"""the specified $variant is not one of the valid variants (${validVariants.mkString(", ").tt})
+                    of sum $sum""")
 
 trait SumDerivationMethods[TypeclassType[_]]:
   transparent inline def sum
