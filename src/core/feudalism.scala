@@ -31,14 +31,14 @@ class Mutex[ValueType](initial: ValueType):
   def read
       [ResultType, ImmutableType]
       (using immutable: Immutable[ValueType, ImmutableType])
-      (fn: (ref: MutexRef[ImmutableType]) => ResultType)
+      (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
       : ResultType =
 
     synchronized:
       while count == -1 do wait()
       count += 1
     
-    val result = fn(MutexRef(immutable.make(value), immutable.snapshot(_)))
+    val result = lambda(MutexRef(immutable.make(value), immutable.snapshot(_)))
     
     synchronized:
       count -= 1
@@ -46,23 +46,23 @@ class Mutex[ValueType](initial: ValueType):
 
     result
   
-  def mutate(fn: ValueType => Unit): Unit =
+  def mutate(lambda: ValueType => Unit): Unit =
     synchronized:
       while count != 0 do wait()
       count = -1
 
-    fn(value)
+    lambda(value)
     
     synchronized:
       count = 0
       notify()
   
-  def replace(fn: ValueType => ValueType): Unit =
+  def replace(lambda: ValueType => ValueType): Unit =
     synchronized:
       while count != 0 do wait()
       count = -1
     
-    value = fn(value)
+    value = lambda(value)
     
     synchronized:
       count = 0
