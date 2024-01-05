@@ -646,7 +646,7 @@ package filesystemOptions:
         given creation: CreateNonexistent = doNotCreateNonexistent
         
         if path.exists() then
-          if path.is[Directory] then path.as[Directory].children.foreach(conditionally(_)(()))
+          if path.is[Directory] then path.as[Directory].children.each(conditionally(_)(()))
           jnf.Files.delete(path.java)
         
         operation
