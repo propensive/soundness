@@ -35,6 +35,11 @@ For the overeager, curious and impatient, see [building](#building).
 
 _Gossamer_ provides a collection of useful methods and constructors for working with strings.
 
+All Gossamer terms and types are defined in the `gossamer` package:
+```scala
+import gossamer.*
+```
+
 ### `Show` typeclass
 
 A standard `Show` typeclass is provided which will convert values of different types into `String`s.
@@ -51,9 +56,10 @@ automatically derived.
 
 ### `Text`, a typesafe `String`
 
-The `Text` type is provided as an opaque alias of `String`, duplicating most of the functionality
-of `String` (and its associated extension methods), but without the typesafety risks associated
-with `String`. `Text` instances may only be combined with other types when a `Show` typeclass
+The `Text` type in `anticipation` is provided as an opaque alias of `String`,
+duplicating most of the functionality of `String` (and its associated extension
+methods), but without the typesafety risks associated with `String`. `Text`
+instances may only be combined with other types when a `Show` typeclass
 instance exists for that type.
 
 Furthermore, every method of `Text` is guaranteed not to be `null` and declares any exceptions it
@@ -81,11 +87,13 @@ character.
 This is particularly useful for embedding long messages in code while not breaking the consistency
 of indentation. For example:
 ```scala
-val msg: String = txt"""This is a long message which will not fit into a
-                        standard line of code, and needs to be split across
-                        several lines.
+import anticipation.Text
 
-                        But at least it is aligned nicely within the code."""
+val msg: Text = txt"""This is a long message which will not fit into a
+                      standard line of code, and needs to be split across
+                      several lines.
+
+                      But at least it is aligned nicely within the code."""
 ```
 
 The `String` `msg` will contain a single `'\n'` character, between `lines.` and `But`.
@@ -119,11 +127,11 @@ delegate to existing methods on `String`, but will:
 
 An implementation of the _Minimum Edit Distance_ or [Levenshtein
 distance](https://en.wikipedia.org/wiki/Levenshtein_distance), `lev` is provided as an extension
-method on `String`s. The method takes another `String` as a parameter, and returns the minimum
+method on `Text`s. The method takes another `Text` as a parameter, and returns the minimum
 number of edits (character additions, deletions or replacements) required to change one string to
 the other.
 
-For example, `"Hello".lev("Hallo!")` returns `2`: the replacement of `e` with `a` counts as one
+For example, `t"Hello".lev(t"Hallo!")` returns `2`: the replacement of `e` with `a` counts as one
 edit, and the addition of `!` counts as the second edit. The algorithm is symmetrical.
 
 ### Joining
@@ -142,13 +150,13 @@ separator to be used between the penultimate and last elements of the collection
 
 For example,
 ```scala
-List("one", "two", "three", "four").join(", ", " and ")
+val numbers = List(t"one", t"two", t"three", t"four").join(t", ", t" and ")
 ```
 will evaluate to `"one, two, three and four"`, and,
 ```scala
-List("one", "two", "three").join("Choose ", ", ", " or ", ".")
+val numbers2 = List(t"one", t"two", t"three").join(t"Choose ", t", ", t" or ", t".")
 ```
-results in, `"Choose one, two or three."`.
+results in, `t"Choose one, two or three."`.
 
 
 
