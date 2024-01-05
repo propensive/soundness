@@ -43,7 +43,7 @@ object Tests extends Suite(t"Merino tests"):
         .check()
     
     suite(t"Negative tests"):
-      tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).foreach: file =>
+      tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
         test(Text(file.getName.nn.dropRight(5))):
           capture(JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file))))
         .matches:
