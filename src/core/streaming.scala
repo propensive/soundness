@@ -62,7 +62,7 @@ object Writable:
 trait Writable[-TargetType, -ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit
 
-  def contraMap[TargetType2](fn: TargetType2 => TargetType): Writable[TargetType2, ChunkType] =
+  def contramap[TargetType2](fn: TargetType2 => TargetType): Writable[TargetType2, ChunkType] =
     (target, stream) => write(fn(target), stream)
 
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
@@ -110,7 +110,7 @@ trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit
   def asWritable: Writable[TargetType, ChunkType] = append(_, _)
   
-  def contraMap[TargetType2](fn: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
+  def contramap[TargetType2](fn: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
     (target, stream) => append(fn(target), stream)
 
 trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, ChunkType]:
@@ -225,7 +225,7 @@ object Readable:
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
   
-  def contraMap[SourceType2](fn: SourceType2 => SourceType): Readable[SourceType2, ChunkType] = source =>
+  def contramap[SourceType2](fn: SourceType2 => SourceType): Readable[SourceType2, ChunkType] = source =>
     read(fn(source))
 
 object Aggregable:
