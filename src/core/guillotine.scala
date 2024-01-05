@@ -76,8 +76,8 @@ object Executor:
 trait Executor[ResultType]:
   def interpret(process: java.lang.Process): ResultType
   
-  def map[ResultType2](fn: ResultType => ResultType2): Executor[ResultType2] =
-    process => fn(interpret(process))
+  def map[ResultType2](lambda: ResultType => ResultType2): Executor[ResultType2] =
+    process => lambda(interpret(process))
 
 trait ProcessRef:
   def pid: Pid
