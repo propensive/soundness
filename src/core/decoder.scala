@@ -89,13 +89,13 @@ object Encoder:
   given text: Encoder[Text] = identity(_)
   given char: Encoder[Char] = _.toString.tt
   given uuid: Encoder[Uuid] = _.text
-  given pid: Encoder[Pid] = long.contraMap(_.value)
+  given pid: Encoder[Pid] = long.contramap(_.value)
 
 @capability
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
   def unapply(value: ValueType): Text = encode(value)
   def encode(value: ValueType): Text
-  def contraMap[ValueType2](fn: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(fn(value))
+  def contramap[ValueType2](fn: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(fn(value))
 
 extension (text: Text)
   def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
