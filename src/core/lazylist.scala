@@ -52,9 +52,6 @@ extension (lazyList: LazyList[Bytes])
     
     def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int): LazyList[Bytes] =
       stream match
-        case LazyList() =>
-          if destPos == 0 then LazyList() else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
-        
         case source #:: more =>
           val ready = source.length - sourcePos
           val free = dest.length - destPos
@@ -68,6 +65,10 @@ extension (lazyList: LazyList[Bytes])
           else // free == ready
             System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+        
+        case _ =>
+          if destPos == 0 then LazyList() else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
+        
       
 
     recur(lazyList, 0, newArray(), 0)
