@@ -49,7 +49,7 @@ object ZipPath:
   given PathCreator[ZipPath, InvalidZipNames, ZipFile] = (root, descent) => ZipPath(root, ZipRef(descent))
 
   given (using CanThrow[StreamError]): Readable[ZipPath, Bytes] =
-    Readable.lazyList[Bytes].contraMap(_.entry().content())
+    Readable.lazyList[Bytes].contramap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
   def entry()(using streamCut: CanThrow[StreamError]): ZipEntry^ = zipFile.entry(ref)
@@ -85,7 +85,7 @@ object ZipEntry:
       : ZipEntry^{readable} =
     new ZipEntry(path, () => resource.stream[Bytes])
 
-  given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contraMap(_.content())
+  given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contramap(_.content())
 
   // 00:00:00, 1 January 2000
   val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
