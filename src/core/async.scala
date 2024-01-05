@@ -38,8 +38,8 @@ class Hook(private val thread: Thread):
 
 object Async:
 
-  def onShutdown(fn: => Unit): Hook =
-    val runnable: Runnable^{fn} = () => fn
+  def onShutdown(block: => Unit): Hook =
+    val runnable: Runnable^{block} = () => block
     val thread: Thread = Thread(runnable)
     Runtime.getRuntime.nn.addShutdownHook(thread)
     Hook(thread)
@@ -132,21 +132,21 @@ class Async
       case Suspended(n)         => if force then Active else Suspended(n - 1)
       case other                => other
 
-  def map[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
-    Async(fn(async.await()))
+  def map[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
+    Async(lambda(async.await()))
   
-  def foreach[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
-    Async(fn(async.await()))
+  def foreach[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+    Async(lambda(async.await()))
   
-  def each[ResultType2](fn: ResultType => ResultType2)(using Raises[CancelError]): Unit =
-    Async(fn(async.await()))
+  def each[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+    Async(lambda(async.await()))
   
   def flatMap
       [ResultType2]
-      (fn: ResultType => Async[ResultType2])
+      (lambda: ResultType => Async[ResultType2])
       (using Raises[CancelError])
       : Async[ResultType2] =
-    Async(fn(await()).await())
+    Async(lambda(await()).await())
   
   def cancel(): Unit =
     thread.interrupt()

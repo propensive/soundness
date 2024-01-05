@@ -65,9 +65,9 @@ case object Supervisor extends Monitor(Nil, Promise())
 
 def supervise
     [ResultType]
-    (fn: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
+    (block: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
     : ResultType =
-  fn(using Supervisor)
+  block(using Supervisor)
 
 @capability
 case class Submonitor
