@@ -30,7 +30,7 @@ object Log:
   val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
   given textLog[TextType](using log: Log[TextType])(using textual: Textual[TextType]): Log[Text] =
-    log.contraMap: text =>
+    log.contramap: text =>
       textual.make(text.s)
 
   inline def fine
@@ -103,5 +103,5 @@ abstract class Log[TextType]():
   val envelopes: List[Text] = Nil
   def record(entry: Entry[TextType]): Unit
 
-  def contraMap[TextType2](fn: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
+  def contramap[TextType2](fn: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
     def record(entry: Entry[TextType2]): Unit = log.record(entry.map(fn))
