@@ -32,8 +32,8 @@ object Annotations:
       : Annotations[AnnotationType, TargetType] =
     ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
 
-  transparent inline def field[TargetType](inline fn: TargetType => Any): List[StaticAnnotation] =
-    ${Adversaria.fieldAnnotations[TargetType]('fn)}
+  transparent inline def field[TargetType](inline lambda: TargetType => Any): List[StaticAnnotation] =
+    ${Adversaria.fieldAnnotations[TargetType]('lambda)}
 
   transparent inline def fields
       [TargetType <: Product, AnnotationType <: StaticAnnotation]
@@ -109,14 +109,14 @@ object Adversaria:
 
   def fieldAnnotations
       [TargetType: Type]
-      (fn: Expr[TargetType => Any])
+      (lambda: Expr[TargetType => Any])
       (using Quotes)
       : Expr[List[StaticAnnotation]] =
     import quotes.reflect.*
     
     val targetType = TypeRepr.of[TargetType]
 
-    val field = fn.asTerm match
+    val field = lambda.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
           fail(msg"the member $term is not a case class field")
