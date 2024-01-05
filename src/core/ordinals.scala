@@ -92,23 +92,23 @@ object Denominative:
     inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal <= end
     inline def size: Int = (end - start) max 0
 
-    inline def each(inline fn: Ordinal => Unit): Unit =
+    inline def each(inline lambda: Ordinal => Unit): Unit =
       var i: Ordinal = start
       
       while i <= end do
-        fn(i)
+        lambda(i)
         i = i.next
 
     inline def foldLeft
         [ValueType]
         (inline initial: ValueType)
-        (inline fn: (ValueType, Ordinal) => ValueType)
+        (inline lambda: (ValueType, Ordinal) => ValueType)
         : ValueType =
       var i: Ordinal = start
       var acc: ValueType = initial
       
       while i <= end do
-        acc = fn(acc, i)
+        acc = lambda(acc, i)
         i = i.next
       acc
 
