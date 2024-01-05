@@ -146,7 +146,7 @@ object TextConversion:
       private def recur(lazyList: LazyList[ElemType], todo: Int): Text =
         if todo <= 0 then "..?".tt
         else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
-        else if lazyList.isEmpty then " ⭗ ".tt
+        else if lazyList.isEmpty then "⯁ ".tt
         else (lazyList.head.debug.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
 
   inline given iarray[ElemType]: Debug[IArray[ElemType]] =
