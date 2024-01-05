@@ -60,6 +60,8 @@ object Denominative:
 
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = ordinal - 1
+
+    @targetName("to")
     inline def ~(inline right: Ordinal): Interval = Interval(ordinal, right)
 
     inline def fromZero: Int = ordinal - 1
@@ -130,6 +132,6 @@ trait Countable[-SequenceType]:
 extension [CountableType](inline value: CountableType)(using countable: Countable[CountableType])
   inline def ult: Ordinal = countable.ult(value)
   inline def pen: Ordinal = countable.ult(value).previous
-  inline def ante: Ordinal = countable.pen(value).previous
+  inline def ante: Ordinal = countable.ult(value).previous.previous
 
 export Denominative.{Ordinal, Interval}
