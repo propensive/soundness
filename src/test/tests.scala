@@ -117,11 +117,11 @@ object Tests extends Suite(t"Aviation Tests"):
       
       test(t"1800, 1900, 2100, 2200 are not leap years"):
         List(1800, 1900, 2100, 2200).map(calendars.gregorian.leapYear)
-      .assert(_.forall(!_))
+      .assert(_.all(!_))
   
       test(t"Years not divisble by 4 are never leap years"):
         List(1985, 2001, 2023, 1843).map(calendars.gregorian.leapYear)
-      .assert(_.forall(!_))
+      .assert(_.all(!_))
     
       test(t"Check recent Julian Day"):
         (2022-Dec-16).julianDay
