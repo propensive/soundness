@@ -83,7 +83,7 @@ object HtmlSerializer:
         if maxWidth == -1 then append(text) else
           if verbatim || pos + text.length <= maxWidth then append(text)
           else
-            text.cut(t"\\s+").nn.foreach: word =>
+            text.cut(t"\\s+").nn.each: word =>
               if !(pos + 1 + word.nn.length < maxWidth || emptyLine) then
                 linebreak = true
                 whitespace()
