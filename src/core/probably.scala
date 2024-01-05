@@ -115,10 +115,10 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
       TestRun.Throws(lazyException, ns, ctx.captured.to(Map))
     finally Runner.testContextThreadLocal.set(None)
 
-  def suite(suite: TestSuite, fn: TestSuite ?=> Unit): Unit =
+  def suite(suite: TestSuite, block: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then
       reporter.declareSuite(report, suite)
-      fn(using suite)
+      block(using suite)
   
   def complete(): Unit = reporter.complete(report)
 
@@ -129,8 +129,8 @@ def test[ReportType](name: Text)(using suite: TestSuite, codepoint: Codepoint): 
 
 def suite
     [ReportType](name: Text)(using suite: TestSuite, runner: Runner[ReportType])
-    (fn: TestSuite ?=> Unit): Unit =
-  runner.suite(TestSuite(name, suite), fn)
+    (block: TestSuite ?=> Unit): Unit =
+  runner.suite(TestSuite(name, suite), block)
 
 extension [TestType](test: Test[TestType])
   inline def aspire[ReportType]
