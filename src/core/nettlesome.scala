@@ -271,7 +271,7 @@ object Nettlesome:
     def parseGroup(text: Text)(using Raises[IpAddressError]): Int =
       if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))(())
       
-      text.lower.s.foreach: char =>
+      text.lower.s.each: char =>
         if !('0' <= char <= '9' || 'a' <= char <= 'f')
         then raise(IpAddressError(Ipv6GroupNotHex(text)))(())
       
