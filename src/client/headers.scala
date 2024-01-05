@@ -43,7 +43,7 @@ object RequestHeader:
       ContentType, Cookie, Date, Expect, Forwarded, From, Host, Http2Settings, IfMatch,
       IfModifiedSince, IfNoneMatch, IfRange, IfUnmodifiedSince, MaxForwards, Origin, Pragma, Prefer,
       ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
-      Warning).mtwin.map(_.header -> _).to(Map)
+      Warning).bi.map(_.header -> _).to(Map)
 
   def unapply(str: Text): Some[RequestHeader[?]] =
     Some(standard.get(str.lower).getOrElse(RequestHeader(str.s)))
@@ -128,7 +128,7 @@ object ResponseHeader:
       Expires, Im, LastModified, Link, Location, P3p, Pragma, PreferenceApplied, ProxyAuthenticate,
       PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
       TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
-    .mtwin.map(_.header -> _).to(Map)
+    .bi.map(_.header -> _).to(Map)
   
   def unapply(str: Text): Some[ResponseHeader] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
