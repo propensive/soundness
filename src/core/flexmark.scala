@@ -37,7 +37,7 @@ case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
     val buf = StringBuilder()
     
-    nodes.foreach: value =>
+    nodes.each: value =>
       (value: @unchecked) match
         case node: Markdown.Ast.Inline => node.serialize(buf)
         case node: Markdown.Ast.Block  => node.serialize(buf)
@@ -97,7 +97,7 @@ object Markdown:
         
         case Emphasis(children*) =>
           buf.add('_')
-          children.foreach(_.serialize(buf))
+          children.each(_.serialize(buf))
           buf.add('_')
         
         case HtmlNode(value) =>
@@ -117,7 +117,7 @@ object Markdown:
         
         case Strong(children*) =>
           buf.add('*')
-          children.foreach(_.serialize(buf))
+          children.each(_.serialize(buf))
           buf.add('*')
         
         case Copy(text) =>
@@ -125,7 +125,7 @@ object Markdown:
         
         case Weblink(location, children*) =>
           buf.add('[')
-          children.foreach(_.serialize(buf))
+          children.each(_.serialize(buf))
           buf.add(t"](")
           buf.add(location)
           buf.add(')')
