@@ -305,7 +305,7 @@ object Nonagenarian:
 
   object Refspec:
     def parse(text: Text)(using Raises[GitRefError]): Text =
-      text.cut(t"/").foreach: part =>
+      text.cut(t"/").each: part =>
         if part.starts(t".") || part.ends(t".") then raise(GitRefError(text))(text)
         if part.ends(t".lock") then raise(GitRefError(text))(text)
         if part.contains(t"@{") then raise(GitRefError(text))(text)
