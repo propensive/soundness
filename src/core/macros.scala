@@ -51,7 +51,7 @@ object Probably:
         val debug: Expr[Debug[t | TestType]] =
           Expr.summon[Debug[t | TestType]].getOrElse('{ TextConversion.any })
         
-        val contrast = Expr.summon[Contrast[t | TestType]].get
+        val contrast = Expr.summon[Contrast[t | TestType]].getOrElse('{Contrast.general[t | TestType]})
         '{ assertion[t | TestType, TestType, ReportType, ResultType]($runner, $test, $predicate, $action, $contrast, Some($expr), $inc,
             $inc2, $debug) }
       
