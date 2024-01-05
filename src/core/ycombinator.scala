@@ -18,10 +18,10 @@ package rudiments
 
 import language.experimental.captureChecking
 
-class Recurrence[ValueType](fn: -> ValueType -> ValueType):
-  inline def apply(value: ValueType): ValueType = fn(value)
+class Recurrence[ValueType](lambda: -> ValueType -> ValueType):
+  inline def apply(value: ValueType): ValueType = lambda(value)
 
-def fix[ValueType](fn: Recurrence[ValueType] ?-> (ValueType -> ValueType)): (ValueType -> ValueType) =
-  fn(using Recurrence(fix(fn)))
+def fix[ValueType](lambda: Recurrence[ValueType] ?-> (ValueType -> ValueType)): (ValueType -> ValueType) =
+  lambda(using Recurrence(fix(lambda)))
 
 def recur[ValueType](value: ValueType)(using recurrence: Recurrence[ValueType]): ValueType = recurrence(value)

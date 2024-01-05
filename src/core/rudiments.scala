@@ -29,8 +29,8 @@ type Nat = Int & Singleton
 type Label = String & Singleton
 
 extension [ValueType](value: ValueType)
-  def only[ValueType2](fn: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
-    Some(value).collect(fn).getOrElse(Unset)
+  def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
+    Some(value).collect(partial).getOrElse(Unset)
   
   def unit: Unit = ()
   def waive: Any => ValueType = _ => value
@@ -45,7 +45,7 @@ extension [ValueType](value: ValueType)
   def contextually[ResultType](block: ValueType ?=> ResultType): ResultType = block(using value)
 
 extension [ValueType](inline value: => ValueType)
-  inline def pipe[ResultType](inline fn: ValueType => ResultType): ResultType = fn(value)
+  inline def pipe[ResultType](inline lambda: ValueType => ResultType): ResultType = lambda(value)
 
   inline def tap(inline block: ValueType => Unit): ValueType =
     val result: ValueType = value

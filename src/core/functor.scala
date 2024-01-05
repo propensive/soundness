@@ -19,29 +19,29 @@ package rudiments
 import language.experimental.captureChecking
 
 extension [FunctorType[+_], ValueType](value: FunctorType[ValueType]^)(using functor: Functor[FunctorType])
-  def map[ValueType2](fn: ValueType => ValueType2): FunctorType[ValueType2]^{value, fn} =
-    functor.map(value, fn)
+  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2]^{value, lambda} =
+    functor.map(value, lambda)
 
 extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType]^)
           (using cofunctor: Cofunctor[CofunctorType])
-  def contramap[ValueType2](fn: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, fn} =
-    cofunctor.contramap(value, fn)
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, lambda} =
+    cofunctor.contramap(value, lambda)
 
 trait Functor[FunctorType[+_]]:
-  def map[ValueType, ValueType2](value: FunctorType[ValueType]^, fn: ValueType => ValueType2)
-          : FunctorType[ValueType2]^{value, fn}
+  def map[ValueType, ValueType2](value: FunctorType[ValueType]^, lambda: ValueType => ValueType2)
+          : FunctorType[ValueType2]^{value, lambda}
     
 object Functor:
   given list: Functor[List] with
-    def map[ElemType, ElemType2](list: List[ElemType]^, fn: ElemType => ElemType2)
-            : List[ElemType2]^{list, fn} =
-      list.map(fn)
+    def map[ElemType, ElemType2](list: List[ElemType]^, lambda: ElemType => ElemType2)
+            : List[ElemType2]^{list, lambda} =
+      list.map(lambda)
   
   given option: Functor[Option] with
-    def map[ValueType, ValueType2](option: Option[ValueType]^, fn: ValueType => ValueType2)
-            : Option[ValueType2]^{option, fn} =
-      option.map(fn)
+    def map[ValueType, ValueType2](option: Option[ValueType]^, lambda: ValueType => ValueType2)
+            : Option[ValueType2]^{option, lambda} =
+      option.map(lambda)
 
 trait Cofunctor[CofunctorType[-_]]:
-  def contramap[ValueType, ValueType2](value: CofunctorType[ValueType]^, fn: ValueType2 => ValueType)
-               : CofunctorType[ValueType2]^{value, fn}
+  def contramap[ValueType, ValueType2](value: CofunctorType[ValueType]^, lambda: ValueType2 => ValueType)
+               : CofunctorType[ValueType2]^{value, lambda}
