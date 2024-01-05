@@ -52,12 +52,12 @@ object Executor:
   
   given text: Executor[Text] = proc =>
     val buf: StringBuilder = StringBuilder()
-    stream.interpret(proc).map(_.s).foreach(buf.append(_))
+    stream.interpret(proc).map(_.s).each(buf.append(_))
     buf.toString.tt
 
   given string: Executor[String] = proc =>
     val buf: StringBuilder = StringBuilder()
-    stream.interpret(proc).map(_.s).foreach(buf.append(_))
+    stream.interpret(proc).map(_.s).each(buf.append(_))
     buf.toString
 
   given dataStream(using streamCut: Raises[StreamError]): Executor[LazyList[Bytes]] =
