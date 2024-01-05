@@ -27,9 +27,12 @@ import java.util.zip as juz
 
 import language.experimental.captureChecking
 
-extension [ValueType <: Matchable](seq: Iterable[ValueType])
+extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
-    seq.collect { case value: FilterType => value }
+    iterable.collect { case value: FilterType => value }
+
+  inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
+  inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
 
 extension [ValueType](seq: Iterable[ValueType])
   transparent inline def bi: Iterable[(ValueType, ValueType)] = seq.map { x => (x, x) }
