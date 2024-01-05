@@ -26,7 +26,7 @@ val I: Complex[Double] = Complex(0.0, 1.0)
 
 object Complex:
   given show[ComponentType: Show]: Show[Complex[ComponentType]] = complex =>
-   t"${complex.real.show} + ${complex.imaginary.show}𝒊"
+   t"${complex.real.show} + ${complex.imaginary.show}𝒾"
   
   inline given quantityShow
       [UnitsType <: Measure]
