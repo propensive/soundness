@@ -104,8 +104,8 @@ object Interaction:
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
     def render(old: Optional[SelectMenu[ItemType]], menu: SelectMenu[ItemType]) =
-      menu.options.foreach: opt =>
-        Out.print((if opt == menu.current then t" > $opt" else t"   $opt")+t"\e[K\n")
+      menu.options.each: option =>
+        Out.print((if option == menu.current then t" > $option" else t"   $option")+t"\e[K\n")
       Out.print(t"\e[${menu.options.length}A")
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current

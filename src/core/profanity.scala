@@ -164,7 +164,7 @@ extends Stdio:
   def knownColumns: Int = safely(initColumns.await(50L)).or(80)
 
   private val signalHandler: Async[Unit] = Async:
-    signals.foreach:
+    signals.each:
       case Signal.Winch => print(Terminal.reportSize)
       case _            => ()
 
