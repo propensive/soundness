@@ -69,7 +69,7 @@ object TextConversion:
   
   given debugText: Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
-    text.s.foreach { char => builder.append(escape(char, true)) }
+    text.s.map(escape(_, true)).each(builder.append)
     
     ("t\""+builder.toString+"\"").tt
 
