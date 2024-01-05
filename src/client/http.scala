@@ -239,7 +239,7 @@ object Http:
       (using postable: Postable[PostType])
       : HttpResponse =
     Log.info(msg"Sending HTTP $method request to $url")
-    headers.foreach: header =>
+    headers.each: header =>
       Log.fine(Message(header.show))
     
     Log.fine(msg"HTTP request body: ${summon[Postable[PostType]].preview(content)}")
@@ -250,13 +250,13 @@ object Http:
         conn.setRequestProperty(RequestHeader.ContentType.header.s, postable.contentType.show.s)
         conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
         
-        headers.foreach:
+        headers.each:
           case RequestHeader.Value(key, value) => conn.setRequestProperty(key.header.s, value.s)
         
         if method == HttpMethod.Post || method == HttpMethod.Put then
           conn.setDoOutput(true)
           val out = conn.getOutputStream().nn
-          summon[Postable[PostType]].content(content).map(_.to(Array)).foreach(out.write(_))
+          summon[Postable[PostType]].content(content).map(_.to(Array)).each(out.write(_))
           out.close()
 
         val buf = new Array[Byte](65536)
