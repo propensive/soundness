@@ -55,21 +55,14 @@ object CodlToken:
 erased trait Codl
 
 object Codl:
-  given transport: Transport[Codl] with
-    type Writer[-DataType] = CodlWriter[DataType]
-    type Reader[DataType] = CodlReader[DataType]
-
-    def write[DataType: Writer](value: DataType): LazyList[Bytes] = ???
-    def read[DataType: Reader](value: LazyList[Bytes]): DataType = ???
-
   def read
-      [ValueType: CodlReader]
+      [ValueType: CodlDecoder]
       (source: Any)
       (using readable: Readable[source.type, Text], aggregate: Raises[AggregateError[CodlError]],
           codlRead: Raises[CodlReadError])
       : ValueType/*^{readable, aggregate}*/ =
     
-    summon[CodlReader[ValueType]].schema.parse(readable.read(source)).as[ValueType]
+    summon[CodlDecoder[ValueType]].schema.parse(readable.read(source)).as[ValueType]
   
   def parse
       [SourceType]

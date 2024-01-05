@@ -33,60 +33,60 @@ case class CodlLabel[+TargetType, +FieldNameType <: Label](label: String)
 
 case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
 
-trait CodlWriter[-ValueType]:
-  def write(value: ValueType): List[IArray[CodlNode]]
+trait CodlEncoder[-ValueType]:
+  def encode(value: ValueType): List[IArray[CodlNode]]
   def schema: CodlSchema
 
-trait CodlReader[ValueType]:
-  def read(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
+trait CodlDecoder[ValueType]:
+  def decode(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
   def schema: CodlSchema
 
-trait CodlFieldWriter[-ValueType] extends CodlWriter[ValueType]:
+trait CodlFieldWriter[-ValueType] extends CodlEncoder[ValueType]:
   def schema: CodlSchema = Field(Arity.One)
-  def writeField(value: ValueType): Text
-  def write(value: ValueType): List[IArray[CodlNode]] =
-    List(IArray(CodlNode(Data(writeField(value)))))
+  def encodeField(value: ValueType): Text
+  def encode(value: ValueType): List[IArray[CodlNode]] =
+    List(IArray(CodlNode(Data(encodeField(value)))))
 
-class CodlFieldReader[ValueType](reader: Text => ValueType)
-extends CodlReader[ValueType]:
+class CodlFieldReader[ValueType](lambda: Text => ValueType)
+extends CodlDecoder[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def read(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
+  def decode(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
     nodes.headOption.getOrElse(abort(CodlReadError())).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) =>
-        reader(value)
+        lambda(value)
       case _ =>
         abort(CodlReadError())
 
-trait CodlWriter3:
+trait CodlEncoder3:
   given optional
       [ValueType]
-      (using writer: CodlWriter[ValueType])
-      : CodlWriter[ValueType | Unset.type] =
-    new CodlWriter[Optional[ValueType]]:
-      def schema: CodlSchema = writer.schema.optional
-      def write(value: Optional[ValueType]): List[IArray[CodlNode]] =
-        value.let(writer.write(_)).or(List())
+      (using encoder: CodlEncoder[ValueType])
+      : CodlEncoder[ValueType | Unset.type] =
+    new CodlEncoder[Optional[ValueType]]:
+      def schema: CodlSchema = encoder.schema.optional
+      def encode(value: Optional[ValueType]): List[IArray[CodlNode]] =
+        value.let(encoder.encode(_)).or(List())
 
-trait CodlWriter2 extends CodlWriter3:
+trait CodlEncoder2 extends CodlEncoder3:
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
-      : CodlWriter[DerivationType] =
+      : CodlEncoder[DerivationType] =
     inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] => new CodlWriter[DerivationType]:
+      case given Mirror.ProductOf[DerivationType & Product] => new CodlEncoder[DerivationType]:
         def schema: CodlSchema =
-          Struct(CodlReader.deriveSchema[DerivationType, mirror.MirroredElemTypes,
+          Struct(CodlDecoder.deriveSchema[DerivationType, mirror.MirroredElemTypes,
               mirror.MirroredElemLabels], Arity.One)
         
-        def write(value: DerivationType): List[IArray[CodlNode]] =
+        def encode(value: DerivationType): List[IArray[CodlNode]] =
           (value.asMatchable: @unchecked) match
             case value: Product =>
               val entries = deriveProduct[DerivationType, mirror.MirroredElemLabels](Tuple.fromProductTyped(value))
               
               List(IArray.from(entries))
       
-      case _ => compiletime.error("cannot derive a CodlWriter sum type")
+      case _ => compiletime.error("cannot derive a CodlEncoder sum type")
 
   private transparent inline def deriveProduct
       [DerivationType, Labels <: Tuple]
@@ -105,23 +105,23 @@ trait CodlWriter2 extends CodlWriter3:
             
             (label.asMatchable: @unchecked) match
               case label: String =>
-                val writer = summonInline[CodlWriter[head.type]]
+                val encoder = summonInline[CodlEncoder[head.type]]
                 
                 val serialization =
-                  writer.write(head).map: value =>
-                    CodlNode(Data(label.tt, value, Layout.empty, writer.schema))
+                  encoder.encode(head).map: value =>
+                    CodlNode(Data(label.tt, value, Layout.empty, encoder.schema))
                   .filter(!_.empty)
                 
                 serialization ::: deriveProduct[DerivationType, tailLabels](tail)
         
       case _ => Nil
   
-object CodlWriter extends CodlWriter2:
-  given field[ValueType](using encoder: Encoder[ValueType]): CodlWriter[ValueType]/*^{encoder}*/ =
-    new CodlWriter[ValueType]:
+object CodlEncoder extends CodlEncoder2:
+  given field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
+    new CodlEncoder[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
       
-      def write(value: ValueType): List[IArray[CodlNode]] =
+      def encode(value: ValueType): List[IArray[CodlNode]] =
         List(IArray(CodlNode(Data(encoder.encode(value)))))
 
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
@@ -129,47 +129,47 @@ object CodlWriter extends CodlWriter2:
   
   given option
       [ValueType]
-      (using writer: CodlWriter[ValueType])
-      : CodlWriter[Option[ValueType]] =
-    new CodlWriter[Option[ValueType]]:
-      def schema: CodlSchema = writer.schema.optional
-      def write(value: Option[ValueType]): List[IArray[CodlNode]] = value match
+      (using encoder: CodlEncoder[ValueType])
+      : CodlEncoder[Option[ValueType]] =
+    new CodlEncoder[Option[ValueType]]:
+      def schema: CodlSchema = encoder.schema.optional
+      def encode(value: Option[ValueType]): List[IArray[CodlNode]] = value match
         case None        => List()
-        case Some(value) => writer.write(value)
+        case Some(value) => encoder.encode(value)
   
   given list
       [ElementType]
-      (using writer: CodlWriter[ElementType])
-      : CodlWriter[List[ElementType]] =
-    new CodlWriter[List[ElementType]]:
-      def schema: CodlSchema = writer.schema match
+      (using encoder: CodlEncoder[ElementType])
+      : CodlEncoder[List[ElementType]] =
+    new CodlEncoder[List[ElementType]]:
+      def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def write(value: List[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => writer.write(value).head }
+      def encode(value: List[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => encoder.encode(value).head }
   
   given set
       [ElementType]
-      (using writer: CodlWriter[ElementType])
-      : CodlWriter[Set[ElementType]] =
-    new CodlWriter[Set[ElementType]]:
-      def schema: CodlSchema = writer.schema match
+      (using encoder: CodlEncoder[ElementType])
+      : CodlEncoder[Set[ElementType]] =
+    new CodlEncoder[Set[ElementType]]:
+      def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def write(value: Set[ElementType]): List[IArray[CodlNode]] =
-        value.map { (value: ElementType) => writer.write(value).head }.to(List)
+      def encode(value: Set[ElementType]): List[IArray[CodlNode]] =
+        value.map { (value: ElementType) => encoder.encode(value).head }.to(List)
   
-trait CodlReader2:
+trait CodlDecoder2:
   inline given derived
       [DerivationType]
       (using mirror: Mirror.Of[DerivationType])
-      : CodlReader[DerivationType] =
+      : CodlDecoder[DerivationType] =
     inline mirror match
       case mirror: Mirror.ProductOf[DerivationType & Product] =>
-        new CodlReader[DerivationType]:
-          def read
+        new CodlDecoder[DerivationType]:
+          def decode
               (value: List[Indexed])(using codlRead: Raises[CodlReadError])
               : DerivationType =
             mirror.fromProduct(deriveProduct[DerivationType, mirror.MirroredElemTypes,
@@ -178,7 +178,7 @@ trait CodlReader2:
           def schema: CodlSchema = Struct(deriveSchema[DerivationType, mirror.MirroredElemTypes,
               mirror.MirroredElemLabels], Arity.One)
       
-      case _ => compiletime.error("cannot derive a CodlReader sum type")
+      case _ => compiletime.error("cannot derive a CodlDecoder sum type")
     
   transparent inline def deriveSchema
       [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
@@ -198,7 +198,7 @@ trait CodlReader2:
           
           (label.asMatchable: @unchecked) match
             case label: String =>
-              CodlSchema.Entry(label.tt, summonInline[CodlReader[headType]].schema) ::
+              CodlSchema.Entry(label.tt, summonInline[CodlDecoder[headType]].schema) ::
                   deriveSchema[DerivationType, tailType, tailLabels]
 
   private transparent inline def deriveProduct
@@ -221,75 +221,75 @@ trait CodlReader2:
           
           (label.asMatchable: @unchecked) match
             case label: String =>
-              summonInline[CodlReader[headType]].read(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
+              summonInline[CodlDecoder[headType]].decode(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
                   deriveProduct[DerivationType, tailType, tailLabels](value)
         
-object CodlReader extends CodlReader2:
+object CodlDecoder extends CodlDecoder2:
   given optional
       [ValueType]
-      (using reader: CodlReader[ValueType])
-      : CodlReader[Optional[ValueType]] =
-    new CodlReader[Optional[ValueType]]:
-      def schema: CodlSchema = reader.schema.optional
+      (using decoder: CodlDecoder[ValueType])
+      : CodlDecoder[Optional[ValueType]] =
+    new CodlDecoder[Optional[ValueType]]:
+      def schema: CodlSchema = decoder.schema.optional
       
-      def read
+      def decode
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Optional[ValueType] =
-        if value.isEmpty then Unset else reader.read(value)
+        if value.isEmpty then Unset else decoder.decode(value)
  
-  given field[ValueType](using decoder: Decoder[ValueType]): CodlReader[ValueType]/*^{decoder}*/ =
+  given field[ValueType](using decoder: Decoder[ValueType]): CodlDecoder[ValueType]/*^{decoder}*/ =
     CodlFieldReader(decoder.decode(_))
   
-  given boolean: CodlReader[Boolean] = CodlFieldReader(_ == t"yes")
-  given text: CodlReader[Text] = CodlFieldReader(identity(_))
+  given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
+  given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
   given option
       [ValueType]
-      (using reader: CodlReader[ValueType])
-      : CodlReader[Option[ValueType]] =
-    new CodlReader[Option[ValueType]]:
-      def schema: CodlSchema = reader.schema.optional
-      def read
+      (using decoder: CodlDecoder[ValueType])
+      : CodlDecoder[Option[ValueType]] =
+    new CodlDecoder[Option[ValueType]]:
+      def schema: CodlSchema = decoder.schema.optional
+      def decode
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : Option[ValueType] =
-        if value.isEmpty then None else Some(reader.read(value))
+        if value.isEmpty then None else Some(decoder.decode(value))
  
   given list
       [ElementType]
-      (using reader: CodlReader[ElementType])
-      : CodlReader[List[ElementType]] =
-    new CodlReader[List[ElementType]]:
-      def schema: CodlSchema = reader.schema match
+      (using decoder: CodlDecoder[ElementType])
+      : CodlDecoder[List[ElementType]] =
+    new CodlDecoder[List[ElementType]]:
+      def schema: CodlSchema = decoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def read
+      def decode
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
           : List[ElementType] =
-        reader.schema match
+        decoder.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
-            reader.read(List(CodlDoc(node)))
+            decoder.decode(List(CodlDoc(node)))
         
           case struct: Struct =>
-            value.map { v => reader.read(List(v)) }
+            value.map { v => decoder.decode(List(v)) }
   
   given set
       [ElementType]
-      (using reader: CodlReader[ElementType])
-      : CodlReader[Set[ElementType]] =
-    new CodlReader[Set[ElementType]]:
-      def schema: CodlSchema = reader.schema match
+      (using decoder: CodlDecoder[ElementType])
+      : CodlDecoder[Set[ElementType]] =
+    new CodlDecoder[Set[ElementType]]:
+      def schema: CodlSchema = decoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
       
-      def read
+      def decode
           (value: List[Indexed])(using coldRead: Raises[CodlReadError])
           : Set[ElementType] =
-        reader.schema match
+        decoder.schema match
           case Field(_, validator) =>
             value.flatMap(_.children).map: node =>
-              reader.read(List(CodlDoc(node)))
+              decoder.decode(List(CodlDoc(node)))
             .to(Set)
           
           case struct: Struct =>
-            value.map { v => reader.read(List(v)) }.to(Set)
+            value.map { v => decoder.decode(List(v)) }.to(Set)

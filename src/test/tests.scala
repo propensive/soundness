@@ -1034,7 +1034,7 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlDoc(CodlNode(t"root")(CodlNode(t"one")(), CodlNode(t"two three")(), CodlNode(t"four five")())))
       
     
-    def roundtrip[T: CodlWriter: CodlReader](value: T): T = value.codl.as[T]
+    def roundtrip[T: CodlEncoder: CodlDecoder](value: T): T = value.codl.as[T]
 
     suite(t"Generic Derivation tests"):
 
@@ -1111,12 +1111,12 @@ object Tests extends Suite(t"CoDL tests"):
       val complex = Bar(List(Baz(t"a", 2, Unset), Baz(t"c", 6, 'e')), Quux(t"e", List(1, 2, 4)))
       
       test(t"roundtrip a complex case class"):
-        summon[CodlReader[Baz]]
-        summon[CodlReader[List[Baz]]]
+        summon[CodlDecoder[Baz]]
+        summon[CodlDecoder[List[Baz]]]
         roundtrip(complex)
       .assert(_ == complex)
 
-      def print[T: CodlReader: CodlWriter](value: T): Text =
+      def print[T: CodlDecoder: CodlEncoder](value: T): Text =
         val writer = new ji.StringWriter()
         Printer.print(writer, value.codl)
         writer.toString().show
