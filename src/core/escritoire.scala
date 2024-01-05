@@ -161,7 +161,7 @@ case class Table
 
       val target = widths(focus) - 1
       
-      cellRefs.indices.foreach: row =>
+      cellRefs.indices.each: row =>
         if cellRefs(row)(focus).right > target
         then cellRefs(row)(focus) = Column.constrain(cells(row)(focus), cols(focus).breaks, target)
       
@@ -214,7 +214,7 @@ case class Table
         
           text #:: rows(row, offsets)
         else
-          offsets.indices.foreach(offsets(_) = 0)
+          offsets.indices.each(offsets(_) = 0)
           
           if row + 1 < cells.length
           then delimitRows match
