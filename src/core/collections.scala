@@ -31,6 +31,7 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
     iterable.collect { case value: FilterType => value }
 
+extension [ValueType](iterable: Iterable[ValueType])
   inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
   inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
 
