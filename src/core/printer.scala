@@ -59,7 +59,7 @@ object Printer:
       case CodlNode(data, meta) =>
         meta.let: meta =>
           for i <- 0 until meta.blank do out.write('\n')
-          meta.comments.foreach: comment =>
+          meta.comments.each: comment =>
             for i <- 0 until indent do out.write(' ')
             out.write("#")
             out.write(comment.s)
@@ -72,7 +72,7 @@ object Printer:
             
             schema match
               case Field(_, _) =>
-                children.foreach: child =>
+                children.each: child =>
                   (child: @unchecked) match
                     case CodlNode(Data(key, _, layout, _), _) =>
                       out.write(' ')
@@ -82,7 +82,7 @@ object Printer:
               case Struct(_, _) =>
                 val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
                 var col = indent - doc.margin + key.or(t"").length
-                ps.foreach: param =>
+                ps.each: param =>
                   (param: @unchecked) match
                     case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
                       if layout.multiline then
@@ -121,7 +121,7 @@ object Printer:
                         if ch == '\n' then for i <- 0 until (indent + 4) do out.write(' ')
   
                 out.write('\n')
-                children.drop(layout.params).foreach(recur(_, indent + 2))
+                children.drop(layout.params).each(recur(_, indent + 2))
           case Unset =>
             ()
-    doc.children.foreach(recur(_, doc.margin))
+    doc.children.each(recur(_, doc.margin))

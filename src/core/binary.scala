@@ -44,7 +44,7 @@ object Bcodl:
 
     write(out, dataNodes.length)
     
-    dataNodes.foreach:
+    dataNodes.each:
       case Data(key, children, _, _) =>
         schema match
           case Field(_, _) =>
