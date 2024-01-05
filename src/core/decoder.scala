@@ -77,7 +77,7 @@ object Decoder:
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
   def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
   def decode(text: Text): ValueType
-  def map[ValueType2](fn: ValueType => ValueType2): Decoder[ValueType2] = text => fn(decode(text))
+  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] = text => lambda(decode(text))
 
 object Encoder:
   given int: Encoder[Int] = _.toString.tt
@@ -95,7 +95,7 @@ object Encoder:
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
   def unapply(value: ValueType): Text = encode(value)
   def encode(value: ValueType): Text
-  def contramap[ValueType2](fn: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(fn(value))
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(lambda(value))
 
 extension (text: Text)
   def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
