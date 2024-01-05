@@ -194,7 +194,7 @@ def daemon[BusType <: Matchable]
           val stdio: Stdio =
             Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in)
           
-          def deliver(sourcePid: Pid, message: BusType): Unit = clients.foreach: (pid, client) =>
+          def deliver(sourcePid: Pid, message: BusType): Unit = clients.each: (pid, client) =>
             if sourcePid != pid then client.receive(message)
   
           val client: DaemonService[BusType] =
@@ -220,7 +220,7 @@ def daemon[BusType <: Matchable]
               case exception: Exception =>
                 Log.fail(exception.toString.show)
                 Optional(exception.getStackTrace).let: stackTrace =>
-                  stackTrace.foreach: frame =>
+                  stackTrace.each: frame =>
                     Log.fail(frame.toString.tt)
                 exitPromise.fulfill(ExitStatus.Fail(1))
             finally
@@ -251,7 +251,7 @@ def daemon[BusType <: Matchable]
 
       Async:
         safely(baseDir.watch()).let: watcher =>
-          watcher.stream.foreach:
+          watcher.stream.each:
             case Delete(_, t"port") =>
               Log.info(t"The file $portFile was deleted; terminating immediately")
               termination
