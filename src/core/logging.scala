@@ -48,8 +48,8 @@ enum Level:
 case class Entry
     [TextType]
     (realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text]):
-  def map[TextType2](fn: TextType => TextType2): Entry[TextType2] =
-    Entry(realm, level, fn(message), timestamp, envelopes)
+  def map[TextType2](lambda: TextType => TextType2): Entry[TextType2] =
+    Entry(realm, level, lambda(message), timestamp, envelopes)
 
 object Envelope:
   given [EnvelopeType](using Show[EnvelopeType]): Envelope[EnvelopeType] = _.show

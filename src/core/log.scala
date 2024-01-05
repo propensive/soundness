@@ -103,5 +103,5 @@ abstract class Log[TextType]():
   val envelopes: List[Text] = Nil
   def record(entry: Entry[TextType]): Unit
 
-  def contramap[TextType2](fn: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
-    def record(entry: Entry[TextType2]): Unit = log.record(entry.map(fn))
+  def contramap[TextType2](lambda: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
+    def record(entry: Entry[TextType2]): Unit = log.record(entry.map(lambda))
