@@ -113,7 +113,7 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Sh
   override def hashCode: Int = bytes.hashCode
 
 trait Digestible2:
-  given optional[ValueType](using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] =
+  given optional[ValueType](using util.NotGiven[Unset.type <:< ValueType])(using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] =
     (acc, value) => value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2, Derivation[Digestible]:
