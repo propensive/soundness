@@ -63,7 +63,7 @@ val cardinal: Int = Non - Sept  // 2
 A range of `Ordinal`s is represented by an `Interval`. In all cases, this is a closed or "inclusive" interval,
 and is specified by its first `Ordinal` and its (included) final `Ordinal`. For example,
 ```scala
-val interval: Interval = Ter to Sen
+val interval: Interval = Ter ~ Sen
 ```
 would represent the elements 2, 3, 5, 8 of the Fibonacci sequence, 1, 1, 2, 3, 5, 8, 13, 21, etc.
 
