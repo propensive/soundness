@@ -19,6 +19,7 @@ package ulysses
 import gastronomy.*
 import cardinality.*
 import rudiments.*
+import vacuous.*
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm
@@ -63,7 +64,7 @@ case class BloomFilter
   @targetName("addAll")
   def ++(elements: Iterable[ElementType]): BloomFilter[ElementType, HashType] =
     val bitSet = scm.BitSet()
-    elements.foreach(additions(_, bitSet))
+    elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
   def mayContain(value: ElementType): Boolean =
