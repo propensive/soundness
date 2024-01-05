@@ -114,6 +114,14 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       productRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](0)
           (typeclass => label => ordinal => join(using typeclass, label, ordinal))
 
+  inline def typeName[DerivationType](using reflective: Reflection[DerivationType]): Text =
+    valueOf[reflective.MirroredLabel].tt
+  
+  inline def tuple[DerivationType](using reflective: Reflection[DerivationType]): Boolean =
+    compiletime.summonFrom:
+      case given (reflective.MirroredMonoType <:< Tuple) => true
+      case _                                             => false
+
   private transparent inline def productRecur
       [DerivationType, ParamsType <: Tuple, LabelsType <: Tuple]
       (index: Int)
