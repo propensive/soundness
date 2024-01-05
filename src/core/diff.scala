@@ -25,20 +25,20 @@ import anticipation.*
 import language.experimental.captureChecking
 
 sealed trait Change[+ElemType] extends Product:
-  def map[ElemType2](fn: ElemType => ElemType2): Change[ElemType2^{fn}] = this match
+  def map[ElemType2](lambda: ElemType => ElemType2): Change[ElemType2^{lambda}] = this match
     case Sub(left, right, leftValue, rightValue) =>
-      Sub(left, right, leftValue.let(fn), rightValue.let(fn))
+      Sub(left, right, leftValue.let(lambda), rightValue.let(lambda))
     
     case edit: Edit[ElemType] =>
-      edit.map(fn)
+      edit.map(lambda)
 
 sealed trait Edit[+ElemType] extends Change[ElemType]:
   def value: Optional[ElemType]
 
-  override def map[ElemType2](fn: ElemType => ElemType2): Edit[ElemType2^{fn}] = this match
-    case Par(left, right, value) => Par(left, right, value.let(fn))
-    case Del(left, value)        => Del(left, value.let(fn))
-    case Ins(right, value)       => Ins(right, fn(value))
+  override def map[ElemType2](lambda: ElemType => ElemType2): Edit[ElemType2^{lambda}] = this match
+    case Par(left, right, value) => Par(left, right, value.let(lambda))
+    case Del(left, value)        => Del(left, value.let(lambda))
+    case Ins(right, value)       => Ins(right, lambda(value))
 
 case class Ins[+ElemType](right: Int, value: ElemType) extends Edit[ElemType]
 case class Del[+ElemType](left: Int, value: Optional[ElemType] = Unset) extends Edit[ElemType]
@@ -65,8 +65,8 @@ case class RDiff[ElemType](changes: Change[ElemType]*):
     
     RDiff(changes2*)
   
-  def map[ElemType2](fn: ElemType => ElemType2): RDiff[ElemType2^{fn}] =
-    RDiff(changes.map(_.map(fn))*)
+  def map[ElemType2](lambda: ElemType => ElemType2): RDiff[ElemType2^{lambda}] =
+    RDiff(changes.map(_.map(lambda))*)
 
 case class DiffParseError(lineNo: Int, line: Text)
 extends Error(msg"could not read the diff at line $lineNo: $line")
@@ -119,7 +119,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     
     Diff(edits2*)
 
-  def map[ElemType2](fn: ElemType => ElemType2): Diff[ElemType2^{fn}] = Diff(edits.map(_.map(fn))*)
+  def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2^{lambda}] = Diff(edits.map(_.map(lambda))*)
 
   def applyTo
       (seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
