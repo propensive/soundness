@@ -377,7 +377,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
         
         case right: IArray[JsonAst] @unchecked => left.asMatchable match
           case left: IArray[JsonAst] @unchecked =>
-            right.length == left.length && right.indices.forall: index =>
+            right.length == left.length && right.indices.all: index =>
               recur(left(index), right(index))
           
           case _ =>
@@ -393,7 +393,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
                       val leftMap = leftKeys.zip(leftValues).to(Map)
                       val rightMap = rightKeys.zip(rightValues).to(Map)
                     
-                      leftMap.keySet == rightMap.keySet && leftMap.keySet.forall: key =>
+                      leftMap.keySet == rightMap.keySet && leftMap.keySet.all: key =>
                         recur(leftMap(key), rightMap(key))
               
               case _ =>
