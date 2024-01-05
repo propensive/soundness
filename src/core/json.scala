@@ -174,7 +174,7 @@ object JsonEncoder extends JsonEncoder2:
     val values = new Array[JsonAst](map.size)
     var index = 0
     
-    map.foreach: (key, value) =>
+    map.each: (key, value) =>
       keys(index) = key
       values(index) = encoder.encode(value)
       index += 1
@@ -269,7 +269,7 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
     new JsonDecoder[CollectionType[ElementType]]:
       def decode(value: JsonAst, missing: Boolean): CollectionType[ElementType] =
         val builder = factory.newBuilder
-        value.array.foreach(builder += decoder.decode(_, false))
+        value.array.each(builder += decoder.decode(_, false))
         builder.result()
 
   given map[ElementType]
@@ -421,7 +421,7 @@ object MinimalSerializer extends JsonPrinter:
   def serialize(json: JsonAst): Text =
     val builder: StringBuilder = StringBuilder()
     def appendString(str: String): Unit =
-      str.foreach:
+      str.each:
         case '\t' => builder.append("\\t")
         case '\n' => builder.append("\\n")
         case '\r' => builder.append("\\r")
@@ -435,7 +435,7 @@ object MinimalSerializer extends JsonPrinter:
           case values: Array[JsonAst] @unchecked =>
             builder.append('{')
             val last = keys.length - 1
-            keys.indices.foreach: i =>
+            keys.indices.each: i =>
               builder.append('"')
               appendString(keys(i))
               builder.append('"')
@@ -446,7 +446,7 @@ object MinimalSerializer extends JsonPrinter:
       case array: Array[JsonAst] @unchecked =>
         builder.append('[')
         val last = array.length - 1
-        array.indices.foreach: i =>
+        array.indices.each: i =>
           recur(array(i))
           builder.append(if i == last then ']' else ',')
       
@@ -472,7 +472,7 @@ object HumanReadableSerializer extends JsonPrinter:
     val builder: StringBuilder = StringBuilder()
     
     def appendString(string: String): Unit =
-      string.foreach:
+      string.each:
         case '\t' => builder.append("\\t")
         case '\n' => builder.append("\\n")
         case '\r' => builder.append("\\r")
@@ -487,7 +487,7 @@ object HumanReadableSerializer extends JsonPrinter:
             builder.append('{')
             val last = keys.length - 1
             
-            keys.indices.foreach: index =>
+            keys.indices.each: index =>
               builder.append('"')
               appendString(keys(index))
               builder.append('"')
@@ -499,7 +499,7 @@ object HumanReadableSerializer extends JsonPrinter:
         builder.append('[')
         val last = array.length - 1
         
-        array.indices.foreach: index =>
+        array.indices.each: index =>
           recur(array(index), indent)
           builder.append(if index == last then ']' else ',')
       
