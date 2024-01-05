@@ -69,7 +69,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
       safely(Async(rest.head).await(30L)) match
         case Unset => Keypress.Escape #:: process(rest)
         case _ => rest match
-          case 'O' #:: fn #:: rest => Keypress.FunctionKey(fn.toInt - 79) #:: process(rest)
+          case 'O' #:: key #:: rest => Keypress.FunctionKey(key.toInt - 79) #:: process(rest)
           case '[' #:: rest        => rest match
             case (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
               Keyboard.navigation(code) #:: process(rest)
