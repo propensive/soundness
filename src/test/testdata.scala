@@ -29,7 +29,7 @@ extends Schema[Datatype]:
     case Numeric.type => Int
 
 object Address extends GeneralSchema(Map("houseNo" -> Numeric, "street" -> Varchar, "city" -> Varchar)):
-  transparent inline def record(inline fn: String => Any): Record = ${build('fn)}
+  transparent inline def record(inline lambda: String => Any): Record = ${build('lambda)}
 
 object Person extends Schema[Datatype]:
   def types: Map[String, Datatype] = Map(
@@ -37,7 +37,7 @@ object Person extends Schema[Datatype]:
     "age"     -> Numeric
   )
 
-  transparent inline def record(inline fn: String => Any): Record = ${build('fn)}
+  transparent inline def record(inline lambda: String => Any): Record = ${build('lambda)}
 
   type Result[D <: Datatype] = D match
     case Varchar.type => String
