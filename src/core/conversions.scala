@@ -19,6 +19,7 @@ package iridescence
 import fulminate.*
 import contextual.*
 import anticipation.*
+import rudiments.*
 
 import language.experimental.captureChecking
 import scala.util.chaining.*
@@ -57,7 +58,7 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   def initial: Option[Rgb24] = None
   def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
-    else if next.s.length == 6 && next.s.forall: char =>
+    else if next.s.length == 6 && next.s.all: char =>
       char.isDigit || ((char | 32) >= 'a' && (char | 32) <= 'f')
     then
       val red = Integer.parseInt(next.s.substring(0, 2).nn, 16)
@@ -83,6 +84,8 @@ object Rgb24Opaque:
 
     def apply(red: Int, green: Int, blue: Int): Rgb24 =
       ((red&255) << 16) + ((green&255) << 8) + (blue&255)
+
+    def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
   
   extension (color: Rgb24)
     def red: Int = (color >> 16) & 255
