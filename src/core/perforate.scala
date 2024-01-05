@@ -120,7 +120,7 @@ object Perforate:
                       val raises = Expr.summon[Raises[targetType]].getOrElse:
                         fail(msg"there is no capability to raise a ${target.show} in this context")
                       
-                      val raises2 = '{$raises.contraMap[sourceType]($handlers(_).asInstanceOf[targetType])}
+                      val raises2 = '{$raises.contramap[sourceType]($handlers(_).asInstanceOf[targetType])}
                       
                       recur('{${current.asExprOf[Raises[sourceType] ?=> Any]}(using ${raises2})}, tail)
   
