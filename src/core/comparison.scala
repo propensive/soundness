@@ -89,17 +89,16 @@ trait Contrast[-ValueType]:
   def apply(a: ValueType, b: ValueType): Semblance
 
 extension [ValueType](left: ValueType)
-  def contrastWith(right: ValueType)(using contrast: Contrast[ValueType]): Semblance =
-    contrast(left, right)
+  inline def contrastWith(right: ValueType): Semblance = compiletime.summonFrom:
+    case contrast: Contrast[ValueType] => contrast(left, right)
+    case _                             => Contrast.general(left, right)
 
-trait Contrast2:
-  inline given generic[ValueType](using scala.util.NotGiven[ValueType <:< Product]): Contrast[ValueType] with
-    def apply(left: ValueType, right: ValueType): Semblance =
-      if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
-
-object Contrast extends Derivation[Contrast], Contrast2:
-  def nothing[ValueType]: Contrast[ValueType] = (a, b) => Semblance.Identical(a.debug)
+object Contrast extends Derivation[Contrast]:
+  def nothing[ValueType]: Contrast[ValueType] = (left, right) => Semblance.Identical(left.debug)
   
+  inline def general[ValueType]: Contrast[ValueType] = (left, right) =>
+    if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
+
   inline given Contrast[Exception] = new Contrast[Exception]:
     def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
