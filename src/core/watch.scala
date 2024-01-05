@@ -52,7 +52,7 @@ object Watcher:
 
     val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
     val watcher = Watcher[DirectoryType](svc)
-    dirs.foreach(watcher.add(_))
+    dirs.each(watcher.add(_))
 
     watcher
 
@@ -73,14 +73,14 @@ case class Watcher
   def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect:
     case event: WatchEvent => event
   
-  def removeAll()(using Log[Text]): Unit = watches.values.map(toDirectory(_)).foreach(remove(_))
+  def removeAll()(using Log[Text]): Unit = watches.values.map(toDirectory(_)).each(remove(_))
 
   @tailrec
   private def pump(): Unit =
     svc.take().nn match
       case k: jnf.WatchKey =>
         val key = k.nn
-        key.pollEvents().nn.iterator.nn.asScala.flatMap(process(key, _)).foreach(funnel.put(_))
+        key.pollEvents().nn.iterator.nn.asScala.flatMap(process(key, _)).each(funnel.put(_))
         key.reset()
     
     pump()
