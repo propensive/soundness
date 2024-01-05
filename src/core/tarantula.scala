@@ -47,9 +47,9 @@ trait Browser(name: Text):
   def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server
   def stop(server: Server)(using Log[Text]): Unit
 
-  def session[T](port: Int = 4444)(fn: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log[Text], Monitor): T =
+  def session[T](port: Int = 4444)(block: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log[Text], Monitor): T =
     val server = launch(port)
-    try fn(using WebDriver(server).startSession()) finally server.stop()
+    try block(using WebDriver(server).startSession()) finally server.stop()
 
 object Firefox extends Browser(t"firefox"):
   def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server =
@@ -78,8 +78,8 @@ case class WebDriver(server: Browser#Server):
   case class Session(sessionId: Text):
     def webDriver: WebDriver = wd
     
-    private def safe[T](fn: => T): T =
-      try fn catch case e: HttpError => e match
+    private def safe[T](block: => T): T =
+      try block catch case e: HttpError => e match
         case HttpError(status, body) =>
           val json = body match
             case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
