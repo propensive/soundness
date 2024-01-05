@@ -26,7 +26,7 @@ import perforate.*
 import errorHandlers.throwUnsafely
 
 object Tests extends Suite(t"Dissonance tests"):
-  given Realm = Realm(t"tests")
+  given Realm = realm"tests"
 
   def run(): Unit =
     suite(t"Diff tests"):
