@@ -4,11 +4,18 @@
 repo propensive/rudiments
 repo propensive/fulminate
 repo propensive/perforate
+repo propensive/gossamer
 
-target wisteria/core
+target wisteria/test
 
 project wisteria
   module core
     compiler  scala
     sources   src/core
     include   rudiments/core fulminate/core perforate/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   wisteria/core gossamer/core
+    main      wisteria.main
