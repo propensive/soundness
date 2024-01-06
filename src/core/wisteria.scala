@@ -30,15 +30,11 @@ extends Error(msg"""the specified $variant is not one of the valid variants (${v
                     of sum $sum""")
 
 trait SumDerivationMethods[TypeclassType[_]]:
-  type SplitContext[VariantType, ResultType] =
-    (typeclass: TypeclassType[VariantType], label: Text, ordinal: Int) ?=> ResultType
-  
-  type SplitContext2[VariantType] = (label: Text, ordinal: Int) ?=> VariantType
 
   transparent inline def sum
       [DerivationType]
       (variant: Text)
-      (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] => SplitContext2[VariantType])
+      (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] => (label: Text, ordinal: Int) ?=> VariantType)
       (using reflective: Reflection[DerivationType])
       : DerivationType =
 
@@ -49,7 +45,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
   private transparent inline def sumRecur
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
       (variant: Text, index: Int)
-      (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] => SplitContext2[VariantType])
+      (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] => (label: Text, ordinal: Int) ?=> VariantType)
       (using reflective: SumReflection[DerivationType])
       : DerivationType =
 
@@ -71,7 +67,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [DerivationType]
       (sum: DerivationType)
       [ResultType]
-      (inline lambda: [VariantType <: DerivationType] => VariantType => SplitContext[VariantType, ResultType])
+      (inline lambda: [VariantType <: DerivationType] => VariantType => (typeclass: TypeclassType[VariantType], label: Text, ordinal: Int) ?=> ResultType)
       (using reflective: SumReflection[DerivationType])
       : ResultType =
 
@@ -86,7 +82,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       (sum: DerivationType, ordinal: Int, index: Int)
       [ResultType]
       (using reflective: SumReflection[DerivationType])
-      (inline lambda: [VariantType <: DerivationType] => VariantType => SplitContext[VariantType, ResultType])
+      (inline lambda: [VariantType <: DerivationType] => VariantType => (typeclass: TypeclassType[VariantType], label: Text, ordinal: Int) ?=> ResultType)
       : ResultType =
 
     inline erasedValue[VariantsType] match
@@ -105,13 +101,10 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
 trait ProductDerivationMethods[TypeclassType[_]]:
 
-  type JoinContext[FieldType] = (label: Text, ordinal: Int) ?=> FieldType
-  type JoinContext2[FieldType, ResultType] = (typeclass: TypeclassType[FieldType], label: Text, ordinal: Int) ?=> ResultType
-
   transparent inline def product
       [DerivationType]
       (using reflective: ProductReflection[DerivationType])
-      (inline lambda: [FieldType] => TypeclassType[FieldType] => JoinContext[FieldType]) =
+      (inline lambda: [FieldType] => TypeclassType[FieldType] => (label: Text, ordinal: Int) ?=> FieldType) =
     
     reflective.fromProduct:
       productRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels](0)(lambda)
@@ -127,7 +120,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   private transparent inline def productRecur
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple]
       (index: Int)
-      (inline lambda: [FieldType] => TypeclassType[FieldType] => JoinContext[FieldType])
+      (inline lambda: [FieldType] => TypeclassType[FieldType] => (label: Text, ordinal: Int) ?=> FieldType)
       : Tuple =
 
     inline erasedValue[FieldsType] match
@@ -147,7 +140,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (inline product: DerivationType)
       (using reflective: ProductReflection[DerivationType])
       [ResultType: ClassTag]
-      (inline lambda: [FieldType] => FieldType => JoinContext2[FieldType, ResultType])
+      (inline lambda: [FieldType] => FieldType => (typeclass: TypeclassType[FieldType], label: Text, ordinal: Int) ?=> ResultType)
       : IArray[ResultType] =
     
     val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflective.MirroredElemTypes]])
@@ -163,7 +156,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   private transparent inline def paramsRecur
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (tuple: Tuple, array: Array[ResultType], index: Int)
-      (inline lambda: [FieldType] => FieldType => JoinContext2[FieldType, ResultType])
+      (inline lambda: [FieldType] => FieldType => (typeclass: TypeclassType[FieldType], label: Text, ordinal: Int) ?=> ResultType)
       : Unit =
 
     inline tuple match
