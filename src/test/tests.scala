@@ -22,18 +22,17 @@ import gossamer.*
 import vacuous.*
 
 object Presentation extends ProductDerivation[Presentation]:
-  given Presentation[Text] = identity(_)
-  given Presentation[Double] = _.toString.tt
-  //given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
+  //given Presentation[Text] = identity(_)
+  //given Presentation[Double] = _.toString.tt
+  given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
   given Presentation[Int] = _.toString.tt
 
   inline def join[DerivationType: ProductReflection]: Presentation[DerivationType] = value =>
     val prefix = if tuple then t"" else typeName
     fields(value):
       [FieldType] => field =>
-        println(summon[Optional[Presentation[FieldType]]])
-        
-        t"$index:$label=text"
+        optionalTypeclass(value).layGiven(t"$index:$label=???"):
+          t"$index:$label=${summon[Presentation[FieldType]].present(field)}"
     .join(t"$prefix(", t", ", t")")
 
 trait Presentation[ValueType]:
