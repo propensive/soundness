@@ -5,6 +5,7 @@ import rudiments.*
 import vacuous.*
 
 import scala.deriving.*
+import scala.quoted.*
 import scala.compiletime.*
 
 trait ProductDerivationMethods[TypeclassType[_]]:
@@ -39,8 +40,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case product: Product => inline reflection match
         case given ProductReflection[DerivationType & Product] =>
           fold[DerivationType, Labels, Optional[Any]](Tuple.fromProductTyped(product), Unset, 0):
-            accumulator => [FieldType2] => field =>
-              if index == fieldIndex then field else accumulator
+            accumulator => [FieldType2] => field => if index == fieldIndex then field else accumulator
           .asInstanceOf[FieldType]
 
   protected transparent inline def fields
@@ -49,7 +49,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
       (inline lambda: [FieldType] => FieldType =>
-          (typeclass: TypeclassType[FieldType], label: Text, index: Int & FieldIndex[FieldType]) ?=> ResultType)
+          (typeclass: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=> ResultType)
       : IArray[ResultType] =
     
     summonInline[ClassTag[ResultType]].contextually:
@@ -71,7 +71,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType, LabelsType <: Tuple, AccumulatorType]
       (inline tuple: Tuple, accumulator: AccumulatorType, index: Int)
       (inline lambda: AccumulatorType => [FieldType] => FieldType =>
-          (typeclass: TypeclassType[FieldType], label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
+          (typeclass: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
       : AccumulatorType =
 
     inline tuple match
@@ -84,7 +84,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             case label: String =>
               val typeclass = summonFrom:
                 case typeclass: TypeclassType[`fieldType`] => typeclass
-                case _                                     => compiletime.error("couldn't get typeclass instance")
+                case _                                     => Unset
 
               val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, index.asInstanceOf[Int & FieldIndex[fieldType]])
               
@@ -93,3 +93,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   inline def join[DerivationType: ProductReflection]: TypeclassType[DerivationType]
 
 transparent erased trait FieldIndex[FieldType]
+
+transparent inline def summonOptionally[ContextualType]: Optional[ContextualType] =
+  ${Wisteria.summonOptionally[ContextualType]}
+
+object Wisteria:
+  def summonOptionally[ContextualType: Type](using Quotes): Expr[Optional[ContextualType]] =
+    Expr.summon[ContextualType].getOrElse('{Unset})
