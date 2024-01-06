@@ -41,8 +41,14 @@ extension [ValueType](optional: Optional[ValueType])
   inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2): ValueType2 =
     if absent then alternative else lambda(vouch(using Unsafe))
 
+  inline def layGiven[ValueType2](inline alternative: => ValueType2)(inline block: ValueType ?=> ValueType2): ValueType2 =
+    if absent then alternative else block(using vouch(using Unsafe))
+
   inline def let[ValueType2](inline lambda: ValueType => ValueType2): Optional[ValueType2] =
     if absent then Unset else lambda(vouch(using Unsafe))
+  
+  inline def letGiven[ValueType2](inline block: ValueType ?=> ValueType2): Optional[ValueType2] =
+    if absent then Unset else block(using vouch(using Unsafe))
 
 extension [ValueType](iterable: Iterable[Optional[ValueType]])
   transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
