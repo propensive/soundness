@@ -189,14 +189,17 @@ object JsonEncoder extends JsonEncoder2:
       case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
   inline def join[DerivationType: ProductReflection]: JsonEncoder[DerivationType] = value =>
-    val labels = params(value)(label.s)
-    val values = params(value)(typeclass.encode(param))
+    val labels = params(value): [FieldType] =>
+      field => label.s
+
+    val values = params(value): [FieldType] =>
+      field => typeclass.encode(field)
     
     JsonAst((labels, values))
   
   inline def split[DerivationType: SumReflection]: JsonEncoder[DerivationType] = value =>
-    variants(value):
-      summonInline[Raises[JsonAccessError]].contextually(typeclass.tag(label).encode(value))
+    variant(value): [VariantType] =>
+      value => summonInline[Raises[JsonAccessError]].contextually(typeclass.tag(label).encode(value))
 
 trait JsonEncoder[-ValueType]:
   def omit(value: ValueType): Boolean = false
@@ -286,10 +289,11 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
       val keyValues = json.obj
       val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-      product:
-        val missing = !values.contains(label.s)
-        val value = if missing then JsonAst(0L) else values(label.s)
-        typeclass.decode(value, missing)
+      product: [FieldType] =>
+        typeclass =>
+          val missing = !values.contains(label.s)
+          val value = if missing then JsonAst(0L) else values(label.s)
+          typeclass.decode(value, missing)
   
   inline def split[DerivationType: SumReflection]: JsonDecoder[DerivationType] = (json, missing) =>
     summonInline[Raises[JsonAccessError]].contextually:
@@ -300,7 +304,9 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
         
         case index =>
           val discriminant = values(1)(index).string
-          sum(discriminant)(typeclass.decode(json, missing))
+          sum(discriminant): [VariantType] =>
+            typeclass =>
+              typeclass.decode(json, missing)
 
 trait JsonDecoder[ValueType]:
   private inline def decoder: this.type = this
