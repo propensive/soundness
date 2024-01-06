@@ -178,36 +178,6 @@ trait ProductDerivationMethods[TypeclassType[_]]:
               paramsRecur[DerivationType, moreFieldsType, moreLabelsType, ResultType](params, array, index + 1)(lambda)
 
   inline def join[DerivationType: ProductReflection]: TypeclassType[DerivationType]
-  // transparent inline def oneParam
-  //     [DerivationType]
-  //     (inline product: DerivationType)
-  //     (index: Int)
-  //     (using reflective: ProductReflection[DerivationType])
-  //     [ResultType]
-  //     (inline join: [FieldType] => FieldType => JoinContext2[FieldType])
-  //     : ResultType =
-    
-  //   inline product.asMatchable match
-  //     case product: Product => inline reflective match
-  //       case given ProductReflection[DerivationType & Product] =>
-  //         oneParamRecur[DerivationType, reflective.MirroredElemTypes, reflective.MirroredElemLabels, ResultType]
-  //             (Tuple.fromProductTyped(product), 0, index)(join)
-    
-  // private transparent inline def oneParamRecur
-  //     [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
-  //     (tuple: Tuple, index: Int, target: Int)
-  //     (inline join: [FieldType] => FieldType => JoinContext2[FieldType])
-  //     : ResultType =
-
-  //   inline tuple match
-  //     case EmptyTuple => throw Mistake(msg"should be unreachable")
-  //     case cons: (fieldType *: moreFieldsType) => cons match
-  //       case param *: params => inline erasedValue[LabelsType] match
-  //         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
-  //           case label: String =>
-  //             if index == target
-  //             then join[fieldType](param)(using summonInline[TypeclassType[fieldType]], label.tt, index)
-  //             else oneParamRecur[DerivationType, moreFieldsType, moreLabelsType, ResultType](params, index + 1, target)(join)
 
 trait ProductDerivation[TypeclassType[_]] extends ProductDerivationMethods[TypeclassType]:
   inline given derived
