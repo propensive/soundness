@@ -82,7 +82,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
       (inline lambda: [FieldType] => FieldType =>
-          (optionalTypeclass: Optional[TypeclassType[FieldType]], label: Text,
+          (context: Optional[TypeclassType[FieldType]], label: Text,
           index: Int & FieldIndex[FieldType]) ?=> ResultType)
       : IArray[ResultType] =
     
@@ -105,7 +105,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType, LabelsType <: Tuple, AccumulatorType]
       (inline tuple: Tuple, accumulator: AccumulatorType, index: Int, required: Boolean)
       (inline lambda: AccumulatorType => [FieldType] => FieldType =>
-          (optionalTypeclass: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
+          (context: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
           AccumulatorType)
       : AccumulatorType =
 

@@ -47,7 +47,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       (using variantIndex: Int & VariantIndex[VariantType])
       [ResultType]
       (inline lambda: VariantType =>
-          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
+          (context: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : Optional[ResultType] =
 
     type Labels = reflection.MirroredElemLabels
@@ -56,16 +56,16 @@ trait SumDerivationMethods[TypeclassType[_]]:
     fold[DerivationType, Variants, Labels](sum, 0, reflection.ordinal(sum)):
       [VariantType2 <: DerivationType] => variant =>
         val variant2 = variant.asInstanceOf[VariantType]
-        val optionalTypeclass2 = optionalTypeclass.asInstanceOf[Optional[TypeclassType[VariantType]]]
+        val context2 = context.asInstanceOf[Optional[TypeclassType[VariantType]]]
         val index2: Int & VariantIndex[VariantType] = index.asInstanceOf[Int & VariantIndex[VariantType]]
-        lambda(variant2)(using optionalTypeclass2, label, index2)
+        lambda(variant2)(using context2, label, index2)
 
   protected transparent inline def variant
       [DerivationType]
       (sum: DerivationType)
       [ResultType]
       (inline lambda: [VariantType <: DerivationType] => VariantType =>
-          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
+          (context: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
       (using reflection: SumReflection[DerivationType])
       : ResultType =
 
@@ -105,7 +105,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [ResultType]
       (using reflection: SumReflection[DerivationType])
       (inline lambda: [VariantType <: DerivationType] => VariantType =>
-          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text,
+          (context: Optional[TypeclassType[VariantType]], label: Text,
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : ResultType =
 
