@@ -62,7 +62,7 @@ object Debug extends Derivation[Debug]:
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        optionalTypeclass2.let(_(variant)).or:
+        optionalTypeclass.let(_(variant)).or:
           summonFrom:
             case given Show[VariantType] => variant.show
             case _                       => variant.toString.tt
