@@ -25,7 +25,7 @@ import scala.compiletime.*
 
 trait ProductDerivationMethods[TypeclassType[_]]:
   protected transparent inline def product
-      [DerivationType]
+      [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType])
       (inline lambda: [FieldType] => TypeclassType[FieldType] => (label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
     
@@ -46,7 +46,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case _                                             => false
 
   protected transparent inline def typeclass
-      [DerivationType, FieldType]
+      [DerivationType <: Product, FieldType]
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : Optional[TypeclassType[FieldType]] =
     type Labels = reflection.MirroredElemLabels
@@ -59,7 +59,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         .asInstanceOf[Option[TypeclassType[FieldType]]].get
 
   protected transparent inline def optionalTypeclass
-      [DerivationType, FieldType]
+      [DerivationType <: Product, FieldType]
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : Optional[TypeclassType[FieldType]] =
     
@@ -74,7 +74,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         .asInstanceOf[Optional[TypeclassType[FieldType]]]
 
   protected transparent inline def correspondent
-      [DerivationType, FieldType]
+      [DerivationType <: Product, FieldType]
       (product: DerivationType)
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : FieldType =
@@ -91,7 +91,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
               if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
 
   protected transparent inline def fields
-      [DerivationType]
+      [DerivationType <: Product]
       (inline product: DerivationType)
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
@@ -163,6 +163,6 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             foldErased[DerivationType, moreFieldsType, moreLabelsType, AccumulatorType](accumulator2, index +
                 1, required)(lambda)
   
-  inline def join[DerivationType: ProductReflection]: TypeclassType[DerivationType]
+  inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
 
 transparent erased trait FieldIndex[FieldType]

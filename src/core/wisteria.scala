@@ -31,16 +31,22 @@ trait ProductDerivation[TypeclassType[_]] extends ProductDerivationMethods[Typec
   inline given derived[DerivationType](using Reflection[DerivationType]): TypeclassType[DerivationType] =
 
     inline summon[Reflection[DerivationType]] match
-      case given ProductReflection[DerivationType] => join
+      case reflection: ProductReflection[derivationType] =>
+        join[derivationType](using reflection).asMatchable match
+          case typeclass: TypeclassType[DerivationType] => typeclass
 
 trait Derivation[TypeclassType[_]]
 extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassType]:
   
   inline given derived[DerivationType](using Reflection[DerivationType]): TypeclassType[DerivationType] =
     inline summon[Reflection[DerivationType]] match
-      case given ProductReflection[DerivationType] => join
-      case given SumReflection[DerivationType]     => split
+      case reflection: ProductReflection[derivationType] =>
+        join[derivationType](using reflection).asMatchable match
+          case typeclass: TypeclassType[DerivationType] => typeclass
+
+      case given SumReflection[DerivationType] =>
+        split
 
 type Reflection[DerivationType] = Mirror.Of[DerivationType]
-type ProductReflection[DerivationType] = Mirror.ProductOf[DerivationType]
+type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
 type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]

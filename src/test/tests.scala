@@ -27,7 +27,7 @@ object Presentation extends ProductDerivation[Presentation]:
   given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
   given Presentation[Int] = _.toString.tt
 
-  inline def join[DerivationType: ProductReflection]: Presentation[DerivationType] = value =>
+  inline def join[DerivationType <: Product: ProductReflection]: Presentation[DerivationType] = value =>
     val prefix = if tuple then t"" else typeName
     fields(value):
       [FieldType] => field =>
