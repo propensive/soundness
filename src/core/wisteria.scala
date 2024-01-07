@@ -28,24 +28,18 @@ extends Error(msg"""the specified $variant is not one of the valid variants (${v
                     of sum $sum""")
 
 trait ProductDerivation[TypeclassType[_]] extends ProductDerivationMethods[TypeclassType]:
-  inline given derived
-      [DerivationType]
-      (using reflection: Reflection[DerivationType])
-      : TypeclassType[DerivationType] =
+  inline given derived[DerivationType](using Reflection[DerivationType]): TypeclassType[DerivationType] =
 
-    inline reflection match
-      case reflection: ProductReflection[DerivationType] => join[DerivationType](using reflection)
+    inline summon[Reflection[DerivationType]] match
+      case given ProductReflection[DerivationType] => join
 
 trait Derivation[TypeclassType[_]]
 extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassType]:
-  inline given derived
-      [DerivationType]
-      (using reflection: Reflection[DerivationType])
-      : TypeclassType[DerivationType] =
-
-    inline reflection match
-      case reflection: ProductReflection[DerivationType] => join[DerivationType](using reflection)
-      case reflection: SumReflection[DerivationType]     => split[DerivationType](using reflection)
+  
+  inline given derived[DerivationType](using Reflection[DerivationType]): TypeclassType[DerivationType] =
+    inline summon[Reflection[DerivationType]] match
+      case given ProductReflection[DerivationType] => join
+      case given SumReflection[DerivationType]     => split
 
 type Reflection[DerivationType] = Mirror.Of[DerivationType]
 type ProductReflection[DerivationType] = Mirror.ProductOf[DerivationType]
