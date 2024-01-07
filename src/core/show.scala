@@ -18,6 +18,8 @@ package spectacular
 
 import rudiments.*
 import inimitable.*
+import vacuous.*
+import wisteria.*
 import anticipation.*
 import fulminate.*
 
@@ -40,6 +42,31 @@ object Show:
   
   given specializable: Show[Specializable] = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
+
+object Debug extends Derivation[Debug]:
+
+  inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
+    val prefix = if tuple then "".tt else typeName
+    
+    fields(value):
+      [FieldType] => field =>
+        val text = optionalTypeclass.let(_(field)).or:
+          summonFrom:
+            case given Show[FieldType] => field.show
+            case _                     => field.toString.tt
+
+        if tuple then text else s"$label:$text"
+
+    .mkString(s"$prefix(", " ╱ ", ")").tt
+
+  inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
+    variant(value):
+      [VariantType <: DerivationType] => variant =>
+        optionalTypeclass2.let(_(variant)).or:
+          summonFrom:
+            case given Show[VariantType] => variant.show
+            case _                       => variant.toString.tt
+        
 
 object TextConversion:
   val any: Debug[Any] = value => value.toString.tt
@@ -65,7 +92,7 @@ object TextConversion:
   given debugString: Debug[String] = string => summon[Debug[Text]](string.tt).s.substring(1).nn.tt
   given debugByte: Debug[Byte] = byte => (byte.toString+".toByte").tt
   given debugShort: Debug[Short] = short => (short.toString+".toShort").tt
-  given debugMessage: Debug[Message] = derived[Message]
+  given debugMessage: Debug[Message] = Debug.derived[Message]
   
   given debugText: Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
@@ -187,9 +214,9 @@ object TextConversion:
     
     case Some(value) =>
       val valueText: Text = compiletime.summonFrom:
-        case debug: Debug[ValueType]     => debug(value)
+        case given Debug[ValueType]      => value.debugText
         case encoder: Encoder[ValueType] => encoder.encode(value)
-        case show: Show[ValueType]       => show(value)
+        case given Show[ValueType]       => value.show
         case _                           => value.toString.tt
       
       s"Some($valueText)".tt
@@ -197,57 +224,59 @@ object TextConversion:
   given none: Show[None.type] = none => "none".tt
   given showNone: Debug[None.type] = none => "None".tt
   
-  private transparent inline def deriveProduct
-      [Labels <: Tuple]
-      (tuple: Tuple, isTuple: Boolean)
-      : List[Text] =
-    inline tuple match
-      case EmptyTuple => Nil
-      case cons: (? *: ?) => cons match
-        case head *: tail => inline erasedValue[Labels] match
-          case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
-            case label: String =>
-              val value = head.debug.s
-              (inline if isTuple then value else (label+"="+value)).tt ::
-                  deriveProduct[tailLabels](tail, isTuple)
+  // private transparent inline def deriveProduct
+  //     [Labels <: Tuple]
+  //     (tuple: Tuple, isTuple: Boolean)
+  //     : List[Text] =
+  //   inline tuple match
+  //     case EmptyTuple => Nil
+  //     case cons: (? *: ?) => cons match
+  //       case head *: tail => inline erasedValue[Labels] match
+  //         case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
+  //           case label: String =>
+  //             val value = head.debug.s
+  //             (inline if isTuple then value else (label+"="+value)).tt ::
+  //                 deriveProduct[tailLabels](tail, isTuple)
 
-  private transparent inline def deriveSum
-      [TupleType <: Tuple, DerivedType]
-      (ordinal: Int)
-      : Debug[DerivedType] =
-    inline erasedValue[TupleType] match
-      case _: (head *: tail) =>
-        if ordinal == 0
-        then summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
-        else deriveSum[tail, DerivedType](ordinal - 1)
+  // private transparent inline def deriveSum
+  //     [TupleType <: Tuple, DerivedType]
+  //     (ordinal: Int)
+  //     : Debug[DerivedType] =
+  //   inline erasedValue[TupleType] match
+  //     case _: (head *: tail) =>
+  //       if ordinal == 0
+  //       then summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
+  //       else deriveSum[tail, DerivedType](ordinal - 1)
 
-  inline given derived
-      [DerivationType]
-      (using mirror: Mirror.Of[DerivationType])
-      : Debug[DerivationType] =
-    inline mirror match
-      case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
-        inline val isTuple = inline erasedValue[DerivationType & Matchable] match
-          case tuple: Tuple => true
-          case _            => false
+  // inline given derived
+  //     [DerivationType]
+  //     (using mirror: Mirror.Of[DerivationType])
+  //     : Debug[DerivationType] =
+  //   inline mirror match
+  //     case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
+  //       inline val isTuple = inline erasedValue[DerivationType & Matchable] match
+  //         case tuple: Tuple => true
+  //         case _            => false
         
-        (value.asMatchable: @unchecked) match
-          case value: Product =>
-            val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value),
-                isTuple)
+  //       (value.asMatchable: @unchecked) match
+  //         case value: Product =>
+  //           val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value),
+  //               isTuple)
             
-            val typeName = valueOf[mirror.MirroredLabel]
+  //           val typeName = valueOf[mirror.MirroredLabel]
             
-            inline if isTuple then elements.mkString("(", "·", ")").tt
-            else elements.mkString(typeName+"(", "·", ")").tt
+  //           inline if isTuple then elements.mkString("(", "·", ")").tt
+  //           else elements.mkString(typeName+"(", "·", ")").tt
     
-      case s: Mirror.SumOf[DerivationType] =>
-        (value: DerivationType) =>
-          deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
+  //     case s: Mirror.SumOf[DerivationType] =>
+  //       (value: DerivationType) =>
+  //         deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
 
 extension [ValueType](value: ValueType)
   inline def show(using display: Show[ValueType]): Text = display(value)
-  
+
+  def debugText(using debug: Debug[ValueType]): Text = debug(value)
+
   inline def debug: Text = compiletime.summonFrom:
     case display: Debug[ValueType]   => display(value)
     case encoder: Encoder[ValueType] => encoder.encode(value)

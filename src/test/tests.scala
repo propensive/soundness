@@ -147,11 +147,11 @@ object Tests extends Suite(t"Spectacular Tests"):
 
       test(t"serialize case class"):
         Person(t"Simon", 72).debug
-      .assert(_ == t"Person(name=t\"Simon\"·age=72)")
+      .assert(_ == t"Person(name:t\"Simon\" ╱ age:72)")
       
       test(t"serialize tuple"):
         (t"Simon", 72).debug
-      .assert(_ == t"(t\"Simon\"·72)")
+      .assert(_ == t"(t\"Simon\" ╱ 72)")
       
       test(t"serialize list of strings"):
         List(t"one", t"two", t"three").debug
