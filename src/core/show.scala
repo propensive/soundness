@@ -50,7 +50,7 @@ object Debug extends Derivation[Debug]:
     
     fields(value):
       [FieldType] => field =>
-        val text = optionalTypeclass.let(_(field)).or:
+        val text = context.let(_(field)).or:
           summonFrom:
             case given Show[FieldType] => field.show
             case _                     => field.toString.tt
@@ -62,7 +62,7 @@ object Debug extends Derivation[Debug]:
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        optionalTypeclass.let(_(variant)).or:
+        context.let(_(variant)).or:
           summonFrom:
             case given Show[VariantType] => variant.show
             case _                       => variant.toString.tt
