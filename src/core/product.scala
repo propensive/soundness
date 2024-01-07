@@ -86,11 +86,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     inline product.asMatchable match
       case product: Product => inline reflection match
         case given ProductReflection[DerivationType & Product] =>
-          fold[DerivationType, Labels, FieldType](Tuple.fromProductTyped(product), null.asInstanceOf[FieldType],
-              0, false):
-            
+          fold[DerivationType, Labels, Optional[FieldType]](Tuple.fromProductTyped(product), Unset, 0, false):
             accumulator => [FieldType2] => field =>
               if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
+          .vouch(using Unsafe)
 
   protected transparent inline def fields
       [DerivationType <: Product]
@@ -167,4 +166,4 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
 
-transparent erased trait FieldIndex[FieldType]
+erased trait FieldIndex[FieldType]
