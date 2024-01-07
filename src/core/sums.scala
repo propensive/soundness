@@ -39,22 +39,6 @@ trait SumDerivationMethods[TypeclassType[_]]:
         val typeclass = summonInline[TypeclassType[VariantType]]
         if variant == label then lambda[VariantType](typeclass)(using label, index) else Unset
 
-  protected transparent inline def optionalTypeclass2
-      [DerivationType]
-      (using reflection: SumReflection[DerivationType])
-      [VariantType <: DerivationType]
-      (using variantIndex: Int & VariantIndex[VariantType])
-      : Optional[TypeclassType[VariantType]] =
-    
-    type Labels = reflection.MirroredElemLabels
-    type Variants = reflection.MirroredElemTypes
-    
-    inline reflection match
-      case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Variants, Labels](0):
-          [VariantType2 <: DerivationType] => typeclass =>
-            typeclass.asInstanceOf[Option[TypeclassType[VariantType]]].getOrElse(Unset)
-
   protected transparent inline def correspondent
       [DerivationType]
       (sum: DerivationType)
@@ -63,7 +47,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       (using variantIndex: Int & VariantIndex[VariantType])
       [ResultType]
       (inline lambda: VariantType =>
-          (typeclass: Option[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
+          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : Optional[ResultType] =
 
     type Labels = reflection.MirroredElemLabels
@@ -72,16 +56,16 @@ trait SumDerivationMethods[TypeclassType[_]]:
     fold[DerivationType, Variants, Labels](sum, 0, reflection.ordinal(sum)):
       [VariantType2 <: DerivationType] => variant =>
         val variant2 = variant.asInstanceOf[VariantType]
-        val typeclass2 = typeclass.asInstanceOf[Option[TypeclassType[VariantType]]]
+        val optionalTypeclass2 = optionalTypeclass.asInstanceOf[Optional[TypeclassType[VariantType]]]
         val index2: Int & VariantIndex[VariantType] = index.asInstanceOf[Int & VariantIndex[VariantType]]
-        lambda(variant2)(using typeclass2, label, index2)
+        lambda(variant2)(using optionalTypeclass2, label, index2)
 
   protected transparent inline def variant
       [DerivationType]
       (sum: DerivationType)
       [ResultType]
       (inline lambda: [VariantType <: DerivationType] => VariantType =>
-          (typeclass: Option[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
+          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text, index: Int & VariantIndex[VariantType]) ?=> ResultType)
       (using reflection: SumReflection[DerivationType])
       : ResultType =
 
@@ -95,7 +79,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
       (index: Int = 0)
       [ResultType]
-      (inline lambda: [VariantType <: DerivationType] => Option[TypeclassType[VariantType]] =>
+      (inline lambda: [VariantType <: DerivationType] => Optional[TypeclassType[VariantType]] =>
           (label: Text, index: Int & VariantIndex[VariantType]) ?=> Optional[ResultType])
       : Optional[ResultType] =
 
@@ -103,7 +87,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
           case label: String =>
-            val typeclass = Some(summonInline[TypeclassType[variantType & DerivationType]])
+            val typeclass = summonInline[TypeclassType[variantType & DerivationType]]
             
             lambda[variantType & DerivationType](typeclass)(using label.tt, index.asInstanceOf[Int & VariantIndex[variantType & DerivationType]]) match
               case Unset => foldErased[DerivationType, variantsType, moreLabelsType](index + 1)(lambda)
@@ -121,7 +105,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [ResultType]
       (using reflection: SumReflection[DerivationType])
       (inline lambda: [VariantType <: DerivationType] => VariantType =>
-          (typeclass: Option[TypeclassType[VariantType]], label: Text,
+          (optionalTypeclass: Optional[TypeclassType[VariantType]], label: Text,
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : ResultType =
 
@@ -132,7 +116,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
           if index == 0 then inline valueOf[labelType].asMatchable match
             case label: String =>
-              val typeclass = Some(summonInline[TypeclassType[variantSubtype]])
+              val typeclass = summonInline[TypeclassType[variantSubtype]]
               
               lambda[variantType & DerivationType](sum.asInstanceOf[variantSubtype])
                   (using typeclass, label.tt, variantIndex.asInstanceOf[Int & VariantIndex[variantType & DerivationType]])

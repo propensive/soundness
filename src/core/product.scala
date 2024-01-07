@@ -54,26 +54,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     
     inline reflection match
       case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Fields, Labels, Option[TypeclassType[FieldType]]](None, 0, true):
+        foldErased[DerivationType, Fields, Labels, Optional[TypeclassType[FieldType]]](Unset, 0, true):
           accumulator => [FieldType2] => typeclass =>
             if index != fieldIndex then accumulator
-            else typeclass.asInstanceOf[Option[TypeclassType[FieldType]]]
-        .get
-
-  protected transparent inline def optionalTypeclass
-      [DerivationType <: Product, FieldType]
-      (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
-      : Optional[TypeclassType[FieldType]] =
-    
-    type Labels = reflection.MirroredElemLabels
-    type Fields = reflection.MirroredElemTypes
-    
-    inline reflection match
-      case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Fields, Labels, Optional[TypeclassType[FieldType]]](Unset, 0, false):
-          accumulator => [FieldType2] => typeclass =>
-            if index != fieldIndex then accumulator
-            else typeclass.asInstanceOf[Option[TypeclassType[FieldType]]].getOrElse(Unset)
+            else typeclass.asInstanceOf[Optional[TypeclassType[FieldType]]]
+        .vouch(using Unsafe)
 
   protected transparent inline def correspondent
       [DerivationType <: Product, FieldType]
@@ -96,8 +81,9 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (inline product: DerivationType)
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
-      (inline lambda: [FieldType] => FieldType => (label: Text, index: Int & FieldIndex[FieldType]) ?=>
-          ResultType)
+      (inline lambda: [FieldType] => FieldType =>
+          (optionalTypeclass: Optional[TypeclassType[FieldType]], label: Text,
+          index: Int & FieldIndex[FieldType]) ?=> ResultType)
       : IArray[ResultType] =
     
     summonInline[ClassTag[ResultType]].contextually:
@@ -119,7 +105,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType, LabelsType <: Tuple, AccumulatorType]
       (inline tuple: Tuple, accumulator: AccumulatorType, index: Int, required: Boolean)
       (inline lambda: AccumulatorType => [FieldType] => FieldType =>
-          (typeclass: Option[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
+          (optionalTypeclass: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
           AccumulatorType)
       : AccumulatorType =
 
@@ -131,10 +117,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         case field *: moreFields => inline erasedValue[LabelsType] match
           case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
-              val typeclass = inline if required then Some(summonInline[TypeclassType[`fieldType`]]) else
+              val typeclass = inline if required then summonInline[TypeclassType[`fieldType`]] else
                 summonFrom:
-                  case typeclass: TypeclassType[`fieldType`] => Some(typeclass)
-                  case _                                     => None
+                  case typeclass: TypeclassType[`fieldType`] => typeclass
+                  case _                                     => Unset
               val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
               val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, fieldIndex)
               
@@ -143,7 +129,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   private transparent inline def foldErased
       [DerivationType, TupleType <: Tuple, LabelsType <: Tuple, AccumulatorType]
       (inline accumulator: AccumulatorType, index: Int, required: Boolean)
-      (inline lambda: AccumulatorType => [FieldType] => Option[TypeclassType[FieldType]] =>
+      (inline lambda: AccumulatorType => [FieldType] => Optional[TypeclassType[FieldType]] =>
           (label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
       : AccumulatorType =
 
@@ -154,10 +140,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case _: (fieldType *: moreFieldsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
           case label: String =>
-            val typeclass = inline if required then Some(summonInline[TypeclassType[`fieldType`]]) else
+            val typeclass = inline if required then summonInline[TypeclassType[`fieldType`]] else
               summonFrom:
-                case typeclass: TypeclassType[`fieldType`] => Some(typeclass)
-                case _                                     => None
+                case typeclass: TypeclassType[`fieldType`] => typeclass
+                case _                                     => Unset
+            
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
             val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using label.tt, fieldIndex)
             
