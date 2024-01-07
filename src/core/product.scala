@@ -48,15 +48,17 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   protected transparent inline def typeclass
       [DerivationType <: Product, FieldType]
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
-      : Optional[TypeclassType[FieldType]] =
+      : TypeclassType[FieldType] =
     type Labels = reflection.MirroredElemLabels
     type Fields = reflection.MirroredElemTypes
     
     inline reflection match
       case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Fields, Labels, Any](Unset, 0, true):
-          accumulator => [FieldType2] => typeclass => if index == fieldIndex then typeclass else accumulator
-        .asInstanceOf[Option[TypeclassType[FieldType]]].get
+        foldErased[DerivationType, Fields, Labels, Option[TypeclassType[FieldType]]](None, 0, true):
+          accumulator => [FieldType2] => typeclass =>
+            if index != fieldIndex then accumulator
+            else typeclass.asInstanceOf[Option[TypeclassType[FieldType]]]
+        .get
 
   protected transparent inline def optionalTypeclass
       [DerivationType <: Product, FieldType]
@@ -68,10 +70,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     
     inline reflection match
       case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Fields, Labels, Optional[Any]](Unset, 0, false):
+        foldErased[DerivationType, Fields, Labels, Optional[TypeclassType[FieldType]]](Unset, 0, false):
           accumulator => [FieldType2] => typeclass =>
-            if index == fieldIndex then typeclass.getOrElse(Unset) else accumulator
-        .asInstanceOf[Optional[TypeclassType[FieldType]]]
+            if index != fieldIndex then accumulator
+            else typeclass.asInstanceOf[Option[TypeclassType[FieldType]]].getOrElse(Unset)
 
   protected transparent inline def correspondent
       [DerivationType <: Product, FieldType]

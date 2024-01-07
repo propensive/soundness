@@ -47,7 +47,6 @@ case class User(person: Person, email: Text)
 @main
 def main(): Unit =
   val george = Person("George Washington".tt, 61, true)
-  println(george.present)
   val ronald = User(Person("Ronald Reagan".tt, 51, true), t"ronald@whitehouse.gov")
   println(ronald.present)
   println((ronald, george).present)
