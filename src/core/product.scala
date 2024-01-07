@@ -30,8 +30,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (inline lambda: [FieldType] => TypeclassType[FieldType] => (label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
     
     reflection.fromProduct:
-      foldOption[DerivationType, reflection.MirroredElemLabels, Tuple]
-          (erasedValue[reflection.MirroredElemTypes], EmptyTuple, 0):
+      fold[DerivationType, reflection.MirroredElemLabels, Tuple]
+          (erasedValue[reflection.MirroredElemTypes], EmptyTuple, 0, false):
         accumulator => [FieldType] => field =>
           val typeclass = summonInline[TypeclassType[FieldType]]
           lambda[FieldType](typeclass)(using label, index) *: accumulator
@@ -51,26 +51,30 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : Optional[TypeclassType[FieldType]] =
     type Labels = reflection.MirroredElemLabels
+    
     inline product.asMatchable match
       case product: Product => inline reflection match
         case given ProductReflection[DerivationType & Product] =>
-          fold[DerivationType, Labels, Any](Tuple.fromProductTyped(product), Unset, 0):
+          fold[DerivationType, Labels, Any](Tuple.fromProductTyped(product), Unset, 0, true):
             accumulator => [FieldType2] => field =>
               if index == fieldIndex then typeclass else accumulator
-          .asInstanceOf[TypeclassType[FieldType]]
+          .asInstanceOf[Option[TypeclassType[FieldType]]].get
 
   protected transparent inline def optionalTypeclass
       [DerivationType, FieldType]
       (product: DerivationType)
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : Optional[TypeclassType[FieldType]] =
+    
     type Labels = reflection.MirroredElemLabels
+    
     inline product.asMatchable match
       case product: Product => inline reflection match
         case given ProductReflection[DerivationType & Product] =>
-          foldOption[DerivationType, Labels, Optional[Any]](Tuple.fromProductTyped(product), Unset, 0):
+          fold[DerivationType, Labels, Optional[Any]](Tuple.fromProductTyped(product), Unset, 0, false):
             accumulator => [FieldType2] => field =>
-              if index == fieldIndex then typeclass.getOrElse(Unset) else accumulator
+              if index == fieldIndex then
+                typeclass.getOrElse(Unset) else accumulator
           .asInstanceOf[Optional[TypeclassType[FieldType]]]
 
   protected transparent inline def correspondent
@@ -78,11 +82,13 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (product: DerivationType)
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
       : FieldType =
+    
     type Labels = reflection.MirroredElemLabels
+    
     inline product.asMatchable match
       case product: Product => inline reflection match
         case given ProductReflection[DerivationType & Product] =>
-          foldOption[DerivationType, Labels, Optional[Any]](Tuple.fromProductTyped(product), Unset, 0):
+          fold[DerivationType, Labels, Optional[Any]](Tuple.fromProductTyped(product), Unset, 0, false):
             accumulator => [FieldType2] => field => if index == fieldIndex then field else accumulator
           .asInstanceOf[FieldType]
 
@@ -102,7 +108,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflection.MirroredElemTypes]])
             type Labels = reflection.MirroredElemLabels
 
-            foldOption[DerivationType, Labels, Array[ResultType]](Tuple.fromProductTyped(product), array, 0):
+            fold[DerivationType, Labels, Array[ResultType]](Tuple.fromProductTyped(product), array, 0, false):
               accumulator => [FieldType] => field =>
 
                 accumulator(index) = lambda[FieldType](field)
@@ -110,34 +116,12 @@ trait ProductDerivationMethods[TypeclassType[_]]:
 
             .immutable(using Unsafe)
 
-  private transparent inline def foldOption
-      [DerivationType, LabelsType <: Tuple, AccumulatorType]
-      (inline tuple: Tuple, accumulator: AccumulatorType, index: Int)
-      (inline lambda: AccumulatorType => [FieldType] => FieldType =>
-          (typeclass: Option[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
-      : AccumulatorType =
-
-    inline tuple match
-      case EmptyTuple =>
-        accumulator
-      
-      case cons: (fieldType *: moreFieldsType) => cons match
-        case field *: fields => inline erasedValue[LabelsType] match
-          case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
-            case label: String =>
-              val typeclass = summonFrom:
-                case typeclass: TypeclassType[`fieldType`] => Some(typeclass)
-                case _                                     => None
-
-              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, index.asInstanceOf[Int & FieldIndex[fieldType]])
-              
-              foldOption[DerivationType, moreLabelsType, AccumulatorType](fields, accumulator2, index + 1)(lambda)
-
   private transparent inline def fold
       [DerivationType, LabelsType <: Tuple, AccumulatorType]
-      (inline tuple: Tuple, accumulator: AccumulatorType, index: Int)
+      (inline tuple: Tuple, accumulator: AccumulatorType, index: Int, required: Boolean)
       (inline lambda: AccumulatorType => [FieldType] => FieldType =>
-          (typeclass: TypeclassType[FieldType], label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
+          (typeclass: Option[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
+          AccumulatorType)
       : AccumulatorType =
 
     inline tuple match
@@ -145,13 +129,17 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         accumulator
       
       case cons: (fieldType *: moreFieldsType) => cons match
-        case field *: fields => inline erasedValue[LabelsType] match
+        case field *: moreFields => inline erasedValue[LabelsType] match
           case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
-              val typeclass = summonInline[TypeclassType[fieldType]]
-              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, index.asInstanceOf[Int & FieldIndex[fieldType]])
+              val typeclass = inline if required then Some(summonInline[TypeclassType[`fieldType`]]) else
+                summonFrom:
+                  case typeclass: TypeclassType[`fieldType`] => Some(typeclass)
+                  case _                                     => None
+              val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
+              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, fieldIndex)
               
-              fold[DerivationType, moreLabelsType, AccumulatorType](fields, accumulator2, index + 1)(lambda)
+              fold[DerivationType, moreLabelsType, AccumulatorType](moreFields, accumulator2, index + 1, required)(lambda)
 
   inline def join[DerivationType: ProductReflection]: TypeclassType[DerivationType]
 
