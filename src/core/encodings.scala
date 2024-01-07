@@ -95,7 +95,7 @@ extends CharDecoder(safeEncoding)(using badEncodingHandlers.skip)
 class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
   def decode(bytes: Bytes): Text =
     val buf: StringBuilder = StringBuilder()
-    decode(LazyList(bytes)).foreach { text => buf.append(text.s) }
+    decode(LazyList(bytes)).each { text => buf.append(text.s) }
     Text(buf.toString)
   
   def decode(stream: LazyList[Bytes]): LazyList[Text] =
