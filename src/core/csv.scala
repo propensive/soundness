@@ -95,8 +95,9 @@ object CsvDoc extends RowFormat:
     if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
 
 object CsvEncoder extends ProductDerivation[CsvEncoder]:
-  inline def join[DerivationType: ProductReflection]: CsvEncoder[DerivationType] = value =>
-    Csv(params(value)(typeclass.encode(param).elems).to(List).flatten*)
+  inline def join[DerivationType <: Product: ProductReflection]: CsvEncoder[DerivationType] = value =>
+    val cells = fields(value) { [FieldType] => field => typeclass.encode(field).elems }.to(List).flatten
+    Csv(cells*)
   
   given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
     Csv(encoder.encode(value))
@@ -131,14 +132,15 @@ object TsvDoc extends RowFormat:
       LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
 object CsvDecoder extends ProductDerivation[CsvDecoder]:
-  inline def join[DerivationType: ProductReflection]: CsvDecoder[DerivationType] =
+  inline def join[DerivationType <: Product: ProductReflection]: CsvDecoder[DerivationType] =
     new CsvDecoder[DerivationType]:
       def decode(elems: Csv): DerivationType =
         var count: Int = 0
         product:
-          val row = Csv(elems.elems.drop(count)*)
-          count += typeclass.width
-          typeclass.decode(row)
+          [FieldType] => typeclass =>
+            val row = Csv(elems.elems.drop(count)*)
+            count += typeclass.width
+            typeclass.decode(row)
         
       override def width: Int =
         var count: Int = 0
@@ -146,8 +148,9 @@ object CsvDecoder extends ProductDerivation[CsvDecoder]:
         // FIXME: constructing the new product is unnecessary, but Wisteria does not currently provide a way
         // to iterate over the parameters
         product:
-          count += typeclass.width
-          null.asInstanceOf[Any]
+          [FieldType] => typeclass =>
+            count += typeclass.width
+            null.asInstanceOf[FieldType]
         
         count
   
