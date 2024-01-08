@@ -129,12 +129,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         case field *: moreFields => inline erasedValue[LabelsType] match
           case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
-              val typeclass = requirement.summon[TypeclassType[fieldType]]`
+              val typeclass = requirement.summon[TypeclassType[fieldType]]
               val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
               val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, fieldIndex)
               
-              fold[DerivationType, moreLabelsType, AccumulatorType](moreFields, accumulator2,
-                  index + 1)(lambda)
+              fold[DerivationType, moreLabelsType, AccumulatorType](moreFields, accumulator2, index + 1)(lambda)
 
   private transparent inline def foldErased
       [DerivationType, TupleType <: Tuple, LabelsType <: Tuple, AccumulatorType]
