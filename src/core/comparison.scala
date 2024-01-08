@@ -22,6 +22,7 @@ import dissonance.*
 import wisteria.*
 import escapade.*
 import iridescence.*
+import vacuous.*
 import dendrology.*
 import escritoire.*
 import spectacular.*
@@ -150,17 +151,18 @@ object Contrast extends Derivation[Contrast]:
       def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
         compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
   
-  inline def join[DerivationType: ProductReflection]: Contrast[DerivationType] = (left, right) =>
-    val elements = params(left):
-      val leftParam = param
-      label -> oneParam(right)(ordinal):
-        if leftParam == param then Semblance.Identical(leftParam.debug) else typeclass(leftParam, param)
+  inline def join[DerivationType <: Product: ProductReflection]: Contrast[DerivationType] = (left, right) =>
+    val elements = fields(left, true): [FieldType] =>
+      leftParam =>
+        if leftParam == complement(right) then (label, Semblance.Identical(leftParam.debug))
+        else (label, context(leftParam, complement(right)))
     
     Semblance.Breakdown(elements, left.debug, right.debug)
   
   inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
-    variants(left):
-      val leftOrdinal = ordinal
-      variants(right):
-        if leftOrdinal == ordinal then typeclass(left, right) else Semblance.Different(left.debug, right.debug)
+    variant(left): [VariantType <: DerivationType] =>
+      left =>
+        complement(right)[VariantType]: right =>
+          left.contrastWith(right)
+        .or(Semblance.Different(left.debug, right.debug))
     
