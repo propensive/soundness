@@ -31,8 +31,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType): DerivationType =
     
     reflection.fromProduct:
-      foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple]
-          (EmptyTuple, 0):
+      fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple](EmptyTuple, 0):
         accumulator => [FieldType] => context =>
           val context2 = context.asInstanceOf[TypeclassType[FieldType]]
           lambda[FieldType](context2)(using context2, label, index) *: accumulator
@@ -48,7 +47,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     
     summonInline[ClassTag[ResultType]].contextually:
       IArray.create[ResultType](valueOf[Tuple.Size[reflection.MirroredElemTypes]]): array =>
-        foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Unit]((), 0):
+        fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Unit]((), 0):
           accumulator => [FieldType] => context =>
             array(index) = lambda[FieldType](context)(using context, label, index)
   
@@ -66,7 +65,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case _                                                 => false
 
   protected transparent inline def complement
-      [DerivationType <: Product, FieldType, RequirementType <: Boolean]
+      [DerivationType <: Product, FieldType]
       (product: DerivationType)
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType],
           requirement: ContextRequirement)
@@ -104,8 +103,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             array(index) = lambda[FieldType](field)(using typeclass, label, index)
             array
 
-  // The implementations of `fold` and `foldErased` are very similar. We would prefer to have a single
-  // implementation (closer to `fold`), but it's difficult to abstract over the erasedness of the tuple.
+  // The two implementations of `fold` are very similar. We would prefer to have a single implementation (closer
+  // to the non-erased `fold`), but it's difficult to abstract over the erasedness of the tuple.
 
   private transparent inline def fold
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
@@ -130,7 +129,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
               
               fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](moreFields, accumulator2, index + 1)(lambda)
 
-  private transparent inline def foldErased
+  private transparent inline def fold
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (using requirement: ContextRequirement)
       (inline accumulator: ResultType, index: Int)
@@ -149,7 +148,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
             val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using label.tt, fieldIndex)
             
-            foldErased[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)
+            fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)
                 (lambda)
   
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]

@@ -20,46 +20,44 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
-import perforate.*
 
 import scala.deriving.*
 import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
+  protected transparent inline def complement
+      [DerivationType, VariantType]
+      (sum: DerivationType)
+      (using variantIndex: Int & VariantIndex[VariantType], reflection: SumReflection[DerivationType])
+      : Optional[VariantType] =
+    
+    type Labels = reflection.MirroredElemLabels
+    type Variants = reflection.MirroredElemTypes
+    val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+    
+    fold[DerivationType, Variants, Labels](sum, size, 0)(index == variantIndex):
+      [VariantType2] => field => field.asInstanceOf[VariantType]
+
   protected transparent inline def delegate
       [DerivationType]
-      (variant: Text)
-      (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] =>
-          (context: TypeclassType[VariantType], label: Text, index: Int & VariantIndex[VariantType]) ?=>
-          Optional[VariantType])
-      (using reflection: SumReflection[DerivationType])
-      : Optional[DerivationType] =
-
-    foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels]():
-      [VariantType <: DerivationType] => typeclassOption =>
-        val typeclass = summonInline[TypeclassType[VariantType]]
-        if variant == label then lambda[VariantType](typeclass)(using typeclass, label, index) else Unset
-
-  protected transparent inline def complement
-      [DerivationType]
-      (sum: DerivationType)
-      (using reflection: SumReflection[DerivationType])
-      [VariantType <: DerivationType]
-      (using variantIndex: Int & VariantIndex[VariantType])
+      (label: Text)
+      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
       [ResultType]
-      (inline lambda: VariantType => (context: Optional[TypeclassType[VariantType]], label: Text,
+      (inline lambda: [VariantType <: DerivationType] => requirement.Optionality[TypeclassType[VariantType]] =>
+          (context: requirement.Optionality[TypeclassType[VariantType]], label: Text,
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
-      : Optional[ResultType] =
+      : ResultType =
 
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
-
-    fold[DerivationType, Variants, Labels](sum, 0, reflection.ordinal(sum)):
-      [VariantType2 <: DerivationType] => variant =>
-        val variant2 = variant.asInstanceOf[VariantType]
-        val context2 = context.asInstanceOf[Optional[TypeclassType[VariantType]]]
-        val index2: Int & VariantIndex[VariantType] = index.asInstanceOf[Int & VariantIndex[VariantType]]
-        lambda(variant2)(using context2, label, index2)
+    
+    val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+    val variantLabel = label
+    
+    fold[DerivationType, Variants, Labels](size, 0)(label ==
+        variantLabel):
+      [VariantType <: DerivationType] => context => lambda[VariantType](context)
+    .vouch(using Unsafe)
 
   protected transparent inline def variant
       [DerivationType]
@@ -71,62 +69,78 @@ trait SumDerivationMethods[TypeclassType[_]]:
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : ResultType =
 
-    fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels](sum, reflection.ordinal(
-        sum), 0):
+    val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+    
+    fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels](sum, size, 0)(index ==
+        reflection.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
+    .vouch(using Unsafe)
 
-  private transparent inline def foldErased
-      [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (index: Int = 0)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] => Optional[TypeclassType[VariantType]] =>
-          (label: Text, index: Int & VariantIndex[VariantType]) ?=> Optional[ResultType])
-      : Optional[ResultType] =
-
-    inline erasedValue[VariantsType] match
-      case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
-        case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
-          case label: String =>
-            type VariantType = variantType & DerivationType
-            val typeclass = summonInline[TypeclassType[VariantType]]
-            val variantIndex = index.asInstanceOf[Int & VariantIndex[VariantType]]
-
-            lambda[variantType & DerivationType](typeclass)(using label.tt, variantIndex) match
-              case Unset  => foldErased[DerivationType, variantsType, moreLabelsType](index + 1)(lambda)
-              case result => result
-
-        case EmptyTuple =>
-          throw Mistake(msg"unreachable")
-
-      case EmptyTuple =>
-        throw Mistake(msg"unreachable")
-  
   private transparent inline def fold
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (sum: DerivationType, index: Int, variantIndex: Int)
-      [ResultType]
+      (inline size: Int, index: Int)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      (inline lambda: [VariantType <: DerivationType] => VariantType =>
+      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+      [ResultType]
+      (inline lambda: [VariantType <: DerivationType] => requirement.Optionality[TypeclassType[VariantType]] =>
           (context: requirement.Optionality[TypeclassType[VariantType]], label: Text,
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
-      : ResultType =
+      : Optional[ResultType] =
 
     inline erasedValue[VariantsType] match
       case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) =>
           type VariantType = variantType & DerivationType
-
-          if index == 0 then inline valueOf[labelType].asMatchable match
-            case label: String =>
-              val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
-              
-              lambda[variantType & DerivationType](sum.asInstanceOf[VariantType])
-                  (using context, label.tt, variantIndex.asInstanceOf[Int & VariantIndex[VariantType]])
-
-          else fold[DerivationType, variantsType, moreLabelsType](sum, index, variantIndex + 1)(lambda)
+          if index >= size then Unset else
+            (valueOf[labelType].asMatchable: @unchecked) match
+              case label: String =>
+                val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
+                
+                if predicate(using label.tt, index2)
+                then
+                  val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
+                  val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
+                  lambda[VariantType](context)(using context, label.tt, index3)
+                else fold[DerivationType, variantsType, moreLabelsType](size, index + 1)(predicate)(lambda)
+        
         case EmptyTuple => throw Mistake(msg"unreachable")
       case EmptyTuple => throw Mistake(msg"unreachable")
+    
+  private transparent inline def fold
+      [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+      (inline sum: DerivationType, size: Int, index: Int)
+      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+      [ResultType]
+      (inline lambda: [VariantType <: DerivationType] => VariantType =>
+          (context: requirement.Optionality[TypeclassType[VariantType]], label: Text,
+          index: Int & VariantIndex[VariantType]) ?=> ResultType)
+      : Optional[ResultType] =
 
+    inline erasedValue[VariantsType] match
+      case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
+        case _: (labelType *: moreLabelsType) =>
+          type VariantType = variantType & DerivationType
+          if index >= size then Unset else
+            (valueOf[labelType].asMatchable: @unchecked) match
+              case label: String =>
+                val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
+                
+                if predicate(using label.tt, index2)
+                then
+                  val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
+                  val variant: VariantType = sum.asInstanceOf[VariantType]
+                  val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
+                  lambda[VariantType](variant)(using context, label.tt, index3)
+                else fold[DerivationType, variantsType, moreLabelsType](sum, size, index + 1)(predicate)(lambda)
+        
+        case EmptyTuple => throw Mistake(msg"unreachable")
+      case EmptyTuple => throw Mistake(msg"unreachable")
+  
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]
+
+object VariantIndex:
+  inline def apply[VariantType](int: Int): Int & VariantIndex[VariantType] =
+    int.asInstanceOf[Int & VariantIndex[VariantType]]
 
 erased trait VariantIndex[VariantType]
