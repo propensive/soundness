@@ -28,16 +28,35 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType])
       (inline lambda: [FieldType] => TypeclassType[FieldType] => (typeclass: TypeclassType[FieldType],
-          label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
+          label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType): DerivationType =
     
     reflection.fromProduct:
       foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple, true]
           (EmptyTuple, 0):
-        accumulator => [FieldType] => field =>
-          val typeclass = summonInline[TypeclassType[FieldType]]
-          lambda[FieldType](typeclass)(using typeclass, label, index) *: accumulator
+        accumulator => [FieldType] => context =>
+          val context2 = context.asInstanceOf[TypeclassType[FieldType]]
+          lambda[FieldType](context2)(using context2, label, index) *: accumulator
       .reverse
 
+  protected transparent inline def fieldContexts
+      [DerivationType <: Product]
+      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
+      [ResultType]
+      (inline lambda: [FieldType] => requirement.Optionality[TypeclassType[FieldType]] =>
+          (typeclass: requirement.Optionality[TypeclassType[FieldType]], label: Text,
+          index: Int & FieldIndex[FieldType]) ?=> ResultType): IArray[ResultType] =
+    
+    summonInline[ClassTag[ResultType]].contextually:
+      val array: Array[ResultType] = new Array(valueOf[Tuple.Size[reflection.MirroredElemTypes]])
+      
+      foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Unit,
+          requirement.RequiredType]((), 0):
+        accumulator => [FieldType] => context =>
+          val context2: requirement.Optionality[TypeclassType[FieldType]] = requirement.wrap(context)
+          array(index) = lambda[FieldType](context2)(using context2, label, index)
+      
+      array.immutable(using Unsafe)
+  
   inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
     valueOf[reflection.MirroredLabel].tt
   
