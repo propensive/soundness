@@ -162,7 +162,7 @@ object Contrast extends Derivation[Contrast]:
   inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
     variant(left): [VariantType <: DerivationType] =>
       left =>
-        complement(right)[VariantType]: right =>
+        complement(right).let: right =>
           left.contrastWith(right)
         .or(Semblance.Different(left.debug, right.debug))
     
