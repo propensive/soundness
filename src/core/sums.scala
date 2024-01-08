@@ -32,7 +32,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       (inline lambda: [VariantType <: DerivationType] => TypeclassType[VariantType] =>
           (context: TypeclassType[VariantType], label: Text, index: Int & VariantIndex[VariantType]) ?=>
           Optional[VariantType])
-      (using reflection: SumReflection[DerivationType], variantError: Raises[VariantError])
+      (using reflection: SumReflection[DerivationType])
       : Optional[DerivationType] =
 
     foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels]():
