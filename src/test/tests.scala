@@ -97,11 +97,11 @@ object Tests extends Suite(t"Caesura tests"):
     .assert(_ == t""""hello""world"""")
 
     test(t"simple parse tsv"):
-      Tsv.parseLine(t"hello\tworld")
+      TsvDoc.parseLine(t"hello\tworld")
     .assert(_ == Csv(t"hello", t"world"))
 
     test(t"decode case class from tsv"):
-      Tsv.parseLine(t"hello\tworld").as[Foo]
+      TsvDoc.parseLine(t"hello\tworld").as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
     test(t"convert case class to tsv"):

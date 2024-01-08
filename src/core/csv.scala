@@ -96,7 +96,7 @@ object CsvDoc extends RowFormat:
 
 object CsvEncoder extends ProductDerivation[CsvEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CsvEncoder[DerivationType] = value =>
-    val cells = fields(value) { [FieldType] => field => typeclass.encode(field).elems }.to(List).flatten
+    val cells = fields(value) { [FieldType] => field => context.encode(field).elems }.to(List).flatten
     Csv(cells*)
   
   given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
@@ -136,23 +136,15 @@ object CsvDecoder extends ProductDerivation[CsvDecoder]:
     new CsvDecoder[DerivationType]:
       def decode(elems: Csv): DerivationType =
         var count: Int = 0
-        product:
-          [FieldType] => typeclass =>
+        construct:
+          [FieldType] => context =>
             val row = Csv(elems.elems.drop(count)*)
-            count += typeclass.width
+            count += context.width
             typeclass.decode(row)
         
-      override def width: Int =
-        var count: Int = 0
+      override def width: Int = contexts { [FieldType] => context => context.width }.sum
+
         
-        // FIXME: constructing the new product is unnecessary, but Wisteria does not currently provide a way
-        // to iterate over the parameters
-        product:
-          [FieldType] => typeclass =>
-            count += typeclass.width
-            null.asInstanceOf[FieldType]
-        
-        count
   
   given decoder[ValueType: Decoder]: CsvDecoder[ValueType] = _.elems.head.decodeAs[ValueType]
 
