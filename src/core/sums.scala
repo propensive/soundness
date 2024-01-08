@@ -40,7 +40,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
         val typeclass = summonInline[TypeclassType[VariantType]]
         if variant == label then lambda[VariantType](typeclass)(using typeclass, label, index) else Unset
 
-  protected transparent inline def cognate
+  protected transparent inline def complement
       [DerivationType]
       (sum: DerivationType)
       (using reflection: SumReflection[DerivationType])
