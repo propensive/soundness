@@ -38,7 +38,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           lambda[FieldType](context2)(using context2, label, index) *: accumulator
       .reverse
 
-  protected transparent inline def fieldContexts
+  protected transparent inline def contexts
       [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
       [ResultType]
@@ -113,7 +113,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                 accumulator
             .immutable(using Unsafe)
 
-  protected transparent inline def fold
+  private transparent inline def fold
       [DerivationType, LabelsType <: Tuple, AccumulatorType, RequiredType <: Boolean]
       (using requirement: ContextRequirement)
       (inline tuple: Tuple, accumulator: AccumulatorType, index: Int)
