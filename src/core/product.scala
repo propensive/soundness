@@ -31,8 +31,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
     
     reflection.fromProduct:
-      foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple]
-          (EmptyTuple, 0, false):
+      foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple, true]
+          (EmptyTuple, 0):
         accumulator => [FieldType] => field =>
           val typeclass = summonInline[TypeclassType[FieldType]]
           lambda[FieldType](typeclass)(using typeclass, label, index) *: accumulator
@@ -51,7 +51,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case given (reflection.MirroredMonoType <:< Singleton) => true
       case _                                                 => false
 
-  protected transparent inline def cognate
+  protected transparent inline def complement
       [DerivationType <: Product, FieldType, RequirementType <: Boolean]
       (product: DerivationType)
       (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType],
@@ -111,10 +111,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         case field *: moreFields => inline erasedValue[LabelsType] match
           case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
-              val typeclass = inline if erasedValue[RequiredType] then summonInline[TypeclassType[`fieldType`]] else
-                summonFrom:
-                  case typeclass: TypeclassType[`fieldType`] => typeclass
-                  case _                                     => Unset
+              val typeclass =
+                inline if erasedValue[RequiredType] then summonInline[TypeclassType[`fieldType`]] else
+                  summonFrom:
+                    case typeclass: TypeclassType[`fieldType`] => typeclass
+                    case _                                     => Unset
               
               val typeclass2 = requirement.wrap(typeclass)
               val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
@@ -124,9 +125,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                   index + 1)(lambda)
 
   private transparent inline def foldErased
-      [DerivationType, TupleType <: Tuple, LabelsType <: Tuple, AccumulatorType]
-      (inline accumulator: AccumulatorType, index: Int, required: Boolean)
-      (inline lambda: AccumulatorType => [FieldType] => Required[TypeclassType[FieldType], required.type] =>
+      [DerivationType, TupleType <: Tuple, LabelsType <: Tuple, AccumulatorType, RequiredType <: Boolean]
+      (using requirement: ContextRequirement)
+      (inline accumulator: AccumulatorType, index: Int)
+      (inline lambda: AccumulatorType => [FieldType] => requirement.Optionality[TypeclassType[FieldType]] =>
           (label: Text, index: Int & FieldIndex[FieldType]) ?=> AccumulatorType)
       : AccumulatorType =
 
@@ -137,26 +139,22 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case _: (fieldType *: moreFieldsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
           case label: String =>
-            val typeclass: Optional[TypeclassType[fieldType]] =
-              inline if required then summonInline[TypeclassType[`fieldType`]] else
+            val typeclass =
+              inline if erasedValue[RequiredType] then summonInline[TypeclassType[`fieldType`]] else
                 summonFrom:
                   case typeclass: TypeclassType[`fieldType`] => typeclass
                   case _                                     => Unset
             
-            val requiredTypeclass = typeclass.asInstanceOf[Required[TypeclassType[fieldType], required.type]]
+            val typeclass2 = requirement.wrap(typeclass)
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
-            val accumulator2 = lambda(accumulator)[fieldType](requiredTypeclass)(using label.tt, fieldIndex)
+            val accumulator2 = lambda(accumulator)[fieldType](typeclass2)(using label.tt, fieldIndex)
             
-            foldErased[DerivationType, moreFieldsType, moreLabelsType, AccumulatorType](accumulator2, index +
-                1, required)(lambda)
+            foldErased[DerivationType, moreFieldsType, moreLabelsType, AccumulatorType, RequiredType](
+                accumulator2, index + 1)(lambda)
   
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
 
 erased trait FieldIndex[FieldType]
-
-type Required[ValueType, RequiredType <: Boolean & Singleton] <: Optional[ValueType] = RequiredType match
-  case true  => ValueType
-  case false => Optional[ValueType]
 
 package derivationContext:
   given required: ContextRequirement.required.type = ContextRequirement.required
