@@ -46,8 +46,10 @@ object Show:
 object Debug extends Derivation[Debug]:
 
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
-    val prefix = if tuple then "".tt else typeName
+    import derivationContext.relaxed
     
+    val prefix = if tuple then "".tt else typeName
+
     fields(value):
       [FieldType] => field =>
         val text = context.let(_(field)).or:
