@@ -22,7 +22,7 @@ import gossamer.*
 import vacuous.*
 
 object Presentation extends ProductDerivation[Presentation]:
-  //given Presentation[Text] = identity(_)
+  given Presentation[Text] = identity(_)
   given Presentation[Double] = _.toString.tt
   given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
   given Presentation[Int] = _.toString.tt
@@ -30,9 +30,7 @@ object Presentation extends ProductDerivation[Presentation]:
   inline def join[DerivationType <: Product: ProductReflection]: Presentation[DerivationType] = value =>
     val prefix = if tuple then t"" else typeName
     fields(value):
-      [FieldType] => field =>
-        context.layGiven(t"$index:$label=missing!"):
-          t"$index:$label=${summon[Presentation[FieldType]].present(field)}"
+      [FieldType] => field => t"$index:$label=${summon[Presentation[FieldType]].present(field)}"
     .join(t"$prefix(", t", ", t")")
 
 trait Presentation[ValueType]:
