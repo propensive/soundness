@@ -32,9 +32,9 @@ import scala.quoted.*
 
 object Realm:
   given Show[Realm] = _.name
-  def make(name: Text)(using Unsafe): Realm = Realm(name)
+  def make(name: Text)(using Unsafe): Realm = new Realm(name)
 
-case class Realm private(name: Text):
+case class Realm(name: Text):
   def unapply(entry: Entry[?]): Boolean = entry.realm == this
 
 object Level:
@@ -67,7 +67,7 @@ object Logger:
       (target: TargetType, appendable: Appendable[TargetType, TextType], format: LogFormat[TargetType, TextType])
       (using monitor: Monitor)
       : Logger[TextType]/*^{monitor}*/ =
-    LiveLogger(target)(using format)(using appendable)
+    LogProcess(target)(using format)(using appendable)
 
 object LogWriter:
   given active
@@ -75,7 +75,7 @@ object LogWriter:
       (using format: LogFormat[TargetType, TextType])
       (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
       : LogWriter[TargetType, TextType]/*^{monitor}*/ =
-    LiveLogger[TargetType, TextType](_)(using format)(using appendable, monitor)
+    LogProcess[TargetType, TextType](_)(using format)(using appendable, monitor)
 
 trait LogWriter[TargetType, TextType]:
   def logger(target: TargetType): Logger[TextType]
@@ -83,7 +83,7 @@ trait LogWriter[TargetType, TextType]:
 trait Logger[TextType]:
   def put(entry: Entry[TextType]): Unit
 
-class LiveLogger
+class LogProcess
     [TargetType, TextType]
     (target: TargetType)
     (using format: LogFormat[TargetType, TextType])
