@@ -4,12 +4,13 @@
 
 # Vacuous
 
-____
+__A simple representation of optional values__
 
-
+TBC
 
 ## Features
 
+TBC
 
 
 ## Availability Plan
@@ -26,12 +27,12 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
-
+TBC
 
 
 ## Status
 
-Vacuous is classified as ____. For reference, Scala One projects are
+Vacuous is classified as __maturescent__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -112,7 +113,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+Something which is _vacuous_ is empty; devoid of content. _Vacuous_ provides representation for values which may be thus.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -127,7 +128,7 @@ language.
 
 ## Logo
 
-
+The logo shows a stylized pressure gauge, reading zero.
 
 ## License
 
