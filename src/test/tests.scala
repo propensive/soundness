@@ -31,7 +31,7 @@ object Presentation extends ProductDerivation[Presentation]:
     val prefix = if tuple then t"" else typeName
     fields(value):
       [FieldType] => field =>
-        optionalTypeclass.layGiven(t"$index:$label=missing!"):
+        context.layGiven(t"$index:$label=missing!"):
           t"$index:$label=${summon[Presentation[FieldType]].present(field)}"
     .join(t"$prefix(", t", ", t")")
 

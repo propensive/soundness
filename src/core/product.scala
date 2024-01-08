@@ -27,14 +27,15 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   protected transparent inline def product
       [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType])
-      (inline lambda: [FieldType] => TypeclassType[FieldType] => (label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
+      (inline lambda: [FieldType] => TypeclassType[FieldType] => (typeclass: TypeclassType[FieldType],
+          label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType) =
     
     reflection.fromProduct:
       foldErased[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple]
           (EmptyTuple, 0, false):
         accumulator => [FieldType] => field =>
           val typeclass = summonInline[TypeclassType[FieldType]]
-          lambda[FieldType](typeclass)(using label, index) *: accumulator
+          lambda[FieldType](typeclass)(using typeclass, label, index) *: accumulator
       .reverse
 
   inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
@@ -45,20 +46,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case given (reflection.MirroredMonoType <:< Tuple) => true
       case _                                             => false
 
-  protected transparent inline def typeclass
-      [DerivationType <: Product, FieldType]
-      (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType])
-      : TypeclassType[FieldType] =
-    type Labels = reflection.MirroredElemLabels
-    type Fields = reflection.MirroredElemTypes
-    
-    inline reflection match
-      case given ProductReflection[DerivationType & Product] =>
-        foldErased[DerivationType, Fields, Labels, Optional[TypeclassType[FieldType]]](Unset, 0, true):
-          accumulator => [FieldType2] => typeclass =>
-            if index != fieldIndex then accumulator
-            else typeclass.asInstanceOf[Optional[TypeclassType[FieldType]]]
-        .vouch(using Unsafe)
+  inline def singleton[DerivationType](using reflection: Reflection[DerivationType]): Boolean =
+    compiletime.summonFrom:
+      case given (reflection.MirroredMonoType <:< Singleton) => true
+      case _                                                 => false
 
   protected transparent inline def correspondent
       [DerivationType <: Product, FieldType]
@@ -81,8 +72,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (inline product: DerivationType)
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
-      (inline lambda: [FieldType] => FieldType =>
-          (context: Optional[TypeclassType[FieldType]], label: Text,
+      (inline lambda: [FieldType] => FieldType => (context: Optional[TypeclassType[FieldType]], label: Text,
           index: Int & FieldIndex[FieldType]) ?=> ResultType)
       : IArray[ResultType] =
     
