@@ -21,17 +21,33 @@ import rudiments.*
 import gossamer.*
 import vacuous.*
 
-object Presentation extends ProductDerivation[Presentation]:
+//object Month:
+  //given Presentation[Month] = _.toString.tt
+
+enum Month:
+  case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
+
+sealed trait Temporal
+
+case class Date(day: Int, month: Month, year: Int) extends Temporal
+case class Time(hour: Int, minute: Int, second: Int) extends Temporal
+
+object Presentation extends Derivation[Presentation]:
   given Presentation[Text] = identity(_)
   given Presentation[Double] = _.toString.tt
   given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
   given Presentation[Int] = _.toString.tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Presentation[DerivationType] = value =>
-    val prefix = if tuple then t"" else typeName
-    fields(value):
-      [FieldType] => field => t"$index:$label=${summon[Presentation[FieldType]].present(field)}"
-    .join(t"$prefix(", t", ", t")")
+    inline if singleton then typeName else
+      val prefix = inline if tuple then t"" else typeName
+      fields(value):
+        [FieldType] => field => t"$index:$label=${field.present}"
+      .join(t"$prefix(", t", ", t")")
+
+  inline def split[DerivationType: SumReflection]: Presentation[DerivationType] = value =>
+    variant(value): [VariantType <: DerivationType] =>
+      variant => typeName+t"."+variant.present
 
 trait Presentation[ValueType]:
   def present(value: ValueType): Text
@@ -48,3 +64,6 @@ def main(): Unit =
   val ronald = User(Person("Ronald Reagan".tt, 51, true), t"ronald@whitehouse.gov")
   println(ronald.present)
   println((ronald, george).present)
+  println(Date(15, Month.Feb, 1985).present)
+  val time: Temporal = Date(15, Month.Jan, 1983)
+  println(time.present)

@@ -50,8 +50,9 @@ extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassT
         join[derivationType](using reflection).asMatchable match
           case typeclass: TypeclassType[DerivationType] => typeclass
 
-      case given SumReflection[DerivationType] =>
-        split
+      case reflection: SumReflection[derivationType] =>
+        split[derivationType](using reflection).asMatchable match
+          case typeclass: TypeclassType[DerivationType] => typeclass
 
 type Reflection[DerivationType] = Mirror.Of[DerivationType]
 type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
