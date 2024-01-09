@@ -40,6 +40,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [VariantType2 <: DerivationType] => field =>
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
+  protected inline def variants[DerivationType](using reflection: SumReflection[DerivationType]): List[Text] =
+    constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+
   protected transparent inline def delegate
       [DerivationType]
       (label: Text)
