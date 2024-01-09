@@ -23,8 +23,6 @@ import anticipation.*
 import spectacular.*
 import perforate.*, errorHandlers.throwUnsafely
 
-import hieroglyph.*
-
 given decimalizer: Decimalizer = Decimalizer(1)
 
 object Tests extends Suite(t"Caesura tests"):
