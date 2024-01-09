@@ -16,6 +16,8 @@
 
 package capricious
 
+import wisteria.*
+
 import scala.util as su
 
 import java.util as ju
@@ -37,12 +39,20 @@ package randomNumberGenerators:
   given secureSeeded(using seed: Seed): RandomNumberGenerator = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
-object Randomizable:
+object Randomizable extends Derivation[Randomizable]:
   given int: Randomizable[Int] = _.toInt
   given long: Randomizable[Long] = identity(_)
   given char: Randomizable[Char] = _.toChar
   given boolean: Randomizable[Boolean] = _ < 0L
   given double(using distribution: Distribution): Randomizable[Double] = distribution.transform(_)
+
+  inline def join[DerivationType <: Product: ProductReflection]: Randomizable[DerivationType] = gen =>
+    construct:
+      [FieldType] => randomizable => randomizable.from(gen)
+
+  inline def split[DerivationType: SumReflection]: Randomizable[DerivationType] = gen =>
+    delegate(variantLabels(math.abs(gen.toInt)%variantLabels.length)):
+      [VariantType <: DerivationType] => randomizable => randomizable.from(gen)
 
 // Note that `gen` is side-effecting, and is therefore not deterministic in concurrent environments
 trait Randomizable[+ValueType]:

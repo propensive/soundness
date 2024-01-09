@@ -4,10 +4,12 @@ target capricious/test
 
 repo propensive/probably
 repo propensive/vacuous
+repo propensive/wisteria
 
 project capricious
   module core
     compiler  scala
+    include   wisteria/core
     sources   src/core
 
   module test
