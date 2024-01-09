@@ -33,6 +33,10 @@ sealed trait Temporal
 case class Date(day: Int, month: Month, year: Int) extends Temporal
 case class Time(hour: Int, minute: Int, second: Int) extends Temporal
 
+enum Tree derives Presentation:
+  case Leaf
+  case Branch(value: Int, left: Tree, right: Tree)
+
 object Presentation extends Derivation[Presentation]:
   given Presentation[Text] = identity(_)
   given Presentation[Double] = _.toString.tt
@@ -123,6 +127,10 @@ def main(): Unit =
   println(time.present)
   println(t"Jimmy Carter,99,yes".read[Person].present)
 
+
+  import Tree.*
+  println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
+  
   given Raises[VariantError] = errorHandlers.throwUnsafely
 
   println(t"President:Richard Nixon,37".read[Human].present)
