@@ -19,6 +19,7 @@ package wisteria
 import anticipation.*
 import rudiments.*
 import gossamer.*
+import perforate.*
 import vacuous.*
 
 //object Month:
@@ -54,9 +55,62 @@ trait Presentation[ValueType]:
 
 extension [ValueType](value: ValueType)
   def present(using presentation: Presentation[ValueType]): Text = presentation.present(value)
-  
-case class Person(name: Text, age: Int, male: Boolean)
+
+sealed trait Human
+case class President(name: Text, number: Int) extends Human
+case class Person(name: Text, age: Int, male: Boolean) extends Human
 case class User(person: Person, email: Text)
+
+object Readable extends Derivation[Readable]:
+  given text: Readable[Text] = identity(_)
+  given int: Readable[Int] = _.s.toInt
+  given boolean: Readable[Boolean] = _ == t"yes"
+
+  inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
+    text.cut(t",").pipe: array =>
+      construct: [FieldType] =>
+        readable =>
+          readable.read(array(index))
+  
+  inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
+    text.cut(t":") match
+      case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
+        context => context.read(text2)
+
+trait Readable[ValueType]:
+  def read(text: Text): ValueType
+
+extension (text: Text) def read[ValueType](using readable: Readable[ValueType]): ValueType = readable.read(text)
+
+trait Eq[ValueType]:
+  def equal(left: ValueType, right: ValueType): Boolean
+
+extension [ValueType](left: ValueType)
+  @targetName("eq")
+  infix def ===(right: ValueType)(using eq: Eq[ValueType]): Boolean = eq.equal(left, right)
+
+object Eq extends Derivation[Eq]:
+  given iarray[ElementType](using eq: Eq[ElementType]): Eq[IArray[ElementType]] = (left, right) =>
+    left.length == right.length && left.indices.all: index =>
+      eq.equal(left(index), right(index))
+  
+  given int: Eq[Int] = _ == _
+  given text: Eq[Text] = _.lower == _.lower
+  given boolean: Eq[Boolean] = _ & _
+  given double: Eq[Double] = (left, right) => math.abs(left - right) < 0.1
+
+  inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
+    (left, right) =>
+      fields(left):
+        [FieldType] => leftValue => leftValue === complement(right)
+      .all { boolean => boolean }
+  
+  inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
+    (left, right) =>
+      variant(left):
+        [VariantType <: DerivationType] => leftValue =>
+          complement(right).lay(false): rightValue =>
+            leftValue === rightValue
 
 @main
 def main(): Unit =
@@ -67,3 +121,24 @@ def main(): Unit =
   println(Date(15, Month.Feb, 1985).present)
   val time: Temporal = Date(15, Month.Jan, 1983)
   println(time.present)
+  println(t"Jimmy Carter,99,yes".read[Person].present)
+
+  given Raises[VariantError] = errorHandlers.throwUnsafely
+
+  println(t"President:Richard Nixon,37".read[Human].present)
+
+  println(t"hello" === t"hElLo")
+  println(President(t"jimmy carter", 99) === President(t"JIMMY CARTER", 99))
+  println(President(t"jimmy carter2", 99) === President(t"JIMMY CARTER", 99))
+  println(President(t"jimmy carter", 99) === President(t"JIMMY CARTER", 100))
+  val array1 = IArray(t"jimmy", t"gerry", t"ronald")
+  val array2 = IArray(t"Jimmy", t"Gerry", t"Ronald")
+  println(array1 === array2)
+
+  val human1 = t"President:Richard Nixon,37".read[Human]
+  val human2 = t"President:George Washington,1".read[Human]
+  val human3 = t"Person:george washington,1,yes".read[Human]
+  println(human1 === human2)
+  println(human2 === human3)
+  val human4 = t"Broken:george washington,1,yes".read[Human]
+  

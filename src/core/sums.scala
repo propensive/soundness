@@ -19,6 +19,7 @@ package wisteria
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import perforate.*
 import fulminate.*
 
 import scala.deriving.*
@@ -35,8 +36,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
     type Variants = reflection.MirroredElemTypes
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     
-    fold[DerivationType, Variants, Labels](sum, size, 0)(index == variantIndex):
-      [VariantType2] => field => field.asInstanceOf[VariantType]
+    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
+      [VariantType2 <: DerivationType] => field =>
+        if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
   protected transparent inline def delegate
       [DerivationType]
@@ -54,8 +56,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     val variantLabel = label
     
-    fold[DerivationType, Variants, Labels](size, 0)(label ==
-        variantLabel):
+    fold[DerivationType, Variants, Labels](size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
     .vouch(using Unsafe)
 
@@ -69,16 +70,18 @@ trait SumDerivationMethods[TypeclassType[_]]:
           index: Int & VariantIndex[VariantType]) ?=> ResultType)
       : ResultType =
 
+    type Labels = reflection.MirroredElemLabels
+    type Variants = reflection.MirroredElemTypes
+
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     
-    fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels](sum, size, 0)(index ==
-        reflection.ordinal(sum)):
+    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
     .vouch(using Unsafe)
-
+  
   private transparent inline def fold
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline size: Int, index: Int)
+      (inline size: Int, index: Int, fallible: Boolean)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
       (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
       [ResultType]
@@ -101,14 +104,17 @@ trait SumDerivationMethods[TypeclassType[_]]:
                   val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
                   val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
                   lambda[VariantType](context)(using context, label.tt, index3)
-                else fold[DerivationType, variantsType, moreLabelsType](size, index + 1)(predicate)(lambda)
+                else fold[DerivationType, variantsType, moreLabelsType](size, index + 1, fallible)(predicate)
+                    (lambda)
         
-        case EmptyTuple => throw Mistake(msg"unreachable")
-      case EmptyTuple => throw Mistake(msg"unreachable")
+      case _ =>
+        inline if fallible
+        then raise(VariantError[DerivationType]())(Unset)(using summonInline[Raises[VariantError]])
+        else throw Mistake(msg"Should be unreachable")
     
   private transparent inline def fold
       [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline sum: DerivationType, size: Int, index: Int)
+      (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
       (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
       [ResultType]
@@ -132,10 +138,13 @@ trait SumDerivationMethods[TypeclassType[_]]:
                   val variant: VariantType = sum.asInstanceOf[VariantType]
                   val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
                   lambda[VariantType](variant)(using context, label.tt, index3)
-                else fold[DerivationType, variantsType, moreLabelsType](sum, size, index + 1)(predicate)(lambda)
+                else fold[DerivationType, variantsType, moreLabelsType](sum, size, index + 1, fallible)
+                    (predicate)(lambda)
         
-        case EmptyTuple => throw Mistake(msg"unreachable")
-      case EmptyTuple => throw Mistake(msg"unreachable")
+      case _ =>
+        inline if fallible
+        then raise(VariantError[DerivationType]())(Unset)(using summonInline[Raises[VariantError]])
+        else throw Mistake(msg"Should be unreachable")
   
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]
 
