@@ -46,8 +46,10 @@ enum HttpBody:
   def as[T](using readable: HttpReadable[T]): T = readable.read(HttpStatus.Ok, this)
 
 object QueryEncoder extends ProductDerivation[QueryEncoder]:
-  inline def join[DerivationType: ProductReflection]: QueryEncoder[DerivationType] =
-    params(_)(typeclass.params(param).prefix(label)).reduce(_.append(_))
+  inline def join[DerivationType <: Product: ProductReflection]: QueryEncoder[DerivationType] =
+    fields(_):
+      [FieldType] => field => context.params(field).prefix(label)
+    .reduce(_.append(_))
 
   given text: QueryEncoder[Text] = string => Params(List((t"", string)))
   given int: QueryEncoder[Int] = int => Params(List((t"", int.show)))
