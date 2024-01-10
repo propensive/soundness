@@ -21,6 +21,7 @@ import vacuous.*
 import fulminate.*
 import spectacular.*
 import perforate.*
+import wisteria.*
 import anticipation.*
 import gossamer.*
 
@@ -225,10 +226,7 @@ trait CodlDecoder2:
                   deriveProduct[DerivationType, tailType, tailLabels](value)
         
 object CodlDecoder extends CodlDecoder2:
-  given optional
-      [ValueType]
-      (using decoder: CodlDecoder[ValueType])
-      : CodlDecoder[Optional[ValueType]] =
+  given optional[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Optional[ValueType]] =
     new CodlDecoder[Optional[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
       
@@ -243,10 +241,7 @@ object CodlDecoder extends CodlDecoder2:
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
-  given option
-      [ValueType]
-      (using decoder: CodlDecoder[ValueType])
-      : CodlDecoder[Option[ValueType]] =
+  given option[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Option[ValueType]] =
     new CodlDecoder[Option[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
       def decode
