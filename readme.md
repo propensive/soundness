@@ -67,6 +67,7 @@ consistency-checking of quoted code, to make it possible to deploy the code insi
 quotes to an environment of your choosing.
 
 
+
 ## Status
 
 Superlunary is classified as __embryotic__. For reference, Scala One projects are
@@ -169,6 +170,6 @@ The logo shows a moon, reflected in water.
 
 ## License
 
-Superlunary is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and
+Superlunary is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
