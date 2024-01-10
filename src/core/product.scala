@@ -26,20 +26,21 @@ import scala.compiletime.*
 trait ProductDerivationMethods[TypeclassType[_]]:
   protected transparent inline def construct
       [DerivationType <: Product]
-      (using reflection: ProductReflection[DerivationType])
-      (inline lambda: [FieldType] => TypeclassType[FieldType] => (
-        typeclass: TypeclassType[FieldType],
+      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
+      (inline lambda: [FieldType] => requirement.Optionality[TypeclassType[FieldType]] => (
+        typeclass: requirement.Optionality[TypeclassType[FieldType]],
         default: Default[Optional[FieldType]],
         label: Text,
         index: Int & FieldIndex[FieldType]
           ) ?=> FieldType)
       : DerivationType =
     
+    type Fields = reflection.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
+    
     reflection.fromProduct:
-      fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple](EmptyTuple, 0):
-        accumulator => [FieldType] => context =>
-          val context2 = context.asInstanceOf[TypeclassType[FieldType]]
-          lambda[FieldType](context2)(using context2, default, label, index) *: accumulator
+      fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
+        [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
       .reverse
 
   protected transparent inline def contexts
@@ -54,11 +55,13 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           ) ?=> ResultType)
       : IArray[ResultType] =
     
+    type Fields = reflection.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
+    
     summonInline[ClassTag[ResultType]].contextually:
-      IArray.create[ResultType](valueOf[Tuple.Size[reflection.MirroredElemTypes]]): array =>
-        fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Unit]((), 0):
-          accumulator => [FieldType] => context =>
-            array(index) = lambda[FieldType](context)(using context, default, label, index)
+      IArray.create[ResultType](valueOf[Tuple.Size[Fields]]): array =>
+        fold[DerivationType, Fields, Labels, Unit]((), 0): accumulator =>
+          [FieldType] => context ?=> array(index) = lambda[FieldType](context)
   
   inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
     valueOf[reflection.MirroredLabel].tt
@@ -112,12 +115,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       val tuple: Fields = Tuple.fromProductTyped(product)
       
       IArray.create[ResultType](tuple.size): array =>
-        fold[DerivationType, Fields, Labels, Array[ResultType]](tuple, array, 0):
-          array => [FieldType] => field =>
-            
-            val typeclass: requirement.Optionality[TypeclassType[FieldType]] = requirement.wrap(context)
-            array(index) = lambda[FieldType](field)(using typeclass, default, label, index)
-            array
+        fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): unit =>
+          [FieldType] => field =>
+            given typeclass: requirement.Optionality[TypeclassType[FieldType]] = requirement.wrap(context)
+            array(index) = lambda[FieldType](field)
 
   // The two implementations of `fold` are very similar. We would prefer to have a single implementation (closer
   // to the non-erased `fold`), but it's difficult to abstract over the erasedness of the tuple.
@@ -174,8 +175,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             val default = Wisteria.default[DerivationType, fieldType](index)
             val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using Default(default), label.tt, fieldIndex)
             
-            fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)
-                (lambda)
+            fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)(lambda)
   
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
 
