@@ -112,16 +112,7 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Sh
   
   override def hashCode: Int = bytes.hashCode
 
-trait Digestible2:
-  given optional
-    [ValueType]
-    (using util.NotGiven[Unset.type <:< ValueType])
-    (using digestible: Digestible[ValueType])
-      : Digestible[Optional[ValueType]] =
-    
-    (acc, value) => value.let(digestible.digest(acc, _))
-
-object Digestible extends Digestible2, Derivation[Digestible]:
+object Digestible extends Derivation[Digestible]:
   inline def join[DerivationType <: Product: ProductReflection]: Digestible[DerivationType] =
     (accumulator, value) => fields(value):
       [FieldType] => field => context.digest(accumulator, field)
@@ -131,6 +122,14 @@ object Digestible extends Digestible2, Derivation[Digestible]:
       [VariantType <: DerivationType] => variant =>
         int.digest(accumulator, index)
         context.digest(accumulator, variant)
+
+  given optional
+      [ValueType]
+      (using digestible: Digestible[ValueType])
+      (using util.NotGiven[Unset.type <:< ValueType])
+      : Digestible[Optional[ValueType]] =
+    
+    (acc, value) => value.let(digestible.digest(acc, _))
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
     (acc, xs) => xs.each(summon[Digestible[ValueType]].digest(acc, _))
