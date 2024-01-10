@@ -61,9 +61,9 @@ extension [ValueType](value: ValueType)
   def present(using presentation: Presentation[ValueType]): Text = presentation.present(value)
 
 sealed trait Human
-case class President(name: Text, number: Int) extends Human
-case class Person(name: Text, age: Int, male: Boolean) extends Human
-case class User(person: Person, email: Text)
+case class President(name: Text = "nobody", number: Int = 42) extends Human
+case class Person(name: Text = "noone", age: Int = 100, male: Boolean = true) extends Human
+case class User(person: Person, email: Text = "nobody@nowhere.com")
 
 object Readable extends Derivation[Readable]:
   given text: Readable[Text] = identity(_)
@@ -74,7 +74,8 @@ object Readable extends Derivation[Readable]:
     text.cut(t",").pipe: array =>
       construct: [FieldType] =>
         readable =>
-          readable.read(array(index))
+          if index < array.length then readable.read(array(index)) else default().or:
+            ???
   
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
     text.cut(t":") match
@@ -144,7 +145,8 @@ def main(): Unit =
   println(array1 === array2)
 
   val human1 = t"President:Richard Nixon,37".read[Human]
-  val human2 = t"President:George Washington,1".read[Human]
+  val human2 = t"President:George Washington".read[President]
+  println("with default "+human2.present)
   val human3 = t"Person:george washington,1,yes".read[Human]
   println(human1 === human2)
   println(human2 === human3)

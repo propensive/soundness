@@ -74,7 +74,6 @@ object Wisteria:
 
     val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
     val productSymbol = TypeRepr.of[ProductType].typeSymbol
-    println(methodName)
     
     productSymbol.companionClass.declaredMethod(methodName).headOption.map: method =>
       Ref(productSymbol.companionModule).select(method)

@@ -27,29 +27,38 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   protected transparent inline def construct
       [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType])
-      (inline lambda: [FieldType] => TypeclassType[FieldType] => (typeclass: TypeclassType[FieldType],
-          label: Text, index: Int & FieldIndex[FieldType]) ?=> FieldType): DerivationType =
+      (inline lambda: [FieldType] => TypeclassType[FieldType] => (
+        typeclass: TypeclassType[FieldType],
+        default: Default[Optional[FieldType]],
+        label: Text,
+        index: Int & FieldIndex[FieldType]
+          ) ?=> FieldType)
+      : DerivationType =
     
     reflection.fromProduct:
       fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Tuple](EmptyTuple, 0):
         accumulator => [FieldType] => context =>
           val context2 = context.asInstanceOf[TypeclassType[FieldType]]
-          lambda[FieldType](context2)(using context2, label, index) *: accumulator
+          lambda[FieldType](context2)(using context2, default, label, index) *: accumulator
       .reverse
 
   protected transparent inline def contexts
       [DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
       [ResultType]
-      (inline lambda: [FieldType] => requirement.Optionality[TypeclassType[FieldType]] =>
-          (typeclass: requirement.Optionality[TypeclassType[FieldType]], label: Text,
-          index: Int & FieldIndex[FieldType]) ?=> ResultType): IArray[ResultType] =
+      (inline lambda: [FieldType] => requirement.Optionality[TypeclassType[FieldType]] => (
+        typeclass: requirement.Optionality[TypeclassType[FieldType]],
+        default:   Default[Optional[FieldType]],
+        label:     Text,
+        index:     Int & FieldIndex[FieldType]
+          ) ?=> ResultType)
+      : IArray[ResultType] =
     
     summonInline[ClassTag[ResultType]].contextually:
       IArray.create[ResultType](valueOf[Tuple.Size[reflection.MirroredElemTypes]]): array =>
         fold[DerivationType, reflection.MirroredElemTypes, reflection.MirroredElemLabels, Unit]((), 0):
           accumulator => [FieldType] => context =>
-            array(index) = lambda[FieldType](context)(using context, label, index)
+            array(index) = lambda[FieldType](context)(using context, default, label, index)
   
   inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
     valueOf[reflection.MirroredLabel].tt
@@ -65,11 +74,14 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       case _                                                 => false
 
   protected transparent inline def complement
-      [DerivationType <: Product, FieldType]
-      (product: DerivationType)
-      (using fieldIndex: Int & FieldIndex[FieldType], reflection: ProductReflection[DerivationType],
-          requirement: ContextRequirement)
-      : FieldType =
+    [DerivationType <: Product, FieldType]
+    (product: DerivationType)
+    (using
+      fieldIndex: Int & FieldIndex[FieldType],
+      reflection: ProductReflection[DerivationType],
+      requirement: ContextRequirement
+        )
+    : FieldType =
     
     type Labels = reflection.MirroredElemLabels
     type Fields = reflection.MirroredElemTypes
@@ -86,8 +98,12 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       (using requirement: ContextRequirement)
       (using reflection: ProductReflection[DerivationType])
       [ResultType]
-      (inline lambda: [FieldType] => FieldType => (context: requirement.Optionality[TypeclassType[FieldType]],
-          label: Text, index: Int & FieldIndex[FieldType]) ?=> ResultType)
+      (inline lambda: [FieldType] => FieldType => (
+        context: requirement.Optionality[TypeclassType[FieldType]],
+        default: Default[Optional[FieldType]],
+        label: Text,
+        index: Int & FieldIndex[FieldType]
+          ) ?=> ResultType)
       : IArray[ResultType] =
     
     summonInline[ClassTag[ResultType]].contextually:
@@ -100,7 +116,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           array => [FieldType] => field =>
             
             val typeclass: requirement.Optionality[TypeclassType[FieldType]] = requirement.wrap(context)
-            array(index) = lambda[FieldType](field)(using typeclass, label, index)
+            array(index) = lambda[FieldType](field)(using typeclass, default, label, index)
             array
 
   // The two implementations of `fold` are very similar. We would prefer to have a single implementation (closer
@@ -110,9 +126,12 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (using requirement: ContextRequirement)
       (inline tuple: FieldsType, accumulator: ResultType, index: Int)
-      (inline lambda: ResultType => [FieldType] => FieldType =>
-          (context: Optional[TypeclassType[FieldType]], label: Text, index: Int & FieldIndex[FieldType]) ?=>
-          ResultType)
+      (inline lambda: ResultType => [FieldType] => FieldType => (
+        context: Optional[TypeclassType[FieldType]],
+        default: Default[Optional[FieldType]],
+        label: Text,
+        index: Int & FieldIndex[FieldType]
+          ) ?=> ResultType)
       : ResultType =
 
     inline tuple match
@@ -125,7 +144,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             case label: String =>
               val typeclass = requirement.summon[TypeclassType[fieldType]]
               val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
-              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, label.tt, fieldIndex)
+              val default = Wisteria.default[DerivationType, fieldType](index)
+              
+              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, Default(default), label.tt,
+                  fieldIndex)
               
               fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](moreFields, accumulator2, index + 1)(lambda)
 
@@ -133,8 +155,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (using requirement: ContextRequirement)
       (inline accumulator: ResultType, index: Int)
-      (inline lambda: ResultType => [FieldType] => requirement.Optionality[TypeclassType[FieldType]] =>
-          (label: Text, index: Int & FieldIndex[FieldType]) ?=> ResultType)
+      (inline lambda: ResultType => [FieldType] => requirement.Optionality[TypeclassType[FieldType]] => (
+        default: Default[Optional[FieldType]],
+        label: Text,
+        index: Int & FieldIndex[FieldType]
+          ) ?=> ResultType)
       : ResultType =
 
     inline erasedValue[FieldsType] match
@@ -146,7 +171,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           case label: String =>
             val typeclass = requirement.summon[TypeclassType[fieldType]]
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
-            val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using label.tt, fieldIndex)
+            val default = Wisteria.default[DerivationType, fieldType](index)
+            val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using Default(default), label.tt, fieldIndex)
             
             fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)
                 (lambda)
