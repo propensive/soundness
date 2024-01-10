@@ -113,7 +113,12 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Sh
   override def hashCode: Int = bytes.hashCode
 
 trait Digestible2:
-  given optional[ValueType](using util.NotGiven[Unset.type <:< ValueType])(using digestible: Digestible[ValueType]): Digestible[Optional[ValueType]] =
+  given optional
+    [ValueType]
+    (using util.NotGiven[Unset.type <:< ValueType])
+    (using digestible: Digestible[ValueType])
+      : Digestible[Optional[ValueType]] =
+    
     (acc, value) => value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2, Derivation[Digestible]:
@@ -186,7 +191,9 @@ package hashFunctions:
   given crc32: HashFunction[Crc32] = Crc32.hashFunction
   given md5: HashFunction[Md5] = Md5.hashFunction
   given sha1: HashFunction[Sha1] = Sha1.hashFunction
-  given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] = Sha2.hashFunction[BitsType]
+  
+  given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
+    Sha2.hashFunction[BitsType]
 
 package alphabets:
   package base32:
@@ -273,7 +280,9 @@ extension [ValueType](value: ValueType)
   def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[ValueType]): Hmac[HashType] =
     val mac = summon[HashFunction[HashType]].initHmac
     mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[HashType]].name.s))
-    Hmac(mac.doFinal(summon[ByteCodec[ValueType]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe))
+    
+    Hmac:
+      mac.doFinal(summon[ByteCodec[ValueType]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe)
 
 extension (bytes: Bytes)
   def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[SchemeType]].encode(bytes)
