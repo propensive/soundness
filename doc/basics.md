@@ -287,6 +287,9 @@ This definiton is sufficient to generate new (and working) contextual instances
 of `Show` for product types. Given the definition of `Person` above,
 `Person(t"George", 19).show` would produce the string, `[George, 19]`.
 
+Similar to the `fields` method, another method, `contexts`, is provided for accessing the typeclasses
+corresponding to each field, without using a preexisting instance of the derivation type for dereferencing.
+
 #### Labels
 
 This is close to what we need, but we would also like to include the type name.
@@ -576,77 +579,86 @@ the lambda, and uses `layGiven` to provide the fallback option in the first para
 code (for when the typeclass *is* available) in the second block. This is made possible because when the
 `Optional` value is present, `layGiven` injects its value contextually into this parameter block.
 
+### Default Values
+
+Case classes may be defined with default values for some of their fields. These default values, if available,
+can be useful during derivation. As one example, a JSON or XML decoder may construct a product instance from
+values provided at runtime, but could choose to use that product's default field values whenever a field's value
+is missing from the runtime input.
+
+A contextual `Default[Optional[FieldType]]` instance called `default` is available within the lambda body of
+`fields` and `contexts`, and calling `default()` within either of these contexts will provide an
+`Optional[FieldType]`.
+
 ### Frequently-asked Questions
 
-How can I avoid generic derivation failing when a typeclass for one or more parameters is missing?
+*How can I avoid generic derivation failing when a typeclass for one or more parameters is missing?*
 
-> Include the import,
-> ```scala
-> import wisteria.derivationContext.relaxed
-> ```
-> in the context where `join` and `split` are defined. This will transform the type of the typeclass value
-> corresponding to the field from `TypeclassType[ValueType]` to `Optional[TypeclassType[ValueType]]`. Normally,
-> this also means that the typeclass will need to be applied explicitly.
+Include the import,
+```scala
+import wisteria.derivationContext.relaxed
+```
+in the context where `join` and `split` are defined. This will transform the type of the typeclass value
+corresponding to the field from `TypeclassType[ValueType]` to `Optional[TypeclassType[ValueType]]`. Normally,
+this also means that the typeclass will need to be applied explicitly.
 
-How can I use other unrelated typeclasses in a `join` or `split` implementation?
+*How can I use other unrelated typeclasses in a `join` or `split` implementation?*
 
-> The signatures of `join` and `split` cannot be changed, so it is impossible to include other typeclass instances
-> in their implementations. But both are inline methods, so `summonInline` and `summonFrom` can be used to summon
-> instances of other typeclasses at compiletime, whether these relate to the derivation type or a field type.
+The signatures of `join` and `split` cannot be changed, so it is impossible to include other typeclass instances
+in their implementations. But both are inline methods, so `summonInline` and `summonFrom` can be used to summon
+instances of other typeclasses at compiletime, whether these relate to the derivation type or a field type.
 
-How can I use Wisteria for generic derivation without making the generically-derived typeclasses available to
-implicit search?
+*How can I use Wisteria for generic derivation without making the generically-derived typeclasses available to implicit search?*
 
-> Use a non-companion object extending `Derivation` or `ProductDerivation` for the definitions of `join` and
-> `split`, and call the inline `derived` method on that object, passing in the derivation type.
+Use a non-companion object extending `Derivation` or `ProductDerivation` for the definitions of `join` and
+`split`, and call the inline `derived` method on that object, passing in the derivation type.
 
-Why is a generically-derived typeclass instance not being found when it is summoned?
+*Why is a generically-derived typeclass instance not being found when it is summoned?*
 
-> This is usually because typeclass instances relating to one or more field or variant values cannot be found. To
-> test this theory, try compiling an explicit call to the inline `derived` method at the callsite where
-> contextual search is failing.
+This is usually because typeclass instances relating to one or more field or variant values cannot be found. To
+test this theory, try compiling an explicit call to the inline `derived` method at the callsite where
+contextual search is failing.
 
-Why is another contextual instance being selected by contextual search instead of a generically-derived one?
+*Why is another contextual instance being selected by contextual search instead of a generically-derived one?*
 
-> Assuming the generically-derived typeclass instance *is* a valid candidate for selection, this is probably
-> because the derived candidate has a lower priority. Since the `given` instance is defined in either
-> `ProductDerivation` or `Derivation`, which is typically inherited by the typeclass's companion object, its
-> priority is naturally lower than `given` instances defined in the body of that companion object.
+Assuming the generically-derived typeclass instance *is* a valid candidate for selection, this is probably
+because the derived candidate has a lower priority. Since the `given` instance is defined in either
+`ProductDerivation` or `Derivation`, which is typically inherited by the typeclass's companion object, its
+priority is naturally lower than `given` instances defined in the body of that companion object.
 
-> One solution would be to artificially reduce the priority of the undesired contextual instances, for example by
-> adding an additional `(using DummyImplicit)` parameter, or moving the definition to an inherited trait.
+One solution would be to artificially reduce the priority of the undesired contextual instances, for example by
+adding an additional `(using DummyImplicit)` parameter, or moving the definition to an inherited trait.
 
-> Another solution is to define `join` and `split` in an unrelated (non-companion) object, and to define an inline
-> given called `derived` directly in the companion object, like so:
-> ```scala
-> object Unrelated extends ProductDerivation[Typeclass]:
->   def join[DerivationType <: Product: ProductReflection]: Typeclass[DerivationType] = ???
+Another solution is to define `join` and `split` in an unrelated (non-companion) object, and to define an inline
+given called `derived` directly in the companion object, like so:
+```scala
+object Unrelated extends ProductDerivation[Typeclass]:
+  def join[DerivationType <: Product: ProductReflection]: Typeclass[DerivationType] = ???
 
-> object Typeclass:
->   inline given derived[DerivationType]: Typeclass[DerivationType] = Unrelated.derived
-> ```
+object Typeclass:
+  inline given derived[DerivationType]: Typeclass[DerivationType] = Unrelated.derived
+```
 
-How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?
+*How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?*
 
-> A recursive type such as `Tree`,
-> ```scala
-> enum Tree:
->   case Leaf
->   case Branch(left: Tree, value: Int, right: Tree)
-> ```
-> cannot be derived in-place, and should be explicitly defined on that type's companion object. The easiest way to
-> do this is to add a `derives` clause to the companion. For example,
-> ```scala
-> object Tree derives Typeclass
-> ```
+A recursive type such as `Tree`,
+```scala
+enum Tree:
+  case Leaf
+  case Branch(left: Tree, value: Int, right: Tree)
+```
+cannot be derived in-place, and should be explicitly defined on that type's companion object. The easiest way to
+do this is to add a `derives` clause to the companion. For example,
+```scala
+object Tree derives Typeclass
+```
 
-Why does the compiler fail dering derivation with a long message that mentions that,
-`given instance derived in trait Derivation does not match type...`?
+*Why does the compiler fail dering derivation with a long message that mentions that, `given instance derived in trait Derivation does not match type...`?*
 
-> This is usually because the polymorphic lambda's type variable for `delegate` or `variant` is missing its upper
-> bound. It is essential that the type variable is specified as `[VariantType <: DerivationType]` and not just,
-> `[VariantType]`.
+This is usually because the polymorphic lambda's type variable for `delegate` or `variant` is missing its upper
+bound. It is essential that the type variable is specified as `[VariantType <: DerivationType]` and not just,
+`[VariantType]`.
 
-Why does the compiler report a type mismatch between the derivation type and `Product`?
+*Why does the compiler report a type mismatch between the derivation type and `Product`?*
 
-> This is usually because the derivation type in the signature of `join` is missing the `<: Product` constraint.
+This is usually because the derivation type in the signature of `join` is missing the `<: Product` constraint.
