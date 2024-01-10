@@ -210,7 +210,7 @@ object TextConversion:
     
     arrayType+dimension+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
 
-  inline given [ValueType]: Debug[Option[ValueType]] =
+  inline given option[ValueType]: Debug[Option[ValueType]] =
     case None =>
       "None".tt
     
@@ -226,54 +226,6 @@ object TextConversion:
   given none: Show[None.type] = none => "none".tt
   given showNone: Debug[None.type] = none => "None".tt
   
-  // private transparent inline def deriveProduct
-  //     [Labels <: Tuple]
-  //     (tuple: Tuple, isTuple: Boolean)
-  //     : List[Text] =
-  //   inline tuple match
-  //     case EmptyTuple => Nil
-  //     case cons: (? *: ?) => cons match
-  //       case head *: tail => inline erasedValue[Labels] match
-  //         case _: (headLabel *: tailLabels) => inline valueOf[headLabel].asMatchable match
-  //           case label: String =>
-  //             val value = head.debug.s
-  //             (inline if isTuple then value else (label+"="+value)).tt ::
-  //                 deriveProduct[tailLabels](tail, isTuple)
-
-  // private transparent inline def deriveSum
-  //     [TupleType <: Tuple, DerivedType]
-  //     (ordinal: Int)
-  //     : Debug[DerivedType] =
-  //   inline erasedValue[TupleType] match
-  //     case _: (head *: tail) =>
-  //       if ordinal == 0
-  //       then summonInline[Debug[head]].asInstanceOf[Debug[DerivedType]]
-  //       else deriveSum[tail, DerivedType](ordinal - 1)
-
-  // inline given derived
-  //     [DerivationType]
-  //     (using mirror: Mirror.Of[DerivationType])
-  //     : Debug[DerivationType] =
-  //   inline mirror match
-  //     case given Mirror.ProductOf[DerivationType & Product] => (value: DerivationType) =>
-  //       inline val isTuple = inline erasedValue[DerivationType & Matchable] match
-  //         case tuple: Tuple => true
-  //         case _            => false
-        
-  //       (value.asMatchable: @unchecked) match
-  //         case value: Product =>
-  //           val elements = deriveProduct[mirror.MirroredElemLabels](Tuple.fromProductTyped(value),
-  //               isTuple)
-            
-  //           val typeName = valueOf[mirror.MirroredLabel]
-            
-  //           inline if isTuple then elements.mkString("(", "·", ")").tt
-  //           else elements.mkString(typeName+"(", "·", ")").tt
-    
-  //     case s: Mirror.SumOf[DerivationType] =>
-  //       (value: DerivationType) =>
-  //         deriveSum[s.MirroredElemTypes, DerivationType](s.ordinal(value))(value)
-
 extension [ValueType](value: ValueType)
   inline def show(using display: Show[ValueType]): Text = display(value)
 
