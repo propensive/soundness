@@ -145,12 +145,13 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             case label: String =>
               val typeclass = requirement.summon[TypeclassType[fieldType]]
               val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
-              val default = Wisteria.default[DerivationType, fieldType](index)
+              val default = Default(Wisteria.default[DerivationType, fieldType](index))
               
-              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, Default(default), label.tt,
+              val accumulator2 = lambda(accumulator)[fieldType](field)(using typeclass, default, label.tt,
                   fieldIndex)
               
-              fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](moreFields, accumulator2, index + 1)(lambda)
+              fold[DerivationType, moreFieldsType, moreLabelsType, ResultType]
+                  (moreFields, accumulator2, index + 1)(lambda)
 
   private transparent inline def fold
       [DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
@@ -172,8 +173,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           case label: String =>
             val typeclass = requirement.summon[TypeclassType[fieldType]]
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
-            val default = Wisteria.default[DerivationType, fieldType](index)
-            val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using Default(default), label.tt, fieldIndex)
+            val default = Default(Wisteria.default[DerivationType, fieldType](index))
+            val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using default, label.tt, fieldIndex)
             
             fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)(lambda)
   
