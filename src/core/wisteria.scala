@@ -18,9 +18,11 @@ package wisteria
 
 import fulminate.*
 import rudiments.*
+import vacuous.*
 import anticipation.*
 
 import scala.deriving.*
+import scala.quoted.*
 import scala.compiletime.*
 
 object VariantError:
@@ -57,3 +59,29 @@ extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassT
 type Reflection[DerivationType] = Mirror.Of[DerivationType]
 type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
 type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+
+object Wisteria:
+
+  inline def default[ProductType, FieldType](index: Int): Optional[FieldType] =
+    ${getDefault[ProductType, FieldType]('index)}
+
+  def getDefault
+      [ProductType: Type, FieldType: Type]
+      (index: Expr[Int])
+      (using Quotes)
+      : Expr[Optional[FieldType]] =
+    import quotes.reflect.*
+
+    val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
+    val productSymbol = TypeRepr.of[ProductType].typeSymbol
+    println(methodName)
+    
+    productSymbol.companionClass.declaredMethod(methodName).headOption.map: method =>
+      Ref(productSymbol.companionModule).select(method)
+    .map: selection =>
+      TypeRepr.of[ProductType].typeArgs match
+        case Nil  => selection
+        case args => selection.appliedToTypes(args)
+    .map(_.asExprOf[FieldType]).getOrElse('{Unset})
+    
+    
