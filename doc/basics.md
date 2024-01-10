@@ -167,7 +167,9 @@ Generalizing over all products (and hence, all possible field types),
 our task is to define _how_ a product type should be shown, if we're provided
 with the means to show each of its fields.
 
-So, if we have `Show` instances for `Int`s and `Text`s, then we want to be able to derive a `Show` instance for a type such as:
+So, if we have `Show` instances for `Int`s and `Text`s, then we want to be able
+to derive a `Show` instance for a type such as:
+
 ```scala
 case class Person(name: Text, age: Int)
 ```
@@ -372,3 +374,281 @@ object Eq extends ProductDerivation[Eq]:
           context.eq(leftField, complement(right))
       .foldLeft(true)(_ && _)
 ```
+
+#### Producer Product Typeclasses
+
+Producer typeclasses can also be generically derived. Wheras a _consumer typeclass_ will receive a pre-existing
+instance of the derivation type as input, and produce a value of some invariant type, a _producer typeclass_
+will take an invariant type as input, and will construct a new instance of the derivation type.
+
+An example of a producer typeclass would be a simple `Random` typeclass which takes a long "seed" value as input
+and constructs a random new instance from that seed. A `Random` instance for a generic product type should
+produce a new product instance, all of whose field values are chosen randomly.
+
+Here is the definition of `Random`:
+```scala
+trait Random[+ValueType]:
+  def next(seed: Long): ValueType
+```
+
+For a producer typeclass derivation, The `join` signature will be identical, but instead of the `fields` method,
+we will need to use the `construct` method to construct a new instance, without taking an existing instance of
+the product type as input. A call to `fields` will also take a polymorphic lambda specifying the field type, but
+since we have no preexisting instance, and therefore no fields, its lambda variable is a reference to the
+typeclass instance which can be used to instantiate the new field value.
+
+```scala
+object Random extends ProductDerivation[Random]:
+  inline def join[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
+    construct:
+      [FieldType] => random =>
+        ???
+```
+
+In fact, since we know nothing about the type of the field in the context of the lambda (except that we have a
+name for it), the typeclass instance, which shares the same type in its parameter, is our _only_ means of
+constructing a new instance for that field.
+
+Therefore, by parametricity, the only sensible way to implement the method is to invoke the `next` method, like
+so:
+```scala
+object Random extends ProductDerivation[Random]:
+  inline def join[DerivationType <: Product: ProductReflection]: Random[DerivationType] = seed =>
+    construct:
+      [FieldType] => random => random.next(seed)
+```
+
+Calling `constuct`, specifying how each field's value will be computed, will return a new instance of the
+product, `DerivationType`. Since `Random` is a SAM type, this expression of `Long => DerivationType` provides
+a suitable implementation for the new typeclass.
+
+### Deriving Sum Types
+
+Deriving sums, or coproducts, is possible by making a choice of which of their variants is represented by the
+sum type. Deriving sums may be omitted for many typeclasses, since it's not as commonly useful as deriving
+products. But if it is desired in addition to product derivation, a typeclass's companion object will need to
+extend `Derivation` instead of `ProductDerivation`, and define an additional `split` method.
+
+Here are the adjusted stub implementations for the `Show` typeclass:
+```scala
+object Show extends Derivation[Show]:
+  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = ???
+  inline def split[DerivationType: SumReflection]: Show[DerivationType] = ???
+```
+
+Note that `split`'s signature is similar to `join`'s, but lacks the subtype constraint on `DerivationType` and
+uses a `SumReflection[DerivationType]` instead of a `ProductReflection`. An implementation of `split` will have
+some similarities with a `join` implementation, but will use `variant` and `delegate` methods instead of
+`fields` and `construct`.
+
+#### Consumer Sum Types
+
+To show an instance of a typeclass, we will use the `variant` method to inspect a preexisting instance of the
+derivation type and apply a lambda to the one variant which matches. This is a dual of the `fields` method for
+sum types, but unlike `fields` the lambda will apply _only_ to the matching variant; not to every variant.
+
+Like `fields`, though, we have no greater knowledge about the type of that variant in the context of the lambda,
+so once again, we will specify a polymorphic lambda which takes a `VariantType` type parameter. We do, however,
+have one more piece of useful information about `VariantType` which we didn't know about a field's type:
+`VariantType` must be a subtype of the derivation type. Therefore, we specify the lambda type variable as
+`[VariantType <: DerivationType]`:
+```scala
+inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
+  variant(value):
+    [VariantType <: DerivationType] => variant =>
+      ???
+```
+
+So, in the body of the `variant` lambda, we now have an instance of `VariantType`, which we know to be a subtype
+of `DerivationType`. This is actually exactly the same value as `value`, but its type has been refined—to a type
+which is more precise; but also abstract.
+
+As was the case with `fields`'s lambda, we have some additional context available in this lambda: `context`
+is an instance of `Show[VariantType]` and `label` is the name of the variant.
+
+A trivial implementation of this lambda would just call `variant.show`, since the contextual `Show[VariantType]`
+value is available.
+
+```scala
+inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
+  variant(value):
+    [VariantType <: DerivationType] => variant => variant.show
+```
+
+#### Complementary Variants
+
+When we provided the product derivation for `Eq`, we used the `complement` method to get the corresponding field
+with the correct type inside the body of `fields`. The same is possible inside the body of `variant`, but it
+returns an `Optional` value, since an unrelated value of the same sum type is, by no means, guaranteed to be
+the _same_ variant: if the other value is a different variant, then it would not make sense to resolve that
+value with the same type—and so an `Unset` value is returned from `complement`.
+
+If, however, both values represent the same variant, then we can access that value, safely typed with the same
+type.
+
+Here is an implementation of `split` for `Eq`:
+```scala
+inline def split[DerivationType: SumReflection]: Eq[DerivationType] = (left, right) =>
+  variant(left):
+    [VariantType <: DerivationType] => leftValue =>
+      complement(right).let(context.equal(leftValue, _)).or(false)
+```
+
+The interpretation of this implementation is that if the left and right sum types represent the same variant,
+then we use `context`, the typeclass instance that is common to both, to compare them. Otherwise, since they are
+evidently different, we return `false`.
+
+#### Producer Sum Typeclasses
+
+As with the `construct` method for product types, the `delegate` method is used for producer sum types which
+must return a new instance of the derivation type, without having a preexisting value to work with. While
+`variant` can unambiguously resolve which of the variants its parameter value represents, just from its runtime
+type, the method of discerning which variant is required from its input will depend on the type of that input,
+and is not guaranteed to succeed.
+
+Imagine defining a `Decoder` type which reads values from strings, and we expect the variant's type to be
+encoded at the start of the string, for example, `"Developer:Hamza,39"` and `"Manager:Jane,52,2"` could both be
+representations of instances of the sum type:
+```scala
+enum Employee:
+  case Developer(name: Text, age: Int)
+  case Manager(name: Text, age: Int, level: Int)
+```
+
+We would like to inspect the part of the string before the `:` and delegate to either the `Developer` or
+`Manager` variants accordingly.
+
+But the typeclass could be passed the string, `"Director:Beatrice,47"`, and no variant would exist in the
+`Employee` sum type to delegate to.
+
+As its first parameter, `delegate` expects the name of the variant (i.e. its `label` value) to delegate to. Its
+second parameter is another polymorphic lambda. As with `construct` which had no `field` lambda variable,
+`delegate` has no `variant` lambda variable, and (likewise) offers the matching variant's context.
+
+For our `Decoder` example, we have:
+```scala
+object Decoder extends Derivation[Decoder]:
+  inline def split[DerivationType: SumReflection]: Decoder[DerivationType] = text =>
+    val prefix = text.cut(t":").head
+    delegate(prefix):
+      [VariantType <: DerivationType] => decoder =>
+        ???
+```
+
+Having discerned which variant's decoder should be used, we can then use this to decode the text following the
+`:`, like so:
+```scala
+object Decoder extends Derivation[Decoder]:
+  inline def split[DerivationType: SumReflection]: Decoder[DerivationType] = text =>
+    text.cut(t":") match
+      case List(prefix, content) => delegate(prefix):
+        [VariantType <: DerivationType] => decoder => decoder.decode(content)
+```
+
+### Optional Derivation
+
+By default, derivation will fail at compiletime if a field's or variant's corresponding typeclass instance
+cannot be found by contextual search. This is usually the desired behavior because it indicates the absence of
+definitions which are inherently necessary.
+
+But it's not unusual to want generic derivation to succeed, accepting that we should provide a fallback option
+when a contextual value is not found. This can be achieved by importing `derivationContext.relaxed` in the scope
+where `join` and `split` are defined.
+
+The presence of this import will change the signature of methods such as `fields` slightly, so that the
+contextual value provided to its lambda is an `Optional[Typeclass]` instead of a `Typeclass` instance. This
+means that there will no longer be a contextual `Typeclass` available, so any calls which expect one will fail
+to compile, but there will be a contextual `Optional[Typeclass]` value instead, and various control methods on
+`Optional` values can be used to work with such a type.
+
+We could take the `Show` example from earlier and adjust it to fall back to a field's `toString` value if a
+`Show` typeclass does not exist for that type:
+```scala
+object Show extends ProductDerivation[Show]:
+  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
+    fields(value):
+      [FieldType] => field => context.layGiven(field.toString.tt)(field.show)
+    .join(t"[", t", ", t"]")
+```
+
+This adjusted version refers to the contextual `Show[FieldType]` value, which is available as `context` inside
+the lambda, and uses `layGiven` to provide the fallback option in the first parameter block, with the original
+code (for when the typeclass *is* available) in the second block. This is made possible because when the
+`Optional` value is present, `layGiven` injects its value contextually into this parameter block.
+
+### Default Values
+
+### Frequently-asked Questions
+
+> How can I avoid generic derivation failing when a typeclass for one or more parameters is missing?
+
+Include the import,
+```scala
+import wisteria.derivationContext.relaxed
+```
+in the context where `join` and `split` are defined. This will transform the type of the typeclass value
+corresponding to the field from `TypeclassType[ValueType]` to `Optional[TypeclassType[ValueType]]`. Normally,
+this also means that the typeclass will need to be applied explicitly.
+
+> How can I use other unrelated typeclasses in a `join` or `split` implementation?
+
+The signatures of `join` and `split` cannot be changed, so it is impossible to include other typeclass instances
+in their implementations. But both are inline methods, so `summonInline` and `summonFrom` can be used to summon
+instances of other typeclasses at compiletime, whether these relate to the derivation type or a field type.
+
+> How can I use Wisteria for generic derivation without making the generically-derived typeclasses available to
+> implicit search?
+
+Use a non-companion object extending `Derivation` or `ProductDerivation` for the definitions of `join` and
+`split`, and call the inline `derived` method on that object, passing in the derivation type.
+
+> Why is a generically-derived typeclass instance not being found when it is summoned?
+
+This is usually because typeclass instances relating to one or more field or variant values cannot be found. To
+test this theory, try compiling an explicit call to the inline `derived` method at the callsite where
+contextual search is failing.
+
+> Why is another contextual instance being selected by contextual search instead of a generically-derived one?
+
+Assuming the generically-derived typeclass instance *is* a valid candidate for selection, this is probably
+because the derived candidate has a lower priority. Since the `given` instance is defined in either
+`ProductDerivation` or `Derivation`, which is typically inherited by the typeclass's companion object, its
+priority is naturally lower than `given` instances defined in the body of that companion object.
+
+One solution would be to artificially reduce the priority of the undesired contextual instances, for example by
+adding an additional `(using DummyImplicit)` parameter, or moving the definition to an inherited trait.
+
+Another solution is to define `join` and `split` in an unrelated (non-companion) object, and to define an inline
+given called `derived` directly in the companion object, like so:
+```scala
+object Unrelated extends ProductDerivation[Typeclass]:
+  def join[DerivationType <: Product: ProductReflection]: Typeclass[DerivationType] = ???
+
+object Typeclass:
+  inline given derived[DerivationType]: Typeclass[DerivationType] = Unrelated.derived
+```
+
+> How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?
+
+A recursive type such as `Tree`,
+```scala
+enum Tree:
+  case Leaf
+  case Branch(left: Tree, value: Int, right: Tree)
+```
+cannot be derived in-place, and should be explicitly defined on that type's companion object. The easiest way to
+do this is to add a `derives` clause to the companion. For example,
+```scala
+object Tree derives Typeclass
+```
+
+> Why does the compiler fail dering derivation with a long message that mentions that,
+> `given instance derived in trait Derivation does not match type...`?
+
+This is usually because the polymorphic lambda's type variable for `delegate` or `variant` is missing its upper
+bound. It is essential that the type variable is specified as `[VariantType <: DerivationType]` and not just,
+`[VariantType]`.
+
+> Why does the compiler report a type mismatch between the derivation type and `Product`?
+
+This is usually because the derivation type in the signature of `join` is missing the `<: Product` constraint.
