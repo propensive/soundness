@@ -117,13 +117,15 @@ trait Digestible2:
     (acc, value) => value.let(digestible.digest(acc, _))
 
 object Digestible extends Digestible2, Derivation[Digestible]:
-  inline def join[DerivationType: ProductReflection]: Digestible[DerivationType] = (accumulator, value) =>
-    params(value)(typeclass.digest(accumulator, param))
+  inline def join[DerivationType <: Product: ProductReflection]: Digestible[DerivationType] =
+    (accumulator, value) => fields(value):
+      [FieldType] => field => context.digest(accumulator, field)
       
   inline def split[DerivationType: SumReflection]: Digestible[DerivationType] = (accumulator, value) =>
-    variants(value):
-      int.digest(accumulator, ordinal)
-      typeclass.digest(accumulator, variant)
+    variant(value):
+      [VariantType <: DerivationType] => variant =>
+        int.digest(accumulator, index)
+        context.digest(accumulator, variant)
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
     (acc, xs) => xs.each(summon[Digestible[ValueType]].digest(acc, _))
