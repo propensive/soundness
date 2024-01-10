@@ -233,7 +233,7 @@ object Windows:
     given debug: Debug[Link] = _.render
 
   object Drive:
-    given Default[Drive](Drive('C'))
+    given default: Default[Drive] = () => Drive('C')
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
