@@ -27,9 +27,13 @@ case class Foo(x: Int, y: String)
 
 @main
 def run(): Unit = unsafely:
-  val fn = external[Foo, String]('{ foo =>
-    s"This is running on $jvmInstanceId."
-  })
+  mitigate:
+    case JsonAccessError(_) => ???
+  .within:
+    val fn = external[Foo, String]('{ foo =>
+      unsafely:
+        s"This is running on $jvmInstanceId."
+    })
 
-  println(fn(Foo(11, "hello")))
-  println(fn(Foo(13, "hello world!")))
+    println(fn(Foo(11, "hello")))
+    println(fn(Foo(13, "hello world!")))

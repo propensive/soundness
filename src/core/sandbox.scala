@@ -37,7 +37,7 @@ import scala.quoted.*, staging.*
 import scala.reflect.Selectable.reflectiveSelectable
 
 inline def external
-    [InputType: JsonSerializer: JsonDeserializer, OutputType]
+    [InputType: JsonEncoder: JsonDecoder, OutputType]
     (body: Quotes ?=> Expr[InputType => OutputType])
     (using Raises[CompileError])
     : InputType => OutputType =
@@ -63,32 +63,31 @@ inline def external
             val readable = summonInline[Readable[Text, Bytes]]
             val in = input.tt
             val json = Json.parse(in)(using readable, raises)
-            val deserializer = summonInline[JsonDeserializer[InputType]]
-            val param = json.as[InputType](using deserializer)
+            val decoder = summonInline[JsonDecoder[InputType]]
+            val param = json.as[InputType](using decoder)
 
-            val serializer = summonInline[JsonSerializer[OutputType]]
+            val encoder = summonInline[JsonEncoder[OutputType]]
 
-            MinimalSerializer.serialize($body(param).json(using serializer).root).s
+            MinimalJsonPrinter.print($body(param).json(using encoder).root).s
       
       val cp: Text = ${Expr(classpath)}
       
       unsafely: raises ?=>
         import hieroglyph.charEncoders.utf8
-        val wd: WorkingDirectory = workingDirectories.virtualMachine
-        val log: Log[Text] = logging.silent
-        val serializer = summonInline[JsonSerializer[InputType]]
-        val in = MinimalSerializer.serialize(input.json(using serializer).root).s
-        val cmd = Command(t"java", t"-classpath", cp, t"superlunary.SandboxRunner", t"Generated$$Code$$From$$Quoted$$External$$2$$", in)
-        val output = cmd.exec[Text]()(using wd, log)
-
-        val readable = summonInline[Readable[Text, Bytes]]
-        val json = Json.parse(output)(using readable, raises)
-        val deserializer = summonInline[JsonDeserializer[OutputType]]
-        json.as[OutputType](using deserializer)
+        workingDirectories.virtualMachine.contextually:
+          logging.silent.contextually:
+            summonInline[JsonEncoder[InputType]].contextually:
+              val in = MinimalJsonPrinter.print(input.json.root).s
+              val cmd = Command(t"java", t"-classpath", cp, t"superlunary.SandboxRunner", t"Generated$$Code$$From$$Quoted$$External$$2$$", in)
+              val output = cmd.exec[Text]()
+      
+              val readable = summonInline[Readable[Text, Bytes]]
+              val json = Json.parse(output)(using readable, raises)
+              val decoder = summonInline[JsonDecoder[OutputType]]
+              json.as[OutputType](using decoder)
     }
   
   catch case error: dotty.tools.dotc.reporting.UnhandledError =>
-    println("Thrown "+error)
     abort(CompileError())
 
 case class CompileError() extends Error(msg"A compilation error occurred")
@@ -99,4 +98,5 @@ object SandboxRunner:
     val params = args(1)
     val cls = Class.forName(className).nn
     val runnable = cls.newInstance()
-    println(runnable.asInstanceOf[{ def run(params: String): String }].run(params))
+    unsafely:
+      println(runnable.asInstanceOf[{ def run(params: String): String }].run(params))
