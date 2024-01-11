@@ -20,6 +20,7 @@ import gossamer.*
 import anticipation.*
 import hieroglyph.*, textWidthCalculation.uniform
 import spectacular.*
+import hypotenuse.*
 import rudiments.*
 
 import language.experimental.captureChecking
@@ -104,12 +105,12 @@ object Plutocrat:
     @targetName("multiply2")
     def *(right: Double): Money[CurrencyType] =
       val value = left*right
-      (value + math.signum(value)/2).toLong
+      (value + value.signum/2).toLong
     
     @targetName("divide")
     def /(right: Double): Money[CurrencyType] =
       val value = left/right
-      (value + math.signum(value)/2).toLong
+      (value + value.signum/2).toLong
 
     @targetName("divide2")
     def /(right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
