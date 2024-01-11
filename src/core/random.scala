@@ -17,6 +17,7 @@
 package capricious
 
 import wisteria.*
+import hypotenuse.*
 
 import scala.util as su
 
@@ -51,7 +52,7 @@ object Randomizable extends Derivation[Randomizable]:
       [FieldType] => randomizable => randomizable.from(gen)
 
   inline def split[DerivationType: SumReflection]: Randomizable[DerivationType] = gen =>
-    delegate(variantLabels(math.abs(gen.toInt)%variantLabels.length)):
+    delegate(variantLabels(gen.toInt.abs%variantLabels.length)):
       [VariantType <: DerivationType] => randomizable => randomizable.from(gen)
 
 // Note that `gen` is side-effecting, and is therefore not deterministic in concurrent environments
@@ -93,7 +94,7 @@ case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends
     val u0 = randomDistributions.uniformUnitInterval.transform(gen)
     val u1 = randomDistributions.uniformUnitInterval.transform(gen)
     
-    standardDeviation*math.sqrt(-2*math.log(u0))*math.cos(2*math.Pi*u1) + mean
+    standardDeviation*(-2*log(u0)).sqrt*cos(2*π*u1) + mean
     
 case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
   def transform(gen: => Long): Double =
@@ -102,7 +103,7 @@ case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) ex
       val u0 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
       val u1 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
       val s = u0*u0 + u1*u1
-      if s >= 1 || s == 0 then recur() else standardDeviation*u0*math.sqrt(-2*math.log(s)/s) + mean
+      if s >= 1 || s == 0 then recur() else standardDeviation*u0*(-2*log(s)/s).sqrt + mean
 
     recur()
 
@@ -115,7 +116,7 @@ object Gamma:
 case class Gamma(shape: Int, scale: Double) extends Distribution:
   def mean: Double = shape*scale
   def variance: Double = shape*scale*scale
-  def variationCoefficient: Double = math.pow(shape, -0.5)
+  def variationCoefficient: Double = shape ** -0.5
   def skewness: Double = 2.0*variationCoefficient
 
   def transform(gen: => Long): Double =
@@ -125,18 +126,3 @@ case class Gamma(shape: Int, scale: Double) extends Distribution:
         accumulate(sum + gaussian*gaussian, count - 1)
     
     accumulate(0.0, shape)
-
-def erf(value: Double): Double =
-  val a = 0.254829592
-  val b = -0.284496736
-  val c = 1.421413741
-  val d = -1.453152027
-  val e = 1.061405429
-  val p = 0.3275911
-  
-  val x = math.abs(value)
-  val t = 1.0/(1.0 + p*x)
-  val y = 1 - (((((e*t + d)*t) + c)*t + b)*t + a)*t*math.exp(-x*x)
-  
-  math.signum(value)*y
-
