@@ -4,6 +4,7 @@ target hypotenuse/core
 
 repo propensive/probably
 repo propensive/larceny
+repo propensive/perforate
 repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
@@ -13,7 +14,7 @@ project hypotenuse
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core
+    include   cardinality/core perforate/core
 
   module test
     compiler  scala
