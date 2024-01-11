@@ -45,10 +45,10 @@ extension (lazyList: LazyList[Bytes])
       
     recur(lazyList, byteSize)
 
-  def shred(mean: Double, variance: Double): LazyList[Bytes] =
+  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = randomize:
     given Distribution = Gamma.approximate(mean, variance)
     
-    def newArray(): Array[Byte] = new Array[Byte](random[Double]().toInt.max(1))
+    def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
     
     def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int): LazyList[Bytes] =
       stream match
