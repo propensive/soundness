@@ -125,3 +125,18 @@ case class Gamma(shape: Int, scale: Double) extends Distribution:
         accumulate(sum + gaussian*gaussian, count - 1)
     
     accumulate(0.0, shape)
+
+def erf(value: Double): Double =
+  val a = 0.254829592
+  val b = -0.284496736
+  val c = 1.421413741
+  val d = -1.453152027
+  val e = 1.061405429
+  val p = 0.3275911
+  
+  val x = math.abs(value)
+  val t = 1.0/(1.0 + p*x)
+  val y = 1 - (((((e*t + d)*t) + c)*t + b)*t + a)*t*math.exp(-x*x)
+  
+  math.signum(value)*y
+
