@@ -16,6 +16,7 @@ available on the JVM.
 - special support for generating random `Double`s in a user-specified distribution
 - parameterized uniform, Normal (Gaussian) and Gamma distributions are available
 - offers a choice of random sources: "default", secure and strongly secure, with optional seed values
+- generic derivation of product and sum types
 
 ## Availability Plan
 
@@ -84,6 +85,25 @@ Those generators which require a seed value can define it, as a `Long` value, wi
 given Seed(23956242374982L)
 ```
 
+### The `Randomizable` Typeclass
+
+The typeclass, `Randomizable`, will produce random instances of its type parameter. Given instances are
+predefined for a few basic types, but custom instances can be constructed by implementing the trait:
+```scala
+trait Randomizable[ValueType]:
+  def from(gen: => Long): ValueType
+```
+
+An implementation of `from` should call `gen` as many times as necessary to construct a new, random instance
+of `ValueType`. Although random, the instance of `ValueType` should depend deterministically on the values
+produced by `gen`.
+
+### Product and Sum types
+
+Capricious can construct random instances of product types such as case classes and enumeration cases, and
+sum types like `enum`s and sealed traits, as long as each field of the product and variant of the sum has
+a valid `Randomizable` instance.
+
 ## Status
 
 Capricious is classified as __fledgling__. For reference, Scala One projects are
@@ -100,7 +120,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Capricious is designed to be _small_. Its entire source code currently consists
-of 81 lines of code.
+of 92 lines of code.
 
 ## Building
 
