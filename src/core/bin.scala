@@ -34,8 +34,8 @@ object Rudiments:
   object ByteSize:
     def apply(long: Long): ByteSize = long
     given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString.tt
-    given Ordering[ByteSize] = Ordering.Long.on(_.long)
-    given Communicable[ByteSize] = byteSize => Message(byteSize.text)
+    given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
+    given communicable: Communicable[ByteSize] = byteSize => Message(byteSize.text)
 
     given add: ClosedOperator["+", ByteSize] = _ + _
     given subtract: ClosedOperator["-", ByteSize] = _ - _
