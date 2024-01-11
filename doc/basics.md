@@ -50,3 +50,22 @@ Those generators which require a seed value can define it, as a `Long` value, wi
 ```scala
 given Seed(23956242374982L)
 ```
+
+### The `Randomizable` Typeclass
+
+The typeclass, `Randomizable`, will produce random instances of its type parameter. Given instances are
+predefined for a few basic types, but custom instances can be constructed by implementing the trait:
+```scala
+trait Randomizable[ValueType]:
+  def from(gen: => Long): ValueType
+```
+
+An implementation of `from` should call `gen` as many times as necessary to construct a new, random instance
+of `ValueType`. Although random, the instance of `ValueType` should depend deterministically on the values
+produced by `gen`.
+
+### Product and Sum types
+
+Capricious can construct random instances of product types such as case classes and enumeration cases, and
+sum types like `enum`s and sealed traits, as long as each field of the product and variant of the sum has
+a valid `Randomizable` instance.
