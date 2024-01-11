@@ -18,13 +18,20 @@ package capricious
 
 import wisteria.*
 import hypotenuse.*
+import rudiments.*
 
 import scala.util as su
+import scala.compiletime.*
 
 import java.util as ju
 import java.security as js
 
-case class Seed(value: IArray[Byte])
+object Seed:
+  def apply(long: Long): Seed = Seed(long.bytes)
+
+case class Seed(value: Bytes):
+  def entropy: Int = value.length*8
+  def long: Long = Long(value)
 
 trait RandomNumberGenerator:
   def make(): su.Random
@@ -33,75 +40,74 @@ package randomNumberGenerators:
   given unseeded: RandomNumberGenerator = () => su.Random(java.util.Random())
   given secureUnseeded: RandomNumberGenerator = () => su.Random(js.SecureRandom())
   given stronglySecure: RandomNumberGenerator = () => su.Random(js.SecureRandom.getInstanceStrong().nn)
-  
-  given seeded(using seed: Seed): RandomNumberGenerator = () =>
-    su.Random(ju.Random(seed.value.foldLeft(0L)(_ << 8 | _ & 0xff)))
-  
-  given secureSeeded(using seed: Seed): RandomNumberGenerator = () =>
-    su.Random(js.SecureRandom(seed.value.to(Array)))
+  given seeded(using seed: Seed): RandomNumberGenerator = () => su.Random(ju.Random(seed.long))
+  given secureSeeded(using seed: Seed): RandomNumberGenerator = () => su.Random(js.SecureRandom(seed.value.to(Array)))
 
-object Randomizable extends Derivation[Randomizable]:
-  given int: Randomizable[Int] = _.toInt
-  given long: Randomizable[Long] = identity(_)
-  given char: Randomizable[Char] = _.toChar
-  given boolean: Randomizable[Boolean] = _ < 0L
-  given double(using distribution: Distribution): Randomizable[Double] = distribution.transform(_)
+object Arbitrary extends Derivation[Arbitrary]:
+  given int: Arbitrary[Int] = _.long().toInt
+  given long: Arbitrary[Long] = _.long()
+  given char: Arbitrary[Char] = _.long().toChar
+  given seed: Arbitrary[Seed] = _.long().pipe(Seed(_))
+  given boolean: Arbitrary[Boolean] = _.long() < 0L
+  given double(using distribution: Distribution): Arbitrary[Double] = distribution.transform(_)
 
-  inline def join[DerivationType <: Product: ProductReflection]: Randomizable[DerivationType] = gen =>
-    construct:
-      [FieldType] => randomizable => randomizable.from(gen)
+  inline def join[DerivationType <: Product: ProductReflection]: Arbitrary[DerivationType] = random =>
+    given seed: Seed = random[Seed]()
+    randomize(using summonInline[RandomNumberGenerator]):
+      construct { [FieldType] => arbitrary => arbitrary.from(summon[Random]) }
 
-  inline def split[DerivationType: SumReflection]: Randomizable[DerivationType] = gen =>
-    delegate(variantLabels(gen.toInt.abs%variantLabels.length)):
-      [VariantType <: DerivationType] => randomizable => randomizable.from(gen)
+  inline def split[DerivationType: SumReflection]: Arbitrary[DerivationType] = random =>
+    given seed: Seed = random[Seed]()
+    randomize(using summonInline[RandomNumberGenerator]):
+      delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
+        [VariantType <: DerivationType] => arbitrary => arbitrary.from(summon[Random])
 
-// Note that `gen` is side-effecting, and is therefore not deterministic in concurrent environments
-trait Randomizable[+ValueType]:
-  def from(gen: => Long): ValueType
+trait Arbitrary[+ValueType]:
+  def apply()(using random: Random): ValueType = from(random)
+  def from(random: Random): ValueType
 
 object Random:
-  lazy val generalPurpose: Random =
-    import randomNumberGenerators.unseeded
-    Random()
+  def apply(seed: Seed)(using generator: RandomNumberGenerator): Random = new Random(generator.make())
 
-  def apply()(using generator: RandomNumberGenerator): Random = new Random(generator.make())
+class Random(private val generator: su.Random):
+  def long(): Long = generator.nextLong()
+  def gaussian(): Double = generator.nextGaussian()
+  def unitInterval(): Double = generator.nextDouble()
+  def apply[ValueType]()(using arbitrary: Arbitrary[ValueType]): ValueType = arbitrary.from(this)
 
-class Random(private val rng: su.Random):
-  def apply[ValueType]()(using randomizable: Randomizable[ValueType]): ValueType =
-    randomizable.from(rng.nextLong())
+  transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] = generator.shuffle(seq)
 
-  def gaussian(): Double = rng.nextGaussian()
-  def unitInterval(): Double = rng.nextDouble()
+def randomize[ResultType](using generator: RandomNumberGenerator)(block: Random ?=> ResultType): ResultType =
+  block(using new Random(generator.make()))
 
-  transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] = rng.shuffle(seq)
-
-def random[ValueType: Randomizable](): ValueType = Random.generalPurpose[ValueType]()
+def arbitrary[ValueType: Arbitrary]()(using Random)(using arbitrary: Arbitrary[ValueType]): ValueType =
+  arbitrary()
 
 package randomDistributions:
   given gaussian: Distribution = Gaussian()
   given uniformUnitInterval: Distribution = UniformDistribution(0, 1)
   given uniformSymmetricUnitInterval: Distribution = UniformDistribution(-1, 1)
-  given binary: Distribution = java.lang.Double.longBitsToDouble(_)
+  given binary: Distribution = random => Double(random.long())
 
 trait Distribution:
-  def transform(gen: => Long): Double
+  def transform(random: Random): Double
 
 case class UniformDistribution(start: Double, end: Double) extends Distribution:
-  def transform(gen: => Long): Double = ((gen.toDouble/2)/Long.MaxValue)*(end - start) + (end + start)/2
+  def transform(random: Random): Double = ((random.long().toDouble/2)/Long.MaxValue)*(end - start) + (end + start)/2
 
 case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
-  def transform(gen: => Long): Double =
-    val u0 = randomDistributions.uniformUnitInterval.transform(gen)
-    val u1 = randomDistributions.uniformUnitInterval.transform(gen)
+  def transform(random: Random): Double =
+    val u0 = randomDistributions.uniformUnitInterval.transform(random)
+    val u1 = randomDistributions.uniformUnitInterval.transform(random)
     
     standardDeviation*(-2*log(u0)).sqrt*cos(2*π*u1) + mean
     
 case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
-  def transform(gen: => Long): Double =
+  def transform(random: Random): Double =
     @annotation.tailrec
     def recur(): Double =
-      val u0 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
-      val u1 = randomDistributions.uniformSymmetricUnitInterval.transform(gen)
+      val u0 = randomDistributions.uniformSymmetricUnitInterval.transform(random)
+      val u1 = randomDistributions.uniformSymmetricUnitInterval.transform(random)
       val s = u0*u0 + u1*u1
       if s >= 1 || s == 0 then recur() else standardDeviation*u0*(-2*log(s)/s).sqrt + mean
 
@@ -119,10 +125,10 @@ case class Gamma(shape: Int, scale: Double) extends Distribution:
   def variationCoefficient: Double = shape ** -0.5
   def skewness: Double = 2.0*variationCoefficient
 
-  def transform(gen: => Long): Double =
+  def transform(random: Random): Double =
     def accumulate(sum: Double, count: Int): Double =
       if count == 0 then sum*scale else
-        val gaussian = randomDistributions.gaussian.transform(gen)
+        val gaussian = randomDistributions.gaussian.transform(random)
         accumulate(sum + gaussian*gaussian, count - 1)
     
     accumulate(0.0, shape)
