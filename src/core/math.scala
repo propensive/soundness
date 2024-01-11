@@ -60,7 +60,7 @@ extension (double: Double)
   inline def finite: Boolean = double.isFinite
   inline def infinite: Boolean = double.isInfinite
   inline def nan: Boolean = double.isNaN
-
+  
   @targetName("power")
   inline infix def **(exponent: Double): Double = math.pow(double, exponent)
 
@@ -106,6 +106,35 @@ extension (long: Long)
   @targetName("power")
   inline infix def **(exponent: Double): Double = math.pow(long.toDouble, exponent)
 
+  def bytes: IArray[Byte] =
+    var array: Array[Byte] = new Array[Byte](8)
+    var index = 0
+    
+    while index < 8 do
+      array(index) = (long >> (8*(7 - index))).toByte
+      index += 1
+
+    array.asInstanceOf[IArray[Byte]]
+
+extension (longObject: Long.type)
+  def apply(bytes: IArray[Byte]): Long =
+    var long: Long = (bytes(0) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(1) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(2) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(3) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(4) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(5) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(6) & 0xFF).toLong
+    long <<= 8
+    long |= (bytes(7) & 0xFF).toLong
+    
+    long
 
 def erf(value: Double): Double =
   val a = 0.254829592
