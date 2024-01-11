@@ -89,7 +89,7 @@ extension (int: Int)
   @targetName("power")
   inline infix def **(exponent: Double): Double = math.pow(int.toDouble, exponent)
 
-  inline def bits: Int = java.lang.Long.bitCount(int)
+  inline def countBits: Int = java.lang.Long.bitCount(int)
   inline def highestBit: Int = java.lang.Integer.highestOneBit(int)
   inline def lowestBit: Int = java.lang.Integer.lowestOneBit(int)
   inline def leadingZeros: Int = java.lang.Integer.numberOfLeadingZeros(int)
@@ -106,7 +106,7 @@ extension (long: Long)
   inline def abs: Long = math.abs(long)
   inline def decrement: Long = math.decrementExact(long)
   inline def increment: Long = math.incrementExact(long)
-  inline def bits: Int = java.lang.Long.bitCount(long)
+  inline def countBits: Int = java.lang.Long.bitCount(long)
   inline def highestBit: Long = java.lang.Long.highestOneBit(long)
   inline def lowestBit: Long = java.lang.Long.lowestOneBit(long)
   inline def leadingZeros: Int = java.lang.Long.numberOfLeadingZeros(long)
@@ -131,6 +131,10 @@ extension (long: Long)
       index += 1
 
     array.asInstanceOf[IArray[Byte]]
+
+extension (doubleObject: Double.type)
+  inline def apply(long: Long): Double = java.lang.Double.longBitsToDouble(long)
+
 
 extension (longObject: Long.type)
   def apply(bytes: IArray[Byte]): Long =
