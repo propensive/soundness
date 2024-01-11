@@ -3,13 +3,14 @@
 target charisma/test
 
 repo propensive/probably
+repo propensive/hypotenuse
 repo propensive/larceny
 
 project charisma
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core hieroglyph/core
+    include   gossamer/core hieroglyph/core hypotenuse/core
 
   module test
     compiler  scala

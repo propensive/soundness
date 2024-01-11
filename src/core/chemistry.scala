@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import anticipation.*
 import vacuous.*
+import hypotenuse.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
@@ -187,8 +188,8 @@ object Molecule:
     val suffix =
       val polarity = if molecule.charge == 0 then t"" else if molecule.charge < 0 then t"⁻" else t"⁺"
       
-      val magnitude = if math.abs(molecule.charge) < 2 then t"" else
-        t"${math.abs(molecule.charge).show.chars.map(_.superscript).sift[Char].map(_.show).join}"
+      val magnitude = if molecule.charge.abs < 2 then t"" else
+        t"${molecule.charge.abs.show.chars.map(_.superscript).sift[Char].map(_.show).join}"
 
       t"$magnitude$polarity${molecule.state.let(_.show).or(t"")}"
     
