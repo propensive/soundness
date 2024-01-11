@@ -17,6 +17,7 @@
 package aviation
 
 import rudiments.*
+import hypotenuse.*
 
 object LeapSeconds:
   // Bits represent leap seconds in years from 1972 (MSB) to 2035 (LSB). Leap seconds will be abolished after
@@ -33,7 +34,7 @@ object LeapSeconds:
     before((year - 1972)*2 + (if plusSixMonths then 1 else 0))
 
   private def before(n: Int): Int =
-    inline def ones(long: Long): Int = java.lang.Long.bitCount(long)
+    inline def ones(long: Long): Int = long.countBits
     val decemberShift = n.min(127)/2
     val juneShift = decemberShift + n%2
     

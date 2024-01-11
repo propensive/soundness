@@ -4,6 +4,7 @@
 target aviation/test
 
 repo propensive/probably
+repo propensive/hypotenuse
 repo propensive/kaleidoscope
 repo propensive/quantitative
 
@@ -11,7 +12,7 @@ project aviation
   module core
     compiler  scala
     sources   src/core
-    include   eucalyptus/core cardinality/core kaleidoscope/core quantitative/core
+    include   eucalyptus/core cardinality/core kaleidoscope/core quantitative/core hypotenuse/core
 
   module test
     compiler  scala
