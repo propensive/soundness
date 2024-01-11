@@ -16,6 +16,8 @@
 
 package quantitative
 
+import hypotenuse.*
+
 import language.experimental.captureChecking
 
 val Galileo = MetricUnit(0.01*Metre/(Second*Second))
@@ -29,7 +31,7 @@ val Calorie = MetricUnit(4.184*Joule)
 val Langley = MetricUnit(41840*Joule/(Metre*Metre))
 val Phot = MetricUnit(10e4*Lux)
 val Stokes = MetricUnit(10e-4*Metre*Metre/Second)
-val Lambert = MetricUnit((10e4/math.Pi)*Candela/(Metre*Metre))
+val Lambert = MetricUnit((10e4/π)*Candela/(Metre*Metre))
 val Emu = MetricUnit(10e-3*Ampere/(Metre*Metre))
 val Oersted = MetricUnit(79.577*Ampere/Metre)
 val Maxwell = MetricUnit(10e-8*Weber)

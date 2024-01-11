@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import symbolism.*
+import hypotenuse.*
 import anticipation.*
 
 import scala.quoted.*
@@ -235,7 +236,7 @@ object QuantitativeMacros:
           case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
             case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
               case ConstantType(constant) => (constant: @unchecked) match
-                case DoubleConstant(double) => Expr(math.pow(double, power))
+                case DoubleConstant(double) => Expr(double**power)
 
   private def normalize
       (using Quotes)
