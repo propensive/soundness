@@ -19,6 +19,7 @@ package charisma
 import gossamer.*
 import rudiments.*
 import anticipation.*
+import vacuous.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
