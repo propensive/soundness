@@ -22,8 +22,8 @@ paths.
 ## Availability Plan
 
 Surveillance has not yet been published. The medium-term plan is to build Surveillance
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Surveillance.
 
 Subsequently, Surveillance will also be made available as a binary in the Maven
@@ -54,6 +54,7 @@ Constructing a new `Watcher` on a directory will register that directory with th
 and start a new thread to respond to updates.
 
 The most important method of a `Watcher` is its `stream` method, which will return a `LazyList[WatchEvent]`
+
 
 
 
