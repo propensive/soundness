@@ -124,3 +124,4 @@ This includes the following rewrites:
 [Escapade](https://github.com/propensive/escapade) provides a contextual
 `AnsiShow` instance for `StackTrace`, and by extension, `Exception`.
 
+
