@@ -79,7 +79,7 @@ def main(): Unit =
 
     async1.await()
     async2.await()
-``
+```
 
 ### Generating random `Double`s
 
