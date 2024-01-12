@@ -23,8 +23,8 @@ _Iridescence_ implements several algorithms for working with colors represented 
 ## Availability Plan
 
 Iridescence has not yet been published. The medium-term plan is to build Iridescence
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Iridescence.
 
 Subsequently, Iridescence will also be made available as a binary in the Maven
@@ -158,6 +158,7 @@ These are available on the `Srgb` type, with the exception of `Hsl#css`.
 ### Limitations
 
 There is no support for transparency.
+
 
 
 
