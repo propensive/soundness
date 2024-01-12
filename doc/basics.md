@@ -44,3 +44,4 @@ performance cost of deferring simple operations to a typeclass, and any
 implementation of `Operator` should do the same.
 
 
+
