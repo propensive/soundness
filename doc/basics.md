@@ -119,3 +119,4 @@ The `Redirect` and `NotFound` case classes provide representations of an HTTP `3
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
 
 
+
