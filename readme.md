@@ -22,8 +22,8 @@ reflection detail about how the source of an expression translates into an AST.
 ## Availability Plan
 
 Hyperbole has not yet been published. The medium-term plan is to build Hyperbole
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Hyperbole.
 
 Subsequently, Hyperbole will also be made available as a binary in the Maven
@@ -82,6 +82,7 @@ test(t"Two joined lists are not empty"):
 .assert(!_.isEmpty)
 
 ```
+
 
 
 
