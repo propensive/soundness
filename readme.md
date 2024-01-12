@@ -20,8 +20,8 @@ and writing files within a ZIP archive, in a streaming or random access style.
 ## Availability Plan
 
 Zeppelin has not yet been published. The medium-term plan is to build Zeppelin
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Zeppelin.
 
 Subsequently, Zeppelin will also be made available as a binary in the Maven
@@ -72,6 +72,7 @@ This method includes two additional parameters: a `prefix`, a `Bytes`
 typically used to make the ZIP file executable; and a `timestamp` value for
 specifying the timestamp of each entry appended to the ZIP file. If no
 `timestamp` is specified, the current time will be used.
+
 
 
 
