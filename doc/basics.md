@@ -146,3 +146,4 @@ def run2(): Unit =
   DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
 ```
 
+
