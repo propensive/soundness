@@ -32,19 +32,19 @@ import language.dynamics
 //import language.experimental.captureChecking
 
 object CodlNode:
-  given Debug[CodlNode] = _.data.option.fold(t"!"): data =>
+  given debug: Debug[CodlNode] = _.data.option.fold(t"!"): data =>
     t"${data.key}[${data.children.map(_.debug).join(t",")}]"
 
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
   
-  given Contrast[CodlNode] = (left, right) =>
-    if left == right then Semblance.Identical(left.debug) else
+  given contrast: Contrast[CodlNode] = (left, right) =>
+    if left == right then Semblance.Identical(left.debugText) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.debug)
-          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
+          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debugText).toString.tt)
+          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debugText)
+          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debugText).toString.tt, t"—")
           
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
@@ -94,14 +94,14 @@ object CodlDoc:
 
   inline given contrast: Contrast[CodlDoc] = new Contrast[CodlDoc]:
     def apply(left: CodlDoc, right: CodlDoc) =
-      inline if left == right then Semblance.Identical(left.debug) else
+      inline if left == right then Semblance.Identical(left.debugText) else
         val comparison = IArray.from:
           (t"[schema]", left.schema.contrastWith(right.schema)) +:
           (t"[margin]", left.margin.contrastWith(right.margin)) +:
           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.debug)
-            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.debug, t"—")
+            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debugText).toString.tt)
+            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debugText)
+            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debugText).toString.tt, t"—")
             case Sub(_, v, lv, rv) =>
               val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
               key -> lv.contrastWith(rv)
@@ -147,7 +147,6 @@ extends Indexed:
     
     copy(children = recur(children, input.children))
 
-
   def as[T](using decoder: CodlDecoder[T])(using Raises[CodlReadError]): T = decoder.decode(List(this))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
@@ -164,7 +163,7 @@ extends Indexed:
     writer.toString().tt
 
 object Data:
-  given [T: CodlEncoder]: Insertion[List[Data], T] =
+  given insertion[T: CodlEncoder]: Insertion[List[Data], T] =
     value => summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect { case data: Data => data }
 
   given debug: Debug[Data] = data => t"Data(${data.key}, ${data.children.length})"
@@ -201,10 +200,13 @@ extends Indexed:
 
 
 case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Optional[Text] = Unset)
+derives Debug//, Contrast
+
 object Layout:
   final val empty = Layout(0, false, 0)
 
 case class Layout(params: Int, multiline: Boolean, col: Int)
+derives Debug//, Contrast
 
 trait Indexed extends Dynamic:
   def children: IArray[CodlNode]
