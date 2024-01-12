@@ -59,18 +59,15 @@ extends CodlDecoder[ValueType]:
       case _ =>
         abort(CodlReadError())
 
-trait CodlEncoder2:
+object CodlEncoder extends ProductDerivation[CodlEncoder]:
   given optional
       [ValueType]
-      (using DummyImplicit)
       (using encoder: CodlEncoder[ValueType])
-      (using util.NotGiven[Unset.type <:< ValueType])
       : CodlEncoder[Optional[ValueType]] =
     new CodlEncoder[Optional[ValueType]]:
       def schema: CodlSchema = encoder.schema.optional
       def encode(value: Optional[ValueType]): List[IArray[CodlNode]] = value.let(encoder.encode(_)).or(List())
 
-object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
     new CodlEncoder[DerivationType]:
       def schema: CodlSchema =
@@ -85,11 +82,6 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
                 CodlNode(Data(label, value, Layout.empty, context.schema))
               .filter(!_.empty)
           .to(List).flatten
-
-object CodlEncoder extends CodlEncoder2:
-
-  inline given derived[DerivationType: Reflection]: CodlEncoder[DerivationType] =
-    CodlEncoderDerivation.derived[DerivationType]
 
   given field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
     new CodlEncoder[ValueType]:
@@ -198,7 +190,7 @@ object CodlEncoder extends CodlEncoder2:
 //               summonInline[CodlDecoder[headType]].decode(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
 //                   deriveProduct[DerivationType, tailType, tailLabels](value)
 
-object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
+object CodlDecoder extends ProductDerivation[CodlDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlDecoder[DerivationType] =
     new CodlDecoder[DerivationType]:
       def schema: CodlSchema =
@@ -210,7 +202,6 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
           [FieldType] => context =>
             context.decode(values.headOption.getOrElse(abort(CodlReadError())).get(label))
  
-object CodlDecoder:
   given optional
       [ValueType]
       (using DummyImplicit)
@@ -225,10 +216,6 @@ object CodlDecoder:
 
   given field[ValueType](using decoder: Decoder[ValueType]): CodlDecoder[ValueType]/*^{decoder}*/ =
     CodlFieldReader(decoder.decode(_))
-
-  inline given derived[DerivationType: Reflection]: CodlDecoder[DerivationType] =
-    CodlDecoderDerivation.derived[DerivationType]
-
 
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
