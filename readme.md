@@ -23,8 +23,8 @@ __Telekinesis__ is a lightweight HTTP client for sending and HTTP requests.
 ## Availability Plan
 
 Telekinesis has not yet been published. The medium-term plan is to build Telekinesis
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Telekinesis.
 
 Subsequently, Telekinesis will also be made available as a binary in the Maven
@@ -92,6 +92,7 @@ catch
   case HttpError(_, _) =>
     t"The request failed"
 ```
+
 
 
 
