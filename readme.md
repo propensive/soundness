@@ -21,8 +21,8 @@ stylesheets.
 ## Availability Plan
 
 Cataclysm has not yet been published. The medium-term plan is to build Cataclysm
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Cataclysm.
 
 Subsequently, Cataclysm will also be made available as a binary in the Maven
@@ -192,6 +192,7 @@ separated by spaces in CSS, they should be embedded in a tuple using Cataclysm. 
 ```scala
 Css(margin = (1.px, 3.em))
 ```
+
 
 
 
