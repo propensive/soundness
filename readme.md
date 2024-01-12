@@ -23,8 +23,8 @@ it&rsquo;s the same as for any other program.
 ## Availability Plan
 
 Probably has not yet been published. The medium-term plan is to build Probably
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Probably.
 
 Subsequently, Probably will also be made available as a binary in the Maven
@@ -201,6 +201,7 @@ launched it using the CLI, the table of results will show the nested tests inden
 
 The `Runner` introduced by the `suite` method is the same as any other `Runner`, so further test suites can be
 defined inside other test suites, making it possible to organise tests into a hierarchy.
+
 
 
 
