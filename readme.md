@@ -27,8 +27,8 @@ order to work with the language.
 ## Availability Plan
 
 Digression has not yet been published. The medium-term plan is to build Digression
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Digression.
 
 Subsequently, Digression will also be made available as a binary in the Maven
@@ -163,6 +163,7 @@ This includes the following rewrites:
 
 [Escapade](https://github.com/propensive/escapade) provides a contextual
 `AnsiShow` instance for `StackTrace`, and by extension, `Exception`.
+
 
 
 
