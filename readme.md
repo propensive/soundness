@@ -23,8 +23,8 @@ structure as lines, for rendering in a monospaced font, typically in a terminal.
 ## Availability Plan
 
 Dendrology has not yet been published. The medium-term plan is to build Dendrology
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Dendrology.
 
 Subsequently, Dendrology will also be made available as a binary in the Maven
@@ -181,6 +181,7 @@ val dag = Dag(
 def run2(): Unit =
   DagDiagram(dag).render { node => t"▪ $node" }.foreach(Out.println(_))
 ```
+
 
 
 
