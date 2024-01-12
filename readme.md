@@ -25,8 +25,8 @@ method that reads a stream of bytes and returns structured data.
 Merino
 jawn has not yet been published. The medium-term plan is to build Merino
 jawn
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Merino
 jawn.
 
@@ -70,6 +70,7 @@ disambiguated reflectively by their erased types.
 If parsing fails, a `JsonParseError` will be thrown, including the line and
 column in which the error occurs, and an enumeration value (of type
 `JsonParseError.Issue`) describing the error.
+
 
 
 
