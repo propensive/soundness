@@ -107,6 +107,9 @@ object Contrast extends Derivation[Contrast]:
       if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
       else Semblance.Different(leftMsg, rightMsg)
 
+  given Contrast[Text] = (left, right) =>
+    if left == right then Semblance.Identical(left) else Semblance.Different(left, right)
+
   inline def compareSeq
       [ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
