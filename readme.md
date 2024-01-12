@@ -20,8 +20,8 @@ support for different character encodings, and utilizing additional Unicode meta
 ## Availability Plan
 
 Hieroglyph has not yet been published. The medium-term plan is to build Hieroglyph
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Hieroglyph.
 
 Subsequently, Hieroglyph will also be made available as a binary in the Maven
@@ -61,6 +61,7 @@ display width of the entire string by summing its character widths, or, with
 Therefore, methods which need to perform text width calculations can use either
 a `uniform` mode or an `eastAsianScripts` mode, depending on the contextual
 value imported from the `textWidthCalculation` package.
+
 
 
 
