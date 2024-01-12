@@ -20,8 +20,8 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 ## Availability Plan
 
 Adversaria has not yet been published. The medium-term plan is to build Adversaria
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Adversaria.
 
 Subsequently, Adversaria will also be made available as a binary in the Maven
@@ -95,6 +95,7 @@ accessor, such as `_.email`, otherwise the method will not compile.
 `T` to dereference) for each annotation on any field with an annotation of type
 `A` in `T`'s definition.
 - `Annotations.firstField[T, A]` will return the first such field, if it exists.
+
 
 
 
