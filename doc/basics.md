@@ -133,12 +133,13 @@ The typeclass, `Arbitrary`, will produce random instances of its type parameter.
 predefined for a few basic types, but custom instances can be constructed by implementing the trait:
 ```scala
 trait Arbitrary[ValueType]:
-  def from(gen: => Long): ValueType
+  def from(random: Random): ValueType
 ```
 
-An implementation of `from` should call `gen` as many times as necessary to construct a new, random instance
-of `ValueType`. Although random, the instance of `ValueType` should depend deterministically on the values
-produced by `gen`.
+An implementation of `from` should call `random`'s methods as many times as
+necessary to construct a new, random instance of `ValueType`. Although random,
+the instance of `ValueType` should depend deterministically on the values
+produced by `random`.
 
 ### Product and Sum types
 
