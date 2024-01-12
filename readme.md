@@ -20,8 +20,8 @@ TBC
 ## Availability Plan
 
 Perforate has not yet been published. The medium-term plan is to build Perforate
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Perforate.
 
 Subsequently, Perforate will also be made available as a binary in the Maven
@@ -208,6 +208,7 @@ preceding the `mitigate` block, like a `try`/`catch` block, but this has proven
 to be difficult. There is an open issue to find a way to switch the order, and
 it is hoped that a later version of Perforate can achieve this more natural
 order._
+
 
 
 
