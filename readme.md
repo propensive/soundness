@@ -23,8 +23,8 @@ exists.
 ## Availability Plan
 
 Nettlesome has not yet been published. The medium-term plan is to build Nettlesome
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Nettlesome.
 
 Subsequently, Nettlesome will also be made available as a binary in the Maven
@@ -116,6 +116,7 @@ val url = Url.parse(urlText)
 If an invalid value is passed to the `parse` method, then an error will be
 raised. If using [Perforate](https://github.com/propensive/perforate/) then
 there are a variety of ways in which such errors can be handled.
+
 
 
 
