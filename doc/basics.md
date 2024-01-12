@@ -48,3 +48,4 @@ Two convenience methods are provided on `Uuid`s:
 - the unary `~` operator, which will construct a new `Uuid` by inverting its bits, and
 - the binary `^` operator, which will combine two `Uuid`s by XORing their bits
 
+
