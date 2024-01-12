@@ -22,8 +22,8 @@ Bloom filter, with flexibility to tune its properties according to need.
 ## Availability Plan
 
 Ulysses has not yet been published. The medium-term plan is to build Ulysses
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Ulysses.
 
 Subsequently, Ulysses will also be made available as a binary in the Maven
@@ -89,6 +89,7 @@ is an estimated 1% chance that the `mayContain` method will return `true` for
 an element which has not been added. That false-positive probably will increase
 if significantly more elements are added to the Bloom filter, and would be
 smaller had significantly fewer elements been added.
+
 
 
 
