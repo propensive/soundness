@@ -23,8 +23,8 @@ just on the operation, but also the filesystem and in-scope options.
 ## Availability Plan
 
 Galilei has not yet been published. The medium-term plan is to build Galilei
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Galilei.
 
 Subsequently, Galilei will also be made available as a binary in the Maven
@@ -80,6 +80,7 @@ Of course, the contents of a filesystem can change independently of the JVM, so 
 an immutable `File` or `Directory` instance does not guarantee its eternal existence on disk, but
 we do, at least, guarantee that the filesystem node existed and had the correct type at the time
 of the object's creation.
+
 
 
 
