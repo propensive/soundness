@@ -25,8 +25,8 @@ container, preferably on a Loom-based JVM.
 ## Availability Plan
 
 Scintillate has not yet been published. The medium-term plan is to build Scintillate
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Scintillate.
 
 Subsequently, Scintillate will also be made available as a binary in the Maven
@@ -155,6 +155,7 @@ The `Redirect` and `NotFound` case classes provide representations of an HTTP `3
 
 `Redirect` takes a single parameter, a representation of a location typically as a `Url` or a `String`, but
 other representations can be used provided a `ToLocation` for that type is in contextual scope.
+
 
 
 
