@@ -34,7 +34,7 @@ case class CodlLabel[+TargetType, +FieldNameType <: Label](label: String)
 
 case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
 
-trait CodlEncoder[-ValueType]:
+trait CodlEncoder[ValueType]:
   def encode(value: ValueType): List[IArray[CodlNode]]
   def schema: CodlSchema
 
@@ -42,7 +42,7 @@ trait CodlDecoder[ValueType]:
   def decode(value: List[Indexed])(using codlRead: Raises[CodlReadError]): ValueType
   def schema: CodlSchema
 
-trait CodlFieldWriter[-ValueType] extends CodlEncoder[ValueType]:
+trait CodlFieldWriter[ValueType] extends CodlEncoder[ValueType]:
   def schema: CodlSchema = Field(Arity.One)
   def encodeField(value: ValueType): Text
   def encode(value: ValueType): List[IArray[CodlNode]] =
@@ -59,15 +59,7 @@ extends CodlDecoder[ValueType]:
       case _ =>
         abort(CodlReadError())
 
-object CodlEncoder extends ProductDerivation[CodlEncoder]:
-  given optional
-      [ValueType]
-      (using encoder: CodlEncoder[ValueType])
-      : CodlEncoder[Optional[ValueType]] =
-    new CodlEncoder[Optional[ValueType]]:
-      def schema: CodlSchema = encoder.schema.optional
-      def encode(value: Optional[ValueType]): List[IArray[CodlNode]] = value.let(encoder.encode(_)).or(List())
-
+object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
     new CodlEncoder[DerivationType]:
       def schema: CodlSchema =
@@ -83,12 +75,26 @@ object CodlEncoder extends ProductDerivation[CodlEncoder]:
               .filter(!_.empty)
           .to(List).flatten
 
-  given field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
+object CodlEncoder:
+
+  inline given derived[ValueType]: CodlEncoder[ValueType] = summonFrom:
+    case given Encoder[ValueType]           => field[ValueType]
+    case given ProductReflection[ValueType] => CodlEncoderDerivation.derived[ValueType]
+
+  def field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
     new CodlEncoder[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
       
       def encode(value: ValueType): List[IArray[CodlNode]] =
         List(IArray(CodlNode(Data(encoder.encode(value)))))
+
+  given optional
+      [ValueType]
+      (using encoder: CodlEncoder[ValueType])
+      : CodlEncoder[Optional[ValueType]] =
+    new CodlEncoder[Optional[ValueType]]:
+      def schema: CodlSchema = encoder.schema.optional
+      def encode(value: Optional[ValueType]): List[IArray[CodlNode]] = value.let(encoder.encode(_)).or(List())
 
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
@@ -190,7 +196,7 @@ object CodlEncoder extends ProductDerivation[CodlEncoder]:
 //               summonInline[CodlDecoder[headType]].decode(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
 //                   deriveProduct[DerivationType, tailType, tailLabels](value)
 
-object CodlDecoder extends ProductDerivation[CodlDecoder]:
+object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlDecoder[DerivationType] =
     new CodlDecoder[DerivationType]:
       def schema: CodlSchema =
@@ -202,6 +208,19 @@ object CodlDecoder extends ProductDerivation[CodlDecoder]:
           [FieldType] => context =>
             context.decode(values.headOption.getOrElse(abort(CodlReadError())).get(label))
  
+
+object CodlDecoder:
+
+  inline given derived[ValueType]: CodlDecoder[ValueType] = summonFrom:
+    case given Decoder[ValueType]           => field[ValueType]
+    case given ProductReflection[ValueType] => CodlDecoderDerivation.derived[ValueType]
+
+  def field[ValueType](using decoder: Decoder[ValueType]): CodlDecoder[ValueType]/*^{decoder}*/ =
+    CodlFieldReader(decoder.decode(_))
+
+  given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
+  given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
+
   given optional
       [ValueType]
       (using DummyImplicit)
@@ -213,12 +232,6 @@ object CodlDecoder extends ProductDerivation[CodlDecoder]:
       
       def decode(value: List[Indexed])(using codlRead: Raises[CodlReadError]): Optional[ValueType] =
         if value.isEmpty then Unset else decoder.decode(value)
-
-  given field[ValueType](using decoder: Decoder[ValueType]): CodlDecoder[ValueType]/*^{decoder}*/ =
-    CodlFieldReader(decoder.decode(_))
-
-  given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
-  given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
   given option[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Option[ValueType]] =
     new CodlDecoder[Option[ValueType]]:
