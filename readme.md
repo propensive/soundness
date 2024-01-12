@@ -24,8 +24,8 @@ plus the means to generate DOT for input to GraphViz.
 ## Availability Plan
 
 Acyclicity has not yet been published. The medium-term plan is to build Acyclicity
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Acyclicity.
 
 Subsequently, Acyclicity will also be made available as a binary in the Maven
@@ -110,6 +110,9 @@ def graph() = println(dag.map(_.show).dot.serialize)
 
 This library is incomplete, inadequately tested and subject to further development, and is recommended to be
 used by developers who do not mind examining the source code to diagnose unexpected behavior.
+
+
+
 
 
 
