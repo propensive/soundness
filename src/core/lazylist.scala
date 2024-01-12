@@ -45,7 +45,7 @@ extension (lazyList: LazyList[Bytes])
       
     recur(lazyList, byteSize)
 
-  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = randomize:
+  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = stochastic:
     given Distribution = Gamma.approximate(mean, variance)
     
     def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
