@@ -21,8 +21,8 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 ## Availability Plan
 
 Xylophone has not yet been published. The medium-term plan is to build Xylophone
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Xylophone.
 
 Subsequently, Xylophone will also be made available as a binary in the Maven
@@ -213,6 +213,7 @@ XML usually needs to be serialized to a string. Xylophone provides a `show` meth
 an `Xml` value to a `Text` value using a contextual `XmlPrinter`, of which two are available by default:
 one which omits all unnecessary whitespace, and one which "pretty prints" the XML with indentation for
 nesting.
+
 
 
 
