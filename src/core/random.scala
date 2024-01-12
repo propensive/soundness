@@ -53,12 +53,12 @@ object Arbitrary extends Derivation[Arbitrary]:
 
   inline def join[DerivationType <: Product: ProductReflection]: Arbitrary[DerivationType] = random =>
     given seed: Seed = random[Seed]()
-    randomize(using summonInline[RandomNumberGenerator]):
+    stochastic(using summonInline[RandomNumberGenerator]):
       construct { [FieldType] => arbitrary => arbitrary.from(summon[Random]) }
 
   inline def split[DerivationType: SumReflection]: Arbitrary[DerivationType] = random =>
     given seed: Seed = random[Seed]()
-    randomize(using summonInline[RandomNumberGenerator]):
+    stochastic(using summonInline[RandomNumberGenerator]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
         [VariantType <: DerivationType] => arbitrary => arbitrary.from(summon[Random])
 
@@ -67,6 +67,7 @@ trait Arbitrary[+ValueType]:
   def from(random: Random): ValueType
 
 object Random:
+  lazy val global: Random = new Random(randomNumberGenerators.unseeded.make())
   def apply(seed: Seed)(using generator: RandomNumberGenerator): Random = new Random(generator.make())
 
 class Random(private val generator: su.Random):
@@ -77,11 +78,16 @@ class Random(private val generator: su.Random):
 
   transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] = generator.shuffle(seq)
 
-def randomize[ResultType](using generator: RandomNumberGenerator)(block: Random ?=> ResultType): ResultType =
+def stochastic[ResultType](using generator: RandomNumberGenerator)(block: Random ?=> ResultType): ResultType =
   block(using new Random(generator.make()))
 
-def arbitrary[ValueType: Arbitrary]()(using Random)(using arbitrary: Arbitrary[ValueType]): ValueType =
+def arbitrary[ValueType]()(using Random)(using arbitrary: Arbitrary[ValueType]): ValueType =
   arbitrary()
+
+def random[ValueType: Arbitrary]()(using arbitrary: Arbitrary[ValueType]): ValueType =
+  given Random = Random.global
+  arbitrary()
+  
 
 package randomDistributions:
   given gaussian: Distribution = Gaussian()
