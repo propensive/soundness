@@ -20,8 +20,8 @@ converting STDIN into an event stream of keypresses.
 ## Availability Plan
 
 Profanity has not yet been published. The medium-term plan is to build Profanity
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Profanity.
 
 Subsequently, Profanity will also be made available as a binary in the Maven
@@ -112,6 +112,7 @@ _on_ or _off_) to be specified.
 ### Limitations
 
 Profanity does not currently support Windows.
+
 
 
 
