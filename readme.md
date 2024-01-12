@@ -22,8 +22,8 @@ libraries.
 ## Availability Plan
 
 Cellulose has not yet been published. The medium-term plan is to build Cellulose
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Cellulose.
 
 Subsequently, Cellulose will also be made available as a binary in the Maven
@@ -102,6 +102,7 @@ This can then be serialized to `Text` with the `Codl#serialize` method:
 ```scala
 val txt = personCodl.serialize
 ```
+
 
 
 
