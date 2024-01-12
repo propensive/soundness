@@ -25,8 +25,8 @@ the same set which can safely select one string from the set.
 ## Availability Plan
 
 Cosmopolite has not yet been published. The medium-term plan is to build Cosmopolite
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Cosmopolite.
 
 Subsequently, Cosmopolite will also be made available as a binary in the Maven
@@ -163,6 +163,7 @@ the `Language` coproduct with each of the `Messages` products, their type parame
 
 Note, however, that the `Language.parse` method, however, can only be invoked on a concrete type, as it needs
 to build a concrete parser for the languages in the union type.
+
 
 
 
