@@ -25,8 +25,8 @@ immutable API.
 ## Availability Plan
 
 Gastronomy has not yet been published. The medium-term plan is to build Gastronomy
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Gastronomy.
 
 Subsequently, Gastronomy will also be made available as a binary in the Maven
@@ -231,6 +231,7 @@ privateKey.pem(RevealSecretKey)
 Gastronomy may be easily extended to support other cryptographic algorithms. The existing
 implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studied to investigate
 this possibility.
+
 
 
 
