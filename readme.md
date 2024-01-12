@@ -27,8 +27,8 @@ content—which lend themselves to conversion to HTML or another format.
 ## Availability Plan
 
 Harlequin has not yet been published. The medium-term plan is to build Harlequin
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Harlequin.
 
 Subsequently, Harlequin will also be made available as a binary in the Maven
@@ -76,6 +76,7 @@ The accent will be one of the following possible values:
 Typically, these would be mapped to different colors during conversion to markup.
 
 It is likely that as Harlequin evolves, the set of `Accent` values will grow.
+
 
 
 
