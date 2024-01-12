@@ -16,8 +16,8 @@ TBC
 ## Availability Plan
 
 Superlunary has not yet been published. The medium-term plan is to build Superlunary
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Superlunary.
 
 Subsequently, Superlunary will also be made available as a binary in the Maven
@@ -65,6 +65,7 @@ on a cloud-based system, or inside a browser using ScalaJS.
 _Superlunary_ provides the wiring to make it easy to exploit the powerful syntax and
 consistency-checking of quoted code, to make it possible to deploy the code inside
 quotes to an environment of your choosing.
+
 
 
 
