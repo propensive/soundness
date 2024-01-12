@@ -22,8 +22,8 @@ instance.
 ## Availability Plan
 
 Gossamer has not yet been published. The medium-term plan is to build Gossamer
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Gossamer.
 
 Subsequently, Gossamer will also be made available as a binary in the Maven
@@ -157,6 +157,7 @@ will evaluate to `"one, two, three and four"`, and,
 val numbers2 = List(t"one", t"two", t"three").join(t"Choose ", t", ", t" or ", t".")
 ```
 results in, `t"Choose one, two or three."`.
+
 
 
 
