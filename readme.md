@@ -18,8 +18,8 @@ _Turbulence_ provides a few useful methods for working with `LazyList`s for stre
 ## Availability Plan
 
 Turbulence has not yet been published. The medium-term plan is to build Turbulence
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Turbulence.
 
 Subsequently, Turbulence will also be made available as a binary in the Maven
@@ -184,6 +184,7 @@ LazyList.pulsar(1000L).foreach:
   unit => println("Hello")
 ```
 will print `Hello` once per second, forever.
+
 
 
 
