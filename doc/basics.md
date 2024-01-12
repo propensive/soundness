@@ -184,3 +184,4 @@ it will ensure that that method can _only_ be called from within an `execute` bl
 obtain an `Effectful` instance is from within an `execute` block. This makes it very difficult to invoke an
 "effectful" method elsewhere, by accident.
 
+
