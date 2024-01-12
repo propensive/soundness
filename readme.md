@@ -21,8 +21,8 @@ and safe to work with JSON in Scala.
 ## Availability Plan
 
 Jacinta has not yet been published. The medium-term plan is to build Jacinta
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Jacinta.
 
 Subsequently, Jacinta will also be made available as a binary in the Maven
@@ -166,6 +166,7 @@ object Email:
   given Json.Reader[Email] = summon[Json.Reader[Text]].map(Email(_))
   given Json.Writer[Email] = summon[Json.Writer[Text]].contramap(_.value)
 ```
+
 
 
 
