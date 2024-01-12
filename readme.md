@@ -23,8 +23,8 @@ differences.
 ## Availability Plan
 
 Chiaroscuro has not yet been published. The medium-term plan is to build Chiaroscuro
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Chiaroscuro.
 
 Subsequently, Chiaroscuro will also be made available as a binary in the Maven
@@ -178,6 +178,7 @@ and a good implementation can dramatically improve the readability of the
 - `Double` elements which differ by less than 5% to be similar
 - `Json` objects with equal `"id"` fields to be similar
 - a choice the same case of an enum (regardless of parameters) to indicate similarity
+
 
 
 
