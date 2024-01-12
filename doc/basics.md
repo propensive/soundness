@@ -80,3 +80,4 @@ An `Interval` is most useful as a way of specifying a range of `Ordinal` values 
 operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
 behave exactly as their familiar counterparts in Scala's standard collections library.
 
+
