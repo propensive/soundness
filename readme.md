@@ -27,8 +27,8 @@ perfect for testing.
 ## Availability Plan
 
 Larceny has not yet been published. The medium-term plan is to build Larceny
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Larceny.
 
 Subsequently, Larceny will also be made available as a binary in the Maven
@@ -155,6 +155,7 @@ test(t"cannot sort data without an Ordering"):
   demilitarize(data.sorted).head.message
 .assert(_.startsWith("No implicit Ordering"))
 ```
+
 
 
 
