@@ -21,8 +21,8 @@ is specified in their type.
 ## Availability Plan
 
 Cardinality has not yet been published. The medium-term plan is to build Cardinality
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Cardinality.
 
 Subsequently, Cardinality will also be made available as a binary in the Maven
@@ -59,6 +59,7 @@ will infer the type of `result` to be `-2.0e8 ~ 3.0e8` (while its value will be 
 
 Unranged `Double`s are pervasive in Scala, so a `Double#force` extension method is provided which can be used (carefully) to convert a `Double`
 to an expected ranged type.
+
 
 
 
