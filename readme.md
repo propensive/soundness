@@ -23,8 +23,8 @@ implementation of `Point` (providing the monadic "unit" operation) can be found.
 ## Availability Plan
 
 Mercator has not yet been published. The medium-term plan is to build Mercator
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Mercator.
 
 Subsequently, Mercator will also be made available as a binary in the Maven
@@ -71,6 +71,7 @@ A `Point[MonadicType]` instance can always be provided to explicitly specify the
 Mercator also provides a `Functor` typeclass, which provides implementations of just
 `point` and `map`. If `map` is required for a particular operation, but `flatMap` is not,
 then only the `Functor` typeclass should be summoned.
+
 
 
 
