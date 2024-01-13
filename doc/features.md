@@ -4,3 +4,4 @@
 - opt-in range checking (e.g. overflow)
 - distinct types for 8, 16, 32 and 64-bit bitmaps
 - integration with standard mathematical operations (from `java.lang.Math`) through extension methods
+- avoids implicit widening to `Int`
