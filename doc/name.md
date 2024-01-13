@@ -1,0 +1,1 @@
+The _hypotenuse_ is the longest edge of a right-angled triangle, whose length, according to Pythagoras' Theorem, is the square root of the sum of the squares of the other two sides. Pythagoras founded the school known as the _Pythagorean Brotherhood_, and it is to this school of mathematics that **Hypotenuse** alludes.
