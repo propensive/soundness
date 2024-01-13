@@ -1,0 +1,6 @@
+- consistent representations of 8, 16, 32 and 64-bit signed and unsigned integers, and 32 and 64-bit floating point numbers
+- uses opaque types and method inlining for native performance
+- stricter typesafety over the standard Java/Scala primitive types
+- opt-in range checking (e.g. overflow)
+- distinct types for 8, 16, 32 and 64-bit bitmaps
+- integration with standard mathematical operations (from `java.lang.Math`) through extension methods
