@@ -25,6 +25,9 @@ import scala.reflect.*
 
 import language.experimental.captureChecking
 
+trait Textualizer[ValueType]:
+  extension (value: ValueType) def textual: Text
+
 object Anticipation:
   opaque type Text <: Matchable = String
 
