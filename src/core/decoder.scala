@@ -22,9 +22,6 @@ import perforate.*
 import anticipation.*
 import inimitable.*
 
-import scala.reflect.*
-import scala.deriving.*
-
 import language.experimental.captureChecking
 
 case class NumberError(text: Text, specializable: Specializable)
@@ -70,8 +67,8 @@ object Decoder:
   given string: Decoder[String] = _.s
   given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
-  given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] = text =>
-    Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
+  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] = text =>
+  //  Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
 @capability
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:

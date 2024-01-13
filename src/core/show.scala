@@ -102,6 +102,9 @@ object TextConversion:
     
     ("t\""+builder.toString+"\"").tt
 
+  given textualize[ValueType](using textualizer: Textualizer[ValueType]): Show[ValueType] =
+    textualizer.textual(_)
+
   given text: Show[Text] = identity(_)
   given string: Show[String] = _.tt
   given char: Show[Char] = char => char.toString.tt
@@ -219,7 +222,7 @@ object TextConversion:
         case given Debug[ValueType]      => value.debugText
         case encoder: Encoder[ValueType] => encoder.encode(value)
         case given Show[ValueType]       => value.show
-        case _                           => value.toString.tt
+        case _                           => s"⦉${value.toString.tt}⦊".tt
       
       s"Some($valueText)".tt
   
