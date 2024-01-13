@@ -27,8 +27,8 @@ for most purposes, and has the distinction that `debug` will always provide _som
 ## Availability Plan
 
 Spectacular has not yet been published. The medium-term plan is to build Spectacular
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Spectacular.
 
 Subsequently, Spectacular will also be made available as a binary in the Maven
@@ -173,6 +173,7 @@ appropriate `using` clauses to demand the capability to raise errors. If using
 [Perforate](https://github.com/propensive/perforate/) for error handling, that
 implies a `Raises` instance, while Scala's checked exceptions require a
 `CanThrow` instance for the exception type.
+
 
 
 
