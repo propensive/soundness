@@ -14,7 +14,7 @@ project hypotenuse
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core perforate/core
+    include   cardinality/core perforate/core anticipation/text
 
   module test
     compiler  scala
