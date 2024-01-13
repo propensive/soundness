@@ -31,7 +31,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Status
 
-Hypotenuse is classified as ____. For reference, Scala One projects are
+Hypotenuse is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -112,7 +112,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+The _hypotenuse_ is the longest edge of a right-angled triangle, whose length, according to Pythagoras' Theorem, is the square root of the sum of the squares of the other two sides. Pythagoras founded the school known as the _Pythagorean Brotherhood_, and it is to this school of mathematics that **Hypotenuse** alludes.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -127,7 +127,7 @@ language.
 
 ## Logo
 
-
+The logo shows a right-angled triange, the longest side of which is its _hypotenuse_.
 
 ## License
 
