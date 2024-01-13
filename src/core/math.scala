@@ -46,7 +46,7 @@ package arithmeticOptions:
       inline def addI16(left: I16, right: I16): I16 = I16((left.short + right.short).toShort.bits)
       inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).bits)
       inline def addI8(left: I8, right: I8): I8 = I8((left.byte + right.byte).bits)
-
+      
     inline given checked: CheckOverflow with
       type Wrap[ResultType] = ResultType raises OverflowError
       
@@ -198,7 +198,28 @@ object Hypotenuse:
     given textualizer: Textualizer[I8] = _.toString.tt
     inline def apply(bits: B8): I8 = bits
 
+  object B64:
+    def apply(bytes: IArray[Byte]): Long =
+      var b64: Long = (bytes(0) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(1) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(2) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(3) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(4) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(5) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(6) & 0xFF).toLong
+      b64 <<= 8
+      b64 |= (bytes(7) & 0xFF).toLong
+      
+      b64
+
   extension (i64: I64)
+    @targetName("absI64")
     inline def abs: I64 = math.abs(i64)
     
     @targetName("longI64")
@@ -224,17 +245,6 @@ object Hypotenuse:
 
     @targetName("powerI64")
     infix inline def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
-
-    @targetName("bytesI64")
-    def bytes: IArray[Byte] =
-      var array: Array[Byte] = new Array[Byte](8)
-      var index = 0
-      
-      while index < 8 do
-        array(index) = (i64 >> (8*(7 - index))).toByte
-        index += 1
-
-      array.asInstanceOf[IArray[Byte]]
 
     @targetName("ltI64")
     infix inline def < (right: I64): Boolean = i64 < right
@@ -502,6 +512,14 @@ object Hypotenuse:
     
     @targetName("zerosB16")
     inline def zeros: I32 = 16 - JInt.bitCount(bitmap.toInt)
+    
+    @targetName("bytesB16")
+    def bytes: IArray[Byte] =
+      import rudiments.*
+      IArray.create(2): array =>
+        array(0) = (bitmap >> 8).toByte
+        array(1) = bitmap.toByte
+
 
   extension (bitmap: B32)
     @targetName("rotateLeftB32")
@@ -543,6 +561,14 @@ object Hypotenuse:
     @targetName("zerosB32")
     inline def zeros: I32 = 32 - JInt.bitCount(bitmap.toInt)
 
+    @targetName("bytesB32")
+    def bytes: IArray[Byte] =
+      import rudiments.*
+      IArray.create(4): array =>
+        array(0) = (bitmap >> (8*3)).toByte
+        array(1) = (bitmap >> (8*2)).toByte
+        array(2) = (bitmap >> 8).toByte
+        array(3) = bitmap.toByte
 
   extension (bitmap: B64)
     @targetName("rotateLeftB64")
@@ -584,8 +610,31 @@ object Hypotenuse:
     @targetName("zerosB64")
     inline def zeros: I32 = 64 - JLong.bitCount(bitmap.toInt)
 
-  extension (u64: U64)
+    @targetName("bytesB64")
+    def bytes: IArray[Byte] =
+      import rudiments.*
+      IArray.create(8): array =>
+        array(0) = (bitmap >> (8*7)).toByte
+        array(1) = (bitmap >> (8*6)).toByte
+        array(2) = (bitmap >> (8*5)).toByte
+        array(3) = (bitmap >> (8*4)).toByte
+        array(4) = (bitmap >> (8*3)).toByte
+        array(5) = (bitmap >> (8*2)).toByte
+        array(6) = (bitmap >> 8).toByte
+        array(7) = bitmap.toByte
 
+  extension (f64: F64)
+    @targetName("doubleF64")
+    def double: Double = f64
+  
+  extension (f32: F32)
+    @targetName("floatF32")
+    def float: Float = f32
+    
+    @targetName("doubleF32")
+    def double: Double = f32.toDouble
+
+  extension (u64: U64)
     @targetName("bitsU64")
     inline def bits: B64 = u64
 
@@ -1042,17 +1091,6 @@ extension (long: Long)
   @targetName("powerLong")
   infix inline def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
 
-  @targetName("bytesLong")
-  def bytes: IArray[Byte] =
-    var array: Array[Byte] = new Array[Byte](8)
-    var index = 0
-    
-    while index < 8 do
-      array(index) = (long >> (8*(7 - index))).toByte
-      index += 1
-
-    array.asInstanceOf[IArray[Byte]]
-
 extension (doubleObject: Double.type)
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)
 
@@ -1110,18 +1148,18 @@ final val eulerNumber = math.E
 final val φ = (1.0 + 5.sqrt)/2.0
 final val goldenRatio = φ
 
-inline def cos(double: Double): Double = math.cos(double)
-inline def acos(double: Double): Double = math.acos(double)
-inline def cosh(double: Double): Double = math.cosh(double)
-inline def sin(double: Double): Double = math.sin(double)
-inline def asin(double: Double): Double = math.asin(double)
-inline def sinh(double: Double): Double = math.sinh(double)
-inline def tan(double: Double): Double = math.tan(double)
-inline def atan(double: Double): Double = math.atan(double)
-inline def hypot(first: Double, second: Double): Double = math.hypot(first, second)
+inline def cos(f64: F64): F64 = F64(math.cos(f64.double))
+inline def acos(f64: F64): F64 = F64(math.acos(f64.double))
+inline def cosh(f64: F64): F64 = F64(math.cosh(f64.double))
+inline def sin(f64: F64): F64 = F64(math.sin(f64.double))
+inline def asin(f64: F64): F64 = F64(math.asin(f64.double))
+inline def sinh(f64: F64): F64 = F64(math.sinh(f64.double))
+inline def tan(f64: F64): F64 = F64(math.tan(f64.double))
+inline def atan(f64: F64): F64 = F64(math.atan(f64.double))
+inline def hyp(first: F64, second: F64): F64 = F64(math.hypot(first.double, second.double))
 
-inline def exp(double: Double): Double = math.exp(double)
-inline def expm1(double: Double): Double = math.expm1(double)
-inline def log(double: Double): Double = math.log(double)
-inline def log10(double: Double): Double = math.log10(double)
-inline def log1p(double: Double): Double = math.log1p(double)
+inline def exp(f64: F64): F64 = F64(math.exp(f64.double))
+inline def expm1(f64: F64): F64 = F64(math.expm1(f64.double))
+inline def log(f64: F64): F64 = F64(math.log(f64.double))
+inline def log10(f64: F64): F64 = F64(math.log10(f64.double))
+inline def log1p(f64: F64): F64 = F64(math.log1p(f64.double))
