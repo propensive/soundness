@@ -20,8 +20,8 @@ of the need for cumbersome dependencies between unrelated projects.
 ## Availability Plan
 
 Anticipation has not yet been published. The medium-term plan is to build Anticipation
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Anticipation.
 
 Subsequently, Anticipation will also be made available as a binary in the Maven
@@ -176,6 +176,7 @@ and [Telekinesis](https://github.com/propensive/telekinesis/).
 [Diuretic](https://github.com/propensive/diuretic/) provides instances for
 `java.net.URL` and Telekinesis provides an instance for its own
 `telekinesis.Url` type.
+
 
 
 
