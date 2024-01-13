@@ -34,7 +34,7 @@ def fail
     case _ =>
       false
 
-  val pkg = Symbol.spliceOwner.owner.fullName.split("\\.").nn.map(_.nn).to(List).takeWhile(_.head.isLower).mkString(".")
+  val pkg = Symbol.spliceOwner.fullName.split("\\.").nn.map(_.nn).to(List).takeWhile(_.head.isLower).mkString(".")
   
   val text =
     if useColor
@@ -42,3 +42,4 @@ def fail
     else s"$pkg: ${message.text}" 
   
   if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
+
