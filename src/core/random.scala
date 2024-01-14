@@ -108,7 +108,7 @@ case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends
     val u0 = randomDistributions.uniformUnitInterval.transform(random)
     val u1 = randomDistributions.uniformUnitInterval.transform(random)
     
-    (-log(u0).sqrt*cos(2*π*u1)*2*standardDeviation + mean).double
+    (-ln(u0).sqrt*cos(2*π*u1)*2*standardDeviation + mean).double
     
 case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
@@ -117,7 +117,7 @@ case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) ex
       val u0: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))
       val u1: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))
       val s: F64 = hyp(u0, u1)
-      if s >= 1 || s == 0 then recur() else F64(standardDeviation)*u0*(-log(s)/s).sqrt*2 + mean
+      if s >= 1 || s == 0 then recur() else F64(standardDeviation)*u0*(-ln(s)/s).sqrt*2 + mean
 
     recur().double
 
