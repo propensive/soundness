@@ -180,6 +180,14 @@ object Hypotenuse:
   object F32:
     inline given canEqual: CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] = erasedValue
     
+    inline given inequality: Inequality[F32, F32] with
+      inline def compare(inline left: F32, inline right: F32, inline strict: Boolean,
+          inline greaterThan: Boolean): Boolean =
+
+        inline if greaterThan
+        then inline if strict then left > right else left >= right
+        else inline if strict then left < right else left <= right
+
     inline def apply(sign: Boolean, exponent: B16, mantissa: B32): F32 =
       val signBit = if sign then 0 else 1 << 31
       F32(if sign then Int.MinValue else 0 | ((exponent & 0xff) << 22) | (mantissa & 0x3fffff))
@@ -399,18 +407,6 @@ object Hypotenuse:
     @targetName("powerI64")
     infix inline def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
 
-    @targetName("ltI64")
-    infix inline def < (right: into I64): Boolean = i64 < right
-    
-    @targetName("gtI64")
-    infix inline def > (right: into I64): Boolean = i64 > right
-    
-    @targetName("gteI64")
-    inline def >= (right: into I64): Boolean = i64 >= right
-    
-    @targetName("lteI64")
-    inline def <= (right: into I64): Boolean = i64 <= right
-    
     @targetName("divI64")
     infix inline def / (right: into I64): I64 = i64/right
     
@@ -451,18 +447,6 @@ object Hypotenuse:
     
     @targetName("floorDivI32")
     inline def \ (right: into I32): I32 = math.floorDiv(i32, right)
-    
-    @targetName("ltI32")
-    infix inline def < (right: into I32): Boolean = i32 < right
-    
-    @targetName("gtI32")
-    infix inline def > (right: into I32): Boolean = i32 > right
-    
-    @targetName("gteI32")
-    inline def >= (right: into I32): Boolean = i32 >= right
-    
-    @targetName("lteI32")
-    inline def <= (right: into I32): Boolean = i32 <= right
     
     @targetName("divI32")
     infix inline def / (right: into I32): I32 = i32/right
@@ -507,18 +491,6 @@ object Hypotenuse:
     
     @targetName("floorDivI16")
     inline def \ (right: into I16): I16 = math.floorDiv(i16, right).toShort
-    
-    @targetName("ltI16")
-    infix inline def < (right: into I16): Boolean = i16 < right
-    
-    @targetName("gtI16")
-    infix inline def > (right: into I16): Boolean = i16 > right
-    
-    @targetName("gteI16")
-    inline def >= (right: into I16): Boolean = i16 >= right
-    
-    @targetName("lteI16")
-    inline def <= (right: into I16): Boolean = i16 <= right
     
     @targetName("divI16")
     infix inline def / (right: into I16): I16 = (i16/right).toShort
@@ -566,18 +538,6 @@ object Hypotenuse:
     
     @targetName("floorDivI8")
     inline def \ (right: into I8): I8 = math.floorDiv(i8, right).toByte
-    
-    @targetName("ltI8")
-    infix inline def < (right: into I8): Boolean = i8 < right
-    
-    @targetName("gtI8")
-    infix inline def > (right: into I8): Boolean = i8 > right
-    
-    @targetName("gteI8")
-    inline def >= (right: into I8): Boolean = i8 >= right
-    
-    @targetName("lteI8")
-    inline def <= (right: into I8): Boolean = i8 <= right
     
     @targetName("divI8")
     infix inline def / (right: into I8): I8 = (i8/right).toByte
@@ -795,18 +755,6 @@ object Hypotenuse:
     @targetName("divF64")
     inline def / (right: into F64): F64 = f64/right
 
-    @targetName("ltF64")
-    infix inline def < (right: into F64): Boolean = f64 < right
-    
-    @targetName("gtF64")
-    infix inline def > (right: into F64): Boolean = f64 > right
-    
-    @targetName("gteF64")
-    inline def >= (right: into F64): Boolean = f64 >= right
-    
-    @targetName("lteF64")
-    inline def <= (right: into F64): Boolean = f64 <= right
-    
     @targetName("unaryMinusF64")
     inline def `unary_-`: F64 = -f64
   
@@ -886,18 +834,6 @@ object Hypotenuse:
     @targetName("divF32")
     inline def / (right: into F32): F32 = f32/right
   
-    @targetName("ltF32")
-    infix inline def < (right: into F32): Boolean = f32 < right
-    
-    @targetName("gtF32")
-    infix inline def > (right: into F32): Boolean = f32 > right
-    
-    @targetName("gteF32")
-    inline def >= (right: into F32): Boolean = f32 >= right
-    
-    @targetName("lteF32")
-    inline def <= (right: into F32): Boolean = f32 <= right
-    
     @targetName("unaryMinusF32")
     inline def `unary_-`: F32 = -f32
   
@@ -981,18 +917,6 @@ object Hypotenuse:
     @targetName("binaryU64")
     inline def binary: Text = JLong.toUnsignedString(u64, 2).nn.tt
     
-    @targetName("ltU64")
-    infix inline def < (right: into U64): Boolean = JLong.compareUnsigned(u64, right) == -1
-    
-    @targetName("gtU64")
-    infix inline def > (right: into U64): Boolean = JLong.compareUnsigned(u64, right) == 1
-    
-    @targetName("gteU64")
-    inline def >= (right: into U64): Boolean = JLong.compareUnsigned(u64, right) != -1
-    
-    @targetName("lteU64")
-    inline def <= (right: into U64): Boolean = JLong.compareUnsigned(u64, right) != 1
-    
     @targetName("divU64")
     infix inline def / (right: into U64): U64 = JLong.divideUnsigned(u64, right)
     
@@ -1036,18 +960,6 @@ object Hypotenuse:
     @targetName("intU32")
     inline def int: Int = u32
     
-    @targetName("ltU32")
-    infix inline def < (right: into U32): Boolean = JInt.compareUnsigned(u32, right) == -1
-    
-    @targetName("gtU32")
-    infix inline def > (right: into U32): Boolean = JInt.compareUnsigned(u32, right) == 1
-    
-    @targetName("gteU32")
-    inline def >= (right: into U32): Boolean = JInt.compareUnsigned(u32, right) != -1
-    
-    @targetName("lteU32")
-    inline def <= (right: into U32): Boolean = JInt.compareUnsigned(u32, right) != 1
-    
     @targetName("divU32")
     infix inline def / (right: into U32): U32 = JInt.divideUnsigned(u32, right)
     
@@ -1088,18 +1000,6 @@ object Hypotenuse:
     
     @targetName("intU16")
     inline def int: Int = JShort.toUnsignedInt(u16)
-    
-    @targetName("ltU16")
-    infix inline def < (right: into U16): Boolean = JShort.compareUnsigned(u16, right) == -1
-    
-    @targetName("gtU16")
-    infix inline def > (right: into U16): Boolean = JShort.compareUnsigned(u16, right) == 1
-    
-    @targetName("gteU16")
-    inline def >= (right: into U16): Boolean = JShort.compareUnsigned(u16, right) != -1
-    
-    @targetName("lteU16")
-    inline def <= (right: into U16): Boolean = JShort.compareUnsigned(u16, right) != 1
     
     @targetName("divU16")
     infix inline def / (right: into U16): U16 = JInt.divideUnsigned(u16, right).toShort
@@ -1146,18 +1046,6 @@ object Hypotenuse:
     
     @targetName("intU8")
     inline def short: Short = JByte.toUnsignedInt(u8).toShort
-    
-    @targetName("ltU8")
-    infix inline def < (right: into U8): Boolean = JShort.compareUnsigned(u8, right) == -1
-    
-    @targetName("gtU8")
-    infix inline def > (right: into U8): Boolean = JShort.compareUnsigned(u8, right) == 1
-    
-    @targetName("gteU8")
-    inline def >= (right: into U8): Boolean = JByte.compareUnsigned(u8, right) != -1
-    
-    @targetName("lteU8")
-    inline def <= (right: into U8): Boolean = JByte.compareUnsigned(u8, right) != 1
     
     @targetName("divU8")
     infix inline def / (right: into U8): U8 = JInt.divideUnsigned(u8, right).toByte

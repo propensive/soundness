@@ -16,6 +16,8 @@
 
 package hypotenuse
 
+import rudiments.*
+
 import scala.annotation.*
 
 import language.experimental.captureChecking
@@ -28,6 +30,12 @@ object Inequality:
         : Boolean =
       ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}
 
+    given inequality: Inequality[ByteSize, ByteSize] with
+      inline def compare
+          (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
+          : Boolean =
+        !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
+    
 trait CompareLess[-LeftType, -RightType, +ResultType]:
   inline def lessThan(inline left: LeftType, inline right: RightType): ResultType
 
