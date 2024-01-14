@@ -32,11 +32,11 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
     iterable.collect { case value: FilterType => value }
 
 extension [ValueType](iterator: Iterator[ValueType])
-  inline def each(predicate: ValueType => Unit): Unit = iterator.foreach(predicate)
+  transparent inline def each(predicate: ValueType => Unit): Unit = iterator.foreach(predicate)
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
-  inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
+  transparent inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
   inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
