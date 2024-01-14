@@ -21,7 +21,6 @@ import rudiments.*
 import fulminate.*
 import perforate.*
 import anticipation.*
-import spectacular.*
 
 import scala.collection.mutable as scm
 import scala.jdk.CollectionConverters.SetHasAsScala
@@ -32,7 +31,7 @@ import java.nio as jn, jn.charset as jnc
 import language.experimental.captureChecking
 
 object Encoding:
-  given Show[Encoding] = _.name
+  given Textualizer[Encoding] = _.name
   given Communicable[Encoding] = encoding => Message(encoding.name)
 
   private val allCharsets: Set[jnc.Charset] =
@@ -197,7 +196,7 @@ object Hieroglyph:
     def apply(char: Char): CharRange = (char.toLong << 32) + char.toInt
     def apply(char: Int): CharRange = (char.toLong << 32) + char
 
-    given show: Show[CharRange] = range => Text("${range.from}..${range.to}")
+    given show: Textualizer[CharRange] = range => Text("${range.from}..${range.to}")
 
   given Ordering[CharRange] = Ordering.Long
 

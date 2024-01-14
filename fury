@@ -2,7 +2,6 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/kaleidoscope
-repo propensive/spectacular
 repo propensive/perforate
 repo propensive/larceny
 
@@ -12,7 +11,7 @@ project hieroglyph
   module core
     compiler  scala
     sources   src/core
-    include   kaleidoscope/core perforate/core spectacular/core
+    include   kaleidoscope/core perforate/core
   
   module test
     compiler  scala
