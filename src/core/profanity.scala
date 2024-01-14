@@ -18,6 +18,7 @@ package profanity
 
 import rudiments.*
 import vacuous.*
+import hypotenuse.*
 import fulminate.*
 import gossamer.*
 import spectacular.*
