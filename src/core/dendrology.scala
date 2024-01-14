@@ -24,13 +24,13 @@ import language.experimental.captureChecking
 
 package treeStyles:
   given default[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(Text("  "), Text("└─"), Text("├─"), Text("│ "))
+    TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
   
   given rounded[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(Text("  "), Text("╰─"), Text("├─"), Text("│ "))
+    TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
   
   given ascii[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(Text("  "), Text("+-"), Text("|-"), Text("| "))
+    TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
 
 trait TreeStyle[LineType]:
   def serialize(tiles: List[TreeTile], node: LineType): LineType

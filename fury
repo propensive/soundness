@@ -11,12 +11,12 @@ project dendrology
   module core
     compiler  scala
     sources   src/core
-    include   spectacular/core gossamer/core
+    include   gossamer/core
   
   module dag
     compiler  scala
     sources   src/dag
-    include   spectacular/core gossamer/core acyclicity/core
+    include   gossamer/core acyclicity/core
 
   module test
     compiler  scala
