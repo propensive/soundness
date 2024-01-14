@@ -170,9 +170,10 @@ trait HttpReadable[+BodyType]:
 case class HttpResponse
     (status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
 
-  def as[BodyType](using readable: HttpReadable[BodyType]): BodyType raises HttpError = status match
-    case status: FailureCase => abort(HttpError(status, body))
-    case status              => readable.read(status, body)
+  def as[BodyType](using readable: HttpReadable[BodyType]): BodyType raises HttpError =
+    (status: @unchecked) match
+      case status: FailureCase => abort(HttpError(status, body))
+      case status              => readable.read(status, body)
 
 object Locatable:
   given httpUrl: Locatable[HttpUrl] = identity(_)
