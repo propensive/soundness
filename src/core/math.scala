@@ -1383,6 +1383,6 @@ inline def hyp(first: into F64, second: F64): F64 = F64(math.hypot(first.double,
 
 inline def exp(f64: into F64): F64 = F64(math.exp(f64.double))
 inline def expm1(f64: into F64): F64 = F64(math.expm1(f64.double))
-inline def log(f64: into F64): F64 = F64(math.log(f64.double))
+inline def ln(f64: into F64): F64 = F64(math.log(f64.double))
 inline def log10(f64: into F64): F64 = F64(math.log10(f64.double))
 inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
