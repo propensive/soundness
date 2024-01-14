@@ -26,8 +26,8 @@ opportunities Scala offers to make these APIs as intuitive as possible.
 ## Availability Plan
 
 Aviation has not yet been published. The medium-term plan is to build Aviation
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Aviation.
 
 Subsequently, Aviation will also be made available as a binary in the Maven
@@ -101,6 +101,7 @@ the Earth's movement which change its rate of rotation over the previous
 months, to try to maintain the invariant that the sun's maximum elevation above
 the Greenwich Meridian (Solar Noon) should be within one second of Clock Noon
 (i.e. the time at which the clock digits read 12:00:00).
+
 
 
 
