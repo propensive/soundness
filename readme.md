@@ -19,8 +19,8 @@ cache which will be appropriate for some (but not all) applications: a least-rec
 ## Availability Plan
 
 Camouflage has not yet been published. The medium-term plan is to build Camouflage
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Camouflage.
 
 Subsequently, Camouflage will also be made available as a binary in the Maven
@@ -120,6 +120,7 @@ one element must be evicted. That value is `two` because it is the least-recentl
 the previous line (_1_), `one` would be the least-recently-used value, and the line marked _3_ would result in
 the evaluation of `ein` and its insertion into the cache; but since `one` remains in the cache at the same
 index, it is retrieved instead.
+
 
 
 
