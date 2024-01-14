@@ -64,13 +64,13 @@ extends CompareGreaterEqual[LeftType, RightType, Boolean], CompareLess[LeftType,
     compare(left, right, true, false)
   
   inline def lessThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, true, true)
+    compare(left, right, false, false)
   
   inline def greaterThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, false, true)
   
   inline def greaterThan(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, false, false)
+    compare(left, right, true, true)
 
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
