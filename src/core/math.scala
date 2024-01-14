@@ -44,8 +44,8 @@ package arithmeticOptions:
       inline def addI32(left: I32, right: I32): I32 = I32((left.int + right.int).bits)
       inline def addU16(left: U16, right: U16): U16 = U16((left.short + right.short).toShort.bits)
       inline def addI16(left: I16, right: I16): I16 = I16((left.short + right.short).toShort.bits)
-      inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).bits)
-      inline def addI8(left: I8, right: I8): I8 = I8((left.byte + right.byte).bits)
+      inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
+      inline def addI8(left: I8, right: I8): I8 = I8((left.byte + right.byte).toByte.bits)
       
     inline given checked: CheckOverflow with
       type Wrap[ResultType] = ResultType raises OverflowError
@@ -87,7 +87,7 @@ package arithmeticOptions:
         then U8(raise(OverflowError())(result)) else U8(result)
       
       inline def addI8(left: I8, right: I8): I8 raises OverflowError =
-        val result: I8 = I8((left.short + right.short).bits)
+        val result: I8 = I8((left.short + right.short).toByte.bits)
         if result < left || result < right then raise(OverflowError())(result) else result
 
 trait CheckOverflow:
@@ -476,7 +476,7 @@ object Hypotenuse:
       overflow.addI16(i16, right)
     
     @targetName("shortI16")
-    inline def short: Int = i16
+    inline def short: Short = i16
     
     @targetName("intI16")
     inline def int: Int = i16.toInt
@@ -532,10 +532,10 @@ object Hypotenuse:
       overflow.addI8(i8, right)
     
     @targetName("byteI8")
-    inline def byte: Int = i8
+    inline def byte: Byte = i8
     
     @targetName("shortI8")
-    inline def short: Int = i8.toShort
+    inline def short: Short = i8.toShort
     
     @targetName("intI8")
     inline def int: Int = i8.toInt
@@ -1283,7 +1283,7 @@ extension (double: Double)
   @targetName("powerDouble")
   infix inline def ** (exponent: Double): Double = math.pow(double, exponent)
 
-extension (byte: Int)
+extension (byte: Byte)
   @targetName("bitsByte")
   inline def bits: B8 = byte.asInstanceOf[B8]
   
@@ -1292,7 +1292,7 @@ extension (byte: Int)
   
   @targetName("intByte")
   inline def int: Long = byte.toInt
-  
+
   @targetName("shortByte")
   inline def short: Long = byte.toShort
   
@@ -1362,7 +1362,7 @@ extension (int: Int)
   inline def abs: Int = math.abs(int)
   
   @targetName("powerInt")
-  inline infix def **(exponent: Double): Double = math.pow(int.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = math.pow(int.toDouble, exponent)
   
   @targetName("octalInt")
   inline def octal: Text = JInt.toOctalString(int).nn.tt
