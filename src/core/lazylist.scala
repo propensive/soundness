@@ -17,6 +17,7 @@
 package turbulence
 
 import rudiments.*
+import hypotenuse.*
 import vacuous.*
 import parasite.*
 import capricious.*
