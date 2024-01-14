@@ -25,8 +25,8 @@ out-of-the-box, and incurs no significant time-penalty during compilation.
 ## Availability Plan
 
 Wisteria has not yet been published. The medium-term plan is to build Wisteria
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Wisteria.
 
 Subsequently, Wisteria will also be made available as a binary in the Maven
@@ -700,6 +700,7 @@ bound. It is essential that the type variable is specified as `[VariantType <: D
 *Why does the compiler report a type mismatch between the derivation type and `Product`?*
 
 This is usually because the derivation type in the signature of `join` is missing the `<: Product` constraint.
+
 
 ## Status
 
