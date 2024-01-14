@@ -26,8 +26,10 @@ import scala.compiletime.*
 import java.util as ju
 import java.security as js
 
+import language.experimental.genericNumberLiterals
+
 object Seed:
-  def apply(long: Long): Seed = Seed(long.bytes)
+  def apply(long: Long): Seed = Seed(long.bits.bytes)
 
 case class Seed(value: Bytes):
   def entropy: Int = value.length*8
@@ -106,18 +108,18 @@ case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends
     val u0 = randomDistributions.uniformUnitInterval.transform(random)
     val u1 = randomDistributions.uniformUnitInterval.transform(random)
     
-    standardDeviation*(-2*log(u0)).sqrt*cos(2*π*u1) + mean
+    (-log(u0).sqrt*cos(2*π*u1)*2*standardDeviation + mean).double
     
 case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
     @annotation.tailrec
-    def recur(): Double =
-      val u0 = randomDistributions.uniformSymmetricUnitInterval.transform(random)
-      val u1 = randomDistributions.uniformSymmetricUnitInterval.transform(random)
-      val s = u0*u0 + u1*u1
-      if s >= 1 || s == 0 then recur() else standardDeviation*u0*(-2*log(s)/s).sqrt + mean
+    def recur(): F64 =
+      val u0: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))
+      val u1: F64 = F64(randomDistributions.uniformSymmetricUnitInterval.transform(random))
+      val s: F64 = hyp(u0, u1)
+      if s >= 1 || s == 0 then recur() else F64(standardDeviation)*u0*(-log(s)/s).sqrt*2 + mean
 
-    recur()
+    recur().double
 
 object Gamma:
   def approximate(mean: Double, variance: Double): Gamma =
@@ -126,10 +128,10 @@ object Gamma:
     Gamma(shape, scale)
 
 case class Gamma(shape: Int, scale: Double) extends Distribution:
-  def mean: Double = shape*scale
-  def variance: Double = shape*scale*scale
-  def variationCoefficient: Double = shape ** -0.5
-  def skewness: Double = 2.0*variationCoefficient
+  def mean: F64 = F64(shape*scale)
+  def variance: F64 = mean*scale
+  def variationCoefficient: F64 = F64(shape) ** -0.5
+  def skewness: F64 = variationCoefficient*2.0
 
   def transform(random: Random): Double =
     def accumulate(sum: Double, count: Int): Double =
