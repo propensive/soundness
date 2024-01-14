@@ -20,8 +20,8 @@ ambitious goal of avoiding off-by-one errors, without compromising performance.
 ## Availability Plan
 
 Denominative has not yet been published. The medium-term plan is to build Denominative
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Denominative.
 
 Subsequently, Denominative will also be made available as a binary in the Maven
@@ -112,6 +112,7 @@ method.
 An `Interval` is most useful as a way of specifying a range of `Ordinal` values because we want to perform some
 operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
 behave exactly as their familiar counterparts in Scala's standard collections library.
+
 
 
 
