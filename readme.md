@@ -21,8 +21,8 @@ could be considered an enhanced "predef".
 ## Availability Plan
 
 Rudiments has not yet been published. The medium-term plan is to build Rudiments
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Rudiments.
 
 Subsequently, Rudiments will also be made available as a binary in the Maven
@@ -127,6 +127,7 @@ every substitution to be a `String`.
 
 These two extension methods produce a two-tuple and a three-tuple (respectively) of repetitions of the value it
 is applied to. This can be useful in a subsequent `map` operation.
+
 
 
 
