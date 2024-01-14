@@ -22,6 +22,7 @@ import serpentine.*, hierarchies.unix
 import rudiments.*
 import vacuous.*
 import guillotine.*
+import hypotenuse.*
 import gossamer.*
 import exoskeleton.*
 import turbulence.*
