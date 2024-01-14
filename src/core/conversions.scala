@@ -217,7 +217,7 @@ case class Cielab(l: Double, a: Double, b: Double):
   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
 
-  def delta(that: Cielab): Double = (hyp(that.a, that.b) - hyp(a, b)).double
+  def delta(that: Cielab): Double = (hyp(F64(that.a), F64(that.b)) - hyp(F64(a), F64(b))).double
 
 object Cmy:
   given RgbColor[Cmy] = _.srgb.rgb24.asInt
