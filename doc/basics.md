@@ -639,6 +639,51 @@ object Typeclass:
   inline given derived[DerivationType]: Typeclass[DerivationType] = Unrelated.derived
 ```
 
+* How can I resolve a derived contextual instance conflicting with another, with an ambiguity error?
+
+Two contextual values are ambiguous if both match the expected type and the
+compiler is unable to find a reason why one should be chosen over the other.
+There are several ways of changing the _priority_ of `given` values, but in
+more complex cases, this can have the unintended consequence of causing a new
+ambiguity elsewhere with a different contextual value.
+
+The most reliable way to avoid this problem is to select the set of `given`
+definitions that can be ambiguous, and to be explicit about their priority
+using `compiletime.summonFrom`.
+
+To transform an existing set of ambiguous `given`s, first change them from
+`given`s into ordinary `def`s. For instances derived by Wisteria, this requires
+the derivation to be implemented outside the companion object (see above).
+Then, define the `derived` `given` as:
+```scala
+inline given derived[ValueType]: DerivationType[ValueType] =
+  compiletime.summonFrom:
+    // cases
+```
+
+We will specify one case for each of the previous `given` definitions, in the
+order that they should be attempted.
+
+Each case should be a type pattern, a `given case` or a wildcard pattern which
+will use the presence of a contextual instance of the specified type (at the
+callsite) to determine if that particular case should match. For example, if we
+want to define derivation for a `Debug` typeclass which returns the "best"
+string value for a particular type, we could write it as follows:
+```scala
+object Debug:
+  inline given derived[ValueType]: Debug[ValueType] = value =>
+    compiletime.summonFrom:
+      case encoder: Encoder[ValueType] => encoder.encode(value)
+      case given Show[ValueType]       => value.show
+      case _                           => value.toString
+```
+
+In plain English, this could be interpreted as,
+ - if there is an `Encoder` for `value`'s type, use it to encode the value
+ - if there is a `Show` for `value`'s type, make it available in-scope on the
+   right-hand side of the case clause, and use it to `show` the value
+ - otherwise, just use the `value`'s `toString` method
+
 *How can I generically-derive a typeclass for a type which indirectly refers to its own type in its fields?*
 
 A recursive type such as `Tree`,
@@ -653,7 +698,7 @@ do this is to add a `derives` clause to the companion. For example,
 object Tree derives Typeclass
 ```
 
-*Why does the compiler fail dering derivation with a long message that mentions that, `given instance derived in trait Derivation does not match type...`?*
+*Why does the compiler fail during derivation with a long message that mentions that, `given instance derived in trait Derivation does not match type...`?*
 
 This is usually because the polymorphic lambda's type variable for `delegate` or `variant` is missing its upper
 bound. It is essential that the type variable is specified as `[VariantType <: DerivationType]` and not just,
