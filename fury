@@ -3,11 +3,12 @@
 
 target digression/core
 
-repo propensive/spectacular
+repo propensive/rudiments
 
 project digression
   module core
     compiler  scala
     sources   src/core
-    include   spectacular/core
+    include   rudiments/core
+
 
