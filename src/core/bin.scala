@@ -40,12 +40,6 @@ object Rudiments:
     given add: ClosedOperator["+", ByteSize] = _ + _
     given subtract: ClosedOperator["-", ByteSize] = _ - _
 
-    given inequality: Inequality[ByteSize, ByteSize] with
-      inline def compare
-          (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
-          : Boolean =
-        !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
-    
     given multiply: Operator["*", ByteSize, Int] with
       type Result = ByteSize
       inline def apply(left: ByteSize, right: Int): ByteSize = left*right
@@ -124,18 +118,6 @@ export Rudiments.ByteSize
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
-
-extension (long: Long)
-  def hex: Text = java.lang.Long.toHexString(long).nn.tt
-
-extension (int: Int)
-  def hex: Text = Integer.toHexString(int).nn.tt
-
-extension (short: Short)
-  def hex: Text = Integer.toHexString(short).nn.tt
-
-extension (byte: Byte)
-  def hex: Text = Integer.toHexString(byte).nn.tt
 
 object Hex:
   def unapply(text: Text): Option[Int] =
