@@ -27,8 +27,8 @@ Scala application into a self-contained, portable executable.
 ## Availability Plan
 
 Spectral has not yet been published. The medium-term plan is to build Spectral
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Spectral.
 
 Subsequently, Spectral will also be made available as a binary in the Maven
@@ -153,6 +153,7 @@ implementation should be both sending and receiving messages on the bus.
 A typical implementation might multiplex the event stream from a
 [Profanity](https://github.com/propensive/profanity/) terminal with the bus, and handle keypresses and messages
 from other clients in an event loop.
+
 
 
 
