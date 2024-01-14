@@ -18,6 +18,7 @@ package iridescence
 
 import fulminate.*
 import contextual.*
+import hypotenuse.*
 import anticipation.*
 import rudiments.*
 
@@ -35,7 +36,7 @@ case class Xyz(x: Double, y: Double, z: Double):
   
   def srgb: Srgb =
     def limit(v: Double): Double =
-      if v > 0.0031308 then 1.055*math.pow(v, 1/2.4) - 0.055 else 12.92*v
+      if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
     
     val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
     val green = limit(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
@@ -46,7 +47,7 @@ case class Xyz(x: Double, y: Double, z: Double):
   def rgb24: Rgb24 = srgb.rgb24
   
   def cielab(using profile: ColorProfile): Cielab =
-    def limit(v: Double): Double = if v > 0.008856 then math.pow(v, 1.0/3) else 7.787*v + 0.13793
+    def limit(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
 
     val l: Double = 116*limit(y/profile.y2) - 16
     val a: Double = 500*(limit(x/profile.x2) - limit(y/profile.y2))
@@ -145,7 +146,7 @@ case class Srgb(red: Double, green: Double, blue: Double):
   def highContrast: Srgb = if hsl.lightness >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
 
   def xyz(using ColorProfile): Xyz =
-    def limit(v: Double): Double = if v > 0.04045 then math.pow((v + 0.055)/1.055, 2.4) else v/12.92
+    def limit(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
 
     val List(r, g, b) = List(red, green, blue).map(limit(_)*100)
 
@@ -216,7 +217,7 @@ case class Cielab(l: Double, a: Double, b: Double):
   def mix(that: Cielab, ratio: Double = 0.5): Cielab =
     Cielab(l*(1 - ratio) + ratio*that.l, a*(1 - ratio) + ratio*that.a, b*(1 - ratio) + ratio*that.b)
 
-  def delta(that: Cielab): Double = math.hypot(that.a, that.b) - math.hypot(a, b)
+  def delta(that: Cielab): Double = (hyp(that.a, that.b) - hyp(a, b)).double
 
 object Cmy:
   given RgbColor[Cmy] = _.srgb.rgb24.asInt
