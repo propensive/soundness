@@ -17,7 +17,6 @@
 package denominative
 
 import rudiments.*
-import spectacular.*
 import anticipation.*
 
 final val Prim = Ordinal.fromOne(1)
@@ -73,7 +72,7 @@ object Denominative:
     inline def fromZero(inline cardinal: Int): Ordinal = cardinal + 1
     inline def fromOne(inline cardinal: Int): Ordinal = cardinal
 
-    given show: Show[Ordinal] =
+    given show: Textualizer[Ordinal] =
       case Prim    => "prim".tt
       case Sec     => "sec".tt
       case Ter     => "ter".tt
