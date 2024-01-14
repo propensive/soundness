@@ -19,6 +19,7 @@ package quantitative
 import gossamer.*
 import rudiments.*
 import anticipation.*
+import hypotenuse.*
 import symbolism.*
 import spectacular.*
 
