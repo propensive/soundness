@@ -21,8 +21,8 @@ available on the JVM.
 ## Availability Plan
 
 Capricious has not yet been published. The medium-term plan is to build Capricious
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Capricious.
 
 Subsequently, Capricious will also be made available as a binary in the Maven
@@ -167,18 +167,20 @@ The typeclass, `Arbitrary`, will produce random instances of its type parameter.
 predefined for a few basic types, but custom instances can be constructed by implementing the trait:
 ```scala
 trait Arbitrary[ValueType]:
-  def from(gen: => Long): ValueType
+  def from(random: Random): ValueType
 ```
 
-An implementation of `from` should call `gen` as many times as necessary to construct a new, random instance
-of `ValueType`. Although random, the instance of `ValueType` should depend deterministically on the values
-produced by `gen`.
+An implementation of `from` should call `random`'s methods as many times as
+necessary to construct a new, random instance of `ValueType`. Although random,
+the instance of `ValueType` should depend deterministically on the values
+produced by `random`.
 
 ### Product and Sum types
 
 Capricious can construct random instances of product types such as case classes and enumeration cases, and
 sum types like `enum`s and sealed traits, as long as each field of the product and variant of the sum has
 a valid `Arbitrary` instance.
+
 
 ## Status
 
