@@ -22,7 +22,7 @@ import scala.annotation.*
 
 import language.experimental.captureChecking
 
-object Inequality:
+object NumericallyComparable:
   inline given numeric: Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] with
     inline def compare
         (inline left: Boolean, inline right: Int | Double | Char | Byte | Short | Float | Long,
@@ -30,22 +30,24 @@ object Inequality:
         : Boolean =
       ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}
 
-    given inequality: Inequality[ByteSize, ByteSize] with
-      inline def compare
-          (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
-          : Boolean =
-        !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
-    
-trait CompareLess[-LeftType, -RightType, +ResultType]:
+  given inequality: Inequality[ByteSize, ByteSize] with
+    inline def compare
+        (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
+        : Boolean =
+      !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
+
+trait NumericallyComparable
+
+trait CompareLess[-LeftType, -RightType, +ResultType] extends NumericallyComparable:
   inline def lessThan(inline left: LeftType, inline right: RightType): ResultType
 
-trait CompareLessEqual[-LeftType, -RightType, +ResultType]:
+trait CompareLessEqual[-LeftType, -RightType, +ResultType] extends NumericallyComparable:
   inline def lessThanOrEqual(inline left: LeftType, inline right: RightType): ResultType
 
-trait CompareGreater[-LeftType, -RightType, +ResultType]:
+trait CompareGreater[-LeftType, -RightType, +ResultType] extends NumericallyComparable:
   inline def greaterThan(inline left: LeftType, inline right: RightType): ResultType
 
-trait CompareGreaterEqual[-LeftType, -RightType, +ResultType]:
+trait CompareGreaterEqual[-LeftType, -RightType, +ResultType] extends NumericallyComparable:
   inline def greaterThanOrEqual(inline left: LeftType, inline right: RightType): ResultType
 
 

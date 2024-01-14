@@ -144,6 +144,22 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
+    inline given inequalityInt: Inequality[F64, Int] with
+      inline def compare(inline left: F64, inline right: Int, inline strict: Boolean,
+          inline greaterThan: Boolean): Boolean =
+
+        inline if greaterThan
+        then inline if strict then left > right else left >= right
+        else inline if strict then left < right else left <= right
+
+    inline given inequalityDouble: Inequality[F64, Double] with
+      inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
+          inline greaterThan: Boolean): Boolean =
+
+        inline if greaterThan
+        then inline if strict then left > right else left >= right
+        else inline if strict then left < right else left <= right
+
     inline given doubleConversion: Conversion[Double, F64] with
       inline def apply(value: Double): F64 = value
   
