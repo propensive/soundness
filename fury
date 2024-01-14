@@ -3,7 +3,6 @@
 
 repo propensive/contextual
 repo propensive/larceny
-repo propensive/spectacular
 repo propensive/kaleidoscope
 
 target camouflage/test
