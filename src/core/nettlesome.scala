@@ -17,6 +17,7 @@
 package nettlesome
 
 import rudiments.*
+import hypotenuse.*
 import spectacular.*
 import gossamer.*
 import perforate.*

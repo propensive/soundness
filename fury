@@ -3,6 +3,7 @@
 target nettlesome/test
 
 repo propensive/probably
+repo propensive/hypotenuse
 repo propensive/larceny
 repo propensive/escapade
 repo propensive/serpentine
@@ -11,7 +12,7 @@ project nettlesome
   module core
     compiler  scala
     sources   src/core
-    include   contextual/core gossamer/core
+    include   contextual/core gossamer/core hypotenuse/core
 
   module url
     compiler  scala
