@@ -83,10 +83,6 @@ extension [SelectorType: Selectable](left: SelectorType)(using selectable: Selec
   infix def >>[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) >> selectable2.selector(right)
   
-  @targetName("child")
-  infix def >[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) > selectable2.selector(right)
-  
   @targetName("after")
   infix def ~[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) + selectable2.selector(right)

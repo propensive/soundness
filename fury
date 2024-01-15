@@ -8,5 +8,5 @@ repo propensive/serpentine
 project cataclysm
   module core
     sources  src/core
-    include  gossamer/core anticipation/css anticipation/html serpentine/core anticipation/color
+    include  gossamer/core anticipation/css anticipation/html serpentine/core anticipation/color hypotenuse/core
 

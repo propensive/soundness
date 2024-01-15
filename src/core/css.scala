@@ -20,6 +20,7 @@ import rudiments.*
 import gossamer.*
 import vacuous.*
 import anticipation.*
+import hypotenuse.*
 import hieroglyph.*
 
 import annotation.targetName
@@ -117,24 +118,28 @@ sealed trait Selector(val value: Text):
   def normalize: Selector
 
   @targetName("or")
-  infix def |(that: Selector): Selector = Selector.Or(this, that)
+  infix def | (that: Selector): Selector = Selector.Or(this, that)
   
   @targetName("descendant")
-  infix def >>(that: Selector): Selector = Selector.Descendant(this, that)
-  
-  @targetName("child")
-  infix def >(that: Selector): Selector = Selector.Child(this, that)
+  infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
   
   @targetName("after")
-  infix def +(that: Selector): Selector = Selector.After(this, that)
+  infix def + (that: Selector): Selector = Selector.After(this, that)
   
   @targetName("and")
-  infix def &(that: Selector): Selector = Selector.And(this, that)
+  infix def & (that: Selector): Selector = Selector.And(this, that)
   
   @targetName("before")
-  infix def ~(that: Selector): Selector = Selector.Before(this, that)
+  infix def ~ (that: Selector): Selector = Selector.Before(this, that)
 
 object Selector:
+  given childSelector[SelectorType, SelectorType2]
+      (using selectable: Selectable[SelectorType], selectable2: Selectable[SelectorType2])
+      : CompareGreater[SelectorType, SelectorType2, Selector] with
+
+    inline def greaterThan(inline left: SelectorType, inline right: SelectorType2): Selector =
+      Selector.Child(selectable.selector(left), selectable2.selector(right))
+
   case class Element(element: Text) extends Selector(element):
     def normalize: Selector = this
 
