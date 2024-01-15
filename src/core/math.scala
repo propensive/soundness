@@ -602,10 +602,10 @@ object Hypotenuse:
     inline def reverse: B8 = (JInt.reverse(bitmap.toInt) >>> 24).toByte
 
     @targetName("hexB8")
-    inline def hex: Text = String.format("%02x", bitmap).tt
+    inline def hex: Text = String.format("%02x", bitmap).nn.tt
 
     @targetName("octalB8")
-    inline def octal: Text = String.format("%03o", bitmap).tt
+    inline def octal: Text = String.format("%03o", bitmap).nn.tt
 
     @targetName("binaryB8")
     def binary: Text =
@@ -668,10 +668,10 @@ object Hypotenuse:
         array(1) = bitmap.toByte
 
     @targetName("hexB16")
-    inline def hex: Text = String.format("%04x", bitmap).tt
+    inline def hex: Text = String.format("%04x", bitmap).nn.tt
 
     @targetName("octalB16")
-    inline def octal: Text = String.format("%06o", bitmap).tt
+    inline def octal: Text = String.format("%06o", bitmap).nn.tt
     
     @targetName("binaryB16")
     def binary: Text =
@@ -736,10 +736,10 @@ object Hypotenuse:
         array(3) = bitmap.toByte
 
     @targetName("hexB32")
-    inline def hex: Text = String.format("%08x", bitmap).tt
+    inline def hex: Text = String.format("%08x", bitmap).nn.tt
 
     @targetName("octalB32")
-    inline def octal: Text = String.format("%011o", bitmap).tt
+    inline def octal: Text = String.format("%011o", bitmap).nn.tt
 
     @targetName("binaryB32")
     def binary: Text =
@@ -808,10 +808,10 @@ object Hypotenuse:
         array(7) = bitmap.toByte
 
     @targetName("hexB64")
-    inline def hex: Text = String.format("%016x", bitmap).tt
+    inline def hex: Text = String.format("%016x", bitmap).nn.tt
 
     @targetName("octalB64")
-    inline def octal: Text = String.format("%022o", bitmap).tt
+    inline def octal: Text = String.format("%022o", bitmap).nn.tt
 
     @targetName("binaryB64")
     def binary: Text =
