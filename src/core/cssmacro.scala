@@ -30,9 +30,6 @@ import language.dynamics
 
 private[cataclysm] type Label = String & Singleton
 
-// FIXME
-given Show[Double] = _.toString.show
-
 object Cataclysm:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
     '{CssRule($selector, ${read(props)})}
