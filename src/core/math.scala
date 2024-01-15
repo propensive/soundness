@@ -31,9 +31,47 @@ import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte
     Float as JFloat}
 
 case class OverflowError() extends Error(msg"an overflow error occurred")
+case class DivisionError() extends Error(msg"the result is unrepresentable")
 
 package arithmeticOptions:
-  object division
+  object division:
+    inline given unchecked: DivisionByZero with
+      type Wrap[ResultType] = ResultType
+      inline def divideU64(left: U64, right: U64): U64 = U64((left.long/right.long).bits)
+      inline def divideI64(left: I64, right: I64): I64 = I64((left.long/right.long).bits)
+      inline def divideU32(left: U32, right: U32): U32 = U32((left.int/right.int).bits)
+      inline def divideI32(left: I32, right: I32): I32 = I32((left.int/right.int).bits)
+      inline def divideU16(left: U16, right: U16): U16 = U16((left.short/right.short).toShort.bits)
+      inline def divideI16(left: I16, right: I16): I16 = I16((left.short/right.short).toShort.bits)
+      inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
+      inline def divideI8(left: I8, right: I8): I8 = I8((left.byte/right.byte).toByte.bits)
+      
+    inline given checked: DivisionByZero with
+      type Wrap[ResultType] = ResultType raises DivisionError
+      
+      inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
+        if right.long == 0 then raise(DivisionError())(U64(0.bits)) else U64((left.long/right.long).bits)
+      
+      inline def divideI64(left: I64, right: I64): I64 raises DivisionError =
+        if right.long == 0 then raise(DivisionError())(I64(0.bits)) else I64((left.long/right.long).bits)
+      
+      inline def divideU32(left: U32, right: U32): U32 raises DivisionError =
+        if right.long == 0 then raise(DivisionError())(U32(0.bits)) else U32((left.int/right.int).bits)
+      
+      inline def divideI32(left: I32, right: I32): I32 raises DivisionError =
+        if right.int == 0 then raise(DivisionError())(I32(0.bits)) else I32((left.int/right.int).bits)
+      
+      inline def divideU16(left: U16, right: U16): U16 raises DivisionError =
+        if right.int == 0 then raise(DivisionError())(U16(0.bits)) else U16((left.short/right.short).toShort.bits)
+      
+      inline def divideI16(left: I16, right: I16): I16 raises DivisionError =
+        if right.int == 0 then raise(DivisionError())(I16(0.bits)) else I16((left.short/right.short).toShort.bits)
+      
+      inline def divideU8(left: U8, right: U8): U8 raises DivisionError =
+        if right.int == 0 then raise(DivisionError())(U8(0.bits)) else U8((left.byte/right.byte).toByte.bits)
+      
+      inline def divideI8(left: I8, right: I8): I8 raises DivisionError =
+        if right.int == 0 then raise(DivisionError())(I8(0.bits)) else I8((left.byte/right.byte).toByte.bits)
   
   object overflow:
     inline given unchecked: CheckOverflow with
@@ -89,6 +127,17 @@ package arithmeticOptions:
       inline def addI8(left: I8, right: I8): I8 raises OverflowError =
         val result: I8 = I8((left.short + right.short).toByte.bits)
         if result < left || result < right then raise(OverflowError())(result) else result
+
+trait DivisionByZero:
+  type Wrap[ResultType]
+  inline def divideU64(left: U64, right: U64): Wrap[U64]
+  inline def divideI64(left: I64, right: I64): Wrap[I64]
+  inline def divideU32(left: U32, right: U32): Wrap[U32]
+  inline def divideI32(left: I32, right: I32): Wrap[I32]
+  inline def divideU16(left: U16, right: U16): Wrap[U16]
+  inline def divideI16(left: I16, right: I16): Wrap[I16]
+  inline def divideU8(left: U8, right: U8): Wrap[U8]
+  inline def divideI8(left: I8, right: I8): Wrap[I8]
 
 trait CheckOverflow:
   type Wrap[ResultType]
@@ -423,7 +472,8 @@ object Hypotenuse:
     infix inline def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
 
     @targetName("divI64")
-    infix inline def / (right: into I64): I64 = i64/right
+    inline infix def / (right: into I64)(using division: DivisionByZero): division.Wrap[I64] =
+      division.divideI64(i64, right)
     
     @targetName("modI64")
     infix inline def % (right: into I64): I64 = i64%right
@@ -464,7 +514,8 @@ object Hypotenuse:
     inline def \ (right: into I32): I32 = math.floorDiv(i32, right)
     
     @targetName("divI32")
-    infix inline def / (right: into I32): I32 = i32/right
+    inline infix def / (right: into I32)(using division: DivisionByZero): division.Wrap[I32] =
+      division.divideI32(i32, right)
     
     @targetName("modI32")
     infix inline def % (right: into I32): I32 = i32%right
@@ -508,7 +559,8 @@ object Hypotenuse:
     inline def \ (right: into I16): I16 = math.floorDiv(i16, right).toShort
     
     @targetName("divI16")
-    infix inline def / (right: into I16): I16 = (i16/right).toShort
+    inline infix def / (right: into I16)(using division: DivisionByZero): division.Wrap[I16] =
+      division.divideI16(i16, right)
     
     @targetName("modI16")
     infix inline def % (right: into I16): I16 = (i16%right).toShort
@@ -555,7 +607,8 @@ object Hypotenuse:
     inline def \ (right: into I8): I8 = math.floorDiv(i8, right).toByte
     
     @targetName("divI8")
-    infix inline def / (right: into I8): I8 = (i8/right).toByte
+    inline infix def / (right: into I8)(using division: DivisionByZero): division.Wrap[I8] =
+      division.divideI8(i8, right)
     
     @targetName("modI8")
     infix inline def % (right: into I8): I8 = (i8%right).toByte
@@ -1008,7 +1061,8 @@ object Hypotenuse:
     inline def binary: Text = JLong.toUnsignedString(u64, 2).nn.tt
     
     @targetName("divU64")
-    infix inline def / (right: into U64): U64 = JLong.divideUnsigned(u64, right)
+    inline infix def / (right: into U64)(using division: DivisionByZero): division.Wrap[U64] =
+      division.divideU64(u64, right)
     
     @targetName("modU64")
     infix inline def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
@@ -1051,7 +1105,8 @@ object Hypotenuse:
     inline def int: Int = u32
     
     @targetName("divU32")
-    infix inline def / (right: into U32): U32 = JInt.divideUnsigned(u32, right)
+    inline infix def / (right: into U32)(using division: DivisionByZero): division.Wrap[U32] =
+      division.divideU32(u32, right)
     
     @targetName("modU32")
     infix inline def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
@@ -1092,7 +1147,8 @@ object Hypotenuse:
     inline def int: Int = JShort.toUnsignedInt(u16)
     
     @targetName("divU16")
-    infix inline def / (right: into U16): U16 = JInt.divideUnsigned(u16, right).toShort
+    inline infix def / (right: into U16)(using division: DivisionByZero): division.Wrap[U16] =
+      division.divideU16(u16, right)
     
     @targetName("modU16")
     infix inline def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
@@ -1138,7 +1194,8 @@ object Hypotenuse:
     inline def short: Short = JByte.toUnsignedInt(u8).toShort
     
     @targetName("divU8")
-    infix inline def / (right: into U8): U8 = JInt.divideUnsigned(u8, right).toByte
+    inline infix def / (right: into U8)(using division: DivisionByZero): division.Wrap[U8] =
+      division.divideU8(u8, right)
     
     @targetName("modU8")
     infix inline def % (right: into U8): U8 = JInt.remainderUnsigned(u8, right).toByte
