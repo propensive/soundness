@@ -4,7 +4,7 @@
 
 # Hypotenuse
 
-____
+__A rigorous and consistent foundation for numerical and arithmetic programming.__
 
 _Hypotenuse_ has the goal of improving the safety and aesthetics of working with numbers in Scala, without compromising on performance. It achieves this by several means. Numeric types have a consistent naming scheme of a letter—`U`, `I`, `F` or `B` for *i*nteger, *u*nsigned integer, *f*loating-point number and *b*itmap—and a number of bits, from `8` to `64`. Unsigned and signed (two's complement) numbers have different types, and both are distinct from _bitmap_ types which are used for bitwise operations; though conversions between them are easy (and free in terms of performance). Associated mathematical methods that were provided through the `java.lang.Math` class are made available, more consistently, as extension methods on each type. And operations such as division by zero on an integer, overflow or production of `NaN`s can be optionally checked.
 
