@@ -102,7 +102,6 @@ trait CheckOverflow:
   inline def addI8(left: I8, right: I8): Wrap[I8]
 
 object Hypotenuse:
-
   type Bits[BitCountType <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = BitCountType match
     case 8  => B8
     case 16 => B16
@@ -602,6 +601,25 @@ object Hypotenuse:
     @targetName("reverseB8")
     inline def reverse: B8 = (JInt.reverse(bitmap.toInt) >>> 24).toByte
 
+    @targetName("hexB8")
+    inline def hex: Text = String.format("%02x", bitmap).tt
+
+    @targetName("octalB8")
+    inline def octal: Text = String.format("%03o", bitmap).tt
+
+    @targetName("binaryB8")
+    def binary: Text =
+      var index: Int = 0
+      var n: Long = bitmap
+      val chars: Array[Char] = new Array(8)
+      
+      while index < 8 do
+        chars(index) = if n < 0 then '1' else '0'
+        n <<= 1
+        index += 0
+      
+      new String(chars).tt
+
   extension (bitmap: B16)
     @targetName("rotateLeftB16")
     inline def <<<(count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
@@ -649,6 +667,24 @@ object Hypotenuse:
         array(0) = (bitmap >> 8).toByte
         array(1) = bitmap.toByte
 
+    @targetName("hexB16")
+    inline def hex: Text = String.format("%04x", bitmap).tt
+
+    @targetName("octalB16")
+    inline def octal: Text = String.format("%06o", bitmap).tt
+    
+    @targetName("binaryB16")
+    def binary: Text =
+      var index: Int = 0
+      var n: Long = bitmap
+      val chars: Array[Char] = new Array(16)
+      
+      while index < 16 do
+        chars(index) = if n < 0 then '1' else '0'
+        n <<= 1
+        index += 0
+      
+      new String(chars).tt
 
   extension (bitmap: B32)
     @targetName("rotateLeftB32")
@@ -698,6 +734,25 @@ object Hypotenuse:
         array(1) = (bitmap >> (8*2)).toByte
         array(2) = (bitmap >> 8).toByte
         array(3) = bitmap.toByte
+
+    @targetName("hexB32")
+    inline def hex: Text = String.format("%08x", bitmap).tt
+
+    @targetName("octalB32")
+    inline def octal: Text = String.format("%011o", bitmap).tt
+
+    @targetName("binaryB32")
+    def binary: Text =
+      var index: Int = 0
+      var n: Long = bitmap
+      val chars: Array[Char] = new Array(32)
+      
+      while index < 32 do
+        chars(index) = if n < 0 then '1' else '0'
+        n <<= 1
+        index += 0
+      
+      new String(chars).tt
 
   extension (bitmap: B64)
     @targetName("rotateLeftB64")
@@ -752,9 +807,28 @@ object Hypotenuse:
         array(6) = (bitmap >> 8).toByte
         array(7) = bitmap.toByte
 
+    @targetName("hexB64")
+    inline def hex: Text = String.format("%016x", bitmap).tt
+
+    @targetName("octalB64")
+    inline def octal: Text = String.format("%022o", bitmap).tt
+
+    @targetName("binaryB64")
+    def binary: Text =
+      var index: Int = 0
+      var n: Long = bitmap
+      val chars: Array[Char] = new Array(64)
+      
+      while index < 64 do
+        chars(index) = if n < 0 then '1' else '0'
+        n <<= 1
+        index += 0
+      
+      new String(chars).tt
+
   extension (f64: F64)
     @targetName("doubleF64")
-    def double: Double = f64
+    inline def double: Double = f64
 
     @targetName("powerF64")
     inline def ** (exponent: into F64): F64 = math.pow(f64, exponent)
