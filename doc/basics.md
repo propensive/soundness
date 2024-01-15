@@ -7,7 +7,7 @@ import quantitative.*
 
 Physical quantities can be represented by different `Quantity` types, with an appropriate parameter that encodes
 the value's units. We can create a quantity by multiplying an existing `Double` (or any numeric type) by some
-unit value, such as `Metre` or `Joule`—which are just `Quantity` values equal to `1.0` of the appropriate unit.
+unit value, such as `Metre` or `Joule`, which are just `Quantity` values equal to `1.0` of the appropriate unit.
 For example:
 ```amok
 ##
@@ -38,7 +38,7 @@ alias.
 
 The precise types, representing units, are known statically, but are erased by runtime. Hence, all
 dimensionality checking takes place at compiletime, after which, operations on `Quantity`s will be
-operations on `Double`s—and will achieve similar performance.
+operations on `Double`s, and will achieve similar performance.
 
 The raw `Double` value of a `Quantity` can always be obtained with `Quantity#value`
 
