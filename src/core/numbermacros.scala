@@ -21,7 +21,7 @@ import fulminate.*
 import scala.quoted.*
 import scala.compiletime.*
 
-object CardinalityMacro:
+object Cardinality:
   def apply
       [LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type]
       (digits: Expr[String])

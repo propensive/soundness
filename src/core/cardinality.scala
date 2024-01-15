@@ -66,7 +66,7 @@ object NumericRange:
     given cardinality[MinValueType <: Double, MaxValueType <: Double]
         : RangeParser[MinValueType, MaxValueType] with
       override inline def fromDigits(digits: String): MinValueType ~ MaxValueType =
-        ${CardinalityMacro('digits)}
+        ${Cardinality('digits)}
     
     extension [LeftMinType <: Double, LeftMaxType <: Double](left: LeftMinType ~ LeftMaxType)
       def double: Double = left
