@@ -1,0 +1,17 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target hallucination/core
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/fulminate
+repo propensive/symbolism
+repo propensive/vacuous
+repo propensive/iridescence
+
+project hallucination
+  module core
+    compiler  scala
+    sources   src/core
+    include   turbulence/core escapade/core iridescence/core
+
