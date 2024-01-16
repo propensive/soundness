@@ -477,6 +477,9 @@ object Hypotenuse:
     
     @targetName("modI64")
     infix inline def % (right: into I64): I64 = i64%right
+    
+    @targetName("bitsI64")
+    inline def bits: B64 = i64
 
   extension (i32: I32)
     @targetName("plusI32")
@@ -519,6 +522,9 @@ object Hypotenuse:
     
     @targetName("modI32")
     infix inline def % (right: into I32): I32 = i32%right
+    
+    @targetName("bitsI32")
+    inline def bits: B32 = i32
 
   extension (i16: I16)
     @targetName("plusI16")
@@ -564,6 +570,9 @@ object Hypotenuse:
     
     @targetName("modI16")
     infix inline def % (right: into I16): I16 = (i16%right).toShort
+    
+    @targetName("bitsI16")
+    inline def bits: B16 = i16
 
   extension (i8: I8)
     @targetName("plusI8")
@@ -612,6 +621,9 @@ object Hypotenuse:
     
     @targetName("modI8")
     infix inline def % (right: into I8): I8 = (i8%right).toByte
+    
+    @targetName("bitsI8")
+    inline def bits: B8 = i8
 
 
   extension (bitmap: B8)
@@ -659,6 +671,8 @@ object Hypotenuse:
 
     @targetName("octalB8")
     inline def octal: Text = String.format("%03o", bitmap).nn.tt
+
+    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
     @targetName("binaryB8")
     def binary: Text =
@@ -739,6 +753,8 @@ object Hypotenuse:
       
       new String(chars).tt
 
+    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+  
   extension (bitmap: B32)
     @targetName("rotateLeftB32")
     inline def <<<(count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
@@ -806,6 +822,8 @@ object Hypotenuse:
         index += 0
       
       new String(chars).tt
+    
+    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
   extension (bitmap: B64)
     @targetName("rotateLeftB64")
@@ -879,6 +897,8 @@ object Hypotenuse:
       
       new String(chars).tt
 
+    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+  
   extension (f64: F64)
     @targetName("doubleF64")
     inline def double: Double = f64
@@ -902,10 +922,10 @@ object Hypotenuse:
     inline def `unary_-`: F64 = -f64
   
     @targetName("mantissaF64")
-    inline def mantissa: B64 = bits & 0xfffffffffffffL.bits
+    inline def mantissa: B64 = bits & 0xfffffffffffffL
     
     @targetName("exponentF64")
-    inline def exponent: B16 = math.getExponent(double).toShort.bits
+    inline def exponent: B16 = math.getExponent(double).toShort
     
     @targetName("absF64")
     inline def abs: F64 = math.abs(double)
@@ -941,10 +961,10 @@ object Hypotenuse:
     inline def ulp: F64 = math.ulp(double)
     
     @targetName("bitsF64")
-    inline def bits: B64 = JDouble.doubleToLongBits(double).bits
+    inline def bits: B64 = JDouble.doubleToLongBits(double)
     
     @targetName("rawBitsF64")
-    inline def rawBits: B64 = JDouble.doubleToRawLongBits(double).bits
+    inline def rawBits: B64 = JDouble.doubleToRawLongBits(double)
     
     @targetName("finiteF64")
     inline def finite: Boolean = double.isFinite
