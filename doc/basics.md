@@ -41,7 +41,7 @@ may also be substituted into another, for example,
 val echo = sh"echo Hello World"
 sh"sh -c '$echo'"
 ```
-where the quotes are required aronud `'$echo'` so that the command is passed to `sh -c` as a
+where the quotes are required around `'$echo'` so that the command is passed to `sh -c` as a
 single argument, rather than multiple arguments (of which only the first would be used).
 
 #### Environment
