@@ -23,8 +23,6 @@ import parasite.*
 import capricious.*
 import anticipation.*
 
-import scala.collection.mutable as scm
-
 import language.experimental.captureChecking
 
 extension (lazyList: LazyList[Bytes])
