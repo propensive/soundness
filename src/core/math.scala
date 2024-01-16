@@ -37,11 +37,11 @@ package arithmeticOptions:
   object division:
     inline given unchecked: DivisionByZero with
       type Wrap[ResultType] = ResultType
-      inline def divideU64(left: U64, right: U64): U64 = U64((left.long/right.long).bits)
+      inline def divideU64(left: U64, right: U64): U64 = U64((Long(left.bits)/Long(right.bits)).bits)
       inline def divideI64(left: I64, right: I64): I64 = I64((left.long/right.long).bits)
-      inline def divideU32(left: U32, right: U32): U32 = U32((left.int/right.int).bits)
+      inline def divideU32(left: U32, right: U32): U32 = U32((Int(left.bits)/Int(right.bits)).bits)
       inline def divideI32(left: I32, right: I32): I32 = I32((left.int/right.int).bits)
-      inline def divideU16(left: U16, right: U16): U16 = U16((left.short/right.short).toShort.bits)
+      inline def divideU16(left: U16, right: U16): U16 = U16((Short(left.bits)/Short(right.bits)).toShort.bits)
       inline def divideI16(left: I16, right: I16): I16 = I16((left.short/right.short).toShort.bits)
       inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
       inline def divideI8(left: I8, right: I8): I8 = I8((left.byte/right.byte).toByte.bits)
@@ -50,19 +50,22 @@ package arithmeticOptions:
       type Wrap[ResultType] = ResultType raises DivisionError
       
       inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
-        if right.long == 0 then raise(DivisionError())(U64(0.bits)) else U64((left.long/right.long).bits)
+        if Long(right.bits) == 0 then raise(DivisionError())(U64(0.bits))
+        else U64((Long(left.bits)/Long(right.bits)).bits)
       
       inline def divideI64(left: I64, right: I64): I64 raises DivisionError =
         if right.long == 0 then raise(DivisionError())(I64(0.bits)) else I64((left.long/right.long).bits)
       
       inline def divideU32(left: U32, right: U32): U32 raises DivisionError =
-        if right.long == 0 then raise(DivisionError())(U32(0.bits)) else U32((left.int/right.int).bits)
+        if right.long == 0 then raise(DivisionError())(U32(0.bits))
+        else U32((Int(left.bits)/Int(right.bits)).bits)
       
       inline def divideI32(left: I32, right: I32): I32 raises DivisionError =
         if right.int == 0 then raise(DivisionError())(I32(0.bits)) else I32((left.int/right.int).bits)
       
       inline def divideU16(left: U16, right: U16): U16 raises DivisionError =
-        if right.int == 0 then raise(DivisionError())(U16(0.bits)) else U16((left.short/right.short).toShort.bits)
+        if right.int == 0 then raise(DivisionError())(U16(0.bits))
+        else U16((Short(left.bits)/Short(right.bits)).toShort.bits)
       
       inline def divideI16(left: I16, right: I16): I16 raises DivisionError =
         if right.int == 0 then raise(DivisionError())(I16(0.bits)) else I16((left.short/right.short).toShort.bits)
@@ -76,11 +79,11 @@ package arithmeticOptions:
   object overflow:
     inline given unchecked: CheckOverflow with
       type Wrap[ResultType] = ResultType
-      inline def addU64(left: U64, right: U64): U64 = U64((left.long + right.long).bits)
+      inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addI64(left: I64, right: I64): I64 = I64((left.long + right.long).bits)
-      inline def addU32(left: U32, right: U32): U32 = U32((left.int + right.int).bits)
+      inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)
       inline def addI32(left: I32, right: I32): I32 = I32((left.int + right.int).bits)
-      inline def addU16(left: U16, right: U16): U16 = U16((left.short + right.short).toShort.bits)
+      inline def addU16(left: U16, right: U16): U16 = U16((Short(left.bits) + Short(right.bits)).toShort.bits)
       inline def addI16(left: I16, right: I16): I16 = I16((left.short + right.short).toShort.bits)
       inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
       inline def addI8(left: I8, right: I8): I8 = I8((left.byte + right.byte).toByte.bits)
@@ -89,7 +92,7 @@ package arithmeticOptions:
       type Wrap[ResultType] = ResultType raises OverflowError
       
       inline def addU64(left: U64, right: U64): U64 raises OverflowError =
-        val result: B64 = (left.long + right.long).bits
+        val result: B64 = (Long(left.bits) + Long(right.bits)).bits
         
         if U64((left.bits^result) & (right.bits^result)) < U64(0.bits)
         then raise(OverflowError())(U64(result)) else U64(result)
@@ -99,7 +102,7 @@ package arithmeticOptions:
         if result < left || result < right then raise(OverflowError())(result) else result
 
       inline def addU32(left: U32, right: U32): U32 raises OverflowError =
-        val result: B32 = (left.int + right.int).bits
+        val result: B32 = (Int(left.bits) + Int(right.bits)).bits
         
         if U32((left.bits^result) & (right.bits^result)) < U32(0.bits)
         then raise(OverflowError())(U32(result)) else U32(result)
@@ -109,7 +112,7 @@ package arithmeticOptions:
         if result < left || result < right then raise(OverflowError())(result) else result
 
       inline def addU16(left: U16, right: U16): U16 raises OverflowError =
-        val result: B16 = (left.short + right.short).toShort.bits
+        val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
         
         if U16((left.bits^result) & (right.bits^result)) < U16(0.toShort.bits)
         then U16(raise(OverflowError())(result)) else U16(result)
@@ -1087,9 +1090,6 @@ object Hypotenuse:
     @targetName("modU64")
     infix inline def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
 
-    @targetName("longU64")
-    inline def long: Long = u64
-
   extension (u32: U32)
     @targetName("plusU32")
     infix inline def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] = overflow.addU32(u32, right)
@@ -1121,15 +1121,18 @@ object Hypotenuse:
     @targetName("longU32")
     inline def long: Long = JInt.toUnsignedLong(u32)
     
-    @targetName("intU32")
-    inline def int: Int = u32
-    
     @targetName("divU32")
     inline infix def / (right: into U32)(using division: DivisionByZero): division.Wrap[U32] =
       division.divideU32(u32, right)
     
     @targetName("modU32")
     infix inline def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
+
+    @targetName("u32ToI64")
+    inline def i64: I64 = JInt.toUnsignedLong(u32)
+
+    @targetName("u32ToU64")
+    inline def u64: U64 = JInt.toUnsignedLong(u32)
 
   extension (u16: U16)
     @targetName("plusU16")
@@ -1173,8 +1176,17 @@ object Hypotenuse:
     @targetName("modU16")
     infix inline def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
 
-    @targetName("shortU16")
-    inline def short: Short = u16
+    @targetName("u16ToI32")
+    inline def i32: I32 = JShort.toUnsignedInt(u16)
+
+    @targetName("u16ToI64")
+    inline def i64: I64 = JShort.toUnsignedLong(u16)
+
+    @targetName("u16ToU32")
+    inline def u32: U32 = JShort.toUnsignedInt(u16)
+
+    @targetName("u16ToU64")
+    inline def u64: U64 = JShort.toUnsignedLong(u16)
 
   extension (u8: U8)
     @targetName("plusU8")
@@ -1222,6 +1234,24 @@ object Hypotenuse:
 
     @targetName("byteU8")
     inline def byte: Byte = u8
+
+    @targetName("u8ToI16")
+    inline def i16: I16 = JByte.toUnsignedInt(u8).toShort
+    
+    @targetName("u8ToI32")
+    inline def i32: I32 = JByte.toUnsignedInt(u8)
+
+    @targetName("u8ToI64")
+    inline def i64: I64 = JByte.toUnsignedLong(u8)
+    
+    @targetName("u8ToU16")
+    inline def u16: U16 = JByte.toUnsignedInt(u8).toShort
+    
+    @targetName("u8ToU32")
+    inline def u32: U32 = JByte.toUnsignedInt(u8)
+
+    @targetName("u8ToU64")
+    inline def u64: U64 = JByte.toUnsignedLong(u8)
 
 export Hypotenuse.{B8, B16, B32, B64, I8, I16, I32, I64, U8, U16, U32, U64, F32, F64}
 
@@ -1468,8 +1498,14 @@ extension (long: Long)
 extension (doubleObject: Double.type)
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)
 
+extension (shortObject: Short.type)
+  def apply(bits: B16): Short = bits.asInstanceOf[Short]
+
+  def apply(bytes: IArray[Byte]): Short = (((bytes(0) & 0xFF) << 8) | (bytes(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
+  def apply(bits: B32): Int = bits.asInstanceOf[Int]
+
   def apply(bytes: IArray[Byte]): Int =
     var int: Int = (bytes(0) & 0xFF).toInt
     int <<= 8
@@ -1482,6 +1518,8 @@ extension (intObject: Int.type)
     int
 
 extension (longObject: Long.type)
+  def apply(bits: B64): Long = bits.asInstanceOf[Long]
+
   def apply(bytes: IArray[Byte]): Long =
     var long: Long = (bytes(0) & 0xFF).toLong
     long <<= 8
