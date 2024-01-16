@@ -13,7 +13,7 @@ project zeppelin
   module core
     compiler  scala
     sources   src/core
-    include   ambience/core imperial/core anticipation/path serpentine/core diuretic/core turbulence/core
+    include   ambience/core imperial/core anticipation/path serpentine/core diuretic/core turbulence/core vacuous/core
 
   module test
     compiler  scala

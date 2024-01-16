@@ -18,6 +18,8 @@ package zeppelin
 
 import rudiments.*
 import gossamer.*
+import vacuous.*
+import perforate.*
 import serpentine.*
 import diuretic.*
 import fulminate.*
@@ -57,9 +59,9 @@ case class ZipPath(zipFile: ZipFile, ref: ZipRef):
 object ZipRef:
   def apply
       (text: Text)
-      (using pathError: CanThrow[PathError], reachable: Reachable[ZipRef, InvalidZipNames, Unset.type])
-      : ZipRef^{pathError, reachable} =
-    reachable.parse(text)
+      (using pathError: Raises[PathError], reachable: Reachable[ZipRef, InvalidZipNames, Unset.type], rootParser: RootParser[ZipRef, Unset.type], creator: PathCreator[ZipRef, InvalidZipNames, Unset.type])
+      : ZipRef^{pathError, reachable, rootParser, creator} =
+    Reachable.decode[ZipRef](text)
   
   @targetName("child")
   def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
@@ -71,7 +73,7 @@ object ZipRef:
       def prefix(ref: Unset.type): Text = t""
 
   given RootParser[ZipRef, Unset.type] with
-    def parse(text: Text): (Unset.type, Text) = (ZipRef, text.drop(1))
+    def parse(text: Text): (Unset.type, Text) = (Unset, text.drop(1))
 
   given PathCreator[ZipRef, InvalidZipNames, "/"] = (root, descent) => ZipRef(descent)
 
@@ -95,17 +97,17 @@ case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 object ZipFile:
   def apply[FileType]
       (file: FileType)
-      (using genericFileReader: /*{*}*/ GenericFileReader[FileType], streamCut: CanThrow[StreamError])
-      : /*{genericFileReader, streamCut}*/ ZipFile =
-    val pathname: String = genericFileReader.filePath(file)
-    new ZipFile(pathname.show)
+      (using genericFile: /*{*}*/ GenericFile[FileType], streamCut: CanThrow[StreamError])
+      : /*{genericFile, streamCut}*/ ZipFile =
+    val pathname: Text = file.fileText
+    new ZipFile(pathname)
 
   def create[PathType]
       (path: PathType)
-      (using pathReader: GenericPathReader[PathType]^, streamCut: CanThrow[StreamError])
-      : ZipFile^{pathReader, streamCut} =
-    val pathname: String = pathReader.getPath(path)
-    val out: juz.ZipOutputStream^{pathReader} =
+      (using genericPath: GenericPath[PathType]^, streamCut: CanThrow[StreamError])
+      : ZipFile^{genericPath, streamCut} =
+    val pathname: Text = path.pathText
+    val out: juz.ZipOutputStream^{genericPath} =
       juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname)))
     
     out.putNextEntry(juz.ZipEntry("/"))
