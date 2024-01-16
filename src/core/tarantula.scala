@@ -23,6 +23,8 @@ import telekinesis.*
 import cataclysm.*
 import honeycomb.*
 import perforate.*
+import gastronomy.*
+import hallucination.*
 import eucalyptus.*
 import spectacular.*
 import rudiments.*
@@ -105,7 +107,10 @@ case class WebDriver(server: Browser#Server):
           .post(content).as[Json]
       
       def click()(using Log[Text]): Unit = post(t"click", Json.parse(t"{}"))
-      def clear()(using Log[Text]): Unit = post(t"clear", Json.parse(t"{}")) 
+      def clear()(using Log[Text]): Unit = post(t"clear", Json.parse(t"{}"))
+
+      def screenshot()(using Log[Text]): Image =
+        Image.read(get(t"screenshot").value.as[Text].decode[Base64])
 
       def value(text: Text)(using Log[Text]): Unit =
         case class Data(text: Text)
