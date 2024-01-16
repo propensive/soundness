@@ -143,13 +143,13 @@ object HttpReadable:
     def read(status: HttpStatus, body: HttpBody): Text = body match
       case HttpBody.Empty         => t""
       case HttpBody.Data(body)    => body.uString
-      case HttpBody.Chunked(body) => body.slurp().uString
+      case HttpBody.Chunked(body) => body.aggregate.uString
   
   given bytes: HttpReadable[Bytes] with
     def read(status: HttpStatus, body: HttpBody): Bytes = body match
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
-      case HttpBody.Chunked(body) => body.slurp()
+      case HttpBody.Chunked(body) => body.aggregate
 
   given genericHttpReader
       [ContentType]
@@ -159,7 +159,7 @@ object HttpReadable:
     def read(status: HttpStatus, body: HttpBody): ContentType = body match
       case HttpBody.Empty         => reader.read(t"")
       case HttpBody.Data(data)    => reader.read(data.uString)
-      case HttpBody.Chunked(data) => reader.read(data.slurp().uString)
+      case HttpBody.Chunked(data) => reader.read(data.aggregate.uString)
 
   given httpStatus: HttpReadable[HttpStatus] with
     def read(status: HttpStatus, body: HttpBody) = status
