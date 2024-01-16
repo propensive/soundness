@@ -28,14 +28,6 @@ import scala.collection.mutable as scm
 import language.experimental.captureChecking
 
 extension (lazyList: LazyList[Bytes])
-  def aggregate: Bytes =
-    val bld: scm.ArrayBuilder[Byte] = scm.ArrayBuilder.ofByte()
-    
-    lazyList.each: bs =>
-      bld.addAll(bs.mutable(using Unsafe))
-    
-    bld.result().immutable(using Unsafe)
-
   def drop(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
       case head #:: tail =>
