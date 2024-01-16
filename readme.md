@@ -21,8 +21,8 @@ protocol.
 ## Availability Plan
 
 Tarantula has not yet been published. The medium-term plan is to build Tarantula
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Tarantula.
 
 Subsequently, Tarantula will also be made available as a binary in the Maven
@@ -84,6 +84,7 @@ repeated applications. The infix syntax is particularly intuitive. For example,
 for elem <- browser / id"menu" / Li / cls"checkbox" do elem.click()
 ```
 would simulate a click on every element with the `checkbox` CSS class inside an `<li>` tag in the element with ID `menu`.
+
 
 
 
