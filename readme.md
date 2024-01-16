@@ -24,8 +24,8 @@ listing may be obtained with `sh"ls $path".exec[List[String]]()`.
 ## Availability Plan
 
 Guillotine has not yet been published. The medium-term plan is to build Guillotine
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Guillotine.
 
 Subsequently, Guillotine will also be made available as a binary in the Maven
@@ -164,6 +164,7 @@ or by mapping across an existing `Executor`, for example,
 given Executor[Int] = summon[Executor[String]].map(_.toInt)
 ```
 since all `Executor`s are functors.
+
 
 
 
