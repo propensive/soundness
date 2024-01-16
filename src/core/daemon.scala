@@ -261,7 +261,7 @@ def daemon[BusType <: Matchable]
           
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = (Classpath / p"spectral" / p"build.id")().readAs[Text].trim.decodeAs[Int]
+      val buildId = (Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]
       val stderr = if stderrSupport() then 1 else 0
       t"$port $buildId $stderr".writeTo(portFile)
       waitFile.touch()
