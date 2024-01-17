@@ -30,8 +30,12 @@ import scala.compiletime.*
 
 //import language.experimental.captureChecking
 
-case class CodlLabel[+TargetType, +FieldNameType <: Label](label: String)
-
+trait CodlRelabelling[+TargetType]:
+  def relabelling(): Map[Text, Text]
+  private lazy val labels: Map[Text, Text] = relabelling()
+  
+  def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
+  
 case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
 
 trait CodlEncoder[ValueType]:
@@ -63,16 +67,28 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
     new CodlEncoder[DerivationType]:
       def schema: CodlSchema =
-        val elements = contexts { [FieldType] => context => CodlSchema.Entry(label, context.schema) }
+        val elements = contexts:
+          [FieldType] => context =>
+            val label2 = summonFrom:
+              case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
+              case _                                            => label
+
+            CodlSchema.Entry(label2, context.schema)
+
         Struct(elements.to(List), Arity.One)
       
       def encode(product: DerivationType): List[IArray[CodlNode]] = List:
         IArray.from:
           fields(product):
             [FieldType] => field =>
+              val label2 = summonFrom:
+                case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
+                case _                                            => label
+              
               context.encode(field).map: value =>
-                CodlNode(Data(label, value, Layout.empty, context.schema))
+                CodlNode(Data(label2, value, Layout.empty, context.schema))
               .filter(!_.empty)
+
           .to(List).flatten
 
 object CodlEncoder:
@@ -133,80 +149,28 @@ object CodlEncoder:
       def encode(value: Set[ElementType]): List[IArray[CodlNode]] =
         value.map { (value: ElementType) => encoder.encode(value).head }.to(List)
   
-// trait CodlDecoder2:
-//   inline given derived
-//       [DerivationType]
-//       (using mirror: Mirror.Of[DerivationType])
-//       : CodlDecoder[DerivationType] =
-//     inline mirror match
-//       case mirror: Mirror.ProductOf[DerivationType & Product] =>
-//         new CodlDecoder[DerivationType]:
-//           def decode
-//               (value: List[Indexed])(using codlRead: Raises[CodlReadError])
-//               : DerivationType =
-//             mirror.fromProduct(deriveProduct[DerivationType, mirror.MirroredElemTypes,
-//                 mirror.MirroredElemLabels](value))
-        
-//           def schema: CodlSchema = Struct(deriveSchema[DerivationType, mirror.MirroredElemTypes,
-//               mirror.MirroredElemLabels], Arity.One)
-      
-//       case _ => compiletime.error("cannot derive a CodlDecoder sum type")
-    
-//   transparent inline def deriveSchema
-//       [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
-//       : List[CodlSchema.Entry] =
-//     inline erasedValue[ElementTypes] match
-//       case EmptyTuple =>
-//         Nil
-      
-//       case cons: (headType *: tailType) => inline erasedValue[Labels] match
-//         case _: (headLabel *: tailLabels) =>
-//           val label: String = summonFrom:
-//             case label: CodlLabel[DerivationType, `headLabel` & Label] =>
-//               label.label
-            
-//             case _ => (valueOf[headLabel].asMatchable: @unchecked) match
-//               case label: String => label
-          
-//           (label.asMatchable: @unchecked) match
-//             case label: String =>
-//               CodlSchema.Entry(label.tt, summonInline[CodlDecoder[headType]].schema) ::
-//                   deriveSchema[DerivationType, tailType, tailLabels]
-
-//   private transparent inline def deriveProduct
-//       [DerivationType, ElementTypes <: Tuple, Labels <: Tuple]
-//       (value: List[Indexed])
-//       (using codlRead: Raises[CodlReadError])
-//       : Tuple =
-//     inline erasedValue[ElementTypes] match
-//       case EmptyTuple =>
-//         EmptyTuple
-      
-//       case cons: (headType *: tailType) => inline erasedValue[Labels] match
-//         case _: (headLabel *: tailLabels) =>
-//           val label: String = summonFrom:
-//             case label: CodlLabel[DerivationType, `headLabel` & Label] =>
-//               label.label
-            
-//             case _ => (valueOf[headLabel].asMatchable: @unchecked) match
-//               case label: String => label
-          
-//           (label.asMatchable: @unchecked) match
-//             case label: String =>
-//               summonInline[CodlDecoder[headType]].decode(value.headOption.getOrElse(abort(CodlReadError())).get(label.tt)) *:
-//                   deriveProduct[DerivationType, tailType, tailLabels](value)
-
 object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlDecoder[DerivationType] =
     new CodlDecoder[DerivationType]:
       def schema: CodlSchema =
-        val elements = contexts { [FieldType] => context => CodlSchema.Entry(label, context.schema) }
+        val elements = contexts:
+          [FieldType] => context =>
+            val label2 = summonFrom:
+              case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
+              case _                                            => label
+            
+            CodlSchema.Entry(label2, context.schema)
+        
         Struct(elements.to(List), Arity.One)
           
       def decode(values: List[Indexed])(using codlRead: Raises[CodlReadError]): DerivationType =
         construct:
           [FieldType] => context =>
-            context.decode(values.headOption.getOrElse(abort(CodlReadError())).get(label))
+            val label2 = summonFrom:
+              case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
+              case _                                            => label
+
+            context.decode(values.headOption.getOrElse(abort(CodlReadError())).get(label2))
  
 
 object CodlDecoder:
