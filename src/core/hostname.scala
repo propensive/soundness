@@ -64,11 +64,11 @@ object Hostname:
       '{Hostname($labels*)}
 
   def parse(text: Text): Hostname raises HostnameError =
-    val buffer: StringBuilder = StringBuilder()
+    val buffer: TextBuffer = TextBuffer()
 
     def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = safely(text(index)) match
       case '.' | Unset =>
-        val label = buffer.text
+        val label = buffer()
         if label.empty then raise(HostnameError(EmptyDnsLabel(dnsLabels.length)))(())
         if label.length > 63 then raise(HostnameError(LongDnsLabel(label)))(())
         if label.starts(t"-") then raise(HostnameError(InitialDash(label)))(())
@@ -81,7 +81,7 @@ object Hostname:
       
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
-        then buffer.append(char)
+        then buffer.append(char.toString.tt)
         else raise(HostnameError(InvalidChar(char)))(())
         recur(index + 1, dnsLabels)
     
