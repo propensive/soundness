@@ -425,53 +425,54 @@ package jsonPrinters:
   given minimal: JsonPrinter = MinimalJsonPrinter
 
 object MinimalJsonPrinter extends JsonPrinter:
-  def print(json: JsonAst): Text =
-    val builder: StringBuilder = StringBuilder()
+  def print(json: JsonAst): Text = Text.make:
     def appendString(str: String): Unit =
       str.each:
-        case '\t' => builder.append("\\t")
-        case '\n' => builder.append("\\n")
-        case '\r' => builder.append("\\r")
-        case '\\' => builder.append("\\\\")
-        case '\f' => builder.append("\\f")
-        case char => builder.append(char)
+        case '\t' => append("\\t")
+        case '\n' => append("\\n")
+        case '\r' => append("\\r")
+        case '\\' => append("\\\\")
+        case '\f' => append("\\f")
+        case char => append(char)
 
     def recur(json: JsonAst): Unit = json.asMatchable match
       case (keys, values) => (keys.asMatchable: @unchecked) match
         case keys: Array[String] @unchecked => (values.asMatchable: @unchecked) match
           case values: Array[JsonAst] @unchecked =>
-            builder.append('{')
+            append('{')
             val last = keys.length - 1
             keys.indices.each: i =>
-              builder.append('"')
+              append('"')
               appendString(keys(i))
-              builder.append('"')
-              builder.append(':')
+              append('"')
+              append(':')
               recur(values(i))
-              builder.append(if i == last then '}' else ',')
+              append(if i == last then '}' else ',')
       
       case array: Array[JsonAst] @unchecked =>
-        builder.append('[')
+        append('[')
         val last = array.length - 1
         array.indices.each: i =>
           recur(array(i))
-          builder.append(if i == last then ']' else ',')
+          append(if i == last then ']' else ',')
       
       case long: Long =>
-       builder.append(long.toString)
+       append(long.toString)
       
       case double: Double =>
-        builder.append(double.toString)
+        append(double.toString)
       
       case string: String =>
-        builder.append('"')
+        append('"')
         appendString(string)
-        builder.append('"')
-      case boolean: Boolean => builder.append(boolean.toString)
-      case _ => builder.append("null")
+        append('"')
+      
+      case boolean: Boolean =>
+        append(boolean.toString)
+      case _ =>
+        append("null")
 
     recur(json)
-    builder.toString.show
 
 // FIXME: Implement this
 object IndentedJsonPrinter extends JsonPrinter:
