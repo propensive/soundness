@@ -76,9 +76,6 @@ def select[SelectorType](sel: SelectorType)(using selectable: Selectable[Selecto
   CssRule(selectable.selector(sel), css)
 
 extension [SelectorType: Selectable](left: SelectorType)(using selectable: Selectable[SelectorType])
-  @targetName("definedAs")
-  infix def :=(css: CssStyle): CssRule = CssRule(selectable.selector(left), css)
-
   @targetName("descendant")
   infix def >>[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) >> selectable2.selector(right)
