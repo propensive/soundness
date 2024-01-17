@@ -476,61 +476,57 @@ object MinimalJsonPrinter extends JsonPrinter:
 
 // FIXME: Implement this
 object IndentedJsonPrinter extends JsonPrinter:
-  def print(json: JsonAst): Text =
-    val builder: StringBuilder = StringBuilder()
-    
+  def print(json: JsonAst): Text = Text.make:
     def appendString(string: String): Unit =
       string.each:
-        case '\t' => builder.append("\\t")
-        case '\n' => builder.append("\\n")
-        case '\r' => builder.append("\\r")
-        case '\\' => builder.append("\\\\")
-        case '\f' => builder.append("\\f")
-        case ch   => builder.append(ch)
+        case '\t' => append("\\t")
+        case '\n' => append("\\n")
+        case '\r' => append("\\r")
+        case '\\' => append("\\\\")
+        case '\f' => append("\\f")
+        case ch   => append(ch)
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
       case (keys, values) => (keys.asMatchable: @unchecked) match
         case keys: Array[String] => (values.asMatchable: @unchecked) match
           case values: Array[JsonAst] @unchecked =>
-            builder.append('{')
+            append('{')
             val last = keys.length - 1
             
             keys.indices.each: index =>
-              builder.append('"')
+              append('"')
               appendString(keys(index))
-              builder.append('"')
-              builder.append(':')
+              append('"')
+              append(':')
               recur(values(index), indent)
-              builder.append(if index == last then '}' else ',')
+              append(if index == last then '}' else ',')
       
       case array: Array[JsonAst] @unchecked =>
-        builder.append('[')
+        append('[')
         val last = array.length - 1
         
         array.indices.each: index =>
           recur(array(index), indent)
-          builder.append(if index == last then ']' else ',')
+          append(if index == last then ']' else ',')
       
       case long: Long =>
-       builder.append(long.toString)
+       append(long.toString)
       
       case double: Double =>
-        builder.append(double.toString)
+        append(double.toString)
       
       case string: String =>
-        builder.append('"')
+        append('"')
         appendString(string)
-        builder.append('"')
+        append('"')
       
       case boolean: Boolean =>
-        builder.append(boolean.toString)
+        append(boolean.toString)
       
       case _ =>
-        builder.append("null")
+        append("null")
 
     recur(json, 0)
-    builder.text
-
 
 object JsonAccessError:
   enum Reason:
