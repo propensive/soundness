@@ -18,7 +18,6 @@ package gossamer
 
 import rudiments.*
 import anticipation.*
-import spectacular.*
 
 def append
     [TextType, ValueType]
