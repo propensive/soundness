@@ -77,8 +77,7 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-  def serialize(tokens: LazyList[Text]): Text =
-    val buf: StringBuilder = StringBuilder()
+  def serialize(tokens: LazyList[Text]): Text = Text.make:
     var level: Int = 0
     var end: Boolean = true
 
@@ -88,22 +87,20 @@ object Dot:
 
     def whitespace(): Unit =
       if end then
-        buf.add(t"\n")
-        buf.add(t"  "*level)
+        append(t"\n")
+        append(t"  "*level)
         end = false
-      else buf.add(t" ")
+      else append(t" ")
 
     tokens.each:
       case t""  => ()
-      case t"," => buf.add(t",")
-      case t"{" => whitespace(); buf.add(t"{"); indent(); newline()
-      case t"}" => outdent(); whitespace(); buf.add(t"}"); newline()
-      case t"[" => whitespace(); buf.add(t"[")
-      case t"]" => whitespace(); buf.add(t"]"); newline()
+      case t"," => append(t",")
+      case t"{" => whitespace(); append(t"{"); indent(); newline()
+      case t"}" => outdent(); whitespace(); append(t"}"); newline()
+      case t"[" => whitespace(); append(t"[")
+      case t"]" => whitespace(); append(t"]"); newline()
       case t";" => newline()
-      case word => whitespace(); buf.add(word)
-
-    buf.text
+      case word => whitespace(); append(word)
 
   private def tokenize(graph: Ref | Dot | Target | Statement | Property): LazyList[Text] = graph match
     case Ref(id, port) =>
