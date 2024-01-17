@@ -237,10 +237,9 @@ object ByteEncoder:
   given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
   
   given ByteEncoder[Binary] = bytes =>
-    val buf = StringBuilder()
-    bytes.each:
-      byte => buf.add(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
-    buf.text
+    Text.make:
+      bytes.each:
+        byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
   given ByteEncoder[Base64Url] = bytes =>
     Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
