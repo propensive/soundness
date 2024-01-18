@@ -135,7 +135,7 @@ case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
 object Request:
   given Show[Request] = request =>
     val bodySample: Text =
-      try request.body.stream.aggregate.uString catch
+      try request.body.stream.readAs[Bytes].uString catch
         case err: StreamError  => t"[-/-]"
     
     val headers: Text =
@@ -176,7 +176,7 @@ case class Request
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
-          Map[Text, Text](body.stream.aggregate.uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+          Map[Text, Text](body.stream.readAs[Bytes].uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Mistake(msg"key/value pair does not match")
