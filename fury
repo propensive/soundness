@@ -12,7 +12,7 @@ project nettlesome
   module core
     compiler  scala
     sources   src/core
-    include   contextual/core gossamer/core hypotenuse/core
+    include   contextual/core gossamer/core hypotenuse/core anticipation/opaque
 
   module url
     compiler  scala

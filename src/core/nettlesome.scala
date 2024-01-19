@@ -106,6 +106,7 @@ object Nettlesome:
       def text: Text = label
 
     object Ipv4:
+      erased given underlying: Underlying[Ipv4, Int] = ###
       given show: Show[Ipv4] = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
@@ -130,6 +131,7 @@ object Nettlesome:
           raise(IpAddressError(Ipv4WrongNumberOfGroups(list.length)))(0)
 
     object MacAddress:
+      erased given underlying: Underlying[MacAddress, Long] = ###
       given show: Show[MacAddress] = _.text
       given encoder: Encoder[MacAddress] = _.text
       given decoder(using Raises[MacAddressError]): Decoder[MacAddress] = parse(_)
@@ -163,6 +165,7 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
+      erased given underlying: Underlying[TcpPort, Int] = ###
       given show: Show[TcpPort] = port => TextConversion.int(port.number)
       given encoder: Encoder[TcpPort] = port => TextConversion.int(port.number)
       given decoder(using Raises[NumberError], Raises[PortError]): Decoder[TcpPort] = text => apply(Decoder.int.decode(text))
@@ -173,6 +176,7 @@ object Nettlesome:
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
 
     object UdpPort:
+      erased given underlying: Underlying[UdpPort, Int] = ###
       given show: Show[UdpPort] = port => TextConversion.int(port.number)
       given encoder: Encoder[UdpPort] = port => TextConversion.int(port.number)
       given decoder(using Raises[NumberError], Raises[PortError]): Decoder[UdpPort] = text => apply(Decoder.int.decode(text))
