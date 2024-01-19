@@ -66,6 +66,7 @@ object Dates:
   opaque type Date = Int
 
   object Date:
+    erased given underlying: Underlying[Date, Int] = ###
     def of(day: Int): Date = day
     
     def apply
@@ -201,12 +202,14 @@ object Timing:
   opaque type TaiInstant = Long
 
   object TaiInstant:
+    erased given underlying: Underlying[TaiInstant, Long] = ###
     given generic: GenericInstant[Timing.TaiInstant] with
       def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
 
 
   object Instant:
+    erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
     
     given generic: GenericInstant[Timing.Instant] with
