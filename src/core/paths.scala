@@ -411,7 +411,10 @@ sealed trait Entry:
         jnf.Files.move(path.java, destination.java, options*)
 
     destination
-      
+
+  def lastModified[InstantType: SpecificInstant]: InstantType =
+    SpecificInstant(jnf.Files.getLastModifiedTime(path.java).nn.toInstant.nn.toEpochMilli)
+
 object PathResolver:
   // given entry
   //     (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError], notFound: Raises[NotFoundError])
