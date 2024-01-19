@@ -13,7 +13,7 @@ project iridescence
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core digression/core contextual/core anticipation/color hypotenuse/core
+    include   cardinality/core digression/core contextual/core anticipation/color hypotenuse/core anticipation/opaque
 
   module test
     compiler  scala

@@ -81,6 +81,7 @@ object Rgb24Opaque:
   opaque type Rgb24 = Int
   
   object Rgb24:
+    given underlying: Underlying[Rgb24, Int] = ###
     given RgbColor[Rgb24] = _.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb24 =
@@ -104,6 +105,7 @@ object Rgb32Opaque:
   opaque type Rgb32 = Int
   
   object Rgb32:
+    given underlying: Underlying[Rgb32, Int] = ###
     given RgbColor[Rgb32] = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 =
@@ -119,6 +121,7 @@ object Rgb12Opaque:
   opaque type Rgb12 = Int
   
   object Rgb12:
+    given underlying: Underlying[Rgb12, Int] = ###
     given RgbColor[Rgb12] = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb12 =
