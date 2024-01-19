@@ -46,7 +46,7 @@ object HostnameError:
 
 import HostnameError.Reason.*
 
-case class HostnameError(reason: HostnameError.Reason)
+case class HostnameError(text: Text, reason: HostnameError.Reason)
 extends Error(msg"the hostname is not valid because $reason")
 
 object Hostname:
@@ -69,20 +69,20 @@ object Hostname:
     def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = safely(text(index)) match
       case '.' | Unset =>
         val label = buffer()
-        if label.empty then raise(HostnameError(EmptyDnsLabel(dnsLabels.length)))(())
-        if label.length > 63 then raise(HostnameError(LongDnsLabel(label)))(())
-        if label.starts(t"-") then raise(HostnameError(InitialDash(label)))(())
+        if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))(())
+        if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))(())
+        if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))(())
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         buffer.clear()
         
         if index < text.length then recur(index + 1, dnsLabels2) else
-          if dnsLabels2.map(_.text.length + 1).sum > 254 then raise(HostnameError(LongHostname))(())
+          if dnsLabels2.map(_.text.length + 1).sum > 254 then raise(HostnameError(text, LongHostname))(())
           Hostname(dnsLabels2.reverse*)
       
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then buffer.append(char.toString.tt)
-        else raise(HostnameError(InvalidChar(char)))(())
+        else raise(HostnameError(text, InvalidChar(char)))(())
         recur(index + 1, dnsLabels)
     
     recur(0, Nil)
