@@ -74,7 +74,7 @@ object TabCompletions:
     mitigate:
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case IoError(_)         => InstallError(InstallError.Reason.Io)
-      case PathError(_)       => InstallError(InstallError.Reason.Environment)
+      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
       case StreamError(_)     => InstallError(InstallError.Reason.Io)
       case OverwriteError(_)  => InstallError(InstallError.Reason.Io)
     .within:
