@@ -26,6 +26,7 @@ object CountQuaques:
   opaque type Count[UnitsType <: Tuple] = Long
 
   object Count:
+    erased given underlying[UnitsType <: Tuple]: Underlying[Count[UnitsType], Long] = ###
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
     
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =

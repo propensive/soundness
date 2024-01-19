@@ -346,12 +346,14 @@ object Quantitative:
       ${QuantitativeMacros.fromQuantity[UnitsType, CountType]('quantity)}
 
   object MetricUnit:
+    erased given underlying[UnitsType <: Measure]: Underlying[MetricUnit[UnitsType], Double] = ###
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
     @targetName("makeDerivedUnit")
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
+    erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]

@@ -10,7 +10,7 @@ project quantitative
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core hypotenuse/core
+    include   gossamer/core hypotenuse/core anticipation/opaque
 
   module test
     compiler  scala
