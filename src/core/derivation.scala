@@ -187,7 +187,6 @@ object CodlDecoder:
 
   given optional
       [ValueType]
-      (using DummyImplicit)
       (using decoder: CodlDecoder[ValueType])
       : CodlDecoder[Optional[ValueType]] =
 
