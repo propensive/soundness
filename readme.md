@@ -24,8 +24,8 @@ Scala. Tab completions are automatically provided for [`bash`](https://www.gnu.o
 ## Availability Plan
 
 Exoskeleton has not yet been published. The medium-term plan is to build Exoskeleton
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Exoskeleton.
 
 Subsequently, Exoskeleton will also be made available as a binary in the Maven
@@ -220,6 +220,7 @@ in Exoskeleton, but is not used anywhere. But any user-defined method can requir
 it will ensure that that method can _only_ be called from within an `execute` block, since the only way to
 obtain an `Effectful` instance is from within an `execute` block. This makes it very difficult to invoke an
 "effectful" method elsewhere, by accident.
+
 
 
 
