@@ -12,6 +12,10 @@ project anticipation
     include   symbolism/core
     sources   src/text
 
+  module opaque
+    compiler  scala
+    sources   src/opaque
+
   module css
     compiler  scala
     include   anticipation/text
@@ -59,3 +63,4 @@ project anticipation
     include anticipation/url
     include anticipation/color
     include anticipation/transport
+    include anticipation/opaque
