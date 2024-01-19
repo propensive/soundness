@@ -89,7 +89,7 @@ object SerpentineMacro:
           $statements
 
           if $text.s.matches(${Expr(pattern)})
-          then raise(PathError($reasonExpr))($text.asInstanceOf[PathName[NameType]])(using $errorHandler)
+          then raise(PathError($text, $reasonExpr))($text.asInstanceOf[PathName[NameType]])(using $errorHandler)
         })
       
       case _ =>

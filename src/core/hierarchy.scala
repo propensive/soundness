@@ -38,20 +38,20 @@ object PathError:
     case InvalidSuffix(suffix: Text)
     case InvalidName(name: Text)
     case ParentOfRoot
-    case NotRooted(path: Text)
+    case NotRooted
 
   given Communicable[Reason] =
-    case Reason.InvalidChar(char)     => msg"the character $char may not appear in a path name"
-    case Reason.InvalidPrefix(prefix) => msg"the path name cannot begin with $prefix"
-    case Reason.InvalidSuffix(suffix) => msg"the path name cannot end with $suffix"
+    case Reason.InvalidChar(char)     => msg"the character $char may not appear in its name"
+    case Reason.InvalidPrefix(prefix) => msg"its name cannot begin with $prefix"
+    case Reason.InvalidSuffix(suffix) => msg"its name cannot end with $suffix"
     case Reason.InvalidName(name)     => msg"the name $name is not valid"
-    case Reason.ParentOfRoot          => msg"the root has no parent"
-    case Reason.NotRooted(path)       => msg"$path is not rooted"
+    case Reason.ParentOfRoot          => msg"it has no parent"
+    case Reason.NotRooted             => msg"it is not rooted"
 
 export Serpentine.PathName
 
-case class PathError(reason: PathError.Reason)
-extends Error(msg"the path is invalid because $reason")
+case class PathError(path: Text, reason: PathError.Reason)
+extends Error(msg"the path $path is invalid because $reason")
 
 @targetName("relative")
 def ?
@@ -209,7 +209,7 @@ object Reachable:
       : PathType =
     val rootRest: Optional[(RootType, Text)] = rootParser.parse(text)
     if rootRest.absent
-    then raise(PathError(PathError.Reason.NotRooted(text))):
+    then raise(PathError(text, PathError.Reason.NotRooted)):
       creator.path(summonInline[Default[RootType]](), Nil)
     else
       // FIXME: The casts below avoid an error in the compiler which just prints an AST without explanation
@@ -360,7 +360,7 @@ extension
       (using pathHandler: Raises[PathError])
       : PathType =
     if followable.ascent(link) > pathlike.descent(path).length
-    then raise(PathError(PathError.Reason.ParentOfRoot))(path)
+    then raise(PathError(path.render, PathError.Reason.ParentOfRoot))(path)
     else
       val common: PathType = pathlike.ancestor(path, followable.ascent(link)).vouch(using Unsafe)
       val descent = pathlike.descent(common)
