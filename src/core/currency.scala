@@ -65,6 +65,7 @@ object Plutocrat:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
 
   object Money:
+    erased given underlying[CurrencyType <: Currency & Singleton]: Underlying[Money[CurrencyType], Int] = ###
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
     

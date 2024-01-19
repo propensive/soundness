@@ -8,7 +8,7 @@ target plutocrat/test
 project plutocrat
   module core
     sources  src/core
-    include  gossamer/core hypotenuse/core
+    include  gossamer/core hypotenuse/core anticipation/opaque
 
   module test
     include   plutocrat/core probably/cli larceny/plugin
