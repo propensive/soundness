@@ -50,7 +50,7 @@ object Installer:
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
       : List[Directory] raises InstallError =
     mitigate:
-      case PathError(path)          => InstallError(InstallError.Reason.Environment)
+      case PathError(_, _)          => InstallError(InstallError.Reason.Environment)
       case EnvironmentError(_)      => InstallError(InstallError.Reason.Environment)
       case SystemPropertyError(_)   => InstallError(InstallError.Reason.Environment)
       case IoError(_)               => InstallError(InstallError.Reason.Io)
@@ -79,7 +79,7 @@ object Installer:
       (using Effectful)
       : Result raises InstallError =
     mitigate:
-      case PathError(path)          => InstallError(InstallError.Reason.Environment)
+      case PathError(_, _)          => InstallError(InstallError.Reason.Environment)
       case ExecError(command, _, _) => InstallError(InstallError.Reason.Io)
       case StreamError(_)           => InstallError(InstallError.Reason.Io)
       case SystemPropertyError(_)   => InstallError(InstallError.Reason.Environment)
