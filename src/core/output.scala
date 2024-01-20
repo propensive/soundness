@@ -198,6 +198,9 @@ object Output:
   given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Output] = (err, output) =>
     stdio.printErr(output.render)
 
+  given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Output] =
+    (target, output) => appendable.append(target, output.map(_.render))
+
   given textual: Textual[Output] with
     type ShowType[-ValueType] = Displayable[ValueType]
     def string(text: Output): String = text.plain.s
