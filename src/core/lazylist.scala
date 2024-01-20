@@ -134,13 +134,15 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
   override def close(): Unit = ()
   
   def read(): Int =
-    if current.isEmpty then -1 else if available() > 0 then current.head(offset).also(offset += 1) else
+    if current.isEmpty then -1 else if available() > 0 then (current.head(offset) & 0xff).also(offset += 1) else
       next()
       read()
   
   override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
     val copyLength = length.min(available())
-    System.arraycopy(current.head, offset, array, arrayOffset, length)
+    System.arraycopy(current.head, offset, array, arrayOffset, copyLength)
+    offset += copyLength
+    if available() == 0 then next()
     copyLength
 
 extension (obj: LazyList.type)
