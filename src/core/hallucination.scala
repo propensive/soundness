@@ -20,6 +20,7 @@ import escapade.*
 import turbulence.*
 import rudiments.*
 import anticipation.*
+import gesticulate.*
 import spectacular.*
 import iridescence.*
 import gossamer.*
@@ -43,10 +44,25 @@ erased trait Jpeg extends ImageFormat
 erased trait Gif extends ImageFormat
 erased trait Png extends ImageFormat
 
-object Jpeg extends ImageCodec[Jpeg]("JPEG".tt)
-object Bmp extends ImageCodec[Bmp]("BMP".tt)
-object Gif extends ImageCodec[Gif]("GIF".tt)
-object Png extends ImageCodec[Png]("PNG".tt)
+object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
+  given response(using ImageCodec[Jpeg]): GenericHttpResponseStream[Image[Jpeg]] with
+    def mediaType = media"image/jpeg".show
+    def content(jpeg: Image[Jpeg]): LazyList[Bytes] = jpeg.serialize
+
+object Bmp extends ImageCodec[Bmp]("BMP".tt):
+  given response(using ImageCodec[Bmp]): GenericHttpResponseStream[Image[Bmp]] with
+    def mediaType = media"image/bmp".show
+    def content(bmp: Image[Bmp]): LazyList[Bytes] = bmp.serialize
+
+object Gif extends ImageCodec[Gif]("GIF".tt):
+  given response(using ImageCodec[Gif]): GenericHttpResponseStream[Image[Gif]] with
+    def mediaType = media"image/gif".show
+    def content(gif: Image[Gif]): LazyList[Bytes] = gif.serialize
+
+object Png extends ImageCodec[Png]("PNG".tt):
+  given response(using ImageCodec[Png]): GenericHttpResponseStream[Image[Png]] with
+    def mediaType = media"image/png".show
+    def content(png: Image[Png]): LazyList[Bytes] = png.serialize
 
 case class Image[ImageFormatType <: ImageFormat](private[hallucination] val image: jai.BufferedImage):
   def width: Int = image.getWidth
@@ -60,6 +76,11 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
     for y <- 0 until (height - 1) by 2 do
       for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render)
       append('\n')
+
+  def serialize(using codec: ImageCodec[ImageFormatType]): LazyList[Bytes] =
+    val out = LazyListOutputStream()
+    ji.ImageIO.createImageOutputStream(out)
+    out.stream
 
 object Image:
   def apply[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[?] =

@@ -8,10 +8,11 @@ repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
 repo propensive/iridescence
+repo propensive/gesticulate
 
 project hallucination
   module core
     compiler  scala
     sources   src/core
-    include   turbulence/core escapade/core iridescence/core
+    include   turbulence/core escapade/core iridescence/core gesticulate/core
 
