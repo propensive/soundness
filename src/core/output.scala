@@ -200,6 +200,9 @@ object Output:
 
   given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Output] =
     (target, output) => appendable.append(target, output.map(_.render))
+  
+  given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Output] =
+    (target, output) => writable.write(target, output.map(_.render))
 
   given textual: Textual[Output] with
     type ShowType[-ValueType] = Displayable[ValueType]
