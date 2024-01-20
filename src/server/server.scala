@@ -336,31 +336,9 @@ case class HttpServer(port: Int) extends RequestHandler:
       exchange.getResponseBody.nn.flush()
       exchange.close()
 
-case class Svg(content: Text)
-
-object Svg:
-  // FIXME: The character encoding depends on the XML header, which should be parsed
-  given SimpleHandler[Svg] =
-    SimpleHandler(media"image/svg+xml", svg => HttpBody.Data(svg.content.bytes(using charEncoders.utf8)))
-
-case class Jpeg(content: IArray[Byte])
-
-object Jpeg:
-  given SimpleHandler[Jpeg] = SimpleHandler(media"image/jpeg", jpeg => HttpBody.Data(jpeg.content))
-
-case class Gif(content: IArray[Byte])
-
-object Gif:
-  given SimpleHandler[Gif] = SimpleHandler(media"image/gif", gif => HttpBody.Data(gif.content))
-
 case class Ttf(content: Bytes)
 object Ttf:
   given SimpleHandler[Ttf] = SimpleHandler(media"application/octet-stream", ttf => HttpBody.Data(ttf.content))
-
-case class Png(content: IArray[Byte])
-
-object Png:
-  given SimpleHandler[Png] = SimpleHandler(media"image/png", png => HttpBody.Data(png.content))
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Response[?])
              (using Request): Response[?] =
