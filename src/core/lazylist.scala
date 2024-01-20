@@ -83,7 +83,7 @@ class LazyListOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Funnel[Bytes] = Funnel()
   
-  def lazyList: LazyList[Bytes] = chunks.stream
+  def stream: LazyList[Bytes] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)
   
   override def close(): Unit = flush().also(chunks.stop())
