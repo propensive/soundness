@@ -23,6 +23,10 @@ import parasite.*
 import capricious.*
 import anticipation.*
 
+import scala.collection.mutable as scm
+
+import java.io as ji
+
 import language.experimental.captureChecking
 
 extension (lazyList: LazyList[Bytes])
@@ -74,6 +78,23 @@ extension (lazyList: LazyList[Bytes])
         LazyList()
       
     recur(lazyList, byteSize)
+
+class LazyListOutputStream() extends ji.OutputStream:
+  private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+  private val chunks: Funnel[Bytes] = Funnel()
+  
+  def lazyList: LazyList[Bytes] = chunks.stream
+  def write(int: Int): Unit = buffer.append(int.toByte)
+  
+  override def close(): Unit = flush().also(chunks.stop())
+  override def write(bytes: Array[Byte]): Unit = chunks.put(bytes.immutable(using Unsafe))
+  
+  override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+    chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
+  
+  override def flush(): Unit = if !buffer.isEmpty then
+    chunks.put(buffer.toArray.immutable(using Unsafe))
+    buffer.clear()
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
