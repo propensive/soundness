@@ -26,6 +26,7 @@ import anticipation.*
 import scala.collection.mutable as scm
 
 import java.io as ji
+import java.util.zip as juz
 
 import language.experimental.captureChecking
 
@@ -39,6 +40,20 @@ extension (lazyList: LazyList[Bytes])
         LazyList()
       
     recur(lazyList, byteSize)
+
+  def gzip(using Monitor): LazyList[Bytes] =
+    val out = LazyListOutputStream()
+    
+    Async:
+      val out2 = new juz.GZIPOutputStream(out)
+      lazyList.map(_.mutable(using Unsafe)).each(out2.write(_))
+      out2.close()
+
+    out.stream
+
+  def gunzip(using Monitor): LazyList[Bytes] =
+    val gis: juz.GZIPInputStream = juz.GZIPInputStream(LazyListInputStream(lazyList))
+    gis.stream[Bytes]
 
   def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = stochastic:
     given Distribution = Gamma.approximate(mean, variance)
@@ -95,6 +110,38 @@ class LazyListOutputStream() extends ji.OutputStream:
   override def flush(): Unit = if !buffer.isEmpty then
     chunks.put(buffer.toArray.immutable(using Unsafe))
     buffer.clear()
+
+object LazyListInputStream:
+  def apply(input: => LazyList[Bytes]): LazyListInputStream = new LazyListInputStream(input)
+
+class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
+  private var current: LazyList[Bytes] = input
+  private var offset: Int = 0
+  
+  private def next(): Unit =
+    current = current.tail
+    offset = 0
+
+  override def available(): Int = current match
+    case head #:: tail =>
+      if head.length >= offset then head.length - offset else
+        next()
+        available()
+
+    case _ =>
+      0
+
+  override def close(): Unit = ()
+  
+  def read(): Int =
+    if current.isEmpty then -1 else if available() > 0 then current.head(offset).also(offset += 1) else
+      next()
+      read()
+  
+  override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
+    val copyLength = length.min(available())
+    System.arraycopy(current.head, offset, array, arrayOffset, length)
+    copyLength
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
