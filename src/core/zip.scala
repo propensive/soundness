@@ -72,10 +72,10 @@ object ZipRef:
       def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
       def prefix(ref: Unset.type): Text = t""
 
-  given RootParser[ZipRef, Unset.type] with
+  given rootParser: RootParser[ZipRef, Unset.type] with
     def parse(text: Text): (Unset.type, Text) = (Unset, text.drop(1))
 
-  given PathCreator[ZipRef, InvalidZipNames, "/"] = (root, descent) => ZipRef(descent)
+  given creator: PathCreator[ZipRef, InvalidZipNames, "/"] = (root, descent) => ZipRef(descent)
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
@@ -108,7 +108,7 @@ object ZipFile:
       : ZipFile^{genericPath, streamCut} =
     val pathname: Text = path.pathText
     val out: juz.ZipOutputStream^{genericPath} =
-      juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname)))
+      juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
     
     out.putNextEntry(juz.ZipEntry("/"))
     out.closeEntry()
