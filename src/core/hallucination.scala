@@ -29,9 +29,15 @@ import java.awt.image as jai
 import java.awt as ja
 import javax.imageio as ji
 
-class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
+abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
+  inline def codec: ImageCodec[ImageFormatType] = this
+  protected def mediaType: MediaType
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
+  
+  given response: GenericHttpResponseStream[Image[ImageFormatType]] with
+    def mediaType = mediaType.show
+    def content(image: Image[ImageFormatType]): LazyList[Bytes] = image.serialize(using codec)
   
   def read[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[?] =
     reader.synchronized:
@@ -45,24 +51,16 @@ erased trait Gif extends ImageFormat
 erased trait Png extends ImageFormat
 
 object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
-  given response(using ImageCodec[Jpeg]): GenericHttpResponseStream[Image[Jpeg]] with
-    def mediaType = media"image/jpeg".show
-    def content(jpeg: Image[Jpeg]): LazyList[Bytes] = jpeg.serialize
+  def mediaType = media"image/jpeg"
 
 object Bmp extends ImageCodec[Bmp]("BMP".tt):
-  given response(using ImageCodec[Bmp]): GenericHttpResponseStream[Image[Bmp]] with
-    def mediaType = media"image/bmp".show
-    def content(bmp: Image[Bmp]): LazyList[Bytes] = bmp.serialize
+  def mediaType = media"image/bmp"
 
 object Gif extends ImageCodec[Gif]("GIF".tt):
-  given response(using ImageCodec[Gif]): GenericHttpResponseStream[Image[Gif]] with
-    def mediaType = media"image/gif".show
-    def content(gif: Image[Gif]): LazyList[Bytes] = gif.serialize
+  def mediaType = media"image/gif"
 
 object Png extends ImageCodec[Png]("PNG".tt):
-  given response(using ImageCodec[Png]): GenericHttpResponseStream[Image[Png]] with
-    def mediaType = media"image/png".show
-    def content(png: Image[Png]): LazyList[Bytes] = png.serialize
+  def mediaType = media"image/png"
 
 case class Image[ImageFormatType <: ImageFormat](private[hallucination] val image: jai.BufferedImage):
   def width: Int = image.getWidth
