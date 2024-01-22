@@ -36,7 +36,8 @@ trait CodlRelabelling[+TargetType]:
   
   def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
   
-case class CodlReadError() extends Error(msg"the CoDL value is not of the right format")
+case class CodlReadError(label: Optional[Text] = Unset)
+extends Error(msg"the CoDL value ${label.or(t"<unknown>")} is not of the right format")
 
 trait CodlEncoder[ValueType]:
   def encode(value: ValueType): List[IArray[CodlNode]]
@@ -58,10 +59,8 @@ extends CodlDecoder[ValueType]:
 
   def decode(nodes: List[Indexed])(using codlError: Raises[CodlReadError]): ValueType =
     nodes.headOption.getOrElse(abort(CodlReadError())).children match
-      case IArray(CodlNode(Data(value, _, _, _), _)) =>
-        lambda(value)
-      case _ =>
-        abort(CodlReadError())
+      case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
+      case _                                         => abort(CodlReadError())
 
 object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
@@ -170,7 +169,7 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
               case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
               case _                                            => label
 
-            context.decode(values.headOption.getOrElse(abort(CodlReadError())).get(label2))
+            context.decode(values.headOption.getOrElse(abort(CodlReadError(label2))).get(label2))
  
 
 object CodlDecoder:
