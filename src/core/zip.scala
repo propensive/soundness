@@ -27,7 +27,6 @@ import anticipation.*
 import turbulence.*
 import spectacular.*
 import ambience.*
-import digression.*
 
 import scala.collection.mutable as scm
 
@@ -35,7 +34,7 @@ import java.io as ji
 import java.nio.file as jnf
 import java.util.zip as juz
 
-import scala.language.experimental.captureChecking
+//import scala.language.experimental.captureChecking
 
 case class ZipError(filename: Text) extends Error(msg"could not create ZIP file ${filename}")
 
@@ -56,14 +55,14 @@ object ZipPath:
     Readable.lazyList[Bytes].contramap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
-  def entry()(using streamCut: CanThrow[StreamError]): ZipEntry^ = zipFile.entry(ref)
+  def entry()(using streamCut: CanThrow[StreamError]): ZipEntry = zipFile.entry(ref)
 
 object ZipRef:
   def apply
       (text: Text)
       (using pathError: Raises[PathError], reachable: Reachable[ZipRef, InvalidZipNames, Unset.type],
           rootParser: RootParser[ZipRef, Unset.type], creator: PathCreator[ZipRef, InvalidZipNames, Unset.type])
-      : ZipRef^{pathError, reachable, rootParser, creator} =
+      : ZipRef =
     Reachable.decode[ZipRef](text)
   
   @targetName("child")
@@ -87,7 +86,7 @@ object ZipEntry:
       [ResourceType]
       (path: ZipRef, resource: ResourceType)
       (using readable: Readable[ResourceType, Bytes])
-      : ZipEntry^{readable} =
+      : ZipEntry =
     new ZipEntry(path, () => resource.stream[Bytes])
 
   given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contramap(_.content())
@@ -107,11 +106,10 @@ object ZipFile:
 
   def create[PathType]
       (path: PathType)
-      (using genericPath: GenericPath[PathType]^, streamCut: CanThrow[StreamError])
-      : ZipFile^{genericPath, streamCut} =
+      (using genericPath: GenericPath[PathType], streamCut: CanThrow[StreamError])
+      : ZipFile =
     val pathname: Text = path.pathText
-    val out: juz.ZipOutputStream^{genericPath} =
-      juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
+    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
     
     out.putNextEntry(juz.ZipEntry("/"))
     out.closeEntry()
@@ -136,7 +134,7 @@ case class ZipFile(private val filename: Text):
   def filesystem(): jnf.FileSystem throws ZipError =
     ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
 
-  def entry(ref: ZipRef)(using streamCut: CanThrow[StreamError]): ZipEntry^ =
+  def entry(ref: ZipRef)(using streamCut: CanThrow[StreamError]): ZipEntry =
     ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
   def append
