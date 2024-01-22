@@ -19,9 +19,10 @@ package zeppelin
 import serpentine.*
 import gossamer.*
 import probably.*
+import perforate.*, errorHandlers.throwUnsafely
 import imperial.*
 import anticipation.*, fileApi.javaIo
-import ambience.*, environments.system
+import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 import turbulence.*
 import rudiments.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.skip
@@ -33,7 +34,7 @@ import java.io.File
 object Tests extends Suite(t"Zeppelin tests"):
   def run(): Unit =
 
-    val root: File = Xdg.Var.Tmp()
+    val root: File = Base.Var.Tmp()
     root.mkdirs()
 
     test(t"Create an empty ZIP file"):
@@ -56,7 +57,7 @@ object Tests extends Suite(t"Zeppelin tests"):
     .assert(_.length == 1)
 
     test(t"Check ZIP file's entry has correct content"):
-      ZipFile(simpleFile).entries().head.read[Text]
+      ZipFile(simpleFile).entries().head.readAs[Text]
     .assert(_ == t"Hello world")
     
     val twoEntryFile: File = test(t"Append a file to a ZIP archive"):
@@ -74,15 +75,15 @@ object Tests extends Suite(t"Zeppelin tests"):
     .assert(_.length == 2)
     
     test(t"Check ZIP file's first entry has correct content after update"):
-      ZipFile(twoEntryFile).entries().head.read[Text]
+      ZipFile(twoEntryFile).entries().head.readAs[Text]
     .assert(_ == t"Hello world")
     
     test(t"Check ZIP file's second entry has correct content"):
-      ZipFile(twoEntryFile).entries().tail.head.read[Text]
+      ZipFile(twoEntryFile).entries().tail.head.readAs[Text]
     .assert(_ == t"The quick brown fox jumps over the lazy dog.")
     
     test(t"Access ZIP file content by path"):
-      (ZipFile(twoEntryFile) / p"fox.txt").read[Text]
+      (ZipFile(twoEntryFile) / p"fox.txt").readAs[Text]
     .assert(_ == t"The quick brown fox jumps over the lazy dog.")
     
     simpleFile.delete()
