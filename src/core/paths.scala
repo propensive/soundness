@@ -233,6 +233,8 @@ object Windows:
     given debug: Debug[Link] = _.render
 
   object Drive:
+    given debug: Debug[Drive] = drive => t"drive:${drive.letter}"
+    given show: Show[Drive] = drive => t"${drive.letter}"
     given default: Default[Drive] = () => Drive('C')
 
   case class Drive(letter: Char):
@@ -307,6 +309,9 @@ object Unix:
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
   sealed trait Entry extends galilei.Entry
+
+object Volume:
+  given debug: Debug[Volume] = volume => t"volume[${volume.name}:${volume.volumeType}]"
 
 case class Volume(name: Text, volumeType: Text)
 
@@ -501,6 +506,7 @@ trait EntryMaker[+EntryType <: Entry, -PathType <: Path]:
   def apply(value: PathType): EntryType
 
 object Directory:
+  given debug: Debug[Directory] = directory => t"directory:${directory.path.render}"
   given GenericWatchService[Directory] = () =>
     jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
@@ -518,6 +524,8 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   inline def /(name: Text)(using Raises[PathError]): Path = path / PathName(name)
 
 object File:
+  given debug: Debug[File] = file => t"file:${file.path.render}"
+
   given readableBytes(using streamCut: Raises[StreamError], io: Raises[IoError]): Readable[File, Bytes] =
     Readable.inputStream.contramap: file =>
       ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
@@ -552,10 +560,29 @@ case class File(path: Path) extends Unix.Entry, Windows.Entry:
 
     destination
 
+object Socket:
+  given debug: Debug[Socket] = socket => t"socket:${socket.path.render}"
+
 case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Entry
+
+object Fifo:
+  given debug: Debug[Fifo] = fifo => t"fifo:${fifo.path.render}"
+
 case class Fifo(path: Unix.Path) extends Unix.Entry
+
+object Symlink:
+  given debug: Debug[Symlink] = symlink => t"symlink:${symlink.path.render}"
+
 case class Symlink(path: Unix.Path) extends Unix.Entry
+
+object BlockDevice:
+  given debug: Debug[BlockDevice] = device => t"block-device:${device.path.render}"
+
 case class BlockDevice(path: Unix.Path) extends Unix.Entry
+
+object CharDevice:
+  given debug: Debug[CharDevice] = device => t"char-device:${device.path.render}"
+
 case class CharDevice(path: Unix.Path) extends Unix.Entry
 
 enum PathStatus:
