@@ -25,6 +25,7 @@ import rudiments.*
 import turbulence.*
 import kaleidoscope.*
 import iridescence.*
+import hypotenuse.*
 
 import scala.compiletime.*
 
