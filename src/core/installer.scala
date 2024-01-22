@@ -108,8 +108,8 @@ object Installer:
         val installFile = installDirectory.let: directory =>
           (directory / PathName(command)).make[File]()
 
-        Log.info(t"Writing to ${installFile.debug}")
         installFile.let: file =>
+          Log.info(t"Writing executable to ${file.debug}")
           if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
           file.executable() = true
