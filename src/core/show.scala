@@ -19,7 +19,7 @@ package spectacular
 import rudiments.*
 import inimitable.*
 import vacuous.*
-import wisteria.*
+import wisteria.*, derivationContext.relaxed
 import anticipation.*
 import fulminate.*
 
@@ -34,41 +34,23 @@ trait TextConversion[-ValueType]:
 trait Show[-ValueType] extends TextConversion[ValueType]
 trait Debug[-ValueType] extends TextConversion[ValueType]
 
-trait Showable[-ValueType]:
-  def show(value: ValueType): Text
-
 object Show:
-  given showable[ValueType](using showable: Showable[ValueType]): Show[ValueType] = showable.show(_)
-  
   given specializable: Show[Specializable] = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
 object Debug extends Derivation[Debug]:
 
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
-    import derivationContext.relaxed
-    
-    val prefix = if tuple then "".tt else typeName
-
     fields(value):
       [FieldType] => field =>
-        val text = context.let(_(field)).or:
-          summonFrom:
-            case given Show[FieldType] => field.show
-            case _                     => field.toString.tt
-
+        val text = context.let(_.contextually(field.debug)).or(field.debug)
         if tuple then text else s"$label:$text"
-
-    .mkString(s"$prefix(", " ╱ ", ")").tt
+    .mkString(if tuple then "(" else s"($typeName", " ╱ ", ")").tt
 
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        context.let(_(variant)).or:
-          summonFrom:
-            case given Show[VariantType] => variant.show
-            case _                       => variant.toString.tt
-        
+        context.let(_.contextually(variant.debug)).or(variant.debug)
 
 object TextConversion:
   val any: Debug[Any] = value => value.toString.tt
@@ -238,7 +220,7 @@ extension [ValueType](value: ValueType)
     case display: Debug[ValueType]   => display(value)
     case encoder: Encoder[ValueType] => encoder.encode(value)
     case display: Show[ValueType]    => display(value)
-    case _                           => value.toString.tt
+    case _                           => ("§["+value.toString.tt+"]").tt
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
