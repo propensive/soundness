@@ -438,48 +438,48 @@ object Tests extends Suite(t"Nettlesome tests"):
       import MacAddressError.Reason.*
 
       test(t"Test simple MAC address"):
-        MacAddress.parse(t"01:23:45:ab:cd:ef")
+        MacAddress.parse(t"01-23-45-ab-cd-ef")
       .assert(_ == MacAddress(1251004370415L))
 
       test(t"Check MAC address with too few groups"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:ab:cd:ef"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-ab-cd-ef"))
       .assert(_ == MacAddressError(WrongGroupCount(5)))
       
       test(t"Check MAC address with too few groups"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:45:67:ab:cd:ef"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-45-67-ab-cd-ef"))
       .assert(_ == MacAddressError(WrongGroupCount(7)))
       
       test(t"Check MAC address with short group"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:45:6:ab:cd"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-45-6-ab-cd"))
       .assert(_ == MacAddressError(WrongGroupLength(3, 1)))
       
       test(t"Check MAC address with long group"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:45:67:ab:cde"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-45-67-ab-cde"))
       .assert(_ == MacAddressError(WrongGroupLength(5, 3)))
       
       test(t"Check MAC address with empty group"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:45::ab:cd"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-45--ab-cd"))
       .assert(_ == MacAddressError(WrongGroupLength(3, 0)))
       
       test(t"Check MAC address with non-hex character"):
-        capture[MacAddressError](MacAddress.parse(t"01:23:45:6g:ab:cd"))
+        capture[MacAddressError](MacAddress.parse(t"01-23-45-6g-ab-cd"))
       .assert(_ == MacAddressError(NotHex(3, t"6g")))
 
       test(t"Show a MAC address"):
-        MacAddress.parse(t"01:23:45:ab:cd:ef").show
-      .assert(_ == t"01:23:45:ab:cd:ef")
+        MacAddress.parse(t"01-23-45-ab-cd-ef").show
+      .assert(_ == t"01-23-45-ab-cd-ef")
 
       test(t"Create a MAC address statically (and show it)"):
-        mac"01:23:45:ab:cd:ef".show
-      .assert(_ == t"01:23:45:ab:cd:ef")
+        mac"01-23-45-ab-cd-ef".show
+      .assert(_ == t"01-23-45-ab-cd-ef")
 
       test(t"Check that a bad MAC address fails at compiletime"):
-        demilitarize(mac"01:23:45:ab:cd:e").map(_.message)
+        demilitarize(mac"01-23-45-ab-cd-e").map(_.message)
       .assert(_ == List(t"nettlesome: the MAC address is not valid because group 5 should be two hex digits, but its length is 1"))
 
       test(t"Create a MAC address from bytes"):
         MacAddress(1, 2, 3, 4, 5, 6).show
-      .assert(_ == t"01:02:03:04:05:06")
+      .assert(_ == t"01-02-03-04-05-06")
 
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))

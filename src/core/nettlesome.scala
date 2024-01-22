@@ -139,7 +139,7 @@ object Nettlesome:
       def apply(value: Long): MacAddress = value
       
       def parse(text: Text): MacAddress raises MacAddressError =
-        val groups = text.cut(t":")
+        val groups = text.cut(t"-")
         if groups.length != 6 then raise(MacAddressError(MacAddressError.Reason.WrongGroupCount(groups.length)))(())
 
         @tailrec
@@ -199,7 +199,7 @@ object Nettlesome:
       def byte5: Int = macAddress.toInt & 255
 
       def text: Text =
-        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join(t":")
+        List(byte0, byte1, byte2, byte3, byte4, byte5).map(_.hex.pad(2, Rtl, '0')).join(t"-")
 
       def long: Long = macAddress
   
