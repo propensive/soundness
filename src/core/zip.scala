@@ -137,13 +137,13 @@ case class ZipFile(private val filename: Text):
     ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
   def append
-      [InstantType]
+      [InstantType: GenericInstant]
       (entries: LazyList[ZipEntry], /*prefix: Optional[Bytes] = Unset, */timestamp: Optional[InstantType] = Unset)
-      (using env: Environment, instant: GenericInstant[InstantType] = timeApi.long)
+      (using env: Environment)
       : Unit throws ZipError | StreamError =
     
     val writeTimestamp: jnf.attribute.FileTime =
-      jnf.attribute.FileTime.fromMillis(timestamp.let(_.milliseconds).or(System.currentTimeMillis)).nn
+      jnf.attribute.FileTime.fromMillis(timestamp.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)).nn
   
     def recur(refs: LazyList[ZipEntry], set: Set[ZipRef]): Set[ZipRef] = refs match
       case head #:: tail => recur(tail, if set.contains(head.ref) then set else set + head.ref)
