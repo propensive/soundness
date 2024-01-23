@@ -18,7 +18,10 @@ package hyperbole
 
 import escapade.*
 import rudiments.*
+import vacuous.*
 import gossamer.*
+import spectacular.*
+import anticipation.*
 import hieroglyph.*, textWidthCalculation.uniform
 import escritoire.*, tableStyles.horizontalGaps
 import dendrology.*
@@ -33,11 +36,11 @@ object reflection:
 
     def init = expr.asTerm.pos.startColumn
     
-    def source(tree: Tree): AnsiText = tree.pos match
+    def source(tree: Tree): Output = tree.pos match
       case pos: dtdu.SourcePosition =>
-        ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).ansi
+        ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).display
       case _ =>
-        ansi""
+        e""
 
     case class TastyTree(name: Text, expr: Text, source: Text, children: List[TastyTree], param: Optional[Text]):
       def shortCode: Text =
@@ -76,12 +79,12 @@ object reflection:
 
 
     Table[Expansion](
-      Column(ansi"TASTy")(_.text.ansi),
-      Column(ansi"Param")(_.param.or(t"")),
-      Column(ansi"Source")(_.source),
-      Column(ansi"Code")(_.expr)
-    ).tabulate(seq, 400, DelimitRows.None).join(ansi"${'\n'}").render
+      Column(e"TASTy")(_.text.display),
+      Column(e"Param")(_.param.or(t"")),
+      Column(e"Source")(_.source),
+      Column(e"Code")(_.expr)
+    ).tabulate(seq, 400, DelimitRows.None).join(e"\n").render
 
 
-case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
+case class Expe(text: Text, param: Optional[Text], expr: Text, source: Text)
 
