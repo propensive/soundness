@@ -18,7 +18,8 @@ package hyperbole
 
 import escapade.*
 import rudiments.*
-import gossamer.*, textWidthCalculation.uniform
+import gossamer.*
+import hieroglyph.*, textWidthCalculation.uniform
 import escritoire.*, tableStyles.horizontalGaps
 import dendrology.*
 

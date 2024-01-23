@@ -11,5 +11,5 @@ repo propensive/probably
 project hyperbole
   module core
     sources src/core
-    include harlequin/core escapade/core escritoire/core dendrology/core
+    include harlequin/core escapade/core escritoire/core dendrology/core hieroglyph/core
 
