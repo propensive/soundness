@@ -35,16 +35,17 @@ object Anticipation:
     def apply(string: String): Text = string
     extension (text: Text) inline def s: String = text
 
-    given add: ClosedOperator["+", Text] = _+_
+    given addOperator: AddOperator[Text, Text] with
+      type Result = Text
+      inline def add(left: Text, right: Text): Text = (left.s+right.s).tt
     
-    given times: Operator["*", Text, Int] with
+    given mulOperator: MulOperator[Text, Int] with
       type Result = Text
       
       private def recur(text: Text, n: Int, acc: Text): Text =
         if n == 0 then acc else recur(text, n - 1, acc+text)
       
-      inline def apply(left: Text, right: Int): Text =
-        recur(left, right.max(0), "")
+      inline def mul(left: Text, right: Int): Text = recur(left, right.max(0), "")
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
     given fromString: CommandLineParser.FromString[Text] = identity(_)
