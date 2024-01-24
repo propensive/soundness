@@ -31,7 +31,7 @@ object Mosquito:
 
     given show
         [SizeType <: Int: ValueOf, ElemType: Show]
-        (using TextWidthCalculator)
+        (using TextMetrics)
         : Show[Euclidean[ElemType, SizeType]] =
       euclidean =>
         val items = euclidean.list.map(_.show)
