@@ -21,8 +21,8 @@ Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-late
 ## Availability Plan
 
 Imperial has not yet been published. The medium-term plan is to build Imperial
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Imperial.
 
 Subsequently, Imperial will also be made available as a binary in the Maven
@@ -76,6 +76,7 @@ For example, if the `envvars` is a `Map` of values, a new EnvVarProvider may be 
 ```scala
 given EnvVarProvider = envvars.get(_)
 ```
+
 
 
 
