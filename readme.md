@@ -25,8 +25,8 @@ and block-level content, with converters to
 ## Availability Plan
 
 Punctuation has not yet been published. The medium-term plan is to build Punctuation
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Punctuation.
 
 Subsequently, Punctuation will also be made available as a binary in the Maven
@@ -95,6 +95,7 @@ Any errors in the Markdown content will be detected at compiletime, causing comp
 Substitutions into Markdown literals are also supported, provided the type of the substitution can be
 converted to Markdown, and can appear at the position it's substituted. Conversion of a particular type
 to Markdown is permitted by the existence of a contextual typeclass instance.
+
 
 
 
