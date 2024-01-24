@@ -10,7 +10,7 @@ repo propensive/quantitative
 project savagery
   module core
     compiler  scala
-    include   cataclysm/core xylophone/core quantitative/core
+    include   cataclysm/core xylophone/core quantitative/core iridescence/core
     sources   src/core
 
   module test
