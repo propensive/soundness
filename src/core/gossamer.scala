@@ -219,11 +219,12 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
       (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
       (using TextWidthCalculator)
       : TextType =
-    val padding = textual.make(char.toString)*(length - text.displayWidth)
+    if text.displayWidth >= length then text else
+      val padding = textual.make(char.toString)*(length - text.displayWidth)
     
-    bidi match
-      case Ltr => textual.concat(text, padding)
-      case Rtl => textual.concat(padding, text)
+      bidi match
+        case Ltr => textual.concat(text, padding)
+        case Rtl => textual.concat(padding, text)
   
   def center(length: Int, char: Char = ' ')(using TextWidthCalculator): TextType =
     text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
