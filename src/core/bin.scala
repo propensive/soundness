@@ -37,16 +37,23 @@ object Rudiments:
     given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
     given communicable: Communicable[ByteSize] = byteSize => Message(byteSize.text)
 
-    given add: ClosedOperator["+", ByteSize] = _ + _
-    given subtract: ClosedOperator["-", ByteSize] = _ - _
-
-    given multiply: Operator["*", ByteSize, Int] with
+    given add: AddOperator[ByteSize, ByteSize] with
       type Result = ByteSize
-      inline def apply(left: ByteSize, right: Int): ByteSize = left*right
+      inline def add(left: ByteSize, right: ByteSize): ByteSize = left + right
 
-    given divide: Operator["/", ByteSize, Int] with
+    given sub: SubOperator[ByteSize, ByteSize] with
       type Result = ByteSize
-      inline def apply(left: ByteSize, right: Int): ByteSize = left/right
+      inline def sub(left: ByteSize, right: ByteSize): ByteSize = left - right
+    
+    given mul: MulOperator[ByteSize, Int] with
+      type Result = ByteSize
+      inline def mul(left: ByteSize, right: Int): ByteSize = left*right
+    
+    given div: DivOperator[ByteSize, Int] with
+      type Result = ByteSize
+      inline def div(left: ByteSize, right: Int): ByteSize = left/right
+    
+    
 
     extension (left: ByteSize)
       def long: Long = left
