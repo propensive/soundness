@@ -26,8 +26,8 @@ their implementation to typeclasses inferred from their parameter types.
 ## Availability Plan
 
 Symbolism has not yet been published. The medium-term plan is to build Symbolism
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Symbolism.
 
 Subsequently, Symbolism will also be made available as a binary in the Maven
@@ -81,6 +81,7 @@ operation, as well as the implementation of the operator, as its two-parameter
 The `apply` method, and its parameters, are inlined, so as to minimize the
 performance cost of deferring simple operations to a typeclass, and any
 implementation of `Operator` should do the same.
+
 
 
 
