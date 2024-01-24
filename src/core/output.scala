@@ -27,6 +27,8 @@ import turbulence.*
 import contextual.*
 import spectacular.*
 
+import scala.util.*
+
 import language.experimental.pureFunctions
 
 opaque type CharSpan = Long
@@ -190,7 +192,9 @@ object Ansi extends Ansi2:
       Output(state.text, state.spans, state.insertions)
 
 object Output:
-  given add: ClosedOperator["+", Output] = _.append(_)
+  given add(using NotGiven[Textual[Output]]): AddOperator[Output, Output] with
+    type Result = Output
+    inline def add(left: Output, right: Output): Output = left.append(right)
 
   given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Output] = (out, output) =>
     stdio.print(output.render)
