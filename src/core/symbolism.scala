@@ -16,60 +16,156 @@
 
 package symbolism
 
+import scala.annotation.*
+
 import language.experimental.captureChecking
 
-trait Operator[OperatorType <: String & Singleton, -LeftType, -RightType]:
+object AddOperator:
+  given byte: AddOperator[Byte, Byte] with
+    type Result = Byte
+    inline def add(left: Byte, right: Byte): Byte = (left + right).toByte
+
+  given short: AddOperator[Short, Short] with
+    type Result = Short
+    inline def add(left: Short, right: Short): Short = (left + right).toShort
+
+  given int: AddOperator[Int, Int] with
+    type Result = Int
+    inline def add(left: Int, right: Int): Int = left + right
+
+  given long: AddOperator[Long, Long] with
+    type Result = Long
+    inline def add(left: Long, right: Long): Long = left + right
+
+  given float: AddOperator[Float, Float] with
+    type Result = Float
+    inline def add(left: Float, right: Float): Float = left + right
+
+  given double: AddOperator[Double, Double] with
+    type Result = Double
+    inline def add(left: Double, right: Double): Double = left + right
+
+trait AddOperator[-LeftType, -RightType]:
   type Result
-  def apply(left: LeftType, right: RightType): Result
+  inline def add(left: LeftType, right: RightType): Result
+  extension (left: LeftType) inline def + (right: RightType): Result = add(left, right)
 
-trait ClosedOperator[OperatorType <: String & Singleton, Type]
-extends Operator[OperatorType, Type, Type]:
-  type Result = Type
-  def op(left: Type, right: Type): Type
-  def apply(left: Type, right: Type): Type = op(left, right)
+object SubOperator:
+  given byte: SubOperator[Byte, Byte] with
+    type Result = Byte
+    inline def sub(left: Byte, right: Byte): Byte = (left - right).toByte
 
-trait UnaryOperator[OperatorType <: String & Singleton, Type]:
+  given short: SubOperator[Short, Short] with
+    type Result = Short
+    inline def sub(left: Short, right: Short): Short = (left - right).toShort
+
+  given int: SubOperator[Int, Int] with
+    type Result = Int
+    inline def sub(left: Int, right: Int): Int = left - right
+
+  given long: SubOperator[Long, Long] with
+    type Result = Long
+    inline def sub(left: Long, right: Long): Long = left - right
+
+  given float: SubOperator[Float, Float] with
+    type Result = Float
+    inline def sub(left: Float, right: Float): Float = left - right
+
+  given double: SubOperator[Double, Double] with
+    type Result = Double
+    inline def sub(left: Double, right: Double): Double = left - right
+
+trait SubOperator[-LeftType, -RightType]:
   type Result
-  inline def apply(inline value: Type): Result
+  inline def sub(left: LeftType, right: RightType): Result
+  extension (left: LeftType) inline def - (right: RightType): Result = sub(left, right)
 
-trait ClosedUnaryOperator[OperatorType <: String & Singleton, Type]:
-  type Result = Type
-  def op(value: Type): Type
-  inline def apply(inline value: Type): Type = op(value)
+object MulOperator:
+  given byte: MulOperator[Byte, Byte] with
+    type Result = Byte
+    inline def mul(left: Byte, right: Byte): Byte = (left*right).toByte
 
-object Operator:  
-  given plusByte: ClosedOperator["+", Byte] = (left, right) => (left + right).toByte
-  given plusShort: ClosedOperator["+", Short] = (left, right) => (left + right).toShort
-  given plusInt: ClosedOperator["+", Int] = _ + _
-  given plusLong: ClosedOperator["+", Long] = _ + _
-  given plusFloat: ClosedOperator["+", Float] = _ + _
-  given plusDouble: ClosedOperator["+", Double] = _ + _
+  given short: MulOperator[Short, Short] with
+    type Result = Short
+    inline def mul(left: Short, right: Short): Short = (left*right).toShort
 
-  given minusByte: ClosedOperator["-", Byte] = (left, right) => (left - right).toByte
-  given minusShort: ClosedOperator["-", Short] = (left, right) => (left - right).toShort
-  given minusInt: ClosedOperator["-", Int] = _ - _
-  given minusLong: ClosedOperator["-", Long] = _ - _
-  given minusFloat: ClosedOperator["-", Float] = _ - _
-  given minusDouble: ClosedOperator["-", Double] = _ - _
+  given int: MulOperator[Int, Int] with
+    type Result = Int
+    inline def mul(left: Int, right: Int): Int = left*right
 
-  given starByte: ClosedOperator["*", Byte] = (left, right) => (left*right).toByte
-  given starShort: ClosedOperator["*", Short] = (left, right) => (left*right).toShort
-  given starInt: ClosedOperator["*", Int] = _*_
-  given starLong: ClosedOperator["*", Long] = _*_
-  given starFloat: ClosedOperator["*", Float] = _*_
-  given starDouble: ClosedOperator["*", Double] = _*_
+  given long: MulOperator[Long, Long] with
+    type Result = Long
+    inline def mul(left: Long, right: Long): Long = left*right
 
-  given slashByte: ClosedOperator["/", Byte] = (left, right) => (left/right).toByte
-  given slashShort: ClosedOperator["/", Short] = (left, right) => (left/right).toShort
-  given slashInt: ClosedOperator["/", Int] = _/_
-  given slashLong: ClosedOperator["/", Long] = _/_
-  given slashFloat: ClosedOperator["/", Float] = _/_
-  given slashDouble: ClosedOperator["/", Double] = _/_
+  given float: MulOperator[Float, Float] with
+    type Result = Float
+    inline def mul(left: Float, right: Float): Float = left*right
 
-object UnaryOperator:
-  given ClosedUnaryOperator["-", Byte] = byte => (-byte).toByte
-  given ClosedUnaryOperator["-", Short] = short => (-short).toShort
-  given ClosedUnaryOperator["-", Int] = -_
-  given ClosedUnaryOperator["-", Long] = -_
-  given ClosedUnaryOperator["-", Float] = -_
-  given ClosedUnaryOperator["-", Double] = -_
+  given double: MulOperator[Double, Double] with
+    type Result = Double
+    inline def mul(left: Double, right: Double): Double = left*right
+
+trait MulOperator[-LeftType, -RightType]:
+  type Result
+  inline def mul(left: LeftType, right: RightType): Result
+  extension (left: LeftType) inline def * (right: RightType): Result = mul(left, right)
+
+object DivOperator:
+  given byte: DivOperator[Byte, Byte] with
+    type Result = Byte
+    inline def div(left: Byte, right: Byte): Byte = (left/right).toByte
+
+  given short: DivOperator[Short, Short] with
+    type Result = Short
+    inline def div(left: Short, right: Short): Short = (left/right).toShort
+
+  given int: DivOperator[Int, Int] with
+    type Result = Int
+    inline def div(left: Int, right: Int): Int = left/right
+
+  given long: DivOperator[Long, Long] with
+    type Result = Long
+    inline def div(left: Long, right: Long): Long = left/right
+
+  given float: DivOperator[Float, Float] with
+    type Result = Float
+    inline def div(left: Float, right: Float): Float = left/right
+
+  given double: DivOperator[Double, Double] with
+    type Result = Double
+    inline def div(left: Double, right: Double): Double = left/right
+
+trait DivOperator[-LeftType, -RightType]:
+  type Result
+  inline def div(left: LeftType, right: RightType): Result
+  extension (left: LeftType) inline def / (right: RightType): Result = div(left, right)
+
+object NegOperator:
+  given byte: NegOperator[Byte] with
+    type Result = Byte
+    inline def neg(left: Byte): Byte = (-left).toByte
+
+  given short: NegOperator[Short] with
+    type Result = Short
+    inline def neg(left: Short): Short = (-left).toShort
+
+  given int: NegOperator[Int] with
+    type Result = Int
+    inline def neg(left: Int): Int = -left
+
+  given long: NegOperator[Long] with
+    type Result = Long
+    inline def neg(left: Long): Long = -left
+
+  given float: NegOperator[Float] with
+    type Result = Float
+    inline def neg(left: Float): Float = -left
+
+  given double: NegOperator[Double] with
+    type Result = Double
+    inline def neg(left: Double): Double = -left
+
+trait NegOperator[-LeftType]:
+  type Result
+  inline def neg(left: LeftType): Result
+  extension (left: LeftType) inline def `unary_-`: Result = neg(left)
