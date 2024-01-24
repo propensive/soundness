@@ -39,7 +39,7 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
     def mediaType = mediaType.show
     def content(image: Image[ImageFormatType]): LazyList[Bytes] = image.serialize(using codec)
   
-  def read[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[?] =
+  def read[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[ImageFormatType] =
     reader.synchronized:
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.readAs[Bytes].javaInputStream).nn)
       Image(reader.read(0).nn).also(reader.dispose())
