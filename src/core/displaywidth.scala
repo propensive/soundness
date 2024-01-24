@@ -84,11 +84,11 @@ object Unicode:
 extension (char: Char)
   def displayWidth: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
 
-trait TextWidthCalculator:
+trait TextMetrics:
   def width(text: Text): Int
   def width(char: Char): Int
 
 package textMetrics:
-  given uniform: TextWidthCalculator with
+  given uniform: TextMetrics with
     def width(text: Text): Int = text.s.length
     def width(char: Char): Int = 1
