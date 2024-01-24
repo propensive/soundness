@@ -216,7 +216,7 @@ object Output:
     def slice(text: Output, start: Int, end: Int): Output =
       text.dropChars(start).takeChars(end - start)
     
-    def empty: Output = Output.empty
+    val empty: Output = Output.empty
     def concat(left: Output, right: Output): Output = left.append(right)
     def unsafeChar(text: Output, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Output, sub: Text): Int = text.plain.s.indexOf(sub.s)
@@ -224,7 +224,7 @@ object Output:
     def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) =
       display(value)
 
-  def empty: Output = Output(t"")
+  val empty: Output = Output(t"")
   given joinable: Joinable[Output] = _.fold(empty)(_ + _)
 
   given printable: Printable[Output] = _.render

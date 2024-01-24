@@ -52,12 +52,12 @@ object Displayable:
   given show[ValueType](using show: Show[ValueType]): Displayable[ValueType] = value =>
     Output(show(value))
 
-  given exception(using TextWidthCalculator): Displayable[Exception] = e =>
+  given exception(using TextMetrics): Displayable[Exception] = e =>
     summon[Displayable[StackTrace]](StackTrace.apply(e))
 
   given error: Displayable[Error] = _.message.display
 
-  given (using TextWidthCalculator): Displayable[StackTrace] = stack =>
+  given (using TextMetrics): Displayable[StackTrace] = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).max
     val classWidth = stack.frames.map(_.method.className.length).max
     val fileWidth = stack.frames.map(_.file.length).max
@@ -81,7 +81,7 @@ object Displayable:
       case None        => root
       case Some(cause) => e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
   
-  given (using TextWidthCalculator): Displayable[StackTrace.Frame] = frame =>
+  given (using TextMetrics): Displayable[StackTrace.Frame] = frame =>
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
     val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
@@ -100,6 +100,5 @@ object Displayable:
     Output.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = 0xdc133b))
 
-trait Displayable[-ValueType] extends Showable[ValueType]:
-  def show(value: ValueType): Text = apply(value).plain
+trait Displayable[-ValueType]:
   def apply(value: ValueType): Output
