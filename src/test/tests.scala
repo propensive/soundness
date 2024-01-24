@@ -24,7 +24,7 @@ import larceny.*
 // FIXME: resolution of overloaded `displayWidth` does not work
 import gossamer.{displayWidth as _, *}
 
-import textWidthCalculation.eastAsianScripts
+import textMetrics.eastAsianScripts
 
 object Tests extends Suite(t"Hieroglyph tests"):
   def run(): Unit =

@@ -84,12 +84,11 @@ object Unicode:
 extension (char: Char)
   def displayWidth: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
 
-@missingContext("a contextual TextWidthCalculator is required to work out the horizontal space a string of text takes when rendered in a monospaced font; for most purposes,\n\n    hieroglyph.textWidthCalculation.uniform\n\nwill suffice, but if using East Asian scripts,\n\n    import hieroglyph.textWidthCalculation.eastAsianScripts\n\nshould be used.")
 trait TextWidthCalculator:
   def width(text: Text): Int
   def width(char: Char): Int
 
-package textWidthCalculation:
+package textMetrics:
   given uniform: TextWidthCalculator with
     def width(text: Text): Int = text.s.length
     def width(char: Char): Int = 1
