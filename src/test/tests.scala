@@ -22,6 +22,7 @@ import gossamer.*
 import perforate.*
 import probably.*
 import rudiments.*
+import vacuous.*
 
 import errorHandlers.throwUnsafely
 
@@ -33,7 +34,7 @@ given SystemProperties =
   case t"user.home" => t"/home/work"
   case _            => t""
 
-given GenericPathMaker[Text] = identity(_)
+given SpecificPath[Text] = identity(_)
 
 object Tests extends Suite(t"Imperial tests"):
   def run(): Unit =
