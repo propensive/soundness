@@ -23,7 +23,7 @@ import iridescence.*
 import harlequin.*
 import digression.*
 import spectacular.*
-import hieroglyph.*, textWidthCalculation.eastAsianScripts
+import hieroglyph.*, textMetrics.eastAsianScripts
 
 case class BodyText(blocks: TextBlock*):
   def serialize(width: Int): Output = blocks.map(_.render(width)).join(e"\n\n")
