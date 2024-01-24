@@ -35,7 +35,7 @@ For example,
 import turbulence.Out
 import turbulence.stdioSources.virtualMachine
 import escritoire.tableStyles.default
-import hieroglyph.textWidthCalculation.uniform
+import hieroglyph.textMetrics.uniform
 
 val persons = List(Person(t"Bill", 48, true), Person(t"Janet", 54, false))
 
