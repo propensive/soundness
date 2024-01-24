@@ -75,7 +75,7 @@ trait Encodable:
 object Hmac:
   given Show[Hmac[?]] = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
-case class Hmac[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Hmac[?]]
+case class Hmac[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable
 
 trait HashFunction[HashType <: HashScheme[?]]:
   def name: Text
@@ -103,7 +103,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
 object Digest:
   given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encodeAs[Base64]})"
 
-case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable, Shown[Digest[?]]:
+case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest[?] => val left: Array[Byte] = bytes.mutable(using Unsafe)
                               val right: Array[Byte] = bytes.mutable(using Unsafe)
