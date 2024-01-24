@@ -98,7 +98,7 @@ extends Logger[TextType]:
 
 object LogFormat:
   given standard[TargetType]: LogFormat[TargetType, Text] = entry =>
-    import textWidthCalculation.uniform
+    import textMetrics.uniform
     val realm: Text = entry.realm.show.fit(8)
     t"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}\n"
   

@@ -23,7 +23,7 @@ import anticipation.*
 import gossamer.*
 import turbulence.*
 import perforate.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 
 //import scala.language.experimental.captureChecking
 

@@ -21,7 +21,7 @@ import iridescence.*
 import anticipation.*
 import gossamer.*
 import spectacular.*
-import hieroglyph.textWidthCalculation.uniform
+import hieroglyph.textMetrics.uniform
 
 //import scala.language.experimental.captureChecking
 
