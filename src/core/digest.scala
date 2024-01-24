@@ -23,7 +23,7 @@ import wisteria.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
