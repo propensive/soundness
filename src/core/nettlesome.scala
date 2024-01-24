@@ -23,7 +23,7 @@ import gossamer.*
 import perforate.*
 import fulminate.*
 import anticipation.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 
 import scala.quoted.*
 
