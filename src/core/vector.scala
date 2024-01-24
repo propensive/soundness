@@ -51,13 +51,13 @@ object Mosquito:
     def cross
         [RightType]
         (right: Euclidean[RightType, 3])
-        (using multiply: Operator["*", LeftType, RightType])
-        (using add: Operator["+", multiply.Result, multiply.Result],
-            subtract: Operator["-", multiply.Result, multiply.Result])
+        (using multiply: MulOperator[LeftType, RightType])
+        (using add: AddOperator[multiply.Result, multiply.Result],
+            subtract: SubOperator[multiply.Result, multiply.Result])
         : Euclidean[add.Result, 3] =
-      subtract(multiply(left(1), right(2)), multiply(left(2), right(1))) *:
-          subtract(multiply(left(2), right(0)), multiply(left(0), right(2))) *:
-          (subtract(multiply(left(0), right(1)), multiply(left(1), right(0)))) *:
+      (left(1)*right(2) - left(2)*right(1)) *:
+          (left(2)*right(0) - left(0)*right(2)) *:
+          (left(0)*right(1) - left(1)*right(0)) *:
           EmptyTuple
       
 
@@ -68,16 +68,16 @@ object Mosquito:
     def dot
         [RightType]
         (right: Euclidean[RightType, SizeType])
-        (using multiply: Operator["*", LeftType, RightType])
+        (using multiply: MulOperator[LeftType, RightType])
         (using size: ValueOf[SizeType])
-        (using add: Operator["+", multiply.Result, multiply.Result])
+        (using add: AddOperator[multiply.Result, multiply.Result])
         (using add.Result =:= multiply.Result)
         : multiply.Result =
       
       def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum else recur(index - 1, add(sum, multiply(left(index), right(index))))
+        if index < 0 then sum else recur(index - 1, sum + left(index)*right(index))
 
       val start = size.value - 1
-      recur(start - 1, multiply(left(start), right(start)))
+      recur(start - 1, left(start)*right(start))
 
 export Mosquito.Euclidean
