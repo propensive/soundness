@@ -64,7 +64,7 @@ object Column:
   def constrain
       [TextType: Textual]
       (text: TextType, breaks: Breaks, maxWidth: Int, init: Int = 0)
-      (using calc: TextWidthCalculator)
+      (using calc: TextMetrics)
       : Table.ShortPair =
 
     @tailrec
@@ -125,7 +125,7 @@ case class Table
 
   def tabulate
       (data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
-      (using style: TableStyle, calc: TextWidthCalculator)
+      (using style: TableStyle, calc: TextMetrics)
       : LazyList[TextType] =
     val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
     val titles: IArray[TextType] = IArray.from(cols.map(_.title))
