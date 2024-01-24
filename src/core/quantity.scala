@@ -315,10 +315,10 @@ object QuantitativeMacros:
       case _ =>
         fail(msg"the operands represent different physical quantities")
 
-  def multiplyTypeclass
+  def mulTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["*", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[MulOperator[Quantity[LeftType], Quantity[RightType]]] =
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
 
@@ -328,7 +328,7 @@ object QuantitativeMacros:
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["*", Quantity[LeftType], Quantity[RightType]]:
+          new MulOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
@@ -382,16 +382,16 @@ object QuantitativeMacros:
       case _ =>
         resultValue
 
-  def subtractTypeclass
+  def subTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["-", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[SubOperator[Quantity[LeftType], Quantity[RightType]]] =
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["-", Quantity[LeftType], Quantity[RightType]]:
+          new SubOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply
                 (left: Quantity[LeftType], right: Quantity[RightType])
@@ -403,13 +403,13 @@ object QuantitativeMacros:
   def addTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["+", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["+", Quantity[LeftType], Quantity[RightType]]:
+          new AddOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def apply
                 (left: Quantity[LeftType], right: Quantity[RightType])

@@ -357,16 +357,16 @@ object Quantitative:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
-        : Operator["+", Quantity[LeftType], Quantity[RightType]] =
+        : AddOperator[Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
     
-    transparent inline given subtract[LeftType <: Measure, RightType <: Measure]
-        : Operator["-", Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.subtractTypeclass[LeftType, RightType]}
+    transparent inline given sub[LeftType <: Measure, RightType <: Measure]
+        : SubOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.subTypeclass[LeftType, RightType]}
 
-    transparent inline given multiply[LeftType <: Measure, RightType <: Measure]
-        : Operator["*", Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.multiplyTypeclass[LeftType, RightType]}
+    transparent inline given mul[LeftType <: Measure, RightType <: Measure]
+        : MulOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.mulTypeclass[LeftType, RightType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
