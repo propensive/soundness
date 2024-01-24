@@ -213,11 +213,11 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
     
     recur(0, 0)
   
-  def displayWidth(using calc: TextWidthCalculator) = calc.width(Text(textual.string(text)))
+  def displayWidth(using calc: TextMetrics) = calc.width(Text(textual.string(text)))
   
   def pad
       (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
-      (using TextWidthCalculator)
+      (using TextMetrics)
       : TextType =
     if text.displayWidth >= length then text else
       val padding = textual.make(char.toString)*(length - text.displayWidth)
@@ -226,10 +226,10 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
         case Ltr => textual.concat(text, padding)
         case Rtl => textual.concat(padding, text)
   
-  def center(length: Int, char: Char = ' ')(using TextWidthCalculator): TextType =
+  def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
     text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
   
-  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextWidthCalculator): TextType =
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     bidi match
       case Ltr => text.pad(length, bidi, char).take(length, Ltr)
       case Rtl => text.pad(length, bidi, char).take(length, Rtl)
