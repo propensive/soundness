@@ -24,8 +24,8 @@ make logs easier to read.
 ## Availability Plan
 
 Eucalyptus has not yet been published. The medium-term plan is to build Eucalyptus
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Eucalyptus.
 
 Subsequently, Eucalyptus will also be made available as a binary in the Maven
@@ -123,6 +123,7 @@ given Log = Log.route:
   case guillotine.Realm & Warn()  => Err
   case probably.Realm             => Out
 ```
+
 
 
 
