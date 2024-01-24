@@ -23,7 +23,7 @@ import rudiments.*
 import vacuous.*
 import anticipation.*
 import ambience.*, environments.virtualMachine
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 
 import language.adhocExtensions
 

@@ -228,7 +228,7 @@ class TestReport(using Environment):
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
-        val frac = (n%1000).show.pad(3, Rtl, '0')(using textWidthCalculation.uniform)
+        val frac = (n%1000).show.pad(3, Rtl, '0')(using textMetrics.uniform)
         e"${colors.Silver}(${sig}.$frac) ${unit}"
     
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
@@ -250,7 +250,7 @@ class TestReport(using Environment):
 
   def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
     given TextWidthCalculator with
-      private val eastAsian = textWidthCalculation.eastAsianScripts
+      private val eastAsian = textMetrics.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
