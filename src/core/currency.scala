@@ -18,7 +18,7 @@ package plutocrat
 
 import gossamer.*
 import anticipation.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 import spectacular.*
 import hypotenuse.*
 import rudiments.*
