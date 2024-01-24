@@ -335,10 +335,6 @@ extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextTy
 case class OutOfRangeError(index: Int, from: Int, to: Int)
 extends Error(msg"the index $index is outside the range $from-$to")
 
-trait Shown[+T](using Show[T]):
-  this: T =>
-    override def toString(): String = summon[Show[T]](this).s
-
 object Interpolation:
   case class Input(txt: Text)
 
