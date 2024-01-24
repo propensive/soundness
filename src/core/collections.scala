@@ -23,7 +23,6 @@ import vacuous.*
 import scala.compiletime.*
 
 import java.io as ji
-import java.util.zip as juz
 
 import language.experimental.captureChecking
 

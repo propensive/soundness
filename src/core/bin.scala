@@ -53,23 +53,9 @@ object Rudiments:
       type Result = ByteSize
       inline def div(left: ByteSize, right: Int): ByteSize = left/right
     
-    
-
     extension (left: ByteSize)
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
-
-      @targetName("plus")
-      def +(right: ByteSize): ByteSize = left + right
-      
-      @targetName("minus")
-      def -(right: ByteSize): ByteSize = left - right
-      
-      @targetName("times")
-      def *(right: Int): ByteSize = left*right
-      
-      @targetName("times2")
-      def *(right: Long): ByteSize = left*right
 
   def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
     import quotes.reflect.*
