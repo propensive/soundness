@@ -21,6 +21,7 @@ import yossarian.*
 import iridescence.*, colors.{Red, Yellow}
 import spectacular.*
 import rudiments.*
+import vacuous.*
 import perforate.*
 import gossamer.*
 
