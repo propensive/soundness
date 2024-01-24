@@ -104,3 +104,7 @@ extends DecimalConverter:
       Text(new String(chars))
     else if double.isNaN then nan
     else if double.isNegInfinity then s"$minusSign$infinity".tt else infinity
+
+package decimalFormatting:
+  given javaDouble: DecimalConverter with
+    def decimalize(double: Double): Text = double.toString.tt
