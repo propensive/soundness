@@ -87,4 +87,4 @@ object Hostname:
     
     recur(0, Nil)
 
-case class Hostname(dnsLabels: DnsLabel*) extends Shown[Hostname]
+case class Hostname(dnsLabels: DnsLabel*)
