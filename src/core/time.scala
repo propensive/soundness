@@ -89,7 +89,7 @@ object Dates:
     
     given ordering: Ordering[Date] = Ordering.Int
     
-    given plus(using calendar: Calendar): Operator["+", Date, Period] with
+    given plus(using calendar: Calendar): AddOperator[Date, Period] with
       type Result = Date
       def apply(date: Date, period: Period): Date = calendar.add(date, period)
     
@@ -191,7 +191,7 @@ case class YearMonth(year: Int, month: MonthName):
   import compiletime.ops.int.*
 
 object YearMonth:
-  given dayOfMonth: Operator["-", YearMonth, Int] with
+  given dayOfMonth: SubOperator[YearMonth, Int] with
     type Result = Date
     
     def apply(yearMonth: YearMonth, day: Int): Date =
@@ -222,11 +222,11 @@ object Timing:
     
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given plus: Operator["+", Instant, Duration] with
+    given plus: AddOperator[Instant, Duration] with
       type Result = Instant
       def apply(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
 
-    given minus: Operator["-", Instant, Instant] with
+    given minus: SubOperator[Instant, Instant] with
       type Result = Duration
       def apply(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
     
@@ -342,13 +342,13 @@ object Period:
       case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
       case StandardTime.Second => new Period(0, 0, 0, 0, 0, n) with FixedDuration
   
-  given plus(using TimeSystem[StandardTime]): Operator["+", Period, Period] with
+  given plus(using TimeSystem[StandardTime]): AddOperator[Period, Period] with
     type Result = Period
     def apply(left: Period, right: Period): Period =
       Period(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
           right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
   
-  given minus(using TimeSystem[StandardTime]): Operator["-", Period, Period] with
+  given minus(using TimeSystem[StandardTime]): SubOperator[Period, Period] with
     type Result = Period
     
     def apply(left: Period, right: Period): Period =
@@ -401,7 +401,7 @@ extension (int: Int)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 object Timestamp:
-  given plus: Operator["+", Timestamp, Timespan] with
+  given plus: AddOperator[Timestamp, Timespan] with
     type Result = Timestamp
     def apply(left: Timestamp, right: Timespan): Timestamp = ???
 
@@ -418,7 +418,7 @@ object MonthName:
   def unapply(value: Int): Option[MonthName] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
  
-  given monthOfYear: Operator["-", Int, MonthName] with
+  given monthOfYear: SubOperator[Int, MonthName] with
     type Result = YearMonth
     def apply(year: Int, month: MonthName) = new YearMonth(year, month)
 
