@@ -47,7 +47,7 @@ object Node:
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
 
-trait Node[+NameType <: Label] extends Shown[Node[?]]:
+trait Node[+NameType <: Label]:
   node =>
   def label: Text
   def attributes: Attributes
