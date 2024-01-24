@@ -20,7 +20,6 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import anticipation.*
-import symbolism.*
 import hieroglyph.*
 import spectacular.*
 import kaleidoscope.*
@@ -221,7 +220,6 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
       (using TextMetrics)
       : TextType =
     if text.displayWidth >= length then text else
-      import textual.mul
       val padding = textual.make(char.toString)*(length - text.displayWidth)
     
       bidi match

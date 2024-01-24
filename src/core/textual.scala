@@ -19,7 +19,6 @@ package gossamer
 import rudiments.*
 import spectacular.*
 import anticipation.*
-import symbolism.*
 
 import language.experimental.captureChecking
 
@@ -42,24 +41,16 @@ trait Textual[TextType]:
   def indexOf(text: TextType, sub: Text): Int
   def show[ValueType](value: ValueType)(using ShowType[ValueType]): TextType
 
-  given mul: MulOperator[TextType, Int] with
-    type Result = TextType
-    
-    private def recur(text: TextType, n: Int, acc: TextType): TextType =
-      if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
+  extension (left: TextType)
+    @targetName("mul")
+    def * (right: Int): TextType = 
+      def recur(text: TextType, n: Int, acc: TextType): TextType =
+        if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
 
-    inline def mul(left: TextType, right: Int): TextType = recur(left, right.max(0), empty)
-  
-  given add: AddOperator[TextType, TextType] with
-    type Result = TextType
-    inline def add(left: TextType, right: TextType): TextType = concat(left, right)
+      recur(left, right.max(0), empty)
 
-extension [TextType](left: TextType)(using textual: Textual[TextType])
-  @targetName("times")
-  def star(right: Int): TextType = textual.mul.mul(left, right)
-  
-  @targetName("plus")
-  def +(right: TextType): TextType = textual.concat(left, right)
+    @targetName("add")
+    def + (right: TextType): TextType = concat(left, right)
 
 object Textual:
   given text: Textual[Text] with
