@@ -27,7 +27,7 @@ import spectacular.*
 import eucalyptus.*, logging.pinned
 import gossamer.*
 import ambience.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 
 import scala.collection.mutable as scm
 

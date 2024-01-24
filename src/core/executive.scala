@@ -22,7 +22,7 @@ import vacuous.*
 import gossamer.*
 import fulminate.*
 import digression.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 import escapade.*
 import ambience.*
 import galilei.*
