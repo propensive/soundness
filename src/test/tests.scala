@@ -20,7 +20,7 @@ import probably.*
 import gossamer.*
 import hieroglyph.*
 
-import textWidthCalculation.uniform
+import textMetrics.uniform
 
 object Tests extends Suite(t"Escritoire tests"):
   def run(): Unit =
