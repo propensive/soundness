@@ -72,7 +72,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         val xs = List(IdName(t"one", t"One"), IdName(t"two", t"Two"),  IdName(t"three", t"Three"), IdName(t"four", t"Four"))
         val ys = List(IdName(t"one", t"Ein"), IdName(t"two", t"Zwei"),  IdName(t"three", t"Three"), IdName(t"vier", t"Vier"))
         val result = xs.contrastWith(ys)
-        import hieroglyph.textWidthCalculation.uniform
+        import hieroglyph.textMetrics.uniform
         import escapade.*
         import turbulence.*
         import stdioSources.virtualMachine
