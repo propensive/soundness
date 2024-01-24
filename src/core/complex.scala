@@ -35,43 +35,43 @@ object Complex:
     
     new Show[Complex[Quantity[UnitsType]]]:
       def apply(value: Complex[Quantity[UnitsType]]): Text =
-        t"${value.real.value} + ${value.imaginary.value}𝒊 ${Quantity.renderUnits(value.real.units)}"
+        t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.renderUnits(value.real.units)}"
 
   given add
       [ComponentType, ComponentType2]
-      (using add: Operator["+", ComponentType, ComponentType2])
-      : Operator["+", Complex[ComponentType], Complex[ComponentType2]] =
-    new Operator["+", Complex[ComponentType], Complex[ComponentType2]]:
-      type Result = Complex[add.Result]
+      (using addOperator: AddOperator[ComponentType, ComponentType2])
+      : AddOperator[Complex[ComponentType], Complex[ComponentType2]] =
+    new AddOperator[Complex[ComponentType], Complex[ComponentType2]]:
+      type Result = Complex[addOperator.Result]
     
-      def apply(left: Complex[ComponentType], right: Complex[ComponentType2]): Complex[add.Result] =
-        Complex[add.Result](add(left.real, right.real), add(left.imaginary, right.imaginary))
+      def add(left: Complex[ComponentType], right: Complex[ComponentType2]): Complex[addOperator.Result] =
+        Complex[addOperator.Result](left.real + right.real, left.imaginary + right.imaginary)
 
-  given subtract
+  given sub
       [ComponentType, ComponentType2]
-      (using subtract: Operator["-", ComponentType, ComponentType2])
-      : Operator["-", Complex[ComponentType], Complex[ComponentType2]] with
-    type Result = Complex[subtract.Result]
+      (using subOperator: SubOperator[ComponentType, ComponentType2])
+      : SubOperator[Complex[ComponentType], Complex[ComponentType2]] with
+    type Result = Complex[subOperator.Result]
     
-    def apply(left: Complex[ComponentType], right: Complex[ComponentType2]): Complex[subtract.Result] =
-      Complex[subtract.Result](subtract(left.real, right.real), subtract(left.imaginary, right.imaginary))
+    def sub(left: Complex[ComponentType], right: Complex[ComponentType2]): Complex[subOperator.Result] =
+      Complex[subOperator.Result](left.real - right.real, left.imaginary - right.imaginary)
   
   given multiply
       [ComponentType, ComponentType2]
-      (using multiply: Operator["*", ComponentType, ComponentType2])
-      (using add: Operator["+", multiply.Result, multiply.Result])
-      (using subtract: Operator["-", multiply.Result, multiply.Result])
-      : Operator["*", Complex[ComponentType], Complex[ComponentType2]] with
-    type Result = Complex[add.Result | subtract.Result]
+      (using multiply: MulOperator[ComponentType, ComponentType2])
+      (using addOperator: AddOperator[multiply.Result, multiply.Result])
+      (using subOperator: SubOperator[multiply.Result, multiply.Result])
+      : MulOperator[Complex[ComponentType], Complex[ComponentType2]] with
+    type Result = Complex[addOperator.Result | subOperator.Result]
 
-    def apply
+    def mul
         (left: Complex[ComponentType], right: Complex[ComponentType2])
-        : Complex[add.Result | subtract.Result] =
-      val ac: multiply.Result = multiply(left.real, right.real)
-      val bd: multiply.Result = multiply(left.imaginary, right.imaginary)
-      val ad: multiply.Result = multiply(left.real, right.imaginary)
-      val bc: multiply.Result = multiply(left.imaginary, right.real)
+        : Complex[addOperator.Result | subOperator.Result] =
+      val ac: multiply.Result = left.real*right.real
+      val bd: multiply.Result = left.imaginary*right.imaginary
+      val ad: multiply.Result = left.real*right.imaginary
+      val bc: multiply.Result = left.imaginary*right.real
     
-      Complex(subtract(ac, bd), add(ad, bc))
+      Complex(ac - bd, ad + bc)
 
 case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType)

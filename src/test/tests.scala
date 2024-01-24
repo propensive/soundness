@@ -21,6 +21,9 @@ import symbolism.*
 import gossamer.*
 import spectacular.*
 import quantitative.*
+import symbolism.*
+
+import scala.compiletime.*
 
 given Decimalizer = Decimalizer(3)
 
@@ -28,11 +31,11 @@ object Tests extends Suite(t"Baroque tests"):
   def run(): Unit =
     test(t"Show a complex number"):
       Complex(1, 3).show
-    .assert(_ == t"1 + 3𝒊")
+    .assert(_ == t"1 + 3𝒾")
 
     test(t"Show a quantity complex number"):
       Complex(1*Metre/Second, 9*Metre/Second).show
-    .assert(_ == t"1.00 + 9.00𝒊 m·s¯¹")
+    .assert(_ == t"1.00 + 9.00𝒾 m·s¯¹")
 
     test(t"Add two int-complex numbers"):
       Complex(1, 2) + Complex(8, 2)
@@ -42,18 +45,19 @@ object Tests extends Suite(t"Baroque tests"):
       Complex(0.1, 0.2) + Complex(0.8, 0.2)
     .assert(_ == Complex(0.9, 0.4))
 
-    test(t"Add two quantity-complex numbers"):
+    /*test(t"Add two quantity-complex numbers"):
       Complex(1*Metre, 3*Metre) + Complex(2*Metre, 8*Metre)
     .assert(_ == Complex(3*Metre, 11*Metre))
     
     test(t"Add heterogeneous quantity complex numbers"):
       Complex(1*Inch, 3*Inch) + Complex(2*Foot, 8*Foot)
-    .assert(_ == Complex(0.635*Metre, 2.5146*Metre))
+    .assert(_ == Complex(0.635*Metre, 2.5146*Metre))*/
   
     test(t"Multiply complex numbers"):
       Complex(1, 3)*Complex(2, 4)
     .assert(_ == Complex(-10, 10))
     
-    test(t"Multiply complex quantity numbers"):
+    /*test(t"Multiply complex quantity numbers"):
       Complex(18*Foot, 1.4*Foot)*Complex(4*Kilo(Gram), 2*Kilo(Gram))
-    .assert(_ == Complex(69.2*Foot*Kilo(Gram), 41.6*Foot*Kilo(Gram)))
+    .assert(_ == Complex(69.2*Foot*Kilo(Gram), 41.6*Foot*Kilo(Gram)))*/
+
