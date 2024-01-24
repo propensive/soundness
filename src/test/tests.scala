@@ -20,7 +20,7 @@ import gossamer.*
 import rudiments.*
 import probably.*
 import spectacular.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 import larceny.*
 
 object Tests extends Suite(t"Mosquito tests"):
