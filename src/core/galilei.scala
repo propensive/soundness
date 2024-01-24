@@ -33,7 +33,7 @@ package galilei
     
 // object Directory:
 // case class Directory(directoryPath: DiskPath)
-// extends Inode(directoryPath), Shown[Directory]:
+// extends Inode(directoryPath):
 //   def tmpPath(suffix: Optional[Text] = Unset): DiskPath =
 //     val part = unsafely(PathElement(t"${Uuid().show}${suffix.or(t"")}"))
 //     path.root.make(path.parts :+ part.value)
@@ -52,7 +52,7 @@ package galilei
 //       def getPath(path: DiskPath): String = path.fullname.s
 
 // case class DiskPath(filesystem: Filesystem, elements: List[Text])
-// extends Absolute(elements), Shown[DiskPath]:
+// extends Absolute(elements):
 //   def rename(fn: Text => Text): DiskPath = DiskPath(root, elements.init :+ fn(name))
 
 // object Filesystem:
@@ -79,7 +79,7 @@ package galilei
 //     recur(cp.classLoader)
 
 // open class Classpath(val classLoader: ClassLoader = getClass.nn.getClassLoader.nn)
-// extends Root(t"/", t""), Shown[Classpath]:
+// extends Root(t"/", t""):
 //   type PathType = ClasspathRef
 //   protected inline def classpath: this.type = this
 //   def make(parts: List[Text]): ClasspathRef = ClasspathRef(this, parts)
@@ -95,7 +95,7 @@ package galilei
 //         case in   => in.nn
 
 // case class ClasspathRef(classpath: Classpath, elements: List[Text])
-// extends Absolute(elements), Shown[ClasspathRef]:
+// extends Absolute(elements):
 //   type RootType = Classpath
 //   val root: Classpath = classpath
 //   def fullname = parts.join(t"/", t"/", t"")
