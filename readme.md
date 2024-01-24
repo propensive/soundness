@@ -23,8 +23,8 @@ enforcing nesting rules between different tags.
 ## Availability Plan
 
 Honeycomb has not yet been published. The medium-term plan is to build Honeycomb
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Honeycomb.
 
 Subsequently, Honeycomb will also be made available as a binary in the Maven
@@ -121,6 +121,7 @@ val styles = Style(htype = media"text/css")(css)
 without any additional imports.
 
 A contextual instance of `anticipation.HtmlAttribute` is all that is required to make this possible.
+
 
 
 
