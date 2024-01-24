@@ -1,6 +1,7 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/gastronomy
+repo propensive/hypotenuse
 repo propensive/cardinality
 
 target ulysses/test
@@ -9,7 +10,7 @@ project ulysses
   module core
     compiler  scala
     sources   src/core
-    include   gastronomy/core  cardinality/core
+    include   gastronomy/core  cardinality/core hypotenuse/core
 
   module test
     sources   src/test
