@@ -22,7 +22,7 @@ import vacuous.*
 import gossamer.*
 import spectacular.*
 import anticipation.*
-import hieroglyph.*, textWidthCalculation.uniform
+import hieroglyph.*, textMetrics.uniform
 import escritoire.*, tableStyles.horizontalGaps
 import dendrology.*
 
