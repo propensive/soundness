@@ -9,7 +9,7 @@ repo propensive/ambience
 repo propensive/eucalyptus
 repo propensive/wisteria
 
-target probably/cli
+target probably/bench
 
 project probably
   module core

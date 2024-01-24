@@ -16,7 +16,7 @@
 
 package probably
 
-import rudiments.*
+import vacuous.*
 import anticipation.*
 
 import scala.collection.mutable as scm
