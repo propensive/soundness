@@ -23,11 +23,11 @@ characters.
 [Gossamer](https://github.com/propensive/gossamer/) provides a corresponding
 `displayWidth` extension method on all text-like types, which calculates the
 display width of the entire string by summing its character widths, or, with
-`textWidthCalculation.uniform` in scope, simply returns the `length` value.
+`textMetrics.uniform` in scope, simply returns the `length` value.
 
 Therefore, methods which need to perform text width calculations can use either
 a `uniform` mode or an `eastAsianScripts` mode, depending on the contextual
-value imported from the `textWidthCalculation` package.
+value imported from the `textMetrics` package.
 
 
 
