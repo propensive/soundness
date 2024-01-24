@@ -42,20 +42,21 @@ trait Textual[TextType]:
   def indexOf(text: TextType, sub: Text): Int
   def show[ValueType](value: ValueType)(using ShowType[ValueType]): TextType
 
-  given times: Operator["*", TextType, Int] with
+  given mul: MulOperator[TextType, Int] with
     type Result = TextType
     
     private def recur(text: TextType, n: Int, acc: TextType): TextType =
       if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
 
-    inline def apply(left: TextType, right: Int): TextType =
-      recur(left, right.max(0), empty)
+    inline def mul(left: TextType, right: Int): TextType = recur(left, right.max(0), empty)
   
-  given add: ClosedOperator["+", TextType] = concat(_, _)
+  given add: AddOperator[TextType, TextType] with
+    type Result = TextType
+    inline def add(left: TextType, right: TextType): TextType = concat(left, right)
 
 extension [TextType](left: TextType)(using textual: Textual[TextType])
   @targetName("times")
-  def *(right: Int): TextType = textual.times(left, right)
+  def star(right: Int): TextType = textual.mul.mul(left, right)
   
   @targetName("plus")
   def +(right: TextType): TextType = textual.concat(left, right)
