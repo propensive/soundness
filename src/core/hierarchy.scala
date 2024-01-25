@@ -247,11 +247,11 @@ object Followable:
       [LinkType <: Matchable, NameType <: Label]
       (using creator: PathCreator[LinkType, NameType, Int],
           followable: Followable[LinkType, NameType, ?, ?])
-      : Operator["+", LinkType, LinkType]/*^{followable, creator}*/ =
-    new Operator["+", LinkType, LinkType]:
+      : AddOperator[LinkType, LinkType]/*^{followable, creator}*/ =
+    new AddOperator[LinkType, LinkType]:
       type Result = LinkType
 
-      inline def apply(left: LinkType, right: LinkType): LinkType =
+      def add(left: LinkType, right: LinkType): LinkType =
         val ascent2 =
           if followable.descent(left).length < followable.ascent(right)
           then followable.ascent(left) + followable.ascent(right) - followable.descent(left).length

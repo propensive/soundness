@@ -32,9 +32,9 @@ object SimplePath:
   inline given decoder(using Raises[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
     def decode(text: Text): SimplePath = Reachable.decode[SimplePath](text)
 
-  inline given add(using path: Raises[PathError]): Operator["+", SimplePath, SimpleLink] with
+  inline given add(using path: Raises[PathError]): AddOperator[SimplePath, SimpleLink] with
     type Result = SimplePath
-    def apply(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
+    def add(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
   
   inline def parse(text: Text)(using path: Raises[PathError]): SimplePath/*^{path}*/ =
     text.decodeAs[SimplePath]

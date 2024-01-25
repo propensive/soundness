@@ -51,7 +51,7 @@ object Example:
   object TestLink:
     inline given (using Raises[PathError]): Decoder[TestLink] = Followable.decoder[TestLink]
     given linkCreator: PathCreator[TestLink, Forbidden, Int] = TestLink(_, _)
-    inline given add: Operator["+", TestLink, TestLink] = Followable.add[TestLink, Forbidden]
+    inline given add: AddOperator[TestLink, TestLink] = Followable.add[TestLink, Forbidden]
 
     given Show[TestLink] = _.render
     def parse(text: Text)(using Raises[PathError]): TestLink = text.decodeAs[TestLink]
