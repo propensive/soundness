@@ -18,8 +18,8 @@ __Charisma__ provides a simple representation of chemical elements and formulas 
 ## Availability Plan
 
 Charisma has not yet been published. The medium-term plan is to build Charisma
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Charisma.
 
 Subsequently, Charisma will also be made available as a binary in the Maven
@@ -132,6 +132,7 @@ Unicode characters for subscripts.
 Since the different elements in a molecule could be written in any order with
 the same meaning, they are canonically written using the [Hill
 System](https://en.wikipedia.org/wiki/Chemical_formula#Hill_system).
+
 
 
 
