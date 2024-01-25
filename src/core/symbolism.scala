@@ -47,7 +47,7 @@ object AddOperator:
 
 trait AddOperator[-LeftType, -RightType]:
   type Result
-  inline def add(left: LeftType, right: RightType): Result
+  def add(left: LeftType, right: RightType): Result
   extension (left: LeftType) inline def + (right: RightType): Result = add(left, right)
 
 object SubOperator:
@@ -77,7 +77,7 @@ object SubOperator:
 
 trait SubOperator[-LeftType, -RightType]:
   type Result
-  inline def sub(left: LeftType, right: RightType): Result
+  def sub(left: LeftType, right: RightType): Result
   extension (left: LeftType) inline def - (right: RightType): Result = sub(left, right)
 
 object MulOperator:
@@ -107,7 +107,7 @@ object MulOperator:
 
 trait MulOperator[-LeftType, -RightType]:
   type Result
-  inline def mul(left: LeftType, right: RightType): Result
+  def mul(left: LeftType, right: RightType): Result
   extension (left: LeftType) inline def * (right: RightType): Result = mul(left, right)
 
 object DivOperator:
@@ -137,7 +137,7 @@ object DivOperator:
 
 trait DivOperator[-LeftType, -RightType]:
   type Result
-  inline def div(left: LeftType, right: RightType): Result
+  def div(left: LeftType, right: RightType): Result
   extension (left: LeftType) inline def / (right: RightType): Result = div(left, right)
 
 object NegOperator:
@@ -167,5 +167,5 @@ object NegOperator:
 
 trait NegOperator[-LeftType]:
   type Result
-  inline def neg(left: LeftType): Result
+  def neg(left: LeftType): Result
   extension (left: LeftType) inline def `unary_-`: Result = neg(left)
