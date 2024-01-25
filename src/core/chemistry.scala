@@ -159,6 +159,17 @@ object PeriodicTable:
   def apply(number: Int): Optional[ChemicalElement] = if 1 <= number <= 118 then elements(number - 1) else Unset
   def apply(symbol: Text): Optional[ChemicalElement] = symbols.getOrElse(symbol, Unset)
 
+  private val prefixes: IArray[Text] =
+    IArray(t"nil", t"un", t"bi", t"tri", t"quad", t"pent", t"hex", t"sept", t"oct", t"enn")
+
+  def make(number: Int): ChemicalElement =
+    def recur(name: Text, symbol: Text, digits: Int): ChemicalElement =
+      if digits == 0 then ChemicalElement(number, symbol.capitalize, name.capitalize.sub(t"ii", t"i")) else
+        val prefix = prefixes(digits%10)
+        recur(prefix+name, t"${prefix.head}$symbol", digits/10)
+   
+    recur(t"ium", t"", number)
+
 object ChemicalElement:
   given show: Show[ChemicalElement] = _.symbol
 
