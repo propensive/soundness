@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target capricious/core
+target capricious/test
 
 repo propensive/probably
 repo propensive/vacuous
@@ -18,5 +18,4 @@ project capricious
     sources   src/test
     include   capricious/core probably/cli larceny/plugin
     main      capricious.Tests
-    #coverage  capricious/core
 
