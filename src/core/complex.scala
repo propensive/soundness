@@ -22,6 +22,8 @@ import quantitative.*
 import anticipation.*
 import symbolism.*
 
+import scala.annotation.*
+
 val I: Complex[Double] = Complex(0.0, 1.0)
 
 object Complex:
@@ -75,18 +77,21 @@ object Complex:
       Complex(ac - bd, ad + bc)
 
 case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType):
+  @targetName("add")
   inline def +
       [ComponentType2](right: Complex[ComponentType2])
       (using addOperator: AddOperator[ComponentType, ComponentType2])
       : Complex[addOperator.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
+  @targetName("sub")
   inline def -
       [ComponentType2](right: Complex[ComponentType2])
       (using subOperator: SubOperator[ComponentType, ComponentType2])
       : Complex[subOperator.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
   
+  @targetName("mul")
   inline def *
       [ComponentType2](right: Complex[ComponentType2])
       (using mulOperator: MulOperator[ComponentType, ComponentType2])
@@ -100,7 +105,8 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
     val bc: mulOperator.Result = imaginary*right.real
     
     Complex(ac - bd, ad + bc)
-    
+  
+  @targetName("div")
   inline def /
       [ComponentType2](right: Complex[ComponentType2])
       (using mulOperator: MulOperator[ComponentType, ComponentType2])
