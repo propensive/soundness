@@ -7,9 +7,15 @@ repo propensive/guillotine
 repo propensive/cataclysm
 repo propensive/honeycomb
 
-target tarantula/core
+target tarantula/test
 
 project tarantula
   module core
     sources  src/core
     include  jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core hallucination/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli tarantula/core
+    main      tarantula.Tests
