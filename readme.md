@@ -30,8 +30,8 @@ IO and NIO types like `File` and `Path`
 ## Availability Plan
 
 Diuretic has not yet been published. The medium-term plan is to build Diuretic
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Diuretic.
 
 Subsequently, Diuretic will also be made available as a binary in the Maven
@@ -70,6 +70,7 @@ for paths (which may not relate to a file or directory) and files/directories.
 ### URL Representation
 
 - `urlApi.javaNet`—uses `java.net.URL` for URLs
+
 
 
 
