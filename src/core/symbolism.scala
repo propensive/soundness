@@ -48,6 +48,7 @@ object AddOperator:
 trait AddOperator[-LeftType, -RightType]:
   type Result
   def add(left: LeftType, right: RightType): Result
+  
   extension (left: LeftType)
     @targetName("add")
     inline def + (right: RightType): Result = add(left, right)
@@ -80,6 +81,7 @@ object SubOperator:
 trait SubOperator[-LeftType, -RightType]:
   type Result
   def sub(left: LeftType, right: RightType): Result
+  
   extension (left: LeftType)
     @targetName("sub")
     inline def - (right: RightType): Result = sub(left, right)
@@ -112,6 +114,7 @@ object MulOperator:
 trait MulOperator[-LeftType, -RightType]:
   type Result
   def mul(left: LeftType, right: RightType): Result
+  
   extension (left: LeftType)
     @targetName("mul")
     inline def * (right: RightType): Result = mul(left, right)
@@ -144,6 +147,7 @@ object DivOperator:
 trait DivOperator[-LeftType, -RightType]:
   type Result
   def div(left: LeftType, right: RightType): Result
+  
   extension (left: LeftType)
     @targetName("div")
     inline def / (right: RightType): Result = div(left, right)
@@ -176,6 +180,22 @@ object NegOperator:
 trait NegOperator[-LeftType]:
   type Result
   def neg(left: LeftType): Result
+  
   extension (left: LeftType)
     @targetName("neg")
     inline def `unary_-`: Result = neg(left)
+
+object SquareRoot:
+  given double: SquareRoot[Double] with
+    type Result = Double
+    inline def squareRoot(value: Double): Double = math.sqrt(value)
+  
+  given float: SquareRoot[Float] with
+    type Result = Float
+    inline def squareRoot(value: Float): Float = math.sqrt(value).toFloat
+
+trait SquareRoot[-ValueType]:
+  type Result
+  def squareRoot(value: ValueType): Result
+
+  extension (value: ValueType) inline def sqrt: Result = squareRoot(value)
