@@ -26,6 +26,7 @@ import gossamer.*
 import spectacular.*
 import larceny.*
 import symbolism.*
+import vacuous.*
 
 object Example:
   type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
@@ -65,7 +66,7 @@ object Example:
   case class TestLink(ascent: Int, descent: List[PathName[Forbidden]])
 
   object Drive:
-    given Default[Drive](Drive('C'))
+    given Default[Drive] = () => Drive('C')
 
   case class Drive(letter: Char):
     @targetName("child")
@@ -77,7 +78,7 @@ import Example.*
 
 object Tests extends Suite(t"Serpentine Tests"):
   given CanThrow[PathError] = unsafeExceptions.canThrowAny
-  given Default[Root.type](Root)
+  given Default[Root.type] = () => Root
   import errorHandlers.throwUnsafely
 
   def run(): Unit =
@@ -100,7 +101,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       
       test(t"try to parse path without prefix"):
         unsafely(capture[PathError](SimplePath.parse(t"home/work/")))
-      .assert(_ == PathError(PathError.Reason.NotRooted(t"home/work/")))
+      .assert(_ == PathError(t"home/work/", PathError.Reason.NotRooted))
 
       test(t"Show a simple path"):
         val path: PathName[".*/.*"] = p"abc"
@@ -246,19 +247,19 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"Parse a path name with an invalid character"):
         unsafely(capture[PathError](PathName[".*x.*"](t"excluded")))
-      .assert(_ == PathError(PathError.Reason.InvalidChar('x')))
+      .assert(_ == PathError(t"excluded", PathError.Reason.InvalidChar('x')))
       
       test(t"Parse a path name with an invalid suffix"):
         unsafely(capture[PathError](PathName[".*txt"](t"bad.txt")))
-      .assert(_ == PathError(PathError.Reason.InvalidSuffix(t"txt")))
+      .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidSuffix(t"txt")))
 
       test(t"Parse a path name with an invalid prefix"):
         unsafely(capture[PathError](PathName["bad.*"](t"bad.txt")))
-      .assert(_ == PathError(PathError.Reason.InvalidPrefix(t"bad")))
+      .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidPrefix(t"bad")))
       
       test(t"Parse a path name with an invalid name"):
         unsafely(capture[PathError](PathName["bad\\.txt"](t"bad.txt")))
-      .assert(_ == PathError(PathError.Reason.InvalidName(t"bad\\.txt")))
+      .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Pattern matching"):
       import hierarchies.simple
@@ -452,7 +453,7 @@ object Tests extends Suite(t"Serpentine Tests"):
         unsafely:
           val rel = ?^^
           capture[PathError]((% / p"foo") + rel)
-      .assert(_ == PathError(PathError.Reason.ParentOfRoot))
+      .assert(_ == PathError(t"/foo", PathError.Reason.ParentOfRoot))
       
       test(t"add relative uncle"):
         unsafely:
