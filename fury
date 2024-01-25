@@ -3,11 +3,17 @@
 
 repo propensive/eucalyptus
 
-target surveillance/core
+target surveillance/test
 
 project surveillance
   module core
     compiler  scala
     sources   src/core
     include   anticipation/path eucalyptus/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    main      surveillance.Tests
+    include   probably/cli surveillance/core
 

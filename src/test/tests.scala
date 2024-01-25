@@ -19,9 +19,5 @@ package surveillance
 import probably.*
 import gossamer.*
 
-import unsafeExceptions.canThrowAny
-
-import encodings.Utf8
-
 object Tests extends Suite(t"Surveillance tests"):
   def run(): Unit = ()
