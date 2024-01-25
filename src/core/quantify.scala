@@ -297,6 +297,10 @@ object Quantitative:
         : MulOperator[Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.mulTypeclass[LeftType, RightType]}
 
+    transparent inline given div[LeftType <: Measure, RightType <: Measure]
+        : DivOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.divTypeclass[LeftType, RightType]}
+
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
     given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] =

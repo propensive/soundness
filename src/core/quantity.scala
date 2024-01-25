@@ -330,9 +330,37 @@ object QuantitativeMacros:
         '{
           new MulOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
+            def mul(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
                 .asInstanceOf[Quantity[resultType]]
+        }
+
+  def divTypeclass
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
+      (using Quotes)
+      : Expr[DivOperator[Quantity[LeftType], Quantity[RightType]]] =
+    val left = UnitsMap[LeftType]
+    val right = UnitsMap[RightType]
+
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
+      case Some('[type resultType <: Measure; resultType]) =>
+        '{
+          new DivOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Quantity[resultType]
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}
+                .asInstanceOf[Quantity[resultType]]
+        }
+      
+      case None =>
+        '{
+          new DivOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Double
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}.asInstanceOf[Double]
         }
 
   def greaterThan
@@ -393,7 +421,7 @@ object QuantitativeMacros:
         '{
           new SubOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply
+            def sub
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
               ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{true})}
@@ -411,7 +439,7 @@ object QuantitativeMacros:
         '{
           new AddOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply
+            def add
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
               ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{false})}
