@@ -76,6 +76,13 @@ object Complex:
     
       Complex(ac - bd, ad + bc)
 
+  def polar
+      [ComponentType]
+      (modulus: ComponentType, argument: Double)
+      (using mul: MulOperator[ComponentType, Double])
+      : Complex[mul.Result] =
+    Complex(modulus*math.cos(argument), modulus*math.sin(argument))
+
 case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType):
   @targetName("add")
   inline def +
@@ -126,4 +133,38 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
     
     Complex((ac + bd)/divisor, (bc - ad)/divisor)
 
+  inline def argument
+      (using mul: MulOperator[ComponentType, ComponentType])
+      (using add: AddOperator[mul.Result, mul.Result])
+      (using sqrt: SquareRoot[add.Result])
+      (using div: DivOperator[ComponentType, sqrt.Result])
+      (using div.Result =:= Double)
+      : Double =
+    scala.math.atan2(imaginary/modulus, real/modulus)
+
+  inline def modulus
+      (using mul: MulOperator[ComponentType, ComponentType])
+      (using add: AddOperator[mul.Result, mul.Result])
+      (using squareRoot: SquareRoot[add.Result])
+      : squareRoot.Result =
+    squareRoot.sqrt(real*real + imaginary*imaginary)
+
+  inline def sqrt
+      (using mul: MulOperator[ComponentType, ComponentType])
+      (using add: AddOperator[mul.Result, mul.Result])
+      (using sqrt: SquareRoot[add.Result])
+      (using div: DivOperator[ComponentType, sqrt.Result])
+      (using div.Result =:= Double)
+      (using sqrt2: SquareRoot[sqrt.Result])
+      (using mul2: MulOperator[sqrt2.Result, Double])
+      : Complex[mul2.Result] =
+    Complex.polar(modulus.sqrt, argument/2.0)
+
+  @targetName("conjugate")
+  inline def unary_~(using neg: NegOperator[ComponentType]): Complex[ComponentType | neg.Result] =
+    Complex(real, -imaginary)
+  
+  @targetName("neg")
+  inline def unary_-(using neg: NegOperator[ComponentType]): Complex[ComponentType | neg.Result] =
+    Complex(-real, -imaginary)
 
