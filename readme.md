@@ -28,8 +28,8 @@ structured types as early as possible. This is the role of Ambience.
 ## Availability Plan
 
 Ambience has not yet been published. The medium-term plan is to build Ambience
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Ambience.
 
 Subsequently, Ambience will also be made available as a binary in the Maven
@@ -188,6 +188,7 @@ val dir = Properties.db.user.cache.dir()
 where the empty parentheses are necessary to signal that the path representing
 the property name has been specified, and its value should be retrieved. The
 retrieval itself works in much the same way as for environment variables.
+
 
 
 
