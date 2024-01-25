@@ -22,18 +22,15 @@ import imperial.*
 import turbulence.*, stdioSources.virtualMachine
 import eucalyptus.*
 import parasite.*
-import rudiments.*
+import rudiments.*, workingDirectories.virtualMachine
 import serpentine.*
 import spectacular.*
-import hieroglyph.*, charEncoders.utf8
 import perforate.*
 import vacuous.*
 import anticipation.*, fileApi.galileiApi
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 
 import errorHandlers.throwUnsafely
-
-given WorkingDirectory = WorkingDirectory(Unset)
 
 object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
@@ -68,12 +65,12 @@ object Tests extends Suite(t"Galilei tests"):
 
         test(t"Parsing C:\\Windows\\System32 should fail"):
           capture[PathError](t"C:\\Windows\\System32".decodeAs[Unix.Path])
-        .assert(_ == PathError(PathError.Reason.NotRooted(t"C:\\Windows\\System32")))
+        .assert(_ == PathError(t"C:\\Windows\\System32", PathError.Reason.NotRooted))
         
       suite(t"Windows tests"):
         test(t"Parsing /home/work/file.txt should fail"):
           capture[PathError](t"/home/work/file.txt".decodeAs[Windows.Path])
-        .assert(_ == PathError(PathError.Reason.NotRooted(t"/home/work/file.txt")))
+        .assert(_ == PathError(t"/home/work/file.txt", PathError.Reason.NotRooted))
 
         test(t"Parse C:\\Windows\\System32"):
           t"C:\\Windows\\System32".decodeAs[Windows.Path]

@@ -46,14 +46,14 @@ type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
 object Path:
   inline given add
-      (using path: Raises[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): Operator["+", Path, Link] with
+      (using path: Raises[PathError], followable: Followable[Link, GeneralForbidden, ?, ?]): AddOperator[Path, Link] with
     type Result = Path
-    def apply(left: Path, right: Link): Path = left.append(right)
+    inline def add(left: Path, right: Link): Path = left.append(right)
   
   inline given add2
-      (using path: Raises[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?]): Operator["+", Path, SafeLink] with
+      (using path: Raises[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?]): AddOperator[Path, SafeLink] with
     type Result = Path
-    def apply(left: Path, right: SafeLink): Path = left.append(right)
+    inline def add(left: Path, right: SafeLink): Path = left.append(right)
   
   given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
   
