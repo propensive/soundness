@@ -334,6 +334,15 @@ object QuantitativeMacros:
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
                 .asInstanceOf[Quantity[resultType]]
         }
+      
+      case None =>
+        '{
+          new MulOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Double
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}.asInstanceOf[Double]
+        }
+
 
   def divTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
