@@ -21,7 +21,6 @@ import symbolism.*
 import gossamer.*
 import spectacular.*
 import quantitative.*
-import symbolism.*
 
 import scala.compiletime.*
 
