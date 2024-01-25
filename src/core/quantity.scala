@@ -371,6 +371,22 @@ object QuantitativeMacros:
             def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}.asInstanceOf[Double]
         }
+  
+  def sqrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[SquareRoot[Quantity[ValueType]]] =
+    val units = UnitsMap[ValueType]
+    if !units.map.values.all(_.power%2 == 0)
+    then fail(msg"only quantities with units in even powers can have square roots calculated")
+    else
+      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap).repr.get.asType match
+        case '[type resultType <: Measure; resultType] =>
+          '{
+            new SquareRoot[Quantity[ValueType]]:
+              type Result = Quantity[resultType]
+              
+              def squareRoot(value: Quantity[ValueType]): Quantity[resultType] =
+                math.sqrt(value.value).asInstanceOf[Quantity[resultType]]
+          }
+      
 
   def greaterThan
       [LeftType <: Measure: Type, RightType <: Measure: Type]

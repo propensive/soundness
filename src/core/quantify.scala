@@ -297,9 +297,20 @@ object Quantitative:
         : MulOperator[Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.mulTypeclass[LeftType, RightType]}
 
+    given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
+      type Result = Quantity[LeftType]
+      inline def mul(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
+
     transparent inline given div[LeftType <: Measure, RightType <: Measure]
         : DivOperator[Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.divTypeclass[LeftType, RightType]}
+
+    given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
+      type Result = Quantity[LeftType]
+      inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
+
+    transparent inline given squareRoot[ValueType <: Measure]: SquareRoot[Quantity[ValueType]] =
+      ${QuantitativeMacros.sqrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
@@ -385,6 +396,8 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   transparent inline def /
       [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+
+  transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
 
   inline def units: Map[Text, Int] = ${QuantitativeMacros.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
