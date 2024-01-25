@@ -61,6 +61,10 @@ object Tests extends Suite(t"Baroque tests"):
       Complex(3.0, 2.0)/Complex(1.0, -4.0)
     .assert { c => c.real == -0.29411764705882354 && c.imaginary == 0.8235294117647058 }
     
+    test(t"Divide complex quantities"):
+      Complex(3.0*Metre, 2.0*Metre)/Complex(1.0*Foot, -4.0*Foot)
+    .assert(_ == Complex(-0.9649529102979775,2.7018681488343375))
+    
     test(t"Multiply complex quantity numbers"):
       Complex(18*Foot, 1.4*Foot)*Complex(4*Kilo(Gram), 2*Kilo(Gram))
     .assert(_ == Complex(69.2*Foot*Kilo(Gram), 41.6*Foot*Kilo(Gram)))
