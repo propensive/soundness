@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target anticipation/all
+target anticipation/test
 
 repo propensive/probably
 repo propensive/symbolism
@@ -64,3 +64,9 @@ project anticipation
     include anticipation/color
     include anticipation/transport
     include anticipation/opaque
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli anticipation/all
+    main      anticipation.Tests
