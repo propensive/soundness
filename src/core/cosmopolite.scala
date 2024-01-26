@@ -33,9 +33,7 @@ case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[St
   
   def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
   
-  def &
-      [ValueType2 >: ValueType, LocalizationType2]
-      (other: Polyglot[ValueType2, LocalizationType2])
+  infix def & [ValueType2 >: ValueType, LocalizationType2](other: Polyglot[ValueType2, LocalizationType2])
       : Polyglot[ValueType2, LocalizationType2]
 
 object Cosmopolite:
