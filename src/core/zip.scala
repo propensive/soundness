@@ -66,7 +66,7 @@ object ZipRef:
     Reachable.decode[ZipRef](text)
   
   @targetName("child")
-  def /(name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
+  infix def / (name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
   given reachable: Reachable[ZipRef, InvalidZipNames, Unset.type] with
     def root(path: ZipRef): Unset.type = Unset
@@ -129,7 +129,7 @@ case class ZipFile(private val filename: Text):
     catch case exception: jnf.ProviderNotFoundException => throw ZipError(filename)
   
   @targetName("child")
-  def /(name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
+  infix def / (name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
 
   def filesystem(): jnf.FileSystem throws ZipError =
     ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
