@@ -100,8 +100,7 @@ object Serpentine:
       mainRoot.empty().show
       
     @targetName("child")
-    def /
-        [PathType <: Matchable, NameType <: Label, AscentType]
+    infix def / [PathType <: Matchable, NameType <: Label, AscentType]
         (using hierarchy: Hierarchy[PathType, ?])
         (using mainRoot: MainRoot[PathType])
         (using pathlike: Pathlike[PathType, NameType, AscentType])
@@ -111,8 +110,7 @@ object Serpentine:
       mainRoot.empty() / name
 
     @targetName("child2")
-    inline def /
-        [PathType <: Matchable, NameType <: Label, AscentType]
+    inline infix def / [PathType <: Matchable, NameType <: Label, AscentType]
         (using hierarchy: Hierarchy[PathType, ?])
         (using mainRoot: MainRoot[PathType])
         (using pathlike: Pathlike[PathType, NameType, AscentType])
