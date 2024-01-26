@@ -207,7 +207,7 @@ sealed trait Executable:
       case command2: Command    => Pipeline(command, command2)
   
   @targetName("pipeTo")
-  infix def |(command: Executable): Pipeline = command(this)
+  infix def | (command: Executable): Pipeline = command(this)
 
 object Command:
   given Communicable[Command] = command => Message(formattedArguments(command.arguments))
