@@ -26,7 +26,7 @@ import gossamer.*
 object BaseLayout:
   case class Dir(home: Boolean, path: List[Text]):
     @targetName("child")
-    def /(name: Text): Dir = Dir(home, name :: path)
+    infix def / (name: Text): Dir = Dir(home, name :: path)
     
     def render(homeDir: Text): Text =
       val slash = if path.isEmpty then t"" else t"/"
