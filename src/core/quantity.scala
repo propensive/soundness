@@ -91,7 +91,7 @@ object QuantitativeMacros:
     def empty: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
-    def *(that: UnitsMap): UnitsMap = new UnitsMap(
+    infix def * (that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
         val dimUnit = unit(dim).orElse(that.unit(dim)).get
         dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
@@ -99,7 +99,7 @@ object QuantitativeMacros:
     )
     
     @targetName("divide")
-    def /(that: UnitsMap): UnitsMap = new UnitsMap(
+    infix def / (that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
         val dimUnit = unit(dim).orElse(that.unit(dim)).get
         dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
