@@ -19,8 +19,6 @@ package cataclysm
 import probably.*
 import gossamer.*
 
-import unsafeExceptions.canThrowAny
-
 object Tests extends Suite(t"Cataclysm Tests"):
   def run(): Unit =
     ()

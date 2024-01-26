@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target cataclysm/core
+target cataclysm/test
 
 repo propensive/gossamer
 repo propensive/serpentine
@@ -15,3 +15,4 @@ project cataclysm
     sources   src/test
     include   probably/cli cataclysm/core
     main      cataclysm.Tests
+
