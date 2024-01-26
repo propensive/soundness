@@ -43,14 +43,14 @@ trait Textual[TextType]:
 
   extension (left: TextType)
     @targetName("mul")
-    def * (right: Int): TextType = 
+    infix def * (right: Int): TextType = 
       def recur(text: TextType, n: Int, acc: TextType): TextType =
         if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
 
       recur(left, right.max(0), empty)
 
     @targetName("add")
-    def + (right: TextType): TextType = concat(left, right)
+    infix def + (right: TextType): TextType = concat(left, right)
 
 object Textual:
   given text: Textual[Text] with
