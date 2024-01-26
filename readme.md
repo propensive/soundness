@@ -21,8 +21,8 @@ all systems. _Inimitable_ provides a few utilities for working with them.
 ## Availability Plan
 
 Inimitable has not yet been published. The medium-term plan is to build Inimitable
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Inimitable.
 
 Subsequently, Inimitable will also be made available as a binary in the Maven
@@ -81,6 +81,7 @@ This will raise a `UuidError` if it is not in the correct format.
 Two convenience methods are provided on `Uuid`s:
 - the unary `~` operator, which will construct a new `Uuid` by inverting its bits, and
 - the binary `^` operator, which will combine two `Uuid`s by XORing their bits
+
 
 
 
