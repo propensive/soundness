@@ -115,7 +115,7 @@ case class WebDriver(server: Browser#Server):
         post(t"value", Data(text).json)
     
       @targetName("at")
-      def /[ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text]): List[Element] =
+      infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text]): List[Element] =
         case class Data(`using`: Text, value: Text)
         post(t"elements", Data(locator.strategy, locator.value(value)).json)
           .value
@@ -148,7 +148,7 @@ case class WebDriver(server: Browser#Server):
     def url[UrlType: SpecificUrl]()(using Log[Text]): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
-    def /[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): List[Element] =
+    infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): List[Element] =
       case class Data(`using`: Text, value: Text)
       post(t"elements", Data(locator.strategy, locator.value(value)).json)
         .value
