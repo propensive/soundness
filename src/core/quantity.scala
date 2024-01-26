@@ -387,6 +387,20 @@ object QuantitativeMacros:
                 math.sqrt(value.value).asInstanceOf[Quantity[resultType]]
           }
       
+  def cbrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[CubeRoot[Quantity[ValueType]]] =
+    val units = UnitsMap[ValueType]
+    if !units.map.values.all(_.power%3 == 0)
+    then fail(msg"only quantities with units in powers which are multiples of 3 can have cube roots calculated")
+    else
+      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap).repr.get.asType match
+        case '[type resultType <: Measure; resultType] =>
+          '{
+            new CubeRoot[Quantity[ValueType]]:
+              type Result = Quantity[resultType]
+              
+              def cubeRoot(value: Quantity[ValueType]): Quantity[resultType] =
+                math.cbrt(value.value).asInstanceOf[Quantity[resultType]]
+          }
 
   def greaterThan
       [LeftType <: Measure: Type, RightType <: Measure: Type]

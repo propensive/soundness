@@ -311,6 +311,9 @@ object Quantitative:
 
     transparent inline given squareRoot[ValueType <: Measure]: SquareRoot[Quantity[ValueType]] =
       ${QuantitativeMacros.sqrtTypeclass[ValueType]}
+    
+    transparent inline given cubeRoot[ValueType <: Measure]: CubeRoot[Quantity[ValueType]] =
+      ${QuantitativeMacros.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
