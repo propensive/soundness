@@ -24,7 +24,6 @@ import hypotenuse.*
 import perforate.*
 import hieroglyph.*
 import spectacular.*
-import symbolism.*
 
 object PeriodicTable:
   val H = ChemicalElement(1,   t"H",  t"Hydrogen")
@@ -227,7 +226,7 @@ trait Molecular extends Formulable:
   
   @targetName("times2")
   infix def ** (multiplier: Int): Molecule =
-    Molecule(molecule.elements.mapValues(_*multiplier).to(Map), molecule.charge*multiplier, Unset)
+    Molecule(molecule.elements.view.mapValues(_*multiplier).to(Map), molecule.charge*multiplier, Unset)
   
   @targetName("cation")
   def `unary_-`: Molecule = molecule.copy(charge = molecule.charge - 1)
