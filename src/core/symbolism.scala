@@ -51,7 +51,7 @@ trait AddOperator[-LeftType, -RightType]:
   
   extension (left: LeftType)
     @targetName("add")
-    inline def + (right: RightType): Result = add(left, right)
+    inline infix def + (right: RightType): Result = add(left, right)
 
 object SubOperator:
   given byte: SubOperator[Byte, Byte] with
@@ -84,7 +84,7 @@ trait SubOperator[-LeftType, -RightType]:
   
   extension (left: LeftType)
     @targetName("sub")
-    inline def - (right: RightType): Result = sub(left, right)
+    inline infix def - (right: RightType): Result = sub(left, right)
 
 object MulOperator:
   given byte: MulOperator[Byte, Byte] with
@@ -117,7 +117,7 @@ trait MulOperator[-LeftType, -RightType]:
   
   extension (left: LeftType)
     @targetName("mul")
-    inline def * (right: RightType): Result = mul(left, right)
+    inline infix def * (right: RightType): Result = mul(left, right)
 
 object DivOperator:
   given byte: DivOperator[Byte, Byte] with
@@ -150,7 +150,7 @@ trait DivOperator[-LeftType, -RightType]:
   
   extension (left: LeftType)
     @targetName("div")
-    inline def / (right: RightType): Result = div(left, right)
+    inline infix def / (right: RightType): Result = div(left, right)
 
 object NegOperator:
   given byte: NegOperator[Byte] with
