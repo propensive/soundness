@@ -118,7 +118,7 @@ object Url:
   given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] = parse(_)
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
-  given [SchemeType <: Label]: Reachable[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
+  given [SchemeType <: Label]: Navigable[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
     def separator(url: Url[SchemeType]): Text = t"/"
     def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
     def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) = (url.scheme, url.authority)
