@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target digression/core
+target digression/test
 
 repo propensive/rudiments
 
@@ -11,4 +11,8 @@ project digression
     sources   src/core
     include   rudiments/core
 
-
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli digression/core
+    main      digression.Tests
