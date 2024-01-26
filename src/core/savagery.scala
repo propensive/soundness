@@ -30,7 +30,7 @@ import vacuous.*
 
 extension (left: Float)
   @targetName("makeCoordinates")
-  def !(right: Float) = Xy(left, right)
+  infix def ! (right: Float) = Xy(left, right)
 
 case class Xy(x: Float, y: Float)
 case class DxDy(dx: Float, dy: Float)
@@ -55,14 +55,14 @@ object Savagery:
     
   extension (point: Xy)
     @targetName("plus")
-    def +(vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
+    infix def + (vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
     
     @targetName("asVector")
-    def unary_~ : DxDy = DxDy(point.x, point.y)
+    def `unary_~`: DxDy = DxDy(point.x, point.y)
   
   extension (vector: DxDy)
     @targetName("plus2")
-    def +(right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
+    infix def + (right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
 
 export Savagery.{Degrees, SvgId}
 
