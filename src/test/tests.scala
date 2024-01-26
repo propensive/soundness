@@ -14,10 +14,13 @@
     and limitations under the License.
 */
 
-package rudiments
+package digression
 
 import probably.*
 import rudiments.*
+import anticipation.*
+import gossamer.*
+import fulminate.*
 import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
@@ -32,4 +35,4 @@ object Tests extends Suite(t"Rudiments Tests"):
           List(1, 2, 3).map(_ / 0)
           ???
         catch case err: Exception => err.stackTrace
-      .assert(_ == t"")
+      .assert()

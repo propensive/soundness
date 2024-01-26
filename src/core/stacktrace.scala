@@ -23,7 +23,7 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-extension (error: Error) def stackTrace: StackTrace = StackTrace(error)
+extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 
 object StackTrace:
   case class Method(className: Text, method: Text)
