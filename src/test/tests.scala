@@ -227,7 +227,7 @@ object Tests extends Suite(t"Nettlesome tests"):
      
       test(t"a@b@c@example.com"):
         capture(EmailAddress.parse(t"a@b@c@example.com"))
-      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(HostnameError.Reason.InvalidChar('@')))))
+      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"b@c@example.com", HostnameError.Reason.InvalidChar('@')))))
      
       test(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"):
         capture(EmailAddress.parse(t"a\\\"b(c)d,e:f;g<h>i[j\\k]l@example.com"))
@@ -255,7 +255,7 @@ object Tests extends Suite(t"Nettlesome tests"):
      
       test(t"i.like.underscores@but_they_are_not_allowed_in_this_part"):
         capture(EmailAddress.parse(t"i.like.underscores@but_they_are_not_allowed_in_this_part"))
-      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(HostnameError.Reason.InvalidChar('_')))))
+      .assert(_ == EmailAddressError(InvalidDomain(HostnameError(t"but_they_are_not_allowed_in_this_part", HostnameError.Reason.InvalidChar('_')))))
       
       test(t"I❤️CHOCOLATE🍫@example.com"):
         capture(EmailAddress.parse(t"I❤️CHOCOLATE🍫@example.com"))
@@ -388,23 +388,23 @@ object Tests extends Suite(t"Nettlesome tests"):
 
       test(t"A hostname cannot end in a period"):
         capture[HostnameError](Hostname.parse(t"www.example."))
-      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(2)))
+      .assert(_ == HostnameError(t"www.example.", HostnameError.Reason.EmptyDnsLabel(2)))
       
       test(t"A hostname cannot start with a period"):
         capture[HostnameError](Hostname.parse(t".example.com"))
-      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(0)))
+      .assert(_ == HostnameError(t".example.com", HostnameError.Reason.EmptyDnsLabel(0)))
       
       test(t"A hostname cannot have adjacent periods"):
         capture[HostnameError](Hostname.parse(t"www..com"))
-      .assert(_ == HostnameError(HostnameError.Reason.EmptyDnsLabel(1)))
+      .assert(_ == HostnameError(t"www..com", HostnameError.Reason.EmptyDnsLabel(1)))
 
       test(t"A hostname cannot contain symbols"):
         capture[HostnameError](Hostname.parse(t"www.maybe?.com"))
-      .assert(_ == HostnameError(HostnameError.Reason.InvalidChar('?')))
+      .assert(_ == HostnameError(t"www.maybe?.com", HostnameError.Reason.InvalidChar('?')))
       
       test(t"A DNS Label cannot begin with a dash"):
         capture[HostnameError](Hostname.parse(t"www.-maybe.com"))
-      .assert(_ == HostnameError(HostnameError.Reason.InitialDash(t"-maybe")))
+      .assert(_ == HostnameError(t"www.-maybe.com", HostnameError.Reason.InitialDash(t"-maybe")))
       
       test(t"A hostname can contain two consecutive dashes"):
         Hostname.parse(t"www.exam--ple.com")
@@ -412,7 +412,10 @@ object Tests extends Suite(t"Nettlesome tests"):
       
       test(t"A DNS label cannot be longer than 63 characters"):
         capture[HostnameError](Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com"))
-      .assert(_ == HostnameError(HostnameError.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")))
+      .assert(_ == HostnameError(
+        t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij.com",
+        HostnameError.Reason.LongDnsLabel(t"abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghij")
+      ))
       
       test(t"A DNS label may be 63 characters long"):
         Hostname.parse(t"www.abcdefghijklmnopqrstuvwxyz-abcdefghijklmnopqrstuvwxyz-abcdefghi.com")
@@ -424,7 +427,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       
       test(t"A DNS label may not be longer than 253 characters"):
         capture[HostnameError](Hostname.parse(t"www.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxy.com"))
-      .assert(_ == HostnameError(HostnameError.Reason.LongHostname))
+      .assert(_.reason == HostnameError.Reason.LongHostname)
 
       test(t"Parse hostname at compiletime"):
         host"www.altavista.com"
