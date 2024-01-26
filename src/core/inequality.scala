@@ -74,30 +74,26 @@ extends CompareGreaterEqual[LeftType, RightType, Boolean], CompareLess[LeftType,
 
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
-  inline def <
-      [RightType, ResultType]
-      (inline right: RightType)(using inline compareLess: CompareLess[LeftType, RightType, ResultType])
+  inline infix def < [RightType, ResultType](inline right: RightType)
+      (using inline compareLess: CompareLess[LeftType, RightType, ResultType])
       : ResultType =
     compareLess.lessThan(left, right)
   
   @targetName("lte")
-  inline def <=
-      [RightType, ResultType]
-      (inline right: RightType)(using inline compareLessEqual: CompareLessEqual[LeftType, RightType, ResultType])
+  inline infix def <= [RightType, ResultType](inline right: RightType)
+      (using inline compareLessEqual: CompareLessEqual[LeftType, RightType, ResultType])
       : ResultType =
     compareLessEqual.lessThanOrEqual(left, right)
   
   @targetName("gt")
-  inline def >
-      [RightType, ResultType]
-      (inline right: RightType)(using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
+  inline def > [RightType, ResultType](inline right: RightType)
+      (using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
       : ResultType =
     compareGreater.greaterThan(left, right)
   
   @targetName("gte")
-  inline def >=
-      [RightType, ResultType]
-      (inline right: RightType)(using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
+  inline def >= [RightType, ResultType](inline right: RightType)
+      (using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
       : ResultType =
     compareGreaterEqual.greaterThanOrEqual(left, right)
   

@@ -492,14 +492,14 @@ object Hypotenuse:
     inline infix def \ (right: into I64): I64 = math.floorDiv(i64, right)
 
     @targetName("powerI64")
-    infix inline def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
 
     @targetName("divI64")
     inline infix def / (right: into I64)(using division: DivisionByZero): division.Wrap[I64] =
       division.divideI64(i64, right)
     
     @targetName("modI64")
-    infix inline def % (right: into I64): I64 = i64%right
+    inline infix def % (right: into I64): I64 = i64%right
     
     @targetName("bitsI64")
     inline def bits: B64 = i64
@@ -519,7 +519,7 @@ object Hypotenuse:
     inline def abs: I32 = math.abs(i32)
     
     @targetName("powerI32")
-    infix inline def ** (exponent: Double): Double = math.pow(i32.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = math.pow(i32.toDouble, exponent)
     
     @targetName("octalI32")
     inline def octal: Text = JInt.toOctalString(i32).nn.tt
@@ -537,14 +537,14 @@ object Hypotenuse:
     inline infix def %% (right: into I32): I32 = math.floorMod(i32, right)
     
     @targetName("floorDivI32")
-    inline def \ (right: into I32): I32 = math.floorDiv(i32, right)
+    inline infix def \ (right: into I32): I32 = math.floorDiv(i32, right)
     
     @targetName("divI32")
     inline infix def / (right: into I32)(using division: DivisionByZero): division.Wrap[I32] =
       division.divideI32(i32, right)
     
     @targetName("modI32")
-    infix inline def % (right: into I32): I32 = i32%right
+    inline infix def % (right: into I32): I32 = i32%right
     
     @targetName("bitsI32")
     inline def bits: B32 = i32
@@ -567,7 +567,7 @@ object Hypotenuse:
     inline def abs: I16 = math.abs(i16).toShort
     
     @targetName("powerI16")
-    infix inline def ** (exponent: Double): Double = math.pow(i16.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = math.pow(i16.toDouble, exponent)
     
     @targetName("octalI16")
     inline def octal: Text = JInt.toOctalString(i16).nn.tt
@@ -585,14 +585,14 @@ object Hypotenuse:
     inline infix def %% (right: into I16): I16 = math.floorMod(i16, right).toShort
     
     @targetName("floorDivI16")
-    inline def \ (right: into I16): I16 = math.floorDiv(i16, right).toShort
+    inline infix def \ (right: into I16): I16 = math.floorDiv(i16, right).toShort
     
     @targetName("divI16")
     inline infix def / (right: into I16)(using division: DivisionByZero): division.Wrap[I16] =
       division.divideI16(i16, right)
     
     @targetName("modI16")
-    infix inline def % (right: into I16): I16 = (i16%right).toShort
+    inline infix def % (right: into I16): I16 = (i16%right).toShort
     
     @targetName("bitsI16")
     inline def bits: B16 = i16
@@ -618,7 +618,7 @@ object Hypotenuse:
     inline def abs: I8 = math.abs(i8).toByte
     
     @targetName("powerI8")
-    infix inline def ** (exponent: Double): Double = math.pow(i8.toDouble, exponent)
+    inline infix def ** (exponent: Double): Double = math.pow(i8.toDouble, exponent)
     
     @targetName("octalI8")
     inline def octal: Text = JInt.toOctalString(i8).nn.tt
@@ -636,14 +636,14 @@ object Hypotenuse:
     inline infix def %% (right: into I8): I8 = math.floorMod(i8, right).toByte
     
     @targetName("floorDivI8")
-    inline def \ (right: into I8): I8 = math.floorDiv(i8, right).toByte
+    inline infix def \ (right: into I8): I8 = math.floorDiv(i8, right).toByte
     
     @targetName("divI8")
     inline infix def / (right: into I8)(using division: DivisionByZero): division.Wrap[I8] =
       division.divideI8(i8, right)
     
     @targetName("modI8")
-    infix inline def % (right: into I8): I8 = (i8%right).toByte
+    inline infix def % (right: into I8): I8 = (i8%right).toByte
     
     @targetName("bitsI8")
     inline def bits: B8 = i8
@@ -651,25 +651,25 @@ object Hypotenuse:
 
   extension (bitmap: B8)
     @targetName("rotateLeftB8")
-    inline def <<<(count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
+    inline infix def <<< (count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
     
     @targetName("rotateRightB8")
-    inline def >>>(count: Int): B8 = ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
+    inline infix def >>> (count: Int): B8 = ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
        
     @targetName("shiftLeftB8")
-    inline def <<(count: Int): B8 = (bitmap << count).toByte
+    inline infix def << (count: Int): B8 = (bitmap << count).toByte
     
     @targetName("shiftRightB8")
-    inline def >>(count: Int): B8 = (bitmap >>> count).toByte
+    inline infix def >> (count: Int): B8 = (bitmap >>> count).toByte
     
     @targetName("andB8")
-    infix inline def & (right: into B8): B8 = (bitmap & right).toByte
+    inline infix def & (right: into B8): B8 = (bitmap & right).toByte
     
     @targetName("orB8")
-    infix transparent inline def | (right: into B8): B8 = (bitmap | right).toByte
+    transparent inline infix def | (right: into B8): B8 = (bitmap | right).toByte
     
     @targetName("xorB8")
-    infix transparent inline def ^ (right: into B8): B8 = (bitmap ^ right).toByte
+    transparent inline infix def ^ (right: into B8): B8 = (bitmap ^ right).toByte
     
     @targetName("invertB8")
     transparent inline def `unary_~`: B8 = (~bitmap).toByte
@@ -724,13 +724,13 @@ object Hypotenuse:
     inline def >>(count: Int): B16 = (bitmap >>> count).toShort
     
     @targetName("andB16")
-    infix inline def & (right: into B16): B16 = (bitmap & right).toShort
+    inline infix def & (right: into B16): B16 = (bitmap & right).toShort
     
     @targetName("orB16")
-    infix transparent inline def | (right: into B16): B16 = (bitmap | right).toShort
+    transparent inline infix def | (right: into B16): B16 = (bitmap | right).toShort
     
     @targetName("xorB16")
-    infix transparent inline def ^ (right: into B16): B16 = (bitmap ^ right).toShort
+    transparent inline infix def ^ (right: into B16): B16 = (bitmap ^ right).toShort
     
     @targetName("invertB16")
     transparent inline def `unary_~`: B16 = (~bitmap).toShort
@@ -780,25 +780,25 @@ object Hypotenuse:
   
   extension (bitmap: B32)
     @targetName("rotateLeftB32")
-    inline def <<<(count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
+    inline infix def <<< (count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
     
     @targetName("rotateRightB32")
-    inline def >>>(count: Int): B32 = JInt.rotateRight(bitmap, count%%32)
+    inline infix def >>> (count: Int): B32 = JInt.rotateRight(bitmap, count%%32)
        
     @targetName("shiftLeftB32")
-    inline def <<(count: Int): B32 = bitmap << count
+    inline infix def << (count: Int): B32 = bitmap << count
     
     @targetName("shiftRightB32")
-    inline def >>(count: Int): B32 = bitmap >>> count
+    inline infix def >> (count: Int): B32 = bitmap >>> count
     
     @targetName("andB32")
-    infix inline def & (right: into B32): B32 = bitmap & right
+    inline infix def & (right: into B32): B32 = bitmap & right
     
     @targetName("orB32")
-    infix transparent inline def | (right: into B32): B32 = bitmap | right
+    transparent inline infix def | (right: into B32): B32 = bitmap | right
     
     @targetName("xorB32")
-    infix transparent inline def ^ (right: into B32): B32 = bitmap ^ right
+    transparent inline infix def ^ (right: into B32): B32 = bitmap ^ right
     
     @targetName("invertB32")
     transparent inline def `unary_~`: B32 = ~bitmap
@@ -850,25 +850,25 @@ object Hypotenuse:
 
   extension (bitmap: B64)
     @targetName("rotateLeftB64")
-    inline def <<<(count: Int): B64 = JLong.rotateLeft(bitmap, count%%64)
+    inline infix def <<< (count: Int): B64 = JLong.rotateLeft(bitmap, count%%64)
     
     @targetName("rotateRightB64")
-    inline def >>>(count: Int): B64 = JLong.rotateRight(bitmap, count%%64)
+    inline infix def >>> (count: Int): B64 = JLong.rotateRight(bitmap, count%%64)
        
     @targetName("shiftLeftB64")
-    inline def <<(count: Int): B64 = bitmap << count
+    inline infix def << (count: Int): B64 = bitmap << count
     
     @targetName("shiftRightB64")
-    inline def >>(count: Int): B64 = bitmap >>> count
+    inline infix def >> (count: Int): B64 = bitmap >>> count
     
     @targetName("andB64")
-    infix inline def & (right: into B64): B64 = bitmap & right
+    inline infix def & (right: into B64): B64 = bitmap & right
     
     @targetName("orB64")
-    infix transparent inline def | (right: into B64): B64 = bitmap | right
+    transparent inline infix def | (right: into B64): B64 = bitmap | right
     
     @targetName("xorB64")
-    infix transparent inline def ^ (right: into B64): B64 = bitmap ^ right
+    transparent inline infix def ^ (right: into B64): B64 = bitmap ^ right
     
     @targetName("invertB64")
     transparent inline def `unary_~`: B64 = ~bitmap
@@ -927,19 +927,19 @@ object Hypotenuse:
     inline def double: Double = f64
 
     @targetName("powerF64")
-    inline def ** (exponent: into F64): F64 = math.pow(f64, exponent)
+    inline infix def ** (exponent: into F64): F64 = math.pow(f64, exponent)
 
     @targetName("plusF64")
-    inline def + (right: into F64): F64 = f64 + right
+    inline infix def + (right: into F64): F64 = f64 + right
     
     @targetName("minusF64")
-    inline def - (right: into F64): F64 = f64 - right
+    inline infix def - (right: into F64): F64 = f64 - right
     
     @targetName("timesF64")
-    inline def * (right: into F64): F64 = f64*right
+    inline infix def * (right: into F64): F64 = f64*right
     
     @targetName("divF64")
-    inline def / (right: into F64): F64 = f64/right
+    inline infix def / (right: into F64): F64 = f64/right
 
     @targetName("unaryMinusF64")
     inline def `unary_-`: F64 = -f64
@@ -1006,19 +1006,19 @@ object Hypotenuse:
     inline def double: Double = f32.toDouble
     
     @targetName("powerF32")
-    inline def ** (exponent: into F32): F32 = math.pow(f32, exponent).toFloat
+    inline infix def ** (exponent: into F32): F32 = math.pow(f32, exponent).toFloat
 
     @targetName("plusF32")
-    inline def + (right: into F32): F32 = f32 + right
+    inline infix def + (right: into F32): F32 = f32 + right
     
     @targetName("plusF32")
-    inline def - (right: into F32): F32 = f32 - right
+    inline infix def - (right: into F32): F32 = f32 - right
     
     @targetName("timesF32")
-    inline def * (right: into F32): F32 = f32*right
+    inline infix def * (right: into F32): F32 = f32*right
     
     @targetName("divF32")
-    inline def / (right: into F32): F32 = f32/right
+    inline infix def / (right: into F32): F32 = f32/right
   
     @targetName("unaryMinusF32")
     inline def `unary_-`: F32 = -f32
@@ -1080,13 +1080,13 @@ object Hypotenuse:
     inline def bits: B64 = u64
 
     @targetName("plusU64")
-    infix inline def + (right: into U64): U64 = u64 + right
+    inline infix def + (right: into U64): U64 = u64 + right
     
     @targetName("minusU64")
-    infix inline def - (right: into U64): U64 = u64 - right
+    inline infix def - (right: into U64): U64 = u64 - right
     
     @targetName("timesU64")
-    infix inline def * (right: into U64): U64 = u64*right
+    inline infix def * (right: into U64): U64 = u64*right
 
     @targetName("textU64")
     inline def text: Text = JLong.toUnsignedString(u64).nn.tt
@@ -1108,20 +1108,20 @@ object Hypotenuse:
       division.divideU64(u64, right)
     
     @targetName("modU64")
-    infix inline def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
+    inline infix def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
 
   extension (u32: U32)
     @targetName("plusU32")
-    infix inline def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] = overflow.addU32(u32, right)
+    inline infix def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] = overflow.addU32(u32, right)
     
     @targetName("bitsU32")
     inline def bits: B32 = u32
     
     @targetName("minuseU32")
-    infix inline def - (right: into U32): U32 = u32 - right
+    inline infix def - (right: into U32): U32 = u32 - right
     
     @targetName("timesU32")
-    infix inline def * (right: into U32): U32 = u32*right
+    inline infix def * (right: into U32): U32 = u32*right
 
     @targetName("textU32")
     inline def text: Text = JInt.toUnsignedString(u32).nn.tt
@@ -1146,7 +1146,7 @@ object Hypotenuse:
       division.divideU32(u32, right)
     
     @targetName("modU32")
-    infix inline def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
+    inline infix def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
 
     @targetName("u32ToI64")
     inline def i64: I64 = JInt.toUnsignedLong(u32)
@@ -1156,16 +1156,16 @@ object Hypotenuse:
 
   extension (u16: U16)
     @targetName("plusU16")
-    infix inline def + (right: into U16)(using overflow: CheckOverflow): overflow.Wrap[U16] = overflow.addU16(u16, right)
+    inline infix def + (right: into U16)(using overflow: CheckOverflow): overflow.Wrap[U16] = overflow.addU16(u16, right)
     
     @targetName("bitsU16")
     inline def bits: B16 = u16
     
     @targetName("minuseU16")
-    infix inline def - (right: into U16): U16 = (u16 - right).toShort
+    inline infix def - (right: into U16): U16 = (u16 - right).toShort
     
     @targetName("timesU16")
-    infix inline def * (right: into U16): U16 = (u16*right).toShort
+    inline infix def * (right: into U16): U16 = (u16*right).toShort
 
     @targetName("textU16")
     inline def text: Text = JInt.toUnsignedString(JShort.toUnsignedInt(u16)).nn.tt
@@ -1194,7 +1194,7 @@ object Hypotenuse:
       division.divideU16(u16, right)
     
     @targetName("modU16")
-    infix inline def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
+    inline infix def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
 
     @targetName("u16ToI32")
     inline def i32: I32 = JShort.toUnsignedInt(u16)
@@ -1210,16 +1210,16 @@ object Hypotenuse:
 
   extension (u8: U8)
     @targetName("plusU8")
-    infix inline def + (right: into U8)(using overflow: CheckOverflow): overflow.Wrap[U8] = overflow.addU8(u8, right)
+    inline infix def + (right: into U8)(using overflow: CheckOverflow): overflow.Wrap[U8] = overflow.addU8(u8, right)
     
     @targetName("bitsU8")
     inline def bits: B8 = u8
     
     @targetName("minusU8")
-    infix inline def - (right: into U8): U8 = (u8 - right).toByte
+    inline infix def - (right: into U8): U8 = (u8 - right).toByte
     
     @targetName("timesU8")
-    infix inline def * (right: into U8): U8 = (u8*right).toByte
+    inline infix def * (right: into U8): U8 = (u8*right).toByte
 
     @targetName("textU8")
     inline def text: Text = JInt.toUnsignedString(JByte.toUnsignedInt(u8)).nn.tt
@@ -1250,7 +1250,7 @@ object Hypotenuse:
       division.divideU8(u8, right)
     
     @targetName("modU8")
-    infix inline def % (right: into U8): U8 = JInt.remainderUnsigned(u8, right).toByte
+    inline infix def % (right: into U8): U8 = JInt.remainderUnsigned(u8, right).toByte
 
     @targetName("byteU8")
     inline def byte: Byte = u8
@@ -1328,7 +1328,7 @@ extension (float: Float)
   inline def nan: Boolean = float.isNaN
   
   @targetName("powerFloat")
-  infix inline def ** (exponent: Double): Float = math.pow(float, exponent).toFloat
+  inline infix def ** (exponent: Double): Float = math.pow(float, exponent).toFloat
 
 extension (double: Double)
   @targetName("mantissaDouble")
@@ -1386,7 +1386,7 @@ extension (double: Double)
   inline def nan: Boolean = double.isNaN
   
   @targetName("powerDouble")
-  infix inline def ** (exponent: Double): Double = math.pow(double, exponent)
+  inline infix def ** (exponent: Double): Double = math.pow(double, exponent)
 
 extension (byte: Byte)
   @targetName("bitsByte")
@@ -1420,10 +1420,10 @@ extension (byte: Byte)
   inline def binary: Text = JInt.toBinaryString(byte).nn.tt
   
   @targetName("floorModByte")
-  infix inline def %% (right: Int): Int = math.floorMod(byte, right)
+  inline infix def %% (right: Int): Int = math.floorMod(byte, right)
   
   @targetName("floorDivByte")
-  infix inline def \ (right: Int): Int = math.floorDiv(byte, right)
+  inline infix def \ (right: Int): Int = math.floorDiv(byte, right)
 
 extension (short: Short)
   @targetName("bitsShort")
@@ -1451,10 +1451,10 @@ extension (short: Short)
   inline def binary: Text = JInt.toBinaryString(short).nn.tt
   
   @targetName("floorModShort")
-  infix inline def %% (right: Short): Short = math.floorMod(short, right).toShort
+  inline infix def %% (right: Short): Short = math.floorMod(short, right).toShort
   
   @targetName("floorDivShort")
-  infix inline def \ (right: Short): Short = math.floorDiv(short, right).toShort
+  inline infix def \ (right: Short): Short = math.floorDiv(short, right).toShort
 
 extension (int: Int)
   @targetName("bitsInt")
@@ -1482,10 +1482,10 @@ extension (int: Int)
   inline def binary: Text = JInt.toBinaryString(int).nn.tt
   
   @targetName("floorModInt")
-  infix inline def %% (right: Int): Int = math.floorMod(int, right)
+  inline infix def %% (right: Int): Int = math.floorMod(int, right)
   
   @targetName("floorDivInt")
-  infix inline def \ (right: Int): Int = math.floorDiv(int, right)
+  inline infix def \ (right: Int): Int = math.floorDiv(int, right)
 
 extension (long: Long)
   @targetName("absLong")
@@ -1507,13 +1507,13 @@ extension (long: Long)
   inline def binary: Text = JLong.toBinaryString(long).nn.tt
   
   @targetName("floorModLong")
-  infix inline def %% (right: Long): Long = math.floorMod(long, right)
+  inline infix def %% (right: Long): Long = math.floorMod(long, right)
   
   @targetName("floorDivLong")
-  infix inline def \ (right: Long): Long = math.floorDiv(long, right)
+  inline infix def \ (right: Long): Long = math.floorDiv(long, right)
 
   @targetName("powerLong")
-  infix inline def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
+  inline infix def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
 
 extension (doubleObject: Double.type)
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)
