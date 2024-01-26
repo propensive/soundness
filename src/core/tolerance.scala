@@ -24,6 +24,6 @@ case class Tolerance(value: Double, tolerance: Double):
 
 extension (value: Double)
   @targetName("plusOrMinus")
-  def +/-(tolerance: Double): Tolerance = Tolerance(value, tolerance)
+  infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
 
-  infix def meets(tolerance: Tolerance): Boolean = tolerance.covers(value)
+  infix def meets (tolerance: Tolerance): Boolean = tolerance.covers(value)
