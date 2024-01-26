@@ -30,7 +30,7 @@ case class BodyText(blocks: TextBlock*):
 
 case class TextBlock(indent: Int, text: Output):
   @targetName("add")
-  def +(txt: Output): TextBlock = TextBlock(indent, text+txt)
+  infix def + (txt: Output): TextBlock = TextBlock(indent, text+txt)
   
   def render(width: Int): Output =
     def rest(text: Output, lines: List[Output]): List[Output] =
