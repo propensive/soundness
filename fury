@@ -10,3 +10,8 @@ project cataclysm
     sources  src/core
     include  gossamer/core anticipation/css anticipation/html serpentine/core anticipation/color hypotenuse/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli cataclysm/core
+    main      cataclysm.Tests
