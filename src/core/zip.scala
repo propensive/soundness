@@ -42,7 +42,7 @@ case class ZipError(filename: Text) extends Error(msg"could not create ZIP file 
 type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
 
 object ZipPath:
-  given reachable: Reachable[ZipPath, InvalidZipNames, ZipFile] with
+  given navigable: Navigable[ZipPath, InvalidZipNames, ZipFile] with
     def root(path: ZipPath): ZipFile = path.zipFile
     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
     def prefix(path: ZipFile): Text = t"/"
@@ -60,15 +60,15 @@ case class ZipPath(zipFile: ZipFile, ref: ZipRef):
 object ZipRef:
   def apply
       (text: Text)
-      (using pathError: Raises[PathError], reachable: Reachable[ZipRef, InvalidZipNames, Unset.type],
+      (using pathError: Raises[PathError], navigable: Navigable[ZipRef, InvalidZipNames, Unset.type],
           rootParser: RootParser[ZipRef, Unset.type], creator: PathCreator[ZipRef, InvalidZipNames, Unset.type])
       : ZipRef =
-    Reachable.decode[ZipRef](text)
+    Navigable.decode[ZipRef](text)
   
   @targetName("child")
   infix def / (name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
   
-  given reachable: Reachable[ZipRef, InvalidZipNames, Unset.type] with
+  given navigable: Navigable[ZipRef, InvalidZipNames, Unset.type] with
     def root(path: ZipRef): Unset.type = Unset
     def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
     def prefix(ref: Unset.type): Text = t""
