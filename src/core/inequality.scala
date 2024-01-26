@@ -86,13 +86,13 @@ extension [LeftType](inline left: LeftType)
     compareLessEqual.lessThanOrEqual(left, right)
   
   @targetName("gt")
-  inline def > [RightType, ResultType](inline right: RightType)
+  inline infix def > [RightType, ResultType](inline right: RightType)
       (using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
       : ResultType =
     compareGreater.greaterThan(left, right)
   
   @targetName("gte")
-  inline def >= [RightType, ResultType](inline right: RightType)
+  inline infix def >= [RightType, ResultType](inline right: RightType)
       (using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
       : ResultType =
     compareGreaterEqual.greaterThanOrEqual(left, right)
