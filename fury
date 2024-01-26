@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target superlunary/core
+target superlunary/test
 
 repo propensive/probably
 repo propensive/larceny
@@ -20,3 +20,9 @@ project superlunary
     lib       scalajs-javalib https://repo1.maven.org/maven2/org/scala-js/scalajs-javalib/1.14.0/scalajs-javalib-1.14.0.jar
     include   anticipation/css anticipation/http symbolism/core anticipation/text anticipation/http jacinta/core inimitable/core gastronomy/core ambience/core hellenism/core guillotine/core
     main      superlunary.run
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli superlunary/core
+    main      superlunary.Tests
