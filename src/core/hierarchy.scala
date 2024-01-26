@@ -105,8 +105,7 @@ extension
   def root(using pathlike: Reachable[PathType, NameType, RootType]): RootType = pathlike.root(left)
 
   @targetName("add")
-  def +
-      (link: LinkType)
+  infix def + (link: LinkType)
       (using Pathlike[PathType, NameType, RootType], PathCreator[PathType, NameType, RootType],
           Followable[LinkType, NameType, ?, ?], Raises[PathError])
       : PathType = left.append(link)
@@ -323,8 +322,7 @@ extends Pathlike[LinkType, NameType, Int]:
 
 implicit class Slash[PathType <: Matchable](path: PathType):
   @targetName("child")
-  infix def /
-      [NameType <: Label, AscentType]
+  infix def / [NameType <: Label, AscentType]
       (using pathlike: Pathlike[PathType, NameType, AscentType])
       (name: PathName[NameType])
       (using creator: PathCreator[PathType, NameType, AscentType])
@@ -343,7 +341,7 @@ extension
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
-  inline infix def /-[PathType2 <: PathType](name: Text)(using pathError: Raises[PathError]): PathType =
+  inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Raises[PathError]): PathType =
     pathlike.child(path, PathName(name))
   
   def render: Text = pathlike.render(path)
