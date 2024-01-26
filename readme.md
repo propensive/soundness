@@ -29,8 +29,8 @@ modifying its source code.
 ## Availability Plan
 
 Umbrageous has not yet been published. The medium-term plan is to build Umbrageous
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Umbrageous.
 
 Subsequently, Umbrageous will also be made available as a binary in the Maven
@@ -91,6 +91,7 @@ object Main // ...
 
 Additionally, code which references an absolute name, such as
 `_root_.com.example.Main` will not find the entity with its new, shaded name.
+
 
 
 
