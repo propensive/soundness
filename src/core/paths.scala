@@ -241,10 +241,10 @@ object Windows:
     def name: Text = t"$letter:"
     
     @targetName("child")
-    def /(name: PathName[Forbidden]): Path = Path(this, List(name))
+    infix def / (name: PathName[Forbidden]): Path = Path(this, List(name))
     
     @targetName("child2")
-    inline def /(name: Text)(using Raises[PathError]): Path = Path(this, List(PathName(name)))
+    inline infix def / (name: Text)(using Raises[PathError]): Path = Path(this, List(PathName(name)))
   
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
   
@@ -255,10 +255,10 @@ object Unix:
   type Forbidden = ".*\\/.*" | ".*[\\cA-\\cZ].*" | "\\.\\." | "\\."
   
   @targetName("child")
-  def /(name: PathName[Forbidden]): Path = Path(List(name))
+  infix def / (name: PathName[Forbidden]): Path = Path(List(name))
 
   @targetName("child2")
-  inline def /(name: Text)(using Raises[PathError]): Path = Path(List(PathName(name)))
+  inline infix def / (name: Text)(using Raises[PathError]): Path = Path(List(PathName(name)))
 
   object Path:
     given mainRoot: MainRoot[Path] = () => Path(Nil)
@@ -518,10 +518,10 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
     
   @targetName("child")
-  def /(name: PathName[GeneralForbidden]): Path = path / name
+  infix def / (name: PathName[GeneralForbidden]): Path = path / name
   
   @targetName("child2")
-  inline def /(name: Text)(using Raises[PathError]): Path = path / PathName(name)
+  inline infix def / (name: Text)(using Raises[PathError]): Path = path / PathName(name)
 
 object File:
   given debug: Debug[File] = file => t"file:${file.path.render}"
