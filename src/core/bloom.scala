@@ -57,13 +57,13 @@ case class BloomFilter
     recur(hash(value), 0)
   
   @targetName("add")
-  def +(value: ElementType): BloomFilter[ElementType, HashType] =
+  infix def + (value: ElementType): BloomFilter[ElementType, HashType] =
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     BloomFilter(bitSize, hashCount, bits | bitSet)
 
   @targetName("addAll")
-  def ++(elements: Iterable[ElementType]): BloomFilter[ElementType, HashType] =
+  infix def ++ (elements: Iterable[ElementType]): BloomFilter[ElementType, HashType] =
     val bitSet = scm.BitSet()
     elements.each(additions(_, bitSet))
     BloomFilter(bitSize, hashCount, bits | bitSet)
