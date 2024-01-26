@@ -13,3 +13,9 @@ project spectral
   module core
     sources  src/core
     include  surveillance/core eucalyptus/syslog digression/core hellenism/core exoskeleton/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli spectral/core
+    main      spectral.Tests
