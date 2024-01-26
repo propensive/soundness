@@ -19,8 +19,8 @@ TBC
 ## Availability Plan
 
 Hellenism has not yet been published. The medium-term plan is to build Hellenism
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Hellenism.
 
 Subsequently, Hellenism will also be made available as a binary in the Maven
@@ -31,6 +31,7 @@ For the overeager, curious and impatient, see [building](#building).
 ## Getting Started
 
 TBC
+
 
 
 
