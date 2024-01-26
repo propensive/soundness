@@ -162,10 +162,16 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def osProcess(using Raises[PidError]) = OsProcess(pid)
   
   def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
-    safely(osProcess).let(_.startTime[InstantType])
+    try
+      import errorHandlers.throwUnsafely
+      osProcess.startTime[InstantType]
+    catch case _: PidError => Unset
   
-  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType] =
-    safely(osProcess).let(_.cpuUsage[DurationType])
+  def cpuUsage[InstantType: SpecificDuration]: Optional[InstantType] =
+    try
+      import errorHandlers.throwUnsafely
+      osProcess.cpuUsage[InstantType]
+    catch case _: PidError => Unset
 
 sealed trait Executable:
   type Exec <: Label
