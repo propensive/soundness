@@ -30,6 +30,7 @@ import scala.quoted.*
 object IpAddressError:
   enum Reason:
     case Ipv4ByteOutOfRange(byte: Int)
+    case Ipv4ByteNotNumeric(byte: Text)
     case Ipv4WrongNumberOfGroups(count: Int)
     case Ipv6GroupWrongLength(group: Text)
     case Ipv6GroupNotHex(group: Text)
@@ -40,6 +41,7 @@ object IpAddressError:
   object Reason:
     given Communicable[Reason] =
       case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
+      case Ipv4ByteNotNumeric(byte)       => msg"the part $byte is not a number"
       case Ipv4WrongNumberOfGroups(count) => msg"the address contains $count period-separated groups instead of 4"
       case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
       case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
@@ -120,15 +122,18 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
       
-      def parse(text: Text)(using Raises[IpAddressError]): Ipv4 = text.cut(t".") match
-        case List(As[Int](byte0), As[Int](byte1), As[Int](byte2), As[Int](byte3)) =>
-          for byte <- List(byte0, byte1, byte2, byte3)
-          do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
+      def parse(text: Text)(using Raises[IpAddressError]): Ipv4 =
+        val bytes = text.cut(t".")
+        if bytes.length == 4 then
+          val bytes2 = mitigate:
+            case NumberError(byte, _) => IpAddressError(Ipv4ByteNotNumeric(byte))
+          .within(bytes.map(Decoder.int.decode(_)))
 
-          Ipv4(byte0.toByte, byte1.toByte, byte2.toByte, byte3.toByte)
+          for byte <- bytes2 do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
+
+          Ipv4(bytes2(0).toByte, bytes2(1).toByte, bytes2(2).toByte, bytes2(3).toByte)
         
-        case list =>
-          raise(IpAddressError(Ipv4WrongNumberOfGroups(list.length)))(0)
+        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))(0)
 
     object MacAddress:
       erased given underlying: Underlying[MacAddress, Long] = ###
