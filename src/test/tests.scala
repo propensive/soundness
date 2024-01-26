@@ -17,6 +17,7 @@
 package hypotenuse
 
 import probably.*
+import gossamer.*
 
 object Tests extends Suite(t"Hypotenuse tests"):
   def run(): Unit =
