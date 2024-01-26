@@ -712,16 +712,16 @@ object Hypotenuse:
 
   extension (bitmap: B16)
     @targetName("rotateLeftB16")
-    inline def <<<(count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
+    inline infix def <<< (count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
     
     @targetName("rotateRightB16")
-    inline def >>>(count: Int): B16 = ((bitmap >>> count%%16) | (bitmap << (16 - count%%16))).toShort
+    inline infix def >>> (count: Int): B16 = ((bitmap >>> count%%16) | (bitmap << (16 - count%%16))).toShort
        
     @targetName("shiftLeftB16")
-    inline def <<(count: Int): B16 = (bitmap << count).toShort
+    inline infix def << (count: Int): B16 = (bitmap << count).toShort
     
     @targetName("shiftRightB16")
-    inline def >>(count: Int): B16 = (bitmap >>> count).toShort
+    inline infix def >> (count: Int): B16 = (bitmap >>> count).toShort
     
     @targetName("andB16")
     inline infix def & (right: into B16): B16 = (bitmap & right).toShort
