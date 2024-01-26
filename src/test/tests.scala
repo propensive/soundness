@@ -18,6 +18,7 @@ package savagery
 
 import probably.*
 import gossamer.*
+import spectacular.*
 
 object Tests extends Suite(t"Savagery tests"):
   def run(): Unit =
