@@ -85,22 +85,19 @@ object Complex:
 
 case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType):
   @targetName("add")
-  inline def +
-      [ComponentType2](right: Complex[ComponentType2])
+  inline infix def + [ComponentType2](right: Complex[ComponentType2])
       (using addOperator: AddOperator[ComponentType, ComponentType2])
       : Complex[addOperator.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
   @targetName("sub")
-  inline def -
-      [ComponentType2](right: Complex[ComponentType2])
+  inline infix def - [ComponentType2](right: Complex[ComponentType2])
       (using subOperator: SubOperator[ComponentType, ComponentType2])
       : Complex[subOperator.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
   
   @targetName("mul")
-  inline def *
-      [ComponentType2](right: Complex[ComponentType2])
+  inline infix def * [ComponentType2](right: Complex[ComponentType2])
       (using mulOperator: MulOperator[ComponentType, ComponentType2])
       (using addOperator: AddOperator[mulOperator.Result, mulOperator.Result])
       (using subOperator: SubOperator[mulOperator.Result, mulOperator.Result])
@@ -114,8 +111,7 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
     Complex(ac - bd, ad + bc)
   
   @targetName("div")
-  inline def /
-      [ComponentType2](right: Complex[ComponentType2])
+  inline infix def / [ComponentType2](right: Complex[ComponentType2])
       (using mulOperator: MulOperator[ComponentType, ComponentType2])
       (using mulOperator2: MulOperator[ComponentType2, ComponentType2])
       (using addOperator: AddOperator[mulOperator.Result, mulOperator.Result])
