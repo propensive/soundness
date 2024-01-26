@@ -38,19 +38,19 @@ case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money
   def effectiveTaxRate: Double = tax/principal
 
   @targetName("add")
-  def +(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
+  infix def + (right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
   
   @targetName("subtract")
-  def -(right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
+  infix def - (right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
   
   @targetName("negate")
-  def unary_- : Price[CurrencyType] = Price(-principal, -tax)
+  def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
   
   @targetName("multiply")
-  def *(right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
+  infix def * (right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
   
   @targetName("divide")
-  def /(right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
+  infix def / (right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
 
   def inclusive: Money[CurrencyType] = principal + tax
 
@@ -83,38 +83,38 @@ object Plutocrat:
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
 
     @targetName("greaterThan")
-    def >(right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
+    infix def > (right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
 
     @targetName("greaterThanOrEqual")
-    def >=(right: Money[CurrencyType]): Boolean = (left: Long) >= (right: Long)
+    infix def >= (right: Money[CurrencyType]): Boolean = (left: Long) >= (right: Long)
 
     @targetName("lessThan")
-    def <(right: Money[CurrencyType]): Boolean = (left: Long) < (right: Long)
+    infix def < (right: Money[CurrencyType]): Boolean = (left: Long) < (right: Long)
 
     @targetName("lessThanOrEqual")
-    def <=(right: Money[CurrencyType]): Boolean = (left: Long) <= (right: Long)
+    infix def <= (right: Money[CurrencyType]): Boolean = (left: Long) <= (right: Long)
 
     @targetName("add")
-    def +(right: Money[CurrencyType]): Money[CurrencyType] = left + right
+    infix def + (right: Money[CurrencyType]): Money[CurrencyType] = left + right
     
     @targetName("subtract")
-    def -(right: Money[CurrencyType]): Money[CurrencyType] = left - right
+    infix def - (right: Money[CurrencyType]): Money[CurrencyType] = left - right
     
     @targetName("multiply")
-    def *(right: Int): Money[CurrencyType] = left*right
+    infix def * (right: Int): Money[CurrencyType] = left*right
     
     @targetName("multiply2")
-    def *(right: Double): Money[CurrencyType] =
+    infix def * (right: Double): Money[CurrencyType] =
       val value = left*right
       (value + value.signum/2).toLong
     
     @targetName("divide")
-    def /(right: Double): Money[CurrencyType] =
+    infix def / (right: Double): Money[CurrencyType] =
       val value = left/right
       (value + value.signum/2).toLong
 
     @targetName("divide2")
-    def /(right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
+    infix def / (right: Money[CurrencyType]): Double = left.toDouble/right.toDouble
 
     @targetName("negate")
     def `unary_-`: Money[CurrencyType] = -left
