@@ -30,7 +30,7 @@ object Root
 
 object SimplePath:
   inline given decoder(using Raises[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
-    def decode(text: Text): SimplePath = Reachable.decode[SimplePath](text)
+    def decode(text: Text): SimplePath = Navigable.decode[SimplePath](text)
 
   inline given add(using path: Raises[PathError]): AddOperator[SimplePath, SimpleLink] with
     type Result = SimplePath
@@ -46,7 +46,7 @@ object SimplePath:
     def parse(text: Text): Optional[(Root.type, Text)] =
       if text.starts(t"/") then (Root, text.drop(1)) else Unset
     
-  given reachable: Reachable[SimplePath, ".*\\/.*", Root.type] with
+  given navigable: Navigable[SimplePath, ".*\\/.*", Root.type] with
     def separator(path: SimplePath): Text = t"/"
     def root(path: SimplePath): Root.type = serpentine.Root
     def prefix(root: Root.type): Text = t"/"
@@ -56,7 +56,7 @@ object SimplePath:
     def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     
 case class SimplePath(descent: List[PathName[".*\\/.*"]])
-extends PathEquality(using SimplePath.reachable)
+extends PathEquality(using SimplePath.navigable)
 
 object SimpleLink:
   inline given decoder(using Raises[PathError]): Decoder[SimpleLink] =

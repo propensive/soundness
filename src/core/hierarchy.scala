@@ -102,7 +102,7 @@ extension
     (left: PathType)
     (using hierarchy: Hierarchy[PathType, LinkType])
   
-  def root(using pathlike: Reachable[PathType, NameType, RootType]): RootType = pathlike.root(left)
+  def root(using pathlike: Navigable[PathType, NameType, RootType]): RootType = pathlike.root(left)
 
   @targetName("add")
   infix def + (link: LinkType)
@@ -114,33 +114,33 @@ extension
       [PathType2 <: PathType]
       (right: PathType)
       (using pathlike: Followable[LinkType, NameType, ?, ?])
-      (using reachable: Reachable[PathType, NameType, RootType],
+      (using navigable: Navigable[PathType, NameType, RootType],
           pathCreator: PathCreator[PathType, NameType, RootType],
           linkCreator: PathCreator[LinkType, NameType, Int],
-          reachable2: Reachable[PathType2, NameType, RootType])
+          navigable2: Navigable[PathType2, NameType, RootType])
       : LinkType =
     
-    val common = reachable.depth(left.conjunction(right))
-    linkCreator.path(reachable.depth(left) - common, reachable.descent(right).dropRight(common))
+    val common = navigable.depth(left.conjunction(right))
+    linkCreator.path(navigable.depth(left) - common, navigable.descent(right).dropRight(common))
   
 extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
   def keep
       (n: Int)
-      (using reachable: Reachable[PathType, NameType, RootType],
+      (using navigable: Navigable[PathType, NameType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
       : PathType =
-    creator.path(reachable.root(left), reachable.descent(left).takeRight(n))
+    creator.path(navigable.root(left), navigable.descent(left).takeRight(n))
     
   def conjunction
       (right: PathType)
-      (using reachable: Reachable[PathType, NameType, RootType],
+      (using navigable: Navigable[PathType, NameType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
       : PathType =
     
-    lazy val leftElements: IArray[Text] = IArray.from(reachable.descent(left).reverse.map(_.render))
+    lazy val leftElements: IArray[Text] = IArray.from(navigable.descent(left).reverse.map(_.render))
     
     lazy val rightElements: IArray[Text] =
-      IArray.from(reachable.descent(right).reverse.map(_.render))
+      IArray.from(navigable.descent(right).reverse.map(_.render))
     
     @tailrec
     def count(n: Int): Int =
@@ -148,17 +148,17 @@ extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
       then count(n + 1)
       else n
     
-    creator.path(reachable.root(left), reachable.descent(left).takeRight(count(0)))
+    creator.path(navigable.root(left), navigable.descent(left).takeRight(count(0)))
 
   def precedes(path: %.type): Boolean = false
   
   def precedes
       (path: PathType)
-      (using reachable: Reachable[PathType, NameType, RootType],
+      (using navigable: Navigable[PathType, NameType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
       : Boolean =
-    reachable.descent(left.conjunction(path)) == reachable.descent(left) &&
-      reachable.root(path) == reachable.root(left)
+    navigable.descent(left.conjunction(path)) == navigable.descent(left) &&
+      navigable.root(path) == navigable.root(left)
 
 trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
   def separator(path: PathType): Text
@@ -196,12 +196,12 @@ trait RootParser[PathType <: Matchable, +RootType]:
 trait PathCreator[+PathType <: Matchable, NameType <: Label, AscentType]:
   def path(ascent: AscentType, descent: List[PathName[NameType]]): PathType
 
-object Reachable:
+object Navigable:
   inline def decode
       [PathType <: Matchable]
       (text: Text)
       [NameType <: Label, RootType]
-      (using reachable: Reachable[PathType, NameType, RootType],
+      (using navigable: Navigable[PathType, NameType, RootType],
           rootParser: RootParser[PathType, RootType],
           creator: PathCreator[PathType, NameType, RootType])
       (using path: Raises[PathError])
@@ -215,7 +215,7 @@ object Reachable:
       val root: RootType = rootRest.asInstanceOf[(RootType, Text)](0)
       val rest: Text = rootRest.asInstanceOf[(RootType, Text)](1)
       
-      val names = rest.cut(reachable.separator(creator.path(root, Nil))).reverse match
+      val names = rest.cut(navigable.separator(creator.path(root, Nil))).reverse match
         case t"" :: tail => tail
         case names       => names
   
@@ -223,7 +223,7 @@ object Reachable:
   
 
 @capability
-trait Reachable[-PathType <: Matchable, NameType <: Label, RootType]
+trait Navigable[-PathType <: Matchable, NameType <: Label, RootType]
 extends Pathlike[PathType, NameType, RootType]:
   def separator(path: PathType): Text
   def prefix(root: RootType): Text

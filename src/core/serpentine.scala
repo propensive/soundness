@@ -34,14 +34,14 @@ object Serpentine:
     def unapply
         [PathType <: Matchable, NameType <: Label, RootType]
         (using hierarchy: Hierarchy[PathType, ?])
-        (using reachable: Reachable[PathType, NameType, RootType])
+        (using navigable: Navigable[PathType, NameType, RootType])
         (using creator: PathCreator[PathType, NameType, RootType])
         (path: PathType)
         : Option[(PathType | RootType | %.type, PathName[NameType])] =
-      reachable.descent(path) match
+      navigable.descent(path) match
         case Nil          => None
-        case head :: Nil  => Some((reachable.root(path), head))
-        case head :: tail => Some((creator.path(reachable.root(path), tail), head))
+        case head :: Nil  => Some((navigable.root(path), head))
+        case head :: tail => Some((creator.path(navigable.root(path), tail), head))
     
 
   object PathName:
@@ -81,16 +81,16 @@ object Serpentine:
         : Boolean =
       true
 
-    given reachable
+    given navigable
         [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
         (using erased hierarchy: Hierarchy[PathType, LinkType])
-        (using reachable: Reachable[PathType, NameType, RootType])
+        (using navigable: Navigable[PathType, NameType, RootType])
         (using mainRoot: MainRoot[PathType])
-        : Reachable[%.type, NameType, RootType] =
-      new Reachable[%.type, NameType, RootType]:
-        def separator(path: %.type): Text = reachable.separator(mainRoot.empty())
-        def prefix(root: RootType): Text = reachable.prefix(reachable.root(mainRoot.empty()))
-        def root(path: %.type): RootType = reachable.root(mainRoot.empty())
+        : Navigable[%.type, NameType, RootType] =
+      new Navigable[%.type, NameType, RootType]:
+        def separator(path: %.type): Text = navigable.separator(mainRoot.empty())
+        def prefix(root: RootType): Text = navigable.prefix(navigable.root(mainRoot.empty()))
+        def root(path: %.type): RootType = navigable.root(mainRoot.empty())
         def descent(path: %.type): List[PathName[NameType]] = Nil
     
     given show
