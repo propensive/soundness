@@ -1,9 +1,15 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target umbrageous/plugin
+target umbrageous/test
 
 project umbrageous
   module plugin
     compiler  scala
     sources   umbrageous/plugin
     plugin    yes
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli umbrageous/plugin
+    main      umbrageous.Tests
