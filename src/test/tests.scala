@@ -22,7 +22,7 @@ import gossamer.*
 import anticipation.*, fileApi.javaIo
 import eucalyptus.*, logging.stdout
 import rudiments.*
-import perforate.*
+import perforate.*, errorHandlers.throwUnsafely
 import hieroglyph.*, charEncoders.utf8
 import turbulence.*, stdioSources.virtualMachine
 import ambience.*, environments.virtualMachine
