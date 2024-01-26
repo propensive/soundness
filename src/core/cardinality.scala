@@ -72,69 +72,54 @@ object NumericRange:
       def double: Double = left
 
       @targetName("add")
-      def +
-          [RightMinType <: Double, RightMaxType <: Double]
-          (right: RightMinType ~ RightMaxType)
+      infix def + [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
           : (LeftMinType + RightMinType) ~ (LeftMaxType + RightMaxType) =
         left + right
       
       @targetName("add2")
-      def +
-          [E <: Double & Singleton]
-          (right: E)
+      infix def + [E <: Double & Singleton](right: E)
           : (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
         left + right
 
       @targetName("add3")
-      def +(right: Double): Double = left + right
+      infix def + (right: Double): Double = left + right
 
       @targetName("times")
-      def *
-          [RightMinType <: Double, RightMaxType <: Double]
-          (right: RightMinType ~ RightMaxType)
+      infix def * [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
           : (Min4[LeftMinType*RightMinType, LeftMinType*RightMaxType, LeftMaxType*RightMaxType,
               LeftMaxType*RightMinType]) ~ (Max4[LeftMinType*RightMinType, LeftMinType*RightMaxType,
               LeftMaxType*RightMaxType, LeftMaxType*RightMinType]) =
         left*right
       
       @targetName("times2")
-      def *
-          [E <: Double & Singleton]
-          (right: E)
+      infix def * [E <: Double & Singleton](right: E)
           : Min[LeftMinType*E, LeftMaxType*E] ~ Max[LeftMinType*E, LeftMaxType*E] =
         left*right
       
       @targetName("times3")
-      def *(right: Double): Double = left*right
+      infix def * (right: Double): Double = left*right
 
       @targetName("minus")
-      def -
-          [RightMinType <: Double, RightMaxType <: Double]
-          (right: RightMinType ~ RightMaxType)
+      infix def - [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
           : Min[LeftMinType - RightMinType, LeftMinType - RightMaxType] ~ Max[LeftMaxType -
               RightMinType, LeftMaxType - RightMaxType] =
         left - right
 
       @targetName("minus2")
-      def -
-          [E <: Double & Singleton]
-          (right: E)
+      infix def - [E <: Double & Singleton](right: E)
           : Min[LeftMinType - E, LeftMaxType - E] ~ Max[LeftMinType - E, LeftMaxType - E] =
         left - right
 
       @targetName("minus3")
-      def -(right: Double): Double = left - right
+      infix def - (right: Double): Double = left - right
 
       @targetName("divide")
-      def /
-          [E <: Double & Singleton]
-          (right: E)
+      infix def / [E <: Double & Singleton](right: E)
           : Min[LeftMinType/E, LeftMaxType/E] ~ Max[LeftMinType/E, LeftMaxType/E] =
         left/right
       
       @targetName("divide2")
-      def /
-          [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
+      infix def / [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
           : Asym[RightMinType*RightMaxType, Min4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
               LeftMinType/RightMaxType, LeftMaxType/RightMaxType], -1.0/0.0] ~ Asym[
               RightMinType*RightMaxType, Max4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
@@ -142,7 +127,7 @@ object NumericRange:
         left/right
       
       @targetName("divide3")
-      def /(right: Double): Double = left/right
+      infix def / (right: Double): Double = left/right
 
 export NumericRange.`~`
 
