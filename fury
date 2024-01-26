@@ -1,4 +1,4 @@
-target profanity/core
+target profanity/test
 
 repo propensive/eucalyptus
 
@@ -7,3 +7,8 @@ project profanity
     sources  src/core
     include  eucalyptus/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli profanity/core
+    main      profanity.Tests
