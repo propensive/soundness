@@ -142,7 +142,7 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait JsonEncoder2 extends Derivation[JsonEncoder]:
+trait JsonEncoder2:
   given optional[ValueType](using encoder: JsonEncoder[ValueType])(using util.NotGiven[Unset.type <:< ValueType]): JsonEncoder[Optional[ValueType]] =
     new JsonEncoder[Optional[ValueType]]:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
@@ -158,9 +158,10 @@ object JsonEncoder extends JsonEncoder2:
   given short: JsonEncoder[Short] = short => JsonAst(short.toLong)
   given boolean: JsonEncoder[Boolean] = JsonAst(_)
 
-  given encoder[ValueType](using encoder: Encoder[ValueType]): JsonEncoder[ValueType]^{encoder} = value =>
-    JsonAst(value.encode.s)
-  
+  inline given derived[ValueType]: JsonEncoder[ValueType] = summonFrom:
+    case given Encoder[ValueType]    => value => JsonAst(value.encode.s)
+    case given Reflection[ValueType] => JsonEncoderDerivation.derived[ValueType]
+
   given json(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
   
   given nil: JsonEncoder[Nil.type] = value => JsonAst(IArray[JsonAst]())
@@ -188,6 +189,7 @@ object JsonEncoder extends JsonEncoder2:
       case None        => JsonAst(null)
       case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
+object JsonEncoderDerivation extends Derivation[JsonEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: JsonEncoder[DerivationType] = value =>
     val labels = fields(value): [FieldType] =>
       field => label.s
@@ -225,7 +227,7 @@ trait JsonDecoder2:
   //     : JsonDecoder[ValueType]^{jsonAccess, decoder} =
   //   (value, omit) => decoder.decode(value.string)
 
-object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
+object JsonDecoder extends JsonDecoder2:
   given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
     (value, omit) => value
   
@@ -284,7 +286,12 @@ object JsonDecoder extends JsonDecoder2, Derivation[JsonDecoder]:
         
       keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
         acc.updated(keys(index), decoder.decode(values(index), false))
-  
+
+  inline given derived[ValueType]: JsonDecoder[ValueType] = summonFrom:
+    case decoder: Decoder[ValueType] => (value, omit) => decoder.decode(value.string(using summonInline[Raises[JsonAccessError]]))
+    case given Reflection[ValueType] => JsonDecoderDerivation.derived[ValueType]
+
+object JsonDecoderDerivation extends Derivation[JsonDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: JsonDecoder[DerivationType] = (json, omit) =>
     summonInline[Raises[JsonAccessError]].contextually:
       val keyValues = json.obj
