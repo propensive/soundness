@@ -199,3 +199,18 @@ trait SquareRoot[-ValueType]:
   def squareRoot(value: ValueType): Result
 
   extension (value: ValueType) inline def sqrt: Result = squareRoot(value)
+
+object CubeRoot:
+  given double: CubeRoot[Double] with
+    type Result = Double
+    inline def cubeRoot(value: Double): Double = math.cbrt(value)
+  
+  given float: CubeRoot[Float] with
+    type Result = Float
+    inline def cubeRoot(value: Float): Float = math.cbrt(value).toFloat
+
+trait CubeRoot[-ValueType]:
+  type Result
+  def cubeRoot(value: ValueType): Result
+
+  extension (value: ValueType) inline def cbrt: Result = cubeRoot(value)
