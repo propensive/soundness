@@ -9,7 +9,7 @@ repo propensive/ambience
 repo propensive/eucalyptus
 repo propensive/wisteria
 
-target probably/bench
+target probably/test
 
 project probably
   module core
@@ -32,3 +32,8 @@ project probably
     sources   src/coverage
     include   gossamer/core dendrology/core digression/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli probably/core probably/bench probably/coverage
+    main      probably.Tests
