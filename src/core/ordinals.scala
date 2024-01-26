@@ -32,7 +32,7 @@ final val Den  = Ordinal.fromOne(10)
 
 extension (inline cardinal: Int)
   @targetName("plus")
-  inline def +(inline ordinal: Ordinal): Ordinal = Ordinal.fromZero(cardinal + ordinal.fromZero)
+  inline infix def + (inline ordinal: Ordinal): Ordinal = Ordinal.fromZero(cardinal + ordinal.fromZero)
 
 object Denominative:
   opaque type Ordinal = Int
@@ -42,26 +42,26 @@ object Denominative:
   // the same name) when it's inline.
   extension (ordinal: Ordinal)
     @targetName("minus2")
-    def -(right: Ordinal): Int = ordinal - right
+    infix def - (right: Ordinal): Int = ordinal - right
 
   extension (inline ordinal: Ordinal)
     @targetName("plus")
-    inline def +(inline cardinal: Int): Ordinal = ordinal + cardinal
+    inline infix def + (inline cardinal: Int): Ordinal = ordinal + cardinal
 
     @targetName("minus")
-    inline def -(inline cardinal: Int): Ordinal = ordinal - cardinal
+    inline infix def - (inline cardinal: Int): Ordinal = ordinal - cardinal
     
     @targetName("lessThanOrEqualTo")
-    inline def <=(inline right: Ordinal): Boolean = ordinal <= right
+    inline infix def <= (inline right: Ordinal): Boolean = ordinal <= right
     
     @targetName("greaterThanOrEqualTo")
-    inline def >=(inline right: Ordinal): Boolean = ordinal >= right
+    inline infix def >= (inline right: Ordinal): Boolean = ordinal >= right
 
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = ordinal - 1
 
     @targetName("to")
-    inline def ~(inline right: Ordinal): Interval = Interval(ordinal, right)
+    inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
 
     inline def fromZero: Int = ordinal - 1
     inline def fromOne: Int = ordinal
