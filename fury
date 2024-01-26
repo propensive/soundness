@@ -3,6 +3,7 @@
 repo propensive/probably
 repo propensive/aviation
 repo propensive/polyvinyl
+repo propensive/nettlesome
 
 target cellulose/test
 
@@ -11,7 +12,13 @@ project cellulose
     sources  src/core
     include  eucalyptus/core chiaroscuro/core kaleidoscope/core polyvinyl/core anticipation/transport
   
+  module example
+    sources  src/example
+    include  cellulose/core probably/cli aviation/core nettlesome/core
+    main     cellulose.run
+  
   module test
     sources  src/test
-    include  cellulose/core probably/cli aviation/core
+    include  cellulose/core cellulose/example probably/cli aviation/core
     main     cellulose.Tests
+  
