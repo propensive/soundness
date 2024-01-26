@@ -216,17 +216,17 @@ trait Molecular extends Formulable:
   def formula: ChemicalFormula = ChemicalFormula(molecule)
   
   @targetName("with")
-  def *(moleculable: Molecular): Molecule =
+  infix def * (moleculable: Molecular): Molecule =
     val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
       acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
     
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
   
   @targetName("times")
-  def *(multiplier: Int): ChemicalFormula = ChemicalFormula(ListMap(molecule -> multiplier))
+  infix def * (multiplier: Int): ChemicalFormula = ChemicalFormula(ListMap(molecule -> multiplier))
   
   @targetName("times2")
-  def **(multiplier: Int): Molecule =
+  infix def ** (multiplier: Int): Molecule =
     Molecule(molecule.elements.mapValues(_*multiplier).to(Map), molecule.charge*multiplier, Unset)
   
   @targetName("cation")
@@ -242,24 +242,24 @@ trait Formulable:
   def formula: ChemicalFormula
   
   @targetName("plus")
-  def +(formulable: Formulable): ChemicalFormula = ChemicalFormula:
+  infix def + (formulable: Formulable): ChemicalFormula = ChemicalFormula:
     formulable.formula.molecules.foldLeft(formula.molecules): (acc, next) =>
       acc.updated(next(0), formula.molecules.getOrElse(next(0), 0) + next(1))
   
   @targetName("netForward")
-  def -->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward, rhs.formula)
+  infix def --> (rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.NetForward, rhs.formula)
   
   @targetName("resonance")
-  def <->(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance, rhs.formula)
+  infix def <-> (rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Resonance, rhs.formula)
   
   @targetName("bothDirections")
-  def <=>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
+  infix def <=> (rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.BothDirections, rhs.formula)
   
   @targetName("equilibrium")
-  def <~>(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium, rhs.formula)
+  infix def <~> (rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Equilibrium, rhs.formula)
   
   @targetName("stoichiometric")
-  def ===(rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
+  infix def === (rhs: Formulable): ChemicalEquation = ChemicalEquation(formula, Reaction.Stoichiometric, rhs.formula)
 
 case class Molecule(elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset)
 extends Molecular:
