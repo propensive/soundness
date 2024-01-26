@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target spectral/core
+target spectral/test
 
 repo propensive/galilei
 repo propensive/ambience
