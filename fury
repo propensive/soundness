@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target exoskeleton/completions
+target exoskeleton/test
 
 repo propensive/galilei
 repo propensive/ambience
@@ -21,3 +21,9 @@ project exoskeleton
   module completions
     sources src/completions
     include exoskeleton/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli exoskeleton/core
+    main      exoskeleton.Tests
