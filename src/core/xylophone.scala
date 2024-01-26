@@ -42,7 +42,7 @@ sealed trait Xml:
   def root: Ast.Root
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc raises XmlAccessError
+  infix def + (other: Xml): XmlDoc raises XmlAccessError
 
   def string(using XmlPrinter[Text]): Text raises XmlAccessError =
     summon[XmlPrinter[Text]].print(XmlDoc(Ast.Root(Xml.normalize(this)*)))
@@ -165,10 +165,10 @@ extends Xml, Dynamic:
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
-  def * : Fragment = Fragment((), head :: path, root)
+  def `*`: Fragment = Fragment((), head :: path, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
   def as
@@ -184,10 +184,10 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
   def pointer: XmlPath = (head :: path).reverse
   
   @targetName("all")
-  def * : Fragment = Fragment((), head :: path, root)
+  def `*`: Fragment = Fragment((), head :: path, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): T =
@@ -202,7 +202,7 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   def `*`: Fragment = Fragment((), Nil, root)
   
   @targetName("add")
-  infix def +(other: Xml): XmlDoc raises XmlAccessError =
+  infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlDecoder](using Raises[XmlAccessError], Raises[XmlReadError]): T =
