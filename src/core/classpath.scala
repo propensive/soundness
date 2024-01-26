@@ -78,7 +78,7 @@ class Classloader(val java: ClassLoader):
 
 object Classpath:
   @targetName("child")
-  def /(child: PathName[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
+  infix def / (child: PathName[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
