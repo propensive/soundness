@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target hyperbole/core
+target hyperbole/test
 
 repo propensive/harlequin
 repo propensive/escapade
@@ -13,3 +13,8 @@ project hyperbole
     sources src/core
     include harlequin/core escapade/core escritoire/core dendrology/core hieroglyph/core
 
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli hyperbole/core
+    main      hyperbole.Tests
