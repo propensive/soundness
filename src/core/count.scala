@@ -43,7 +43,7 @@ object CountQuaques:
     
   extension [UnitsType <: Tuple](inline count: Count[UnitsType])
     @targetName("add")
-    inline def +(right: Count[UnitsType]): Count[UnitsType] =
+    inline infix def + (right: Count[UnitsType]): Count[UnitsType] =
       ${QuantitativeMacros.addCount[UnitsType]('count, 'right)}
 
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
@@ -56,11 +56,11 @@ object CountQuaques:
       ${QuantitativeMacros.describeCount[UnitsType]('count)}
     
     @targetName("multiply")
-    transparent inline def *(inline multiplier: Double): Any =
+    transparent inline infix def * (inline multiplier: Double): Any =
       ${QuantitativeMacros.multiplyCount('count, 'multiplier, false)}
     
     @targetName("divide")
-    transparent inline def /(inline multiplier: Double): Any =
+    transparent inline infix def / (inline multiplier: Double): Any =
       ${QuantitativeMacros.multiplyCount('count, 'multiplier, true)}
 
 export CountQuaques.Count

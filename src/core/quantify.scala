@@ -375,11 +375,11 @@ val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
-  transparent inline def +[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
   
   @targetName("minus")
-  transparent inline def -[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def - [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
@@ -388,13 +388,13 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${QuantitativeMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
-  transparent inline def *
-      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def * [UnitsType2 <: Measure]
+      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
-  transparent inline def /
-      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def / [UnitsType2 <: Measure]
+      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
@@ -406,9 +406,9 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
 
 extension (value: Double)
   @targetName("times")
-  def *[UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
+  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
   @targetName("divide")
-  transparent inline def /[UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
+  transparent inline infix def / [UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
     ((1.0/value)*quantity).invert
   
