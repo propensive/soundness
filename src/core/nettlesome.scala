@@ -210,7 +210,7 @@ object Nettlesome:
       def byte3: Int = ip & 255
     
       @targetName("subnet")
-      def /(size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
+      infix def / (size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
 
       def int: Int = ip
 
