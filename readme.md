@@ -24,8 +24,8 @@ source, loaded at compiletime, and utilized in a later phase of compilation.
 ## Availability Plan
 
 Polyvinyl has not yet been published. The medium-term plan is to build Polyvinyl
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Polyvinyl.
 
 Subsequently, Polyvinyl will also be made available as a binary in the Maven
@@ -207,6 +207,7 @@ exist between those files).
 `SimpleSchema` and `Schema` do not currently make their precise record types available except as the
 return type of calling `record`. However the type is statically known, and could potentially be made
 available as a type member.
+
 
 
 
