@@ -32,7 +32,7 @@ object Example:
   type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
   
   object TestPath:
-    given (using Raises[PathError]): Decoder[TestPath] = Reachable.decode[TestPath](_)
+    given (using Raises[PathError]): Decoder[TestPath] = Navigable.decode[TestPath](_)
     given pathCreator: PathCreator[TestPath, Forbidden, Drive] = TestPath(_, _)
     given Show[TestPath] = _.render
     def parse(text: Text)(using Raises[PathError]): TestPath = text.decodeAs[TestPath]
@@ -41,7 +41,7 @@ object Example:
       def parse(text: Text): Optional[(Drive, Text)] = text.only:
         case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
 
-    given reachable: Reachable[TestPath, Forbidden, Drive] with
+    given navigable: Navigable[TestPath, Forbidden, Drive] with
       def separator(path: TestPath): Text = t"\\"
       def root(path: TestPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
