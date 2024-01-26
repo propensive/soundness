@@ -2,7 +2,7 @@
 
 repo propensive/telekinesis
 
-target scintillate/servlet
+target scintillate/test
 
 project scintillate
   module server
@@ -13,3 +13,9 @@ project scintillate
     sources  src/servlet
     include  scintillate/server
     lib      servlet-api https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli scintillate/server scintillate/servlet
+    main      scintillate.Tests
