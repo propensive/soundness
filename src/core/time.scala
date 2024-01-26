@@ -121,7 +121,7 @@ object Dates:
     infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("plus")
-    def +(period: Period)(using Calendar): Date = Date.plus(date, period)
+    infix def + (period: Period)(using Calendar): Date = Date.plus(date, period)
     
 export Dates.Date
 
@@ -242,15 +242,15 @@ object Timing:
 
   extension (instant: Instant)
     @targetName("to")
-    def ~(that: Instant): Interval = Interval(instant, that)
+    infix def ~ (that: Instant): Interval = Interval(instant, that)
     
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
     @targetName("plus")
-    def +(duration: Duration): Instant = Instant.plus(instant, duration)
+    infix def + (duration: Duration): Instant = Instant.plus(instant, duration)
     
     @targetName("minus")
-    def -(duration: Instant): Duration = Instant.minus(instant, duration)
+    infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
 
     infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
@@ -372,13 +372,13 @@ extends DiurnalPeriod, TemporalPeriod:
   def simplify(using timeSys: TimeSystem[StandardTime]): Period = timeSys.simplify(this)
 
   @targetName("times")
-  def *(n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
+  infix def * (n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
 
   @targetName("plus")
-  def +(right: Period): Period = Period.plus(this, right)
+  infix def + (right: Period): Period = Period.plus(this, right)
   
   @targetName("minus")
-  def -(right: Period): Period = Period.minus(this, right)
+  infix def - (right: Period): Period = Period.minus(this, right)
 
 extension (one: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
@@ -497,13 +497,13 @@ given (using Unapply[Text, Int]): Unapply[Text, Base24] =
 
 extension (i: Int)
   @targetName("mod24")
-  def %%(j: 24): Base24 =
+  infix def %% (j: 24): Base24 =
     val x: Int = i%j.pipe { v => if v < 0 then v + 24 else v }
     (x: @unchecked) match
     case v: Base24 => v
   
   @targetName("mod60")
-  def %%(j: 60): Base60 =
+  infix def %% (j: 60): Base60 =
     val x: Int = i%j.pipe { v => if v < 0 then v + 60 else v }
     (x: @unchecked) match
       case v: Base60 => v
