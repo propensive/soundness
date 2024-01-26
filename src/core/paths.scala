@@ -64,14 +64,14 @@ object Path:
       if !path.java.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.java.toFile, false))
 
-  given reachable: Reachable[Path, GeneralForbidden, Optional[Windows.Drive]] with
+  given navigable: Navigable[Path, GeneralForbidden, Optional[Windows.Drive]] with
     def root(path: Path): Optional[Windows.Drive] = path match
       case path: Windows.SafePath => path.drive
       case path: Windows.Path     => path.drive
       case _                      => Unset
     
     def prefix(root: Optional[Windows.Drive]): Text =
-      root.let(Windows.Path.reachable.prefix(_)).or(Unix.Path.reachable.prefix(Unset))
+      root.let(Windows.Path.navigable.prefix(_)).or(Unix.Path.navigable.prefix(Unset))
     
     def descent(path: Path): List[PathName[GeneralForbidden]] =
       // FIXME: This is a bit of a hack
@@ -99,7 +99,7 @@ object Path:
   given Communicable[Path] = path => Message(path.render)
 
   inline given decoder(using Raises[PathError]): Decoder[Path] = new Decoder[Path]:
-    def decode(text: Text): Path = Reachable.decode(text)
+    def decode(text: Text): Path = Navigable.decode(text)
 
   given show: Show[Path] = _.render
   given encoder: Encoder[Path] = _.render
@@ -191,9 +191,9 @@ object Windows:
 
   object Path:
     inline given decoder(using Raises[PathError]): Decoder[Path] = new Decoder[Path]:
-      def decode(text: Text): Path = Reachable.decode(text)
+      def decode(text: Text): Path = Navigable.decode(text)
     
-    given reachable: Reachable[Path, Forbidden, Drive] with
+    given navigable: Navigable[Path, Forbidden, Drive] with
       def root(path: Path): Drive = path.drive
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
@@ -213,7 +213,7 @@ object Windows:
     def name: Text = if descent.isEmpty then drive.name else descent.head.show
     
     def fullname: Text =
-      t"${Path.reachable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
+      t"${Path.navigable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
 
   class SafePath(initDrive: Drive, val safeDescent: List[PathName[GeneralForbidden]])
   extends Path(initDrive, safeDescent.map(_.widen[Forbidden]))
@@ -264,14 +264,14 @@ object Unix:
     given mainRoot: MainRoot[Path] = () => Path(Nil)
     
     inline given decoder(using Raises[PathError]): Decoder[Path] = new Decoder[Path]:
-      def decode(text: Text): Path = Reachable.decode(text)
+      def decode(text: Text): Path = Navigable.decode(text)
     
     given rootParser: RootParser[Path, Unset.type] = text =>
       if text.starts(t"/") then (Unset, text.drop(1)) else Unset
     
     given creator: PathCreator[Path, Forbidden, Unset.type] = (root, descent) => Path(descent)
 
-    given reachable: Reachable[Path, Forbidden, Unset.type] with
+    given navigable: Navigable[Path, Forbidden, Unset.type] with
       def separator(path: Path): Text = t"/"
       def root(path: Path): Unset.type = Unset
       def prefix(root: Unset.type): Text = t"/"
@@ -283,10 +283,10 @@ object Unix:
   
   case class Path(descent: List[PathName[Forbidden]]) extends galilei.Path:
     def root: Unset.type = Unset
-    def name: Text = if descent.isEmpty then Path.reachable.prefix(Unset) else descent.head.show
+    def name: Text = if descent.isEmpty then Path.navigable.prefix(Unset) else descent.head.show
     
     def fullname: Text =
-      t"${Path.reachable.prefix(Unset)}${descent.reverse.map(_.render).join(t"/")}"
+      t"${Path.navigable.prefix(Unset)}${descent.reverse.map(_.render).join(t"/")}"
   
 
   class SafePath(val safeDescent: List[PathName[GeneralForbidden]])
