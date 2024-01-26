@@ -112,9 +112,9 @@ object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
 
   inline given decoder(using Raises[PathError]): Decoder[ClasspathRef] = new Decoder[ClasspathRef]:
-    def decode(text: Text): ClasspathRef = Reachable.decode[ClasspathRef](text)
+    def decode(text: Text): ClasspathRef = Navigable.decode[ClasspathRef](text)
 
-  given reachable: Reachable[ClasspathRef, Forbidden, Classpath.type] with
+  given navigable: Navigable[ClasspathRef, Forbidden, Classpath.type] with
     def root(ref: ClasspathRef): Classpath.type = Classpath
     def prefix(classpathCompanion: Classpath.type): Text = t""
     def descent(ref: ClasspathRef): List[PathName[Forbidden]] = ref.descent
