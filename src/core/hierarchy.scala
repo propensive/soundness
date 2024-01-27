@@ -92,7 +92,7 @@ extension
   def inWorkingDirectory
       [RootType]
       (using hierarchy: Hierarchy[PathType, LinkType])
-      (using WorkingDirectory, Pathlike[PathType, NameType, RootType], SpecificPath[PathType],
+      (using WorkingDirectory, Directional[PathType, NameType, RootType], SpecificPath[PathType],
           PathCreator[PathType, NameType, RootType], Raises[PathError])
       : PathType =
     workingDirectory + left
@@ -102,18 +102,18 @@ extension
     (left: PathType)
     (using hierarchy: Hierarchy[PathType, LinkType])
   
-  def root(using pathlike: Navigable[PathType, NameType, RootType]): RootType = pathlike.root(left)
+  def root(using directional: Navigable[PathType, NameType, RootType]): RootType = directional.root(left)
 
   @targetName("add")
   infix def + (link: LinkType)
-      (using Pathlike[PathType, NameType, RootType], PathCreator[PathType, NameType, RootType],
+      (using Directional[PathType, NameType, RootType], PathCreator[PathType, NameType, RootType],
           Followable[LinkType, NameType, ?, ?], Raises[PathError])
       : PathType = left.append(link)
   
   def relativeTo
       [PathType2 <: PathType]
       (right: PathType)
-      (using pathlike: Followable[LinkType, NameType, ?, ?])
+      (using directional: Followable[LinkType, NameType, ?, ?])
       (using navigable: Navigable[PathType, NameType, RootType],
           pathCreator: PathCreator[PathType, NameType, RootType],
           linkCreator: PathCreator[LinkType, NameType, Int],
@@ -160,7 +160,7 @@ extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
     navigable.descent(left.conjunction(path)) == navigable.descent(left) &&
       navigable.root(path) == navigable.root(left)
 
-trait Pathlike[-PathType <: Matchable, NameType <: Label, AscentType]:
+trait Directional[-PathType <: Matchable, NameType <: Label, AscentType]:
   def separator(path: PathType): Text
   def descent(path: PathType): List[PathName[NameType]]
   def render(path: PathType): Text
@@ -224,7 +224,7 @@ object Navigable:
 
 @capability
 trait Navigable[-PathType <: Matchable, NameType <: Label, RootType]
-extends Pathlike[PathType, NameType, RootType]:
+extends Directional[PathType, NameType, RootType]:
   def separator(path: PathType): Text
   def prefix(root: RootType): Text
   def root(path: PathType): RootType
@@ -290,7 +290,7 @@ object Followable:
 trait Followable
     [-LinkType <: Matchable, NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
     (using ValueOf[ParentRefType], ValueOf[SelfRefType])
-extends Pathlike[LinkType, NameType, Int]:
+extends Directional[LinkType, NameType, Int]:
   val parentRef: Text = Text(summon[ValueOf[ParentRefType]].value)
   val selfRef: Text = Text(summon[ValueOf[SelfRefType]].value)
   def separators: Set[Char]
@@ -323,33 +323,33 @@ extends Pathlike[LinkType, NameType, Int]:
 implicit class Slash[PathType <: Matchable](path: PathType):
   @targetName("child")
   infix def / [NameType <: Label, AscentType]
-      (using pathlike: Pathlike[PathType, NameType, AscentType])
+      (using directional: Directional[PathType, NameType, AscentType])
       (name: PathName[NameType])
       (using creator: PathCreator[PathType, NameType, AscentType])
       : PathType =
-    pathlike.child(path, name)
+    directional.child(path, name)
 
 extension
     [PathType <: Matchable, NameType <: Label, AscentType]
     (path: PathType)
-    (using pathlike: Pathlike[PathType, NameType, AscentType])
+    (using directional: Directional[PathType, NameType, AscentType])
     (using creator: PathCreator[PathType, NameType, AscentType])
   
   // @targetName("child")
   // infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
-  //   pathlike.child(path, name)
+  //   directional.child(path, name)
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
   inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Raises[PathError]): PathType =
-    pathlike.child(path, PathName(name))
+    directional.child(path, PathName(name))
   
-  def render: Text = pathlike.render(path)
-  def descent: List[PathName[NameType]] = pathlike.descent(path)
-  def depth: Int = pathlike.descent(path).length
+  def render: Text = directional.render(path)
+  def descent: List[PathName[NameType]] = directional.descent(path)
+  def depth: Int = directional.descent(path).length
 
-  transparent inline def parent: Optional[PathType] = pathlike.parent(path)
-  transparent inline def ancestor(n: Int): Optional[PathType] = pathlike.ancestor(path, n)
+  transparent inline def parent: Optional[PathType] = directional.parent(path)
+  transparent inline def ancestor(n: Int): Optional[PathType] = directional.ancestor(path, n)
   
   inline def append
       [LinkType <: Matchable]
@@ -357,13 +357,13 @@ extension
       (using followable: Followable[LinkType, NameType, ?, ?])
       (using pathHandler: Raises[PathError])
       : PathType =
-    if followable.ascent(link) > pathlike.descent(path).length
+    if followable.ascent(link) > directional.descent(path).length
     then raise(PathError(path.render, PathError.Reason.ParentOfRoot))(path)
     else
-      val common: PathType = pathlike.ancestor(path, followable.ascent(link)).vouch(using Unsafe)
-      val descent = pathlike.descent(common)
+      val common: PathType = directional.ancestor(path, followable.ascent(link)).vouch(using Unsafe)
+      val descent = directional.descent(common)
   
-      creator.path(pathlike.ascent(path), followable.descent(link) ::: descent)
+      creator.path(directional.ascent(path), followable.descent(link) ::: descent)
 
 trait PExtractor[NameType <: Label]():
   def apply(): PathName[NameType]
@@ -375,20 +375,20 @@ extension (inline context: StringContext)
   
 trait PathEquality
     [PathType <: Matchable]
-    (using pathlike: Pathlike[PathType, ?, ?])
+    (using directional: Directional[PathType, ?, ?])
     (using TypeTest[Any, PathType]):
   this: PathType & Matchable =>
   
   override def equals(other: Any): Boolean = other.asMatchable match
     case `%` =>
-      pathlike.descent(this) == Nil
+      directional.descent(this) == Nil
     
     case other: PathType =>
-      pathlike.descent(other) == pathlike.descent(this) && pathlike.ascent(other) == pathlike.ascent(this)
+      directional.descent(other) == directional.descent(this) && directional.ascent(other) == directional.ascent(this)
     
     case other =>
       false
   
-  override def hashCode: Int = if pathlike.descent(this) == Nil then 0 else super.hashCode
+  override def hashCode: Int = if directional.descent(this) == Nil then 0 else super.hashCode
 
 export Serpentine.`/`

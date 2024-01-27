@@ -103,7 +103,7 @@ object Serpentine:
     infix def / [PathType <: Matchable, NameType <: Label, AscentType]
         (using hierarchy: Hierarchy[PathType, ?])
         (using mainRoot: MainRoot[PathType])
-        (using pathlike: Pathlike[PathType, NameType, AscentType])
+        (using directional: Directional[PathType, NameType, AscentType])
         (name: PathName[NameType])
         (using creator: PathCreator[PathType, NameType, AscentType])
         : PathType =
@@ -113,7 +113,7 @@ object Serpentine:
     inline infix def / [PathType <: Matchable, NameType <: Label, AscentType]
         (using hierarchy: Hierarchy[PathType, ?])
         (using mainRoot: MainRoot[PathType])
-        (using pathlike: Pathlike[PathType, NameType, AscentType])
+        (using directional: Directional[PathType, NameType, AscentType])
         (name: Text)
         (using creator: PathCreator[PathType, NameType, AscentType])
         (using path: Raises[PathError])
