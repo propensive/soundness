@@ -20,10 +20,7 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-def fail
-    (using quotes: Quotes)
-    (message: Message, pos: quotes.reflect.Position | Null = null)
-    : Nothing =
+def fail(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null): Nothing =
   import quotes.reflect.*
   import dotty.tools.dotc.config.Settings.Setting.value
   
