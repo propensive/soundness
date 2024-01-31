@@ -1,0 +1,336 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.4204826"
+     inkscape:cx="225.93087"
+     inkscape:cy="365.05672"
+     inkscape:window-width="2248"
+     inkscape:window-height="1489"
+     inkscape:window-x="2250"
+     inkscape:window-y="17"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid355"
+       dotted="true"
+       originx="-30"
+       originy="-60" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1341">
+      <stop
+         style="stop-color:#ff6dad;stop-opacity:1;"
+         offset="0"
+         id="stop1337" />
+      <stop
+         style="stop-color:#f7c000;stop-opacity:0.32678753;"
+         offset="1"
+         id="stop1339" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1207">
+      <stop
+         style="stop-color:#b60050;stop-opacity:1;"
+         offset="0"
+         id="stop1203" />
+      <stop
+         style="stop-color:#ff8a6b;stop-opacity:1;"
+         offset="1"
+         id="stop1205" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1341"
+       id="linearGradient1209"
+       x1="40"
+       y1="170"
+       x2="145.05801"
+       y2="66.57476"
+       gradientUnits="userSpaceOnUse" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1207"
+       id="linearGradient1331"
+       gradientUnits="userSpaceOnUse"
+       x1="40"
+       y1="170"
+       x2="145.05801"
+       y2="66.57476" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1953">
+      <g
+         id="g1957">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1955"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1959">
+      <g
+         id="g1963">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1961"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1965">
+      <g
+         id="g1969">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1967"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1971">
+      <g
+         id="g1975">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1973"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1977">
+      <g
+         id="g1981">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1979"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1983">
+      <g
+         id="g1987">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1985"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1989">
+      <g
+         id="g1993">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1991"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1995">
+      <g
+         id="g1999">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle1997"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2001">
+      <g
+         id="g2005">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle2003"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2007">
+      <g
+         id="g2011">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle2009"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2013">
+      <g
+         id="g2017">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle2015"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2019">
+      <g
+         id="g2023">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+           id="circle2021"
+           cx="90"
+           cy="120"
+           r="60" />
+      </g>
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-30,-60)">
+    <g
+       id="g2051">
+      <circle
+         style="fill:url(#linearGradient1331);fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path413-7"
+         cx="90"
+         cy="120"
+         r="60"
+         clip-path="url(#clipPath2019)" />
+      <path
+         id="path1334"
+         style="opacity:0.69424;fill:url(#linearGradient1209);fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         d="M 90.000191,59.999955 A 60,60 0 0 0 30.000236,119.99991 H 150.00015 A 60,60 0 0 0 90.000191,59.999955 Z"
+         clip-path="url(#clipPath2013)" />
+      <circle
+         style="opacity:0.733563;fill:#504100;fill-opacity:0.24952;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path415-5"
+         cx="142.6458"
+         cy="122.64582"
+         r="10"
+         clip-path="url(#clipPath2007)" />
+      <circle
+         style="opacity:0.733563;fill:#504100;fill-opacity:0.24952;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path417-3"
+         cx="122.64582"
+         cy="122.64582"
+         r="10"
+         clip-path="url(#clipPath2001)" />
+      <circle
+         style="opacity:0.733563;fill:#ffd933;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path415"
+         cx="140"
+         cy="120"
+         r="10"
+         clip-path="url(#clipPath1995)" />
+      <circle
+         style="opacity:0.733563;fill:#ffd933;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path417"
+         cx="120"
+         cy="120"
+         r="10"
+         clip-path="url(#clipPath1989)" />
+      <circle
+         style="opacity:0.733563;fill:#504100;fill-opacity:0.24952;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path419-5"
+         cx="42.645836"
+         cy="122.64582"
+         r="10"
+         clip-path="url(#clipPath1983)" />
+      <circle
+         style="opacity:0.733563;fill:#ffd933;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path419"
+         cx="40"
+         cy="120"
+         r="10"
+         clip-path="url(#clipPath1977)" />
+      <circle
+         style="opacity:0.733563;fill:#504100;fill-opacity:0.24952;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path421-6"
+         cx="62.645836"
+         cy="122.64582"
+         r="10"
+         clip-path="url(#clipPath1971)" />
+      <circle
+         style="opacity:0.733563;fill:#ffd933;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path421"
+         cx="60"
+         cy="120"
+         r="10"
+         clip-path="url(#clipPath1965)" />
+      <circle
+         style="opacity:0.733563;fill:#504100;fill-opacity:0.24952;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path423-2"
+         cx="82.645836"
+         cy="122.64582"
+         r="10"
+         clip-path="url(#clipPath1959)" />
+      <circle
+         style="opacity:0.733563;fill:#ffd933;fill-opacity:1;stroke:#000000;stroke-width:0.015;stop-color:#000000"
+         id="path423"
+         cx="80"
+         cy="120"
+         r="10"
+         clip-path="url(#clipPath1953)" />
+    </g>
+  </g>
+</svg>
