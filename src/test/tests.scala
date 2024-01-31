@@ -1,5 +1,5 @@
 /*
-    Quantitative, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Abacist, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
