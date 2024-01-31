@@ -1,5 +1,5 @@
 /*
-    Nonagenarian, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Octogenarian, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package nonagenarian
+package octogenarian
 
 import anticipation.*, fileApi.galileiApi
 import eucalyptus.*
@@ -226,7 +226,7 @@ enum Progress:
   case RemoteCounting(complete: Double)
   case RemoteCompressing(complete: Double)
 
-private[nonagenarian] inline def git(using command: GitCommand): GitCommand = command
+private[octogenarian] inline def git(using command: GitCommand): GitCommand = command
 
 object Git:
   def progress(process: Process[?, ?]): LazyList[Progress] =
@@ -297,7 +297,7 @@ object Git:
           abort(GitError(CloneFailed))
 
 
-object Nonagenarian:
+object Octogenarian:
   opaque type Refspec = Text
   opaque type Tag <: Refspec = Text
   opaque type Branch <: Refspec = Text
@@ -345,7 +345,7 @@ object Nonagenarian:
     given decoder(using Raises[GitRefError]): Decoder[CommitHash] = apply(_)
     given show: Show[CommitHash] = identity(_)
 
-export Nonagenarian.{Tag, Branch, CommitHash, Refspec}
+export Octogenarian.{Tag, Branch, CommitHash, Refspec}
 
 object GitCommand:
   given AsParams[GitCommand] = _.file.path.fullname

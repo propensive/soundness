@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target nonagenarian/test
+target octogenarian/test
 
 repo propensive/probably
 repo propensive/nettlesome
@@ -10,7 +10,7 @@ repo propensive/guillotine
 repo propensive/galilei
 repo propensive/ambience
 
-project nonagenarian
+project octogenarian
   module core
     compiler  scala
     sources   src/core
@@ -19,7 +19,7 @@ project nonagenarian
   module test
     compiler  scala
     sources   src/test
-    include   nonagenarian/core probably/cli larceny/plugin
-    main      nonagenarian.Tests
-    coverage  nonagenarian/core
+    include   octogenarian/core probably/cli larceny/plugin
+    main      octogenarian.Tests
+    coverage  octogenarian/core
 
