@@ -270,10 +270,6 @@ object Quantitative:
       case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
       case _                                   => quantity
   
-  extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
-    inline def count[CountType <: Tuple]: Count[CountType] =
-      ${QuantitativeMacros.fromQuantity[UnitsType, CountType]('quantity)}
-
   object MetricUnit:
     erased given underlying[UnitsType <: Measure]: Underlying[MetricUnit[UnitsType], Double] = ###
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
