@@ -4,3 +4,4 @@ _Ethereal_ provides the capability to turn an existing Scala command-line applic
 
 Ethereal's launcher script is written in around 100 lines of zero-dependency Bash, and can be used to transform a
 Scala application into a self-contained, portable executable.
+
