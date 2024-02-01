@@ -4,3 +4,4 @@ filesystem-aware constraints on filenames and metadata. Galilei has a particular
 handling and, when enabled, each filesystem operation which might fail must be handled for each possible
 failure type; but its innovation is in minimizing that to a set of failure types which depends not
 just on the operation, but also the filesystem and in-scope options.
+
