@@ -24,8 +24,8 @@ unrepresentable, which is contravened when media types are represented by string
 ## Availability Plan
 
 Gesticulate has not yet been published. The medium-term plan is to build Gesticulate
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Gesticulate.
 
 Subsequently, Gesticulate will also be made available as a binary in the Maven
@@ -99,6 +99,7 @@ parameters.
 Media types may be parsed using `MediaType.parse(string)` which returns a `MediaType` or throws an
 `InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
+
 
 
 
