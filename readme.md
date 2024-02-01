@@ -1,16 +1,16 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/spectral/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/spectral/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/ethereal/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/ethereal/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Spectral
+# Ethereal
 
 __Launch Scala applications lightning-fast by running them as daemons.__
 
-_Spectral_ provides the capability to turn an existing Scala command-line application into a daemon for fast startup
+_Ethereal_ provides the capability to turn an existing Scala command-line application into a daemon for fast startup
 (like [Nailgun](https://github.com/facebookarchive/nailgun)). This is particularly useful when combined with
 [Exoskeleton](https://github.com/propensive/exoskeleton) for tab completions.
 
-Spectral's launcher script is written in around 100 lines of zero-dependency Bash, and can be used to transform a
+Ethereal's launcher script is written in around 100 lines of zero-dependency Bash, and can be used to transform a
 Scala application into a self-contained, portable executable.
 
 ## Features
@@ -26,12 +26,12 @@ Scala application into a self-contained, portable executable.
 
 ## Availability Plan
 
-Spectral has not yet been published. The medium-term plan is to build Spectral
+Ethereal has not yet been published. The medium-term plan is to build Ethereal
 with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
 [Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Spectral.
+software which depends on Ethereal.
 
-Subsequently, Spectral will also be made available as a binary in the Maven
+Subsequently, Ethereal will also be made available as a binary in the Maven
 Central repository. This will enable users of other build tools to use it.
 
 For the overeager, curious and impatient, see [building](#building).
@@ -47,7 +47,7 @@ unacceptable for many purposes, in particular, providing dynamic tab-completions
 Furthermore, many programs run faster, the longer they have been running, thanks to the HotSpot just-in-time
 compiler. This advantage returns to zero every time the application is started.
 
-Spectral makes it easy to write a program which runs as a daemon. The first time it is called, it starts the
+Ethereal makes it easy to write a program which runs as a daemon. The first time it is called, it starts the
 JVM as a background process which listens for socket connections on a free local port, and all subsequent
 invocations connect to the running JVM through sockets.
 
@@ -64,7 +64,7 @@ Nailgun provides two launcher clients written in C and Python. Unfortunately, th
 separately, distributed as multiple binaries for different CPU architectures, or compiled with a C compiler
 before use. And the latter has noticeably poor performance for each invocation.
 
-Spectral's launcher, which is written in Bash, is both portable and fast.
+Ethereal's launcher, which is written in Bash, is both portable and fast.
 
 The daemon implementation is an ordinary method call which primarily specifies the code to be invoked for each
 invocation, and would typically be the implementation of a main method,
@@ -161,7 +161,7 @@ from other clients in an event loop.
 
 ## Status
 
-Spectral is classified as ____. For reference, Scala One projects are
+Ethereal is classified as ____. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -174,20 +174,20 @@ Projects at any stability level, even _embryonic_ projects, can still be used,
 as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
-Spectral is designed to be _small_. Its entire source code currently consists
+Ethereal is designed to be _small_. Its entire source code currently consists
 of 314 lines of code.
 
 ## Building
 
-Spectral will ultimately be built by Fury, when it is published. In the
+Ethereal will ultimately be built by Fury, when it is published. In the
 meantime, two possibilities are offered, however they are acknowledged to be
 fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
-answer to the question, "how can I try Spectral?".
+answer to the question, "how can I try Ethereal?".
 
 1. *Copy the sources into your own project*
    
-   Read the `fury` file in the repository root to understand Spectral's build
+   Read the `fury` file in the repository root to understand Ethereal's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
    project, then repeat (recursively) for each of the dependencies.
@@ -198,7 +198,7 @@ answer to the question, "how can I try Spectral?".
 
 2. *Build with [Wrath](https://github.com/propensive/wrath/)*
 
-   Wrath is a bootstrapping script for building Spectral and other projects in
+   Wrath is a bootstrapping script for building Ethereal and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
@@ -210,21 +210,21 @@ answer to the question, "how can I try Spectral?".
    `/usr/local/bin/`.
 
    Clone this repository inside an empty directory, so that the build can
-   safely make clones of repositories it depends on as _peers_ of `spectral`.
+   safely make clones of repositories it depends on as _peers_ of `ethereal`.
    Run `wrath -F` in the repository root. This will download and compile the
-   latest version of Scala, as well as all of Spectral's dependencies.
+   latest version of Scala, as well as all of Ethereal's dependencies.
 
    If the build was successful, the compiled JAR files can be found in the
    `.wrath/dist` directory.
 
 ## Contributing
 
-Contributors to Spectral are welcome and encouraged. New contributors may like
+Contributors to Ethereal are welcome and encouraged. New contributors may like
 to look for issues marked
-[beginner](https://github.com/propensive/spectral/labels/beginner).
+[beginner](https://github.com/propensive/ethereal/labels/beginner).
 
 We suggest that all contributors read the [Contributing
-Guide](/contributing.md) to make the process of contributing to Spectral
+Guide](/contributing.md) to make the process of contributing to Ethereal
 easier.
 
 Please __do not__ contact project maintainers privately with questions unless
@@ -234,7 +234,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Spectral was designed and developed by Jon Pretty, and commercial support and
+Ethereal was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
 
@@ -242,7 +242,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-_Spectral_ alludes to the paranormal concept of spectres, a type of daemon.
+_Ethereal_ alludes to the present, but unseen—and thus daemons.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -257,10 +257,10 @@ language.
 
 ## Logo
 
-The logo shows a spectrum of light, and is thus _spectral_.
+The logo shows a spectrum of light, and is thus _ethereal_.
 
 ## License
 
-Spectral is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Ethereal is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
