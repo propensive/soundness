@@ -24,8 +24,8 @@ sequence.
 ## Availability Plan
 
 Dissonance has not yet been published. The medium-term plan is to build Dissonance
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Dissonance.
 
 Subsequently, Dissonance will also be made available as a binary in the Maven
@@ -131,6 +131,7 @@ Three reasonable alternatives for `update` are:
 
 But more involved possibilities are available which could "merge" the original and
 diff elements, or prefer one or the other.
+
 
 
 
