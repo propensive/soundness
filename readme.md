@@ -15,8 +15,8 @@ ____
 ## Availability Plan
 
 Feudalism has not yet been published. The medium-term plan is to build Feudalism
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Feudalism.
 
 Subsequently, Feudalism will also be made available as a binary in the Maven
@@ -25,6 +25,7 @@ Central repository. This will enable users of other build tools to use it.
 For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
+
 
 
 
