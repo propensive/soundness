@@ -1,4 +1,4 @@
 - provides methods for reading and writing ZIP files
-- integrates seamlessly with any file representations
+- integrates seamlessly with Galilei and third-party file representations
 - both streaming and random-access APIs are provided
 - integrates directly with Turbulence readable and writable types
