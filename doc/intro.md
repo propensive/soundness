@@ -5,3 +5,4 @@ to be compared; the result is an instance of `Diff`, a sequence of additions,
 deletions and no-change nodes representing each item in the left and right
 sequence.
 
+
