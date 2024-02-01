@@ -6,3 +6,4 @@ the original Scala names and features are harder to discern. _Digression_
 believes that a Scala developer (particularly a beginner, who will still be
 exposed to stack traces) should not have to understand how Scala is encoded in
 order to work with the language.
+
