@@ -5,3 +5,4 @@ markdown, HTML or console text: usually, it's necessary to commit early to
 the output format. _Fulminate_ fills this gap by providing a convenient
 representation of a message, with constructors which automatically contrast
 the dynamic parts of the message from the static parts.
+
