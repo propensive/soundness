@@ -22,8 +22,8 @@ the hierarchy. Capture checking is used to avoid thread leaks.
 ## Availability Plan
 
 Parasite has not yet been published. The medium-term plan is to build Parasite
-with [Fury](/propensive/fury) and to publish it as a source build on
-[Vent](/propensive/vent). This will enable ordinary users to write and build
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
 software which depends on Parasite.
 
 Subsequently, Parasite will also be made available as a binary in the Maven
@@ -105,6 +105,7 @@ produced. Any `await()` calls on the task will throw a `CancelError`.
 However, this happens _only_ when `acquiesce()` is called, so if no such calls
 are run as the task is executing, that task cannot be cancelled, and it must
 execute to completion.
+
 
 
 
