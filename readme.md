@@ -118,7 +118,7 @@ behave exactly as their familiar counterparts in Scala's standard collections li
 
 ## Status
 
-Denominative is classified as __experimental__. For reference, Scala One projects are
+Denominative is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
