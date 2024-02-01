@@ -45,7 +45,7 @@ object Debug extends Derivation[Debug]:
       [FieldType] => field =>
         val text = context.let(_.contextually(field.debug)).or(field.debug)
         if tuple then text else s"$label:$text"
-    .mkString(if tuple then "(" else s"($typeName", " ╱ ", ")").tt
+    .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
