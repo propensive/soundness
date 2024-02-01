@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target spectral/test
+target ethereal/test
 
 repo propensive/galilei
 repo propensive/ambience
@@ -9,7 +9,7 @@ repo propensive/profanity
 repo propensive/surveillance
 repo propensive/exoskeleton
 
-project spectral
+project ethereal
   module core
     sources  src/core
     include  surveillance/core eucalyptus/syslog digression/core hellenism/core exoskeleton/core
@@ -17,5 +17,5 @@ project spectral
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli spectral/core
-    main      spectral.Tests
+    include   probably/cli ethereal/core
+    main      ethereal.Tests

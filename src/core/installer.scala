@@ -1,5 +1,5 @@
 /*
-    Spectral, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Ethereal, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package spectral
+package ethereal
 
 import anticipation.*, fileApi.galileiApi
 import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
@@ -96,8 +96,8 @@ object Installer:
       if safely(scriptPath.decodeAs[Path]) == service.script && !force
       then Result.AlreadyOnPath(command, service.script.show)
       else
-        val payloadSize: ByteSize = ByteSize(Properties.spectral.payloadSize[Int]())
-        val jarSize: ByteSize = ByteSize(Properties.spectral.jarSize[Int]())
+        val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
+        val jarSize: ByteSize = ByteSize(Properties.ethereal.jarSize[Int]())
         val scriptFile: File = service.script.as[File]
         val fileSize = scriptFile.size()
         val prefixSize = fileSize - payloadSize - jarSize

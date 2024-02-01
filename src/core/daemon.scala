@@ -1,5 +1,5 @@
 /*
-    Spectral, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Ethereal, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package spectral
+package ethereal
 
 import serpentine.*, hierarchies.unix
 
@@ -85,7 +85,7 @@ def daemon[BusType <: Matchable]
   import environments.virtualMachine
   import errorHandlers.throwUnsafely
 
-  val name: Text = Properties.spectral.name[Text]()
+  val name: Text = Properties.ethereal.name[Text]()
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val waitFile: Path = baseDir / p"wait"
@@ -240,7 +240,7 @@ def daemon[BusType <: Matchable]
       
     supervise:
       given Log[Text] = Log.route[Text]:
-        case _ => Syslog(t"spectral")
+        case _ => Syslog(t"ethereal")
 
       Log.pin()
 
@@ -285,4 +285,4 @@ enum DaemonEvent:
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
-given Realm: Realm = realm"spectral"
+given Realm: Realm = realm"ethereal"

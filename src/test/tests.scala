@@ -1,5 +1,5 @@
 /*
-    Spectral, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Ethereal, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,11 +14,11 @@
     and limitations under the License.
 */
 
-package spectral
+package ethereal
 
 import probably.*
 import gossamer.*
 
-object Tests extends Suite(t"Spectral Tests"):
+object Tests extends Suite(t"Ethereal Tests"):
   def run(): Unit =
     ()

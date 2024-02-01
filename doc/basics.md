@@ -7,7 +7,7 @@ unacceptable for many purposes, in particular, providing dynamic tab-completions
 Furthermore, many programs run faster, the longer they have been running, thanks to the HotSpot just-in-time
 compiler. This advantage returns to zero every time the application is started.
 
-Spectral makes it easy to write a program which runs as a daemon. The first time it is called, it starts the
+Ethereal makes it easy to write a program which runs as a daemon. The first time it is called, it starts the
 JVM as a background process which listens for socket connections on a free local port, and all subsequent
 invocations connect to the running JVM through sockets.
 
@@ -24,7 +24,7 @@ Nailgun provides two launcher clients written in C and Python. Unfortunately, th
 separately, distributed as multiple binaries for different CPU architectures, or compiled with a C compiler
 before use. And the latter has noticeably poor performance for each invocation.
 
-Spectral's launcher, which is written in Bash, is both portable and fast.
+Ethereal's launcher, which is written in Bash, is both portable and fast.
 
 The daemon implementation is an ordinary method call which primarily specifies the code to be invoked for each
 invocation, and would typically be the implementation of a main method,
