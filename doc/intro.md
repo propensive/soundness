@@ -4,3 +4,4 @@ arbitrary different audiences is possible, but is usually better handled with di
 too. Spectacular's compromise of distinguishing with `Show` and `Debug` typeclasses will be sufficient
 for most purposes, and has the distinction that `debug` will always provide _some_ `Text` value, while
 `show` will require an appropriate `Show` instance to be provided.
+
