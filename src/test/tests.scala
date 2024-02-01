@@ -20,6 +20,8 @@ import gossamer.*
 import rudiments.*
 import probably.*
 import spectacular.*
+import turbulence.*
+import quantitative.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*
 
@@ -67,3 +69,19 @@ object Tests extends Suite(t"Mosquito tests"):
       Euclidean(1, 3, 6).show
     .assert(_ == t"\u239b 1 \u239e\n\u239c 3 \u239f\n\u239d 6 \u23a0")
     
+    test(t"Add two vectors"):
+      Euclidean(1, 2, 3) + Euclidean(3, 4, 5)
+    .assert(_ == Euclidean(4, 6, 8))
+    
+    suite(t"Quantity operations"):
+      test(t"Add two quantity vectors"):
+        Euclidean(1*Metre, 2*Metre, 3*Metre) + Euclidean(3*Metre, 4*Metre, 5*Metre)
+      .assert(_ == Euclidean(4*Metre, 6*Metre, 8*Metre))
+    
+      test(t"Add two mixed-quantity vectors"):
+        Euclidean(1*Foot, 1*Foot, 1*Foot) + Euclidean(3*Metre, 4*Metre, 5*Metre)
+      .assert(_ == Euclidean(3.3048*Metre, 4.3048*Metre, 5.3048*Metre))
+
+      test(t"Map from m to m²"):
+        Euclidean(1*Metre, 2*Metre, 3*Metre, 4*Metre).map(_*Metre)
+      .assert(_ == Euclidean(1*Metre*Metre, 2*Metre*Metre, 3*Metre*Metre, 4*Metre*Metre))

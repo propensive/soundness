@@ -64,7 +64,33 @@ object Mosquito:
   extension [SizeType <: Int, LeftType](left: Euclidean[LeftType, SizeType])
     def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
     def list: List[LeftType] = left.toList.asInstanceOf[List[LeftType]]
+    def iarray: IArray[LeftType] = left.toIArray.asInstanceOf[IArray[LeftType]]
     
+    def map[LeftType2](fn: LeftType => LeftType2): Euclidean[LeftType2, SizeType] =
+      def recur(tuple: Tuple): Tuple = tuple match
+        case head *: tail => fn(head.asInstanceOf[LeftType]) *: recur(tail)
+        case _            => EmptyTuple
+
+      recur(left)
+
+    @targetName("add")
+    def +
+        [RightType]
+        (right: Euclidean[RightType, SizeType])
+        (using add: AddOperator[LeftType, RightType])
+        : Euclidean[add.Result, SizeType] =
+
+      def recur(left: Tuple, right: Tuple): Tuple = left match
+        case leftHead *: leftTail => right match
+          case rightHead *: rightTail =>
+            (leftHead.asInstanceOf[LeftType] + rightHead.asInstanceOf[RightType]) *: recur(leftTail, rightTail)
+          case _ =>
+            EmptyTuple
+        case _ =>
+          EmptyTuple
+
+      recur(left, right)
+
     def dot
         [RightType]
         (right: Euclidean[RightType, SizeType])
