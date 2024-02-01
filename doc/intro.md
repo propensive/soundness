@@ -5,3 +5,4 @@ actual Scala compiler to ensure that code is parsed exactly as it would be durin
 
 The result of parsing code contains only three different types of token—spaces, newlines and
 content—which lend themselves to conversion to HTML or another format.
+
