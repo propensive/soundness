@@ -6,3 +6,4 @@ compiler is often unable to disambiguate between different methods.  Contextual
 resolution is, however, much more reliable, so _Symbolism_ provides a single
 definition of each of the arithmetic and comparison operators, which defers
 their implementation to typeclasses inferred from their parameter types.
+
