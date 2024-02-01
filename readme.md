@@ -115,7 +115,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-TBC
+Savagery was chosen because it contains the letters S, V and G in order, and offers a pessimistic commentary on the nature of vector graphics.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
