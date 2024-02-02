@@ -104,3 +104,11 @@ object Tests extends Suite(t"Mosquito tests"):
       test(t"Multiply matrices"):
         m1*m2
       .assert(_ == Matrix[2, 2]((58, 139), (64, 154)))
+      
+      test(t"Scalar multiply matrices"):
+        m1*10
+      .assert(_ == Matrix[2, 3]((10, 20, 30), (40, 50, 60)))
+      
+      test(t"Scalar divide matrices"):
+        m1/2
+      .assert(_ == Matrix[2, 3]((0, 1, 1), (2, 2, 3)))

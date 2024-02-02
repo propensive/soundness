@@ -37,7 +37,7 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
   
   override def toString(): String = t"[${elements.debug}]".s
 
-  @targetName("mul2")
+  @targetName("scalarMul")
   def * 
       [RightType]
       (right: RightType)
@@ -47,6 +47,19 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
     val elements2 = IArray.create[mul.Result](elements.length): array =>
       elements.indices.foreach: index =>
         array(index) = elements(index)*right
+
+    new Matrix(rows, columns, elements2)
+  
+  @targetName("scalarDiv")
+  def / 
+      [RightType]
+      (right: RightType)
+      (using div: DivOperator[ElementType, RightType])
+      (using ClassTag[div.Result])
+      : Matrix[div.Result, RowsType, ColumnsType] =
+    val elements2 = IArray.create[div.Result](elements.length): array =>
+      elements.indices.foreach: index =>
+        array(index) = elements(index)/right
 
     new Matrix(rows, columns, elements2)
 
@@ -179,6 +192,22 @@ object Mosquito:
 
       recur(left, right)
     
+    @targetName("scalarMul")
+    def *
+        [RightType]
+        (right: RightType)
+        (using mul: MulOperator[LeftType, RightType])
+        : Euclidean[mul.Result, SizeType] =
+      map(_*right)
+    
+    @targetName("scalarDiv")
+    def *
+        [RightType]
+        (right: RightType)
+        (using div: DivOperator[LeftType, RightType])
+        : Euclidean[div.Result, SizeType] =
+      map(_/right)
+
     def dot
         [RightType]
         (right: Euclidean[RightType, SizeType])
