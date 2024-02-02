@@ -26,12 +26,8 @@ import vacuous.*
 
 import compiletime.ops.int.*
 
-class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int](val elements: IArray[ElementType]):
-  def rows(using ValueOf[RowsType]): Int = valueOf[RowsType]
-  def columns(using ValueOf[ColumnsType]): Int = valueOf[ColumnsType]
-  
-  def apply(row: Int, column: Int)(using ValueOf[RowsType], ValueOf[ColumnsType]): ElementType =
-    elements(columns*row + column)
+class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, val columns: Int, val elements: IArray[ElementType]):
+  def apply(row: Int, column: Int): ElementType = elements(columns*row + column)
 
   override def equals(right: Any): Boolean = right match
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
@@ -59,23 +55,28 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int](val elements: IAr
       do array(columns2*column + row) =
         (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
     
-    new Matrix(elements)
+    new Matrix(rows, columns2, elements)
 
 object Matrix:
-  inline def apply
-      [RowsType <: Int: ValueOf, ColumnsType <: Int: ValueOf]
+  transparent inline def apply
+      [Rows <: Int: ValueOf, Columns <: Int: ValueOf]
       (using DummyImplicit)
-      [ElementType: ClassTag]
-      (elements: Tuple)
-      (using Tuple.Size[elements.type] =:= RowsType*ColumnsType)
-      (using Tuple.Union[elements.type] <:< ElementType)
-      : Matrix[ElementType, RowsType, ColumnsType] =
-    val size = valueOf[RowsType]*valueOf[ColumnsType]
-    val iarray = elements.toIArray
+      [ElementType]
+      (rows: Tuple)
+      (using Tuple.Union[Tuple.Fold[rows.type, EmptyTuple, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< ElementType)
+      (using Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]])
+      (using Rows =:= Tuple.Size[rows.type])
+      (using ClassTag[ElementType])
+      : Any =
+    val rowCount: Int = valueOf[Rows]
+    val columnCount = valueOf[Columns]
     
-    new Matrix(
-      IArray.create[ElementType](size): array =>
-        for i <- 0 until size do array(i) = iarray(i).asInstanceOf[ElementType]
+    new Matrix[ElementType, Rows, Columns](rowCount, columnCount,
+      IArray.create[ElementType](columnCount*rowCount): array =>
+        for row <- 0 until rowCount; column <- 0 until columnCount
+        do rows.productElement(row) match
+          case tuple: Tuple =>
+            array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType]
     )
 
 
