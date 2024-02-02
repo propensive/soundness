@@ -20,7 +20,6 @@ import gossamer.*
 import rudiments.*
 import probably.*
 import spectacular.*
-import turbulence.*
 import quantitative.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*

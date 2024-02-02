@@ -24,18 +24,31 @@ import gossamer.*
 import hieroglyph.*
 import vacuous.*
 
-import compiletime.ops.int.*
+import scala.compiletime.*, ops.int.*
 
 class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, val columns: Int, val elements: IArray[ElementType]):
   def apply(row: Int, column: Int): ElementType = elements(columns*row + column)
 
-  override def equals(right: Any): Boolean = right match
+  override def equals(right: Any): Boolean = right.asMatchable match
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
     case _                       => false
 
   override def hashCode: Int = scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
   
   override def toString(): String = t"[${elements.debug}]".s
+
+  @targetName("mul2")
+  def * 
+      [RightType]
+      (right: RightType)
+      (using mul: MulOperator[ElementType, RightType])
+      (using ClassTag[mul.Result])
+      : Matrix[mul.Result, RowsType, ColumnsType] =
+    val elements2 = IArray.create[mul.Result](elements.length): array =>
+      elements.indices.foreach: index =>
+        array(index) = elements(index)*right
+
+    new Matrix(rows, columns, elements2)
 
   @targetName("mul")
   def *
@@ -74,7 +87,7 @@ object Matrix:
     new Matrix[ElementType, Rows, Columns](rowCount, columnCount,
       IArray.create[ElementType](columnCount*rowCount): array =>
         for row <- 0 until rowCount; column <- 0 until columnCount
-        do rows.productElement(row) match
+        do (rows.productElement(row).asMatchable: @unchecked) match
           case tuple: Tuple =>
             array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType]
     )
