@@ -85,3 +85,23 @@ object Tests extends Suite(t"Mosquito tests"):
       test(t"Map from m to m²"):
         Euclidean(1*Metre, 2*Metre, 3*Metre, 4*Metre).map(_*Metre)
       .assert(_ == Euclidean(1*Metre*Metre, 2*Metre*Metre, 3*Metre*Metre, 4*Metre*Metre))
+
+    suite(t"Matrix tests"):
+      val m1 = Matrix[2, 3][Int](1, 2, 3, 4, 5, 6)
+      val m2 = Matrix[3, 2][Int](7, 8, 9, 10, 11, 12)
+    
+      test(t"Access matrix elements"):
+        m1(0, 0)
+      .assert(_ == 1)
+      
+      test(t"Access matrix elements2"):
+        m1(1, 1)
+      .assert(_ == 5)
+      
+      test(t"Access matrix elements 3"):
+        m1(1, 2)
+      .assert(_ == 6)
+      
+      test(t"Multiply matrices"):
+        m1*m2
+      .assert(_ == Matrix[2, 2][Int](58, 139, 64, 154))

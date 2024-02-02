@@ -22,6 +22,62 @@ import spectacular.*
 import symbolism.*
 import gossamer.*
 import hieroglyph.*
+import vacuous.*
+
+import compiletime.ops.int.*
+
+class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int](val elements: IArray[ElementType]):
+  def rows(using ValueOf[RowsType]): Int = valueOf[RowsType]
+  def columns(using ValueOf[ColumnsType]): Int = valueOf[ColumnsType]
+  
+  def apply(row: Int, column: Int)(using ValueOf[RowsType], ValueOf[ColumnsType]): ElementType =
+    elements(columns*row + column)
+
+  override def equals(right: Any): Boolean = right match
+    case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
+    case _                       => false
+
+  override def hashCode: Int = scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
+  
+  override def toString(): String = t"[${elements.debug}]".s
+
+  @targetName("mul")
+  def *
+      [RightType, RightColumnsType <: Int: ValueOf]
+      (right: Matrix[RightType, ColumnsType, RightColumnsType])
+      (using mul: MulOperator[ElementType, RightType])
+      (using ValueOf[RowsType], ValueOf[ColumnsType])
+      (using ClassTag[mul.Result])
+      (using add: AddOperator[mul.Result, mul.Result])
+      (using add.Result =:= mul.Result)
+      : Matrix[mul.Result, RowsType, RightColumnsType] =
+    val columns2 = valueOf[RightColumnsType]
+    val inner = valueOf[ColumnsType]
+    
+    val elements = IArray.create[mul.Result](rows*columns2): array =>
+      for row <- 0 until rows; column <- 0 until columns2
+      do array(columns2*column + row) =
+        (0 until inner).map { index => apply(row, index)*right(index, column) }.reduce(_ + _)
+    
+    new Matrix(elements)
+
+object Matrix:
+  inline def apply
+      [RowsType <: Int: ValueOf, ColumnsType <: Int: ValueOf]
+      (using DummyImplicit)
+      [ElementType: ClassTag]
+      (elements: Tuple)
+      (using Tuple.Size[elements.type] =:= RowsType*ColumnsType)
+      (using Tuple.Union[elements.type] <:< ElementType)
+      : Matrix[ElementType, RowsType, ColumnsType] =
+    val size = valueOf[RowsType]*valueOf[ColumnsType]
+    val iarray = elements.toIArray
+    
+    new Matrix(
+      IArray.create[ElementType](size): array =>
+        for i <- 0 until size do array(i) = iarray(i).asInstanceOf[ElementType]
+    )
+
 
 object Mosquito:
   opaque type Euclidean[+ValueType, SizeType <: Int] = Tuple
@@ -90,7 +146,25 @@ object Mosquito:
           EmptyTuple
 
       recur(left, right)
+    
+    @targetName("sub")
+    def -
+        [RightType]
+        (right: Euclidean[RightType, SizeType])
+        (using sub: SubOperator[LeftType, RightType])
+        : Euclidean[sub.Result, SizeType] =
 
+      def recur(left: Tuple, right: Tuple): Tuple = left match
+        case leftHead *: leftTail => right match
+          case rightHead *: rightTail =>
+            (leftHead.asInstanceOf[LeftType] - rightHead.asInstanceOf[RightType]) *: recur(leftTail, rightTail)
+          case _ =>
+            EmptyTuple
+        case _ =>
+          EmptyTuple
+
+      recur(left, right)
+    
     def dot
         [RightType]
         (right: Euclidean[RightType, SizeType])
