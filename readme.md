@@ -125,7 +125,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+A mosquito is a typical example of a vector: an animal that transmits a pathogen or disease.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
