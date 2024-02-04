@@ -140,7 +140,7 @@ language.
 
 ## Logo
 
-The logo represents a column vector of abstract dots.
+The logo represents the _x_, _y_ and _z_ axes of a vector space.
 
 ## License
 
