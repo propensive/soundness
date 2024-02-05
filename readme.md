@@ -18,6 +18,7 @@ instances.
 - provides a generic representation of complex numbers
 - extends any numerical type to the complex
 - provides many standard complex numerical operations on values
+- allows conversion between cartesian and polar forms
 
 
 ## Availability Plan
@@ -122,7 +123,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+Baroque music, architecture and design is characterized by its ornate _complexity_ which alludes to _complex numbers_.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
