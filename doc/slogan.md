@@ -1,1 +1,1 @@
-Work with complex numbers in Scala
+Making work with complex numbers real
