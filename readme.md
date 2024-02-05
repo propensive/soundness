@@ -4,7 +4,7 @@
 
 # Baroque
 
-__Work with complex numbers in Scala__
+__Making work with complex numbers real__
 
 _Baroque_ provides a single generic type, `Complex`, comprising of real and
 imaginary values of the same numeric type. This could be a `Double`, `Int` or a
@@ -138,7 +138,9 @@ language.
 
 ## Logo
 
-The logo shows an [alto clef](https://en.wikipedia.org/wiki/Clef), used predominantly in music for viola (which features in Baroque music), and also resembles a capital B, the first letter of "Baroque".
+The logo shows an [alto clef](https://en.wikipedia.org/wiki/Clef), used
+predominantly in music for viola (which features in Baroque music), and also
+resembles a capital B, the first letter of "Baroque".
 
 ## License
 
