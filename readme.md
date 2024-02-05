@@ -14,7 +14,12 @@ which provides this functionality.
 
 ## Features
 
-TBC
+- Provides an implementation of optional values using union types
+- No need to wrap _present_ values in `Some`
+- Flattened representation, prohibiting ambiguous `Some(None)` representation
+- Lightweight `let`, `lay` and `or` methods cover `map`, `flatMap`, `fold`, `orElse` and `getOrElse`
+- Performant inlined implementations of all critical methods
+- Especially convenient use case for default parameters
 
 
 ## Availability Plan
