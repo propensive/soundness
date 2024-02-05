@@ -4,7 +4,7 @@
 
 # Mosquito
 
-____
+__Typesafe vector algebra__
 
 Euclidean vectors, in contrast to scalars and arbitrary collections, represent
 values in _a fixed multiple_ number of dimensions. _Mosquito_ provides a
