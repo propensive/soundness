@@ -3,3 +3,4 @@
 - Flattened representation, prohibiting ambiguous `Some(None)` representation
 - Lightweight `let`, `lay` and `or` methods cover `map`, `flatMap`, `fold`, `orElse` and `getOrElse`
 - Performant inlined implementations of all critical methods
+- Especially convenient use case for default parameters
