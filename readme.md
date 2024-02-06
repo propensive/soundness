@@ -4,7 +4,7 @@
 
 # Baroque
 
-__Making work with complex numbers real__
+__Make coding with complex numbers more real__
 
 _Baroque_ provides a single generic type, `Complex`, comprising of real and
 imaginary values of the same numeric type. This could be a `Double`, `Int` or a
