@@ -1,1 +1,1 @@
-Making work with complex numbers real
+Make coding with complex numbers more real
