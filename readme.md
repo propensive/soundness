@@ -14,7 +14,9 @@ languages or stylized diagrams. This is the role that _Savagery_ aims to fill.
 
 ## Features
 
-TBC
+- construct Scalable Vector Graphics programmatically
+- compose low-level components into larger components as easily as applying functions
+- renders generated SVG as XML
 
 
 ## Availability Plan
