@@ -1,5 +1,5 @@
 /*
-    Savagery, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Savagery, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -17,19 +17,20 @@
 package savagery
 
 import rudiments.*
-import gossamer.*, decimalFormats.exact
+import gossamer.*, decimalFormatting.javaDouble
 import cardinality.*
 import cataclysm.{Float as _, Length as _, *}
-import turbulence.*
+import perforate.*
 import quantitative.*
+import anticipation.*
+import spectacular.*
+import hieroglyph.*
 import xylophone.*
-import iridescence.*
+import vacuous.*
 
-import java.lang as jl
-
-import unsafeExceptions.canThrowAny
-
-extension (left: Float) def !(right: Float) = Xy(left, right)
+extension (left: Float)
+  @targetName("makeCoordinates")
+  infix def ! (right: Float) = Xy(left, right)
 
 case class Xy(x: Float, y: Float)
 case class DxDy(dx: Float, dy: Float)
@@ -54,13 +55,14 @@ object Savagery:
     
   extension (point: Xy)
     @targetName("plus")
-    def +(vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
+    infix def + (vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
     
-    def unary_~ : DxDy = DxDy(point.x, point.y)
+    @targetName("asVector")
+    def `unary_~`: DxDy = DxDy(point.x, point.y)
   
   extension (vector: DxDy)
     @targetName("plus2")
-    def +(right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
+    infix def + (right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
 
 export Savagery.{Degrees, SvgId}
 
@@ -83,8 +85,8 @@ enum PathOp:
   case Move(coords: Coords)
   case Line(coords: Coords)
   case Close
-  case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Maybe[CoordsType], ctrl2: CoordsType, point: CoordsType)
-  case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Maybe[CoordsType], point: CoordsType)
+  case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], ctrl2: CoordsType, point: CoordsType)
+  case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], point: CoordsType)
   case Arc(rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Boolean, coords: Coords)
 
 object PathOp:
@@ -92,8 +94,8 @@ object PathOp:
   
   given Show[PathOp] =
     case Move(coords)                => t"${coords.key('m')} $coords"
-    case Line(Rel(DxDy(0.0f, v)))    => t"v $v"
-    case Line(Rel(DxDy(h, 0.0f)))    => t"h $h"
+    case Line(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
+    case Line(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
     case Line(coords)                => t"${coords.key('l')} $coords"
     case Close                       => t"Z"
     case Cubic(Unset, ctrl2, coords) => t"${coords.key('s')} $ctrl2, $coords"
@@ -102,10 +104,10 @@ object PathOp:
     case Quadratic(ctrl1, coords)    => t"${coords.key('q')} ${ctrl1.option.get}, $coords"
     
     case Arc(rx, ry, angle, largeArc, sweep, coords) =>
-      t"${coords.key('a')} $rx $ry $angle ${bit(largeArc)} ${bit(sweep)} $coords"
+      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} $angle ${bit(largeArc)} ${bit(sweep)} $coords"
 
 case class Path
-    (ops: List[PathOp] = Nil, style: Maybe[CssStyle] = Unset, id: Maybe[SvgId] = Unset,
+    (ops: List[PathOp] = Nil, style: Optional[CssStyle] = Unset, id: Optional[SvgId] = Unset,
         transform: List[Transform] = Nil)
 extends Shape:
   import PathOp.*
@@ -113,7 +115,7 @@ extends Shape:
   def xml: Xml =
     val d: Text = ops.reverse.map(_.show).join(t" ")
     // FIXME
-    Xml.parse(t"""<path d="$d"/>""")
+    unsafely(Xml.parse(t"""<path d="$d"/>"""))
   
   def moveTo(point: Xy): Path = Path(Move(Abs(point)) :: ops)
   def lineTo(point: Xy): Path = Path(Line(Abs(point)) :: ops)
@@ -148,14 +150,15 @@ object Circle:
   def apply(center: Xy, radius: Float): Ellipse = Ellipse(center, radius, radius, Degrees(0.0))
 
 case class Rectangle(position: Xy, width: Float, height: Float) extends Shape:
-  def xml: Xml = Xml.parse(t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>""")
+  def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
 
 case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
   def circle: Boolean = xRadius == yRadius
   
-  def xml: Xml = Xml.parse:
-    if circle then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
-    else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="$xRadius" ry="$yRadius"/>"""
+  def xml: Xml = unsafely:
+    Xml.parse:
+      if circle then t"""<circle cx="${center.x.toDouble}" cy="${center.y.toDouble}" r="${xRadius.toDouble}"/>"""
+      else t"""<ellipse cx="${center.x.toDouble}" cy="${center.y.toDouble}" rx="${xRadius.toDouble}" ry="${yRadius.toDouble}"/>"""
 
 case class Svg(width: Quantity[Units[1, Length]], height: Quantity[Units[1, Length]], viewWidth: Float, viewHeight: Float, defs: List[SvgDef], shapes: List[Shape])
 
@@ -164,23 +167,23 @@ sealed trait Shape:
 
 enum Transform:
   case Translate(vector: DxDy)
-  case Scale(x: Float, y: Maybe[Float])
+  case Scale(x: Float, y: Optional[Float])
   case Matrix()
   case Skew()
   case Rotate(angle: Degrees)
 
 sealed trait SvgDef
 
-case class LinearGradient(stops: Stop*) extends SvgDef
-case class Stop(offset: 0.0 ~ 1.0, color: Color)
+case class LinearGradient[ColorType: RgbColor](stops: Stop[ColorType]*) extends SvgDef
 
+case class Stop[ColorType: RgbColor](offset: 0.0 ~ 1.0, color: ColorType)
 
 case class SvgDoc(svg: Svg, encoding: Encoding)
 
 
 // extension (elem: Shape)
 //   def translate(vector: DxDy) 
-//   def scale(xScale: Float, yScale: Maybe[Float])
+//   def scale(xScale: Float, yScale: Optional[Float])
 //   def skew()
 //   def rotate(angle: 0.0 ~ 360.0)
 //   def matrix(x1: Float, x2: Float, x3: Float, y1: Float, y2: Float, y3: Float)
