@@ -6,16 +6,16 @@
 
 __Lightweight string utilities__
 
-Gossamer provides the `Text` type, a typesafe opaque type alias of `String` and a `Show` typeclass
-instance.
+The Java implementation of `String` provides many methods which are useful, but
+some lack sufficient typesafety. Gossamer provides the `Text` type, a more
+typesafe opaque type alias of `String`.
 
 ## Features
 
-- provides a `Show` typeclass with instances for common types, including product types
 - reimplements common methods on `String` with more typesafe variants
-- implementation of the Minimum Edit Distance algorithm
+- provides an implementation of the Minimum Edit Distance algorithm
 - convenient converters to common encodings like URL encodings and Punycode
-- implements a stricter `str""` interpolator for strings
+- implements a stricter `t""` interpolator for strings
 - implements the `txt""` interpolator to ignore spurious whitespace in strings which flow onto multiple lines
 
 
