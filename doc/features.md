@@ -1,6 +1,5 @@
-- provides a `Show` typeclass with instances for common types, including product types
 - reimplements common methods on `String` with more typesafe variants
-- implementation of the Minimum Edit Distance algorithm
+- provides an implementation of the Minimum Edit Distance algorithm
 - convenient converters to common encodings like URL encodings and Punycode
-- implements a stricter `str""` interpolator for strings
+- implements a stricter `t""` interpolator for strings
 - implements the `txt""` interpolator to ignore spurious whitespace in strings which flow onto multiple lines
