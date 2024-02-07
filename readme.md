@@ -31,7 +31,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
-## The `Ordinal` type
+### The `Ordinal` type
 
 _Denominative_ introduces a new type, `Ordinal`, which represents an ordinal number. Unlike cardinal numbers
 (still represented by `Int`s and `Long`s) an `Ordinal` has a first element, called `Prim`, which unambiguously
@@ -91,7 +91,7 @@ One `Ordinal` may be subtracted from another:
 val cardinal: Int = Non - Sept  // 2
 ```
 
-## `Interval`s
+### `Interval`s
 
 A range of `Ordinal`s is represented by an `Interval`. In all cases, this is a closed or "inclusive" interval,
 and is specified by its first `Ordinal` and its (included) final `Ordinal`. For example,
@@ -107,12 +107,11 @@ and last elements by writing `Sec to xs.pen`. This would produce an interval rep
 The size of an `Interval` is a cardinal number, thus an `Int`. We can get an `Interval`s size with the `size`
 method.
 
-### Iterating over `Interval`s
+#### Iterating over `Interval`s
 
 An `Interval` is most useful as a way of specifying a range of `Ordinal` values because we want to perform some
 operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
 behave exactly as their familiar counterparts in Scala's standard collections library.
-
 
 
 
