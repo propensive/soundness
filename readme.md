@@ -30,7 +30,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Status
 
-Abacist is classified as ____. For reference, Scala One projects are
+Abacist is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
