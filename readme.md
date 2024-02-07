@@ -38,7 +38,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
-## Running as a Daemon
+### Running as a Daemon
 
 Java is known for its slow startup time compared to other languages. While that has improved significantly in
 more recent versions, waiting about a second is typical, even for a trivial "Hello world" application. This is
@@ -153,9 +153,6 @@ implementation should be both sending and receiving messages on the bus.
 A typical implementation might multiplex the event stream from a
 [Profanity](https://github.com/propensive/profanity/) terminal with the bus, and handle keypresses and messages
 from other clients in an event loop.
-
-
-
 
 
 
