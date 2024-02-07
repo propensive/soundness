@@ -4,7 +4,7 @@
 
 # Abacist
 
-____
+__Calculations with non-decimal units and mixed bases__
 
 
 
@@ -111,7 +111,8 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+An _abacist_ is a person who operates an abacus, for counting and arithmetic.
+Counting of mixed-base units is the purpose of _Abacist_.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
