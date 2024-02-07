@@ -1,1 +1,1 @@
-TBC
+Common Git operations for Scala
