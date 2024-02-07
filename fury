@@ -4,12 +4,13 @@ target quantitative/test
 
 repo propensive/probably
 repo propensive/larceny
+repo propensive/hypotenuse
 
 project quantitative
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core anticipation/math
+    include   gossamer/core hypotenuse/core anticipation/opaque
 
   module test
     compiler  scala

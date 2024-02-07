@@ -1,5 +1,5 @@
 /*
-    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,11 +16,13 @@
 
 package quantitative
 
+import hypotenuse.*
+
 import language.experimental.captureChecking
 
 package constants:
   val SpeedOfLightInVacuum = 299792458*Metre/Second
-  val MagneticConstant = 4*math.Pi*(10e-7)*Newton/(Ampere*Ampere)
+  val MagneticConstant = 4*π*(10e-7)*Newton/(Ampere*Ampere)
   val ElectricConstant = 8.854187817e-12*Farad/Metre
   val CharacteristicImpedanceOfVacuum = 376.730313461*Ohm
   val NewtonianConstantOfGravitation = 6.673e-11*Metre*Metre*Metre/Kilo(Gram)/Second/Second

@@ -1,5 +1,5 @@
 /*
-    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -19,6 +19,7 @@ package quantitative
 import gossamer.*
 import rudiments.*
 import anticipation.*
+import hypotenuse.*
 import symbolism.*
 import spectacular.*
 
@@ -115,77 +116,6 @@ object PhysicalQuantity:
   type Volume = Units[3, Length]
   type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
   
-  // type L[-NatType <: Nat] = Units[Nat, Length]
-  // type M[-NatType <: Nat] = Units[Nat, Mass]
-  // type T[-NatType <: Nat] = Units[Nat, Time]
-  // type I[-NatType <: Nat] = Units[Nat, Current]
-  // type N[-NatType <: Nat] = Units[Nat, AmountOfSubstance]
-  // type H[-NatType <: Nat] = Units[Nat, Temperature]
-  // type J[-NatType <: Nat] = Units[Nat, Luminosity]
-
-  // type ElectricalConductivity    = L[-3] & M[-1] & T[ 3] & I[ 2]
-  // type Permittivity              = L[-3] & M[-1] & T[ 4] & I[ 2]
-  // type ReactionRate              = L[-3] &         T[-1] &                 N[ 1]
-  // type MolarConcentration        = L[-3] &                                 N[ 1]
-  // type ElectricChargeDensity     = L[-3] &         T[ 1] & I[ 1]
-  // type MassDensity               = L[-3] & M[ 1]
-  // type Reluctance                = L[-2] & M[-1] & T[ 2] & I[ 2]
-  // type ElectricalConductance     = L[-2] & M[-1] & T[ 3] & I[ 2]
-  // type ThermalResistance         = L[-2] & M[-1] & T[ 3] &         H[ 1]
-  // type Capacitance               = L[-2] & M[-1] & T[ 4] & I[ 1]
-  // type CurrentDensity            = L[-2] &                 I[ 1]
-  // type ElectricDisplacementField = L[-2] &         T[ 1] & I[ 1]
-  // type Illuminance               = L[-2] &                                         J[ 1]
-  // type AreaDensity               = L[-2] & M[ 1]
-  // type ThermalResistivity        = L[-1] & M[-1] & T[ 3] &         H[ 1]
-  // type Magnetization             = L[-1] &                 I[ 1]
-  // type OpticalPower              = L[-1]
-  // type TempratureGradient        = L[-1] &                         H[ 1]
-  // type Pressure                  = L[-1] & M[ 1] & T[-2]
-  // type DynamicViscosity          = L[-1] & M[ 1] & T[-1]
-  // type LinearDensity             = L[-1] & M[ 1]
-  // type Frequency                 =                 T[-1]
-  // type ElectricCharge            =                 T[ 1] & I[ 1]
-  // type Radiance                  =         M[ 1] & T[-3]
-  // type MagneticFluxDensity       =         M[ 1] & T[-2] & I[-1]
-  // type SurfaceTension            =         M[ 1] & T[-2]
-  // type Absement                  =         M[ 1] & T[ 1]
-  // type Pop                       = L[ 1] &         T[-6]
-  // type Crackle                   = L[ 1] &         T[-5]
-  // type Jounce                    = L[ 1] &         T[-4]
-  // type Jerk                      = L[ 1] &         T[-3]
-  // type Acceleration              = L[ 1] &         T[-2]
-  // type Velocity2                  = L[ 1] &         T[-1]
-  // type Velocity = Units[1, Length] & Units[-1, Time]
-  // type ElectricDipoleMoment      = L[ 1] &         T[ 1] & I[ 1]
-  // type ElectricFieldStrength     = L[ 1] & M[ 1] & T[-3] & I[-1]
-  // type ThermalConductivity       = L[ 1] & M[ 1] & T[-3] &         H[-1]
-  // type Permeability              = L[ 1] & M[ 1] & T[-2] & I[-2]
-  // type Force                     = L[ 1] & M[ 1] & T[-2]
-  // type Momentum                  = L[ 1] & M[ 1] & T[-1]
-  // type AbsorbedDoseRate          = L[ 2] &         T[-3]
-  // type SpecificHeatCapacity      = L[ 2] &         T[-2] &         H[-1]
-  // type SpecificEnergy            = L[ 2] &         T[-2]
-  // type Area                      = L[ 2]
-  // type MagneticMoment            = L[ 2] &                 I[ 1]
-  // type Impedance                 = L[ 2] & M[ 1] & T[-3] & I[-2]
-  // type ElectricalPotential       = L[ 2] & M[ 1] & T[-3] & I[-1]
-  // type ThermalConductance        = L[ 2] & M[ 1] & T[-3] &         H[-1]
-  // type Power                     = L[ 2] & M[ 1] & T[-3]
-  // type Inductance                = L[ 2] & M[ 1] & T[-2] & I[-2]
-  // type MagneticFlux              = L[ 2] & M[ 1] & T[-2] & I[-1]
-  // type Entropy                   = L[ 2] & M[ 1] & T[-2] &         H[-1]
-  // type MolarEntropy              = L[ 2] & M[ 1] & T[-2] &         H[-1] & N[-1]
-  // type ChemicalPotential         = L[ 2] & M[ 1] & T[-2] &                 N[-1]
-  // type Energy                    = L[ 2] & M[ 1] & T[-2]
-  // type Spin                      = L[ 2] & M[ 1] & T[-1]
-  // type MomentOfInertia           = L[ 2] & M[ 1]
-  // type SpecificVolume            = L[ 3] & M[-1]
-  // type VolumetricFlowRate        = L[ 3] &         T[-1]
-  // type Volume                    = L[ 3]
-  // type ElectricalResistivity     = L[ 3] & M[ 1] & T[-3] & I[-2]
-
-  // erased given heat: PhysicalQuantity[Heat, "heat"] = ###
   erased given absement: PhysicalQuantity[Absement, "absement"] = ###
   erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###
   erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = ###
@@ -340,30 +270,46 @@ object Quantitative:
       case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
       case _                                   => quantity
   
-  extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
-    inline def count[CountType <: Tuple]: Count[CountType] =
-      ${QuantitativeMacros.fromQuantity[UnitsType, CountType]('quantity)}
-
   object MetricUnit:
+    erased given underlying[UnitsType <: Measure]: Underlying[MetricUnit[UnitsType], Double] = ###
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
     @targetName("makeDerivedUnit")
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
+    erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
-        : Operator["+", Quantity[LeftType], Quantity[RightType]] =
+        : AddOperator[Quantity[LeftType], Quantity[RightType]] =
       ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
     
-    transparent inline given subtract[LeftType <: Measure, RightType <: Measure]
-        : Operator["-", Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.subtractTypeclass[LeftType, RightType]}
+    transparent inline given sub[LeftType <: Measure, RightType <: Measure]
+        : SubOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.subTypeclass[LeftType, RightType]}
 
-    transparent inline given multiply[LeftType <: Measure, RightType <: Measure]
-        : Operator["*", Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.multiplyTypeclass[LeftType, RightType]}
+    transparent inline given mul[LeftType <: Measure, RightType <: Measure]
+        : MulOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.mulTypeclass[LeftType, RightType]}
+
+    given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
+      type Result = Quantity[LeftType]
+      inline def mul(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
+
+    transparent inline given div[LeftType <: Measure, RightType <: Measure]
+        : DivOperator[Quantity[LeftType], Quantity[RightType]] =
+      ${QuantitativeMacros.divTypeclass[LeftType, RightType]}
+
+    given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
+      type Result = Quantity[LeftType]
+      inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
+
+    transparent inline given squareRoot[ValueType <: Measure]: SquareRoot[Quantity[ValueType]] =
+      ${QuantitativeMacros.sqrtTypeclass[ValueType]}
+    
+    transparent inline given cubeRoot[ValueType <: Measure]: CubeRoot[Quantity[ValueType]] =
+      ${QuantitativeMacros.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
@@ -428,11 +374,11 @@ val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
 
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   @targetName("plus")
-  transparent inline def +[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
   
   @targetName("minus")
-  transparent inline def -[UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def - [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
@@ -441,14 +387,16 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${QuantitativeMacros.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
-  transparent inline def *
-      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def * [UnitsType2 <: Measure]
+      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
-  transparent inline def /
-      [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def / [UnitsType2 <: Measure]
+      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
     ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
+
+  transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
 
   inline def units: Map[Text, Int] = ${QuantitativeMacros.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
@@ -457,9 +405,9 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
 
 extension (value: Double)
   @targetName("times")
-  def *[UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
+  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
   
   @targetName("divide")
-  transparent inline def /[UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
+  transparent inline infix def / [UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
     ((1.0/value)*quantity).invert
   

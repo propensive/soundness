@@ -8,7 +8,7 @@ ____
 
 When working with physical quantities, such as lengths, masses or temperatures,
 it can be easy to mix up quantities with different units, especially if we
-represent all quantities with `Double`s—which is often necessary for
+represent all quantities with `Double`s, which is often necessary for
 performance.
 
 Quantitative represents physical quantities with a generic `Quantity` type, an
@@ -39,19 +39,33 @@ by the compiler, and checked for consistency in additions and subtractions.
   current and temperature) as well as other distinct dimensions, such as angles
 
 
-## Availability
+## Availability Plan
 
-Quantitative has not yet been published as a binary.
+Quantitative has not yet been published. The medium-term plan is to build Quantitative
+with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
+[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
+software which depends on Quantitative.
+
+Subsequently, Quantitative will also be made available as a binary in the Maven
+Central repository. This will enable users of other build tools to use it.
+
+For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
+
+All Quantitative terms and types are defined in the `quantitative` package:
+```scala
+import quantitative.*
+```
 
 ### `Quantity` types
 
 Physical quantities can be represented by different `Quantity` types, with an appropriate parameter that encodes
 the value's units. We can create a quantity by multiplying an existing `Double` (or any numeric type) by some
-unit value, such as `Metre` or `Joule`—which are just `Quantity` values equal to `1.0` of the appropriate unit.
+unit value, such as `Metre` or `Joule`, which are just `Quantity` values equal to `1.0` of the appropriate unit.
 For example:
-```scala
+```amok
+##
 val distance = 58.3*Metre
 ```
 
@@ -64,7 +78,8 @@ even though "Kelvins" and "Kelvin" are both commonly used for plural values. Uni
 the singular.
 
 We can compute an `area` value by squaring the distance,
-```scala
+```amok
+##
 val area = distance*distance
 ```
 which should have units of square metres (`m
@@ -79,7 +94,7 @@ alias.
 
 The precise types, representing units, are known statically, but are erased by runtime. Hence, all
 dimensionality checking takes place at compiletime, after which, operations on `Quantity`s will be
-operations on `Double`s—and will achieve similar performance.
+operations on `Double`s, and will achieve similar performance.
 
 The raw `Double` value of a `Quantity` can always be obtained with `Quantity#value`
 
@@ -91,7 +106,8 @@ human-readable `Text` values, so calling `show` on a `Quantity` will produce muc
 ### Derived units
 
 We can also define:
-```scala
+```amok
+##
 val energy = Joule*28000
 ```
 
@@ -125,7 +141,8 @@ units.
 
 Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
 by combining, say, `area` and `energy`,
-```scala
+```amok
+##
 val volume = distance*distance*distance
 val energyDensity = energy/volume
 ```
@@ -140,8 +157,9 @@ their dimensionality will be checked at compiletime. For example, the equation, 
 �` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
 implemented using Quantitative `Quantity`s with:
-```scala
-def s(u: Quantity[Metres[1] & Seconds[-2]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
+```amok
+##
+def s(u: Quantity[Metres[1] & Seconds[-1]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
   u*t + 0.5*a*t*t
 ```
@@ -177,10 +195,11 @@ available.
 
 Quantitative defines a variety of imperial measurements, and will automatically convert units of the same
 dimension to the same units in multiplications and divisions. For example,
-```scala
+```amok
+##
 val width = 0.3*Metre
 val height = 5*Inch
-val area = width*height
+val area2 = width*height
 ```
 will infer the type `Quantity[Metres[2]]` for `area`.
 
@@ -195,11 +214,13 @@ units, `Inches[2]`, performing no unnecessary conversions.
 Addition and subtraction are possible between quantities which share the same dimension.
 
 We can safely add an inch and a metre,
-```scala
+```amok
+##
 val length = 1*Inch + 1*Metre
 ```
 but we can't subtract a second from a litre:
-```scala
+```amok
+##
 val nonsense = Litre - Second // will not compile
 ```
 
@@ -220,7 +241,8 @@ information on conversions.
 Likewise, we can compare units in like or mixed values with the four standard inequality operators
 (`<`, `>`, `<=`, `>=`). These will return `true` or `false` if the operands have the same dimension,
 even if they have different units, for example,
-```scala
+```amok
+##
 8*Foot < 4*Metre // returns true
 ```
 while incompatible units will result in a compile error.
@@ -232,7 +254,8 @@ represented as `Double`s at runtime, and the JVM's standard equality will not ta
 account. So, by default, `3*Foot == 3*Metre` will yield `true`, since `3.0 == 3.0`!
 
 This is highly undesirable, but luckily there's a solution:
-```scala
+```amok
+##
 import language.strictEquality
 ```
 
@@ -256,7 +279,8 @@ power `1` and the other with the power `-1`. The rate of conversion should be sp
 literal `Double` as the second parameter. The `given` may be `erased`, if using Scala's erased definitions.
 
 For example,
-```scala
+```amok
+##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
 ```
 which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
@@ -280,10 +304,11 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 `(3*Foot * 1*Metre * 0.4*Centi(Metre)).in[Inches]`, would calculate a volume in cubic inches.
 
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
-```scala
-val distance = 100*Metre
+```amok
+##
+val distance2 = 100*Metre
 val time = 9.8*Second
-val speed = distance/time
+val speed = distance2/time
 val mph = speed.in[Miles].in[Hours]
 ```
 
@@ -327,15 +352,17 @@ Imagine we wanted to implement the FLOPS unit, for measuring the floating-point 
 CPU: floating-point instructions per second.
 
 Trivially, we could create a value,
-```scala
-val Flop = 1.0/Second
+```amok
+##
+val SimpleFlop = 1.0/Second
 ```
-and use it in equations such as, `1000000*Flop * Minute` to yield an absolute number representing
+and use it in equations such as, `1000000*SimpleFlop * Minute` to yield an absolute number representing
 the number of floating-point instructions that could (theoretically) be calculated in one minute by
 a one-megaFLOP CPU.
 
 But this definition is just a value, not a unit. We can tweak the definition slightly to,
-```scala
+```amok
+##
 val Flop = MetricUnit(1.0/Second)
 ```
 and it becomes possible to use metric prefixes on the value. So we could rewrite the above expression
@@ -347,11 +374,13 @@ The result is just a `Double`, though, which is a little unsatisfactory, since i
 something more specific: a number of instructions. To do better, we need to introduce a new
 `Dimension`, distinct from length, mass and other dimensions, and representing a CPU's
 performance,
-```scala
+```amok
+##
 trait CpuPerformance extends Dimension
 ```
 and create a `Flops` type corresponding to this dimension:
-```scala
+```amok
+##
 import rudiments.*
 trait Flops[PowerType <: Nat] extends Units[PowerType, CpuPerformance]
 val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
@@ -367,7 +396,8 @@ With these definitions, we can now write `Mega(Flop) * Minute` to get a result w
 
 If we want to show the FLOPS value as `Text`, a symbolic name is required. This can be specified
 with a contextual instance of `UnitName[Flops[1]]`,
-```scala
+```amok
+##
 given UnitName[Flops[1]] = () => t"FLOPS"
 ```
 which will allow `show` to be called on a quantity involving FLOPs.
@@ -387,7 +417,8 @@ quantitative: the left operand represents velocity, but the right operand repres
 these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
-```scala
+```amok
+##
 erased given DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
 ```
 
@@ -408,7 +439,10 @@ much easier to write.
 By default, Quantitative will use the latter form, but it is possible to define alternative
 representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
-```scala
+```amok
+##
+import gossamer.t
+
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
 ```
 and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead of `2800 kg⋅m
@@ -434,20 +468,24 @@ officiality.
 Quantitative can accommodate all such systems through a single _type_ which defines a cascade of
 units of the same dimension, in a tuple. For example, one variant of the Imperial System measuring
 human heights could be defined as,
-```scala
+```amok
+##
 type ImperialHeight = (Feet[1], Inches[1])
 ```
 or for distances,
-```scala
+```amok
+##
 type ImperialDistance = (Miles[1], Yards[1], Inches[1])
 ```
 that is, a number of miles, yards and inches, represented as a `Tuple` of these units' types
 (each raised to the power `1`). Another example for mass is,
-```scala
+```amok
+##
 type Avoirdupois = (Hundredweights[1], Stones[1], Pounds[1], Ounces[1], Drams[1])
 ```
 or alternatively:
-```scala
+```amok
+##
 type SimpleAvoirdupois = (Pounds[1], Ounces[1])
 ```
 
@@ -472,7 +510,8 @@ Individual units from a `Count` may be extracted.
 `Count`s of identical units may be added and subtracted, and multiplied and divided by numbers (but not
 other quantities). They may be converted to `Quantity`s with the `in` method, much as a `Quantity` can
 be converted, or constructed from a `Quantity` by applying in to the factory method, e.g.
-```scala
+```amok
+##
 Count[Avoirdupois](18*Kilo(Gram))
 ```
 
@@ -508,6 +547,8 @@ accessed with just a binary `AND` operation and a right-shift.
 
 
 
+
+
 ## Status
 
 Quantitative is classified as __maturescent__. For reference, Scala One projects are
@@ -519,26 +560,62 @@ categorized into one of the following five stability levels:
 - _dependable_: production-ready, subject to controlled ongoing maintenance and enhancement; tagged as version `1.0.0` or later
 - _adamantine_: proven, reliable and production-ready, with no further breaking changes ever anticipated
 
-Projects at any stability level, even _embryonic_ projects, are still ready to
-be used, but caution should be taken if there is a mismatch between the
-project's stability level and the importance of your own project.
+Projects at any stability level, even _embryonic_ projects, can still be used,
+as long as caution is taken to avoid a mismatch between the project's stability
+level and the required stability and maintainability of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 1385 lines of code.
+of 1163 lines of code.
 
 ## Building
 
-Quantitative can be built on Linux or Mac OS with [Fury](/propensive/fury), however
-the approach to building is currently in a state of flux, and is likely to
-change.
+Quantitative will ultimately be built by Fury, when it is published. In the
+meantime, two possibilities are offered, however they are acknowledged to be
+fragile, inadequately tested, and unsuitable for anything more than
+experimentation. They are provided only for the necessity of providing _some_
+answer to the question, "how can I try Quantitative?".
+
+1. *Copy the sources into your own project*
+   
+   Read the `fury` file in the repository root to understand Quantitative's build
+   structure, dependencies and source location; the file format should be short
+   and quite intuitive. Copy the sources into a source directory in your own
+   project, then repeat (recursively) for each of the dependencies.
+
+   The sources are compiled against the latest nightly release of Scala 3.
+   There should be no problem to compile the project together with all of its
+   dependencies in a single compilation.
+
+2. *Build with [Wrath](https://github.com/propensive/wrath/)*
+
+   Wrath is a bootstrapping script for building Quantitative and other projects in
+   the absence of a fully-featured build tool. It is designed to read the `fury`
+   file in the project directory, and produce a collection of JAR files which can
+   be added to a classpath, by compiling the project and all of its dependencies,
+   including the Scala compiler itself.
+   
+   Download the latest version of
+   [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
+   executable, and add it to your path, for example by copying it to
+   `/usr/local/bin/`.
+
+   Clone this repository inside an empty directory, so that the build can
+   safely make clones of repositories it depends on as _peers_ of `quantitative`.
+   Run `wrath -F` in the repository root. This will download and compile the
+   latest version of Scala, as well as all of Quantitative's dependencies.
+
+   If the build was successful, the compiled JAR files can be found in the
+   `.wrath/dist` directory.
 
 ## Contributing
 
-Contributors to Quantitative are welcome and encouraged. New contributors may like to look for issues marked
-<a href="https://github.com/propensive/quantitative/labels/beginner">beginner</a>.
+Contributors to Quantitative are welcome and encouraged. New contributors may like
+to look for issues marked
+[beginner](https://github.com/propensive/quantitative/labels/beginner).
 
-We suggest that all contributors read the [Contributing Guide](/contributing.md) to make the process of
-contributing to Quantitative easier.
+We suggest that all contributors read the [Contributing
+Guide](/contributing.md) to make the process of contributing to Quantitative
+easier.
 
 Please __do not__ contact project maintainers privately with questions unless
 there is a good reason to keep them private. While it can be tempting to
@@ -547,8 +624,9 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Quantitative was designed and developed by Jon Pretty, and commercial support and training is available from
-[Propensive O&Uuml;](https://propensive.com/).
+Quantitative was designed and developed by Jon Pretty, and commercial support and
+training on all aspects of Scala 3 is available from [Propensive
+O&Uuml;](https://propensive.com/).
 
 
 
@@ -558,16 +636,23 @@ Something which is _quantitative_ relates to measurements by quantity rather tha
 best known in the concept of "quantitative easing". _Easing the measurement of quantities_ is
 exactly Quantitative's remit.
 
-In general, Scala One project names are always chosen with some rationale, however it is usually
-frivolous. Each name is chosen for more for its _uniqueness_ and _intrigue_ than its concision or
-catchiness, and there is no bias towards names with positive or "nice" meanings—since many of the
-libraries perform some quite unpleasant tasks.
+In general, Scala One project names are always chosen with some rationale,
+however it is usually frivolous. Each name is chosen for more for its
+_uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
+bias towards names with positive or "nice" meanings—since many of the libraries
+perform some quite unpleasant tasks.
 
-Names should be English words, though many are obscure or archaic, and it should be noted how
-willingly English adopts foreign words. Names are generally of Greek or Latin origin, and have
-often arrived in English via a romance language.
+Names should be English words, though many are obscure or archaic, and it
+should be noted how willingly English adopts foreign words. Names are generally
+of Greek or Latin origin, and have often arrived in English via a romance
+language.
+
+## Logo
+
+The logo shows an unlabelled diagram of the seven SI base units, as illustrated on [Wikipedia](https://en.wikipedia.org/wiki/2019_redefinition_of_the_SI_base_units).
 
 ## License
 
-Quantitative is copyright &copy; 2023 Jon Pretty & Propensive O&Uuml;, and is made available under the
-[Apache 2.0 License](/license.md).
+Quantitative is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+is made available under the [Apache 2.0 License](/license.md).
+

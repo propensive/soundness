@@ -1,5 +1,5 @@
 /*
-    Quantitative, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Quantitative, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -17,18 +17,19 @@
 package quantitative
 
 import rudiments.*
+import vacuous.*
 import fulminate.*
 import symbolism.*
+import hypotenuse.*
 import anticipation.*
 
 import scala.quoted.*
 import scala.compiletime.*
 
-import language.experimental.captureChecking
+//import language.experimental.captureChecking
 
 object QuantitativeMacros:
-
-  private case class UnitPower(ref: UnitRef, power: Int)
+  case class UnitPower(ref: UnitRef, power: Int)
   
   private object UnitsMap:
     def apply[UnitsTypeType <: Measure: Type](using Quotes): UnitsMap =
@@ -48,7 +49,7 @@ object QuantitativeMacros:
       
       new UnitsMap(recur(quotes.reflect.TypeRepr.of[UnitsTypeType]))
 
-  private case class Dimensionality(map: Map[DimensionRef, Int]):
+  case class Dimensionality(map: Map[DimensionRef, Int]):
     def quantityName(using Quotes): Option[String] =
       import quotes.reflect.*
       def recur(todo: List[(DimensionRef, Int)], current: TypeRepr): TypeRepr = todo match
@@ -68,7 +69,7 @@ object QuantitativeMacros:
                   (TypeRepr.of[name].asMatchable: @unchecked) match
                     case ConstantType(StringConstant(name)) => name
     
-  private def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
+  def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
     
     (typeRepr.asMatchable: @unchecked) match
@@ -78,7 +79,7 @@ object QuantitativeMacros:
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
       
-  private case class UnitsMap(map: Map[DimensionRef, UnitPower]):
+  case class UnitsMap(map: Map[DimensionRef, UnitPower]):
     def repr(using Quotes): Option[quotes.reflect.TypeRepr] = construct(map.values.to(List))
     
     def inverseMap: Map[DimensionRef, UnitPower] =
@@ -86,10 +87,10 @@ object QuantitativeMacros:
 
     def dimensionality: Dimensionality = Dimensionality(map.view.mapValues(_.power).to(Map))
     def dimensions: List[DimensionRef] = map.keys.to(List)
-    def empty: Boolean = map.values.forall(_.power == 0)
+    def empty: Boolean = map.values.all(_.power == 0)
 
     @targetName("multiply")
-    def *(that: UnitsMap): UnitsMap = new UnitsMap(
+    infix def * (that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
         val dimUnit = unit(dim).orElse(that.unit(dim)).get
         dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
@@ -97,7 +98,7 @@ object QuantitativeMacros:
     )
     
     @targetName("divide")
-    def /(that: UnitsMap): UnitsMap = new UnitsMap(
+    infix def / (that: UnitsMap): UnitsMap = new UnitsMap(
       (dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
         val dimUnit = unit(dim).orElse(that.unit(dim)).get
         dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
@@ -124,7 +125,7 @@ object QuantitativeMacros:
     def unit(dimension: DimensionRef): Option[UnitRef] = map.get(dimension).map(_.ref)
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
 
-  private class UnitRef(val unitType: Type[?], val name: String):
+  class UnitRef(val unitType: Type[?], val name: String):
     def unitName(using Quotes): Expr[Text] = (power(1).asType: @unchecked) match
       case '[unitType] => Expr.summon[UnitName[unitType]] match
         case None       => '{Text(${Expr(name)})}
@@ -151,7 +152,7 @@ object QuantitativeMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  private class DimensionRef(val dimensionType: Type[?], val name: String):
+  class DimensionRef(val dimensionType: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
       (dimensionType: @unchecked) match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
     
@@ -199,7 +200,7 @@ object QuantitativeMacros:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  private def ratio
+  def ratio
       (using Quotes)
       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
       : Expr[Double] =
@@ -234,7 +235,7 @@ object QuantitativeMacros:
           case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
             case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
               case ConstantType(constant) => (constant: @unchecked) match
-                case DoubleConstant(double) => Expr(math.pow(double, power))
+                case DoubleConstant(double) => Expr(double**power)
 
   private def normalize
       (using Quotes)
@@ -313,10 +314,10 @@ object QuantitativeMacros:
       case _ =>
         fail(msg"the operands represent different physical quantities")
 
-  def multiplyTypeclass
+  def mulTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["*", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[MulOperator[Quantity[LeftType], Quantity[RightType]]] =
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
 
@@ -326,12 +327,79 @@ object QuantitativeMacros:
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["*", Quantity[LeftType], Quantity[RightType]]:
+          new MulOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
+            def mul(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
               ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
                 .asInstanceOf[Quantity[resultType]]
         }
+      
+      case None =>
+        '{
+          new MulOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Double
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}.asInstanceOf[Double]
+        }
+
+
+  def divTypeclass
+      [LeftType <: Measure: Type, RightType <: Measure: Type]
+      (using Quotes)
+      : Expr[DivOperator[Quantity[LeftType], Quantity[RightType]]] =
+    val left = UnitsMap[LeftType]
+    val right = UnitsMap[RightType]
+
+    val (leftNorm, _) = normalize(left, right, '{1.0})
+    val (rightNorm, _) = normalize(right, left, '{1.0})
+
+    ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
+      case Some('[type resultType <: Measure; resultType]) =>
+        '{
+          new DivOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Quantity[resultType]
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}
+                .asInstanceOf[Quantity[resultType]]
+        }
+      
+      case None =>
+        '{
+          new DivOperator[Quantity[LeftType], Quantity[RightType]]:
+            type Result = Double
+            def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
+              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}.asInstanceOf[Double]
+        }
+  
+  def sqrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[SquareRoot[Quantity[ValueType]]] =
+    val units = UnitsMap[ValueType]
+    if !units.map.values.all(_.power%2 == 0)
+    then fail(msg"only quantities with units in even powers can have square roots calculated")
+    else
+      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap).repr.get.asType match
+        case '[type resultType <: Measure; resultType] =>
+          '{
+            new SquareRoot[Quantity[ValueType]]:
+              type Result = Quantity[resultType]
+              
+              def squareRoot(value: Quantity[ValueType]): Quantity[resultType] =
+                math.sqrt(value.value).asInstanceOf[Quantity[resultType]]
+          }
+      
+  def cbrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[CubeRoot[Quantity[ValueType]]] =
+    val units = UnitsMap[ValueType]
+    if !units.map.values.all(_.power%3 == 0)
+    then fail(msg"only quantities with units in powers which are multiples of 3 can have cube roots calculated")
+    else
+      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap).repr.get.asType match
+        case '[type resultType <: Measure; resultType] =>
+          '{
+            new CubeRoot[Quantity[ValueType]]:
+              type Result = Quantity[resultType]
+              
+              def cubeRoot(value: Quantity[ValueType]): Quantity[resultType] =
+                math.cbrt(value.value).asInstanceOf[Quantity[resultType]]
+          }
 
   def greaterThan
       [LeftType <: Measure: Type, RightType <: Measure: Type]
@@ -380,18 +448,18 @@ object QuantitativeMacros:
       case _ =>
         resultValue
 
-  def subtractTypeclass
+  def subTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["-", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[SubOperator[Quantity[LeftType], Quantity[RightType]]] =
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["-", Quantity[LeftType], Quantity[RightType]]:
+          new SubOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply
+            def sub
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
               ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{true})}
@@ -401,15 +469,15 @@ object QuantitativeMacros:
   def addTypeclass
       [LeftType <: Measure: Type, RightType <: Measure: Type]
       (using Quotes)
-      : Expr[Operator["+", Quantity[LeftType], Quantity[RightType]]] =
+      : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
         '{
-          new Operator["+", Quantity[LeftType], Quantity[RightType]]:
+          new AddOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def apply
+            def add
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
               ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{false})}
@@ -435,227 +503,3 @@ object QuantitativeMacros:
     UnitsMap[UnitsType].dimensionality.quantityName match
       case Some(name) => '{Text(${Expr(name)})}
       case None       => fail(msg"there is no descriptive name for this physical quantity")
-
-  private case class BitSlice(unitPower: UnitPower, max: Int, width: Int, shift: Int):
-    def ones: Long = -1L >>> (64 - width)
-
-  private def bitSlices[UnitsType: Type](using Quotes): List[BitSlice] =
-    import quotes.reflect.*
-    
-    def untuple
-        [TupleType: Type]
-        (dimension: Maybe[DimensionRef], result: List[UnitPower])
-        : List[UnitPower] =
-      Type.of[TupleType] match
-        case '[head *: tail] =>
-          val unitPower = readUnitPower(TypeRepr.of[head])
-          
-          dimension.mm: current =>
-            if unitPower.ref.dimensionRef != current
-            then fail(msg"""
-              the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
-              ${current.name}
-            """)
-          
-          untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
-        
-        case _ =>
-          result
-
-    val cascade: List[UnitPower] = untuple[UnitsType](Unset, Nil)
-    val principalUnit = cascade.head.ref.dimensionRef.principal
-    
-    def width(value: Double, n: Int = 1): Int = if (1 << n) >= value then n else width(value, n + 1)
-
-    def recur(unit: List[UnitPower], next: UnitPower, factor: Double, shift: Int): List[BitSlice] =
-      unit match
-        case Nil =>
-          List(BitSlice(cascade.last, Int.MaxValue, 64 - shift, shift))
-        
-        case head :: tail =>
-          val value = ratio(head.ref, principalUnit, head.power).valueOrAbort
-          val max = value/factor
-          val bitSlice = BitSlice(next, (max + 0.5).toInt, width(max), shift)
-          
-          bitSlice :: recur(tail, head, value, shift + width(max))
-    
-    recur(cascade, cascade.head, 1.0, -1).tail.reverse
-
-  def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
-    val inputs: List[Expr[Int]] = (values: @unchecked) match
-      case Varargs(values) => values.to(List).reverse
-    
-    def recur(slices: List[BitSlice], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
-      values match
-        case Nil =>
-          expr
-        
-        case unitValue :: valuesTail => slices match
-          case BitSlice(unitPower, max, width, shift) :: tail =>
-            unitValue.value match
-              case Some(unitValue) =>
-                if unitValue < 0 then fail(msg"""
-                  the value for the ${unitPower.ref.name} unit ($unitValue) cannot be a negative
-                  number
-                """)
-                else if unitValue >= max then fail(msg"""
-                  the value for the ${unitPower.ref.name} unit ${unitValue} must be less than ${max}
-                """)
-                recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)} << ${Expr(shift)})})
-              
-              case None =>
-                recur(tail, valuesTail, '{$expr + ($unitValue.toLong << ${Expr(shift)})})
-          
-          case Nil =>
-            fail(msg"""
-              ${inputs.length} unit values were provided, but this Count only has ${slices.length}
-              units
-            """)
-    
-    '{Count.fromLong[UnitsType](${recur(bitSlices[UnitsType].reverse, inputs, '{0L})})}
-
-  def addCount
-      [CountUnitsType <: Tuple: Type]
-      (left: Expr[Count[CountUnitsType]], right: Expr[Count[CountUnitsType]])
-      (using Quotes)
-      : Expr[Count[CountUnitsType]] =
-    import quotes.reflect.*
-
-    val slices = bitSlices[CountUnitsType]
-
-    '{
-      var total: Long = 0
-      var part: Long = 0
-      
-      ${
-        def recur(slices: List[BitSlice], statements: Expr[Unit]): Expr[Unit] = slices match
-          case Nil =>
-            statements
-        
-          case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
-            recur(tail, '{
-              $statements
-              part += ($left.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}
-              part += ($right.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}
-              
-              if part < ${Expr(max)} then
-                total += part << ${Expr(shift)}
-                part = 0
-              else
-                total += (part - ${Expr(max)}) << ${Expr(shift)}
-                part = 1
-            })
-      
-        recur(slices.reverse, '{()})
-      }
-      
-      Count.fromLong(total)
-    }
-
-  def describeCount
-      [CountUnits <: Tuple: Type]
-      (count: Expr[Count[CountUnits]])
-      (using Quotes)
-      : Expr[ListMap[Text, Long]] =
-    def recur(slices: List[BitSlice], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
-      slices match
-        case Nil =>
-          expr
-        
-        case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
-          val value = '{($count.asInstanceOf[Long] >>> ${Expr(shift)}) & ${Expr(slice.ones)}}
-          recur(tail, '{$expr.updated(${unitPower.ref.unitName}, $value)})
-
-    recur(bitSlices[CountUnits], '{ListMap()})
-
-  def multiplyCount
-      [CountUnitsType <: Tuple: Type]
-      (count: Expr[Count[CountUnitsType]], multiplier: Expr[Double], division: Boolean)
-      (using Quotes)
-      : Expr[Any] =
-    val principal = bitSlices[CountUnitsType].head.unitPower.ref.dimensionRef.principal
-    
-    (principal.power(1).asType: @unchecked) match
-      case '[type unitType <: Measure; unitType] =>
-        val quantityExpr = toQuantity[CountUnitsType](count).asExprOf[Quantity[unitType]]
-        val multiplier2 = if division then '{1.0/$multiplier} else multiplier
-        val multiplied = multiply('{Quantity($multiplier2)}, quantityExpr, false)
-        val quantity2 = multiplied.asExprOf[Quantity[unitType]]
-        
-        fromQuantity[unitType, CountUnitsType](quantity2)
-
-  def toQuantity
-      [CountUnitsType <: Tuple: Type]
-      (count: Expr[Count[CountUnitsType]])
-      (using Quotes)
-      : Expr[Any] =
-    val slices = bitSlices[CountUnitsType]
-    val quantityUnit = slices.head.unitPower.ref.dimensionRef.principal
-
-    def recur(slices: List[BitSlice], expr: Expr[Double]): Expr[Double] = slices match
-      case Nil =>
-        expr
-      
-      case (slice@BitSlice(unitPower, max, width, shift)) :: tail =>
-        val factor = ratio(unitPower.ref, quantityUnit, unitPower.power)
-        recur(tail, '{$expr + $factor*(($count.longValue >>> ${Expr(shift)}) &
-            ${Expr(slice.ones)})})
-    
-    (quantityUnit.power(1).asType: @unchecked) match
-      case '[type quantityType <: Measure; quantityType] =>
-        '{Quantity[quantityType](${recur(slices, '{0.0})})}
-
-  def fromQuantity
-      [QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
-      (quantity: Expr[Quantity[QuantityType]])
-      (using Quotes)
-      : Expr[Count[CountUnitsType]] =
-    import quotes.reflect.*
-    
-    val slices = bitSlices[CountUnitsType]
-    val quantityUnit = readUnitPower(TypeRepr.of[QuantityType].dealias)
-    val rounding = ratio(slices.last.unitPower.ref, quantityUnit.ref, slices.last.unitPower.power)
-    
-    '{
-      var result: Long = 0L
-      var current: Double = $quantity.underlying + $rounding/2
-      var part: Int = 0
-      ${
-        def recur(bitSlices: List[BitSlice], statements: Expr[Unit]): Expr[Unit] =
-          bitSlices match
-            case Nil =>
-              statements
-            
-            case (bitSlice@BitSlice(unitPower, max, width, shift)) :: tail =>
-              val ratioExpr = ratio(unitPower.ref, quantityUnit.ref, unitPower.power)
-              
-              val expr = '{
-                $statements
-                part = (current/$ratioExpr).toInt
-                result = result + (part << ${Expr(shift)})
-                current = current - part*$ratioExpr
-              }
-              
-              recur(tail, expr)
-            
-        recur(slices, '{})
-      }
-      
-      Count.fromLong[CountUnitsType](result)
-    }
-
-  def get
-      [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
-      (value: Expr[Count[UnitsType]])
-      (using Quotes)
-      : Expr[Int] =
-    import quotes.reflect.*
-  
-    val slices = bitSlices[UnitsType]
-    val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
-    
-    val bitSlice: BitSlice = slices.find(_.unitPower == lookupUnit).getOrElse:
-      fail(msg"the Count does not include this unit")
-
-    '{(($value.longValue >>> ${Expr(bitSlice.shift)}) & ${Expr(bitSlice.ones)}).toInt}
-  

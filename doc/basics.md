@@ -1,10 +1,16 @@
+All Quantitative terms and types are defined in the `quantitative` package:
+```scala
+import quantitative.*
+```
+
 ### `Quantity` types
 
 Physical quantities can be represented by different `Quantity` types, with an appropriate parameter that encodes
 the value's units. We can create a quantity by multiplying an existing `Double` (or any numeric type) by some
-unit value, such as `Metre` or `Joule`—which are just `Quantity` values equal to `1.0` of the appropriate unit.
+unit value, such as `Metre` or `Joule`, which are just `Quantity` values equal to `1.0` of the appropriate unit.
 For example:
-```scala
+```amok
+##
 val distance = 58.3*Metre
 ```
 
@@ -17,7 +23,8 @@ even though "Kelvins" and "Kelvin" are both commonly used for plural values. Uni
 the singular.
 
 We can compute an `area` value by squaring the distance,
-```scala
+```amok
+##
 val area = distance*distance
 ```
 which should have units of square metres (`m²`). Quantitative represents this as the type, `Quantity[Metres[2]]`; the
@@ -31,7 +38,7 @@ alias.
 
 The precise types, representing units, are known statically, but are erased by runtime. Hence, all
 dimensionality checking takes place at compiletime, after which, operations on `Quantity`s will be
-operations on `Double`s—and will achieve similar performance.
+operations on `Double`s, and will achieve similar performance.
 
 The raw `Double` value of a `Quantity` can always be obtained with `Quantity#value`
 
@@ -43,7 +50,8 @@ human-readable `Text` values, so calling `show` on a `Quantity` will produce muc
 ### Derived units
 
 We can also define:
-```scala
+```amok
+##
 val energy = Joule*28000
 ```
 
@@ -68,7 +76,8 @@ units.
 
 Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
 by combining, say, `area` and `energy`,
-```scala
+```amok
+##
 val volume = distance*distance*distance
 val energyDensity = energy/volume
 ```
@@ -81,8 +90,9 @@ We can go further. For example, the "SUVAT" equations of motion can be safely im
 their dimensionality will be checked at compiletime. For example, the equation, `s = ut + ½at²` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
 implemented using Quantitative `Quantity`s with:
-```scala
-def s(u: Quantity[Metres[1] & Seconds[-2]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
+```amok
+##
+def s(u: Quantity[Metres[1] & Seconds[-1]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
   u*t + 0.5*a*t*t
 ```
@@ -118,10 +128,11 @@ available.
 
 Quantitative defines a variety of imperial measurements, and will automatically convert units of the same
 dimension to the same units in multiplications and divisions. For example,
-```scala
+```amok
+##
 val width = 0.3*Metre
 val height = 5*Inch
-val area = width*height
+val area2 = width*height
 ```
 will infer the type `Quantity[Metres[2]]` for `area`.
 
@@ -136,11 +147,13 @@ units, `Inches[2]`, performing no unnecessary conversions.
 Addition and subtraction are possible between quantities which share the same dimension.
 
 We can safely add an inch and a metre,
-```scala
+```amok
+##
 val length = 1*Inch + 1*Metre
 ```
 but we can't subtract a second from a litre:
-```scala
+```amok
+##
 val nonsense = Litre - Second // will not compile
 ```
 
@@ -161,7 +174,8 @@ information on conversions.
 Likewise, we can compare units in like or mixed values with the four standard inequality operators
 (`<`, `>`, `<=`, `>=`). These will return `true` or `false` if the operands have the same dimension,
 even if they have different units, for example,
-```scala
+```amok
+##
 8*Foot < 4*Metre // returns true
 ```
 while incompatible units will result in a compile error.
@@ -173,7 +187,8 @@ represented as `Double`s at runtime, and the JVM's standard equality will not ta
 account. So, by default, `3*Foot == 3*Metre` will yield `true`, since `3.0 == 3.0`!
 
 This is highly undesirable, but luckily there's a solution:
-```scala
+```amok
+##
 import language.strictEquality
 ```
 
@@ -197,7 +212,8 @@ power `1` and the other with the power `-1`. The rate of conversion should be sp
 literal `Double` as the second parameter. The `given` may be `erased`, if using Scala's erased definitions.
 
 For example,
-```scala
+```amok
+##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
 ```
 which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
@@ -221,10 +237,11 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 `(3*Foot * 1*Metre * 0.4*Centi(Metre)).in[Inches]`, would calculate a volume in cubic inches.
 
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
-```scala
-val distance = 100*Metre
+```amok
+##
+val distance2 = 100*Metre
 val time = 9.8*Second
-val speed = distance/time
+val speed = distance2/time
 val mph = speed.in[Miles].in[Hours]
 ```
 
@@ -268,15 +285,17 @@ Imagine we wanted to implement the FLOPS unit, for measuring the floating-point 
 CPU: floating-point instructions per second.
 
 Trivially, we could create a value,
-```scala
-val Flop = 1.0/Second
+```amok
+##
+val SimpleFlop = 1.0/Second
 ```
-and use it in equations such as, `1000000*Flop * Minute` to yield an absolute number representing
+and use it in equations such as, `1000000*SimpleFlop * Minute` to yield an absolute number representing
 the number of floating-point instructions that could (theoretically) be calculated in one minute by
 a one-megaFLOP CPU.
 
 But this definition is just a value, not a unit. We can tweak the definition slightly to,
-```scala
+```amok
+##
 val Flop = MetricUnit(1.0/Second)
 ```
 and it becomes possible to use metric prefixes on the value. So we could rewrite the above expression
@@ -288,11 +307,13 @@ The result is just a `Double`, though, which is a little unsatisfactory, since i
 something more specific: a number of instructions. To do better, we need to introduce a new
 `Dimension`, distinct from length, mass and other dimensions, and representing a CPU's
 performance,
-```scala
+```amok
+##
 trait CpuPerformance extends Dimension
 ```
 and create a `Flops` type corresponding to this dimension:
-```scala
+```amok
+##
 import rudiments.*
 trait Flops[PowerType <: Nat] extends Units[PowerType, CpuPerformance]
 val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
@@ -308,7 +329,8 @@ With these definitions, we can now write `Mega(Flop) * Minute` to get a result w
 
 If we want to show the FLOPS value as `Text`, a symbolic name is required. This can be specified
 with a contextual instance of `UnitName[Flops[1]]`,
-```scala
+```amok
+##
 given UnitName[Flops[1]] = () => t"FLOPS"
 ```
 which will allow `show` to be called on a quantity involving FLOPs.
@@ -328,7 +350,8 @@ quantitative: the left operand represents velocity, but the right operand repres
 these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
-```scala
+```amok
+##
 erased given DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
 ```
 
@@ -344,7 +367,10 @@ much easier to write.
 By default, Quantitative will use the latter form, but it is possible to define alternative
 representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
-```scala
+```amok
+##
+import gossamer.t
+
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
 ```
 and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead of `2800 kg⋅m²⋅s¯²`.
