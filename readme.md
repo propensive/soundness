@@ -4,7 +4,7 @@
 
 # Octogenarian
 
-__TBC__
+__Common Git operations for Scala__
 
 TBC
 
