@@ -37,14 +37,14 @@ All Inimitable terms and types are defined in the `inimitable` package:
 import inimitable.*
 ```
 
-## Constructing a new UUID
+### Constructing a new UUID
 
 A UUID can be constructed with the `Uuid()` factory method. This will create a
 new, and by definition, universally unique, identifier. The `Uuid` instance is
 composed of two 64-bit longs, `msb` (for "most significant bits") and `lsb`
 ("least significant bits"), implying (in theory) 128 bits of entropy.
 
-### Specific UUIDs
+#### Specific UUIDs
 
 A particular UUID, for example `e6388c03-3dd2-4044-bb38-e58dbf8368fd`, may be
 constructed using the `uuid""` interpolator, like so,
@@ -76,7 +76,7 @@ val uuid3 = text.decodeAs[Uuid]
 
 This will raise a `UuidError` if it is not in the correct format.
 
-#### Methods on `Uuid`s
+### Methods on `Uuid`s
 
 Two convenience methods are provided on `Uuid`s:
 - the unary `~` operator, which will construct a new `Uuid` by inverting its bits, and
