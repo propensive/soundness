@@ -4,12 +4,13 @@
 
 # Hallucination
 
-____
+__TBC__
 
-
+TBC
 
 ## Features
 
+TBC
 
 
 ## Availability Plan
@@ -26,11 +27,12 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
+TBC
 
 
 ## Status
 
-Hallucination is classified as ____. For reference, Scala One projects are
+Hallucination is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -111,7 +113,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+TBC
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -126,7 +128,7 @@ language.
 
 ## Logo
 
-
+TBC
 
 ## License
 
