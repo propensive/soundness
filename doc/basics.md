@@ -1,4 +1,4 @@
-## Quotes and Splices
+### Quotes and Splices
 
 A Scala 3 macro, written using quotes and splices syntax, typically looks something like this:
 ```scala
