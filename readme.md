@@ -4,7 +4,7 @@
 
 # Hallucination
 
-__TBC__
+__A library for working with images in Scala__
 
 TBC
 
