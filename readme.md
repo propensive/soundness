@@ -32,7 +32,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Status
 
-Feudalism is classified as ____. For reference, Scala One projects are
+Feudalism is classified as __fledgling__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -131,7 +131,9 @@ language.
 
 ## Logo
 
-
+The logo shows a ring, split into two halves representing read-access and
+write-access; in the read-access half, the ring splits into multiple threads,
+while in the write-access half, the ring is just a single thread.
 
 ## License
 
