@@ -1,1 +1,2 @@
-TBC
+- simple immutable API for reading and writing image files
+- supports standard Java ImageIO formats: GIF, JPEG, BMP and PNG
