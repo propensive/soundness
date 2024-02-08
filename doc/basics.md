@@ -31,3 +31,12 @@ import hellenism.*
 
 val icon = (Classpath / p"icon.bmp").readAs[Image[Bmp]]
 ```
+
+### Accessing `Image` data
+
+The width and height of the image are available through the `width` and
+`height` methods of `Image[?]`.
+
+The color of the pixel at given coordinates within the image can be accessed,
+as an `Rgb24` value, using `Image`'s `apply` method, i.e. `image(x, y)`.
+
