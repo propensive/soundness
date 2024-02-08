@@ -1,2 +1,4 @@
 - simple immutable API for reading and writing image files
 - supports standard Java ImageIO formats: GIF, JPEG, BMP and PNG
+- read directly from any [Turbulence](https://github.com/propensive/turbulence) source
+- access image metadata and individual pixel colors
