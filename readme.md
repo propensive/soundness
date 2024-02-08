@@ -113,7 +113,8 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-TBC
+An _hallucination_ is a sensation of something appearing real, but existing
+only in ones mind. An image is a visual hallucination.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -128,7 +129,7 @@ language.
 
 ## Logo
 
-TBC
+Hallucination's logo is a simplistic eye, the organ that is stimulated by images.
 
 ## License
 
