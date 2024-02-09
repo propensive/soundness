@@ -1,4 +1,5 @@
 - provides an abstract framework for data transmission through sockets
 - supports both stateful (e.g. TCP) and stateless (e.g. UDP) connections
+- server and client implementations for UDP, TCP and UNIX domain sockets
 - allows servers and clients to process connections as state machines
 - uses a safe, functional API
