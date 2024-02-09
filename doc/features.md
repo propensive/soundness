@@ -1,1 +1,4 @@
-TBC
+- provides an abstract framework for data transmission through sockets
+- supports both stateful (e.g. TCP) and stateless (e.g. UDP) connections
+- allows servers and clients to process connections as state machines
+- uses a safe, functional API
