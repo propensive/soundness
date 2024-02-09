@@ -127,6 +127,41 @@ value to be specified means that it's impossible to forget how to handle the
 input; the programmer must decide to reply, continue, conclude or terminate the
 connection, otherwise the code will not compile.
 
+### Implementing a Server
+
+Writing a server can be simpler than sending a client request. The `listen`
+method is available on any type with a `Bindable` typeclass instance, but this
+notably includes:
+ - UNIX domain sockets
+ - TCP ports
+ - UDP ports
+
+We can write a server by calling the `listen` method on a `Bindable` type, and
+specifying, by means of a lambda, how a request should be handled.
+
+Calling `listen` will start a new server in a separate thread. Any incoming
+request will dispatch it to the handler lambda. The type of the input will
+depend on the type of the local endpoint. So a stateful connection will provide
+an input type which can support an interactive session, whereas a stateless
+connection will provide just the payload.
+
+The return value of the lambda will also be determined from the endpoint type,
+as appropriate for stateful and stateless connections.
+
+As an example, a simple UDP server takes input as a `UdpPacket` and returns a
+`UdpResponse`. `UdpPacket` is a case class with fields: `data`, the payload
+bytes; `sender`, an `Ipv4` or `Ipv6` source address; and `port`, the remote UDP
+port.
+
+`UdpResponse` is an enumeration, which is either `Ignore` (if no response is
+expected to the UDP packet), or `Reply(payload)` with the bytes to respond
+with.
+
+So a UDP server which responds to `PING` messages with `PONG`, but ignores
+other messages could be implemented with just:
+```scala
+udp"1722".listen: packet =>
+  if packet.as[Text] == t"PING" then Reply(t"PONG") else Ignore
 
 
 
