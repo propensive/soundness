@@ -124,7 +124,16 @@ with.
 So a UDP server which responds to `PING` messages with `PONG`, but ignores
 other messages could be implemented with just:
 ```scala
-udp"1722".listen: packet =>
+val server = udp"1722".listen: packet =>
   if packet.as[Text] == t"PING" then Reply(t"PONG") else Ignore
+```
+
+The return value, `server`, is a `SocketService` representing the server
+running in the background, and will be returned as soon as the port has been
+bound. It may be stopped at any time by calling its `stop` method, like so:
+```scala
+server.stop()
+```
+
 
 
