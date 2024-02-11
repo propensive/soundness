@@ -19,7 +19,7 @@ package wisteria
 import anticipation.*
 import rudiments.*
 import vacuous.*
-import perforate.*
+import contingency.*
 import fulminate.*
 
 import scala.deriving.*
