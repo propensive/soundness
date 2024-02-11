@@ -130,7 +130,7 @@ However, the API of `Decoder` does not include any optionality in the signature
 of its `decode` method. That's because _capabilities_ should be used to handle
 failures, with greater flexibility.  Given `Decoder` instances should include
 appropriate `using` clauses to demand the capability to raise errors. If using
-[Perforate](https://github.com/propensive/perforate/) for error handling, that
+[Contingency](https://github.com/propensive/contingency/) for error handling, that
 implies a `Raises` instance, while Scala's checked exceptions require a
 `CanThrow` instance for the exception type.
 
