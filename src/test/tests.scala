@@ -21,7 +21,7 @@ import rudiments.*
 import anticipation.*
 import gossamer.*
 import spectacular.*
-import perforate.*
+import contingency.*
 import printers.compact
 
 import unsafeExceptions.canThrowAny
