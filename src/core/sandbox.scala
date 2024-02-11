@@ -28,7 +28,7 @@ import ambience.*, systemProperties.virtualMachine
 import gossamer.*
 import inimitable.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8
-import perforate.*
+import contingency.*
 import eucalyptus.*
 import hellenism.*
 

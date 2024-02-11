@@ -21,7 +21,7 @@ import gossamer.*
 import inimitable.*
 import anticipation.*
 import fulminate.*
-import perforate.*
+import contingency.*
 
 case class Foo(x: Int, y: String)
 
