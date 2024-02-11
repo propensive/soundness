@@ -48,12 +48,12 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = throw error
 
 @capability
-class RaisesCompileFailure[ErrorType <: Error, SuccessType]()(using Quotes) extends Raises[ErrorType]:
+class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes) extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = fail(error.message)
   def abort(error: ErrorType): Nothing = fail(error.message)
 
 @capability
-class RaisesAggregate
+class AggregateStrategy
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
 extends Raises[ErrorType]:
@@ -69,7 +69,7 @@ extends Raises[ErrorType]:
     if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
 
 @capability
-class RaisesErrorResult
+class EitherStrategy
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Either[ErrorType, SuccessType]])
     (using @annotation.constructorOnly unexpectedSuccess: Raises[UnexpectedSuccessError[SuccessType]])
@@ -79,7 +79,7 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
 
 @capability
-class RaisesOptional[ErrorType <: Error, SuccessType](label: boundary.Label[Optional[SuccessType]])
+class OptionalStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Optional[SuccessType]])
 extends Raises[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
@@ -88,7 +88,7 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
 @capability
-class ReturnMitigated
+class MitigationStrategy
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Mitigated[SuccessType, ErrorType]])
 extends Raises[ErrorType]:
@@ -124,10 +124,10 @@ def safely
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: RaisesOptional[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: OptionalStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
     : Optional[SuccessType] =
   try boundary: label ?=>
-    block(using RaisesOptional(label))
+    block(using OptionalStrategy(label))
   catch case error: Exception => Unset
 
 def unsafely
@@ -152,11 +152,11 @@ def validate
     [ErrorType <: Error]
     (using raise: Raises[AggregateError[ErrorType]])
     [SuccessType]
-    (block: RaisesAggregate[ErrorType, SuccessType] ?=> SuccessType)
+    (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
   val value: Either[AggregateError[ErrorType], SuccessType] =
     boundary: label ?=>
-      val raiser = RaisesAggregate(label)
+      val raiser = AggregateStrategy(label)
       Right(block(using raiser)).also(raiser.finish())
   
   value match
@@ -167,11 +167,11 @@ def capture
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: RaisesErrorResult[ErrorType, SuccessType] ?=> SuccessType)
+    (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
     (using raise: Raises[UnexpectedSuccessError[SuccessType]])
     : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
-    Right(block(using RaisesErrorResult(label)))
+    Right(block(using EitherStrategy(label)))
   
   value match
     case Left(error)  => error
@@ -181,18 +181,18 @@ def over
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: ReturnMitigated[ErrorType, SuccessType] ?=> SuccessType)
+    (block: MitigationStrategy[ErrorType, SuccessType] ?=> SuccessType)
     : Mitigated[SuccessType, ErrorType] =
   boundary: label ?=>
-    Mitigated.Success(block(using ReturnMitigated[ErrorType, SuccessType](label)))
+    Mitigated.Success(block(using MitigationStrategy[ErrorType, SuccessType](label)))
 
 def failCompilation
     [ErrorType <: Error]
     (using Quotes)
     [SuccessType]
-    (block: RaisesCompileFailure[ErrorType, SuccessType] ?=> SuccessType)
+    (block: FailStrategy[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
-  given RaisesCompileFailure[ErrorType, SuccessType]()
+  given FailStrategy[ErrorType, SuccessType]()
   block
 
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
