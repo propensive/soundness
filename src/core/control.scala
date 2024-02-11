@@ -1,5 +1,5 @@
 /*
-    Perforate, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Contingency, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package perforate
+package contingency
 
 import fulminate.*
 import vacuous.*
@@ -223,7 +223,7 @@ trait Mitigation[-InputErrorTypes <: Error]:
   def handle[SuccessType](mitigated: Mitigated[SuccessType, InputErrorTypes]): SuccessType
 
 // transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
-//   ${Perforate.mitigate('handler)}
+//   ${Contingency.mitigate('handler)}
 
 enum Mitigated[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)

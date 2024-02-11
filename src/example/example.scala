@@ -1,5 +1,5 @@
 /*
-    Perforate, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Contingency, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package perforate
+package contingency
 
 import kaleidoscope.*
 import rudiments.*

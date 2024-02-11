@@ -1,5 +1,5 @@
 /*
-    Perforate, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Contingency, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,11 +14,11 @@
     and limitations under the License.
 */
 
-package perforate
+package contingency
 
 import probably.*
 import gossamer.*
 
-object Tests extends Suite(t"Perforate tests"):
+object Tests extends Suite(t"Contingency tests"):
   def run(): Unit =
     ()

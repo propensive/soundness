@@ -1,5 +1,5 @@
 /*
-    Perforate, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Contingency, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package perforate
+package contingency
 
 import fulminate.*
 import rudiments.*
@@ -29,14 +29,14 @@ transparent inline def mitigate
     [ErrorType <: Error]
     (inline mitigation: PartialFunction[Throwable, ErrorType])
     : Mitigator[ErrorType] =
-  ${Perforate.mitigate[ErrorType]('mitigation)}
+  ${Contingency.mitigate[ErrorType]('mitigation)}
 
 trait Mitigator[+ErrorType]:
   type Context[+ResultType]
 
   def within[ResultType](block: Context[ResultType]): ResultType
 
-object Perforate:
+object Contingency:
   def mitigate
       [ErrorType <: Error: Type]
       (handlers: Expr[PartialFunction[Throwable, ErrorType]])

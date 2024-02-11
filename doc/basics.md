@@ -1,12 +1,12 @@
-All Perforate terms and types are defined in the `perforate` package:
+All Contingency terms and types are defined in the `contingency` package:
 ```scala
-import perforate.*
+import contingency.*
 ```
 
-_Perforate_ provides a number of different ways to work with errors in Scala,
+_Contingency_ provides a number of different ways to work with errors in Scala,
 for libraries which opt in to its advanced error-handling capabilities.
 
-Perforate builds upon Scala 3's _safer exceptions_ with its new
+Contingency builds upon Scala 3's _safer exceptions_ with its new
 `boundary`/`break` control flow syntax to abstract over exception handling.
 
 We will look at how this works at the call site first, and then from the
@@ -21,7 +21,7 @@ throw an exception, determined directly or indirectly by the code in the
 method's implementation. The method's signature _may_ also specify the types of
 exception it can throw, if it has been written with _safer exceptions_ in mind.
 
-For Perforate's purposes, a partial method is one which declares a `raises`
+For Contingency's purposes, a partial method is one which declares a `raises`
 clause in its type, such as,
 ```scala
 import fulminate.{msg, Error}
@@ -44,7 +44,7 @@ different type of error.
 
 ### Raising
 
-Perforate introduces the terminology of _raising_ as a generalization of
+Contingency introduces the terminology of _raising_ as a generalization of
 _throwing_ which is dependent on callsite context. If the callsite context
 calls for throwing, then _raising an error_ will mean _throwing an error_. But
 there are alternative interpretations of raising which don't involve throwing.
@@ -70,7 +70,7 @@ If we just don't care about error handling, for example when building a
 prototype, we can effectively `turn off` error handling by providing a global
 contextual value which "handles" all errors by throwing them as exceptions,
 ```scala
-import perforate.errorHandling.throwUnsafely
+import contingency.errorHandling.throwUnsafely
 ```
 which is equivalent to Scala's default behavior: errors will be unchecked, and
 will be thrown like traditional exceptions, bubbling through the stack until
@@ -101,7 +101,7 @@ which returns `Optional[ReturnType]`.
 
 One happy benefit of this is that the relatively expensive performance cost of
 constructing and throwing an exception, only to discard it for an `Unset`
-value, is saved. The exception instance is never constructed because Perforate
+value, is saved. The exception instance is never constructed because Contingency
 knows from the callsite context (i.e. inside the `safely` wrapper) that it just
 needs to return `Unset` instead.
 
@@ -173,7 +173,7 @@ required capabilities.
 _Note that a more natural way to write this would have the `within` block
 preceding the `mitigate` block, like a `try`/`catch` block, but this has proven
 to be difficult. There is an open issue to find a way to switch the order, and
-it is hoped that a later version of Perforate can achieve this more natural
+it is hoped that a later version of Contingency can achieve this more natural
 order._
 
 
