@@ -19,7 +19,7 @@ package imperial
 import ambience.*
 import anticipation.*
 import gossamer.*
-import perforate.*
+import contingency.*
 import probably.*
 import rudiments.*
 import vacuous.*
