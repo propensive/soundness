@@ -1,16 +1,17 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/perforate/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/perforate/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/contingency/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/contingency/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
 <img src="/doc/images/github.png" valign="middle">
 
-# Perforate
+# Contingency
 
 __Versatile error handling for every scenario.__
 
-Perforate is an experimental library for abstracting over error handling. In
-particular, it gives developers a choice between throwing exceptions, returning
-errors in a variety of datatypes, and accumulating several validation-style
-errors. Code must be written to accomodate Perforate's generic
-error handling, but the changes from exception-throwing code are trivial.
+Contingency is an experimental library for abstracting over error handling
+strategies. In particular, it gives developers a choice between throwing
+exceptions, returning errors in a variety of datatypes, and accumulating
+several validation-style errors. Code must be written to accomodate
+Contingency's generic error handling, but the changes from exception-throwing
+code are trivial.
 
 ## Features
 
@@ -19,27 +20,27 @@ TBC
 
 ## Availability Plan
 
-Perforate has not yet been published. The medium-term plan is to build Perforate
+Contingency has not yet been published. The medium-term plan is to build Contingency
 with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
 [Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Perforate.
+software which depends on Contingency.
 
-Subsequently, Perforate will also be made available as a binary in the Maven
+Subsequently, Contingency will also be made available as a binary in the Maven
 Central repository. This will enable users of other build tools to use it.
 
 For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
-All Perforate terms and types are defined in the `perforate` package:
+All Contingency terms and types are defined in the `contingency` package:
 ```scala
-import perforate.*
+import contingency.*
 ```
 
-_Perforate_ provides a number of different ways to work with errors in Scala,
+_Contingency_ provides a number of different ways to work with errors in Scala,
 for libraries which opt in to its advanced error-handling capabilities.
 
-Perforate builds upon Scala 3's _safer exceptions_ with its new
+Contingency builds upon Scala 3's _safer exceptions_ with its new
 `boundary`/`break` control flow syntax to abstract over exception handling.
 
 We will look at how this works at the call site first, and then from the
@@ -54,7 +55,7 @@ throw an exception, determined directly or indirectly by the code in the
 method's implementation. The method's signature _may_ also specify the types of
 exception it can throw, if it has been written with _safer exceptions_ in mind.
 
-For Perforate's purposes, a partial method is one which declares a `raises`
+For Contingency's purposes, a partial method is one which declares a `raises`
 clause in its type, such as,
 ```scala
 import fulminate.{msg, Error}
@@ -77,7 +78,7 @@ different type of error.
 
 ### Raising
 
-Perforate introduces the terminology of _raising_ as a generalization of
+Contingency introduces the terminology of _raising_ as a generalization of
 _throwing_ which is dependent on callsite context. If the callsite context
 calls for throwing, then _raising an error_ will mean _throwing an error_. But
 there are alternative interpretations of raising which don't involve throwing.
@@ -103,7 +104,7 @@ If we just don't care about error handling, for example when building a
 prototype, we can effectively `turn off` error handling by providing a global
 contextual value which "handles" all errors by throwing them as exceptions,
 ```scala
-import perforate.errorHandling.throwUnsafely
+import contingency.errorHandling.throwUnsafely
 ```
 which is equivalent to Scala's default behavior: errors will be unchecked, and
 will be thrown like traditional exceptions, bubbling through the stack until
@@ -134,7 +135,7 @@ which returns `Optional[ReturnType]`.
 
 One happy benefit of this is that the relatively expensive performance cost of
 constructing and throwing an exception, only to discard it for an `Unset`
-value, is saved. The exception instance is never constructed because Perforate
+value, is saved. The exception instance is never constructed because Contingency
 knows from the callsite context (i.e. inside the `safely` wrapper) that it just
 needs to return `Unset` instead.
 
@@ -206,7 +207,7 @@ required capabilities.
 _Note that a more natural way to write this would have the `within` block
 preceding the `mitigate` block, like a `try`/`catch` block, but this has proven
 to be difficult. There is an open issue to find a way to switch the order, and
-it is hoped that a later version of Perforate can achieve this more natural
+it is hoped that a later version of Contingency can achieve this more natural
 order._
 
 
@@ -218,7 +219,7 @@ order._
 
 ## Status
 
-Perforate is classified as __embryotic__. For reference, Scala One projects are
+Contingency is classified as __embryotic__. For reference, Scala One projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -231,20 +232,20 @@ Projects at any stability level, even _embryonic_ projects, can still be used,
 as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
-Perforate is designed to be _small_. Its entire source code currently consists
+Contingency is designed to be _small_. Its entire source code currently consists
 of 302 lines of code.
 
 ## Building
 
-Perforate will ultimately be built by Fury, when it is published. In the
+Contingency will ultimately be built by Fury, when it is published. In the
 meantime, two possibilities are offered, however they are acknowledged to be
 fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
-answer to the question, "how can I try Perforate?".
+answer to the question, "how can I try Contingency?".
 
 1. *Copy the sources into your own project*
    
-   Read the `fury` file in the repository root to understand Perforate's build
+   Read the `fury` file in the repository root to understand Contingency's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
    project, then repeat (recursively) for each of the dependencies.
@@ -255,7 +256,7 @@ answer to the question, "how can I try Perforate?".
 
 2. *Build with [Wrath](https://github.com/propensive/wrath/)*
 
-   Wrath is a bootstrapping script for building Perforate and other projects in
+   Wrath is a bootstrapping script for building Contingency and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
@@ -267,21 +268,21 @@ answer to the question, "how can I try Perforate?".
    `/usr/local/bin/`.
 
    Clone this repository inside an empty directory, so that the build can
-   safely make clones of repositories it depends on as _peers_ of `perforate`.
+   safely make clones of repositories it depends on as _peers_ of `contingency`.
    Run `wrath -F` in the repository root. This will download and compile the
-   latest version of Scala, as well as all of Perforate's dependencies.
+   latest version of Scala, as well as all of Contingency's dependencies.
 
    If the build was successful, the compiled JAR files can be found in the
    `.wrath/dist` directory.
 
 ## Contributing
 
-Contributors to Perforate are welcome and encouraged. New contributors may like
+Contributors to Contingency are welcome and encouraged. New contributors may like
 to look for issues marked
-[beginner](https://github.com/propensive/perforate/labels/beginner).
+[beginner](https://github.com/propensive/contingency/labels/beginner).
 
 We suggest that all contributors read the [Contributing
-Guide](/contributing.md) to make the process of contributing to Perforate
+Guide](/contributing.md) to make the process of contributing to Contingency
 easier.
 
 Please __do not__ contact project maintainers privately with questions unless
@@ -291,7 +292,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Perforate was designed and developed by Jon Pretty, and commercial support and
+Contingency was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
 
@@ -318,6 +319,6 @@ The logo shows three tickets, each of which has been _validated_.
 
 ## License
 
-Perforate is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Contingency is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 

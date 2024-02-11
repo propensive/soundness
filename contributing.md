@@ -1,8 +1,8 @@
 <img src="/doc/images/200x200.png" align="right">
 
-# Contributing to Perforate
+# Contributing to Contingency
 
-Firstly, thank you for taking an interesting in contributing! Perforate is an
+Firstly, thank you for taking an interesting in contributing! Contingency is an
 open-source project, and welcomes contributions in the form of feature code,
 bug reports and fixes, tests, feature suggestions and anything else which may
 help to make it better software.
@@ -29,14 +29,14 @@ X](https://x.com/propensive).
 
 All development work&mdash;whether bugfixing or implementing new
 features&mdash;should have a corresponding issue before work starts. If you
-have commit rights to the `propensive/perforate` repository, push to a branch named
+have commit rights to the `propensive/contingency` repository, push to a branch named
 after the issue number, prefixed with `issue/`, for example, `issue/423`.
 
 ## Contribution standards
 
 Pull requests should try to follow the coding style of existing code in the
 repository. They are unlikely to be rejected on grounds of formatting, except
-in extreme cases. Perforate does not use automatic code-formatting because it
+in extreme cases. Contingency does not use automatic code-formatting because it
 has proven to produce unreliable results (and furthermore, hand-formatting is
 not particularly laborious).
 
@@ -65,7 +65,7 @@ if it&rsquo;s needed.
 
 Contributors and other participants in online discussions are expected to be
 polite, on-topic and to nurture a pleasant development environment for all
-Perforate&rsquo;s users. Propensive O&Uuml; reserves the right to censure
+Contingency&rsquo;s users. Propensive O&Uuml; reserves the right to censure
 and&mdash;in extreme cases&mdash;ban users whose behavior, in their opinion, is
 detrimental toward this goal. But individualism is valued, and nobody should
 feel constrained in how they express themselves.
