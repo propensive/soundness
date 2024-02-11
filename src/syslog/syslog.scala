@@ -22,7 +22,7 @@ import parasite.*
 import anticipation.*
 import gossamer.*
 import turbulence.*
-import perforate.*
+import contingency.*
 import hieroglyph.*, textMetrics.uniform
 
 //import scala.language.experimental.captureChecking

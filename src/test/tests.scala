@@ -22,7 +22,7 @@ import gossamer.*
 import spectacular.*
 import escapade.*
 import parasite.*
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine
 
 object Tests extends Suite(t"Eucalyptus tests"):
