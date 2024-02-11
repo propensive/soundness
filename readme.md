@@ -193,11 +193,11 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Mosquito](https://github.com/propensive/mosquito/raw/main/doc/images/128x128.png)](https://github.com/propensive/mosquito/)&nbsp;
 [![Nectary](https://github.com/propensive/nectary/raw/main/doc/images/128x128.png)](https://github.com/propensive/nectary/)&nbsp;
 [![Nettlesome](https://github.com/propensive/nettlesome/raw/main/doc/images/128x128.png)](https://github.com/propensive/nettlesome/)&nbsp;
-[![Nonagenarian](https://github.com/propensive/nonagenarian/raw/main/doc/images/128x128.png)](https://github.com/propensive/nonagenarian/)&nbsp;
+[![Octagenarian](https://github.com/propensive/octogenarian/raw/main/doc/images/128x128.png)](https://github.com/propensive/octogenarian/)&nbsp;
 [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/)&nbsp;
 [![Panopticon](https://github.com/propensive/panopticon/raw/main/doc/images/128x128.png)](https://github.com/propensive/panopticon/)&nbsp;
 [![Parasite](https://github.com/propensive/parasite/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasite/)&nbsp;
-[![Perforate](https://github.com/propensive/perforate/raw/main/doc/images/128x128.png)](https://github.com/propensive/perforate/)&nbsp;
+[![Contingency](https://github.com/propensive/contingency/raw/main/doc/images/128x128.png)](https://github.com/propensive/contingency/)&nbsp;
 [![Polyvinyl](https://github.com/propensive/polyvinyl/raw/main/doc/images/128x128.png)](https://github.com/propensive/polyvinyl/)&nbsp;
 [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/)&nbsp;
 [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/)&nbsp;
