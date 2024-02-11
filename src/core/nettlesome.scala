@@ -20,7 +20,7 @@ import rudiments.*
 import hypotenuse.*
 import spectacular.*
 import gossamer.*
-import perforate.*
+import contingency.*
 import fulminate.*
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform

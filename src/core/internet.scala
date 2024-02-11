@@ -17,7 +17,7 @@
 package nettlesome
 
 import fulminate.*
-import perforate.*
+import contingency.*
 import rudiments.*
 import vacuous.*
 

@@ -22,7 +22,7 @@ import gossamer.*
 import anticipation.*
 import serpentine.*, hierarchies.urls
 import spectacular.*
-import perforate.*
+import contingency.*
 import larceny.*
 
 import errorHandlers.throwUnsafely
