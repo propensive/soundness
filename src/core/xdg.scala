@@ -17,7 +17,7 @@
 package ambience
 
 import gossamer.*
-import perforate.*
+import contingency.*
 import anticipation.*
 import rudiments.*
 import vacuous.*
