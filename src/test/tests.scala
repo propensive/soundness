@@ -21,7 +21,7 @@ import rudiments.*
 import hieroglyph.*, charEncoders.utf8, textMetrics.uniform
 import spectacular.*
 import vacuous.*
-import perforate.*
+import contingency.*
 import anticipation.*
 import larceny.*
 
