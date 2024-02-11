@@ -39,13 +39,18 @@ def run(): Unit =
 def maybe(): Unit raises BazError1 =
   println("Hello")
 
-  mitigate:
-    case quux@QuuxError1(BarError1(n, s)) => BazError1(s"$n / $s")
-    case (_: BarError1) | (_: FooError1) => BazError1(s"bar")
-  .within:
-    println("Hello 3")
-    println(foo()+bar()+quux())
-    println("Hello 4")
+  given (BazError1 fixes QuuxError1) =
+    case QuuxError1(BarError1(n, s)) => BazError1(s"$n / $s")
+
+  given (BazError1 fixes BarError1) =
+    case BarError1(n, s) => BazError1(s"$n / $s")
+
+  given (BazError1 fixes FooError1) =
+    case FooError1() => BazError1(s"foo")
+    
+  println("Hello 3")
+  println(foo()+bar()+quux())
+  println("Hello 4")
   
   println("Hello 5")
 

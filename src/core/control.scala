@@ -27,6 +27,18 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
+infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, ErrorType1]
+
+trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
+  def fix(error: ErrorType1): ErrorType2
+
+object Raises:
+  given fixStrategy
+      [ErrorType1 <: Error, ErrorType2 <: Error]
+      (using fix: Fix[ErrorType1, ErrorType2], strategy: Raises[ErrorType2])
+      : Raises[ErrorType1] =
+    strategy.contramap(fix.fix(_))
+
 @capability
 trait Raises[-ErrorType <: Error] extends Pure:
 
