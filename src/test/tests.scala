@@ -19,7 +19,7 @@ package rudiments
 import anticipation.*
 import gossamer.*
 import larceny.*
-import perforate.*
+import contingency.*
 import vacuous.*
 import probably.*
 import rudiments.*
