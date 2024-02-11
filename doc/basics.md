@@ -34,7 +34,7 @@ extension method:
 ```scala
 import spectacular.decodeAs
 import gossamer.t
-import perforate.errorHandlers.throwUnsafely
+import contingency.errorHandlers.throwUnsafely
 
 val text = t"e6388c03-3dd2-4044-bb38-e58dbf8368fd"
 val uuid3 = text.decodeAs[Uuid]
