@@ -18,7 +18,7 @@ package anthology
 
 import anticipation.*
 import galilei.*
-import perforate.*
+import contingency.*
 import fulminate.*
 import ambience.*
 import gossamer.*
