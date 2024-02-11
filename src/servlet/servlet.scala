@@ -17,7 +17,7 @@
 package scintillate
 
 import rudiments.*
-import perforate.*
+import contingency.*
 import vacuous.*
 import anticipation.*
 import turbulence.*
