@@ -78,7 +78,7 @@ val url = Url.parse(urlText)
 ```
 
 If an invalid value is passed to the `parse` method, then an error will be
-raised. If using [Perforate](https://github.com/propensive/perforate/) then
+raised. If using [Contingency](https://github.com/propensive/contingency/) then
 there are a variety of ways in which such errors can be handled.
 
 
