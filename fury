@@ -12,7 +12,7 @@ project spectacular
   module core
     sources   src/core
     compiler  scala
-    include   rudiments/core inimitable/core perforate/core wisteria/core
+    include   rudiments/core inimitable/core contingency/core wisteria/core
 
   module test
     sources   src/test
