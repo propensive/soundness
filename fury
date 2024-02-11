@@ -4,13 +4,13 @@
 target ambience/test
 
 repo propensive/rudiments
-repo propensive/perforate
+repo propensive/contingency
 
 project ambience
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core anticipation/path spectacular/core gossamer/core perforate/core
+    include   rudiments/core anticipation/path spectacular/core gossamer/core contingency/core
   
   module test
     compiler  scala
