@@ -19,7 +19,7 @@ package gastronomy
 import rudiments.*
 import gossamer.*
 import anticipation.*
-import perforate.*
+import contingency.*
 import spectacular.*
 import kaleidoscope.*
 

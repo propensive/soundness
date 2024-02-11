@@ -20,7 +20,7 @@ import probably.*
 import rudiments.*
 import anticipation.*
 import gossamer.*
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, badEncodingHandlers.skip
 
