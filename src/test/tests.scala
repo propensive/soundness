@@ -23,7 +23,7 @@ import rudiments.*
 import spectacular.*
 import parasite.*
 import superlunary.*
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 import inimitable.*
 import nettlesome.*
 import jacinta.*, jsonPrinters.minimal
