@@ -300,7 +300,8 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-Tickets for public transport, and various other services, would historically have a hole punched into them to indicate that they had been checked, thus performing validation by perforation.
+_Contingency_ (the library) provides various forms of mitagation and
+contingency in the event that an exception occurs at runtime.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
