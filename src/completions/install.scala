@@ -22,7 +22,7 @@ import anticipation.*, fileApi.galileiApi
 import rudiments.*, homeDirectories.default
 import vacuous.*
 import serpentine.*, hierarchies.unix
-import perforate.*
+import contingency.*
 import guillotine.*
 import fulminate.*
 import eucalyptus.*
