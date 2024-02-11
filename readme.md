@@ -54,7 +54,7 @@ it as a `Text` value, to the `Environment` object, like so:
 ```scala
 import gossamer.t
 import environments.jvm
-import perforate.errorHandlers.throwUnsafely
+import contingency.errorHandlers.throwUnsafely
 
 val xdgDataDirs = Environment(t"XDG_DATA_DIRS")
 ```
