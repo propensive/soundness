@@ -19,7 +19,7 @@ package gesticulate
 import gossamer.*
 import probably.*
 import rudiments.*
-import perforate.*
+import contingency.*
 
 import errorHandlers.throwUnsafely
 
