@@ -17,7 +17,7 @@
 package hypotenuse
 
 import anticipation.*
-import perforate.*
+import contingency.*
 import fulminate.*
 
 import scala.util.FromDigits
