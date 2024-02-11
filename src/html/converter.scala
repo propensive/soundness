@@ -19,7 +19,7 @@ package punctuation
 import honeycomb.*
 import rudiments.*
 import vacuous.*
-import perforate.*
+import contingency.*
 import symbolism.*
 import anticipation.*
 import gossamer.*

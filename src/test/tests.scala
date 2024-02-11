@@ -19,7 +19,7 @@ package punctuation
 import probably.*
 import gossamer.*
 import spectacular.*
-import perforate.*
+import contingency.*
 import symbolism.*
 import rudiments.*
 import anticipation.*
