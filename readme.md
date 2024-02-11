@@ -63,7 +63,7 @@ Here is an example of using the `LruCache` to cache reading two files from disk:
 ```scala
 import galilei.File
 import galilei.filesystemOptions.{dereferenceSymlinks, doNotCreateNonexistent}
-import perforate.errorHandlers.throwUnsafely
+import contingency.errorHandlers.throwUnsafely
 import hieroglyph.charDecoders.utf8
 import hieroglyph.badEncodingHandlers.skip
 import serpentine.{%, p, Slash}
