@@ -26,7 +26,7 @@ import merino.*
 import hieroglyph.*
 import wisteria.*
 import spectacular.*
-import perforate.*
+import contingency.*
 
 import scala.collection.Factory
 import scala.compiletime.*
