@@ -19,7 +19,7 @@ package inimitable
 import anticipation.*
 import gossamer.*
 import larceny.*
-import perforate.*
+import contingency.*
 import probably.*
 import rudiments.*
 import digression.*
