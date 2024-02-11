@@ -19,7 +19,7 @@ package octogenarian
 import anticipation.*, fileApi.galileiApi
 import eucalyptus.*
 import fulminate.*
-import perforate.*
+import contingency.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
 import gastronomy.*
 import gossamer.*
