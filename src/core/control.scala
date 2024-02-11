@@ -41,7 +41,7 @@ trait Raises[-ErrorType <: Error] extends Pure:
       def abort(error: ErrorType2): Nothing = raises.abort(lambda(error))
 
 @capability
-class RaisesThrow
+class ThrowStrategy
     [ErrorType <: Error, SuccessType]()(using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = throw error
@@ -134,19 +134,19 @@ def unsafely
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: RaisesThrow[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
     : SuccessType =
   boundary: label ?=>
     import unsafeExceptions.canThrowAny
-    block(using RaisesThrow())
+    block(using ThrowStrategy())
 
 def throwErrors
     [ErrorType <: Error]
     (using CanThrow[ErrorType])
     [SuccessType]
-    (block: RaisesThrow[ErrorType, SuccessType] ?=> SuccessType)
+    (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
-  block(using RaisesThrow())
+  block(using ThrowStrategy())
 
 def validate
     [ErrorType <: Error]
@@ -202,8 +202,8 @@ case class UnexpectedSuccessError[ResultType](result: ResultType)
 extends Error(msg"the expression was expected to fail, but succeeded")
 
 package errorHandlers:
-  given throwUnsafely[SuccessType]: RaisesThrow[Error, SuccessType] =
-    RaisesThrow()(using unsafeExceptions.canThrowAny)
+  given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
+    ThrowStrategy()(using unsafeExceptions.canThrowAny)
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
