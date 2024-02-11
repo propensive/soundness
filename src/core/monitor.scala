@@ -18,7 +18,7 @@ package parasite
 
 import anticipation.*
 import rudiments.*
-import perforate.*
+import contingency.*
 import fulminate.*
 
 import scala.annotation.*

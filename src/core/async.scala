@@ -18,7 +18,7 @@ package parasite
 
 import anticipation.*
 import rudiments.*
-import perforate.*
+import contingency.*
 import digression.*
 
 import java.util.concurrent.atomic as juca
