@@ -22,7 +22,7 @@ import gossamer.*
 import hieroglyph.*
 import anticipation.*
 import spectacular.*
-import perforate.*
+import contingency.*
 
 import language.experimental.pureFunctions
 
