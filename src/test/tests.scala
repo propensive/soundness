@@ -19,7 +19,7 @@ package hieroglyph
 import probably.*
 import rudiments.*
 import vacuous.*
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 import larceny.*
 // FIXME: resolution of overloaded `displayWidth` does not work
 import gossamer.{displayWidth as _, *}
