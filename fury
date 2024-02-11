@@ -9,7 +9,7 @@ project dissonance
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core perforate/core
+    include   rudiments/core contingency/core
 
   module test
     compiler  scala
