@@ -45,7 +45,7 @@ differences.
 
 We can create one inside a `supervise` block with:
 ```scala
-import perforate.errorHandlers.throwUnsafely
+import contingency.errorHandlers.throwUnsafely
 
 def slowTask(): Unit = ???
 
