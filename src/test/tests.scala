@@ -23,7 +23,7 @@ import spectacular.*
 import parasite.*
 import anticipation.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 
 import scala.collection.mutable as scm
 
