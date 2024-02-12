@@ -219,12 +219,6 @@ package errorHandlers:
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
-trait Mitigation[-InputErrorTypes <: Error]:
-  def handle[SuccessType](mitigated: Mitigated[SuccessType, InputErrorTypes]): SuccessType
-
-// transparent inline def mitigate(inline handler: PartialFunction[Error, Error]): Mitigation[Nothing] =
-//   ${Contingency.mitigate('handler)}
-
 enum Mitigated[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
@@ -236,3 +230,4 @@ enum Mitigated[+SuccessType, +ErrorType <: Error]:
   transparent inline def get: SuccessType raises ErrorType = this match
     case Success(value) => value
     case Failure(error) => abort(error)
+
