@@ -100,15 +100,15 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
 @capability
-class MitigationStrategy
+class AttemptStrategy
     [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Mitigated[SuccessType, ErrorType]])
+    (label: boundary.Label[Attempt[SuccessType, ErrorType]])
 extends Raises[ErrorType]:
-  type Result = Mitigated[SuccessType, ErrorType]
-  type Return = Mitigated[SuccessType, ErrorType]
+  type Result = Attempt[SuccessType, ErrorType]
+  type Return = Attempt[SuccessType, ErrorType]
   
-  def record(error: ErrorType): Unit = boundary.break(Mitigated.Failure(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Mitigated.Failure(error))(using label)
+  def record(error: ErrorType): Unit = boundary.break(Attempt.Failure(error))(using label)
+  def abort(error: ErrorType): Nothing = boundary.break(Attempt.Failure(error))(using label)
 
 trait Recovery[-ErrorType <: Error, +SuccessType]:
   def recover(error: ErrorType): SuccessType
@@ -189,14 +189,14 @@ def capture
     case Left(error)  => error
     case Right(value) => abort(UnexpectedSuccessError(value))
 
-def over
+def attempt
     [ErrorType <: Error]
     (using DummyImplicit)
     [SuccessType]
-    (block: MitigationStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    : Mitigated[SuccessType, ErrorType] =
+    (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    : Attempt[SuccessType, ErrorType] =
   boundary: label ?=>
-    Mitigated.Success(block(using MitigationStrategy[ErrorType, SuccessType](label)))
+    Attempt.Success(block(using AttemptStrategy[ErrorType, SuccessType](label)))
 
 def failCompilation
     [ErrorType <: Error]
@@ -219,11 +219,11 @@ package errorHandlers:
 
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
-enum Mitigated[+SuccessType, +ErrorType <: Error]:
+enum Attempt[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
 
-  def handle(block: PartialFunction[ErrorType, Error]): Mitigated[SuccessType, Error] = this match
+  def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
@@ -231,3 +231,6 @@ enum Mitigated[+SuccessType, +ErrorType <: Error]:
     case Success(value) => value
     case Failure(error) => abort(error)
 
+  def recover[SuccessType2 >: SuccessType](block: PartialFunction[ErrorType, SuccessType2]): SuccessType2 = this match
+    case Success(value) => value
+    case Failure(error) => block(error)
