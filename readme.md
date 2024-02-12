@@ -15,7 +15,13 @@ code are trivial.
 
 ## Features
 
-TBC
+- error are checked as _capabilities_
+- choose global and localized strategies for error-handling
+- fully-typesafe error handling
+- selectively ignore errors considered "impossible"
+- aggregate multiple errors, like a _validation_
+- recover from specific errors with success values
+- mitigate specific errors into more general errors
 
 
 ## Availability Plan
