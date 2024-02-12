@@ -217,6 +217,9 @@ package errorHandlers:
   given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
     ThrowStrategy()(using unsafeExceptions.canThrowAny)
 
+  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]: ThrowStrategy[ErrorType, SuccessType] =
+    ThrowStrategy()
+
 infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
 
 enum Attempt[+SuccessType, +ErrorType <: Error]:
