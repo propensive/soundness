@@ -71,7 +71,16 @@ object Panopticon:
       case '[type tail <: Tuple; head *: tail] => (TypeRepr.of[head].asMatchable: @unchecked) match
         case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
       case _                                   => path
-  
+
+  def getPaths[TupleType <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes): List[List[String]] =
+    import quotes.reflect.*
+
+    Type.of[TupleType] match
+      case '[type tail <: Tuple; head *: tail] => Type.of[head] match
+        case '[type tupleType <: Tuple; tupleType] => getPath[tupleType]() :: getPaths[tail]()
+      case _ =>
+        fail(msg"unexpectedly did not match")
+
   def get
       [FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])
       (using Quotes): Expr[ToType] =
@@ -88,7 +97,7 @@ object Panopticon:
             case None =>
               expr.asTerm.select(TypeRepr.of[TargetType].typeSymbol.fieldMember(next)).asExpr match
                 case '{$expr: targetType} => select[targetType](tail, expr)
-        
+
     select[FromType](getPath[PathType](), value).asExprOf[ToType]
 
   def set
