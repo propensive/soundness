@@ -18,6 +18,12 @@ conversions of singleton literal types.
 
 ## Features
 
+- Provides type-level encodings of `List`s, `Set`s and `Map`s
+- Conversions between runtime values and compiletime types
+- Automatically converts singleton literal types
+- Types can be trivially composed for more complex structures
+- Types can be reified from a `Type` or `TypeRepr` value from a macro implementation...
+- ...or from a concrete type in "normal" code
 
 
 ## Availability Plan
@@ -34,6 +40,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
+TBC
 
 
 ## Status
