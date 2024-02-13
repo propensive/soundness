@@ -27,7 +27,7 @@ import language.dynamics
 
 class Target[FromType, PathType <: Tuple]() extends Dynamic:
   transparent inline def selectDynamic(member: String): Any =
-    ${Panopticon.resolve[FromType, PathType]('member)}
+    ${Panopticon.dereference[FromType, PathType]('member)}
 
 export Panopticon.Lens
 
@@ -64,10 +64,7 @@ object Panopticon:
       : Lens[FromType, PathType, ToType] =
     0
   
-  private def getPath
-      [TupleType <: Tuple: Type]
-      (path: List[String] = Nil)(using Quotes)
-      : List[String] =
+  private def getPath[TupleType <: Tuple: Type](path: List[String] = Nil)(using Quotes): List[String] =
     import quotes.reflect.*
 
     Type.of[TupleType] match
@@ -80,12 +77,15 @@ object Panopticon:
       (using Quotes): Expr[ToType] =
     import quotes.reflect.*
     
-    def select(path: List[String], term: Term): Term =
-      path match
-        case Nil          => term
-        case next :: tail => select(tail, Select(term, term.tpe.typeSymbol.fieldMember(next)))
+    def select[TargetType: Type](path: List[String], expr: Expr[TargetType]): Expr[ToType] = path match
+      case Nil          => expr.asExprOf[ToType]
+      case next :: tail =>
+        val term = expr.asTerm.select(TypeRepr.of[TargetType].typeSymbol.fieldMember(next))
+        
+        term.asExpr match
+          case '{$expr: targetType} => select[targetType](tail, expr)
       
-    select(getPath[PathType](), value.asTerm).asExprOf[ToType]
+    select[FromType](getPath[PathType](), value).asExprOf[ToType]
 
   def set
       [FromType: Type, PathType <: Tuple: Type, ToType: Type]
@@ -116,18 +116,28 @@ object Panopticon:
         
     rewrite(getPath[PathType](), value.asTerm).asExprOf[FromType]
   
-  def resolve
-      [TargetType: Type, TupleType <: Tuple: Type](member: Expr[String])(using Quotes): Expr[Any] =
+  def dereference[TargetType: Type, TupleType <: Tuple: Type](member: Expr[String])(using Quotes): Expr[Any] =
     import quotes.reflect.*
     
     val fieldName = member.valueOrAbort
     val fieldNameType = ConstantType(StringConstant(fieldName)).asType
     val targetType = TypeRepr.of[TargetType]
 
-    targetType.typeSymbol.caseFields.find(_.name == fieldName) match
-      case None =>
-        fail(msg"the field $fieldName is not a member of ${targetType.show}")
-      
-      case Some(sym) => (sym.info.asType: @unchecked) match
-        case '[returnType] => (fieldNameType: @unchecked) match
-          case '[fieldName] => '{Target[returnType, fieldName *: TupleType]()}
+    fieldNameType match
+      case '[type fieldNameType <: Label; fieldNameType] =>
+        Expr.summon[Dereferencer[TargetType, fieldNameType]] match
+          case Some('{type fieldType; $dereferencer: Dereferencer[TargetType, labelType] { type FieldType =
+              fieldType }}) =>
+            '{Target[fieldType, fieldNameType *: TupleType]()}
+    
+          case None =>
+            targetType.typeSymbol.caseFields.find(_.name == fieldName) match
+              case None =>
+                fail(msg"the field $fieldName is not a member of ${targetType.show}")
+              
+              case Some(symbol) => (symbol.info.asType: @unchecked) match
+                case '[returnType] => '{Target[returnType, fieldNameType *: TupleType]()}
+  
+trait Dereferencer[TargetType, LabelType <: Label]:
+  type FieldType
+  def field(target: TargetType): FieldType

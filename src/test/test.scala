@@ -78,7 +78,10 @@ object Tests extends Suite(t"Panopticon tests"):
       newRole.salary
     .assert(_ == 100)
     
-    test(t"Can updatea value with a deep lens"):
+    test(t"Get a value with a deep lens"):
+      val lens = Lens[Organization](_.leader.role.salary)
+    
+    test(t"Can update a value with a deep lens"):
       val lens = Lens[Organization](_.leader.role.salary)
       val newOrganization: Organization = lens.set(org, 1000)
       newOrganization.leader.role.salary
