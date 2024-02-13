@@ -87,6 +87,19 @@ object Tests extends Suite(t"Panopticon tests"):
       newOrganization.leader.role.salary
     .assert(_ == 1000)
 
+    object Date:
+      given Dereferencer[Date, "month"] with
+        type FieldType = Int
+        def field(target: Date): Int = target.month
+
+    class Date(val day: Int, val month: Int, val year: Int)
+
+    val date = new Date(1, 3, 2000)
+
+    test(t"Test non-case-class get"):
+      val lens = Lens[Date](_.month)
+      lens.get(date)
+    .assert(_ == 3)
 
     // val orgName = new Lens[Organization, "name" *: EmptyTuple, String](_.name, (org, name) => org.copy(name = name))
     

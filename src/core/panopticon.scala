@@ -79,12 +79,16 @@ object Panopticon:
     
     def select[TargetType: Type](path: List[String], expr: Expr[TargetType]): Expr[ToType] = path match
       case Nil          => expr.asExprOf[ToType]
-      case next :: tail =>
-        val term = expr.asTerm.select(TypeRepr.of[TargetType].typeSymbol.fieldMember(next))
-        
-        term.asExpr match
-          case '{$expr: targetType} => select[targetType](tail, expr)
+      case next :: tail => ConstantType(StringConstant(next)).asType match
+        case '[type nextType <: Label; nextType] =>
+          Expr.summon[Dereferencer[TargetType, nextType]] match
+            case Some('{type fieldType; $dereferencer: Dereferencer[TargetType, labelType] { type FieldType = fieldType }}) =>
+              select[fieldType](tail, '{$dereferencer.field($expr)})
       
+            case None =>
+              expr.asTerm.select(TypeRepr.of[TargetType].typeSymbol.fieldMember(next)).asExpr match
+                case '{$expr: targetType} => select[targetType](tail, expr)
+        
     select[FromType](getPath[PathType](), value).asExprOf[ToType]
 
   def set
