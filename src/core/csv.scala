@@ -37,35 +37,35 @@ trait RowFormat:
   def parseLine(line: Text): Csv =
     @tailrec
     def parseLine
-        (items: Vector[Text], idx: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
+        (items: Vector[Text], index: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
         : Vector[Text] =
-      if line.length <= idx then
-        if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then idx else end)}"
-        else items :+ line.slice(start, if end < 0 then idx else end)
+      if line.length <= index then
+        if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then index else end)}"
+        else items :+ line.slice(start, if end < 0 then index else end)
       else 
-        val ch = try line(idx) catch case error: OutOfRangeError => throw Mistake(error)
+        val ch = try line(index) catch case error: OutOfRangeError => throw Mistake(error)
         
         (ch: @switch) match
           case `separator` =>
-            if quoted then parseLine(items, idx + 1, quoted, start, end, join)
+            if quoted then parseLine(items, index + 1, quoted, start, end, join)
             else
               val elems: Vector[Text] = if start < 0 then items :+ t"" else
-                val suffix = line.slice(start, if end == -1 then idx else end)
+                val suffix = line.slice(start, if end == -1 then index else end)
                 if join then
                   val part: Text = t"${items.last}${suffix.s}"
                   items.init :+ part
                 else items :+ suffix
   
-              parseLine(elems, idx + 1, quoted = false, idx + 1, -1, join = false)
+              parseLine(elems, index + 1, quoted = false, index + 1, -1, join = false)
   
           case '"' =>
-            if quoted then parseLine(items, idx + 1, quoted = false, start, idx, join = join)
+            if quoted then parseLine(items, index + 1, quoted = false, start, index, join = join)
             else if end != -1 then
-              parseLine(items :+ line.slice(start, idx), idx + 1, quoted = true, idx + 1, -1, join = true)
-            else parseLine(items, idx + 1, quoted = true, idx + 1, -1, join = false)
+              parseLine(items :+ line.slice(start, index), index + 1, quoted = true, index + 1, -1, join = true)
+            else parseLine(items, index + 1, quoted = true, index + 1, -1, join = false)
   
           case ch: Char =>
-            parseLine(items, idx + 1, quoted, start, end, join)
+            parseLine(items, index + 1, quoted, start, end, join)
 
     Csv(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
