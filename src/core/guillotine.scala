@@ -263,9 +263,9 @@ extends Error(msg"execution of the command $command failed")
 case class PidError(pid: Pid) extends Error(msg"the process with PID ${pid.value} is not running")
 
 object Sh:
-  case class Params(params: Text*)
+  case class Parameters(params: Text*)
 
-  object Prefix extends Interpolator[Params, State, Command]:
+  object Prefix extends Interpolator[Parameters, State, Command]:
     import Context.*
   
     def complete(state: State): Command =
@@ -279,9 +279,9 @@ object Sh:
 
     def initial: State = State(Awaiting, false, Nil)
 
-    def skip(state: State): State = insert(state, Params(t"x"))
+    def skip(state: State): State = insert(state, Parameters(t"x"))
 
-    def insert(state: State, value: Params): State =
+    def insert(state: State, value: Parameters): State =
       value.params.to(List) match
         case h :: t =>
           if state.escape then throw InterpolationError(msg"""
@@ -320,12 +320,12 @@ object Sh:
         case (State(context, _, Nil), char)                 => State(context, false, List(t"$char"))
         case (State(context, _, more :+ current), char)     => State(context, false, more :+ t"$current$char")
 
-  given Insertion[Params, Text] = value => Params(value)
-  given Insertion[Params, List[Text]] = xs => Params(xs*)
-  given Insertion[Params, Command] = command => Params(command.arguments*)
+  given Insertion[Parameters, Text] = value => Parameters(value)
+  given Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
+  given Insertion[Parameters, Command] = command => Parameters(command.arguments*)
   
-  given [ValueType: Parameterizable]: Insertion[Params, ValueType] = value =>
-    Params(summon[Parameterizable[ValueType]].show(value))
+  given [ValueType: Parameterizable]: Insertion[Parameters, ValueType] = value =>
+    Parameters(summon[Parameterizable[ValueType]].show(value))
 
 object Parameterizable:
   given [PathType](using genericPath: GenericPath[PathType]): Parameterizable[PathType]^{genericPath} = _.pathText
