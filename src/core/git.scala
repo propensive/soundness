@@ -263,23 +263,51 @@ object Git:
     catch
       case error: PathError => abort(GitError(InvalidRepoPath))
       case error: IoError   => abort(GitError(InvalidRepoPath))
-  
-  def cloneCommit
+
+  inline def cloneCommit
+      [SourceType, PathType: GenericPath]
+      (source: SourceType, targetPath: PathType, commit: CommitHash)
+      (using Internet, Decoder[Path], GitCommand, Raises[GitError], Raises[ExecError], Log[Text],
+          WorkingDirectory)
+      : GitProcess[GitRepo] =
+    val sourceText = inline source match
+      case source: SshUrl => source.text
+      case other          => summonFrom:
+        case genericUrl: GenericUrl[SourceType] => genericUrl.text(source)
+        case given GenericPath[SourceType]      => source.pathText
+    
+    uncheckedCloneCommit(sourceText, targetPath, commit)
+
+  inline def clone
+      [SourceType, PathType: GenericPath]
+      (source: SourceType, targetPath: PathType, bare: Boolean = false, branch: Optional[Branch] = Unset,
+          recursive: Boolean = false)
+      (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
+      : GitProcess[GitRepo] =
+    val sourceText = inline source match
+      case source: SshUrl => source.text
+      case other          => summonFrom:
+        case genericUrl: GenericUrl[SourceType] => genericUrl.text(source)
+        case given GenericPath[SourceType]      => source.pathText
+    
+    uncheckedClone(sourceText, targetPath, bare, branch, recursive)
+    
+  private def uncheckedCloneCommit
       [PathType: GenericPath]
-      (repo: Text, targetPath: PathType, commit: CommitHash)
+      (source: Text, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand)(using gitError: Raises[GitError], exec: Raises[ExecError], log: Log[Text], workingDirectory: WorkingDirectory)
       : GitProcess[GitRepo]/*^{gitError, log, workingDirectory, exec}*/ =
     
     val gitRepo = init(targetPath)
     
-    val fetch = gitRepo.fetch(1, repo, commit)
+    val fetch = gitRepo.fetch(1, source, commit)
     
     GitProcess(fetch.progress):
       fetch.complete()
       gitRepo.checkout(commit)
       gitRepo
 
-  def clone
+  private def uncheckedClone
       [PathType: GenericPath]
       (source: Text, targetPath: PathType, bare: Boolean = false, branch: Optional[Branch] = Unset,
           recursive: Boolean = false)
@@ -368,3 +396,7 @@ package gitCommands:
     val path: Path = sh"which git"()
 
     GitCommand(path.as[File])
+
+case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
+  def userText = user.lay(t"") { user => t"$user:" }
+  t"$userText@$hostname$path"
