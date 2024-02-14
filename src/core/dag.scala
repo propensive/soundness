@@ -19,6 +19,8 @@ package acyclicity
 import rudiments.*
 import anticipation.*
 
+import scala.collection.mutable.HashMap
+
 import language.experimental.captureChecking
 
 object Dag:
@@ -35,6 +37,8 @@ object Dag:
   def apply[NodeType](nodes: (NodeType, Set[NodeType])*): Dag[NodeType] = Dag(Map(nodes*))
 
 case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
+  private val reachableCache: HashMap[NodeType, Set[NodeType]] = HashMap()
+  
   def keys: Set[NodeType] = edgeMap.keySet
   def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (lambda(k), v.map(lambda)) })
   def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
@@ -78,8 +82,9 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
       removals.foldLeft(edgeMap):
         case (m, (k, v)) => m.updated(k, m(k) - v)
 
-  // FIXME: This may be a slow implementation if called repeatedly
-  def reachable(node: NodeType): Set[NodeType] = edgeMap(node).flatMap(reachable) + node
+
+  def reachable(node: NodeType): Set[NodeType] =
+    reachableCache.getOrElseUpdate(node, edgeMap(node).flatMap(reachable) + node)
 
   def invert: Dag[NodeType] = Dag:
     edgeMap.foldLeft(Map[NodeType, Set[NodeType]]()):
