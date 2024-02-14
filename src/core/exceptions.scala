@@ -31,12 +31,12 @@ extends Exception(message.text.s, cause, false, !hideStack):
   override def getMessage: String = component.s+": "+message.text
   override def getCause: Exception | Null = cause
   
-object Mistake:
-  def apply(error: Exception): Mistake =
-    Mistake(msg"""
+object Panic:
+  def apply(error: Exception): Panic =
+    Panic(msg"""
       an ${error.getClass.getName.nn.tt} exception was unexpectedly thrown;
       the error was: ${Option(error.getMessage).getOrElse("[null]").nn.tt}
     """)
 
-case class Mistake(message: Message) extends java.lang.Error(message.text.s)
+case class Panic(message: Message) extends java.lang.Error(message.text.s)
 
