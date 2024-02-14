@@ -89,13 +89,14 @@ object Runner:
   private[probably] val testContextThreadLocal: ThreadLocal[Option[TestContext]] = ThreadLocal()
 
 class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
+  private var active: Set[TestId] = Set()
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
 
-  def maybeRun[T, S](test: Test[T]): Optional[TestRun[T]] =
-    if skip(test.id) then Unset else run[T, S](test)
+  def maybeRun[T, S](test: Test[T]): Optional[TestRun[T]] = if skip(test.id) then Unset else run[T, S](test)
 
   def run[T, S](test: Test[T]): TestRun[T] =
+    synchronized { active += test.id }
     val ctx = TestContext()
     Runner.testContextThreadLocal.set(Some(ctx))
     val ns0 = System.nanoTime
@@ -104,7 +105,8 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
       val ns0: Long = System.nanoTime
       val result: T = test.action(ctx)
       val ns: Long = System.nanoTime - ns0
-      TestRun.Returns(result, ns, ctx.captured.to(Map))
+      TestRun.Returns(result, ns, ctx.captured.to(Map)).also:
+        synchronized { active -= test.id }
     
     catch case err: Exception =>
       val ns: Long = System.nanoTime - ns0
@@ -113,14 +115,20 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
         given CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw err
 
-      TestRun.Throws(lazyException, ns, ctx.captured.to(Map))
-    finally Runner.testContextThreadLocal.set(None)
+      TestRun.Throws(lazyException, ns, ctx.captured.to(Map)).also:
+        synchronized { active -= test.id }
+    
+    finally
+      Runner.testContextThreadLocal.set(None)
 
   def suite(suite: TestSuite, block: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then
       reporter.declareSuite(report, suite)
       block(using suite)
   
+  def terminate(error: Throwable): Unit = synchronized:
+    reporter.fail(report, error, active)
+
   def complete(): Unit = reporter.complete(report)
 
 case class Test[+Return](id: TestId, action: TestContext => Return)

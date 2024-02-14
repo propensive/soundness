@@ -46,9 +46,5 @@ abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
   
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
-    catch
-      case err: EnvironmentError => println(StackTrace(err).display.render)
-      case err: Throwable => println(StackTrace(err).display.render)
-    finally
-      try runner.complete()
-      catch case err: EnvironmentError => println(StackTrace(err).display.render)
+    catch case err: Throwable => runner.terminate(err)
+    finally try runner.complete() catch case err: EnvironmentError => println(StackTrace(err).display.render)

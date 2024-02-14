@@ -88,6 +88,7 @@ trait Inclusion[ReportType, DataType]:
 
 trait TestReporter[ReportType]:
   def make(): ReportType
+  def fail(report: ReportType, error: Throwable, active: Set[TestId]): Unit
   def declareSuite(report: ReportType, suite: TestSuite): Unit
   def complete(report: ReportType): Unit
 
@@ -95,6 +96,7 @@ object TestReporter:
   given (using Stdio, Environment): TestReporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
+    def fail(report: TestReport, error: Throwable, active: Set[TestId]): Unit = report.fail(error, active)
     def complete(report: TestReport): Unit =
       report.complete(Coverage())
 
@@ -116,6 +118,7 @@ object TestReport:
 
 
 class TestReport(using Environment):
+  var failure: Optional[(Throwable, Set[TestId])] = Unset
   
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
@@ -171,6 +174,8 @@ class TestReport(using Environment):
 
   def declareSuite(suite: TestSuite): TestReport = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
+  
+  def fail(error: Throwable, active: Set[TestId]): Unit = failure = (error, active)
 
   def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.also:
     val benchmarks = resolve(testId.suite).tests
@@ -245,8 +250,6 @@ class TestReport(using Environment):
     def maxTime: Output = if max == 0L then e"" else showTime(max)
     def avgTime: Output = if avg == 0L then e"" else showTime(avg)
     def iterations: Output = if count == 0 then e"" else count.display
-
-  
 
   def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
     given TextMetrics with
@@ -492,3 +495,18 @@ class TestReport(using Environment):
             Out.println(text)
       
       Out.println()
+
+    failure.let: (error, active) =>
+      val explanation = active.to(List) match
+        case Nil =>
+          e"No tests were active when a fatal error occurred."
+        
+        case _ =>
+          val tests = active.to(List).map { test => e"$Bold(${test.name})" }.join(e"", e", ", e" and ", e"")
+          val were = if active.size == 1 then e"was" else e"were"
+          e"A fatal error occurred while $tests $were running."
+        
+      Out.println()
+      
+      Out.println(Ribbon(colors.Crimson.srgb, colors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
+      Out.println(StackTrace(error).display.render)
