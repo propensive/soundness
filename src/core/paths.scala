@@ -135,11 +135,11 @@ sealed trait Path:
         case 32768 => PathStatus.File
         case 40960 => PathStatus.Symlink
         case 49152 => PathStatus.Socket
-        case _     => throw Mistake(msg"an unexpected POSIX mode value was returned")
+        case _     => throw Panic(msg"an unexpected POSIX mode value was returned")
     
     catch
       case error: UnsupportedOperationException =>
-        throw Mistake(msg"the file attribute unix:mode could not be accessed")
+        throw Panic(msg"the file attribute unix:mode could not be accessed")
       
       case error: ji.FileNotFoundException =>
         raise(IoError(this))(PathStatus.File)
