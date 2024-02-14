@@ -71,7 +71,7 @@ open class TextConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
               
               case _ =>
-                throw Mistake("unexpected non-paragraph node found while folding inline nodes")
+                throw Panic("unexpected non-paragraph node found while folding inline nodes")
             (false, content)
     .apply(1).reverse
 
@@ -107,7 +107,7 @@ open class TextConverter():
                     case Accent.String            => e"${solarized.Violet}(${code.trim})"
                     case other                   => e"${code.trim}"
                   case Token.Unparsed(content)   => e"${content}"
-                  case _                       => throw Mistake("Should not have a newline")
+                  case _                       => throw Panic("Should not have a newline")
                 .join
             
             acc :+ TextBlock(indent, highlightedLines.join(e"\n"))
