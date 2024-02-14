@@ -43,7 +43,7 @@ trait RowFormat:
         if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then index else end)}"
         else items :+ line.slice(start, if end < 0 then index else end)
       else 
-        val ch = try line(index) catch case error: OutOfRangeError => throw Mistake(error)
+        val ch = try line(index) catch case error: OutOfRangeError => throw Panic(error)
         
         (ch: @switch) match
           case `separator` =>
