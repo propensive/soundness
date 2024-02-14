@@ -24,15 +24,12 @@ import vacuous.*
 import anticipation.*
 import ambience.*, environments.virtualMachine
 import hieroglyph.*, textMetrics.uniform
+import digression.*
 
 import language.adhocExtensions
 
 abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine).vouch(using Unsafe)
-
-  // FIXME: This seems to introduce a ghost ambiguity on the previous line
-  // It should be moved back to the top-level as soon as it works
-  import digression.*
 
   given runner: Runner[TestReport] =
     given Stdio = suiteIo
