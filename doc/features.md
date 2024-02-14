@@ -1,6 +1,7 @@
 - Provides type-level encodings of `List`s, `Set`s and `Map`s
-- Conversions between runtime values and compiletime types
-- Automatically converts singleton literal types
+- Convert between runtime values and static types
+- Automatically convert singleton literal types
 - Types can be trivially composed for more complex structures
-- Types can be reified from a `Type` or `TypeRepr` value from a macro implementation...
-- ...or from a concrete type in "normal" code
+- Types may be reified from a static type in "normal" code
+- Types can also be converted from a `Type` or `TypeRepr` value from within a
+  macro implementation
