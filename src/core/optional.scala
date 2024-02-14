@@ -32,7 +32,7 @@ extension [ValueType](optional: Optional[ValueType])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
   inline def or(inline value: => ValueType): ValueType = if absent then value else optional.asInstanceOf[ValueType]
-  inline def vouch(using Unsafe): ValueType = or(throw Mistake(msg"a value was vouched but was absent"))
+  inline def vouch(using Unsafe): ValueType = or(throw Panic(msg"a value was vouched but was absent"))
   
   def presume(using default: Default[ValueType]): ValueType = or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
