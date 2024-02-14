@@ -65,10 +65,17 @@ class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => Resu
   def complete(): ResultType/*^{closure*}*/ = result
 
 object GitRepo:
-  def apply(path: Path)(using gitError: Raises[GitError], io: Raises[IoError]): GitRepo =
-    if !path.exists() then abort(GitError(RepoDoesNotExist))
-    if (path / p".git").exists() then GitRepo((path / p".git").as[Directory], path.as[Directory])
-    else GitRepo(path.as[Directory])
+  def apply
+      [PathType: GenericPath]
+      (path: PathType)
+      (using gitError: Raises[GitError], io: Raises[IoError])
+      : GitRepo =
+    
+    val path2 = SpecificPath(path.pathText)
+    if !path2.exists() then abort(GitError(RepoDoesNotExist))
+    
+    if (path2 / p".git").exists() then GitRepo((path2 / p".git").as[Directory], path2.as[Directory])
+    else GitRepo(path2.as[Directory])
 
 case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
