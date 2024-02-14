@@ -87,5 +87,5 @@ extends Monitor(identifier :: parent.name, promise):
     stateRef.get().nn match
       case Active            => ()
       case Suspended(_)      => wait()
-      case Completed(value)  => throw Mistake(msg"should not be acquiescing after completion")
-      case Failed(error)     => throw Mistake(msg"should not be acquiescing after failure")
+      case Completed(value)  => throw Panic(msg"should not be acquiescing after completion")
+      case Failed(error)     => throw Panic(msg"should not be acquiescing after failure")
