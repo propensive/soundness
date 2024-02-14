@@ -179,7 +179,7 @@ case class Request
           Map[Text, Text](body.stream.readAs[Bytes].uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                         => throw Mistake(msg"key/value pair does not match")
+            case _                         => throw Panic(msg"key/value pair does not match")
           )*)
         else Map[Text, Text]()
       }
