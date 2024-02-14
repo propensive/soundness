@@ -216,7 +216,7 @@ object Abacist:
         [TupleType: Type]
         (dimension: Optional[DimensionRef], result: List[UnitPower])
         : List[UnitPower] =
-      Type.of[TupleType] match
+      TypeRepr.of[TupleType].dealias.asType match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
           

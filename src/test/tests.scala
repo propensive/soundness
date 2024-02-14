@@ -22,7 +22,6 @@ import gossamer.{t, Decimalizer}
 import larceny.*
 import spectacular.*
 import quantitative.*
-import hypotenuse.*
 
 import language.strictEquality
 
@@ -31,6 +30,8 @@ given decimalizer: Decimalizer = Decimalizer(3)
 object Tests extends Suite(t"Quantitative Tests"):
   def run(): Unit =
     suite(t"Count tests"):
+      
+      type Height = (Feet[1], Inches[1])
 
       test(t"Access seconds in an HMS time"):
         val hmsTime = Count[TimeSeconds](27, 18, 9)
@@ -58,7 +59,6 @@ object Tests extends Suite(t"Quantitative Tests"):
       .assert(_.length == 1)
 
       test(t"Convert a length to a Count"):
-        type Height = (Feet[1], Inches[1])
         val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
         val count = length.count[Height]
         (count[Feet], count[Inches])
@@ -136,4 +136,12 @@ object Tests extends Suite(t"Quantitative Tests"):
         test(t"Show a weight of three parts"):
           Count[Weight](1, 3, 2).show
         .assert(_ == t"1st 3lb 2oz")
+        
+        test(t"Show a weight of three parts"):
+          Count[Weight](1, 3, 2).show
+        .assert(_ == t"1st 3lb 2oz")
 
+        test(t"Show with custom unit rendering"):
+          given UnitsNames[Height] = () => List(t"'", t"\"")
+          Count[Height](5, 9).show
+        .assert(_ == t"5' 9\"")

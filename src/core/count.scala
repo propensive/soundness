@@ -26,18 +26,24 @@ import scala.quoted.*
 object CountQuaques:
   opaque type Count[UnitsType <: Tuple] = Long
 
-  object Count:
+  object Count extends Count2:
     erased given underlying[UnitsType <: Tuple]: Underlying[Count[UnitsType], Long] = ###
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
     
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
 
+    inline given [UnitsType <: Tuple](using names: UnitsNames[UnitsType]): Show[Count[UnitsType]] =
+      new Show[Count[UnitsType]]:
+        def apply(count: Count[UnitsType]): Text =
+          val nonzeroUnits = count.components.filter(_(1) != 0).map(_(1).toString.tt).to(List)
+          val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
+          units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
+    
+  trait Count2:
     inline given [UnitsType <: Tuple]: Show[Count[UnitsType]] = new Show[Count[UnitsType]]:
-      def apply(count: Count[UnitsType]): Text = Text:
-        count.components.filter(_(1) != 0).map: (unit, count) =>
-          Text(count.toString+unit)
-        .mkString(" ")
+      def apply(count: Count[UnitsType]): Text =
+        count.components.filter(_(1) != 0).map { (unit, count) => count.toString+unit }.mkString(" ").tt
     
   extension [UnitsType <: Tuple](count: Count[UnitsType])
     def longValue: Long = count
@@ -73,3 +79,7 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   inline def count[CountType <: Tuple]: Count[CountType] =
     ${Abacist.fromQuantity[UnitsType, CountType]('quantity)}
 
+trait UnitsNames[UnitsType <: Tuple]:
+  def prefix: Text = "".tt
+  def separator: Text = " ".tt
+  def units(): List[Text]
