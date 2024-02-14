@@ -206,7 +206,7 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[BitsType],
       case key: js.interfaces.RSAPrivateCrtKey =>
         key
       case key: js.PrivateKey =>
-        throw Mistake(msg"public key did not have the correct type")
+        throw Panic(msg"public key did not have the correct type")
 
     val spec = RSAPublicKeySpec(privateKey.getModulus, privateKey.getPublicExponent)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
@@ -247,7 +247,7 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorit
         key
       
       case key: js.PublicKey =>
-        throw Mistake(msg"public key did not have the correct type")
+        throw Panic(msg"public key did not have the correct type")
     
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
@@ -271,7 +271,7 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorit
         key
       
       case key: js.PrivateKey =>
-        throw Mistake(msg"private key did not have the correct type")
+        throw Panic(msg"private key did not have the correct type")
 
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)
