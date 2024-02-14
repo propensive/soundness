@@ -53,7 +53,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Octogenarian is designed to be _small_. Its entire source code currently consists
-of 267 lines of code.
+of 294 lines of code.
 
 ## Building
 
