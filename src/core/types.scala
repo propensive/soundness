@@ -19,10 +19,13 @@ package typonym
 import scala.quoted.*
 
 erased trait TypeList[+TupleType <: Tuple]
-erased trait TypeSet[+TupleType <: Tuple]
 erased trait TypeMap[+TupleType <: Tuple]
 
 transparent inline def reify[PhantomType]: Any = ${Typonym.reify[PhantomType]}
+
+def reify[PhantomType](phantomType: Type[PhantomType])(using Quotes): Expr[Any] =
+  Typonym.reify[PhantomType](using phantomType)
+
 //transparent inline def erase(inline value: Any): Any = ${Typonym.erase(value)}
 
 object Typonym:
@@ -41,10 +44,6 @@ object Typonym:
         untuple[listType].map(_.asType).map { case '[elementType] => reify[elementType] }
           .reverse
           .foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
-
-      case '[type setType <: Tuple; TypeSet[setType]] =>
-        untuple[setType].map(_.asType).map { case '[elementType] => reify[elementType] }
-          .foldLeft('{Set()}) { (set, next) => '{$set + $next} }
 
       case '[type mapType <: Tuple; TypeMap[mapType]] =>
         val entries = untuple[mapType].map(_.asType).map:
@@ -77,12 +76,3 @@ object Typonym:
         
         tuple.asType match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[TypeList[tupleType]]
- 
-      case set: Set[?] =>
-        val tuple = set.to(List).map(reflect).reverse.foldLeft(TypeRepr.of[EmptyTuple]): (tuple, next) =>
-          tuple.asType match
-            case '[type tupleType <: Tuple; tupleType] => next.asType match
-              case '[nextType] => TypeRepr.of[nextType *: tupleType]
-        
-        tuple.asType match
-          case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[TypeSet[tupleType]]

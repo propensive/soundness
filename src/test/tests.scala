@@ -22,10 +22,6 @@ import rudiments.*
 
 object Tests extends Suite(t"Typonym tests"):
   def run(): Unit =
-    test(t"Get a set of strings"):
-      reify[TypeSet[("one", "two", "three")]]
-    .assert(_ == Set("one", "two", "three"))
-    
     test(t"Get a list of strings"):
       reify[TypeList[("one", "two", "three")]]
     .assert(_ == List("one", "two", "three"))
