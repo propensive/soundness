@@ -39,7 +39,7 @@ import language.experimental.captureChecking
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
-case class State(current: Context, esc: Boolean, arguments: List[Text])
+case class State(current: Context, escape: Boolean, arguments: List[Text])
 
 object CommandOutput extends PosixCommandOutputs
 
@@ -270,10 +270,10 @@ object Sh:
   
     def complete(state: State): Command =
       val arguments = state.current match
-        case Quotes2        => throw InterpolationError(msg"the double quotes have not been closed")
-        case Quotes1        => throw InterpolationError(msg"the single quotes have not been closed")
-        case _ if state.esc => throw InterpolationError(msg"cannot terminate with an escape character")
-        case _              => state.arguments
+        case Quotes2           => throw InterpolationError(msg"the double quotes have not been closed")
+        case Quotes1           => throw InterpolationError(msg"the single quotes have not been closed")
+        case _ if state.escape => throw InterpolationError(msg"cannot terminate with an escape character")
+        case _                 => state.arguments
       
       Command(arguments*)
 
@@ -284,7 +284,7 @@ object Sh:
     def insert(state: State, value: Params): State =
       value.params.to(List) match
         case h :: t =>
-          if state.esc then throw InterpolationError(msg"""
+          if state.escape then throw InterpolationError(msg"""
             escaping with '\\' is not allowed immediately before a substitution
           """)
           
@@ -306,34 +306,36 @@ object Sh:
           
     def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
       ((state, next): @unchecked) match
-        case (State(Awaiting, esc, arguments), ' ')          => State(Awaiting, false, arguments)
-        case (State(Quotes1, false, rest :+ cur), '\\') => State(Quotes1, false, rest :+ t"$cur\\")
-        case (State(ctx, false, arguments), '\\')            => State(ctx, true, arguments)
-        case (State(Unquoted, esc, arguments), ' ')          => State(Awaiting, false, arguments)
-        case (State(Quotes1, esc, arguments), '\'')          => State(Unquoted, false, arguments)
-        case (State(Quotes2, false, arguments), '"')         => State(Unquoted, false, arguments)
-        case (State(Unquoted, false, arguments), '"')        => State(Quotes2, false, arguments)
-        case (State(Unquoted, false, arguments), '\'')       => State(Quotes1, false, arguments)
-        case (State(Awaiting, false, arguments), '"')        => State(Quotes2, false, arguments :+ t"")
-        case (State(Awaiting, false, arguments), '\'')       => State(Quotes1, false, arguments :+ t"")
-        case (State(Awaiting, esc, arguments), char)         => State(Unquoted, false, arguments :+ t"$char")
-        case (State(ctx, esc, Nil), char)               => State(ctx, false, List(t"$char"))
-        case (State(ctx, esc, rest :+ cur), char)       => State(ctx, false, rest :+ t"$cur$char")
+        case (State(Awaiting, _, arguments), ' ')           => State(Awaiting, false, arguments)
+        case (State(Quotes1, false, more :+ current), '\\') => State(Quotes1, false, more :+ t"$current\\")
+        case (State(context, false, arguments), '\\')       => State(context, true, arguments)
+        case (State(Unquoted, _, arguments), ' ')           => State(Awaiting, false, arguments)
+        case (State(Quotes1, _, arguments), '\'')           => State(Unquoted, false, arguments)
+        case (State(Quotes2, false, arguments), '"')        => State(Unquoted, false, arguments)
+        case (State(Unquoted, false, arguments), '"')       => State(Quotes2, false, arguments)
+        case (State(Unquoted, false, arguments), '\'')      => State(Quotes1, false, arguments)
+        case (State(Awaiting, false, arguments), '"')       => State(Quotes2, false, arguments :+ t"")
+        case (State(Awaiting, false, arguments), '\'')      => State(Quotes1, false, arguments :+ t"")
+        case (State(Awaiting, _, arguments), char)          => State(Unquoted, false, arguments :+ t"$char")
+        case (State(context, _, Nil), char)                 => State(context, false, List(t"$char"))
+        case (State(context, _, more :+ current), char)     => State(context, false, more :+ t"$current$char")
 
   given Insertion[Params, Text] = value => Params(value)
   given Insertion[Params, List[Text]] = xs => Params(xs*)
   given Insertion[Params, Command] = command => Params(command.arguments*)
-  given [ValueType: AsParams]: Insertion[Params, ValueType] = value => Params(summon[AsParams[ValueType]].show(value))
-
-object AsParams:
-  given [PathType](using genericPath: GenericPath[PathType]): AsParams[PathType]^{genericPath} = _.pathText
-  given AsParams[Int] = _.show
   
-  given [ValueType](using encoder: Encoder[ValueType]): AsParams[ValueType]^{encoder} =
-    new AsParams[ValueType]:
+  given [ValueType: Parameterizable]: Insertion[Params, ValueType] = value =>
+    Params(summon[Parameterizable[ValueType]].show(value))
+
+object Parameterizable:
+  given [PathType](using genericPath: GenericPath[PathType]): Parameterizable[PathType]^{genericPath} = _.pathText
+  given Parameterizable[Int] = _.show
+  
+  given [ValueType](using encoder: Encoder[ValueType]): Parameterizable[ValueType]^{encoder} =
+    new Parameterizable[ValueType]:
       def show(value: ValueType): Text = encoder.encode(value)
 
-trait AsParams[-ValueType]:
+trait Parameterizable[-ValueType]:
   def show(value: ValueType): Text
 
 given realm: Realm = realm"guillotine"
