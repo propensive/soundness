@@ -348,7 +348,7 @@ object Octogenarian:
 export Octogenarian.{Tag, Branch, CommitHash, Refspec}
 
 object GitCommand:
-  given AsParams[GitCommand] = _.file.path.fullname
+  given Parameterizable[GitCommand] = _.file.path.fullname
 
 case class GitCommand(file: File)
 
