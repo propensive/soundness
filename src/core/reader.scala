@@ -22,7 +22,7 @@ import gossamer.*
 import anticipation.*
 import kaleidoscope.*
 import spectacular.*
-import perforate.*
+import contingency.*
 
 import language.experimental.captureChecking
 

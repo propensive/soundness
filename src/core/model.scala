@@ -18,7 +18,7 @@ package cellulose
 
 import rudiments.*
 import vacuous.*
-import perforate.*
+import contingency.*
 import gossamer.*
 import anticipation.*
 import contextual.*
