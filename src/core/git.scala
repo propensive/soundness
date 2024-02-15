@@ -32,6 +32,8 @@ import serpentine.*, hierarchies.unix
 import spectacular.*
 import turbulence.*
 
+import scala.compiletime.*
+
 //import language.experimental.captureChecking
 
 import GitError.Detail.*
@@ -70,12 +72,12 @@ object GitRepo:
       (path: PathType)
       (using gitError: Raises[GitError], io: Raises[IoError])
       : GitRepo =
+
+    unsafely(path.pathText.decodeAs[Path]).pipe: path =>
+      if !path.exists() then abort(GitError(RepoDoesNotExist))
     
-    val path2 = SpecificPath(path.pathText)
-    if !path2.exists() then abort(GitError(RepoDoesNotExist))
-    
-    if (path2 / p".git").exists() then GitRepo((path2 / p".git").as[Directory], path2.as[Directory])
-    else GitRepo(path2.as[Directory])
+      if (path / p".git").exists() then GitRepo((path / p".git").as[Directory], path.as[Directory])
+      else new GitRepo(path.as[Directory])
 
 case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
@@ -265,7 +267,7 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
   inline def cloneCommit
-      [SourceType, PathType: GenericPath]
+      [SourceType <: Matchable, PathType: GenericPath]
       (source: SourceType, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand, Raises[GitError], Raises[ExecError], Log[Text],
           WorkingDirectory)
@@ -279,7 +281,7 @@ object Git:
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone
-      [SourceType, PathType: GenericPath]
+      [SourceType <: Matchable, PathType: GenericPath]
       (source: SourceType, targetPath: PathType, bare: Boolean = false, branch: Optional[Branch] = Unset,
           recursive: Boolean = false)
       (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)(using gitError: Raises[GitError])
@@ -398,5 +400,6 @@ package gitCommands:
     GitCommand(path.as[File])
 
 case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
-  def userText = user.lay(t"") { user => t"$user:" }
-  t"$userText@$hostname$path"
+  def text: Text =
+    def userText = user.lay(t"") { user => t"$user:" }
+    t"$userText@$hostname$path"
