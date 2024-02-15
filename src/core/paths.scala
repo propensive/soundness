@@ -55,7 +55,7 @@ object Path:
     type Result = Path
     inline def add(left: Path, right: SafeLink): Path = left.append(right)
   
-  given Insertion[Sh.Params, Path] = path => Sh.Params(path.fullname)
+  given Insertion[Sh.Parameters, Path] = path => Sh.Parameters(path.fullname)
   
   given writableBytes
       (using io: Raises[IoError], streamCut: Raises[StreamError])
