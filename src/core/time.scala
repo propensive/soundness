@@ -91,7 +91,7 @@ object Dates:
     
     given plus(using calendar: Calendar): AddOperator[Date, Period] with
       type Result = Date
-      def apply(date: Date, period: Period): Date = calendar.add(date, period)
+      def add(date: Date, period: Period): Date = calendar.add(date, period)
     
     def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-") match
       // FIXME: This compiles successfully, but never seems to match
@@ -121,7 +121,7 @@ object Dates:
     infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("plus")
-    infix def + (period: Period)(using Calendar): Date = Date.plus(date, period)
+    infix def + (period: Period)(using Calendar): Date = Date.plus.add(date, period)
     
 export Dates.Date
 
@@ -194,7 +194,7 @@ object YearMonth:
   given dayOfMonth: SubOperator[YearMonth, Int] with
     type Result = Date
     
-    def apply(yearMonth: YearMonth, day: Int): Date =
+    def sub(yearMonth: YearMonth, day: Int): Date =
       safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).vouch(using Unsafe)
 
 object Timing:
@@ -224,11 +224,11 @@ object Timing:
 
     given plus: AddOperator[Instant, Duration] with
       type Result = Instant
-      def apply(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
+      def add(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
 
     given minus: SubOperator[Instant, Instant] with
       type Result = Duration
-      def apply(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+      def sub(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
     
   type Duration = Quantity[Seconds[1]]
 
@@ -246,11 +246,11 @@ object Timing:
     
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
-    @targetName("plus")
-    infix def + (duration: Duration): Instant = Instant.plus(instant, duration)
+    //@targetName("plus")
+    //infix def + (duration: Duration): Instant = Instant.plus(instant, duration)
     
-    @targetName("minus")
-    infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
+    //@targetName("minus")
+    //infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
 
     infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
@@ -264,7 +264,7 @@ object Timing:
       LocalTime(date, time, timezone)
 
   extension (duration: Duration)
-    def from(instant: Instant): Interval = Interval(instant, Instant.plus(instant, duration))
+    def from(instant: Instant): Interval = Interval(instant, Instant.plus.add(instant, duration))
 
 export Timing.{Instant, Duration}
 
@@ -344,14 +344,14 @@ object Period:
   
   given plus(using TimeSystem[StandardTime]): AddOperator[Period, Period] with
     type Result = Period
-    def apply(left: Period, right: Period): Period =
+    def add(left: Period, right: Period): Period =
       Period(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
           right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
   
   given minus(using TimeSystem[StandardTime]): SubOperator[Period, Period] with
     type Result = Period
     
-    def apply(left: Period, right: Period): Period =
+    def sub(left: Period, right: Period): Period =
       Period(left.years - right.years, left.months - right.months, left.days - right.days, left.hours -
           right.hours, left.minutes - right.minutes, left.seconds - right.seconds)
 
@@ -375,10 +375,10 @@ extends DiurnalPeriod, TemporalPeriod:
   infix def * (n: Int): Period = Period(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
 
   @targetName("plus")
-  infix def + (right: Period): Period = Period.plus(this, right)
+  infix def + (right: Period): Period = Period.plus.add(this, right)
   
   @targetName("minus")
-  infix def - (right: Period): Period = Period.minus(this, right)
+  infix def - (right: Period): Period = Period.minus.sub(this, right)
 
 extension (one: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
@@ -403,7 +403,7 @@ case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 object Timestamp:
   given plus: AddOperator[Timestamp, Timespan] with
     type Result = Timestamp
-    def apply(left: Timestamp, right: Timespan): Timestamp = ???
+    def add(left: Timestamp, right: Timespan): Timestamp = ???
 
 case class Timestamp(date: Date, time: Time)(using cal: Calendar):
   def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
@@ -420,7 +420,7 @@ object MonthName:
  
   given monthOfYear: SubOperator[Int, MonthName] with
     type Result = YearMonth
-    def apply(year: Int, month: MonthName) = new YearMonth(year, month)
+    def sub(year: Int, month: MonthName) = new YearMonth(year, month)
 
 enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
