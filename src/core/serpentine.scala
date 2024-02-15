@@ -19,7 +19,7 @@ package serpentine
 import rudiments.*
 import spectacular.*
 import anticipation.*
-import perforate.*
+import contingency.*
 
 import scala.compiletime.*
 import scala.quoted.*
