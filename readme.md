@@ -39,7 +39,13 @@ within a single runtime environment.
 
 ## Features
 
-TBC
+- write remote code in-place using quotes and splices
+- embed local values seamlessly into remote code
+- lightweight, yet clearly-delimited code
+- compile code using a custom compiler, to be run remotely
+- ensure contractual consistency between local and remote code
+- applications in microservice architectures and client-server scenarios
+
 
 
 ## Availability Plan
