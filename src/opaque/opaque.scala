@@ -16,4 +16,8 @@
 
 package anticipation
 
-erased trait Underlying[OpaqueType, PrimitiveType <: Boolean | Byte | Char | Short | Int | Long | Float | Double]
+erased trait Underlying[OpaqueType, PrimitiveType]
+
+extension [OpaqueType](value: OpaqueType)
+  def underlying[PrimitiveType](using erased Underlying[OpaqueType, PrimitiveType]): PrimitiveType =
+    value.asInstanceOf[PrimitiveType]
