@@ -19,9 +19,10 @@ package xylophone
 import anticipation.*
 import rudiments.*
 import spectacular.*
+import wisteria.*
 import gossamer.*
 
-object XmlEncoder:
+object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
   given XmlEncoder[String] = string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
@@ -34,33 +35,14 @@ object XmlEncoder:
 
   private val attributeAttribute = xmlAttribute()
 
-  // def join[DerivationType](caseClass: CaseClass[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] = value =>
-  //   val elements = caseClass.params
-  //     .filter(!_.annotations.contains(attributeAttribute))
-  //     .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(p.label.tt)) }
-
-  //   val attributes = caseClass.params
-  //     .filter(_.annotations.contains(attributeAttribute))
-  //     .map { p => XmlName(p.label.tt) -> textElements(p.typeclass.write(p.deref(value))) }
-  //     .to(Map)
-
-  //   val tag = caseClass.annotations.collect:
-  //     case `xmlLabel`(name) => name.show
-  //   .headOption.getOrElse(caseClass.typeInfo.short.show)
-
-  //   XmlAst.Element(XmlName(tag), elements, attributes)
-
-  // def split[DerivationType](sealedTrait: SealedTrait[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] =
-  //   value =>
-  //     sealedTrait.choose(value): subtype =>
-  //       val xml = subtype.typeclass.write(subtype.cast(value))
-  //       XmlAst.Element(
-  //         XmlName(sealedTrait.typeInfo.short.tt),
-  //         xml.children,
-  //         xml.attributes.updated(XmlName(t"type"), xml.name.name),
-  //         xml.namespaces
-  //       )
+  inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] = value =>
+    val elements = fields(value) { [FieldType] => field => context.write(field) }
+    XmlAst.Element(XmlName(typeName), elements.to(List))
   
+  inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
+    variant(value):
+      [VariantType <: DerivationType] => variant => context.write(variant)
+    
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
