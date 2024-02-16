@@ -101,10 +101,7 @@ object Xml:
       case ELEMENT_NODE =>
         val xmlName = XmlName(Text(node.getLocalName.nn), getNamespace(node))
         val childNodes = node.getChildNodes
-        
-        val children =
-          (0 until childNodes.nn.getLength).map(childNodes.nn.item(_).nn).map(readNode(_))
-        
+        val children = List.range(0, childNodes.nn.getLength).map(childNodes.nn.item(_).nn).map(readNode(_))
         val atts = (0 until node.getAttributes.nn.getLength).map(node.getAttributes.nn.item(_).nn)
         val attributes = atts.map { att =>
           val alias: Optional[Namespace] = getNamespace(att)
@@ -127,14 +124,14 @@ object Xml:
     (readNode(root.getDocumentElement.nn): @unchecked) match
       case elem@Ast.Element(_, _, _, _) => XmlDoc(Ast.Root(elem))
 
-  def normalize(xml: Xml): Seq[Ast] raises XmlAccessError =
-    def recur(path: XmlPath, current: Seq[Ast]): Seq[Ast] = (path: @unchecked) match
+  def normalize(xml: Xml): List[Ast] raises XmlAccessError =
+    def recur(path: XmlPath, current: List[Ast]): List[Ast] = (path: @unchecked) match
       case Nil =>
         current
 
       case (idx: Int) :: tail =>
         if current.length <= idx then abort(XmlAccessError(idx, path))
-        recur(tail, Seq(current(idx)))
+        recur(tail, List(current(idx)))
 
       case (unit: Unit) :: tail =>
         val next = current
@@ -151,7 +148,7 @@ object Xml:
 
         recur(tail, next)
 
-    try recur(xml.pointer, xml.root.content)
+    try recur(xml.pointer, xml.root.content.to(List))
     catch case err: XmlAccessError =>
       abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
 
@@ -215,7 +212,7 @@ case class Attribute(node: XmlNode, attribute: Text):
       case _                                      => abort(XmlReadError())
 
     summon[XmlDecoder[T]]
-      .read(Seq(Ast.Element(XmlName(t"empty"), Seq(Ast.Textual(attributes(XmlName(attribute)))))))
+      .read(List(Ast.Element(XmlName(t"empty"), List(Ast.Textual(attributes(XmlName(attribute)))))))
       .getOrElse(abort(XmlReadError()))
 
 case class xmlAttribute() extends StaticAnnotation

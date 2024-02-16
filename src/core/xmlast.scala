@@ -37,7 +37,7 @@ object Ast:
 
 enum Ast:
   case Element
-      (name: XmlName, children: Seq[Ast], attributes: Map[XmlName, Text] = Map(),
+      (name: XmlName, children: List[Ast], attributes: Map[XmlName, Text] = Map(),
           namespaces: List[Namespace] = Nil)
   case Comment(content: Text)
   case ProcessingInstruction(target: Text, content: Text)

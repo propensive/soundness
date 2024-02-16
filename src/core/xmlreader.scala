@@ -21,7 +21,7 @@ import anticipation.*
 import spectacular.*
 
 trait XmlDecoder[ValueType]:
-  def read(xml: Seq[Ast]): Option[ValueType]
+  def read(xml: List[Ast]): Option[ValueType]
   def map[ValueType2](lambda: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(lambda(_))
 
 object XmlDecoder:
@@ -39,7 +39,7 @@ object XmlDecoder:
   //       elems
   //         .collect { case e: Ast.Element => e }
   //         .find(_.name.name.s == param.label)
-  //         .flatMap { e => param.typeclass.read(Seq(e)) }.get
+  //         .flatMap { e => param.typeclass.read(List(e)) }.get
   
   // def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
   //   seq.headOption match
@@ -51,5 +51,5 @@ object XmlDecoder:
   //     case _ =>
   //       None
   
-  private def childElements(seq: Seq[Ast]): Seq[Ast] =
+  private def childElements(seq: List[Ast]): Seq[Ast] =
     seq.collect { case e@Ast.Element(_, children, _, _) => children }.flatten

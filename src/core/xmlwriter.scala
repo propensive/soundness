@@ -27,7 +27,7 @@ object XmlEncoder:
 
   given [ValueType: XmlEncoder, CollectionType[ElementType] <: Seq[ElementType]]
       : XmlEncoder[CollectionType[ValueType]] =
-    elements => Ast.Element(XmlName(t"Seq"), elements.map(summon[XmlEncoder[ValueType]].write(_)))
+    elements => Ast.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
 
   given XmlEncoder[Int] = int =>
     Ast.Element(XmlName(t"Int"), List(Ast.Textual(int.show)))
