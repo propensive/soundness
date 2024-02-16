@@ -89,34 +89,32 @@ object Xml:
         case None         => Unset
         case Some(prefix) => Option(node.getNamespaceURI) match
                                case None      => Unset
-                               case Some(uri) => Namespace(Text(prefix.nn), Text(uri.nn))
+                               case Some(uri) => Namespace(prefix.nn.tt, uri.nn.tt)
 
     def readNode(node: owd.Node): XmlAst = node.getNodeType match
       case CDATA_SECTION_NODE =>
-        XmlAst.CData(Text(node.getTextContent.nn))
+        XmlAst.CData(node.getTextContent.nn.tt)
 
       case COMMENT_NODE =>
-        XmlAst.Comment(Text(node.getTextContent.nn))
+        XmlAst.Comment(node.getTextContent.nn.tt)
 
       case ELEMENT_NODE =>
-        val xmlName = XmlName(Text(node.getLocalName.nn), getNamespace(node))
+        val xmlName = XmlName(node.getLocalName.nn.tt, getNamespace(node))
         val childNodes = node.getChildNodes
         val children = List.range(0, childNodes.nn.getLength).map(childNodes.nn.item(_).nn).map(readNode(_))
         val atts = (0 until node.getAttributes.nn.getLength).map(node.getAttributes.nn.item(_).nn)
         val attributes = atts.map { att =>
           val alias: Optional[Namespace] = getNamespace(att)
-          XmlName(Text(att.getLocalName.nn), alias) -> Text(att.getTextContent.nn)
+          XmlName(att.getLocalName.nn.tt, alias) -> att.getTextContent.nn.tt
         }.to(Map)
         
         XmlAst.Element(xmlName, children, attributes)
 
       case PROCESSING_INSTRUCTION_NODE =>
-        val name = Text(node.getNodeName.nn)
-        val content = Text(node.getTextContent.nn)
-        XmlAst.ProcessingInstruction(name, content)
+        XmlAst.ProcessingInstruction(node.getNodeName.nn.tt, node.getTextContent.nn.tt)
 
       case TEXT_NODE =>
-        XmlAst.Textual(Text(node.getTextContent.nn))
+        XmlAst.Textual(node.getTextContent.nn.tt)
       
       case id =>
         XmlAst.Comment(t"unrecognized node $id")
@@ -158,7 +156,7 @@ extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
   def attribute(key: Text): Attribute = apply(0).attribute(key)
   def pointer: XmlPath = (head :: path).reverse
-  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
@@ -175,7 +173,7 @@ extends Xml, Dynamic:
     apply().as[ValueType]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
-  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   def attribute(attribute: Text): Attribute = Attribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
@@ -192,7 +190,7 @@ case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dyn
 
 case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
-  def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), Nil, root)
+  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")

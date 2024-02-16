@@ -37,11 +37,11 @@ object XmlEncoder:
   // def join[DerivationType](caseClass: CaseClass[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] = value =>
   //   val elements = caseClass.params
   //     .filter(!_.annotations.contains(attributeAttribute))
-  //     .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(Text(p.label))) }
+  //     .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(p.label.tt)) }
 
   //   val attributes = caseClass.params
   //     .filter(_.annotations.contains(attributeAttribute))
-  //     .map { p => XmlName(Text(p.label)) -> textElements(p.typeclass.write(p.deref(value))) }
+  //     .map { p => XmlName(p.label.tt) -> textElements(p.typeclass.write(p.deref(value))) }
   //     .to(Map)
 
   //   val tag = caseClass.annotations.collect:
@@ -55,7 +55,7 @@ object XmlEncoder:
   //     sealedTrait.choose(value): subtype =>
   //       val xml = subtype.typeclass.write(subtype.cast(value))
   //       XmlAst.Element(
-  //         XmlName(Text(sealedTrait.typeInfo.short)),
+  //         XmlName(sealedTrait.typeInfo.short.tt),
   //         xml.children,
   //         xml.attributes.updated(XmlName(t"type"), xml.name.name),
   //         xml.namespaces

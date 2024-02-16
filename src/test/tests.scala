@@ -142,7 +142,7 @@ object Tests extends Suite(t"Xylophone tests"):
                         |</h:table>
                         |</root>""".s.stripMargin
 
-      val xml = Xml.parse(Text(string))
+      val xml = Xml.parse(string.tt)
       xml.table.tr.td().as[Text]
     .assert(_ == t"Apples")
 
