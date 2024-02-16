@@ -25,37 +25,55 @@ erased trait Ratio[UnitsType <: Measure, RatioType <: Double & Singleton]
 
 // Units of length
 
+trait Points[Power <: Nat] extends Units[Power, Length]
+object Points:
+  given UnitName[Points[1]] = () => "pt".tt
+  erased given pointsPerMetre: Ratio[Points[-1] & Metres[1], 3.5277777777777776E-4] = ###
+
+trait Picas[Power <: Nat] extends Units[Power, Length]
+object Picas:
+  given UnitName[Picas[1]] = () => "pc".tt
+  erased given picasPerMetre: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = ###
+
 trait Inches[Power <: Nat] extends Units[Power, Length]
 object Inches:
+  given UnitName[Inches[1]] = () => "in".tt
   erased given inchesPerMetre: Ratio[Inches[-1] & Metres[1], 0.0254] = ###
 
 trait Feet[Power <: Nat] extends Units[Power, Length]
 object Feet:
+  given UnitName[Inches[1]] = () => "ft".tt
   erased given feetPerMetre: Ratio[Feet[-1] & Metres[1], 0.3048] = ###
 
 trait Yards[Power <: Nat] extends Units[Power, Length]
 object Yards:
+  given UnitName[Inches[1]] = () => "yd".tt
   erased given yardsPerMetre: Ratio[Yards[-1] & Metres[1], 0.9144] = ###
 
 trait Miles[Power <: Nat] extends Units[Power, Length]
 object Miles:
+  given UnitName[Inches[1]] = () => "mi".tt
   erased given milesPerMetre: Ratio[Miles[-1] & Metres[1], 1609.344] = ###
 
 trait Lightyears[Power <: Nat] extends Units[Power, Length]
 object Lightyears:
+  given UnitName[Inches[1]] = () => "ly".tt
   erased given lightYearsPerMetre: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = ###
 
 trait NauticalMiles[Power <: Nat] extends Units[Power, Length]
 object NauticalMiles:
+  given UnitName[Inches[1]] = () => "NM".tt
   erased given nauticalMilesPerMetre: Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4] =
     ###
 
 trait Furlongs[Power <: Nat] extends Units[Power, Length]
 object Furlongs:
+  given UnitName[Inches[1]] = () => "fur".tt
   erased given metresPerFurlong: Ratio[Metres[1] & Furlongs[-1], 201.168] = ###
 
 trait Chains[Power <: Nat] extends Units[Power, Length]
 object Chains:
+  given UnitName[Inches[1]] = () => "ch".tt
   erased given metresPerChain: Ratio[Metres[1] & Chains[-1], 20.1168] = ###
 
 val Inch = Quantity[Inches[1]](1.0)
@@ -140,14 +158,17 @@ object SiderealDays:
 
 trait Days[Power <: Nat] extends Units[Power, Time]
 object Days:
+  given UnitName[Hours[1]] = () => "d".tt
   erased given secondsPerDay: Ratio[Seconds[1] & Days[-1], 86400.0] = ###
 
 trait Hours[Power <: Nat] extends Units[Power, Time]
 object Hours:
+  given UnitName[Hours[1]] = () => "h".tt
   erased given secondsPerHour: Ratio[Seconds[1] & Hours[-1], 3600.0] = ###
 
 trait Minutes[Power <: Nat] extends Units[Power, Time]
 object Minutes:
+  given UnitName[Minutes[1]] = () => "min".tt
   erased given secondsPerMinute: Ratio[Seconds[1] & Minutes[-1], 60.0] = ###
 
 // Units of Angle
