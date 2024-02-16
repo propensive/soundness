@@ -27,8 +27,6 @@ import turbulence.*
 import rudiments.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.skip
 
-import unsafeExceptions.canThrowAny
-
 import java.io.File
 
 object Tests extends Suite(t"Zeppelin tests"):
