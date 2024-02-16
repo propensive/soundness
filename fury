@@ -14,6 +14,7 @@ project abacist
 
   module test
     compiler  scala
+    coverage  abacist/core
     sources   src/test
     include   probably/cli abacist/core larceny/plugin
     main      abacist.Tests
