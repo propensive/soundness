@@ -104,47 +104,49 @@ case class Scalac
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
       def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
     
-    mitigate:
+    given (ScalacError fixes SystemPropertyError) =
       case SystemPropertyError(_) => ScalacError()
-      case IoError(_)             => ScalacError()
-    .within:
-      val separator: Text = Properties.path.separator().show
+
+    given (ScalacError fixes IoError) =
+      case IoError(_) => ScalacError()
+    
+    val separator: Text = Properties.path.separator().show
       
-      val callbackApi = new dtdi.CompilerCallback:
-        override def onClassGenerated
-            (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
-            : Unit =
-          ()
+    val callbackApi = new dtdi.CompilerCallback:
+      override def onClassGenerated
+          (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
+          : Unit =
+        ()
         
-        override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
+      override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
       
-      object driver extends dotc.Driver:
-        val currentCtx =
-          val ctx = initCtx.fresh
-          //val pluginParams = plugins
-          //val jsParams = 
-          val args: List[Text] = List(t"-d", out.fullname, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
-          setup(args.map(_.s).to(Array), ctx).map(_(1)).get
+    object driver extends dotc.Driver:
+      val currentCtx =
+        val ctx = initCtx.fresh
+        //val pluginParams = plugins
+        //val jsParams = 
+        val args: List[Text] = List(t"-d", out.fullname, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
+        setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
-        def run(classpath: LocalClasspath): List[Diagnostic] =
-          val ctx = currentCtx.fresh
+      def run(classpath: LocalClasspath): List[Diagnostic] =
+        val ctx = currentCtx.fresh
           
-          val ctx2 = ctx
-            .setReporter(reporter)
-            .setCompilerCallback(callbackApi)
-            .setSetting(ctx.settings.language, Nil)
-            .setSetting(ctx.settings.classpath, classpath().s)
+        val ctx2 = ctx
+          .setReporter(reporter)
+          .setCompilerCallback(callbackApi)
+          .setSetting(ctx.settings.language, Nil)
+          .setSetting(ctx.settings.classpath, classpath().s)
           
-          val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
-            dtdu.SourceFile.virtual(name.s, content.s)
+        val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
+          dtdu.SourceFile.virtual(name.s, content.s)
           
-          Scalac.Scala3.newRun(using ctx2).tap: run =>
-            run.compileSources(sourceFiles)
-            if !reporter.hasErrors then finish(Scalac.Scala3, run)(using ctx2)
+        Scalac.Scala3.newRun(using ctx2).tap: run =>
+          run.compileSources(sourceFiles)
+          if !reporter.hasErrors then finish(Scalac.Scala3, run)(using ctx2)
           
-          reporter.errors.to(List)
+        reporter.errors.to(List)
       
-      driver.run(classpath)
+    driver.run(classpath)
           
             
 enum CompileResult:
