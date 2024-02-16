@@ -22,15 +22,15 @@ import spectacular.*
 import gossamer.*
 
 object XmlEncoder:
-  given XmlEncoder[Text] = text => Ast.Element(XmlName(t"Text"), List(Ast.Textual(text)))
-  given XmlEncoder[String] = string => Ast.Element(XmlName(t"String"), List(Ast.Textual(string.tt)))
+  given XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
+  given XmlEncoder[String] = string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
   given [ValueType: XmlEncoder, CollectionType[ElementType] <: Seq[ElementType]]
       : XmlEncoder[CollectionType[ValueType]] =
-    elements => Ast.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
+    elements => XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
 
   given XmlEncoder[Int] = int =>
-    Ast.Element(XmlName(t"Int"), List(Ast.Textual(int.show)))
+    XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()
 
@@ -48,23 +48,23 @@ object XmlEncoder:
   //     case `xmlLabel`(name) => name.show
   //   .headOption.getOrElse(caseClass.typeInfo.short.show)
 
-  //   Ast.Element(XmlName(tag), elements, attributes)
+  //   XmlAst.Element(XmlName(tag), elements, attributes)
 
   // def split[DerivationType](sealedTrait: SealedTrait[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] =
   //   value =>
   //     sealedTrait.choose(value): subtype =>
   //       val xml = subtype.typeclass.write(subtype.cast(value))
-  //       Ast.Element(
+  //       XmlAst.Element(
   //         XmlName(Text(sealedTrait.typeInfo.short)),
   //         xml.children,
   //         xml.attributes.updated(XmlName(t"type"), xml.name.name),
   //         xml.namespaces
   //       )
   
-  private def textElements(value: Ast.Element): Text =
-    value.children.collect { case Ast.Textual(txt) => txt }.join
+  private def textElements(value: XmlAst.Element): Text =
+    value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
 trait XmlEncoder[-ValueType]:
-  def write(value: ValueType): Ast.Element
+  def write(value: ValueType): XmlAst.Element
   def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] = value => write(lambda(value))
 

@@ -39,19 +39,19 @@ case class XmlName(name: Text, namespace: Optional[Namespace] = Unset)
 
 sealed trait Xml:
   def pointer: List[Int | Text | Unit]
-  def root: Ast.Root
+  def root: XmlAst.Root
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError
 
   def string(using XmlPrinter[Text]): Text raises XmlAccessError =
-    summon[XmlPrinter[Text]].print(XmlDoc(Ast.Root(Xml.normalize(this)*)))
+    summon[XmlPrinter[Text]].print(XmlDoc(XmlAst.Root(Xml.normalize(this)*)))
 
 type XmlPath = List[Text | Int | Unit]
 
 object Xml:
   given show: Show[Xml] = xml =>
-    safely(printers.compact.print(XmlDoc(Ast.Root(Xml.normalize(xml)*)))).or(t"undefined")
+    safely(printers.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
     def mediaType: Text = t"application/xml; charset=${enc.name}"
@@ -91,12 +91,12 @@ object Xml:
                                case None      => Unset
                                case Some(uri) => Namespace(Text(prefix.nn), Text(uri.nn))
 
-    def readNode(node: owd.Node): Ast = node.getNodeType match
+    def readNode(node: owd.Node): XmlAst = node.getNodeType match
       case CDATA_SECTION_NODE =>
-        Ast.CData(Text(node.getTextContent.nn))
+        XmlAst.CData(Text(node.getTextContent.nn))
 
       case COMMENT_NODE =>
-        Ast.Comment(Text(node.getTextContent.nn))
+        XmlAst.Comment(Text(node.getTextContent.nn))
 
       case ELEMENT_NODE =>
         val xmlName = XmlName(Text(node.getLocalName.nn), getNamespace(node))
@@ -108,24 +108,24 @@ object Xml:
           XmlName(Text(att.getLocalName.nn), alias) -> Text(att.getTextContent.nn)
         }.to(Map)
         
-        Ast.Element(xmlName, children, attributes)
+        XmlAst.Element(xmlName, children, attributes)
 
       case PROCESSING_INSTRUCTION_NODE =>
         val name = Text(node.getNodeName.nn)
         val content = Text(node.getTextContent.nn)
-        Ast.ProcessingInstruction(name, content)
+        XmlAst.ProcessingInstruction(name, content)
 
       case TEXT_NODE =>
-        Ast.Textual(Text(node.getTextContent.nn))
+        XmlAst.Textual(Text(node.getTextContent.nn))
       
       case id =>
-        Ast.Comment(t"unrecognized node $id")
+        XmlAst.Comment(t"unrecognized node $id")
 
     (readNode(root.getDocumentElement.nn): @unchecked) match
-      case elem@Ast.Element(_, _, _, _) => XmlDoc(Ast.Root(elem))
+      case elem@XmlAst.Element(_, _, _, _) => XmlDoc(XmlAst.Root(elem))
 
-  def normalize(xml: Xml): List[Ast] raises XmlAccessError =
-    def recur(path: XmlPath, current: List[Ast]): List[Ast] = (path: @unchecked) match
+  def normalize(xml: Xml): List[XmlAst] raises XmlAccessError =
+    def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = (path: @unchecked) match
       case Nil =>
         current
 
@@ -135,16 +135,16 @@ object Xml:
 
       case (unit: Unit) :: tail =>
         val next = current
-          .collect { case e@Ast.Element(_, children, _, _) => children }
+          .collect { case e@XmlAst.Element(_, children, _, _) => children }
           .flatten
-          .collect { case e: Ast.Element => e }
+          .collect { case e: XmlAst.Element => e }
 
         recur(tail, next)
 
       case (label: Text) :: tail =>
         val next = current
-          .collect { case e@Ast.Element(_, children, _, _) => children }
-          .flatten.collect { case e: Ast.Element if e.name.name == label => e }
+          .collect { case e@XmlAst.Element(_, children, _, _) => children }
+          .flatten.collect { case e: XmlAst.Element if e.name.name == label => e }
 
         recur(tail, next)
 
@@ -153,7 +153,7 @@ object Xml:
       abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
 
 
-case class Fragment(head: Text | Unit, path: XmlPath, root: Ast.Root)
+case class Fragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
 extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
   def attribute(key: Text): Attribute = apply(0).attribute(key)
@@ -166,7 +166,7 @@ extends Xml, Dynamic:
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
-    XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
+    XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
   
   def as
       [ValueType]
@@ -174,7 +174,7 @@ extends Xml, Dynamic:
       : ValueType raises XmlAccessError raises XmlReadError =
     apply().as[ValueType]
 
-case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynamic:
+case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
   def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   def attribute(attribute: Text): Attribute = Attribute(this, attribute)
@@ -185,12 +185,12 @@ case class XmlNode(head: Int, path: XmlPath, root: Ast.Root) extends Xml, Dynami
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
-    XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
+    XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): T =
     summon[XmlDecoder[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
 
-case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
+case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
   def selectDynamic(tagName: String): Fragment = Fragment(Text(tagName), Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
@@ -200,7 +200,7 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
-    XmlDoc(Ast.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
+    XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as[T: XmlDecoder](using Raises[XmlAccessError], Raises[XmlReadError]): T =
     summon[XmlDecoder[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
@@ -208,15 +208,15 @@ case class XmlDoc(root: Ast.Root) extends Xml, Dynamic:
 case class Attribute(node: XmlNode, attribute: Text):
   def as[T: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): T =
     val attributes = Xml.normalize(node).headOption match
-      case Some(Ast.Element(_, _, attributes, _)) => attributes
+      case Some(XmlAst.Element(_, _, attributes, _)) => attributes
       case _                                      => abort(XmlReadError())
 
     summon[XmlDecoder[T]]
-      .read(List(Ast.Element(XmlName(t"empty"), List(Ast.Textual(attributes(XmlName(attribute)))))))
+      .read(List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
       .getOrElse(abort(XmlReadError()))
 
 case class xmlAttribute() extends StaticAnnotation
 case class xmlLabel(name: String) extends StaticAnnotation
 
 extension [T](value: T)(using NotGiven[T =:= StringContext])
-  def xml(using writer: XmlEncoder[T]): XmlDoc = XmlDoc(Ast.Root(writer.write(value)))
+  def xml(using writer: XmlEncoder[T]): XmlDoc = XmlDoc(XmlAst.Root(writer.write(value)))

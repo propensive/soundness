@@ -21,15 +21,15 @@ import anticipation.*
 import spectacular.*
 
 trait XmlDecoder[ValueType]:
-  def read(xml: List[Ast]): Option[ValueType]
+  def read(xml: List[XmlAst]): Option[ValueType]
   def map[ValueType2](lambda: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(lambda(_))
 
 object XmlDecoder:
   given txt: XmlDecoder[Text] =
-    childElements(_).collect { case Ast.Textual(txt) => txt }.headOption
+    childElements(_).collect { case XmlAst.Textual(txt) => txt }.headOption
   
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value => (value: @unchecked) match
-    case Ast.Element(_, Ast.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[ValueType])
+    case XmlAst.Element(_, XmlAst.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[ValueType])
   
   // def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
   //   val elems = childElements(seq)
@@ -37,13 +37,13 @@ object XmlDecoder:
   //   Some:
   //     caseClass.construct: param =>
   //       elems
-  //         .collect { case e: Ast.Element => e }
+  //         .collect { case e: XmlAst.Element => e }
   //         .find(_.name.name.s == param.label)
   //         .flatMap { e => param.typeclass.read(List(e)) }.get
   
   // def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
   //   seq.headOption match
-  //     case Some(Ast.Element(_, children, attributes, _)) =>
+  //     case Some(XmlAst.Element(_, children, attributes, _)) =>
   //       attributes
   //         .get(XmlName(t"type"))
   //         .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
@@ -51,5 +51,5 @@ object XmlDecoder:
   //     case _ =>
   //       None
   
-  private def childElements(seq: List[Ast]): Seq[Ast] =
-    seq.collect { case e@Ast.Element(_, children, _, _) => children }.flatten
+  private def childElements(seq: List[XmlAst]): Seq[XmlAst] =
+    seq.collect { case e@XmlAst.Element(_, children, _, _) => children }.flatten

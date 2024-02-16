@@ -54,12 +54,12 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
         pos = indent*2
       linebreak = false
 
-    def inline(element: Ast.Element): Boolean = element.children.all:
-      case Ast.Textual(_) => true
+    def inline(element: XmlAst.Element): Boolean = element.children.all:
+      case XmlAst.Textual(_) => true
       case _              => false
 
-    def next(node: Ast): Unit = node match
-      case element@Ast.Element(tagName, children, attributes, namespaces) =>
+    def next(node: XmlAst): Unit = node match
+      case element@XmlAst.Element(tagName, children, attributes, namespaces) =>
         whitespace()
         append(t"<", tagName.show)
 
@@ -72,7 +72,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
         for child <- element.children do
           val splitLine = child match
-            case Ast.Textual(_) => false
+            case XmlAst.Textual(_) => false
             case _              => true
           if splitLine then newline()
           next(child)
@@ -85,16 +85,16 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
           append(t"</", tagName.show, t">")
           if !inline(element) then newline(0)
 
-      case Ast.Textual(text) =>
+      case XmlAst.Textual(text) =>
         whitespace()
         append(text)
 
-      case Ast.ProcessingInstruction(target, content) =>
+      case XmlAst.ProcessingInstruction(target, content) =>
         whitespace()
         append(t"<?", target, t" ", content, t"?>")
         newline()
 
-      case Ast.Comment(content) =>
+      case XmlAst.Comment(content) =>
         whitespace()
         append(t"<!--", content, t"-->")
         newline()

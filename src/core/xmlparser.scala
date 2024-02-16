@@ -29,7 +29,7 @@ object XmlInterpolation:
 
   enum XmlInput:
     case Flat(text: Text)
-    case Structured(xml: Ast.Element)
+    case Structured(xml: XmlAst.Element)
 
   enum ContextType:
     case AttributeValue, InTagName, SelfClosingTagName, TagClose, ClosingTag, InAttributeName,
