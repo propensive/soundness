@@ -55,6 +55,7 @@ object CountQuaques:
     @targetName("sub")
     inline infix def - (right: Count[UnitsType]): Count[UnitsType] = count - right
 
+    @targetName("negate")
     inline def `unary_-`: Count[UnitsType] = -count
 
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
