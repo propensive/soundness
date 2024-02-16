@@ -151,16 +151,16 @@ object Xml:
       abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
 
 
-case class Fragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
+case class XmlFragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
 extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
   def attribute(key: Text): Attribute = apply(0).attribute(key)
   def pointer: XmlPath = (head :: path).reverse
-  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, head :: path, root)
+  def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
-  def `*`: Fragment = Fragment((), head :: path, root)
+  def `*`: XmlFragment = XmlFragment((), head :: path, root)
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
@@ -173,13 +173,13 @@ extends Xml, Dynamic:
     apply().as[ValueType]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
-  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, head :: path, root)
+  def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   def attribute(attribute: Text): Attribute = Attribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
   
   @targetName("all")
-  def `*`: Fragment = Fragment((), head :: path, root)
+  def `*`: XmlFragment = XmlFragment((), head :: path, root)
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
@@ -190,11 +190,11 @@ case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dyn
 
 case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
-  def selectDynamic(tagName: String): Fragment = Fragment(tagName.tt, Nil, root)
+  def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   
   @targetName("all")
-  def `*`: Fragment = Fragment((), Nil, root)
+  def `*`: XmlFragment = XmlFragment((), Nil, root)
   
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
