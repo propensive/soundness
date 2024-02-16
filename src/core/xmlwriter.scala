@@ -41,7 +41,9 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   
   inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
     variant(value):
-      [VariantType <: DerivationType] => variant => context.write(variant)
+      [VariantType <: DerivationType] => variant =>
+        val xml = context.write(variant)
+        XmlAst.Element(XmlName(typeName), xml.children, xml.attributes.updated(XmlName("type".tt), xml.name.name), xml.namespaces)
     
 
   //   val elements = caseClass.params
