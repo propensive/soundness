@@ -4,7 +4,7 @@
 
 # Quantitative
 
-____
+__Statically-checked physical units with seamless syntax__
 
 When working with physical quantities, such as lengths, masses or temperatures,
 it can be easy to mix up quantities with different units, especially if we
