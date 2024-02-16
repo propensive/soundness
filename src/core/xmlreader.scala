@@ -17,25 +17,45 @@
 package xylophone
 
 import rudiments.*
+import wisteria.*
 import anticipation.*
 import spectacular.*
 import contingency.*
+
+import compiletime.*
 
 trait XmlDecoder[ValueType]:
   def read(xml: List[XmlAst]): ValueType
   def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
 
-object XmlDecoder:
+object XmlDecoder extends Derivation[XmlDecoder]:
   given text(using Raises[XmlReadError]): XmlDecoder[Text] = list =>
-    val elements = childElements(list).collect:
-      case XmlAst.Textual(text) => text
-    
+    val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
     if elements.length == 0 then raise(XmlReadError())("".tt) else elements.head
   
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
     (value: @unchecked) match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decodeAs[ValueType]
+
+  inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] = list =>
+    val elements = childElements(list)
+
+    construct:
+      [FieldType] => context =>
+        val element =
+          elements.collect { case element: XmlAst.Element => element }
+            .find(_.name.name == label)
+            .get
+          
+        context.read(List(element))
   
+  inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
+    list.head match
+      case XmlAst.Element(_, children, attributes, _) =>
+        delegate(attributes.get(XmlName("type".tt)).get):
+          [VariantType <: DerivationType] => decoder =>
+            decoder.read(list)
+
   // def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
   //   val elems = childElements(seq)
     
