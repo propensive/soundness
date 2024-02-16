@@ -22,8 +22,6 @@ import anticipation.*
 import spectacular.*
 import contingency.*
 
-import compiletime.*
-
 trait XmlDecoder[ValueType]:
   def read(xml: List[XmlAst]): ValueType
   def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
@@ -56,25 +54,5 @@ object XmlDecoder extends Derivation[XmlDecoder]:
           [VariantType <: DerivationType] => decoder =>
             decoder.read(list)
 
-  // def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
-  //   val elems = childElements(seq)
-    
-  //   Some:
-  //     caseClass.construct: param =>
-  //       elems
-  //         .collect { case e: XmlAst.Element => e }
-  //         .find(_.name.name.s == param.label)
-  //         .flatMap { e => param.typeclass.read(List(e)) }.get
-  
-  // def split[DerivationType](sealedTrait: SealedTrait[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
-  //   seq.headOption match
-  //     case Some(XmlAst.Element(_, children, attributes, _)) =>
-  //       attributes
-  //         .get(XmlName(t"type"))
-  //         .flatMap { t => sealedTrait.subtypes.find(_.typeInfo.short == t.s) }
-  //         .flatMap(_.typeclass.read(seq))
-  //     case _ =>
-  //       None
-  
   private def childElements(seq: List[XmlAst]): Seq[XmlAst] =
     seq.collect { case e@XmlAst.Element(_, children, _, _) => children }.flatten
