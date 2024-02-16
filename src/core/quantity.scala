@@ -17,7 +17,6 @@
 package quantitative
 
 import rudiments.*
-import vacuous.*
 import fulminate.*
 import symbolism.*
 import hypotenuse.*
