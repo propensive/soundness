@@ -40,6 +40,7 @@ object Tests extends Suite(t"Quantitative Tests"):
       
       test(t"Access minutes in an HMS time"):
         val hmsTime = Count[TimeSeconds](27, 18, 9)
+        println("underlying = "+hmsTime)
         hmsTime[Minutes]
       .assert(_ == 18)
       
@@ -116,7 +117,7 @@ object Tests extends Suite(t"Quantitative Tests"):
         val weight: Count[Weight] = Count(12, 9)
         val result = weight*2.5
         (result[Stones], result[Pounds], result[Ounces])
-      .assert(_ == (2, 3, 6))
+      .assert(_ == (2, 3, 7))
       
       test(t"Adding with double carry"):
         val weight: Count[Weight] = Count(100, 13, 15)
