@@ -19,17 +19,22 @@ package xylophone
 import rudiments.*
 import anticipation.*
 import spectacular.*
+import contingency.*
 
 trait XmlDecoder[ValueType]:
-  def read(xml: List[XmlAst]): Option[ValueType]
-  def map[ValueType2](lambda: ValueType => Option[ValueType2]): XmlDecoder[ValueType2] = read(_).flatMap(lambda(_))
+  def read(xml: List[XmlAst]): ValueType
+  def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
 
 object XmlDecoder:
-  given txt: XmlDecoder[Text] =
-    childElements(_).collect { case XmlAst.Textual(txt) => txt }.headOption
+  given text(using Raises[XmlReadError]): XmlDecoder[Text] = list =>
+    val elements = childElements(list).collect:
+      case XmlAst.Textual(text) => text
+    
+    if elements.length == 0 then raise(XmlReadError())("".tt) else elements.head
   
-  given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value => (value: @unchecked) match
-    case XmlAst.Element(_, XmlAst.Textual(text) +: _, _, _) +: _ => Some(text.decodeAs[ValueType])
+  given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
+    (value: @unchecked) match
+      case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decodeAs[ValueType]
   
   // def join[DerivationType](caseClass: CaseClass[XmlDecoder, DerivationType]): XmlDecoder[DerivationType] = seq =>
   //   val elems = childElements(seq)

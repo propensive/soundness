@@ -185,8 +185,8 @@ case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dyn
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): T =
-    summon[XmlDecoder[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
+  def as[ValueType: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): ValueType =
+    summon[XmlDecoder[ValueType]].read(Xml.normalize(this))
 
 case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
@@ -200,18 +200,20 @@ case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
-  def as[T: XmlDecoder](using Raises[XmlAccessError], Raises[XmlReadError]): T =
-    summon[XmlDecoder[T]].read(Xml.normalize(this)).getOrElse(abort(XmlReadError()))
+  def as[ValueType: XmlDecoder](using Raises[XmlAccessError], Raises[XmlReadError]): ValueType =
+    summon[XmlDecoder[ValueType]].read(Xml.normalize(this))
 
 case class Attribute(node: XmlNode, attribute: Text):
-  def as[T: XmlDecoder](using Raises[XmlReadError], Raises[XmlAccessError]): T =
+  def as
+      [ValueType]
+      (using decoder: XmlDecoder[ValueType])
+      (using Raises[XmlReadError], Raises[XmlAccessError]): ValueType =
+
     val attributes = Xml.normalize(node).headOption match
       case Some(XmlAst.Element(_, _, attributes, _)) => attributes
-      case _                                      => abort(XmlReadError())
+      case _                                         => abort(XmlReadError())
 
-    summon[XmlDecoder[T]]
-      .read(List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
-      .getOrElse(abort(XmlReadError()))
+    decoder.read(List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
 
 case class xmlAttribute() extends StaticAnnotation
 case class xmlLabel(name: String) extends StaticAnnotation
