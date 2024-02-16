@@ -260,7 +260,7 @@ object SubstituteUnits:
 trait UnitsOffset[UnitsType <: Measure]:
   def value(): Double
 
-object Quantitative:
+object Quantitative extends Quantitative2:
   opaque type Quantity[UnitsType <: Measure] = Double
   opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
 
@@ -283,15 +283,15 @@ object Quantitative:
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
         : AddOperator[Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.addTypeclass[LeftType, RightType]}
+      ${Quantitative.addTypeclass[LeftType, RightType]}
     
     transparent inline given sub[LeftType <: Measure, RightType <: Measure]
         : SubOperator[Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.subTypeclass[LeftType, RightType]}
+      ${Quantitative.subTypeclass[LeftType, RightType]}
 
     transparent inline given mul[LeftType <: Measure, RightType <: Measure]
         : MulOperator[Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.mulTypeclass[LeftType, RightType]}
+      ${Quantitative.mulTypeclass[LeftType, RightType]}
 
     given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
       type Result = Quantity[LeftType]
@@ -299,17 +299,17 @@ object Quantitative:
 
     transparent inline given div[LeftType <: Measure, RightType <: Measure]
         : DivOperator[Quantity[LeftType], Quantity[RightType]] =
-      ${QuantitativeMacros.divTypeclass[LeftType, RightType]}
+      ${Quantitative.divTypeclass[LeftType, RightType]}
 
     given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
       type Result = Quantity[LeftType]
       inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
     transparent inline given squareRoot[ValueType <: Measure]: SquareRoot[Quantity[ValueType]] =
-      ${QuantitativeMacros.sqrtTypeclass[ValueType]}
+      ${Quantitative.sqrtTypeclass[ValueType]}
     
     transparent inline given cubeRoot[ValueType <: Measure]: CubeRoot[Quantity[ValueType]] =
-      ${QuantitativeMacros.cbrtTypeclass[ValueType]}
+      ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     
@@ -326,7 +326,7 @@ object Quantitative:
           (inline left: Quantity[UnitsType], inline right: Quantity[UnitsType2],
               inline strict: Boolean, inline greaterThan: Boolean)
           : Boolean =
-        ${QuantitativeMacros.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict,
+        ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict,
             'greaterThan)}
       
 
@@ -371,43 +371,3 @@ val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
 val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
 
 val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
-
-extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
-  @targetName("plus")
-  transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
-  
-  @targetName("minus")
-  transparent inline infix def - [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
-
-  transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
-
-  transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
-    ${QuantitativeMacros.norm[UnitsType, UnitsType2]('quantity)}
-  
-  @targetName("times2")
-  transparent inline infix def * [UnitsType2 <: Measure]
-      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
-  
-  @targetName("divide2")
-  transparent inline infix def / [UnitsType2 <: Measure]
-      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
-    ${QuantitativeMacros.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
-
-  transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
-
-  inline def units: Map[Text, Int] = ${QuantitativeMacros.collectUnits[UnitsType]}
-  inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
-
-  inline def dimension: Text = ${QuantitativeMacros.describe[UnitsType]}
-
-extension (value: Double)
-  @targetName("times")
-  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
-  
-  @targetName("divide")
-  transparent inline infix def / [UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
-    ((1.0/value)*quantity).invert
-  

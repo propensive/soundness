@@ -27,7 +27,7 @@ import scala.compiletime.*
 
 //import language.experimental.captureChecking
 
-object QuantitativeMacros:
+trait Quantitative2:
   case class UnitPower(ref: UnitRef, power: Int)
   
   private object UnitsMap:
@@ -329,7 +329,7 @@ object QuantitativeMacros:
           new MulOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def mul(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
-              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}
+              ${Quantitative.multiply[LeftType, RightType]('left, 'right, false)}
                 .asInstanceOf[Quantity[resultType]]
         }
       
@@ -338,7 +338,7 @@ object QuantitativeMacros:
           new MulOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Double
             def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
-              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, false)}.asInstanceOf[Double]
+              ${Quantitative.multiply[LeftType, RightType]('left, 'right, false)}.asInstanceOf[Double]
         }
 
 
@@ -358,7 +358,7 @@ object QuantitativeMacros:
           new DivOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
             def div(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
-              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}
+              ${Quantitative.multiply[LeftType, RightType]('left, 'right, true)}
                 .asInstanceOf[Quantity[resultType]]
         }
       
@@ -367,7 +367,7 @@ object QuantitativeMacros:
           new DivOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Double
             def div(left: Quantity[LeftType], right: Quantity[RightType]): Double =
-              ${QuantitativeMacros.multiply[LeftType, RightType]('left, 'right, true)}.asInstanceOf[Double]
+              ${Quantitative.multiply[LeftType, RightType]('left, 'right, true)}.asInstanceOf[Double]
         }
   
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[SquareRoot[Quantity[ValueType]]] =
@@ -461,7 +461,7 @@ object QuantitativeMacros:
             def sub
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
-              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{true})}
+              ${Quantitative.add[LeftType, RightType]('left, 'right, '{true})}
                   .asInstanceOf[Quantity[resultType]]
         }
 
@@ -479,7 +479,7 @@ object QuantitativeMacros:
             def add
                 (left: Quantity[LeftType], right: Quantity[RightType])
                 : Quantity[resultType] =
-              ${QuantitativeMacros.add[LeftType, RightType]('left, 'right, '{false})}
+              ${Quantitative.add[LeftType, RightType]('left, 'right, '{false})}
                   .asInstanceOf[Quantity[resultType]]
         }
 
