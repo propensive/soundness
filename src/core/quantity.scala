@@ -375,7 +375,7 @@ object QuantitativeMacros:
     if !units.map.values.all(_.power%2 == 0)
     then fail(msg"only quantities with units in even powers can have square roots calculated")
     else
-      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap).repr.get.asType match
+      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap).repr.get.asType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           '{
             new SquareRoot[Quantity[ValueType]]:
@@ -390,7 +390,7 @@ object QuantitativeMacros:
     if !units.map.values.all(_.power%3 == 0)
     then fail(msg"only quantities with units in powers which are multiples of 3 can have cube roots calculated")
     else
-      UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap).repr.get.asType match
+      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap).repr.get.asType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           '{
             new CubeRoot[Quantity[ValueType]]:
