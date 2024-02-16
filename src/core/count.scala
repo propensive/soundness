@@ -50,8 +50,12 @@ object CountQuaques:
     
   extension [UnitsType <: Tuple](inline count: Count[UnitsType])
     @targetName("add")
-    inline infix def + (right: Count[UnitsType]): Count[UnitsType] =
-      ${Abacist.addCount[UnitsType]('count, 'right)}
+    inline infix def + (right: Count[UnitsType]): Count[UnitsType] = count + right
+    
+    @targetName("sub")
+    inline infix def - (right: Count[UnitsType]): Count[UnitsType] = count - right
+
+    inline def `unary_-`: Count[UnitsType] = -count
 
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
       ${Abacist.get[UnitsType, UnitType[1]]('count)}

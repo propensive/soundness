@@ -57,13 +57,6 @@ object Abacist:
     
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
-  def addCount
-      [CountUnitsType <: Tuple: Type]
-      (left: Expr[Count[CountUnitsType]], right: Expr[Count[CountUnitsType]])
-      (using Quotes)
-      : Expr[Count[CountUnitsType]] =
-    '{($left.asInstanceOf[Long] + $right.asInstanceOf[Long]).asInstanceOf[Count[CountUnitsType]]}
-
   def describeCount
       [CountUnits <: Tuple: Type]
       (count: Expr[Count[CountUnits]])

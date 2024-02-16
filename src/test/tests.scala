@@ -113,6 +113,20 @@ object Tests extends Suite(t"Quantitative Tests"):
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (0, 13, 1))
       
+      test(t"Subtract two Counts 1"):
+        val weight: Count[Weight] = Count(12, 9)
+        val weight2: Count[Weight] = Count(0, 2)
+        val result = weight - weight2
+        (result[Stones], result[Pounds], result[Ounces])
+      .assert(_ == (0, 12, 7))
+      
+      test(t"Subtract two Counts 2"):
+        val weight: Count[Weight] = Count(12, 9)
+        val weight2: Count[Weight] = Count(0, 2)
+        val result = weight2 - weight
+        (result[Stones], result[Pounds], result[Ounces])
+      .assert(_ == (0, -12, -7))
+      
       test(t"Multiply a count by a double"):
         val weight: Count[Weight] = Count(12, 9)
         val result = weight*2.5
