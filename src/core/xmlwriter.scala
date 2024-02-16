@@ -45,33 +45,6 @@ object XmlEncoder extends Derivation[XmlEncoder]:
         val xml = context.write(variant)
         XmlAst.Element(XmlName(typeName), xml.children, xml.attributes.updated(XmlName("type".tt), xml.name.name), xml.namespaces)
     
-
-  //   val elements = caseClass.params
-  //     .filter(!_.annotations.contains(attributeAttribute))
-  //     .map { p => p.typeclass.write(p.deref(value)).copy(name = XmlName(p.label.tt)) }
-
-  //   val attributes = caseClass.params
-  //     .filter(_.annotations.contains(attributeAttribute))
-  //     .map { p => XmlName(p.label.tt) -> textElements(p.typeclass.write(p.deref(value))) }
-  //     .to(Map)
-
-  //   val tag = caseClass.annotations.collect:
-  //     case `xmlLabel`(name) => name.show
-  //   .headOption.getOrElse(caseClass.typeInfo.short.show)
-
-  //   XmlAst.Element(XmlName(tag), elements, attributes)
-
-  // def split[DerivationType](sealedTrait: SealedTrait[XmlEncoder, DerivationType]): XmlEncoder[DerivationType] =
-  //   value =>
-  //     sealedTrait.choose(value): subtype =>
-  //       val xml = subtype.typeclass.write(subtype.cast(value))
-  //       XmlAst.Element(
-  //         XmlName(sealedTrait.typeInfo.short.tt),
-  //         xml.children,
-  //         xml.attributes.updated(XmlName(t"type"), xml.name.name),
-  //         xml.namespaces
-  //       )
-  
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
