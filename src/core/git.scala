@@ -16,7 +16,7 @@
 
 package octogenarian
 
-import anticipation.*, fileApi.galileiApi
+import anticipation.*, filesystemInterfaces.galileiApi
 import eucalyptus.*
 import fulminate.*
 import contingency.*
