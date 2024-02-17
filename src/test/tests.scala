@@ -22,7 +22,7 @@ import digression.*
 import gossamer.*
 import turbulence.*
 import contingency.*
-import anticipation.*, timeApi.long
+import anticipation.*, timeInterfaces.long
 
 import errorHandlers.throwUnsafely
 
