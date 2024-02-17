@@ -18,7 +18,7 @@ package exoskeleton
 
 import spectacular.*
 import gossamer.*
-import anticipation.*, fileApi.galileiApi
+import anticipation.*, filesystemInterfaces.galileiApi
 import rudiments.*, homeDirectories.default
 import vacuous.*
 import serpentine.*, hierarchies.unix
