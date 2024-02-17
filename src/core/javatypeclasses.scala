@@ -20,7 +20,7 @@ import diuretic.*
 
 import language.experimental.captureChecking
 
-package timeApi:
+package timeInterfaces:
   given javaTime: JavaTime.type = JavaTime
   given long: JavaLongTime.type = JavaLongTime
   given javaUtil: JavaUtilTime.type = JavaUtilTime
