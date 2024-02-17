@@ -21,7 +21,7 @@ import gossamer.*
 import probably.*
 import contingency.*, errorHandlers.throwUnsafely
 import imperial.*
-import anticipation.*, fileApi.javaIo
+import anticipation.*, filesystemInterfaces.javaIo
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 import turbulence.*
 import rudiments.*
