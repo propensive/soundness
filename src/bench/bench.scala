@@ -20,7 +20,7 @@ package merino
 import probably.*
 import gossamer.*
 //import galilei.*, filesystems.unix
-import anticipation.* //, fileApi.galileiApi
+import anticipation.* //, filesystemInterfaces.galileiApi
 import eucalyptus.*
 import rudiments.*
 import hieroglyph.*, characterEncodings.utf8, badEncodingHandlers.strict

@@ -19,7 +19,7 @@ package merino
 
 import probably.*
 import gossamer.*
-import anticipation.*, fileApi.javaIo
+import anticipation.*, filesystemInterfaces.javaIo
 import eucalyptus.*
 import rudiments.*, workingDirectories.virtualMachine
 import contingency.*, errorHandlers.throwUnsafely
