@@ -25,7 +25,7 @@ import spectacular.*
 import contingency.*
 import parasite.*
 import turbulence.*
-import anticipation.*, timeApi.long
+import anticipation.*, timeInterfaces.long
 
 import language.experimental.captureChecking
 
