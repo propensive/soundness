@@ -28,8 +28,8 @@ extension [TestType](test: Test[TestType])
           duration: Optional[DurationType] = Unset, warmup: Optional[DurationType] = Unset,
           baseline: Optional[Baseline] = Unset)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
-          specificDuration: SpecificDuration[DurationType] = timeApi.long,
-          genericDuration: GenericDuration[DurationType] = timeApi.long)
+          specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
+          genericDuration: GenericDuration[DurationType] = timeInterfaces.long)
       : Unit =
     val action = test.action
     var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
