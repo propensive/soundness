@@ -44,7 +44,7 @@ case class CompileOption[CompilerType <: ScalacVersions](flags: Text*)
 enum Unused[CompilerType]:
   case All extends Unused[3.1 | 3.2 | 3.3]
   case None extends Unused[3.1 | 3.2 | 3.3]
-  case Subset[CompilerType <: 3.3](feature: UnusedFeature[CompilerType]*) extends Unused[CompilerType]
+  case Subset[CompilerType <: 3.3](features: List[UnusedFeature[CompilerType]]) extends Unused[CompilerType]
 
 enum UnusedFeature[CompilerType](val name: Text):
   case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
@@ -64,10 +64,10 @@ package scalacOptions:
     val implausiblePatterns = CompileOption[3.3](t"-Wimplausible-patterns")
     
     def unused[CompilerType <: ScalacVersions](selection: Unused[CompilerType]) =
-      val option = selection match
-        case Unused.All               => t"-Wunused:all"
-        case Unused.None              => t"-Wunused:none"
-        case Unused.Subset(features*) => features.map(_.name).join(t"-Wunused:", t",", t"")
+      val option = (selection: @unchecked) match
+        case Unused.All              => t"-Wunused:all"
+        case Unused.None             => t"-Wunused:none"
+        case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
 
       CompileOption[CompilerType](option)
 
@@ -98,8 +98,8 @@ object Scalac:
 
 case class Scalac
     [CompilerType <: ScalacVersions]
-    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path, options: List[CompileOption[CompilerType]]):
-  def apply()(using SystemProperties): List[Diagnostic] raises ScalacError =
+    (classpath: LocalClasspath, options: List[CompileOption[CompilerType]]):
+  def apply(sources: Map[Text, Text], out: Path)(using SystemProperties): List[Diagnostic] raises ScalacError =
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
       def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
