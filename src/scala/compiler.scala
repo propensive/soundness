@@ -97,6 +97,9 @@ object Scalac:
   var Scala3: Compiler = new Compiler()
 
 case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
+
+  def commandLineArguments: List[Text] = options.flatMap(_.flags)
+
   def apply
       (classpath: LocalClasspath)
       [PathType: GenericPath]
@@ -129,7 +132,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val ctx = initCtx.fresh
         //val pluginParams = plugins
         //val jsParams = 
-        val args: List[Text] = List(t"-d", out.pathText, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
+        val args: List[Text] = List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
       def run(classpath: LocalClasspath): List[Diagnostic] =
