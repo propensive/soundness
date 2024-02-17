@@ -104,18 +104,20 @@ object Contrast extends Derivation[Contrast]:
     def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
+
       if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
       else Semblance.Different(leftMsg, rightMsg)
 
-  given Contrast[Text] = (left, right) =>
-    if left == right then Semblance.Identical(left) else Semblance.Different(left, right)
+  given Contrast[Char] = (left, right) =>
+    if left == right then Semblance.Identical(left.show) else Semblance.Different(left.show, right.show)
+
+  given Contrast[Text] = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
   inline def compareSeq
       [ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
       : Semblance =
-    if left == right then Semblance.Identical(leftDebug)
-    else
+    if left == right then Semblance.Identical(leftDebug) else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
           case Par(leftIndex, rightIndex, value) =>
@@ -164,8 +166,5 @@ object Contrast extends Derivation[Contrast]:
   
   inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
     variant(left): [VariantType <: DerivationType] =>
-      left =>
-        complement(right).let: right =>
-          left.contrastWith(right)
-        .or(Semblance.Different(left.debug, right.debug))
+      left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.debug, right.debug))
     
