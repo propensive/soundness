@@ -25,7 +25,7 @@ package timeApi:
   given long: JavaLongTime.type = JavaLongTime
   given javaUtil: JavaUtilTime.type = JavaUtilTime
 
-package fileApi:
+package filesystemInterfaces:
   given javaNio: JavaNioFile.type = JavaNioFile
   given javaIo: JavaIoFile.type = JavaIoFile
 
