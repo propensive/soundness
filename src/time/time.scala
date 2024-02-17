@@ -30,7 +30,7 @@ trait SpecificDuration[DurationType]:
 trait GenericDuration[DurationType]:
   def milliseconds(duration: DurationType): Long
 
-package timeApi {}
+package timeInterfaces {}
 
 extension [InstantType](instant: InstantType)(using generic: GenericInstant[InstantType])
   def millisecondsSinceEpoch: Long = generic.millisecondsSinceEpoch(instant)
