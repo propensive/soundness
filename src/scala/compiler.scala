@@ -96,10 +96,13 @@ package scalacOptions:
 object Scalac:
   var Scala3: Compiler = new Compiler()
 
-case class Scalac
-    [CompilerType <: ScalacVersions]
-    (classpath: LocalClasspath, options: List[CompileOption[CompilerType]]):
-  def apply(sources: Map[Text, Text], out: Path)(using SystemProperties): List[Diagnostic] raises ScalacError =
+case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
+  def apply
+      (classpath: LocalClasspath)
+      (sources: Map[Text, Text], out: Path)
+      (using SystemProperties)
+      : List[Diagnostic] raises ScalacError =
+
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
       def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
