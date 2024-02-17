@@ -34,7 +34,7 @@ import nettlesome.*
 import hieroglyph.*, charEncoders.utf8
 import gesticulate.*
 import parasite.*
-import anticipation.*, timeApi.long
+import anticipation.*, timeInterfaces.long
 
 import errorHandlers.throwUnsafely
 
