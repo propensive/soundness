@@ -245,7 +245,7 @@ object Tests extends Suite(t"Guillotine tests"):
       .assert(_ == t"Hello world")
       
       test(t"implied return type for `which`"):
-        import fileApi.galileiApi
+        import filesystemInterfaces.galileiApi
         sh"which cat"()
       .assert(_ == Unix / p"bin" / p"cat")
 
