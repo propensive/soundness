@@ -27,7 +27,7 @@ import serpentine.*
 import spectacular.*
 import contingency.*
 import vacuous.*
-import anticipation.*, fileApi.galileiApi
+import anticipation.*, filesystemInterfaces.galileiApi
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 
 import errorHandlers.throwUnsafely

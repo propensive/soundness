@@ -22,7 +22,7 @@ import galilei.*
 
 // import language.experimental.captureChecking
 
-package fileApi:
+package filesystemInterfaces:
   given galileiApi
       [PathType <: Path]
       (using hierarchy: Hierarchy[PathType, ?])
