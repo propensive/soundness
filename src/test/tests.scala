@@ -139,6 +139,24 @@ object Tests extends Suite(t"Quantitative Tests"):
         (sum[Stones], sum[Pounds], sum[Ounces])
       .assert(_ == (101, 0, 0))
 
+      test(t"Collapse a weight value"):
+        val weight: Count[Weight] = Count(2, 3, 4)
+        val weight2 = weight.collapse(1)
+        (weight2[Pounds], weight2[Ounces])
+      .assert(_ == (31, 4))
+      
+      test(t"Collapse a weight value 2"):
+        val weight: Count[Weight] = Count(2, 3, 4)
+        val weight2 = weight.collapse(2)
+        weight2[Ounces]
+      .assert(_ == 500)
+      
+      test(t"Cannot collapse beyond last unit"):
+        demilitarize:
+          val weight: Count[Weight] = Count(2, 3, 4)
+          weight.collapse(3)
+      .assert(_.length == 1)
+
       suite(t"Showing Count values"):
         test(t"Show a single-unit weight"):
           Count[Weight](2).show

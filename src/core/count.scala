@@ -22,6 +22,7 @@ import quantitative.*
 import spectacular.*
 
 import scala.quoted.*
+import scala.compiletime.ops.int.*
 
 object CountQuaques:
   opaque type Count[UnitsType <: Tuple] = Long
@@ -74,6 +75,12 @@ object CountQuaques:
     @targetName("divide")
     transparent inline infix def / (inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, true)}
+
+    transparent inline def collapse
+        (length: Int)
+        (using length.type < Tuple.Size[UnitsType] =:= true)
+        : Count[Tuple.Drop[UnitsType, length.type]] =
+      count
 
 export CountQuaques.Count
 
