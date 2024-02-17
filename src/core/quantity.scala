@@ -26,7 +26,7 @@ import scala.quoted.*
 
 object Abacist:
 
-  import QuantitativeMacros.*
+  import Quantitative.*
 
   def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
     val inputs: List[Expr[Int]] = (values: @unchecked) match
