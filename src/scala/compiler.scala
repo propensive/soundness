@@ -99,7 +99,8 @@ object Scalac:
 case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
   def apply
       (classpath: LocalClasspath)
-      (sources: Map[Text, Text], out: Path)
+      [PathType: GenericPath]
+      (sources: Map[Text, Text], out: PathType)
       (using SystemProperties)
       : List[Diagnostic] raises ScalacError =
 
@@ -128,7 +129,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val ctx = initCtx.fresh
         //val pluginParams = plugins
         //val jsParams = 
-        val args: List[Text] = List(t"-d", out.fullname, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
+        val args: List[Text] = List(t"-d", out.pathText, t"-classpath", classpath()) ::: options.flatMap(_.flags) ::: List(t"")
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
       def run(classpath: LocalClasspath): List[Diagnostic] =
