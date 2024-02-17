@@ -128,7 +128,6 @@ object ClasspathRef:
 
 case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
-
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
 
 object Resource:
