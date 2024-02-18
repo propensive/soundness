@@ -160,6 +160,7 @@ object JsonEncoder extends JsonEncoder2:
   given byte: JsonEncoder[Byte] = byte => JsonAst(byte.toLong)
   given short: JsonEncoder[Short] = short => JsonAst(short.toLong)
   given boolean: JsonEncoder[Boolean] = JsonAst(_)
+  given json: JsonEncoder[Json] = _.root
 
   inline given derived[ValueType]: JsonEncoder[ValueType] = summonFrom:
     case given Encoder[ValueType]    => value => JsonAst(value.encode.s)
