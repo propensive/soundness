@@ -16,28 +16,25 @@
 
 package superlunary
 
-import jacinta.*, jsonPrinters.minimal
+import jacinta.*
 import serpentine.*, hierarchies.unix
-import anticipation.*, filesystemInterfaces.galileiApi
+import anticipation.*
 import spectacular.*
 import digression.*
 import guillotine.*
-import turbulence.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
 import ambience.*, systemProperties.virtualMachine
 import gossamer.*
 import anthology.*
-import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+import galilei.*
 import inimitable.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8
 import contingency.*
 import eucalyptus.*
 import hellenism.*
 
 import scala.compiletime.*
-import scala.collection.mutable as scm
 import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
 
@@ -46,7 +43,7 @@ object DispatchRunner:
     val className = args(0)
     val params = args(1)
     val cls = Class.forName(className).nn
-    val runnable = cls.newInstance()
+    val runnable = cls.getDeclaredConstructor().nn.newInstance()
     println(runnable.asInstanceOf[{ def apply(): String => String }]()(params))
 
 class References():
@@ -61,22 +58,6 @@ class References():
     allocations.length.also { allocations ::= value.json }
   
   def apply(): Text = allocations.reverse.json.encode
-
-inline given embed
-    [ValueType]
-    (using references: References, encoder: JsonEncoder[ValueType])
-    (using Type[ValueType])
-    : ToExpr[ValueType] =
-
-  new ToExpr[ValueType]:
-    def apply(value: ValueType)(using quotes: Quotes): Expr[ValueType] =
-      import quotes.reflect.*
-      val j: Json = value.json
-      val l: List[Json] = List(j)
-      '{
-        import errorHandlers.throwUnsafely
-        ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))}).as[ValueType]
-      }
 
 extension [ValueType](value: ValueType)(using Quotes)
   inline def put(using references: References): Expr[ValueType] = '{
@@ -136,11 +117,11 @@ trait Dispatcher:
         Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
     
-    val classpath = classloaders.threadContext.classpath match
+    val classpath = (classloaders.threadContext.classpath: @unchecked) match
       case LocalClasspath(entries) => LocalClasspath(entries :+ ClasspathEntry.Directory(out.encode))
     
     invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
-        (fn: Text => Text) => fn(references()).tap(println(_)).decodeAs[Json].as[OutputType]))
+        (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
 
 case class Dispatch
     [OutputType]

@@ -39,7 +39,7 @@ def run(): Unit =
 
   def offset(input: Long): Text = remote.dispatch:
     '{
-      t"${System.currentTimeMillis - ${input.put}}"
+      t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"
     }
 
   def fn(message: Example): Text = remote.dispatch:
@@ -47,23 +47,4 @@ def run(): Unit =
       t"Time: ${System.currentTimeMillis - ${message.count.put}}"
     }
 
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
-  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(offset(System.currentTimeMillis))
