@@ -474,7 +474,15 @@ object MinimalJsonPrinter extends JsonPrinter:
       
       case string: String =>
         append('"')
-        appendString(string)
+        string.tt.chars.each:
+          case '\n' => append("\\n")
+          case '\"' => append("\\\"")
+          case '\\' => append("\\\\")
+          case '\r' => append("\\r")
+          case '\t' => append("\\t")
+          case '\b' => append("\\b")
+          case '\f' => append("\\f")
+          case char => append(char)
         append('"')
       
       case boolean: Boolean =>
