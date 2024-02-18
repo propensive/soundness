@@ -20,18 +20,26 @@ import jacinta.*
 import gossamer.*
 import inimitable.*
 import anticipation.*
+import anthology.*
 import fulminate.*
 import contingency.*
+import spectacular.*
+import hellenism.*, classloaders.threadContext
 
-case class Foo(x: Int, y: String)
+import scala.quoted.*
+
+given Scalac[3.4] = Scalac[3.4](List())
+
+case class Example(name: Text, count: Int)
 
 @main
-def run(): Unit = unsafely:
-  given Raises[JsonAccessError] = ???
-  val fn = external[Foo, String]('{ foo =>
-    unsafely:
-      s"This is running on $jvmInstanceId."
-  })
+def run(): Unit =
+  given Raises[JsonAccessError] = errorHandlers.throwUnsafely
+  given Raises[ScalacError] = errorHandlers.throwUnsafely
+ 
+  def fn(message: Example, n: Text): Example = remote:
+    '{
+      Example(t"Testing ${${Expr(n)}} ${${Expr(message)}.debug}...", 5)
+    }
 
-  println(fn(Foo(11, "hello")))
-  println(fn(Foo(13, "hello world!")))
+  println(fn(Example(t"Hello world", 12), t"enn"))
