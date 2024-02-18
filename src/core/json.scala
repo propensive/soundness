@@ -108,7 +108,9 @@ extension [ValueType](value: ValueType)(using encoder: JsonEncoder[ValueType])
   def json: Json = Json(encoder.encode(value))
 
 object Json extends Dynamic:
-  
+
+  given encoder: Encoder[Json] = json => MinimalJsonPrinter.print(json.root)
+
   def parse
       [SourceType]
       (value: SourceType)
