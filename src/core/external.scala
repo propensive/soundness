@@ -41,7 +41,7 @@ import scala.collection.mutable as scm
 import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
 
-object RemoteRunner:
+object DispatchRunner:
   def main(args: Array[String]): Unit =
     val className = args(0)
     val params = args(1)
@@ -78,14 +78,20 @@ inline given embed
         ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))}).as[ValueType]
       }
 
-object Remote:
+extension [ValueType](value: ValueType)(using Quotes)
+  inline def put(using references: References): Expr[ValueType] = '{
+    import errorHandlers.throwUnsafely
+    ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))}).as[ValueType]
+  }
+
+object Dispatcher:
   private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
 
-trait Remote:
+trait Dispatcher:
   type Result[OutputType]
-  def invoke[OutputType](context: InvocationContext[OutputType]): Result[OutputType]
+  def invoke[OutputType](context: Dispatch[OutputType]): Result[OutputType]
   
-  inline def apply[OutputType: JsonDecoder]
+  inline def dispatch[OutputType: JsonDecoder]
       (body: References ?=> Quotes ?=> Expr[OutputType])
       [ScalacVersionType <: ScalacVersions]
       (using codepoint: Codepoint, classloader: Classloader, scalac: Scalac[ScalacVersionType])
@@ -96,7 +102,7 @@ trait Remote:
     val references = new References()
   
     val (out, fn): (Path, Text => Text) =
-      if Remote.cache.contains(codepoint) then
+      if Dispatcher.cache.contains(codepoint) then
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
         
@@ -109,7 +115,7 @@ trait Remote:
               body(using references)
             }
           }
-        Remote.cache(codepoint)
+        Dispatcher.cache(codepoint)
       else 
         val out: Unix.Path = % / p"home" / p"propensive" / p"tmp" / p"staging" / PathName(uuid.show)
         val settings: staging.Compiler.Settings =
@@ -127,27 +133,27 @@ trait Remote:
 
           '{ text => $fromList(text.decodeAs[Json].as[List[Json]]) }
 
-        Remote.cache = Remote.cache.updated(codepoint, (out, fn))
+        Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
     
     val classpath = classloaders.threadContext.classpath match
       case LocalClasspath(entries) => LocalClasspath(entries :+ ClasspathEntry.Directory(out.encode))
     
-    invoke[OutputType](InvocationContext(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
-        (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
+    invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
+        (fn: Text => Text) => fn(references()).tap(println(_)).decodeAs[Json].as[OutputType]))
 
-case class InvocationContext
+case class Dispatch
     [OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
   def className: Text = t"Generated$$Code$$From$$Quoted"
 
-object remote extends Remote:
+object remote extends Dispatcher:
   type Result[OutputType] = OutputType
 
-  def invoke[OutputType](context: InvocationContext[OutputType]): OutputType =
+  def invoke[OutputType](context: Dispatch[OutputType]): OutputType =
     import workingDirectories.virtualMachine
     import logging.silent
     
     context.remote: input =>
-      val cmd = sh"java -classpath ${context.classpath()} superlunary.RemoteRunner ${context.className} $input"
+      val cmd = sh"java -classpath ${context.classpath()} superlunary.DispatchRunner ${context.className} $input"
       unsafely(cmd.exec[Text]())

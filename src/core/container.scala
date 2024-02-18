@@ -30,16 +30,40 @@ import scala.quoted.*
 
 given Scalac[3.4] = Scalac[3.4](List())
 
-case class Example(name: Text, count: Int)
+case class Example(name: Text, count: Long)
 
 @main
 def run(): Unit =
   given Raises[JsonAccessError] = errorHandlers.throwUnsafely
   given Raises[ScalacError] = errorHandlers.throwUnsafely
- 
-  def fn(message: Example, n: Text): Example = remote:
+
+  def offset(input: Long): Text = remote.dispatch:
     '{
-      Example(t"Testing ${${Expr(n)}} ${${Expr(message)}.debug}...", 5)
+      t"${System.currentTimeMillis - ${input.put}}"
     }
 
-  println(fn(Example(t"Hello world", 12), t"enn"))
+  def fn(message: Example): Text = remote.dispatch:
+    '{
+      t"Time: ${System.currentTimeMillis - ${message.count.put}}"
+    }
+
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
+  println(fn(Example(t"Hello world", System.currentTimeMillis)))
