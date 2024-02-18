@@ -62,7 +62,9 @@ For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
-### Quotes and Splices
+### Background
+
+#### Quotes and Splices
 
 A Scala 3 macro, written using quotes and splices syntax, typically looks something like this:
 ```scala
@@ -88,20 +90,19 @@ run.
 
 A similar effect could be achieved just by writing the code in a separate file, and
 compiling it later, but the clever part is that quotes and splices can be interleaved
-at a fine-grained level; as expressions. And furthermore, those expressions are
-typechecked.
+at a fine-grained level with multiple levelse of nesting; as expressions. And
+furthermore, those expressions are typechecked for _consistency across phases_.
 
 But quotes and splices and the concept of phases can be applied more generally than in
 plain macros. The "next phase" does not have to be "the next compilation"; a quoted
 block can represent any code which runs "elsewhere". There are a world of
-possibilities for where "elsewhere" could be, but it could be inside another JVM,
-on a cloud-based system, or inside a browser using ScalaJS.
+possibilities for where "elsewhere" could be: it could be in another JVM, on a
+cloud-based system, or inside a browser using ScalaJS.
 
 _Superlunary_ provides the wiring to make it easy to exploit the powerful syntax and
-consistency-checking of quoted code, to make it possible to deploy the code inside
-quotes to an environment of your choosing.
-
-
+consistency-checking of quoted code, to make it possible to write code with
+seamless syntax which can be dispatched to run in an environment of your
+choosing, with very little effort.
 
 
 ## Status
