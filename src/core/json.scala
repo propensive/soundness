@@ -128,10 +128,11 @@ object Json extends Dynamic:
       def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
       def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given
-      (using jsonParse: Raises[JsonParseError], charEncoder: CharEncoder^)
-      : GenericHttpReader[Json]^{jsonParse, charEncoder} =
-    text => Json.parse(LazyList(text.bytes))
+  given(using jsonParse: Raises[JsonParseError]): Decoder[Json] = text =>
+    Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
+  
+  given(using jsonParse: Raises[JsonParseError]): GenericHttpReader[Json]^{jsonParse} = text =>
+    Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
   given aggregable
       [SourceType]
