@@ -65,7 +65,8 @@ object EmailAddressError:
 import EmailAddressError.Reason.*
 
 object EmailAddress:
-  
+  given Realm = realm"nettlesome"
+
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = failCompilation:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
