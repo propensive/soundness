@@ -40,8 +40,8 @@ import scala.reflect.Selectable.reflectiveSelectable
 
 object DispatchRunner:
   def main(args: Array[String]): Unit =
-    val className = args(0)
-    val params = args(1)
+    val className = "Generated$Code$From$Quoted"
+    val params = args(0)
     val cls = Class.forName(className).nn
     val runnable = cls.getDeclaredConstructor().nn.newInstance()
     println(runnable.asInstanceOf[{ def apply(): String => String }]()(params))
@@ -126,7 +126,7 @@ trait Dispatcher:
 case class Dispatch
     [OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
-  def className: Text = t"Generated$$Code$$From$$Quoted"
+  def className: Text = t"superlunary.DispatchRunner"
 
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType
@@ -136,5 +136,5 @@ object remote extends Dispatcher:
     import logging.silent
     
     dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.DispatchRunner ${dispatch.className} $input"
+      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.className} $input"
       unsafely(cmd.exec[Text]())

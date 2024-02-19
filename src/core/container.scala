@@ -42,9 +42,14 @@ def run(): Unit =
       t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"
     }
 
-  def fn(message: Example): Text = remote.dispatch:
+  def fn(message: Example): Example = remote.dispatch:
     '{
-      t"Time: ${System.currentTimeMillis - ${message.count.put}}"
+      Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)
     }
 
-  println(offset(System.currentTimeMillis))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
+  println(fn(Example(t"hello", System.currentTimeMillis)))
