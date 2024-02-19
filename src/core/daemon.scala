@@ -79,7 +79,8 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 def daemon[BusType <: Matchable]
     (using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr)
+    (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr,
+        model: ThreadModel)
     : Unit =
 
   import environments.virtualMachine
