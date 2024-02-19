@@ -27,6 +27,8 @@ import hieroglyph.*, textMetrics.uniform
 
 import scala.quoted.*
 
+given Realm = realm"nettlesome"
+
 object IpAddressError:
   enum Reason:
     case Ipv4ByteOutOfRange(byte: Int)
