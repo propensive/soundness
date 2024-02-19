@@ -122,10 +122,10 @@ input parameters, launch it and capture its result. These implementations would
 be very different for code being deployed to a web browser, compared to code
 deployed to a docker container or cloud virtual machine.
 
-These libraries will be called _dispatch providers_.
+These libraries will be called _dispatch providers_ and implement _dispatchers_.
 
-Further libraries (or applications) may make use of one or more dispatch
-providers as a convenient way to run their code in a different environment, and
+Further libraries (or applications) may make use of one or more dispatchers
+as a convenient way to run their code in a different environment, and
 could be maintained by entirely different developers. Libraries like this will
 need to implement that code using _quotes and splices_ syntax, but will present
 it to dependents as ordinary methods, like any other API.
@@ -135,21 +135,22 @@ These libraries will be called _dispatch clients_.
 Any downstream libraries may call these methods, blissfully unaware that
 _Superlunary_ is involved.
 
-The two "interesting" users of _Superlunary_ are dispatch providers and
+The two "interesting" uses of _Superlunary_ are dispatch providers and
 dispatch clients.
 
-#### Writing a Dispatch Client
+### Writing a Dispatch Client
 
 All terms and types are defined in the `superlunary` package:
 ```scala
 import superlunary.*
 ```
 
-Writing a dispatch client presumes a dispatch provider, which may come from a
+Writing a dispatch client presumes we have a dispatcher, which may come from a
 third-party library, or may be defined locally. For now, we will assume that we
-have a dispatch provider, an instance of `Dispatcher`, which will dispatch some
-code _somewhere else_ to run. `Dispatcher` is designed so that _somewhere else_
-can remain abstract.
+have a dispatcher, an instance of `Dispatcher`, which will dispatch some
+code _somewhere else_ to run. `Dispatcher` is designed so that the exact
+meaning of "somewhere else" does not affect the way it is used, and can remain
+abstract.
 
 Thus, given a `Dispatcher` object, called `Remote`, we can call its 'dispatch'
 method, passing in a quoted block of code, like so:
@@ -235,6 +236,113 @@ def lag(): Long = remote.dispatch:
 As with return parameters, all marshalling to and from JSON is handled
 automatically by _Superlunary_.
 
+### Writing a `Dispatcher`
+
+A dispatch provider will provide a singleton instance of `Dispatcher`, or some
+means of constructing new `Dispatcher`s, potentially with parameters which
+determine the remote environment.
+
+The definition of `Dispatcher` is relatively simple. It provides an
+implementation of `dispatch`—the method which dispatch clients will call—and
+requires a simpler method, `invoke`, to be implemented. Additionally, the type
+constructor member, `Result[OutputType]`, should be specified to determine how
+the raw return type of the dispatched code (`OutputType`) should be transformed
+into a result from executing it.
+
+For example, we could return an `Optional[OutputType]`, an `Async[OutputType]`
+or simply `OutputType` itself. Or if we don't care about the result, we could
+even return `Unit`.
+
+The signature of `invoke` looks like this:
+```scala
+def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
+```
+
+We need to implement it to produce a `Result[OutputType]`, using the input
+information that has been packaged together in the `Dispatch[OutputType]`
+value, `dispatch`. A `Dispatch` value provides the following:
+ - `path`, a `Path` of the output from compiling the dispatched code
+ - `classpath`, the full `LocalClasspath` that was used for compilation
+ - `mainClass`, the name of the class whose `main` method should be invoked
+ - `local`, a function value of `() => OutputType` which invokes the code
+   locally
+ - `remote`, a function value of `(Text => Text) => OutputType`, which will
+   form the crux of the implementation
+
+Together, these values can be used to implement a `Dispatcher` instance.
+
+When a user calls `dispatch` on a `Dispatcher`, several tasks are performed in
+constructing a `Dispatch` value before delegating to the `Dispatcher`'s
+`invoke` method. These include:
+ - extracting the classpath from the current classloader
+ - compiling the quoted code, if it has not already been compiled
+ - capturing the spliced input values
+ - encoding the inputs as a single JSON value, which is serialized as `Text`
+
+This reduces the implementation of `invoke` to a simpler core task: to execute
+the `main` method of a particular class from a provided classpath (in an
+environment of our choosing), passing in a single `Text` value, and returning
+the `Text` value that results from calling that method.
+
+This is how it works in practice:
+```scala
+object Remote extends Dispatcher:
+  type Result[OutputType] = Optional[ResultType]
+
+  def invoke(dispatch: Dispatch): Optional[ResultType] =
+    dispatch.remote { input => executeRemotely(input) }
+```
+
+So we just need to specify what `executeRemotely` should do.
+
+As an example, we will using Guillotine to run the `java` command and launch a
+new JVM locally. The shell command we need to run will look similar to this:
+```scala
+java -classpath <classpath> <main-class> <input>
+```
+
+We will use [Guillotine](https://github.com/propensive/guillotine/) to run that
+shell command:
+```scala
+def invoke(dispatch: Dispatch): Optional[ResultType] =
+  dispatch.remote: input =>
+    val command = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
+    command.exec[Text]()
+```
+
+The `command` definition specifies the command to be run, and the final line,
+`command.exec[Text]()`, runs it and captures its standard output as a single
+`Text` value. We could print the `command` value before executing it, to check
+exactly what will be run.
+
+The `mainClass` value is actually a fixed value,
+`"superlunary.DispatchRunner"`, but it is provided as a named value so that
+that exact name is not part of the public API, in case it ever changes.
+`DispatchRunner` itself provides the `main` method we used above, which is
+suitable for running the class from outside a JVM. As with all `main` methods,
+this takes an array of strings as input and returns no value—so it _prints_ the
+return value, which we capture above.
+
+This is not so convenient for performing the executing from _within_ a JVM, so
+a `run` method is also provided, which takes a single `String` parameter and
+returns a `String`. This offers a useful alternative if reflection is used to
+invoke the code.
+
+The example above allows such a simple implementation in part because it runs
+on the same machine and the references to directories and JAR files specified
+in the `classpath` value are readily available on the same machine. However,
+any (genuinely) remote execution will need those class files to be made
+available in the remote environment.
+
+The `classpath` is an immutable value whose `entries` value can be used as a
+means to get hold of these files and directories for remote deployment. But
+more specifically, the `path` value provides the location (within a temporary
+directory) of the newly-compiled source files.
+
+### Caching
+
+The remote quoted code will be compiled within the running JVM the first time
+it is encountered, and subsequent invocations will reuse the cached version.
 
 
 ## Status
