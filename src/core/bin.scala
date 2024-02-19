@@ -25,6 +25,7 @@ import scala.quoted.*
 import language.experimental.captureChecking
 
 object Rudiments:
+  given Realm = realm"rudiments"
   opaque type ByteSize = Long
 
   @annotation.targetName("And")
