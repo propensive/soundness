@@ -20,7 +20,7 @@ import rudiments.*
 import probably.*
 import anticipation.*
 import nettlesome.*
-import perforate.*, errorHandlers.throwUnsafely
+import contingency.*, errorHandlers.throwUnsafely
 import serpentine.*, hierarchies.urls
 import spectacular.*
 import gossamer.*
