@@ -44,7 +44,7 @@ within a single runtime environment.
 - lightweight, yet clearly-delimited code
 - compile code using a custom compiler, to be run remotely
 - ensure contractual consistency between local and remote code
-- applications in microservice architectures and client-server scenarios
+- widespread applications in many microservice and client-server scenarios
 
 
 
@@ -265,7 +265,7 @@ value, `dispatch`. A `Dispatch` value provides the following:
  - `classpath`, the full `LocalClasspath` that was used for compilation
  - `mainClass`, the name of the class whose `main` method should be invoked
  - `local`, a function value of `() => OutputType` which invokes the code
-   locally
+   locally; included for completeness
  - `remote`, a function value of `(Text => Text) => OutputType`, which will
    form the crux of the implementation
 
