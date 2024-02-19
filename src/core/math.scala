@@ -30,6 +30,8 @@ import language.experimental.genericNumberLiterals
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
 
+given Realm = realm"hypotenuse"
+
 case class OverflowError() extends Error(msg"an overflow error occurred")
 case class DivisionError() extends Error(msg"the result is unrepresentable")
 
