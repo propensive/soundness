@@ -18,7 +18,6 @@ package eucalyptus
 
 import gossamer.*
 import rudiments.*
-import vacuous.*
 import anticipation.*
 import contingency.*
 import parasite.*
@@ -26,8 +25,6 @@ import turbulence.*
 import spectacular.*
 import hieroglyph.*
 import fulminate.*
-
-import scala.quoted.*
 
 //import language.experimental.captureChecking
 

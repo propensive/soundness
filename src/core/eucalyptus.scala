@@ -17,7 +17,6 @@
 package eucalyptus
 
 import rudiments.*
-import vacuous.*
 import fulminate.*
 import anticipation.*
 import parasite.*
