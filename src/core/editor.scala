@@ -24,7 +24,6 @@ import turbulence.*
 import contingency.*
 import anticipation.*
 import fulminate.*
-import eucalyptus.*
 
 //import language.experimental.captureChecking
 
