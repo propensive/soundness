@@ -21,6 +21,8 @@ import fulminate.*
 
 import scala.quoted.*
 
+given Realm = realm"polyvinyl"
+
 trait Record[DataType](data: DataType, access: String => DataType => Any) extends Selectable:
   def selectDynamic(name: String): Any = access(name)(data)
 
