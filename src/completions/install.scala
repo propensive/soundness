@@ -71,8 +71,11 @@ object TabCompletions:
       (using service: ShellContext)
       (using WorkingDirectory, Log[Text], Effectful)
       : TabCompletionsInstallation raises InstallError =
-    given fix1: (InstallError fixes PathError | ExecError) = _ => InstallError(InstallError.Reason.Environment)
-    given fix2: (InstallError fixes StreamError | OverwriteError | IoError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes OverwriteError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
     
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
@@ -106,7 +109,9 @@ object TabCompletions:
       (shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Effectful)
       : TabCompletionsInstallation.InstallResult raises InstallError =
-    given fix: (InstallError fixes StreamError | OverwriteError | IoError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes OverwriteError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
     
     dirs.find { dir => dir.exists() && dir.as[Directory].writable() }.map: dir =>
       val path = dir / scriptName
