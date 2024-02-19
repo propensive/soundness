@@ -36,6 +36,8 @@ import java.io as ji
 
 import language.experimental.captureChecking
 
+given Realm = realm"guillotine"
+
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
