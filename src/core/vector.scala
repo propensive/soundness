@@ -84,6 +84,26 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
     new Matrix(rows, columns2, elements)
 
 object Matrix:
+
+  given show[ElementType: Show](using TextMetrics): Show[Matrix[ElementType, ?, ?]] = matrix =>
+    val textElements = matrix.elements.map(_.show)
+    val sizes = textElements.map(_.length)
+    
+    val columnWidths: IArray[Int] = IArray.from:
+      (0 until matrix.columns).map: column =>
+        sizes(column + matrix.columns*(0 until matrix.rows).maxBy { row => sizes(matrix.columns*row + column) })
+    
+    (0 until matrix.rows).map: row =>
+      val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
+      val after = if row == 0 then t" ⎤" else if row == matrix.rows - 1 then t" ⎦" else t" ⎪"
+
+      (0 until matrix.columns).map: column =>
+        textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
+      .join(before, t" ", after)
+    .join(t"\n")
+
+    
+
   transparent inline def apply
       [Rows <: Int: ValueOf, Columns <: Int: ValueOf]
       (using DummyImplicit)
