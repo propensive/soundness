@@ -22,6 +22,7 @@ import gossamer.*
 import spectacular.*
 import escapade.*
 import parasite.*
+import fulminate.*
 import contingency.*, errorHandlers.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine
 
