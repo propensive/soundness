@@ -42,12 +42,6 @@ object Eucalyptus:
       catch case e: Exception => ()
     }
 
-  def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
-    import quotes.reflect.*
-    val name: String = context.valueOrAbort.parts.head
-    if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
-    else '{Realm.make(${Expr(name)}.tt)(using Unsafe)}
-
   def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log[TextType]] =
     import quotes.reflect.*
 

@@ -20,6 +20,7 @@ import parasite.*
 import anticipation.*
 import rudiments.*
 import gossamer.*
+import fulminate.*
 
 import java.text as jt
 

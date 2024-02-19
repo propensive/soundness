@@ -25,17 +25,11 @@ import parasite.*
 import turbulence.*
 import spectacular.*
 import hieroglyph.*
+import fulminate.*
 
 import scala.quoted.*
 
 //import language.experimental.captureChecking
-
-object Realm:
-  given Show[Realm] = _.name
-  def make(name: Text)(using Unsafe): Realm = new Realm(name)
-
-case class Realm(name: Text):
-  def unapply(entry: Entry[?]): Boolean = entry.realm == this
 
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
@@ -99,14 +93,11 @@ extends Logger[TextType]:
 object LogFormat:
   given standard[TargetType]: LogFormat[TargetType, Text] = entry =>
     import textMetrics.uniform
-    val realm: Text = entry.realm.show.fit(8)
+    val realm: Text = entry.realm.name.fit(8)
     t"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}\n"
   
 trait LogFormat[TargetType, TextType]:
   def apply(entry: Entry[TextType]): TextType
-
-extension (inline context: StringContext)
-  inline def realm(): Realm = ${Eucalyptus.realm('context)}
 
 package logging:
 
