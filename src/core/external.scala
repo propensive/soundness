@@ -77,12 +77,13 @@ object Dispatcher:
 
 trait Dispatcher:
   type Result[OutputType]
-  def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
+  protected def scalac: Scalac[?]
+  protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
   
   inline def dispatch[OutputType: JsonDecoder]
       (body: References ?=> Quotes ?=> Expr[OutputType])
       [ScalacVersionType <: ScalacVersions]
-      (using codepoint: Codepoint, classloader: Classloader, scalac: Scalac[ScalacVersionType])
+      (using codepoint: Codepoint, classloader: Classloader)
       : Result[OutputType] raises ScalacError =
     import errorHandlers.throwUnsafely
     val uuid = Uuid()
@@ -138,7 +139,9 @@ case class Dispatch
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType
 
-  def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
+  val scalac: Scalac[3.4] = Scalac[3.4](List())
+
+  protected def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
     import workingDirectories.virtualMachine
     import logging.silent
     

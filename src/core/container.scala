@@ -28,8 +28,6 @@ import hellenism.*, classloaders.threadContext
 
 import scala.quoted.*
 
-given Scalac[3.4] = Scalac[3.4](List())
-
 case class Example(name: Text, count: Long)
 
 @main
