@@ -26,6 +26,8 @@ import gossamer.*
 import scala.quoted.*
 import scala.compiletime.*
 
+given Realm = realm"serpentine"
+
 object SerpentineMacro:
   def parse
       [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
