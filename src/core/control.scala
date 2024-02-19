@@ -27,8 +27,6 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
-given Realm = realm"contingency"
-
 infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, ErrorType1]
 
 trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
@@ -62,7 +60,7 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = throw error
 
 @capability
-class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes) extends Raises[ErrorType]:
+class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm) extends Raises[ErrorType]:
   def record(error: ErrorType): Unit = fail(error.message)
   def abort(error: ErrorType): Nothing = fail(error.message)
 
@@ -202,7 +200,7 @@ def attempt
 
 def failCompilation
     [ErrorType <: Error]
-    (using Quotes)
+    (using Quotes, Realm)
     [SuccessType]
     (block: FailStrategy[ErrorType, SuccessType] ?=> SuccessType)
     : SuccessType =
