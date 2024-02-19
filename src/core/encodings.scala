@@ -30,6 +30,8 @@ import java.nio as jn, jn.charset as jnc
 
 import language.experimental.captureChecking
 
+given Realm = realm"hieroglyph"
+
 object Encoding:
   given Textualizer[Encoding] = _.name
   given Communicable[Encoding] = encoding => Message(encoding.name)
