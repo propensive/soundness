@@ -21,9 +21,9 @@ import fulminate.*
 import scala.quoted.*
 import scala.compiletime.*
 
-given Realm = realm"cardinality"
-
 object Cardinality:
+  given Realm = realm"cardinality"
+  
   def apply
       [LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type]
       (digits: Expr[String])
