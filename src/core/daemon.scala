@@ -88,7 +88,6 @@ def daemon[BusType <: Matchable]
   val name: Text = Properties.ethereal.name[Text]()
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
-  val waitFile: Path = baseDir / p"wait"
   val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
   var continue: Boolean = true
   val terminatePid: Promise[Pid] = Promise()
@@ -235,7 +234,6 @@ def daemon[BusType <: Matchable]
     import workingDirectories.default
 
     Async.onShutdown:
-      waitFile.wipe()
       portFile.wipe()
       
     supervise:
@@ -264,8 +262,6 @@ def daemon[BusType <: Matchable]
       val buildId = (Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]
       val stderr = if stderrSupport() then 1 else 0
       t"$port $buildId $stderr".writeTo(portFile)
-      waitFile.touch()
-      waitFile.wipe()
       while continue do safely(client(socket.accept().nn))
 
     ExitStatus.Ok
@@ -286,3 +282,4 @@ enum DaemonEvent:
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
 given Realm: Realm = realm"ethereal"
+

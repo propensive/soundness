@@ -1,6 +1,6 @@
 #!/bin/bash
 
-declare portFile initFile ttystate script waitFile tmpPipe javaVersion dataHomeDir data stderr
+declare portFile initFile ttystate script tmpPipe javaVersion dataHomeDir data stderr
 declare -i pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize
 declare -a args signals sttyOptions
 
@@ -15,7 +15,6 @@ baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
 dataHomeDir="${XDG_DATA_HOME:-$HOME/.local/share}"
 portFile="$baseDir/port"
 initFile="$baseDir/init"
-waitFile="$baseDir/wait"
 failFile="$baseDir/fail"
 script="$(realpath "$0")"
 javaVersion="21"
@@ -41,15 +40,18 @@ backOut() {
 
 abort() {
   touch "$failFile"
-  printf '' > "$waitFile"
-  rm -f "$waitFile" "$initFile"
+  rm -f "$initFile"
 }
 
 launch() {
   test -x "$javaHome/bin/java" || extract
-  mkfifo "$waitFile" 2> /dev/null && (exec nohup "$javaHome/bin/java" -Dethereal.name="$name" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
+  (nohup "$javaHome/bin/java" -Dethereal.name="$name" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
-  flock "$initFile" sh -c "test -f \"$portFile\" || cat \"$waitFile\"" > /dev/null 2>&1 || abort
+
+  while [[ ! -s "$portFile" ]]
+  do sleep 0.05
+  done
+
   rm -f "$initFile"
   setup
 }
@@ -95,7 +97,7 @@ backOut
 
 flock -n "$portFile" rm "$portFile"
 
-if [ -f "$portFile" ]
+if [ -s "$portFile" ]
 then
   setup
   
@@ -106,7 +108,7 @@ then
   fi
 fi
 
-test -f "$portFile" || launch
+test -s "$portFile" || launch
 backOut
 
 tmpPipe="$(mktemp -u)"
