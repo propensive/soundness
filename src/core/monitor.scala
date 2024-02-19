@@ -43,7 +43,8 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
         case _              => ()
 
   def terminate(): Unit = this match
-    case Supervisor                                     => Supervisor.cancel()
+    case VirtualSupervisor                              => VirtualSupervisor.cancel()
+    case PlatformSupervisor                             => PlatformSupervisor.cancel()
     case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
 
   def sleep(duration: Long): Unit = Thread.sleep(duration)
@@ -61,13 +62,24 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
     
     monitor
 
-case object Supervisor extends Monitor(Nil, Promise())
+  def supervisor: Supervisor
+
+sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
+  def newThread(runnable: Runnable^): Thread^{runnable}
+
+case object VirtualSupervisor extends Supervisor():
+  def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
+  def supervisor: Supervisor = this
+
+case object PlatformSupervisor extends Supervisor():
+  def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
+  def supervisor: Supervisor = this
 
 def supervise
     [ResultType]
-    (block: Monitor ?=> ResultType)(using cancel: Raises[CancelError])
+    (block: Monitor ?=> ResultType)(using cancel: Raises[CancelError], model: ThreadModel)
     : ResultType =
-  block(using Supervisor)
+  block(using model.supervisor())
 
 @capability
 case class Submonitor
@@ -77,6 +89,7 @@ case class Submonitor
 extends Monitor(identifier :: parent.name, promise):
 
   def state(): AsyncState[ResultType] = stateRef.get().nn
+  def supervisor: Supervisor = parent.supervisor
   
   def complete(value: ResultType): Nothing =
     stateRef.set(Completed(value))

@@ -46,7 +46,7 @@ object Async:
 
   def race
       [AsyncType]
-      (asyncs: Vector[Async[AsyncType]])(using cancel: Raises[CancelError], monitor: Monitor)
+      (asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor)
       : Async[AsyncType] =
 
     Async[Int]:
@@ -62,6 +62,13 @@ object Async:
       case -1 => abort(CancelError())
       case n  => asyncs(n)
 
+trait ThreadModel:
+  def supervisor(): Supervisor
+
+package threadModels:
+  given platform: ThreadModel = () => PlatformSupervisor
+  given virtual: ThreadModel = () => VirtualSupervisor
+
 @capability
 class Async
     [+ResultType]
@@ -74,7 +81,7 @@ class Async
 
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
-  private final val thread: Thread =
+  private final val thread: Thread^{async} =
     def runnable: Runnable^{async} = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
@@ -92,8 +99,7 @@ class Async
           child.cancel()
           boundary.break()
     
-    // TODO: Check whether making all threads daemons is desirable
-    Thread(runnable).tap(_.setDaemon(true)).tap(_.start())
+    monitor.supervisor.newThread(runnable)
   
   private def identifier: Text = Text(s"${codepoint.text}")
   private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
