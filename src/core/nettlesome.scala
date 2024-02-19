@@ -93,8 +93,8 @@ erased trait Port
 
 object Nettlesome:
   object Opaques:
-    opaque type Ipv4 = Int
-    opaque type MacAddress = Long
+    opaque type Ipv4 <: Matchable = Int
+    opaque type MacAddress <: Matchable = Long
     opaque type DnsLabel = Text
     opaque type TcpPort <: Port = Int & Port
     opaque type UdpPort <: Port = Int & Port
