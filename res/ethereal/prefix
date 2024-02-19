@@ -88,7 +88,7 @@ extract() {
 terminate() {
   exec 6<> /dev/tcp/localhost/$port
   printf "x\n%s\n" "$pid" >&6
-  exit "$(cat <&6)"
+  exit "$(cat <&6 2> /dev/null || echo '1')"
 }
 
 test -t 0 && ttystate="$(stty -g)"
