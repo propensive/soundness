@@ -70,7 +70,7 @@ object Dispatcher:
 
 trait Dispatcher:
   type Result[OutputType]
-  def invoke[OutputType](context: Dispatch[OutputType]): Result[OutputType]
+  def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
   
   inline def dispatch[OutputType: JsonDecoder]
       (body: References ?=> Quotes ?=> Expr[OutputType])
@@ -131,10 +131,10 @@ case class Dispatch
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType
 
-  def invoke[OutputType](context: Dispatch[OutputType]): OutputType =
+  def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
     import workingDirectories.virtualMachine
     import logging.silent
     
-    context.remote: input =>
-      val cmd = sh"java -classpath ${context.classpath()} superlunary.DispatchRunner ${context.className} $input"
+    dispatch.remote: input =>
+      val cmd = sh"java -classpath ${dispatch.classpath()} superlunary.DispatchRunner ${dispatch.className} $input"
       unsafely(cmd.exec[Text]())
