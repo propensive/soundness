@@ -37,6 +37,8 @@ import java.util as ju
 
 import language.dynamics
 
+given Realm = realm"telekinesis"
+
 enum HttpBody:
   case Empty
   case Chunked(stream: LazyList[IArray[Byte]])
