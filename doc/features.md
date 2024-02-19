@@ -3,5 +3,5 @@
 - lightweight, yet clearly-delimited code
 - compile code using a custom compiler, to be run remotely
 - ensure contractual consistency between local and remote code
-- applications in microservice architectures and client-server scenarios
+- widespread applications in many microservice and client-server scenarios
 
