@@ -16,8 +16,8 @@
 
 package probably
 
-import eucalyptus.*
 import gossamer.*
+import fulminate.*
 import anticipation.*
 import rudiments.*
 import hypotenuse.*

@@ -21,6 +21,7 @@ import vacuous.*
 import digression.*
 import anticipation.*
 import gossamer.*
+import fulminate.*
 import contingency.*
 import chiaroscuro.*
 import ambience.*
