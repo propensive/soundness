@@ -37,7 +37,7 @@ package logFormats:
       e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
 
     // FIXME: This is far too much object creation for every log message
-    val realm: Output = e"${colors.SteelBlue}(${entry.realm.show.fit(8)})"
+    val realm: Output = e"${colors.SteelBlue}(${entry.realm.name.fit(8)})"
     val colorSeq = List(colors.Chocolate, colors.OliveDrab, colors.CadetBlue, colors.DarkGoldenrod)
     
     val stack: Output =
