@@ -249,13 +249,17 @@ constructor member, `Result[OutputType]`, should be specified to determine how
 the raw return type of the dispatched code (`OutputType`) should be transformed
 into a result from executing it.
 
+Additionally, its `scalac` value is a specification for the invocation of the
+Scala compiler, as specified in
+[Anthology](https://github.com/propensive/anthology/).
+
 For example, we could return an `Optional[OutputType]`, an `Async[OutputType]`
 or simply `OutputType` itself. Or if we don't care about the result, we could
 even return `Unit`.
 
 The signature of `invoke` looks like this:
 ```scala
-def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
+protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
 ```
 
 We need to implement it to produce a `Result[OutputType]`, using the input
@@ -289,7 +293,9 @@ This is how it works in practice:
 object Remote extends Dispatcher:
   type Result[OutputType] = Optional[ResultType]
 
-  def invoke(dispatch: Dispatch): Optional[ResultType] =
+  protected val scalac = Scalac[3.4](Nil)
+
+  protected def invoke(dispatch: Dispatch): Optional[ResultType] =
     dispatch.remote { input => executeRemotely(input) }
 ```
 
