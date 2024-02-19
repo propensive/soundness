@@ -20,6 +20,7 @@ import probably.*
 import rudiments.*
 import larceny.*
 import gossamer.*
+import fulminate.*
 
 object Tests extends Suite(t"Cardinality tests"):
   def run(): Unit =
