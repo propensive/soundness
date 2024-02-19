@@ -15,5 +15,5 @@ project coaxial
   module test
     compiler  scala
     sources   src/test
-    include   superlunary/core probably/cli larceny/core coaxial/core
+    include   superlunary/jvm probably/cli larceny/core coaxial/core
     main      coaxial.Tests

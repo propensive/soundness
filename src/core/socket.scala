@@ -34,8 +34,6 @@ import java.io as ji
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
-object UnixSocket
-
 case class BindError() extends Error(msg"the port was not available for binding")
 
 object DomainSocket:
@@ -295,8 +293,6 @@ object Receivable:
 trait SocketService:
   def stop(): Unit
 
-
-
 extension [SocketType](socket: SocketType)
   def listen
       [InputType]
@@ -323,15 +319,16 @@ extension [EndpointType](endpoint: EndpointType)
   def connect
       [StateType]
       (initialState: StateType)
-      (initialMessage: Bytes = Bytes())
-      (handle: (state: StateType) ?=> Bytes => Control[StateType])
-      (using connectable: Connectable[EndpointType])
+      [MessageType]
+      (initialMessage: MessageType = Bytes())
+      (handle: (state: StateType) ?=> MessageType => Control[StateType])
+      (using connectable: Connectable[EndpointType], receivable: Receivable[MessageType])
       : StateType =
 
     val connection = connectable.connect(endpoint)
     
     def recur(input: LazyList[Bytes], state: StateType): StateType = input match
-      case head #:: tail => handle(using state)(head) match
+      case head #:: tail => handle(using state)(receivable.deserialize(head)) match
         case Continue(state2) => recur(tail, state2.or(state))
         case Terminate        => state
         
