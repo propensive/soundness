@@ -30,8 +30,6 @@ import language.experimental.genericNumberLiterals
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
 
-given Realm = realm"hypotenuse"
-
 case class OverflowError() extends Error(msg"an overflow error occurred")
 case class DivisionError() extends Error(msg"the result is unrepresentable")
 
@@ -156,6 +154,8 @@ trait CheckOverflow:
   inline def addI8(left: I8, right: I8): Wrap[I8]
 
 object Hypotenuse:
+  given Realm = realm"hypotenuse"
+  
   type Bits[BitCountType <: 8 | 16 | 32 | 64] <: B8 | B16 | B32 | B64 = BitCountType match
     case 8  => B8
     case 16 => B16

@@ -25,6 +25,8 @@ import java.lang.{Integer as JInt, Long as JLong}
 import language.experimental.genericNumberLiterals
 
 object Hypotenuse2:
+  given Realm = realm"hypotenuse"
+
   def parseU64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
     case None         => '{JLong.parseUnsignedLong($digits)}
     case Some(digits) => Expr(JLong.parseUnsignedLong(digits))
