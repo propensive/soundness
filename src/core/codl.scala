@@ -17,7 +17,7 @@
 package cellulose
 
 import gossamer.*
-import eucalyptus.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 import anticipation.*
