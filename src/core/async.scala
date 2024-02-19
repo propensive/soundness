@@ -68,6 +68,7 @@ trait ThreadModel:
 package threadModels:
   given platform: ThreadModel = () => PlatformSupervisor
   given virtual: ThreadModel = () => VirtualSupervisor
+  given daemon: ThreadModel = () => DaemonSupervisor
 
 @capability
 class Async

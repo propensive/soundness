@@ -43,8 +43,7 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
         case _              => ()
 
   def terminate(): Unit = this match
-    case VirtualSupervisor                              => VirtualSupervisor.cancel()
-    case PlatformSupervisor                             => PlatformSupervisor.cancel()
+    case supervisor: Supervisor                         => supervisor.cancel()
     case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
 
   def sleep(duration: Long): Unit = Thread.sleep(duration)
@@ -66,14 +65,18 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
 
 sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
   def newThread(runnable: Runnable^): Thread^{runnable}
+  def supervisor: Supervisor = this
 
 case object VirtualSupervisor extends Supervisor():
   def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
-  def supervisor: Supervisor = this
 
 case object PlatformSupervisor extends Supervisor():
   def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
-  def supervisor: Supervisor = this
+
+case object DaemonSupervisor extends Supervisor():
+  def newThread(runnable: Runnable^): Thread^{runnable} = new Thread(runnable).nn.tap: thread =>
+    thread.setDaemon(true)
+    thread.start()
 
 def supervise
     [ResultType]
