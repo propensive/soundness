@@ -48,7 +48,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
         context.read(List(element))
   
   inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
-    list.head match
+    (list.head: @unchecked) match
       case XmlAst.Element(_, children, attributes, _) =>
         delegate(attributes.get(XmlName("type".tt)).get):
           [VariantType <: DerivationType] => decoder =>
