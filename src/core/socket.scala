@@ -196,29 +196,24 @@ object Bindable:
       jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
         channel.configureBlocking(true)
         channel.bind(address)
-        println("bound")
   
     def connect(channel: jnc.ServerSocketChannel): Connection =
       val clientChannel: jnc.SocketChannel = channel.accept().nn
       val in = jnc.Channels.newInputStream(clientChannel).nn
       val out = jnc.Channels.newOutputStream(clientChannel).nn
-      println("connected")
       
       Connection(in, out)
     
     def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Bytes): Unit =
       connection.out.write(bytes.mutable(using Unsafe))
       connection.out.flush()
-      println("sent")
     
     def stop(channel: jnc.ServerSocketChannel): Unit =
       channel.close()
-      println("stopped")
     
     def close(connection: Connection): Unit =
       connection.in.close()
       connection.out.close()
-      println("closed")
 
   given tcpPort(using Raises[StreamError]): Bindable[TcpPort] with
     type Binding = jn.ServerSocket

@@ -21,7 +21,7 @@ import gossamer.*
 import vacuous.*
 import rudiments.*
 import spectacular.*
-import parasite.*
+import parasite.*, threadModels.platform
 import superlunary.*
 import contingency.*, errorHandlers.throwUnsafely
 import inimitable.*
@@ -38,11 +38,11 @@ object Tests extends Suite(t"Coaxial tests"):
 
     supervise:
       val async = Async:
-        val udpServer = external[UdpPort, Text]('{ port =>
+        val udpServer: Unit = remote.dispatch('{
           unsafely:
             supervise:
               val promise: Promise[Text] = Promise()
-              val server = port.listen[Text]: in =>
+              val server = ${port.put}.listen[Text]: in =>
                 UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(in.data.uString))
               
               promise.await()
