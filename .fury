@@ -20,7 +20,7 @@ project hieroglyph
   module core
     compiler  scala
     sources   src/core
-    include   kaleidoscope/core  perforate/core  spectacular/core
+    include   kaleidoscope/core  contingency/core  spectacular/core
 
 ##
 

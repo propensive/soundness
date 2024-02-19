@@ -30,8 +30,6 @@ import java.nio as jn, jn.charset as jnc
 
 import language.experimental.captureChecking
 
-given Realm = realm"hieroglyph"
-
 object Encoding:
   given Textualizer[Encoding] = _.name
   given Communicable[Encoding] = encoding => Message(encoding.name)
@@ -190,7 +188,7 @@ extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
 
 object Hieroglyph:
-  
+  given Realm = realm"hieroglyph"
   opaque type CharRange = Long
   
   object CharRange:
