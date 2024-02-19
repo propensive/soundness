@@ -18,6 +18,7 @@ package coaxial
 
 import nettlesome.*
 import parasite.*
+import hypotenuse.*
 import fulminate.*
 import hieroglyph.*
 import spectacular.*
@@ -247,12 +248,16 @@ object Bindable:
       val packet = jn.DatagramPacket(array, 1472)
       val socket = binding.receive(packet)
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
-      val ip = address.getAddress.nn match
+      
+      val ip = (address.getAddress.nn: @unchecked) match
         case ip: jn.Inet4Address =>
           val bytes: Array[Byte] = ip.getAddress.nn
           Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
-        case _                           => ??? // FIXME
-
+        
+        case ip: jn.Inet6Address =>
+          val bytes: Array[Byte] = ip.getAddress.nn
+          Ipv6(Long(bytes.take(8).immutable(using Unsafe)), Long(bytes.drop(8).immutable(using Unsafe)))
+        
       UdpPacket(array.slice(0, packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort))
     
     def transmit(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit = response match
@@ -261,10 +266,15 @@ object Bindable:
       case UdpResponse.Reply(data) =>
         val sender = input.sender
         
-        val ip: jn.InetAddress = input.sender match
-          case ip: Ipv4 => jn.InetAddress.getByAddress(Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)).nn
-          case _        => ??? // FIXME
-        
+        val ip: jn.InetAddress = (input.sender: @unchecked) match
+          case ip: Ipv4 =>
+            val array = Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
+            jn.InetAddress.getByAddress(array).nn
+          
+          case ip: Ipv6 =>
+            val array = IArray.from(ip.highBits.bits.bytes ++ ip.lowBits.bits.bytes).mutable(using Unsafe)
+            jn.InetAddress.getByAddress(array).nn
+          
         val packet = jn.DatagramPacket(data.mutable(using Unsafe), data.length, ip, input.port.number)
         socket.send(packet)
     
