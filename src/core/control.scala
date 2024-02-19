@@ -27,6 +27,8 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
+given Realm = realm"contingency"
+
 infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, ErrorType1]
 
 trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
