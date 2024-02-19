@@ -26,6 +26,8 @@ import scala.quoted.*
 
 //import language.experimental.captureChecking
 
+given Realm = realm"eucalyptus"
+
 object Eucalyptus:
   def record
       [MessageType: Type, TextType: Type]
