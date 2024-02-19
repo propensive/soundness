@@ -21,17 +21,14 @@ import serpentine.*, hierarchies.unix
 import anticipation.*
 import spectacular.*
 import digression.*
-import guillotine.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
-import ambience.*, systemProperties.virtualMachine
 import gossamer.*
 import anthology.*
 import galilei.*
 import inimitable.*
 import contingency.*
-import eucalyptus.*
 import hellenism.*
 
 import scala.compiletime.*
@@ -135,16 +132,3 @@ case class Dispatch
     [OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
   def mainClass: Text = t"superlunary.DispatchRunner"
-
-object remote extends Dispatcher:
-  type Result[OutputType] = OutputType
-
-  val scalac: Scalac[3.4] = Scalac[3.4](List())
-
-  protected def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
-    import workingDirectories.virtualMachine
-    import logging.silent
-    
-    dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
-      unsafely(cmd.exec[Text]())
