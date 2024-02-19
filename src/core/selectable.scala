@@ -21,8 +21,6 @@ import fulminate.*
 
 import scala.quoted.*
 
-given Realm = realm"polyvinyl"
-
 trait Record[DataType](data: DataType, access: String => DataType => Any) extends Selectable:
   def selectDynamic(name: String): Any = access(name)(data)
 
@@ -48,6 +46,8 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
       (using thisType: Type[this.type])
       : Expr[RecordType] =
     import quotes.reflect.*
+
+    given Realm = realm"polyvinyl"
   
     val target = (thisType: @unchecked) match
       case '[thisType] =>
