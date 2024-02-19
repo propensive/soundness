@@ -49,8 +49,11 @@ object Installer:
       (using service: DaemonService[?])
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
       : List[Directory] raises InstallError =
-    given fix1: (InstallError fixes PathError | EnvironmentError | SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
-    given fix2: (InstallError fixes IoError | ExecError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Io)
 
     val paths: List[Path] = Environment.path
 
@@ -75,11 +78,15 @@ object Installer:
       (using Effectful)
       : Result raises InstallError =
 
-    given fix1: (InstallError fixes PathError | EnvironmentError | SystemPropertyError | NumberError) = _ =>
-      InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
+    given (InstallError fixes NumberError) = _ => InstallError(InstallError.Reason.Environment)
     
-    given fix2: (InstallError fixes NotFoundError | IoError | ExecError | StreamError) = _ =>
-      InstallError(InstallError.Reason.Io)
+    given (InstallError fixes NotFoundError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
 
     import workingDirectories.default
     import systemProperties.virtualMachine
