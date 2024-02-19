@@ -39,12 +39,19 @@ import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
 
 object DispatchRunner:
+  def run(input: String): String =
+    val cls = Class.forName("Generated$Code$From$Quoted").nn
+    val instance = cls.getDeclaredConstructor().nn.newInstance().nn
+    val callable = instance.asInstanceOf[{ def apply(): String => String }]
+
+    callable()(input)
+    
   def main(args: Array[String]): Unit =
-    val className = "Generated$Code$From$Quoted"
+    val out = System.out.nn
+    System.setErr(null)
+    System.setOut(null)
     val params = args(0)
-    val cls = Class.forName(className).nn
-    val runnable = cls.getDeclaredConstructor().nn.newInstance()
-    println(runnable.asInstanceOf[{ def apply(): String => String }]()(params))
+    out.println(run(args(0)))
 
 class References():
   private var ref: Optional[Expr[List[Json]]] = Unset
