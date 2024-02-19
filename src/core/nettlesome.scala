@@ -27,8 +27,6 @@ import hieroglyph.*, textMetrics.uniform
 
 import scala.quoted.*
 
-given Realm = realm"nettlesome"
-
 object IpAddressError:
   enum Reason:
     case Ipv4ByteOutOfRange(byte: Int)
@@ -94,6 +92,8 @@ extension [RemoteType](value: RemoteType)(using remote: Remote[RemoteType])
 erased trait Port
 
 object Nettlesome:
+  given Realm = realm"nettlesome"
+  
   object Opaques:
     opaque type Ipv4 <: Matchable = Int
     opaque type MacAddress <: Matchable = Long
