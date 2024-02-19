@@ -33,6 +33,8 @@ import ambience.*
 import fulminate.*
 
 object Installer:
+  given Realm = realm"ethereal"
+
   object Result:
     given Communicable[Result] =
       case AlreadyOnPath(script, path) => msg"The $script command is already installed at $path."

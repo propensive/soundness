@@ -82,6 +82,8 @@ def daemon[BusType <: Matchable]
     (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr,
         model: ThreadModel)
     : Unit =
+  
+  given Realm: Realm = realm"ethereal"
 
   import environments.virtualMachine
   import errorHandlers.throwUnsafely
@@ -281,6 +283,4 @@ enum DaemonEvent:
   case Stderr(pid: Pid)
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
-
-given Realm: Realm = realm"ethereal"
 
