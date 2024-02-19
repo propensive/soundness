@@ -133,7 +133,7 @@ trait Dispatcher:
 case class Dispatch
     [OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
-  def className: Text = t"superlunary.DispatchRunner"
+  def mainClass: Text = t"superlunary.DispatchRunner"
 
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType
@@ -143,5 +143,5 @@ object remote extends Dispatcher:
     import logging.silent
     
     dispatch.remote: input =>
-      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.className} $input"
+      val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
       unsafely(cmd.exec[Text]())
