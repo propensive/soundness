@@ -26,9 +26,9 @@ import scala.quoted.*
 import scala.compiletime.*
 
 //import language.experimental.captureChecking
-
-given Realm = realm"quantitative"
 trait Quantitative2:
+  given Realm = realm"quantitative"
+  
   case class UnitPower(ref: UnitRef, power: Int)
   
   private object UnitsMap:
