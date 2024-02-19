@@ -62,6 +62,8 @@ case class Uuid(msb: Long, lsb: Long):
   infix def ^ (right: Uuid): Uuid = Uuid(msb ^ right.msb, lsb ^ right.lsb)
 
 object Inimitable:
+  given Realm = realm"inimitable"
+
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
     val text = expr.valueOrAbort.parts.head.tt
     val uuid = failCompilation(Uuid.parse(text))
