@@ -85,6 +85,8 @@ extends Node[NameType]:
     Element(labelString, unclosed, block, verbatim, attributes, children)
 
 object Honeycomb:
+  given Realm = realm"honeycomb"
+
   def read
       [NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
       (name: Expr[NameType], unclosed: Expr[Boolean], block: Expr[Boolean], verbatim: Expr[Boolean],
