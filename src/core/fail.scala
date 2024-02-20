@@ -20,23 +20,18 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-def fail(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null): Nothing =
+def fail(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm): Nothing =
   import quotes.reflect.*
   import dotty.tools.dotc.config.Settings.Setting.value
   
   val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl =>
-      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
-    
-    case _ =>
-      false
+    case quotes: runtime.impl.QuotesImpl => value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+    case _                               => false
 
-  val pkg = Symbol.spliceOwner.fullName.split("\\.").nn.map(_.nn).to(List).takeWhile(_.head.isLower).mkString(".")
-  
   val text =
     if useColor
-    then s"${27.toChar}[38;2;0;190;255m${27.toChar}[1m$pkg${27.toChar}[0m ${message.colorText}"
-    else s"$pkg: ${message.text}" 
+    then s"${27.toChar}[38;2;0;190;255m${27.toChar}[1m${summon[Realm].name}${27.toChar}[0m ${message.colorText}"
+    else s"${summon[Realm].name}: ${message.text}" 
   
   if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
 

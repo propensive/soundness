@@ -13,7 +13,8 @@ object Fulminate:
   def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
     import quotes.reflect.*
     val name: String = context.valueOrAbort.parts.head
-    if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
+    if !name.matches("[a-z]+")
+    then fail(msg"the realm name should comprise only of lowercase letters")(using Realm("fulminate".tt))
     else '{Realm.make(${Expr(name)}.tt)}
 
 extension (inline context: StringContext)
