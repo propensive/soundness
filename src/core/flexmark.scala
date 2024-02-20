@@ -31,7 +31,21 @@ import annotation.tailrec
 
 import scala.quoted.*
 
-case class MarkdownError(detail: Text) extends Error(msg"the markdown could not be read: $detail")
+object MarkdownError:
+  enum Reason:
+    case BlockInsideInline
+    case BrokenImageRef
+    case BadHeadingLevel
+    case UnexpectedNode
+
+  object Reason:
+    given communicable: Communicable[Reason] =
+      case BlockInsideInline => msg"the markdown contains block-level elements"
+      case BrokenImageRef    => msg"the image reference could not be resolved"
+      case BadHeadingLevel   => msg"the heading level is not in the range 1-6"
+      case UnexpectedNode    => msg"a node with an unexpected type was found"
+
+case class MarkdownError(reason: MarkdownError.Reason) extends Error(msg"the markdown could not be read because $reason")
 
 case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
@@ -148,7 +162,7 @@ object Markdown:
         Markdown[Markdown.Ast.Inline](xs*)
 
       case other =>
-        raise(MarkdownError(t"markdown contains block-level elements"))(Markdown[Markdown.Ast.Inline]())
+        raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))(Markdown[Markdown.Ast.Inline]())
   
   @tailrec
   private def coalesce
@@ -174,7 +188,7 @@ object Markdown:
       (using Raises[MarkdownError])
       : Text =
     
-    Optional(node.getReferenceNode(root)).lay(raise(MarkdownError(t"the image reference could not be resolved"))(t"https://example.com/")): node =>
+    Optional(node.getReferenceNode(root)).lay(raise(MarkdownError(MarkdownError.Reason.BrokenImageRef))(t"https://example.com/")): node =>
       node.nn.getUrl.toString.show
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
@@ -240,7 +254,7 @@ object Markdown:
                                                Heading(lvl, phraseChildren(root, node)*)
                                              
                                              case _ =>
-                                               raise(MarkdownError(txt"""the heading level is not in the range 1-6"""))(Heading(6, phraseChildren(root, node)*))
+                                               raise(MarkdownError(MarkdownError.Reason.BadHeadingLevel))(Heading(6, phraseChildren(root, node)*))
       
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)(using Raises[MarkdownError]): Markdown.Ast.Node =
     node match
@@ -255,7 +269,7 @@ object Markdown:
       case node: tables.TableBlock  => Table(table(root, node)*)
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
-      case node: cvfua.Node         => raise(MarkdownError(t"unexpected Markdown node"))(Copy(t"?"))
+      case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode))(Copy(t"?"))
   
   def table(root: cvfua.Document, node: tables.TableBlock)(using Raises[MarkdownError])
       : List[Markdown.Ast.TablePart] =
