@@ -20,6 +20,7 @@ import parasite.*
 import anticipation.*
 import rudiments.*
 import gossamer.*
+import fulminate.*
 
 import java.text as jt
 
@@ -105,3 +106,4 @@ abstract class Log[TextType]():
 
   def contramap[TextType2](lambda: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
     def record(entry: Entry[TextType2]): Unit = log.record(entry.map(lambda))
+

@@ -17,7 +17,6 @@
 package eucalyptus
 
 import rudiments.*
-import vacuous.*
 import fulminate.*
 import anticipation.*
 import parasite.*
@@ -28,6 +27,8 @@ import scala.quoted.*
 //import language.experimental.captureChecking
 
 object Eucalyptus:
+  given Realm = realm"eucalyptus"
+  
   def record
       [MessageType: Type, TextType: Type]
       (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm], textual: Expr[Textual[TextType]], show: Expr[Any])
@@ -41,12 +42,6 @@ object Eucalyptus:
       try $log.record(Entry($realm, $level, t.show($message)(using $show.asInstanceOf[t.ShowType[MessageType]]), time, $log.envelopes))
       catch case e: Exception => ()
     }
-
-  def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
-    import quotes.reflect.*
-    val name: String = context.valueOrAbort.parts.head
-    if !name.matches("[a-z]+") then fail(msg"the realm name should comprise only of lowercase letters")
-    else '{Realm.make(${Expr(name)}.tt)(using Unsafe)}
 
   def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log[TextType]] =
     import quotes.reflect.*
