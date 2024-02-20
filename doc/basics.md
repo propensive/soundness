@@ -72,7 +72,7 @@ by referring to that library's realm, for example:
 given Log = Log.route:
   case scintillate.Realm => Out
 ```
-As with `Everything`, a level may also be specified:
+A level may also be specified:
 ```scala
 given Log = Log.route:
   case Level.Warn() | Level.Fail() => Err
