@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import wisteria.*
+import contingency.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
@@ -254,7 +255,9 @@ trait ByteEncoder[SchemeType <: EncodingScheme]:
   def encode(bytes: Bytes): Text
 
 object ByteDecoder:
-  given ByteDecoder[Base64] = value => Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
+  given (using Raises[DecodeError]): ByteDecoder[Base64] = value =>
+    try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
+    catch case _: IllegalArgumentException => abort(DecodeError(t"an invalid BASE-64 character found"))
   
   given ByteDecoder[Hex] = value =>
     import java.lang.Character.digit

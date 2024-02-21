@@ -31,7 +31,8 @@ case class Pem(kind: Text, data: Bytes):
   ).flatten.join(t"\n")
 
 object Pem:
-  def parse(string: Text)(using Raises[PemError]): Pem =
+  def parse(string: Text): Pem raises PemError =
+    given (PemError fixes DecodeError) = error => PemError(error.detail)
     val lines = string.trim.nn.cut(t"\n")
     
     val label = lines.head match
