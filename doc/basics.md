@@ -7,7 +7,7 @@ colors.
 
 ### Creating ANSI strings
 
-To create an ANSI string, we use the `ansi""` interpolator. This works like an ordinary string
+To create an ANSI string, we use the `e""` interpolator. This works like an ordinary string
 interpolator, allowing substitutions of stringlike values.
 
 But substitutions may also be `Escape` instances, which do not insert any visible characters, but
@@ -17,7 +17,7 @@ the `escapes` object, for example, `Bold`, `Underline` and `BrightRedFg`.
 These escapes may be used in an ANSI string, like so:
 ```scala
 import escapes.*
-val txt = ansi"This text is ${Bold}bold, ${Underline}underlined and ${BrightRedFg}bright red."
+val txt = e"This text is ${Bold}bold, ${Underline}underlined and ${BrightRedFg}bright red."
 ```
 
 This introduces the bold and underline styles and the bright red color to the string, but once
@@ -30,7 +30,7 @@ the character immediately following the escape is a recognized opening bracket (
 
 For example,
 ```scala
-ansi"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
+e"This text is $Bold[bold], $Underline{underlined} and $BrightRedFg<bright red>."
 ```
 will apply each style only to the words inside the brackets.
 
@@ -42,7 +42,7 @@ opening bracket will not be given special treatment.
 
 For example,
 ```scala
-ansi"This text is $Bold[bold and $Italic{italic] text.}"
+e"This text is $Bold[bold and $Italic{italic] text.}"
 ```
 might be intending to display the final word, `text`, in italic but not bold. But the mismatched
 brackets would treat `italic] text.` as literal text, rendered in italic. And, in fact, the ANSI
@@ -64,12 +64,12 @@ ANSI string, like so:
 ```scala
 import iridescence.*
 import colors.*
-ansi"$Gold[gold, $Indigo[indigo, $HotPink[hot pink], indigo] $White[and] gold]"
+e"$Gold[gold, $Indigo[indigo, $HotPink[hot pink], indigo] $White[and] gold]"
 ```
 
 ### Manipulating colors
 
-Each substitution into an `ansi""` string interpolator may apply a change to the existing style,
+Each substitution into an `e""` string interpolator may apply a change to the existing style,
 represented by and tracked throughout the string as an instance of the case class, `Style`.
 Typically, these changes will specify the new state of properties such as _bold_, _italic_ or the
 background color.
