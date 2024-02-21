@@ -109,7 +109,7 @@ by referring to that library's realm, for example:
 given Log = Log.route:
   case scintillate.Realm => Out
 ```
-As with `Everything`, a level may also be specified:
+A level may also be specified:
 ```scala
 given Log = Log.route:
   case Level.Warn() | Level.Fail() => Err
@@ -144,7 +144,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Eucalyptus is designed to be _small_. Its entire source code currently consists
-of 277 lines of code.
+of 278 lines of code.
 
 ## Building
 
