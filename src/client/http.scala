@@ -91,7 +91,7 @@ class Postable
     val sample = bytes.take(256)
     
     val string: Text =
-      if sample.all(32.toByte <= _ <= 127.toByte) then sample.uString else sample.hex
+      if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
     
     if bytes.length > 128 then t"$string..." else string
 
@@ -142,8 +142,8 @@ object HttpReadable:
   given text: HttpReadable[Text] with
     def read(status: HttpStatus, body: HttpBody): Text = body match
       case HttpBody.Empty         => t""
-      case HttpBody.Data(body)    => body.uString
-      case HttpBody.Chunked(body) => body.readAs[Bytes].uString
+      case HttpBody.Data(body)    => body.utf8
+      case HttpBody.Chunked(body) => body.readAs[Bytes].utf8
   
   given bytes: HttpReadable[Bytes] with
     def read(status: HttpStatus, body: HttpBody): Bytes = body match
@@ -158,8 +158,8 @@ object HttpReadable:
 
     def read(status: HttpStatus, body: HttpBody): ContentType = body match
       case HttpBody.Empty         => reader.read(t"")
-      case HttpBody.Data(data)    => reader.read(data.uString)
-      case HttpBody.Chunked(data) => reader.read(data.readAs[Bytes].uString)
+      case HttpBody.Data(data)    => reader.read(data.utf8)
+      case HttpBody.Chunked(data) => reader.read(data.readAs[Bytes].utf8)
 
   given httpStatus: HttpReadable[HttpStatus] with
     def read(status: HttpStatus, body: HttpBody) = status
