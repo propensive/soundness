@@ -80,8 +80,8 @@ case class TextStyle
     if strike != next.strike then buf.add(t"${esc}${next.strikeEsc}")
 
 object rendering:
-  given plain: Show[Output] = _.plain
-  given output: Show[Output] = _.render
+  given plain: Show[Display] = _.plain
+  given output: Show[Display] = _.render
   
 object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
@@ -92,7 +92,7 @@ trait Ansi2:
       def embed(value: ValueType) = Ansi.Input.TextInput:
         compiletime.summonFrom:
           case display: Displayable[ValueType] => display(value)
-          case show: Show[ValueType]           => Output(show(value))
+          case show: Show[ValueType]           => Display(show(value))
   
 
 object Ansi extends Ansi2:
@@ -116,7 +116,7 @@ object Ansi extends Ansi2:
   given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
   
   enum Input:
-    case TextInput(text: Output)
+    case TextInput(text: Display)
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
 
@@ -134,7 +134,7 @@ object Ansi extends Ansi2:
       val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(pos, insertions2))
 
-  object Interpolator extends contextual.Interpolator[Input, State, Output]:
+  object Interpolator extends contextual.Interpolator[Input, State, Display]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
     def initial: State = State()
 
@@ -183,62 +183,62 @@ object Ansi extends Ansi2:
       case esc@Input.Escape(on, off) =>
         state.copy(last = None).add(state.text.length, esc)
     
-    def skip(state: State): State = insert(state, Input.TextInput(Output.empty))
+    def skip(state: State): State = insert(state, Input.TextInput(Display.empty))
     
-    def complete(state: State): Output =
+    def complete(state: State): Display =
       if !state.stack.isEmpty
       then throw InterpolationError(msg"the closing brace does not match an opening brace")
 
-      Output(state.text, state.spans, state.insertions)
+      Display(state.text, state.spans, state.insertions)
 
-object Output:
-  given add(using NotGiven[Textual[Output]]): AddOperator[Output, Output] with
-    type Result = Output
-    inline def add(left: Output, right: Output): Output = left.append(right)
+object Display:
+  given add(using NotGiven[Textual[Display]]): AddOperator[Display, Display] with
+    type Result = Display
+    inline def add(left: Display, right: Display): Display = left.append(right)
 
-  given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Output] = (out, output) =>
+  given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Display] = (out, output) =>
     stdio.print(output.render)
   
-  given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Output] = (err, output) =>
+  given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Display] = (err, output) =>
     stdio.printErr(output.render)
 
-  given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Output] =
+  given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Display] =
     (target, output) => appendable.append(target, output.map(_.render))
   
-  given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Output] =
+  given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
     (target, output) => writable.write(target, output.map(_.render))
 
-  given textual: Textual[Output] with
+  given textual: Textual[Display] with
     type ShowType[-ValueType] = Displayable[ValueType]
-    def string(text: Output): String = text.plain.s
-    def length(text: Output): Int = text.plain.s.length
-    def make(string: String): Output = Output(Text(string))
+    def string(text: Display): String = text.plain.s
+    def length(text: Display): Int = text.plain.s.length
+    def make(string: String): Display = Display(Text(string))
     
-    def map(text: Output, lambda: Char => Char): Output =
-      Output(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
+    def map(text: Display, lambda: Char => Char): Display =
+      Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-    def slice(text: Output, start: Int, end: Int): Output =
+    def slice(text: Display, start: Int, end: Int): Display =
       text.dropChars(start).takeChars(end - start)
     
-    val empty: Output = Output.empty
-    def concat(left: Output, right: Output): Output = left.append(right)
-    def unsafeChar(text: Output, index: Int): Char = text.plain.s.charAt(index)
-    def indexOf(text: Output, sub: Text): Int = text.plain.s.indexOf(sub.s)
+    val empty: Display = Display.empty
+    def concat(left: Display, right: Display): Display = left.append(right)
+    def unsafeChar(text: Display, index: Int): Char = text.plain.s.charAt(index)
+    def indexOf(text: Display, sub: Text): Int = text.plain.s.indexOf(sub.s)
     
     def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) =
       display(value)
 
-  val empty: Output = Output(t"")
-  given joinable: Joinable[Output] = _.fold(empty)(_ + _)
+  val empty: Display = Display(t"")
+  given joinable: Joinable[Display] = _.fold(empty)(_ + _)
 
-  given printable: Printable[Output] = _.render
+  given printable: Printable[Display] = _.render
 
-  given cuttable: Cuttable[Output, Text] = (text, delimiter, limit) =>
+  given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
     
     @tailrec
-    def recur(source: Output, limit: Int, acc: List[Output]): List[Output] =
+    def recur(source: Display, limit: Int, acc: List[Display]): List[Display] =
       if limit <= 0 then acc
       else
         val matcher = pattern.matcher(source.plain.s).nn
@@ -252,32 +252,32 @@ object Output:
 
     recur(text, limit, Nil)
 
-  given Ordering[Output] = Ordering.by(_.plain)
+  given Ordering[Display] = Ordering.by(_.plain)
 
   def make
       [ValueType]
       (value: ValueType, transform: Ansi.Transform)(using Show[ValueType])
-      : Output =
+      : Display =
     val text: Text = value.show
-    Output(text, TreeMap(CharSpan(0, text.s.length) -> transform))
+    Display(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
-case class Output
+case class Display
     (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
         insertions: TreeMap[Int, Text] = TreeMap()):
   
   def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
 
   @targetName("add")
-  infix def append(text: Text): Output = Output(t"$plain$text", spans)
+  infix def append(text: Text): Display = Display(t"$plain$text", spans)
 
   @targetName("add2")
-  infix def append(text: Output): Output =
+  infix def append(text: Display): Display =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
     
-    Output(plain+text.plain, spans ++ newSpans)
+    Display(plain+text.plain, spans ++ newSpans)
 
-  def dropChars(n: Int, dir: Bidi = Ltr): Output = dir match
+  def dropChars(n: Int, dir: Bidi = Ltr): Display = dir match
     case Rtl =>
       takeChars(plain.length - n)
     
@@ -289,9 +289,9 @@ case class Output
             charSpan -> transform
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
-      Output(plain.drop(n), newSpans)
+      Display(plain.drop(n), newSpans)
 
-  def takeChars(n: Int, dir: Bidi = Ltr): Output = dir match
+  def takeChars(n: Int, dir: Bidi = Ltr): Display = dir match
     case Rtl =>
       dropChars(plain.length - n)
 
@@ -303,7 +303,7 @@ case class Output
             charSpan -> tf
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
       
-      Output(plain.take(n), newSpans)
+      Display(plain.take(n), newSpans)
 
   def render: Text =
     val buf = StringBuilder()

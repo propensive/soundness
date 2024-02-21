@@ -19,8 +19,8 @@ package escapade
 import language.experimental.captureChecking
 
 extension (inline ctx: StringContext)
-  transparent inline def e(inline parts: Any*): Output =
+  transparent inline def e(inline parts: Any*): Display =
     ${Ansi.Interpolator.expand('ctx, 'parts)}
 
 extension [T](value: T)
-  def display(using displayable: Displayable[T]): Output = displayable(value)
+  def display(using displayable: Displayable[T]): Display = displayable(value)

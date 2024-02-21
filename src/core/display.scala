@@ -28,8 +28,8 @@ import spectacular.*
 import language.experimental.captureChecking
 
 object Displayable:
-  given output: Displayable[Output] = identity(_)
-  given text: Displayable[Text] = text => Output(text)
+  given output: Displayable[Display] = identity(_)
+  given text: Displayable[Text] = text => Display(text)
   given pid: Displayable[Pid] = pid => e"${pid.value.show}"
 
   given highlighted
@@ -39,18 +39,18 @@ object Displayable:
 
     value => e"${highlight.color(value)}(${value.show})"
 
-  given message: Displayable[Message] = _.fold[Output](e""): (acc, next, level) =>
+  given message: Displayable[Message] = _.fold[Display](e""): (acc, next, level) =>
     level match
       case 0 => e"$acc${Fg(0xefe68b)}($next)"
       case 1 => e"$acc$Italic(${Fg(0xffd600)}($next))"
       case _ => e"$acc$Italic($Bold(${Fg(0xffff00)}($next)))"
 
   given option[T: Displayable]: Displayable[Option[T]] =
-    case None    => Output("empty".show)
+    case None    => Display("empty".show)
     case Some(v) => summon[Displayable[T]](v)
   
   given show[ValueType](using show: Show[ValueType]): Displayable[ValueType] = value =>
-    Output(show(value))
+    Display(show(value))
 
   given exception(using TextMetrics): Displayable[Exception] = e =>
     summon[Displayable[StackTrace]](StackTrace.apply(e))
@@ -94,11 +94,11 @@ object Displayable:
     e"$className${Fg(0x808080)}(#)$methodName"
   
   given (using decimalizer: Decimalizer): Displayable[Double] = double =>
-    Output.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
+    Display.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
 
   given Displayable[Throwable] = throwable =>
-    Output.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
+    Display.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = 0xdc133b))
 
 trait Displayable[-ValueType]:
-  def apply(value: ValueType): Output
+  def apply(value: ValueType): Display

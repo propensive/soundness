@@ -22,4 +22,4 @@ import rudiments.*
 import language.experimental.captureChecking
 
 package defaultTextTypes:
-  given output: DefaultTextType { type TextType = Output } = ###
+  given output: DefaultTextType { type TextType = Display } = ###

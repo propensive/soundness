@@ -27,7 +27,7 @@ object Ribbon:
   def apply[ColorType: RgbColor](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
 
 case class Ribbon(colors: Bg*):
-  def fill(parts: Output*): Output =
+  def fill(parts: Display*): Display =
     import escapes.*
     IArray.from(colors.zip(parts)).curse:
       val (background, text) = cursor

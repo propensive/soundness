@@ -83,8 +83,7 @@ object escapes:
   val EraseLine: Escape = Escape(t"[0K", t"[0m")
 
   def title(name: Text) = Escape(t"]0;$name\e\\")
-  def link[UrlType: GenericUrl](url: UrlType, text: Text) =
-    Escape(t"]8;;${url.text}\e\\$text\e]8;;\e\\")
+  def link[UrlType: GenericUrl](url: UrlType, text: Text): Text = t"\e]8;;${url.text}\e\\$text\e]8;;\e\\"
 
 object csi:
   val esc: Text = t"\e"
