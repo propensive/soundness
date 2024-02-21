@@ -26,14 +26,14 @@ import spectacular.*
 import hieroglyph.*, textMetrics.eastAsianScripts
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): Output = blocks.map(_.render(width)).join(e"\n\n")
+  def serialize(width: Int): Display = blocks.map(_.render(width)).join(e"\n\n")
 
-case class TextBlock(indent: Int, text: Output):
+case class TextBlock(indent: Int, text: Display):
   @targetName("add")
-  infix def + (txt: Output): TextBlock = TextBlock(indent, text+txt)
+  infix def + (txt: Display): TextBlock = TextBlock(indent, text+txt)
   
-  def render(width: Int): Output =
-    def rest(text: Output, lines: List[Output]): List[Output] =
+  def render(width: Int): Display =
+    def rest(text: Display, lines: List[Display]): List[Display] =
       if text.length == 0 then lines.reverse
       else
         try
@@ -140,7 +140,7 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): Output = node.map:
+  def text(node: Seq[Markdown.Ast.Node]): Display = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => e"[ $text ]"
     case Markdown.Ast.Inline.Weblink(s, desc)       => e"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
     case Markdown.Ast.Inline.Break()                => e""
@@ -159,7 +159,7 @@ open class TextConverter():
     case _                                          => e""
   .join
 
-  def phrasing(node: Markdown.Ast.Inline): Output = node match
+  def phrasing(node: Markdown.Ast.Inline): Display = node match
     case Markdown.Ast.Inline.Image(altText, location) => e"[ $altText ]"
     case Markdown.Ast.Inline.Break()                  => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
