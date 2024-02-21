@@ -111,7 +111,7 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
                               ju.Arrays.equals(left, right)
     case _                 => false
   
-  override def hashCode: Int = bytes.hashCode
+  override def hashCode: Int = ju.Arrays.hashCode(bytes.mutable(using Unsafe): Array[Byte])
 
 object Digestible extends Derivation[Digestible]:
   inline def join[DerivationType <: Product: ProductReflection]: Digestible[DerivationType] =
