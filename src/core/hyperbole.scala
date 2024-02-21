@@ -36,7 +36,7 @@ object reflection:
 
     def init = expr.asTerm.pos.startColumn
     
-    def source(tree: Tree): Output = tree.pos match
+    def source(tree: Tree): Display = tree.pos match
       case pos: dtdu.SourcePosition =>
         ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).display
       case _ =>
