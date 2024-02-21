@@ -26,7 +26,7 @@ import hieroglyph.textMetrics.uniform
 //import scala.language.experimental.captureChecking
 
 package logFormats:
-  given standardColor[TargetType]: LogFormat[TargetType, Output] = entry =>
+  given standardColor[TargetType]: LogFormat[TargetType, Display] = entry =>
     given displayLevel: Displayable[Level] = level =>
       val color = level match
         case Level.Fine => colors.LightSeaGreen
@@ -37,10 +37,10 @@ package logFormats:
       e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
 
     // FIXME: This is far too much object creation for every log message
-    val realm: Output = e"${colors.SteelBlue}(${entry.realm.name.fit(8)})"
+    val realm: Display = e"${colors.SteelBlue}(${entry.realm.name.fit(8)})"
     val colorSeq = List(colors.Chocolate, colors.OliveDrab, colors.CadetBlue, colors.DarkGoldenrod)
     
-    val stack: Output =
+    val stack: Display =
       entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
     
     val dateTime = Log.dateFormat.format(entry.timestamp).nn.tt

@@ -29,10 +29,10 @@ import turbulence.*, stdioSources.virtualMachine
 object Tests extends Suite(t"Eucalyptus tests"):
   def run(): Unit =
     import Level.*
-    given LogFormat[Out.type, Output] = logFormats.standardColor[Out.type]
-    given LogFormat[Err.type, Output] = logFormats.standardColor[Err.type]
+    given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
+    given LogFormat[Err.type, Display] = logFormats.standardColor[Err.type]
     supervise:
-      given Log[Output] = Log.route[Output]:
+      given Log[Display] = Log.route[Display]:
         case Warn() => Out
         case Fail() => Out
         case _      => Out//Syslog(t"tab")
