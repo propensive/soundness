@@ -46,7 +46,7 @@ object Semblance:
         case Different(left, right, difference) => Nil
         case Breakdown(comparison, left, right) => comparison.to(List)
       
-      case class Row(treeLine: Text, left: Output, right: Output, difference: Output)
+      case class Row(treeLine: Text, left: Display, right: Display, difference: Display)
 
       given TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
