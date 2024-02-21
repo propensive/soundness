@@ -43,7 +43,7 @@ object Tests extends Suite(t"Coaxial tests"):
             supervise:
               val promise: Promise[Text] = Promise()
               val server = ${port.put}.listen[Text]: in =>
-                UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(in.data.uString))
+                UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(in.data.utf8))
               
               promise.await()
         })
