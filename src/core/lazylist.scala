@@ -41,8 +41,18 @@ extension (bytes: Bytes)
   def gunzip: Bytes =
     val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
     val in2 = juz.GZIPInputStream(in)
-    in2.close()
-    IArray.create(in2.available)(in2.read(_))
+    val out = ji.ByteArrayOutputStream()
+
+    val buffer: Array[Byte] = new Array(1024)
+    
+    def recur(): Unit = in2.read(buffer).tap: length =>
+      if length > 0 then
+        out.write(buffer, 0, length)
+        recur()
+
+    recur()
+
+    out.toByteArray.nn.immutable(using Unsafe)
 
 extension (lazyList: LazyList[Bytes])
   def drop(byteSize: ByteSize): LazyList[Bytes] =
