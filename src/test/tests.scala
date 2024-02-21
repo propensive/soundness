@@ -26,6 +26,8 @@ import anticipation.*, timeInterfaces.long
 
 import errorHandlers.throwUnsafely
 
+import threadModels.platform
+
 object Tests extends Suite(t"Parasite tests"):
 
   def thread(block: => Unit): () => Unit =
