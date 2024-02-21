@@ -30,6 +30,20 @@ import java.util.zip as juz
 
 import language.experimental.captureChecking
 
+extension (bytes: Bytes)
+  def gzip: Bytes =
+    val out = ji.ByteArrayOutputStream()
+    val out2 = juz.GZIPOutputStream(out)
+    out2.write(bytes.mutable(using Unsafe))
+    out2.close()
+    out.toByteArray.nn.immutable(using Unsafe)
+
+  def gunzip: Bytes =
+    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+    val in2 = juz.GZIPInputStream(in)
+    in2.close()
+    IArray.create(in2.available)(in2.read(_))
+
 extension (lazyList: LazyList[Bytes])
   def drop(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
