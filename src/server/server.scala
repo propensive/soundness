@@ -135,7 +135,7 @@ case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
 object Request:
   given Show[Request] = request =>
     val bodySample: Text =
-      try request.body.stream.readAs[Bytes].uString catch
+      try request.body.stream.readAs[Bytes].utf8 catch
         case err: StreamError  => t"[-/-]"
     
     val headers: Text =
@@ -176,7 +176,7 @@ case class Request
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
         then
-          Map[Text, Text](body.stream.readAs[Bytes].uString.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+          Map[Text, Text](body.stream.readAs[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Panic(msg"key/value pair does not match")
@@ -345,7 +345,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
       val Seq(username: Text, password: Text) =
-        val text: Text = credentials.show.decode[Base64].uString
+        val text: Text = credentials.show.decode[Base64].utf8
         text.cut(t":").to(Seq)
       
       if validate(username, password) then response else Response(Bytes(), HttpStatus.Forbidden)
