@@ -102,7 +102,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
     
 
 object Digest:
-  given Show[Digest[?]] = digest => t"Digest(${digest.bytes.encodeAs[Base64]})"
+  given show: Show[Digest[?]] = _.bytes.encodeAs[Base64]
 
 case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
   override def equals(that: Any) = that.asMatchable match
