@@ -77,14 +77,14 @@ object PosixCliInterpreter extends CliInterpreter:
 
 object Suggestion:
   def apply
-      (text: Text, description: Optional[Text | Output], hidden: Boolean = false, incomplete: Boolean = false,
+      (text: Text, description: Optional[Text | Display], hidden: Boolean = false, incomplete: Boolean = false,
           aliases: List[Text] = Nil)
       : Suggestion =
     
     new Suggestion(text, description, hidden, incomplete, aliases)
 
 case class Suggestion
-    (text: Text, description: Optional[Text | Output], hidden: Boolean, incomplete: Boolean, aliases: List[Text])
+    (text: Text, description: Optional[Text | Display], hidden: Boolean, incomplete: Boolean, aliases: List[Text])
 
 object Suggestions:
   def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
@@ -138,7 +138,7 @@ case class Flag
     cli.register(this, suggestions)
     cli.readParameter(this)
 
-case class Subcommand(name: Text, description: Optional[Text | Output] = Unset, hidden: Boolean = false):
+case class Subcommand(name: Text, description: Optional[Text | Display] = Unset, hidden: Boolean = false):
   def unapply(argument: Argument)(using Cli): Boolean =
     argument.suggest(Suggestion(name, description, hidden) :: previous)
     argument() == name

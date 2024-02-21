@@ -115,7 +115,7 @@ extends Cli:
               case description: Text =>
                 sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
               
-              case description: Output =>
+              case description: Display =>
                 sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l $hiddenParam -- $text"
             
             val aliasLines = aliases.map: text =>
@@ -126,7 +126,7 @@ extends Cli:
                 case description: Text =>
                   sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
                 
-                case description: Output =>
+                case description: Display =>
                   sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l -n -- $text"
             
             mainLine :: aliasLines
@@ -143,9 +143,9 @@ extends Cli:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
             (text :: aliases).map: text =>
               (description: @unchecked) match
-                case Unset               => t"$text"
-                case description: Text   => t"$text\t$description"
-                case description: Output => t"$text\t${description.plain}"
+                case Unset                => t"$text"
+                case description: Text    => t"$text\t$description"
+                case description: Display => t"$text\t${description.plain}"
       
 case class Execution(execute: CliInvocation => ExitStatus)
 
