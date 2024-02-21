@@ -29,6 +29,7 @@ import language.experimental.captureChecking
 
 infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, ErrorType1]
 
+@FunctionalInterface
 trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
   def fix(error: ErrorType1): ErrorType2
 
