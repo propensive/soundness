@@ -84,9 +84,9 @@ case class WebDriver(server: Browser#Server):
       try block catch case e: HttpError => e match
         case HttpError(status, body) =>
           val json = body match
-            case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).uString).value
+            case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).utf8).value
             case HttpBody.Empty           => throw e
-            case HttpBody.Data(data)      => Json.parse(data.uString).value
+            case HttpBody.Data(data)      => Json.parse(data.utf8).value
           
           throw WebDriverError(json.error.as[Text], json.message.as[Text],
               json.stacktrace.as[Text].cut(t"\n"))
