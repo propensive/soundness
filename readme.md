@@ -57,7 +57,7 @@ Block-level AST elements are:
 
 Using [Honeycomb](https://github.com/propensive/honeycomb/) a `Markdown[Block]` instance may be converted
 to HTML just by calling the `html` extension method on it. This extension method returns an instance of
-`Seq[Html[Flow]].
+`Seq[Html[Flow]]`.
 
 ### Inline Markdown
 
@@ -116,7 +116,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Punctuation is designed to be _small_. Its entire source code currently consists
-of 605 lines of code.
+of 617 lines of code.
 
 ## Building
 
