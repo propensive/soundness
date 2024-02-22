@@ -440,31 +440,49 @@ object Hypotenuse:
 
   object B64:
     erased given underlying: Underlying[B64, Long] = erasedValue
-    def apply(bytes: IArray[Byte]): Long =
-      var b64: Long = (bytes(0) & 0xFF).toLong
+    def apply(bytes: IArray[Byte], offset: Int = 0): B64 =
+      var b64: Long = (bytes(offset) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(1) & 0xFF).toLong
+      b64 |= (bytes(offset + 1) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(2) & 0xFF).toLong
+      b64 |= (bytes(offset + 2) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(3) & 0xFF).toLong
+      b64 |= (bytes(offset + 3) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(4) & 0xFF).toLong
+      b64 |= (bytes(offset + 4) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(5) & 0xFF).toLong
+      b64 |= (bytes(offset + 5) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(6) & 0xFF).toLong
+      b64 |= (bytes(offset + 6) & 0xFF).toLong
       b64 <<= 8
-      b64 |= (bytes(7) & 0xFF).toLong
+      b64 |= (bytes(offset + 7) & 0xFF).toLong
       
       b64
 
   object B32:
     erased given underlying: Underlying[B32, Int] = erasedValue
 
+    def apply(bytes: IArray[Byte], offset: Int = 0): B32 =
+      var b32: Int = (bytes(offset) & 0xFF)
+      b32 <<= 8
+      b32 |= (bytes(offset + 1) & 0xFF)
+      b32 <<= 8
+      b32 |= (bytes(offset + 2) & 0xFF)
+      b32 <<= 8
+      b32 |= (bytes(offset + 3) & 0xFF)
+      
+      b32
+
   object B16:
     erased given underlying: Underlying[B16, Short] = erasedValue
   
+    def apply(bytes: IArray[Byte], offset: Int = 0): B16 =
+      var b16: Int = (bytes(offset) & 0xFF)
+      b16 <<= 8
+      b16 |= (bytes(offset + 1) & 0xFF)
+      
+      b16.toShort
+
   object B8:
     erased given underlying: Underlying[B8, Byte] = erasedValue
 
