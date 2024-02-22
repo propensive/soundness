@@ -8,12 +8,13 @@ repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
 repo propensive/quantitative
+repo propensive/bifurcate
 
 project phoenicia
   module core
     compiler  scala
     sources   src/core
-    include   hypotenuse/core turbulence/core quantitative/core
+    include   hypotenuse/core turbulence/core quantitative/core bifurcate/core
 
   module test
     compiler  scala
