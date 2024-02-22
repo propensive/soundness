@@ -5,6 +5,15 @@ import rudiments.*
 import anticipation.*
 import hypotenuse.*
 
+object Bifurcate:
+  opaque type P8[PackType <: Nat] = Byte
+  opaque type P16[PackType <: Nat] = Short
+  opaque type P32[PackType <: Nat] = Int
+  opaque type P64[PackType <: Nat] = Long
+
+  opaque type I[WidthType <: Nat] = Int
+  opaque type U[WidthType <: Nat] = Int
+
 object Deserializer extends ProductDerivation[Deserializer]:
 
   def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): Deserializer[DataType] =
@@ -49,10 +58,7 @@ trait Deserializer[+DataType]:
   def width: Int
 
 extension (bytes: Bytes)
-  def deserialize
-      [DataType]
-      (offset: Int = 0)
-      (using deserializer: Deserializer[DataType])[ResultType]
-      (lambda: (width: Int) ?=> DataType => ResultType)
-      : ResultType =
-    lambda(using deserializer.width)(deserializer.deserialize(bytes, offset))
+  def deserialize[DataType](offset: Int = 0)(using deserializer: Deserializer[DataType]): DataType =
+    deserializer.deserialize(bytes, offset)
+
+def byteWidth[DataType](using deserializer: Deserializer[DataType]): Int = deserializer.width
