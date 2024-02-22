@@ -1,0 +1,23 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target phoenicia/test
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/fulminate
+repo propensive/symbolism
+repo propensive/vacuous
+
+project phoenicia
+  module core
+    compiler  scala
+    sources   src/core
+    include   hypotenuse/core turbulence/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   phoenicia/core probably/cli larceny/plugin
+    main      phoenicia.Tests
+    #coverage  phoenicia/core
+
