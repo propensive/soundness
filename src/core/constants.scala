@@ -25,7 +25,9 @@ package constants:
   val MagneticConstant = 4*π*(10e-7)*Newton/(Ampere*Ampere)
   val ElectricConstant = 8.854187817e-12*Farad/Metre
   val CharacteristicImpedanceOfVacuum = 376.730313461*Ohm
-  val NewtonianConstantOfGravitation = 6.673e-11*Metre*Metre*Metre/Kilo(Gram)/Second/Second
   val PlanckConstant = 6.62607015e-34*Metre*Metre*Kilo(Gram)/Second
+  val GravitationalConstant = 6.67430e-11*Newton/Metre*Metre/Kilo(Gram)/Kilo(Gram)
+  val ElementaryCharge = 1.602176634e-19*Coulomb
+  val AvogadroConstant = 6.02214076e23/Mole
+  val BoltzmannConstant = 1.380649e-13*Joule/Kelvin
 
-  // FIXME: Add more
