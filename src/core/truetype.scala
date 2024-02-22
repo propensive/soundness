@@ -90,7 +90,7 @@ case class Ttf(data: Bytes):
 
   def glyph(char: Char): Glyph[ttf.type] raises FontError = cmap.glyphEncodings(0).format.glyph(char)
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
-  def advanceWidth(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
+  def width(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
   lazy val tables: Map[Text, TableOffset] =
