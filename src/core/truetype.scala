@@ -60,6 +60,23 @@ object Phoenicia:
 
 export Phoenicia.Glyph
 
+enum TtfTable:
+  case Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp, Meta,
+      Name, Post, Prep, Sbix, Vhea, Vmtx
+
+  def text: Text = this match
+    case Cvt   => t"cvt "
+    case table => table.toString.tt.lower
+
+enum OtfTable:
+  case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf, Ltsh,
+      Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
+
+  def text: Text = this match
+    case Os2   => t"OS/2"
+    case Cff   => t"CFF "
+    case table => table.toString.tt.upper
+
 case class Ttf(data: Bytes):
   ttf =>
 
@@ -140,37 +157,47 @@ case class Ttf(data: Bytes):
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
       val formatId: Int = B16(data, offset).u16.int
       
-      lazy val format: Format = formatId match
-        case 0 =>
-          val length = B16(data, offset + 2).u16.int
-          val language = B16(data, offset + 4).u16.int
-          Format0(length, language)
+      private var formatMemo: Optional[Format] = Unset
 
-        case 4 =>
-          val length = B16(data, offset + 2).u16.int
-          val language = B16(data, offset + 4).u16.int
-          val segCount = B16(data, offset + 6).u16.int/2
-          val searchRange = B16(data, offset + 8).u16.int/2
-          val entrySelector = B16(data, offset + 10).u16.int
-          val rangeShift = B16(data, offset + 12).u16.int
-          val endCodesStart = offset + 14
-          val startCodesStart = endCodesStart + segCount*2 + 2
-          val idDeltaStart = startCodesStart + segCount*2
-          val idRangeOffsetsStart = startCodesStart + segCount*2
+      def format: Format raises FontError = synchronized:
+        formatMemo.or:
+          val format = formatId match
+            case 0 =>
+              val length = B16(data, offset + 2).u16.int
+              val language = B16(data, offset + 4).u16.int
+              Format0(length, language)
 
-          val segments = (0 until segCount).map: n =>
-            Segment(B16(data, startCodesStart + n*2).u16.int.toChar,
-                B16(data, endCodesStart + n*2).u16.int.toChar,
-                B16(data, idDeltaStart).i16.int,
-                B16(data, idRangeOffsetsStart).u16.int)
-          
-          Format4(length, language, segCount, searchRange, entrySelector, rangeShift, IArray.from(segments))
+            case 4 =>
+              val length = B16(data, offset + 2).u16.int
+              val language = B16(data, offset + 4).u16.int
+              val segCount = B16(data, offset + 6).u16.int/2
+              val searchRange = B16(data, offset + 8).u16.int/2
+              val entrySelector = B16(data, offset + 10).u16.int
+              val rangeShift = B16(data, offset + 12).u16.int
+              val endCodesStart = offset + 14
+              val startCodesStart = endCodesStart + segCount*2 + 2
+              val idDeltaStart = startCodesStart + segCount*2
+              val idRangeOffsetsStart = startCodesStart + segCount*2
 
-        case 12 =>
-          val length = B32(data, offset + 2).i32.int
-          val language = B32(data, offset + 6).i32.int
-          val nGroups = B32(data, offset + 10).i32.int
-          Format12(length, language, nGroups)
+              val segments = (0 until segCount).map: n =>
+                Segment(B16(data, startCodesStart + n*2).u16.int.toChar,
+                    B16(data, endCodesStart + n*2).u16.int.toChar,
+                    B16(data, idDeltaStart).i16.int,
+                    B16(data, idRangeOffsetsStart).u16.int)
+              
+              Format4(length, language, segCount, searchRange, entrySelector, rangeShift, IArray.from(segments))
+
+            case 12 =>
+              val length = B32(data, offset + 2).i32.int
+              val language = B32(data, offset + 6).i32.int
+              val nGroups = B32(data, offset + 10).i32.int
+              Format12(length, language, nGroups)
+
+            case other =>
+              abort(FontError())
+
+          format.also:
+            formatMemo = format
 
       case class Segment(start: Char, end: Char, delta: Int, rangeOffset: Int)
       
