@@ -42,38 +42,38 @@ object Inches:
 
 trait Feet[Power <: Nat] extends Units[Power, Length]
 object Feet:
-  given UnitName[Inches[1]] = () => "ft".tt
+  given UnitName[Feet[1]] = () => "ft".tt
   erased given feetPerMetre: Ratio[Feet[-1] & Metres[1], 0.3048] = ###
 
 trait Yards[Power <: Nat] extends Units[Power, Length]
 object Yards:
-  given UnitName[Inches[1]] = () => "yd".tt
+  given UnitName[Yards[1]] = () => "yd".tt
   erased given yardsPerMetre: Ratio[Yards[-1] & Metres[1], 0.9144] = ###
 
 trait Miles[Power <: Nat] extends Units[Power, Length]
 object Miles:
-  given UnitName[Inches[1]] = () => "mi".tt
+  given UnitName[Miles[1]] = () => "mi".tt
   erased given milesPerMetre: Ratio[Miles[-1] & Metres[1], 1609.344] = ###
 
 trait Lightyears[Power <: Nat] extends Units[Power, Length]
 object Lightyears:
-  given UnitName[Inches[1]] = () => "ly".tt
+  given UnitName[Lightyears[1]] = () => "ly".tt
   erased given lightYearsPerMetre: Ratio[Lightyears[1] & Metres[-1], 1.057E-16] = ###
 
 trait NauticalMiles[Power <: Nat] extends Units[Power, Length]
 object NauticalMiles:
-  given UnitName[Inches[1]] = () => "NM".tt
+  given UnitName[NauticalMiles[1]] = () => "NM".tt
   erased given nauticalMilesPerMetre: Ratio[NauticalMiles[1] & Metres[-1], 5.399568034557236E-4] =
     ###
 
 trait Furlongs[Power <: Nat] extends Units[Power, Length]
 object Furlongs:
-  given UnitName[Inches[1]] = () => "fur".tt
+  given UnitName[Furlongs[1]] = () => "fur".tt
   erased given metresPerFurlong: Ratio[Metres[1] & Furlongs[-1], 201.168] = ###
 
 trait Chains[Power <: Nat] extends Units[Power, Length]
 object Chains:
-  given UnitName[Inches[1]] = () => "ch".tt
+  given UnitName[Chains[1]] = () => "ch".tt
   erased given metresPerChain: Ratio[Metres[1] & Chains[-1], 20.1168] = ###
 
 val Inch = Quantity[Inches[1]](1.0)
