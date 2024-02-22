@@ -38,7 +38,16 @@ extension [ValueType](iterator: Iterator[ValueType])
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
-  transparent inline def each(predicate: ValueType => Unit): Unit = iterable.foreach(predicate)
+  transparent inline def each(lambda: ValueType => Unit): Unit = iterable.foreach(lambda)
+  
+  def sumBy[NumberType](lambda: ValueType => NumberType)(using numeric: Numeric[NumberType]): NumberType =
+    var count = numeric.zero
+    
+    iterable.foreach: value =>
+      count = numeric.plus(count, lambda(value))
+    
+    count
+
   inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
