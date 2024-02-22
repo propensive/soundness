@@ -24,6 +24,7 @@ import gossamer.*
 import fulminate.*
 import vacuous.*
 import turbulence.*
+import bifurcate.*
 import quantitative.*
 
 erased trait FontSize extends Dimension
@@ -89,7 +90,7 @@ case class Ttf(data: Bytes):
 
   def glyph(char: Char): Glyph[ttf.type] raises FontError = cmap.glyphEncodings(0).format.glyph(char)
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
-  def advanceWidth(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm
+  def advanceWidth(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
   lazy val tables: Map[Text, TableOffset] =
@@ -103,7 +104,7 @@ case class Ttf(data: Bytes):
     .to(Map)
 
   def head: HeadTable raises FontError =
-    tables.get(t"head").map { ref => HeadTable(ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(t"head").map { ref => data.deserialize[HeadTable](ref.offset) }.getOrElse(abort(FontError()))
 
   def cmap: CmapTable raises FontError =
     tables.get(t"cmap").map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
@@ -117,15 +118,8 @@ case class Ttf(data: Bytes):
       HmtxTable(ref.offset, count)
     .getOrElse(abort(FontError()))
 
-  case class HeadTable(offset: Int):
-    lazy val majorVersion: Int = B16(data, offset).u16.int
-    lazy val minorVersion: Int = B16(data, offset + 2).u16.int
-    lazy val fontRevisionHigh: Int = B16(data, offset + 4).u16.int
-    lazy val fontRevisionLow: Int = B16(data, offset + 6).u16.int
-    lazy val checksumAdjustment: B32 = B32(data, offset + 8)
-    lazy val magicNumber: B32 = B32(data, offset + 12)
-    lazy val flags: B16 = B16(data, offset + 16)
-    lazy val unitsPerEm: Int = B16(data, offset + 18).u16.int
+  case class HeadTable(majorVersion: U16, minorVersion: U16, fontRevisionHigh: U16, fontRevisionLow: U16,
+      checksumAdjustment: B32, magicNumber: B32, flags: B16, unitsPerEm: U16)
 
   case class HheaTable(offset: Int):
     lazy val majorVersion: Int = B16(data, offset).u16.int
