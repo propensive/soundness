@@ -1,0 +1,3 @@
+- reads TrueType and OpenType font files
+- can read from any [Turbulence](https://github.com/propensive/turbulence/) source
+- access font metrics and calculate widths of individual glyphs or strings of text
