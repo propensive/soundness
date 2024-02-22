@@ -24,6 +24,16 @@ import gossamer.*
 import fulminate.*
 import vacuous.*
 import turbulence.*
+import quantitative.*
+
+erased trait FontSize extends Dimension
+erased given fontSize: PhysicalQuantity[Units[1, FontSize], "font size"] = ###
+
+object Ems:
+  given UnitName[Ems[1]] = () => t"ems"
+
+erased trait Ems[Power <: Nat] extends Units[Power, FontSize]
+val Em: Quantity[Ems[1]] = Quantity(1.0)
 
 object Ttf:
   def apply[SourceType](source: SourceType)(using Readable[SourceType, Bytes]): Ttf =
@@ -62,7 +72,7 @@ case class Ttf(data: Bytes):
 
   def glyph(char: Char): Glyph[ttf.type] raises FontError = cmap.glyphEncodings(0).format.glyph(char)
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
-  def advanceWidth(text: Text): Int raises FontError = text.chars.sumBy(advanceWidth)
+  def advanceWidth(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
   lazy val tables: Map[Text, TableOffset] =
@@ -75,6 +85,9 @@ case class Ttf(data: Bytes):
       tableTag -> TableOffset(tableTag, checksum, offset, length)
     .to(Map)
 
+  def head: HeadTable raises FontError =
+    tables.get(t"head").map { ref => HeadTable(ref.offset) }.getOrElse(abort(FontError()))
+
   def cmap: CmapTable raises FontError =
     tables.get(t"cmap").map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
   
@@ -86,6 +99,16 @@ case class Ttf(data: Bytes):
       val count = hhea.numberOfHMetrics
       HmtxTable(ref.offset, count)
     .getOrElse(abort(FontError()))
+
+  case class HeadTable(offset: Int):
+    lazy val majorVersion: Int = B16(data, offset).u16.int
+    lazy val minorVersion: Int = B16(data, offset + 2).u16.int
+    lazy val fontRevisionHigh: Int = B16(data, offset + 4).u16.int
+    lazy val fontRevisionLow: Int = B16(data, offset + 6).u16.int
+    lazy val checksumAdjustment: B32 = B32(data, offset + 8)
+    lazy val magicNumber: B32 = B32(data, offset + 12)
+    lazy val flags: B16 = B16(data, offset + 16)
+    lazy val unitsPerEm: Int = B16(data, offset + 18).u16.int
 
   case class HheaTable(offset: Int):
     lazy val majorVersion: Int = B16(data, offset).u16.int
