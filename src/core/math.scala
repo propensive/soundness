@@ -730,6 +730,9 @@ object Hypotenuse:
       
       new String(chars).tt
 
+    def i8: I8 = bitmap
+    def u8: U8 = bitmap
+
   extension (bitmap: B16)
     @targetName("rotateLeftB16")
     inline infix def <<< (count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
@@ -797,6 +800,9 @@ object Hypotenuse:
       new String(chars).tt
 
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+
+    def i16: I16 = bitmap
+    def u16: U16 = bitmap
   
   extension (bitmap: B32)
     @targetName("rotateLeftB32")
@@ -867,6 +873,9 @@ object Hypotenuse:
       new String(chars).tt
     
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+
+    def i32: I32 = bitmap
+    def u32: U32 = bitmap
 
   extension (bitmap: B64)
     @targetName("rotateLeftB64")
@@ -941,6 +950,9 @@ object Hypotenuse:
       new String(chars).tt
 
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+    
+    def i64: I64 = bitmap
+    def u64: U64 = bitmap
   
   extension (f64: F64)
     @targetName("doubleF64")
