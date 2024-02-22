@@ -236,16 +236,6 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
   def unapply(req: Request): Option[ParamType] = opt(using req)
   def apply()(using Request): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
 
-// trait HttpService:
-//   def stop(): Unit
-//   def await(): Unit
-
-// @targetName("Ampersand")
-// val `&` = Split
-
-// object Split:
-//   def unapply(req: Request): (Request, Request) = (req, req)
-
 case class HttpService(port: Int, async: Async[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
@@ -344,11 +334,12 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
-      val Seq(username: Text, password: Text) =
-        val text: Text = credentials.show.decode[Base64].utf8
-        text.cut(t":").to(Seq)
-      
-      if validate(username, password) then response else Response(Bytes(), HttpStatus.Forbidden)
+      safely(credentials.tt.decode[Base64].utf8.cut(t":").to(List)) match
+        case List(username: Text, password: Text) if validate(username, password) =>
+          response
+        
+        case _ =>
+          Response(Bytes(), HttpStatus.Forbidden)
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""

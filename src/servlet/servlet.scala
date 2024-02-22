@@ -42,10 +42,8 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
         case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
                                        unsafely(body.map(_.mutable(using Unsafe)).each(out.write(_)))
 
-  protected def streamBody
-      (request: HttpServletRequest)(using Raises[StreamError])
-      : HttpBody.Chunked =
-    val in = request.getInputStream
+  protected def streamBody(request: HttpServletRequest): HttpBody.Chunked raises StreamError =
+    val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
     HttpBody.Chunked(Readable.inputStream.read(request.getInputStream.nn))
