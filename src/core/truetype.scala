@@ -62,6 +62,7 @@ case class Ttf(data: Bytes):
 
   def glyph(char: Char): Glyph[ttf.type] raises FontError = cmap.glyphEncodings(0).format.glyph(char)
   def advanceWidth(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).advanceWidth
+  def advanceWidth(text: Text): Int raises FontError = text.chars.sumBy(advanceWidth)
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
   lazy val tables: Map[Text, TableOffset] =
@@ -132,11 +133,13 @@ case class Ttf(data: Bytes):
           val endCodesStart = offset + 14
           val startCodesStart = endCodesStart + segCount*2 + 2
           val idDeltaStart = startCodesStart + segCount*2
+          val idRangeOffsetsStart = startCodesStart + segCount*2
 
           val segments = (0 until segCount).map: n =>
             Segment(B16(data, startCodesStart + n*2).u16.int.toChar,
                 B16(data, endCodesStart + n*2).u16.int.toChar,
-                B16(data, idDeltaStart).i16.int)
+                B16(data, idDeltaStart).i16.int,
+                B16(data, idRangeOffsetsStart).u16.int)
           
           Format4(length, language, segCount, searchRange, entrySelector, rangeShift, IArray.from(segments))
 
@@ -146,7 +149,7 @@ case class Ttf(data: Bytes):
           val nGroups = B32(data, offset + 10).i32.int
           Format12(length, language, nGroups)
 
-      case class Segment(start: Char, end: Char, delta: Int)
+      case class Segment(start: Char, end: Char, delta: Int, rangeOffset: Int)
       
       sealed trait Format:
         def glyph(char: Char): Glyph[ttf.type]
@@ -160,7 +163,8 @@ case class Ttf(data: Bytes):
       extends Format:
         def glyph(char: Char): Glyph[ttf.type] =
           val segment = segments(segments.indexWhere(_.start > char) - 1)
-          Glyph(ttf, char.toInt - segment.delta)
+          // FIXME: Understand why we need to add a `+1` here to fix an off-by-one error
+          Glyph(ttf, segment.rangeOffset/2 + (char - segment.start) + segment.rangeOffset + segment.delta + 1)
       
       case class Format12(length: Int, language: Int, nGroups: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] = ???
