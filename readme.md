@@ -111,7 +111,8 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+The Phoenicians were responsible for creating the first recorded alphabet.
+Their land, mostly modern-day Lebanon, was _Phoenicia_.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -126,7 +127,7 @@ language.
 
 ## Logo
 
-
+The logo shows a close-up view of a character in a _serif_ font.
 
 ## License
 
