@@ -78,7 +78,7 @@ enum TtfTag:
 object TtfTag:
   def unapply(text: Text): Option[TtfTag] = text match
     case t"cvt " => Some(Cvt)
-    case other   => try Some(TtfTag.valueOf(other.s)) catch case error: Exception => None
+    case other   => try Some(TtfTag.valueOf(other.lower.capitalize.s)) catch case error: Exception => None
 
 enum OtfTag:
   case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf, Ltsh,
@@ -93,7 +93,7 @@ object OtfTag:
   def unapply(text: Text): Option[OtfTag] = text match
     case t"OS/2" => Some(Os2)
     case t"CFF " => Some(Cff)
-    case other   => try Some(OtfTag.valueOf(other.s)) catch case error: Exception => None
+    case other   => try Some(OtfTag.valueOf(other.lower.capitalize.s)) catch case error: Exception => None
 
 case class Ttf(data: Bytes):
   ttf =>
