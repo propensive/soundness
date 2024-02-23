@@ -61,7 +61,7 @@ object Phoenicia:
 
 export Phoenicia.Glyph
 
-enum TtfTable:
+enum TtfTag:
   case Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp, Meta,
       Name, Post, Prep, Sbix, Vhea, Vmtx
 
@@ -69,7 +69,12 @@ enum TtfTable:
     case Cvt   => t"cvt "
     case table => table.toString.tt.lower
 
-enum OtfTable:
+object TtfTag:
+  def unapply(text: Text): Option[TtfTag] = text match
+    case t"cvt " => Some(Cvt)
+    case other   => try Some(TtfTag.valueOf(other.s)) catch case error: Exception => None
+
+enum OtfTag:
   case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf, Ltsh,
       Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
 
@@ -78,10 +83,16 @@ enum OtfTable:
     case Cff   => t"CFF "
     case table => table.toString.tt.upper
 
+object OtfTag:
+  def unapply(text: Text): Option[OtfTag] = text match
+    case t"OS/2" => Some(Os2)
+    case t"CFF " => Some(Cff)
+    case other   => try Some(OtfTag.valueOf(other.s)) catch case error: Exception => None
+
 case class Ttf(data: Bytes):
   ttf =>
 
-  case class TableOffset(id: Text, checksum: B32, offset: Int, length: Int)
+  case class TableOffset(id: OtfTag | TtfTag, checksum: B32, offset: Int, length: Int)
 
   lazy val numTables = B16(data, 4).u16.int
   lazy val searchRange = B16(data, 6).u16.int
@@ -93,27 +104,31 @@ case class Ttf(data: Bytes):
   def advanceWidth(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
-  lazy val tables: Map[Text, TableOffset] =
-    (0 until numTables).map: n =>
+  lazy val tables: Map[OtfTag | TtfTag, TableOffset] =
+    (0 until numTables).flatMap: n =>
       val start = 12 + n*16
       val tableTag = String(data.mutable(using Unsafe), start, 4, "ASCII").tt
       val checksum = B32(data, start + 4)
       val offset = B32(data, start + 8).i32.int
       val length = B32(data, start + 12).i32.int
-      tableTag -> TableOffset(tableTag, checksum, offset, length)
+      
+      tableTag match
+        case OtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+        case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
+        case _           => None
     .to(Map)
 
   def head: HeadTable raises FontError =
-    tables.get(t"head").map { ref => data.deserialize[HeadTable](ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Head).map { ref => data.deserialize[HeadTable](ref.offset) }.getOrElse(abort(FontError()))
 
   def cmap: CmapTable raises FontError =
-    tables.get(t"cmap").map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Cmap).map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
   
   def hhea: HheaTable raises FontError =
-    tables.get(t"hhea").map { ref => HheaTable(ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Hhea).map { ref => HheaTable(ref.offset) }.getOrElse(abort(FontError()))
   
   def hmtx: HmtxTable raises FontError =
-    tables.get(t"hmtx").map: ref =>
+    tables.get(TtfTag.Hmtx).map: ref =>
       val count = hhea.numberOfHMetrics
       HmtxTable(ref.offset, count)
     .getOrElse(abort(FontError()))
@@ -138,7 +153,6 @@ case class Ttf(data: Bytes):
     lazy val numberOfHMetrics: Int = B16(data, offset + 34).u16.int
 
   case class HmtxTable(offset: Int, count: Int):
-
     lazy val metrics: IArray[HMetrics] =
       IArray.from:
         (0 until count).map: index =>
