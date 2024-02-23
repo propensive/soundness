@@ -54,6 +54,37 @@ extension (bytes: Bytes)
 
     out.toByteArray.nn.immutable(using Unsafe)
 
+erased trait CompressionAlgorithm
+erased trait Gzip extends CompressionAlgorithm
+erased trait Zlib extends CompressionAlgorithm
+
+trait Compression[CompressionType <: CompressionAlgorithm]:
+  def compress(lazyList: LazyList[Bytes]): LazyList[Bytes]
+  def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes]
+
+object Compression:
+  given gzip: Compression[Gzip] = new Compression[Gzip]:
+    def compress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
+      val out = ji.ByteArrayOutputStream()
+      val out2 = juz.GZIPOutputStream(out)
+      
+      def recur(stream: LazyList[Bytes]): LazyList[Bytes] = stream match
+        case head #:: tail =>
+          out2.write(head.mutable(using Unsafe))
+          if out.size == 0 then recur(tail) else
+            val data = out.toByteArray().nn.immutable(using Unsafe)
+            out.reset()
+            data #:: recur(tail)
+
+        case _ =>
+          out2.close()
+          if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
+      
+      recur(lazyList)
+
+    def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
+      juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes]
+
 extension (lazyList: LazyList[Bytes])
   def drop(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
@@ -65,19 +96,17 @@ extension (lazyList: LazyList[Bytes])
       
     recur(lazyList, byteSize)
 
-  def gzip(using Monitor): LazyList[Bytes] =
-    val out = LazyListOutputStream()
-    
-    Async:
-      val out2 = new juz.GZIPOutputStream(out)
-      lazyList.map(_.mutable(using Unsafe)).each(out2.write(_))
-      out2.close()
-
-    out.stream
-
-  def gunzip(using Monitor): LazyList[Bytes] =
-    val gis: juz.GZIPInputStream = juz.GZIPInputStream(LazyListInputStream(lazyList))
-    gis.stream[Bytes]
+  def compress
+      [CompressionType <: CompressionAlgorithm]
+      (using compression: Compression[CompressionType])
+      : LazyList[Bytes] =
+    compression.compress(lazyList)
+  
+  def decompress
+      [CompressionType <: CompressionAlgorithm]
+      (using compression: Compression[CompressionType])
+      : LazyList[Bytes] =
+    compression.decompress(lazyList)
 
   def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = stochastic:
     given Distribution = Gamma.approximate(mean, variance)
