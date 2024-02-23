@@ -48,7 +48,13 @@ object Ttf:
   enum EncodingId:
     case Unicode1, Unicode1_1, IsoIec10646, Unicode2Bmp, Unicode2Full, UnicodeVariation, UnicodeFull
 
+object FontError:
+  enum Reason:
+    case MissingTable(tag: OtfTag | TtfTag)
+
 case class FontError() extends Error(msg"there was a problem with the font")
+
+
 
 object Phoenicia:
   opaque type Glyph[TtfType <: Ttf & Singleton] = Int
@@ -125,32 +131,20 @@ case class Ttf(data: Bytes):
     tables.get(TtfTag.Cmap).map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
   
   def hhea: HheaTable raises FontError =
-    tables.get(TtfTag.Hhea).map { ref => HheaTable(ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Hhea).map { ref => data.deserialize[HheaTable](ref.offset) }.getOrElse(abort(FontError()))
   
   def hmtx: HmtxTable raises FontError =
     tables.get(TtfTag.Hmtx).map: ref =>
-      val count = hhea.numberOfHMetrics
-      HmtxTable(ref.offset, count)
+      HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
     .getOrElse(abort(FontError()))
 
   case class HeadTable(majorVersion: U16, minorVersion: U16, fontRevisionHigh: U16, fontRevisionLow: U16,
       checksumAdjustment: B32, magicNumber: B32, flags: B16, unitsPerEm: U16)
 
-  case class HheaTable(offset: Int):
-    lazy val majorVersion: Int = B16(data, offset).u16.int
-    lazy val minorVersion: Int = B16(data, offset + 2).u16.int
-    lazy val ascender: Int = B16(data, offset + 4).i16.int
-    lazy val descender: Int = B16(data, offset + 6).i16.int
-    lazy val lineGap: Int = B16(data, offset + 8).i16.int
-    lazy val advanceWidthMax: Int = B16(data, offset + 10).u16.int
-    lazy val minLeftSideBearing: Int = B16(data, offset + 12).i16.int
-    lazy val minRightSideBearing: Int = B16(data, offset + 14).i16.int
-    lazy val xMaxExtent: Int = B16(data, offset + 16).i16.int
-    lazy val caretSlopeRise: Int = B16(data, offset + 18).i16.int
-    lazy val caretSlopeRun: Int = B16(data, offset + 20).i16.int
-    lazy val caretOffset: Int = B16(data, offset + 22).i16.int
-    lazy val metricDataFormat: Int = B16(data, offset + 32).i16.int
-    lazy val numberOfHMetrics: Int = B16(data, offset + 34).u16.int
+  case class HheaTable(majorVersion: U16, minorVersion: U16, ascender: I16, descender: I16, lineGap: I16,
+      advanceWidthMax: U16, minLeftSideBearing: I16, minRightSideBearing: I16, xMaxExtent: I16,
+      caretSlopeRise: I16, caretSlopeRun: I16, caretOffset: I16, reserved0: U16, reserved1: U16,
+      reserved2: U16, reserved4: U16, metricDataFormat: I16, numberOfHMetrics: U16)
 
   case class HmtxTable(offset: Int, count: Int):
     lazy val metrics: IArray[HMetrics] =
