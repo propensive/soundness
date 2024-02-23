@@ -50,11 +50,15 @@ object Ttf:
 
 object FontError:
   enum Reason:
-    case MissingTable(tag: OtfTag | TtfTag)
+    case MissingTable(tag: TableTag)
+    case UnknownFormat
+  
+  given communicable: Communicable[Reason] =
+    case Reason.MissingTable(tag) => msg"the table ${tag.text} was not found"
+    case Reason.UnknownFormat     => msg"the table contains data in an unknown format"
 
-case class FontError() extends Error(msg"there was a problem with the font")
-
-
+case class FontError(reason: FontError.Reason)
+extends Error(msg"the font could not be read because $reason")
 
 object Phoenicia:
   opaque type Glyph[TtfType <: Ttf & Singleton] = Int
@@ -67,7 +71,10 @@ object Phoenicia:
 
 export Phoenicia.Glyph
 
-enum TtfTag:
+sealed trait TableTag:
+  def text: Text
+
+enum TtfTag extends TableTag:
   case Avar, Cmap, Cvar, Cvt, Fpgm, Fvar, Gasp, Glyf, Gvar, Hdmx, Head, Hhea, Hmtx, Kern, Loca, Maxp, Meta,
       Name, Post, Prep, Sbix, Vhea, Vmtx
 
@@ -80,7 +87,7 @@ object TtfTag:
     case t"cvt " => Some(Cvt)
     case other   => try Some(TtfTag.valueOf(other.lower.capitalize.s)) catch case error: Exception => None
 
-enum OtfTag:
+enum OtfTag extends TableTag:
   case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf, Ltsh,
       Math, Merg, Mvar, Os2, Pclt, Stat, Svg, Vdmx, Vorg, Vvar
 
@@ -98,7 +105,7 @@ object OtfTag:
 case class Ttf(data: Bytes):
   ttf =>
 
-  case class TableOffset(id: OtfTag | TtfTag, checksum: B32, offset: Int, length: Int)
+  case class TableOffset(id: TableTag, checksum: B32, offset: Int, length: Int)
 
   lazy val numTables = B16(data, 4).u16.int
   lazy val searchRange = B16(data, 6).u16.int
@@ -110,7 +117,7 @@ case class Ttf(data: Bytes):
   def width(text: Text): Quantity[Ems[1]] raises FontError = text.chars.sumBy(advanceWidth)*Em/head.unitsPerEm.int
   def leftSideBearing(char: Char): Int raises FontError = hmtx.metrics(glyph(char).id).leftSideBearing
 
-  lazy val tables: Map[OtfTag | TtfTag, TableOffset] =
+  lazy val tables: Map[TableTag, TableOffset] =
     (0 until numTables).flatMap: n =>
       val start = 12 + n*16
       val tableTag = String(data.mutable(using Unsafe), start, 4, "ASCII").tt
@@ -125,18 +132,24 @@ case class Ttf(data: Bytes):
     .to(Map)
 
   def head: HeadTable raises FontError =
-    tables.get(TtfTag.Head).map { ref => data.deserialize[HeadTable](ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Head).map: ref =>
+      data.deserialize[HeadTable](ref.offset)
+    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
 
   def cmap: CmapTable raises FontError =
-    tables.get(TtfTag.Cmap).map { ref => CmapTable(ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Cmap).map: ref =>
+      CmapTable(ref.offset)
+    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Cmap))))
   
   def hhea: HheaTable raises FontError =
-    tables.get(TtfTag.Hhea).map { ref => data.deserialize[HheaTable](ref.offset) }.getOrElse(abort(FontError()))
+    tables.get(TtfTag.Hhea).map: ref =>
+      data.deserialize[HheaTable](ref.offset)
+    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
   
   def hmtx: HmtxTable raises FontError =
     tables.get(TtfTag.Hmtx).map: ref =>
       HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    .getOrElse(abort(FontError()))
+    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
 
   case class HeadTable(majorVersion: U16, minorVersion: U16, fontRevisionHigh: U16, fontRevisionLow: U16,
       checksumAdjustment: B32, magicNumber: B32, flags: B16, unitsPerEm: U16)
@@ -196,7 +209,7 @@ case class Ttf(data: Bytes):
               Format12(length, language, nGroups)
 
             case other =>
-              abort(FontError())
+              abort(FontError(FontError.Reason.UnknownFormat))
 
           format.also:
             formatMemo = format
