@@ -52,10 +52,12 @@ object FontError:
   enum Reason:
     case MissingTable(tag: TableTag)
     case UnknownFormat
+    case MagicNumber
   
   given communicable: Communicable[Reason] =
     case Reason.MissingTable(tag) => msg"the table ${tag.text} was not found"
     case Reason.UnknownFormat     => msg"the table contains data in an unknown format"
+    case Reason.MagicNumber       => msg"the font did not contain expected check data"
 
 case class FontError(reason: FontError.Reason)
 extends Error(msg"the font could not be read because $reason")
@@ -133,7 +135,9 @@ case class Ttf(data: Bytes):
 
   def head: HeadTable raises FontError =
     tables.get(TtfTag.Head).map: ref =>
-      data.deserialize[HeadTable](ref.offset)
+      data.deserialize[HeadTable](ref.offset).tap: table =>
+        if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))(())
+        
     .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
 
   def cmap: CmapTable raises FontError =
