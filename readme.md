@@ -111,7 +111,10 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+In physics, a _bifurcation_ is a critical point where a slight variation causes
+a switch between two distinct states. This alludes to the interpretation of an
+electrical current as a binary value, and it is sequences of binary values that
+_Bifurcate_ interprets.
 
 In general, Scala One project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
