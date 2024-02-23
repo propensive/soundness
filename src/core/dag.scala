@@ -24,14 +24,24 @@ import scala.collection.mutable.HashMap
 import language.experimental.captureChecking
 
 object Dag:
-  @targetName("build")
+  @targetName("apply2")
   def apply[NodeType](keys: Set[NodeType])(dependencies: NodeType => Set[NodeType]): Dag[NodeType] =
-    Dag(keys.map { k => (k, dependencies(k)) }.to(Map))
+    Dag(keys.map { key => (key, dependencies(key)) }.to(Map))
 
+  def create[NodeType](start: NodeType)(dependencies: NodeType => Set[NodeType]): Dag[NodeType] =
+    @tailrec
+    def recur(map: Map[NodeType, Set[NodeType]], todo: Set[NodeType], done: Set[NodeType]): Dag[NodeType] =
+      if todo.isEmpty then new Dag(map) else
+        val key = todo.head
+        dependencies(key).pipe: children =>
+          recur(map.updated(key, children), (todo ++ children.filter(!done(_))) - key, done + key)
+    
+    recur(Map(), Set(start), Set())
+  
   @targetName("fromEdges")
   def apply[NodeType](edges: (NodeType, NodeType)*): Dag[NodeType] = Dag:
     edges.foldLeft(Map[NodeType, Set[NodeType]]()):
-      case (acc, (k, v)) => acc.updated(k, acc.get(k).fold(Set(v))(_ + v))
+      case (acc, (key, value)) => acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
   
   @targetName("fromNodes")
   def apply[NodeType](nodes: (NodeType, Set[NodeType])*): Dag[NodeType] = Dag(Map(nodes*))
