@@ -76,5 +76,16 @@ trait Deserializer[+DataType]:
 extension (bytes: Bytes)
   def deserialize[DataType](offset: Int = 0)(using deserializer: Deserializer[DataType]): DataType =
     deserializer.deserialize(bytes, offset)
+  
+  def deserializeIArray
+      [DataType: ClassTag]
+      (size: Int, offset: Int = 0)
+      (using deserializer: Deserializer[DataType])
+      : IArray[DataType] =
+    val width = deserializer.width
+    
+    IArray.create[DataType](size): array =>
+      array.indices.each: index =>
+        array(index) = deserializer.deserialize(bytes, offset + index*width)
 
 def byteWidth[DataType](using deserializer: Deserializer[DataType]): Int = deserializer.width
