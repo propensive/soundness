@@ -83,7 +83,7 @@ object reflection:
       Column(e"Param")(_.param.or(t"")),
       Column(e"Source")(_.source),
       Column(e"Code")(_.expr)
-    ).tabulate(seq, 400, DelimitRows.None).join(e"\n").render
+    ).tabulate(seq)(400, DelimitRows.None).join(e"\n").render
 
 
 case class Expe(text: Text, param: Optional[Text], expr: Text, source: Text)
