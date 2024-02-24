@@ -332,7 +332,7 @@ class TestReport(using Environment):
         Column(e"Line"): row =>
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
         Column(e"Symbol")(_(0).juncture.symbolName)
-      ).tabulate(render(junctures2), columns)(using tableStyles.horizontal).each(Out.println)
+      ).tabulate(render(junctures2))(columns)(using tableStyles.horizontal).each(Out.println)
       
       Out.println(e"")
     
@@ -355,7 +355,7 @@ class TestReport(using Environment):
               colors.Brown -> notCovered)
           
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
-      ).tabulate(data, columns).each(Out.println(_))
+      ).tabulate(data)(columns).each(Out.println(_))
       
       Out.println(e"")
     
@@ -367,7 +367,7 @@ class TestReport(using Environment):
       Out.println(e"${escapes.Reset}")
       Out.println(e"$Bold($Underline(Test results))")
 
-      table.tabulate(summaryLines, columns, delimitRows = DelimitRows.SpaceIfMultiline).each(Out.println(_))
+      table.tabulate(summaryLines)(columns, delimitRows = DelimitRows.SpaceIfMultiline).each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
       Out.println(e" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
       Out.println(t"─"*72)
@@ -449,7 +449,7 @@ class TestReport(using Environment):
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput), columns).each(Out.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))(columns).each(Out.println(_))
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
@@ -490,7 +490,7 @@ class TestReport(using Environment):
             Table[(Text, Text), Display](
               Column(e"Expression", align = Alignment.Right)(_(0)),
               Column(e"Value")(_(1)),
-            ).tabulate(map.to(List), 140).each(Out.println(_))
+            ).tabulate(map.to(List))(140).each(Out.println(_))
           
           case DebugInfo.Message(text) =>
             Out.println(text)
