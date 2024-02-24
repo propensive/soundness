@@ -72,7 +72,7 @@ object Semblance:
         Column(e"Difference")(_.difference.or(e""))
       )
 
-      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine), maxWidth = 200).join(e"\n")
+      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine))(maxWidth = 200).join(e"\n")
     
     case Different(left, right, difference) =>
       val whitespace = if right.contains('\n') then e"\n" else e" "
