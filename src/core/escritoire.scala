@@ -112,37 +112,28 @@ object Table:
   @targetName("make")
   def apply
       [RowType]
-      (using ClassTag[RowType])
-      [TextType]
-      (initCols: Column[RowType, TextType]*)
-      (using textTypeClassTag: ClassTag[TextType], textual: Textual[TextType]) =
-    new Table[RowType, TextType](initCols*)
+      (using classTag: ClassTag[RowType])
+      [TextType: ClassTag: Textual]
+      (initCols: Column[RowType, TextType]*): Table[RowType, TextType] =
+    new Table(initCols*)
 
-case class Table
-    [RowType: ClassTag, TextType]
-    (initCols: Column[RowType, TextType]*)
-    (using classTag: ClassTag[TextType], textual: Textual[TextType]):
+abstract class Tabulation[TextType: ClassTag]():
+  type Row
+  def cols: IArray[Column[Row, TextType]]
+  def titles: IArray[TextType]
+  def cells: IArray[IArray[TextType]]
+  def dataLength: Int
 
-  def tabulate
-      (data: Seq[RowType], maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)
-      (using style: TableStyle, calc: TextMetrics)
-      : LazyList[TextType] =
-    val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
-    val titles: IArray[TextType] = IArray.from(cols.map(_.title))
-    
-    val cells: IArray[IArray[TextType]] = IArray.from:
-      titles +: data.map { row => IArray.from(cols.map(_.get(row))) }
-    
+  def apply(maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)(using style: TableStyle, calc: TextMetrics, textual: Textual[TextType]) =
     val freeWidth: Int =
       maxWidth - cols.filter(!_.width.absent).map(_.width.or(0)).sum - style.cost(cols.length)
     
     val cellRefs: Array[Array[ShortPair]] =
-      Array.tabulate(data.length + 1, cols.length): (row, col) =>
+      Array.tabulate(dataLength + 1, cols.length): (row, col) =>
         Column.constrain(cells(row)(col), cols(col).breaks, freeWidth)
     
     val widths: Array[Int] = Array.from:
-      cols.indices.map: col =>
-        cellRefs.maxBy(_(col).right).apply(col).right
+      cols.indices.map { col => cellRefs.maxBy(_(col).right).apply(col).right }
 
     @tailrec
     def recur(): Unit = if widths.sum > freeWidth then
@@ -243,6 +234,28 @@ case class Table
     val next = rule(style.topLeft, style.topSep, style.topRight, style.topBar)
     next #:: rows(0, Array.fill[Int](cols.length)(0))
 
+
+case class Table
+    [RowType: ClassTag, TextType: ClassTag]
+    (initCols: Column[RowType, TextType]*)
+    (using textual: Textual[TextType]):
+  table =>
+  
+  val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
+  val titles: IArray[TextType] = IArray.from(cols.map(_.title))
+
+  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } =
+    
+    new Tabulation[TextType]:
+      type Row = RowType
+      val cols: IArray[Column[Row, TextType]] = table.cols
+      val titles: IArray[TextType] = table.titles
+      val dataLength: Int = data.length
+      
+      val cells: IArray[IArray[TextType]] = 
+        IArray.from(titles +: data.map { row => IArray.from(cols.map(_.get(row))) })
+      
+    
 package tableStyles:
   given default: TableStyle =
     TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
