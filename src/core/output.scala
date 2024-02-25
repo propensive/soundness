@@ -210,6 +210,7 @@ object Display:
 
   given textual: Textual[Display] with
     type ShowType[-ValueType] = Displayable[ValueType]
+    def classTag: ClassTag[Display] = summon[ClassTag[Display]]
     def string(text: Display): String = text.plain.s
     def length(text: Display): Int = text.plain.s.length
     def make(string: String): Display = Display(Text(string))
@@ -250,7 +251,7 @@ object Display:
 
 
 
-    recur(text, limit, Nil)
+    IArray.from(recur(text, limit, Nil))
 
   given Ordering[Display] = Ordering.by(_.plain)
 
