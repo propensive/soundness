@@ -213,7 +213,7 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
     
     recur(0, 0)
   
-  def displayWidth(using calc: TextMetrics) = calc.width(Text(textual.string(text)))
+  def displayWidth(using metrics: TextMetrics) = metrics.width(Text(textual.string(text)))
   
   def pad
       (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
