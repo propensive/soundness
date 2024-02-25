@@ -21,12 +21,8 @@ import vacuous.*
 import gossamer.*
 import hieroglyph.*
 import anticipation.*
-import spectacular.*
-import contingency.*
 
 import language.experimental.pureFunctions
-
-import Table.ShortPair
 
 enum Breaks:
   case Never, Space, Zwsp, Character
@@ -52,208 +48,83 @@ object Column:
   def apply
       [RowType, CellType, TextType]
       (title: TextType, width: Optional[Int] = Unset, align: Optional[Alignment] = Unset,
-          breaks: Breaks = Breaks.Space, hide: Boolean = false)(get: RowType -> CellType)
+          breaks: Breaks = Breaks.Space, hide: Boolean = false, confinement: Confinement)
+      (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
       : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
-    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide)
-
-  def constrain
-      [TextType: Textual]
-      (text: TextType, breaks: Breaks, maxWidth: Int, init: Int = 0)
-      (using calc: TextMetrics)
-      : Table.ShortPair =
-
-    @tailrec
-    def recur
-        (pos: Int, space: Int = 0, count: Int = 0, max: Int = 0, lines: Int = 1)
-        : Table.ShortPair =
-
-      if pos == text.length then Table.ShortPair(lines, max.max(count))
-      else unsafely(text(pos)) match
-        case ' ' if breaks == Breaks.Space || breaks == Breaks.Zwsp =>
-          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-          else recur(pos + 1, count, count + 1, max, lines)
-        case '\u200b' if breaks == Breaks.Zwsp =>
-          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-          else recur(pos + 1, count, count, max, lines)
-        case '\n' =>
-          recur(pos + 1, 0, 0, max.max(count), lines + 1)
-        case ch if breaks == Breaks.Character =>
-          if count >= maxWidth then recur(pos + 1, 0, 0, max.max(count), lines + 1)
-          else recur(pos + 1, count, count + calc.width(ch), max, lines)
-        case ch =>
-          if count >= maxWidth then recur(pos + 1, 0, count - space, max.max(space), lines + 1)
-          else recur(pos + 1, space, count + calc.width(ch), max, lines)
- 
-    recur(init)
+    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, confinement)
 
 case class Column
     [RowType, TextType: Textual]
     (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Optional[Int],
-        hide: Boolean)
+        hide: Boolean, confinement: Confinement)
+
+trait Confinement:
+  def width[TextType: Textual](count: Int, get: Int -> IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
+  def confine(text: Text, width: Int): List[Text]
 
 object Table:
-  opaque type ShortPair = Int
-  
-  object ShortPair:
-    def apply(left: Int, right: Int): ShortPair = ((right&65535) << 16) + (left&65535)
-    
-    given Ordering[ShortPair] = Ordering.Int
-    
-    extension (value: ShortPair)
-      def right: Int = value >> 16
-      def left: Int = value&65535
-
-
   @targetName("make")
   def apply
       [RowType]
       (using classTag: ClassTag[RowType])
       [TextType: ClassTag: Textual]
-      (initCols: Column[RowType, TextType]*): Table[RowType, TextType] =
-    new Table(initCols*)
+      (initColumns: Column[RowType, TextType]*): Table[RowType, TextType] =
+    new Table(initColumns*)
 
 abstract class Tabulation[TextType: ClassTag]():
   type Row
-  def cols: IArray[Column[Row, TextType]]
-  def titles: IArray[TextType]
-  def cells: IArray[IArray[TextType]]
+  def columns: IArray[Column[Row, TextType]]
+  def titles: IArray[(IArray[TextType], Int)] // rows of columns of lines
+  def cells: Seq[IArray[IArray[TextType]]] // rows of columns of lines
   def dataLength: Int
 
-  def apply(maxWidth: Int, delimitRows: DelimitRows = DelimitRows.RuleIfMultiline)(using style: TableStyle, calc: TextMetrics, textual: Textual[TextType]) =
-    val freeWidth: Int =
-      maxWidth - cols.filter(!_.width.absent).map(_.width.or(0)).sum - style.cost(cols.length)
+  def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType]): Unit =
     
-    val cellRefs: Array[Array[ShortPair]] =
-      Array.tabulate(dataLength + 1, cols.length): (row, col) =>
-        Column.constrain(cells(row)(col), cols(col).breaks, freeWidth)
+    def calculate(slack: Double): (Int, Int) =
+      val widths = columns.indices.map: index =>
+        columns(index).confinement.width[TextType](dataLength, cells(index)(_), width, slack)
+
+      val shown: Int = widths.count(_.present)
+
+      (widths.count(_.present), widths.sumBy(_.or(0)) + style.cost(shown))
     
-    val widths: Array[Int] = Array.from:
-      cols.indices.map { col => cellRefs.maxBy(_(col).right).apply(col).right }
-
-    @tailrec
-    def recur(): Unit = if widths.sum > freeWidth then
-      val maxLinesByRow: IArray[Int] = cellRefs.map(_.maxBy(_.left).left).immutable(using Unsafe)
-      
-      val totalUnfilledCellsByColumn: IArray[Int] = IArray.tabulate[Int](cols.length): col =>
-        if !cols(col).width.absent then 0 else cellRefs.indices.count: row =>
-          cellRefs(row)(col).left < maxLinesByRow(row)
-      
-      val mostSpaceInAnyColumn = totalUnfilledCellsByColumn.max
-      
-      val focus: Int = cols.indices.maxBy: col =>
-        if totalUnfilledCellsByColumn(col) == mostSpaceInAnyColumn && cols(col).width.absent
-        then widths(col)
-        else -1
-
-      val target = widths(focus) - 1
-      
-      cellRefs.indices.each: row =>
-        if cellRefs(row)(focus).right > target
-        then cellRefs(row)(focus) = Column.constrain(cells(row)(focus), cols(focus).breaks, target)
-      
-      widths(focus) = target
-      recur()
-      
-    recur()
-
-    val Multiline: Boolean = cellRefs.exists(_.exists(_.left > 1))
-
-    val columns = cols.zip(widths).map: (col, width) =>
-      col.copy(width = width)
-    
-    def extent(text: TextType, width: Int, start: Int): ShortPair =
-      
-      @tailrec
-      def search(pos: Int, space: Int = 0, count: Int = 0): ShortPair =
-        if pos >= text.length then ShortPair(pos, pos)
-        else unsafely(text(pos)) match
-          case '\n' => ShortPair(pos, pos + 1)
-          case ' '  => if count >= width then ShortPair(pos, pos + 1)
-                       else search(pos + 1, pos, count + 1)
-          
-          case ch =>
-            if count >= width then
-              if space > 0 then ShortPair(space, space + 1) else ShortPair(pos, pos)
-            else search(pos + 1, space, count + 1)
-      
-      search(start)
-    
-    def rows(row: Int = 0, offsets: Array[Int]): LazyList[TextType] =
-      if row >= cells.length then LazyList()
-      else
-        if columns.indices.exists { col => offsets(col) != cells(row)(col).length }
-        then
-          val text: TextType = columns.indices.map: col =>
-            val content: TextType = cells(row)(col)
-            val ext: ShortPair = extent(content, columns(col).width.or(0), offsets(col))
-            val slice: TextType = content.slice(offsets(col), ext.left)
-            offsets(col) = ext.right
-            val width: Int = columns(col).width.or(0)
-            
-            columns(col).align match
-              case Alignment.Left   => slice.pad(width)(using calc)
-              case Alignment.Center => slice.center(width)(using calc)
-              case Alignment.Right  => slice.pad(width, Rtl)(using calc)
-          
-          .join(textual.make(t"${style.left} ".s), textual.make(t" ${style.sep} ".s),
-              textual.make(t" ${style.right}".s))
+    def bisect(minSlack: Double, minWidth: Int, maxSlack: Double, maxWidth: Int): Double =
+      if maxWidth - minWidth > 1 then
+        val slack2 = (maxSlack + minSlack)/2
+        val width2 = calculate(slack2)(1)
         
-          text #:: rows(row, offsets)
-        else
-          offsets.indices.each(offsets(_) = 0)
-          
-          if row + 1 < cells.length
-          then delimitRows match
-            case _ if row == 0 =>
-              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
-              next #:: rows(row + 1, offsets)
-            case DelimitRows.Rule =>
-              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
-              next #:: rows(row + 1, offsets)
-            case DelimitRows.Space  =>
-              rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
-            case DelimitRows.RuleIfMultiline if Multiline =>
-              val next = rule(style.midLeft, style.midSep, style.midRight, style.midBar)
-              next #:: rows(row + 1, offsets)
-            case DelimitRows.SpaceIfMultiline if Multiline =>
-              rule(style.left, style.sep, style.right, ' ') #:: rows(row + 1, offsets)
-            case _ =>
-              rows(row + 1, offsets)
-          else LazyList(rule(style.bottomLeft, style.bottomSep, style.bottomRight, style.bottomBar))
-
-    def rule(left: Char, separator: Char, right: Char, bar: Char): TextType =
-      columns.map: col =>
-        textual.make(bar.show.s)*(col.width.or(0) + 2)
-      .join(textual.make(left.show.s), textual.make(separator.show.s), textual.make(right.show.s))
-
-    val next = rule(style.topLeft, style.topSep, style.topRight, style.topBar)
-    next #:: rows(0, Array.fill[Int](cols.length)(0))
-
+        if width2 == width then slack2
+        else if width2 > width then bisect(minSlack, minWidth, slack2, width2)
+        else bisect(slack2, width2, maxSlack, maxWidth)
+      
+      else minSlack
+    
+    val minSlack = bisect(0.0, 0, 1.0, calculate(1.0)(1))
 
 case class Table
     [RowType: ClassTag, TextType: ClassTag]
-    (initCols: Column[RowType, TextType]*)
+    (initColumns: Column[RowType, TextType]*)
     (using textual: Textual[TextType]):
   table =>
   
-  val cols: IArray[Column[RowType, TextType]] = IArray.from(initCols.filterNot(_.hide))
-  val titles: IArray[TextType] = IArray.from(cols.map(_.title))
+  val columns: IArray[Column[RowType, TextType]] = IArray.from(initColumns.filterNot(_.hide))
+  val titles: IArray[(IArray[TextType], Int)] = IArray.from(columns.map(_.title.cut(t"\n") -> 1))
 
   def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } =
     
     new Tabulation[TextType]:
       type Row = RowType
-      val cols: IArray[Column[Row, TextType]] = table.cols
-      val titles: IArray[TextType] = table.titles
+      val columns: IArray[Column[Row, TextType]] = table.columns
+      val titles: IArray[(IArray[TextType], Int)] = table.titles
       val dataLength: Int = data.length
       
-      val cells: IArray[IArray[TextType]] = 
-        IArray.from(titles +: data.map { row => IArray.from(cols.map(_.get(row))) })
+      val cells: Seq[IArray[IArray[TextType]]] =
+        data.map { row => IArray.from(columns.map(_.get(row).cut(t"\n"))) }
       
     
 package tableStyles:
@@ -295,4 +166,16 @@ case class TableStyle
         bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
         midRight: Char, topBar: Char, midBar: Char, bottomBar: Char):
 
-  def cost(cols: Int): Int = cols*pad*2 + cols + 1
+  def cost(columns: Int): Int = columns*pad*2 + columns + 1
+
+extension [RowType](data: Seq[RowType])
+  def table[TextType]
+      (using textual: Textual[TextType], tabulable: Tabulable[RowType, TextType])
+      : Tabulation[TextType] =
+    tabulable.tabulate(data)
+
+trait Tabulable[RowType, TextType]:
+  def table(): Table[RowType, TextType]
+  private lazy val tableValue: Table[RowType, TextType] = table()
+  def tabulate(data: Seq[RowType]): Tabulation[TextType] = tableValue.tabulate(data)
+
