@@ -19,13 +19,14 @@ package cellulose
 import probably.*
 import gossamer.*
 import rudiments.*
+import fulminate.*
 import spectacular.*
-import parasite.*
+import parasite.*, threadModels.virtual
 import vacuous.*
 import contingency.*
 import anticipation.*
 import turbulence.*, stdioSources.virtualMachine
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*
 import eucalyptus.*, logging.stdout
 
 import java.io as ji
