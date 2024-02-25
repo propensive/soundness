@@ -30,6 +30,7 @@ package defaultTextTypes:
 
 trait Textual[TextType]:
   type ShowType[-ValueType]
+  def classTag: ClassTag[TextType]
   def length(text: TextType): Int
   def string(text: TextType): String
   def make(string: String): TextType
@@ -55,6 +56,7 @@ trait Textual[TextType]:
 object Textual:
   given text: Textual[Text] with
     type ShowType[-ValueType] = Show[ValueType]
+    val classTag: ClassTag[Text] = summon[ClassTag[Text]]
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)

@@ -38,7 +38,9 @@ enum Bidi:
 export Bidi.Ltr, Bidi.Rtl
 
 extension (value: Bytes)
-  def uString: Text = Text(String(value.to(Array), "UTF-8"))
+  def utf8: Text = Text(String(value.to(Array), "UTF-8"))
+  def utf16: Text = Text(String(value.to(Array), "UTF-16"))
+  def ascii: Text = Text(String(value.to(Array), "ASCII"))
   def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text(using decoder: CharDecoder): Text = decoder.decode(value)
   
@@ -59,7 +61,7 @@ object Pue:
         i += 1
 
 object Cuttable:
-  given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Text] =
+  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Text] =
     (text, delimiter, limit) =>
       val string = textual.string(text)
       val dLength = delimiter.s.length
@@ -70,9 +72,9 @@ object Cuttable:
           case -1    => Nil
           case index => recur(index + dLength, textual.slice(text, start, index) :: results)
     
-      recur(0, Nil).reverse
+      IArray.from(recur(0, Nil).reverse)(using textual.classTag)
 
-  given [TextType: Textual](using textual: Textual[TextType]): Cuttable[TextType, Regex] =
+  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Regex] =
     (text, regex, limit) =>
       val string = textual.string(text)
       val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
@@ -83,28 +85,26 @@ object Cuttable:
         then recur(matcher.end, textual.slice(text, matcher.start, matcher.end) :: results)
         else results
         
-      recur(0, Nil).reverse
+      IArray.from(recur(0, Nil).reverse)(using textual.classTag)
 
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
-    val parts = text.s.split(Pattern.quote(delimiter.s), limit).nn
-    val nnParts = parts.map(_.nn)
-    nnParts.map(Text(_)).to(List)
+    text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).immutable(using Unsafe)
   
   given Cuttable[Text, Regex] = (text, regex, limit) =>
-    text.s.split(regex.pattern.s, limit).nn.map(_.nn).map(Text(_)).to(List)
+    text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).immutable(using Unsafe)
 
   given [TextType](using cuttable: Cuttable[TextType, Text]): Cuttable[TextType, Char] = (text, delimiter, limit) =>
     cuttable.cut(text, delimiter.show, limit)
 
 trait Cuttable[TextType, DelimiterType]:
-  def cut(value: TextType, delimiter: DelimiterType, limit: Int): List[TextType]
+  def cut(value: TextType, delimiter: DelimiterType, limit: Int): IArray[TextType]
 
 extension [TextType](value: TextType)
   def cut
       [DelimiterType]
       (delimiter: DelimiterType, limit: Int = Int.MaxValue)
       (using cuttable: Cuttable[TextType, DelimiterType])
-      : List[TextType] =
+      : IArray[TextType] =
     cuttable.cut(value, delimiter, limit)
 
 extension (words: Iterable[Text])
@@ -234,12 +234,14 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
       case Ltr => text.pad(length, bidi, char).take(length, Ltr)
       case Rtl => text.pad(length, bidi, char).take(length, Rtl)
   
-  def uncamel: List[TextType] = text.where(_.isUpper, 1) match
-    case Unset  => List(text.lower)
-    case i: Int => text.take(i).lower :: text.drop(i).uncamel
+  def uncamel: IArray[TextType] =
+    def recur(text: TextType): List[TextType] = text.where(_.isUpper, 1).lay(List(text.lower)): index =>
+      text.take(index).lower :: recur(text.drop(index))
+
+    IArray.from(recur(text))(using textual.classTag)
   
-  def unkebab: List[TextType] = text.cut(Text("-"))
-  def unsnake: List[TextType] = text.cut(Text("_"))
+  def unkebab: IArray[TextType] = text.cut(Text("-"))
+  def unsnake: IArray[TextType] = text.cut(Text("_"))
   
   inline def starts(prefix: into Text): Boolean =
     val length: Int = prefix.s.length
