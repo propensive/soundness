@@ -86,7 +86,7 @@ case class Column[RowType, TextType: Textual]
 
 trait ColumnSizing:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType]
+  def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType]
 
 package columnSizing:
   object Prose extends ColumnSizing:
@@ -100,7 +100,7 @@ package columnSizing:
       
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt)
     
-    def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] =
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] =
       val textual = summon[Textual[TextType]]
       given ClassTag[TextType] = summon[Textual[TextType]].classTag
       
@@ -122,9 +122,7 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
     
-    def confine[TextType](lines: IArray[TextType], width: Int)
-        (using textual: Textual[TextType])
-        : IArray[TextType] =
+    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
       given ClassTag[TextType] = summon[Textual[TextType]].classTag
       lines.map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
@@ -134,9 +132,7 @@ package columnSizing:
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
     
-    def confine[TextType](lines: IArray[TextType], width: Int)
-        (using textual: Textual[TextType])
-        : IArray[TextType] =
+    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
       given ClassTag[TextType] = summon[Textual[TextType]].classTag
       lines.map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
@@ -145,7 +141,7 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
-    def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
       
 
 object Table:
@@ -166,7 +162,7 @@ abstract class Tabulation[TextType: ClassTag]():
 
   def layout(width: Int)
       (using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
-      : LazyList[IArray[IArray[TextType]]] =
+      : TableLayout[TextType] =
     
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val columnWidths: IArray[(Int, Column[Row, TextType], Int)] = IArray.from:
@@ -195,14 +191,34 @@ abstract class Tabulation[TextType: ClassTag]():
 
     // We may be able to increase the slack in some of the remaining columns
 
-    def lines(data: Iterable[IArray[IArray[TextType]]]): LazyList[IArray[IArray[TextType]]] =
+    def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[IArray[IArray[TextType]]] =
       data.to(LazyList).map: cells =>
         rowLayout.columnWidths.map: (index, column, width) =>
-          column.sizing.confine(cells(index), width)
+          column.sizing.fit(cells(index), width)
     
-    lines(rows)
-    
+    TableLayout(rowLayout.columnWidths.map(_(0)), lines(rows))
 
+case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[IArray[IArray[TextType]]]):
+  def render(using metrics: TextMetrics, textual: Textual[TextType]): LazyList[TextType] =
+    def recur(rows: LazyList[IArray[IArray[TextType]]]): LazyList[TextType] = rows match
+      case row #:: tail =>
+        val height = row.map(_.length).max
+        val lines = (0 until height).map: lineNumber =>
+          widths.indices.map: index =>
+            val cell = row(index)
+            
+            if cell.length < lineNumber then cell(lineNumber).pad(widths(index))
+            else textual.make((t" "*widths(index)).s)
+          
+          .join(textual.make(t" | ".s))
+        
+        lines.to(LazyList) #::: recur(tail)
+      
+      case _ =>
+        LazyList()
+    
+    recur(rows)
+      
 
 case class Table
     [RowType: ClassTag, TextType: ClassTag]
