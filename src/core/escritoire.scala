@@ -24,6 +24,28 @@ import anticipation.*
 
 import language.experimental.pureFunctions
 
+
+enum BoxLine:
+  case None, Thin, Thick, Double
+
+case class BoxDrawingCharacter(vertical: BoxLine, horizontal: BoxLine)
+
+object BoxDrawing:
+  val simpleChars: IArray[Char] = IArray(
+      ' ', '─', '━', '═',
+      '│', '┼', '┿', '╪',
+      '┃', '╂', '╋', '═',
+      '║', '╫', '║', '╬')
+  
+  def simple(vertical: BoxLine, horizontal: BoxLine): Char =
+    simpleChars(vertical.ordinal*4 + horizontal.ordinal)
+  
+  private val box: IArray[Char] =
+    t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝     ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬".chars
+
+  def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
+    box(top.ordinal + right.ordinal*4 + bottom.ordinal*16 + left.ordinal*64)
+
 enum Breaks:
   case Never, Space, Zwsp, Character
 
@@ -48,7 +70,7 @@ object Column:
   def apply
       [RowType, CellType, TextType]
       (title: TextType, width: Optional[Int] = Unset, align: Optional[Alignment] = Unset,
-          breaks: Breaks = Breaks.Space, hide: Boolean = false, confinement: Confinement)
+          breaks: Breaks = Breaks.Space, hide: Boolean = false, sizing: ColumnSizing)
       (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
@@ -56,16 +78,75 @@ object Column:
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
-    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, confinement)
+    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, sizing)
 
-case class Column
-    [RowType, TextType: Textual]
+case class Column[RowType, TextType: Textual]
     (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Optional[Int],
-        hide: Boolean, confinement: Confinement)
+        hide: Boolean, sizing: ColumnSizing)
 
-trait Confinement:
-  def width[TextType: Textual](count: Int, get: Int -> IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  def confine(text: Text, width: Int): List[Text]
+trait ColumnSizing:
+  def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
+  def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType]
+
+package columnSizing:
+  object Prose extends ColumnSizing:
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+      def longestWord(text: TextType, pos: Int, lastStart: Int, max: Int): Int =
+        if pos < text.length then
+          if summon[Textual[TextType]].unsafeChar(text, pos) == ' '
+          then longestWord(text, pos + 1, pos + 1, max.max(pos - lastStart))
+          else longestWord(text, pos + 1, lastStart, max)
+        else max.max(pos - lastStart)
+      
+      lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt)
+    
+    def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] =
+      val textual = summon[Textual[TextType]]
+      given ClassTag[TextType] = summon[Textual[TextType]].classTag
+      
+      def format(text: TextType, pos: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
+          : List[TextType] =
+
+        if pos < text.length then
+          if textual.unsafeChar(text, pos) == ' '
+          then format(text, pos + 1, lineStart, pos, lines)
+          else if pos - lineStart >= width
+          then format(text, pos + 1, lastSpace + 1, lastSpace, text.slice(lineStart, lastSpace) :: lines)
+          else format(text, pos + 1, lineStart, lastSpace, lines)
+        else if lineStart == pos then lines else text.slice(lineStart, pos) :: lines
+      
+      lines.flatMap(format(_, 0, 0, 0, Nil).reverse)
+
+
+  case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+      fixedWidth
+    
+    def confine[TextType](lines: IArray[TextType], width: Int)
+        (using textual: Textual[TextType])
+        : IArray[TextType] =
+      given ClassTag[TextType] = summon[Textual[TextType]].classTag
+      lines.map: line =>
+        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
+
+  case class Shorted(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+      val naturalWidth = lines.map(_.length).max
+      (maxWidth*slack).toInt.min(naturalWidth)
+    
+    def confine[TextType](lines: IArray[TextType], width: Int)
+        (using textual: Textual[TextType])
+        : IArray[TextType] =
+      given ClassTag[TextType] = summon[Textual[TextType]].classTag
+      lines.map: line =>
+        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
+
+  case class Collapsible(threshold: Double) extends ColumnSizing:
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+      if slack > threshold then lines.map(_.length).max else Unset
+
+    def confine[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
+      
 
 object Table:
   @targetName("make")
@@ -80,31 +161,48 @@ abstract class Tabulation[TextType: ClassTag]():
   type Row
   def columns: IArray[Column[Row, TextType]]
   def titles: IArray[(IArray[TextType], Int)] // rows of columns of lines
-  def cells: Seq[IArray[IArray[TextType]]] // rows of columns of lines
+  def rows: Seq[IArray[IArray[TextType]]] // rows of columns of lines
   def dataLength: Int
 
-  def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType]): Unit =
+  def layout(width: Int)
+      (using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
+      : LazyList[IArray[IArray[TextType]]] =
     
-    def calculate(slack: Double): (Int, Int) =
-      val widths = columns.indices.map: index =>
-        columns(index).confinement.width[TextType](dataLength, cells(index)(_), width, slack)
+    case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
+      lazy val columnWidths: IArray[(Int, Column[Row, TextType], Int)] = IArray.from:
+        indices.indices.map: index =>
+          val columnIndex = indices(index)
+          (columnIndex, columns(columnIndex), widths(index))
 
-      val shown: Int = widths.count(_.present)
-
-      (widths.count(_.present), widths.sumBy(_.or(0)) + style.cost(shown))
-    
-    def bisect(minSlack: Double, minWidth: Int, maxSlack: Double, maxWidth: Int): Double =
-      if maxWidth - minWidth > 1 then
-        val slack2 = (maxSlack + minSlack)/2
-        val width2 = calculate(slack2)(1)
-        
-        if width2 == width then slack2
-        else if width2 > width then bisect(minSlack, minWidth, slack2, width2)
-        else bisect(slack2, width2, maxSlack, maxWidth)
+    def layout(slack: Double): Layout =
+      val widths: IndexedSeq[Optional[Int]] = columns.indices.map: index =>
+        rows.map { cells => columns(index).sizing.width[TextType](cells(index), width, slack).or(0) }.max
       
-      else minSlack
+      val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.vouched
+      val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.length)
+      
+      Layout(slack, IArray.from(indices), IArray.from(widths.vouched), totalWidth)
+
+    def bisect(min: Layout, max: Layout): (Layout, Layout) =
+      if max.totalWidth - min.totalWidth <= 1 then (min, max) else
+        val point = layout((min.slack + max.slack)/2)
+        
+        if point.totalWidth == width then (point, point)
+        else if point.totalWidth > width then bisect(min, point)
+        else bisect(point, max)
+      
+    val rowLayout = bisect(layout(0), layout(1))(0)
+
+    // We may be able to increase the slack in some of the remaining columns
+
+    def lines(data: Iterable[IArray[IArray[TextType]]]): LazyList[IArray[IArray[TextType]]] =
+      data.to(LazyList).map: cells =>
+        rowLayout.columnWidths.map: (index, column, width) =>
+          column.sizing.confine(cells(index), width)
     
-    val minSlack = bisect(0.0, 0, 1.0, calculate(1.0)(1))
+    lines(rows)
+    
+
 
 case class Table
     [RowType: ClassTag, TextType: ClassTag]
@@ -123,7 +221,7 @@ case class Table
       val titles: IArray[(IArray[TextType], Int)] = table.titles
       val dataLength: Int = data.length
       
-      val cells: Seq[IArray[IArray[TextType]]] =
+      val rows: Seq[IArray[IArray[TextType]]] =
         data.map { row => IArray.from(columns.map(_.get(row).cut(t"\n"))) }
       
     
