@@ -99,7 +99,7 @@ object Denominative:
         i = i.next
 
     inline def foldLeft[ValueType](inline initial: ValueType)(inline lambda: (ValueType, Ordinal) => ValueType)
-          : ValueType =
+            : ValueType =
 
       var i: Ordinal = start
       var acc: ValueType = initial
