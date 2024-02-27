@@ -79,8 +79,7 @@ object ScalaSyntax:
         
         val unparsed: LazyList[Token] =
           if lastEnd != start
-          then text.slice(lastEnd, start).cut(t"\n").to(LazyList)
-              .flatMap(markup(_).filter(_.length > 0)).init
+          then text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
           else LazyList()
 
         scanner.nextToken()
@@ -89,9 +88,8 @@ object ScalaSyntax:
         val content: LazyList[Token] =
           if start == end then LazyList()
           else
-            text.slice(start, end).cut(t"\n").to(LazyList).flatMap:
-              line => LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))),
-                  Token.Newline)
+            text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
+              LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
             .init
         
         unparsed #::: content #::: stream(end)
@@ -122,16 +120,13 @@ object ScalaSyntax:
           ()
         
         case tree: ValOrDefDef =>
-          if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
+          if tree.nameSpan.exists then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
         
         case tree: MemberDef =>
-          if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Type
+          if tree.nameSpan.exists then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Type
         
         case tree: Ident if tree.isType =>
-          if tree.span.exists
-          then trees += (tree.span.start, tree.span.end) -> Accent.Type
+          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
         
         case _: TypTree =>
           if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
