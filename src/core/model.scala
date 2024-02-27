@@ -234,8 +234,7 @@ trait Indexed extends Dynamic:
   def apply(idx: Int = 0)(using Raises[MissingIndexValueError]): CodlNode =
     children.lift(idx).getOrElse(abort(MissingIndexValueError(idx)))
   
-  def apply(key: Text): List[CodlNode] =
-    index.get(key).getOrElse(Nil).map(children(_))
+  def apply(key: Text): List[CodlNode] = index.get(key).getOrElse(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] =
     paramIndex.lift(key) match

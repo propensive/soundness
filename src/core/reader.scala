@@ -30,6 +30,7 @@ opaque type Character = Long
 
 object Character:
   val End: Character = Long.MaxValue
+  
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
 

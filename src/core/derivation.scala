@@ -103,10 +103,7 @@ object CodlEncoder:
       def encode(value: ValueType): List[IArray[CodlNode]] =
         List(IArray(CodlNode(Data(encoder.encode(value)))))
 
-  given optional
-      [ValueType]
-      (using encoder: CodlEncoder[ValueType])
-      : CodlEncoder[Optional[ValueType]] =
+  given optional[ValueType](using encoder: CodlEncoder[ValueType]): CodlEncoder[Optional[ValueType]] =
     new CodlEncoder[Optional[ValueType]]:
       def schema: CodlSchema = encoder.schema.optional
       def encode(value: Optional[ValueType]): List[IArray[CodlNode]] = value.let(encoder.encode(_)).or(List())
@@ -114,20 +111,14 @@ object CodlEncoder:
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
   
-  given option
-      [ValueType]
-      (using encoder: CodlEncoder[ValueType])
-      : CodlEncoder[Option[ValueType]] =
+  given option[ValueType](using encoder: CodlEncoder[ValueType]): CodlEncoder[Option[ValueType]] =
     new CodlEncoder[Option[ValueType]]:
       def schema: CodlSchema = encoder.schema.optional
       def encode(value: Option[ValueType]): List[IArray[CodlNode]] = value match
         case None        => List()
         case Some(value) => encoder.encode(value)
   
-  given list
-      [ElementType]
-      (using encoder: CodlEncoder[ElementType])
-      : CodlEncoder[List[ElementType]] =
+  given list[ElementType](using encoder: CodlEncoder[ElementType]): CodlEncoder[List[ElementType]] =
     new CodlEncoder[List[ElementType]]:
       def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
@@ -136,10 +127,7 @@ object CodlEncoder:
       def encode(value: List[ElementType]): List[IArray[CodlNode]] =
         value.map { (value: ElementType) => encoder.encode(value).head }
   
-  given set
-      [ElementType]
-      (using encoder: CodlEncoder[ElementType])
-      : CodlEncoder[Set[ElementType]] =
+  given set[ElementType](using encoder: CodlEncoder[ElementType]): CodlEncoder[Set[ElementType]] =
     new CodlEncoder[Set[ElementType]]:
       def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
@@ -184,10 +172,7 @@ object CodlDecoder:
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
-  given optional
-      [ValueType]
-      (using decoder: CodlDecoder[ValueType])
-      : CodlDecoder[Optional[ValueType]] =
+  given optional[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Optional[ValueType]] =
 
     new CodlDecoder[Optional[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
