@@ -98,11 +98,9 @@ object Denominative:
         lambda(i)
         i = i.next
 
-    inline def foldLeft
-        [ValueType]
-        (inline initial: ValueType)
-        (inline lambda: (ValueType, Ordinal) => ValueType)
-        : ValueType =
+    inline def foldLeft[ValueType](inline initial: ValueType)(inline lambda: (ValueType, Ordinal) => ValueType)
+          : ValueType =
+
       var i: Ordinal = start
       var acc: ValueType = initial
       
@@ -125,6 +123,7 @@ object Countable:
 trait Countable[-SequenceType]:
   inline def zeroIndexed: Boolean
   inline def ult(inline sequence: SequenceType): Ordinal
+  
   inline def index(inline ordinal: Ordinal): Int =
     inline if zeroIndexed then ordinal.fromZero else ordinal.fromOne
 
