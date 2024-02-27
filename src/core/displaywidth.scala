@@ -67,15 +67,19 @@ object Unicode:
       stream match
         case r"${Hex(from)}([0-9A-F]{4})\.\.${Hex(to)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, to), w))
+        
         case r"${Hex(from)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, from), w))
+        
         case head #:: tail =>
           recur(tail, map)
+        
         case _ =>
           map
     
-    val in: ji.InputStream = Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
-      throw Panic(msg"could not find hieroglyph/EastAsianWidth.txt on the classpath")
+    val in: ji.InputStream =
+      Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
+        throw Panic(msg"could not find hieroglyph/EastAsianWidth.txt on the classpath")
     
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
   
