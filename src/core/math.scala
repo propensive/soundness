@@ -68,7 +68,8 @@ package arithmeticOptions:
         else U16((Short(left.bits)/Short(right.bits)).toShort.bits)
       
       inline def divideI16(left: I16, right: I16): I16 raises DivisionError =
-        if right.int == 0 then raise(DivisionError())(I16(0.bits)) else I16((left.short/right.short).toShort.bits)
+        if right.int == 0 then raise(DivisionError())(I16(0.bits))
+        else I16((left.short/right.short).toShort.bits)
       
       inline def divideU8(left: U8, right: U8): U8 raises DivisionError =
         if right.int == 0 then raise(DivisionError())(U8(0.bits)) else U8((left.byte/right.byte).toByte.bits)
@@ -182,7 +183,9 @@ object Hypotenuse:
 
   object F64:
     erased given underlying: Underlying[F64, Double] = erasedValue
-    inline given canEqual: CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] = erasedValue
+    
+    inline given canEqual: CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] =
+      erasedValue
 
     inline def apply(sign: Boolean, exponent: B16, mantissa: B64): F64 =
       F64((if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) | (mantissa & 0xfffffffffffffL))
@@ -191,22 +194,27 @@ object Hypotenuse:
     inline def apply(double: Double): F64 = double
 
     inline given inequality: Inequality[F64, F64] with
-      inline def compare(inline left: F64, inline right: F64, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: F64, inline right: F64, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
     inline given inequalityInt: Inequality[F64, Int] with
-      inline def compare(inline left: F64, inline right: Int, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: F64, inline right: Int, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
     inline given inequalityDouble: Inequality[F64, Double] with
+      
       inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
           inline greaterThan: Boolean): Boolean =
 
@@ -249,11 +257,15 @@ object Hypotenuse:
 
   object F32:
     erased given underlying: Underlying[F32, Float] = erasedValue
-    inline given canEqual: CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] = erasedValue
+    
+    inline given canEqual: CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] =
+      erasedValue
     
     inline given inequality: Inequality[F32, F32] with
-      inline def compare(inline left: F32, inline right: F32, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -298,8 +310,10 @@ object Hypotenuse:
     inline def apply(bits: B64): U64 = bits
   
     inline given inequality: Inequality[U64, U64] with
-      inline def compare(inline left: U64, inline right: U64, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan then
           inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -310,7 +324,10 @@ object Hypotenuse:
 
   object I64:
     erased given underlying: Underlying[I64, Long] = erasedValue
-    inline given canEqual: CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] = erasedValue
+    inline given canEqual
+            : CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+      erasedValue
+    
     given fromDigits: FromDigits[I64] with
       inline def fromDigits(digits: String): I64 = ${Hypotenuse2.parseI64('digits)}
 
@@ -318,8 +335,10 @@ object Hypotenuse:
     inline def apply(bits: B64): I64 = bits
     
     inline given inequality: Inequality[I64, I64] with
-      inline def compare(inline left: I64, inline right: I64, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: I64, inline right: I64, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -329,6 +348,7 @@ object Hypotenuse:
   object U32:
     erased given underlying: Underlying[U32, Int] = erasedValue
     inline given canEqual: CanEqual[U32, U32] = erasedValue
+    
     given fromDigits: FromDigits[U32] with
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
@@ -336,8 +356,10 @@ object Hypotenuse:
     inline def apply(bits: B32): U32 = bits
   
     inline given inequality: Inequality[U32, U32] with
-      inline def compare(inline left: U32, inline right: U32, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan then
           inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -348,7 +370,10 @@ object Hypotenuse:
 
   object I32:
     erased given underlying: Underlying[I32, Int] = erasedValue
-    inline given canEqual: CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] = erasedValue
+    inline given canEqual
+            : CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+      erasedValue
+
     given fromDigits: FromDigits[I32] with
       inline def fromDigits(digits: String): I32 = ${Hypotenuse2.parseI32('digits)}
     
@@ -356,8 +381,10 @@ object Hypotenuse:
     inline def apply(bits: B32): I32 = bits
     
     inline given inequality: Inequality[I32, I32] with
-      inline def compare(inline left: I32, inline right: I32, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: I32, inline right: I32, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -366,6 +393,7 @@ object Hypotenuse:
   object U16:
     erased given underlying: Underlying[U16, Short] = erasedValue
     inline given canEqual: CanEqual[U16, U16] = erasedValue
+
     given fromDigits: FromDigits[U16] with
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
     
@@ -373,8 +401,10 @@ object Hypotenuse:
     inline def apply(bits: B16): U16 = bits
   
     inline given inequality: Inequality[U16, U16] with
-      inline def compare(inline left: U16, inline right: U16, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         val left2 = JShort.toUnsignedInt(left)
         val right2 = JShort.toUnsignedInt(right)
@@ -385,7 +415,11 @@ object Hypotenuse:
 
   object I16:
     erased given underlying: Underlying[I16, Short] = erasedValue
-    inline given canEqual: CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] = erasedValue
+    
+    inline given canEqual
+            : CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+      erasedValue
+    
     given fromDigits: FromDigits[I16] with
       inline def fromDigits(digits: String): I16 = ${Hypotenuse2.parseI16('digits)}
 
@@ -393,8 +427,10 @@ object Hypotenuse:
     inline def apply(bits: B16): I16 = bits
 
     inline given inequality: Inequality[I16, I16] with
-      inline def compare(inline left: I16, inline right: I16, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: I16, inline right: I16, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -411,8 +447,10 @@ object Hypotenuse:
   
   
     inline given inequality: Inequality[U8, U8] with
-      inline def compare(inline left: U8, inline right: U8, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+      
+      inline def compare
+          (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
         
         val left2 = JByte.toUnsignedInt(left)
         val right2 = JByte.toUnsignedInt(right)
@@ -423,7 +461,11 @@ object Hypotenuse:
 
   object I8:
     erased given underlying: Underlying[I8, Byte] = erasedValue
-    inline given canEqual: CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] = erasedValue
+    
+    inline given canEqual
+            : CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+      erasedValue
+
     given fromDigits: FromDigits[I8] with
       inline def fromDigits(digits: String): I8 = ${Hypotenuse2.parseI8('digits)}
 
@@ -431,8 +473,10 @@ object Hypotenuse:
     inline def apply(bits: B8): I8 = bits
 
     inline given inequality: Inequality[I8, I8] with
-      inline def compare(inline left: I8, inline right: I8, inline strict: Boolean,
-          inline greaterThan: Boolean): Boolean =
+
+      inline def compare
+          (inline left: I8, inline right: I8, inline strict: Boolean, inline greaterThan: Boolean)
+              : Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -1144,7 +1188,8 @@ object Hypotenuse:
 
   extension (u32: U32)
     @targetName("plusU32")
-    inline infix def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] = overflow.addU32(u32, right)
+    inline infix def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] =
+      overflow.addU32(u32, right)
     
     @targetName("bitsU32")
     inline def bits: B32 = u32
@@ -1188,7 +1233,8 @@ object Hypotenuse:
 
   extension (u16: U16)
     @targetName("plusU16")
-    inline infix def + (right: into U16)(using overflow: CheckOverflow): overflow.Wrap[U16] = overflow.addU16(u16, right)
+    inline infix def + (right: into U16)(using overflow: CheckOverflow): overflow.Wrap[U16] =
+      overflow.addU16(u16, right)
     
     @targetName("bitsU16")
     inline def bits: B16 = u16
@@ -1242,7 +1288,8 @@ object Hypotenuse:
 
   extension (u8: U8)
     @targetName("plusU8")
-    inline infix def + (right: into U8)(using overflow: CheckOverflow): overflow.Wrap[U8] = overflow.addU8(u8, right)
+    inline infix def + (right: into U8)(using overflow: CheckOverflow): overflow.Wrap[U8] =
+      overflow.addU8(u8, right)
     
     @targetName("bitsU8")
     inline def bits: B8 = u8
