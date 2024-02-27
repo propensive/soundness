@@ -56,14 +56,14 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-    ( fg:        Optional[Int] = Unset,
-      bg:        Optional[Int] = Unset,
-      italic:    Boolean       = false,
-      bold:      Boolean       = false,
-      reverse:   Boolean       = false,
-      underline: Boolean       = false,
-      conceal:   Boolean       = false,
-      strike:    Boolean       = false ):
+    (fg:        Optional[Int] = Unset,
+     bg:        Optional[Int] = Unset,
+     italic:    Boolean       = false,
+     bold:      Boolean       = false,
+     reverse:   Boolean       = false,
+     underline: Boolean       = false,
+     conceal:   Boolean       = false,
+     strike:    Boolean       = false):
 
   import escapes.*
   import TextStyle.esc
@@ -129,11 +129,11 @@ object Ansi extends Ansi2:
   case class Frame(bracket: Char, start: Int, transform: Transform)
   
   case class State
-      ( text:       Text                         = t"",
-        last:       Option[Transform]            = None,
-        stack:      List[Frame]                  = Nil,
-        spans:      TreeMap[CharSpan, Transform] = TreeMap(),
-        insertions: TreeMap[Int, Text]           = TreeMap() ):
+      (text:       Text                         = t"",
+       last:       Option[Transform]            = None,
+       stack:      List[Frame]                  = Nil,
+       spans:      TreeMap[CharSpan, Transform] = TreeMap(),
+       insertions: TreeMap[Int, Text]           = TreeMap()):
 
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
@@ -309,11 +309,11 @@ case class Display
 
     @tailrec
     def recur
-        ( spans:      TreeMap[CharSpan, Ansi.Transform],
-          pos:        Int                               = 0,
-          style:      TextStyle                         = TextStyle(),
-          stack:      List[(CharSpan, TextStyle)]       = Nil,
-          insertions: TreeMap[Int, Text]                = TreeMap() )
+        (spans:      TreeMap[CharSpan, Ansi.Transform],
+         pos:        Int                               = 0,
+         style:      TextStyle                         = TextStyle(),
+         stack:      List[(CharSpan, TextStyle)]       = Nil,
+         insertions: TreeMap[Int, Text]                = TreeMap())
             : Text =
 
       inline def addSpan(): Text =
