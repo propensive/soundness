@@ -43,7 +43,7 @@ object CasualDiff:
     def recur
         (stream: LazyList[Text], context: List[Text], original: List[Text], replacement: List[Text],
             done: List[Replace], lineNo: Int)
-        : List[Replace] =
+          : List[Replace] =
       
       stream match
         case head #:: tail =>
@@ -71,9 +71,8 @@ object CasualDiff:
 
 case class CasualDiff(replacements: List[Replace]):
   def applyTo(original: Iterable[Text]): LazyList[Text] raises CasualDiffError =
-    def recur
-        (stream: LazyList[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
-        : LazyList[Text] =
+    def recur(stream: LazyList[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
+          : LazyList[Text] =
       todo match
         case Nil =>
           LazyList()
