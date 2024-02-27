@@ -49,9 +49,9 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
   def child[ResultType2]
-      ( id: Text,
-        state: juca.AtomicReference[AsyncState[ResultType2]],
-        promise: Promise[ResultType2 | Promise.Special] )
+      (id: Text,
+       state: juca.AtomicReference[AsyncState[ResultType2]],
+       promise: Promise[ResultType2 | Promise.Special])
       (using label: boundary.Label[Unit])
           : Submonitor[ResultType2] =
     
@@ -86,10 +86,10 @@ def supervise[ResultType](block: Monitor ?=> ResultType)(using cancel: Raises[Ca
 
 @capability
 case class Submonitor[ResultType]
-    ( identifier: Text,
-      parent: Monitor,
-      stateRef: juca.AtomicReference[AsyncState[ResultType]],
-      promise: Promise[ResultType | Promise.Special] )
+    (identifier: Text,
+     parent: Monitor,
+     stateRef: juca.AtomicReference[AsyncState[ResultType]],
+     promise: Promise[ResultType | Promise.Special])
     (using label: boundary.Label[Unit])
 extends Monitor(identifier :: parent.name, promise):
 
