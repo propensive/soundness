@@ -67,90 +67,37 @@ trait ColumnAlignment[-ColumnType]:
   def alignment(): Alignment
 
 object Column:
-  def apply
-      [RowType, CellType, TextType]
-      (title: TextType, width: Optional[Int] = Unset, align: Optional[Alignment] = Unset,
-          breaks: Breaks = Breaks.Space, hide: Boolean = false, sizing: ColumnSizing)
+  def apply[RowType, CellType, TextType]
+      ( title:  TextType,
+        width:  Optional[Int]       = Unset,
+        align:  Optional[Alignment] = Unset,
+        breaks: Breaks              = Breaks.Space,
+        hide:   Boolean             = false,
+        sizing: ColumnSizing )
       (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
-      : Column[RowType, TextType] =
+        : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
     Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, sizing)
 
 case class Column[RowType, TextType: Textual]
-    (title: TextType, get: RowType -> TextType, breaks: Breaks, align: Alignment, width: Optional[Int],
-        hide: Boolean, sizing: ColumnSizing)
-
-trait ColumnSizing:
-  def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType]
-
-package columnSizing:
-  object Prose extends ColumnSizing:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
-      def longestWord(text: TextType, pos: Int, lastStart: Int, max: Int): Int =
-        if pos < text.length then
-          if summon[Textual[TextType]].unsafeChar(text, pos) == ' '
-          then longestWord(text, pos + 1, pos + 1, max.max(pos - lastStart))
-          else longestWord(text, pos + 1, lastStart, max)
-        else max.max(pos - lastStart)
-      
-      lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt)
-    
-    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] =
-      val textual = summon[Textual[TextType]]
-      given ClassTag[TextType] = summon[Textual[TextType]].classTag
-      
-      def format(text: TextType, pos: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
-          : List[TextType] =
-
-        if pos < text.length then
-          if textual.unsafeChar(text, pos) == ' '
-          then format(text, pos + 1, lineStart, pos, lines)
-          else if pos - lineStart >= width
-          then format(text, pos + 1, lastSpace + 1, lastSpace, text.slice(lineStart, lastSpace) :: lines)
-          else format(text, pos + 1, lineStart, lastSpace, lines)
-        else if lineStart == pos then lines else text.slice(lineStart, pos) :: lines
-      
-      lines.flatMap(format(_, 0, 0, 0, Nil).reverse)
-
-
-  case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
-      fixedWidth
-    
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
-      given ClassTag[TextType] = summon[Textual[TextType]].classTag
-      lines.map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
-
-  case class Shorted(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
-      val naturalWidth = lines.map(_.length).max
-      (maxWidth*slack).toInt.min(naturalWidth)
-    
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
-      given ClassTag[TextType] = summon[Textual[TextType]].classTag
-      lines.map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
-
-  case class Collapsible(threshold: Double) extends ColumnSizing:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
-      if slack > threshold then lines.map(_.length).max else Unset
-
-    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
-      
+    ( title:  TextType,
+      get:    RowType -> TextType,
+      breaks: Breaks,
+      align:  Alignment,
+      width:  Optional[Int],
+      hide:   Boolean,
+      sizing: ColumnSizing )
 
 object Table:
   @targetName("make")
-  def apply
-      [RowType]
-      (using classTag: ClassTag[RowType])
-      [TextType: ClassTag: Textual]
-      (initColumns: Column[RowType, TextType]*): Table[RowType, TextType] =
+  def apply[RowType](using classTag: ClassTag[RowType])[TextType: ClassTag: Textual]
+      (initColumns: Column[RowType, TextType]*)
+        : Table[RowType, TextType] =
+
     new Table(initColumns*)
 
 abstract class Tabulation[TextType: ClassTag]():
@@ -160,9 +107,8 @@ abstract class Tabulation[TextType: ClassTag]():
   def rows: Seq[IArray[IArray[TextType]]] // rows of columns of lines
   def dataLength: Int
 
-  def layout(width: Int)
-      (using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
-      : TableLayout[TextType] =
+  def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
+        : TableLayout[TextType] =
     
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val columnWidths: IArray[(Int, Column[Row, TextType], Int)] = IArray.from:
@@ -220,9 +166,7 @@ case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[IArray[IArr
     recur(rows)
       
 
-case class Table
-    [RowType: ClassTag, TextType: ClassTag]
-    (initColumns: Column[RowType, TextType]*)
+case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowType, TextType]*)
     (using textual: Textual[TextType]):
   table =>
   
@@ -240,56 +184,3 @@ case class Table
       val rows: Seq[IArray[IArray[TextType]]] =
         data.map { row => IArray.from(columns.map(_.get(row).cut(t"\n"))) }
       
-    
-package tableStyles:
-  given default: TableStyle =
-    TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
- 
-  given horizontal: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ', ' ', '─', ' ', '─', '─', '─')
- 
-  given minimalist: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ')
- 
-  given horizontalGaps: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', '─', '─')
- 
-  given horizontalDots: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', '╌', ' ', ' ', '╌', ' ', ' ', '╌', ' ', '╌', '╌', '╌')
- 
-  given doubled: TableStyle =
-    TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
- 
-  given rounded: TableStyle =
-    TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
- 
-  given dotted: TableStyle =
-    TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
- 
-  given outline: TableStyle =
-    TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
- 
-  given ascii: TableStyle =
-    TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
- 
-  given borderless: TableStyle =
-    TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
-
-case class TableStyle
-    (pad: Int, left: Char, sep: Char, right: Char, topLeft: Char, topSep: Char, topRight: Char,
-        bottomLeft: Char, bottomSep: Char, bottomRight: Char, midLeft: Char, midSep: Char,
-        midRight: Char, topBar: Char, midBar: Char, bottomBar: Char):
-
-  def cost(columns: Int): Int = columns*pad*2 + columns + 1
-
-extension [RowType](data: Seq[RowType])
-  def table[TextType]
-      (using textual: Textual[TextType], tabulable: Tabulable[RowType, TextType])
-      : Tabulation[TextType] =
-    tabulable.tabulate(data)
-
-trait Tabulable[RowType, TextType]:
-  def table(): Table[RowType, TextType]
-  private lazy val tableValue: Table[RowType, TextType] = table()
-  def tabulate(data: Seq[RowType]): Tabulation[TextType] = tableValue.tabulate(data)
-
