@@ -27,48 +27,43 @@ import ambience.*
 
 object Xdg:
 
-  def dataHome
-      [PathType]
+  def dataHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-      : PathType/*^{specificPath, environment, home}*/ =
+        : PathType/*^{specificPath, environment, home}*/ =
+
     safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
   
-  def configHome
-      [PathType]
+  def configHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-      : PathType/*^{specificPath, environment, home}*/ =
+        : PathType/*^{specificPath, environment, home}*/ =
+
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
   
-  def cacheHome
-      [PathType]
+  def cacheHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-      : PathType/*^{specificPath, environment, home}*/ =
+        : PathType/*^{specificPath, environment, home}*/ =
+
     safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
   
-  def stateHome
-      [PathType]
+  def stateHome[PathType]
       (using environment: Environment, specificPath: SpecificPath[PathType], home: HomeDirectory)
-      : PathType/*^{specificPath, environment, home}*/ =
+        : PathType/*^{specificPath, environment, home}*/ =
+
     safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
   
-  def runtimeDir
-      [PathType]
-      (using specificPath: SpecificPath[PathType], environment: Environment)
-      : Optional[PathType/*^{specificPath, environment}*/] =
+  def runtimeDir[PathType](using specificPath: SpecificPath[PathType], environment: Environment)
+        : Optional[PathType/*^{specificPath, environment}*/] =
+
     safely(Environment.xdgRuntimeDir[PathType])
   
-  def bin
-      [PathType]
-      (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-      : PathType/*^{specificPath, environment, home}*/ =
+  def bin[PathType](using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
+        : PathType/*^{specificPath, environment, home}*/ =
+
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/bin"))
   
-  def dataDirs
-      [PathType]
-      (using SpecificPath[PathType], Environment, SystemProperties): List[PathType] =
+  def dataDirs[PathType](using SpecificPath[PathType], Environment, SystemProperties): List[PathType] =
     safely(Environment.xdgDataDirs[List[PathType]]).or:
       List(t"/usr/local/share", t"/usr/share").map(SpecificPath(_))
   
   def configDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =
-    safely(Environment.xdgConfigDirs[List[PathType]]).or:
-      List(t"/etc/xdg").map(SpecificPath(_))
+    safely(Environment.xdgConfigDirs[List[PathType]]).or(List(t"/etc/xdg").map(SpecificPath(_)))
