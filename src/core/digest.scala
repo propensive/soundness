@@ -96,6 +96,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
     def digest(): Bytes =
       val int = state.getValue()
       IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
+
   def name: Text = t"CRC32"
   def hmacName: Text = t"HMAC-CRC32"
   def initHmac: Mac = throw Panic(msg"this has not been implemented")
@@ -131,7 +132,7 @@ object Digestible extends Derivation[Digestible]:
     (acc, value) => value.let(digestible.digest(acc, _))
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
-    (acc, xs) => xs.each(summon[Digestible[ValueType]].digest(acc, _))
+    (accumulator, iterable) => iterable.each(summon[Digestible[ValueType]].digest(accumulator, _))
 
   given int: Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
@@ -159,15 +160,14 @@ trait Digestible[-ValueType]:
 
 case class Digester(run: DigestAccumulator => Unit):
   def apply[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
-    val acc = summon[HashFunction[HashType]].init
-    run(acc)
-    Digest(acc.digest())
+    summon[HashFunction[HashType]].init.pipe: accumulator =>
+      run(accumulator)
+      Digest(accumulator.digest())
   
-  def digest[ValueType: Digestible](value: ValueType): Digester =
-    Digester:
-      acc =>
-        run(acc)
-        summon[Digestible[ValueType]].digest(acc, value)
+  def digest[ValueType: Digestible](value: ValueType): Digester = Digester:
+    accumulator =>
+      run(accumulator)
+      summon[Digestible[ValueType]].digest(accumulator, value)
 
 trait DigestAccumulator:
   def append(bytes: Bytes): Unit
@@ -215,8 +215,8 @@ object ByteEncoder:
     Text(String(array))
 
 
-  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] = bytes =>
-    val buf: StringBuilder = StringBuilder()
+  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] =
+    bytes => val buf: StringBuilder = StringBuilder()
     
     @tailrec
     def recur(acc: Int, index: Int, unused: Int): Text =
@@ -227,6 +227,7 @@ object ByteEncoder:
         if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
         if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
         buf.toString.tt
+
       else
         if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
         else recur(acc << 5, index, unused + 5)
@@ -241,7 +242,7 @@ object ByteEncoder:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
   given ByteEncoder[Base64Url] = bytes =>
-    Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
+    Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
       .tr('+', '-')
       .tr('/', '_')
       .upto(_ == '=')
@@ -261,10 +262,9 @@ object ByteDecoder:
     import java.lang.Character.digit
     val data = Array.fill[Byte](value.length/2)(0)
     
-    (0 until value.length by 2).each:
-      i =>
-        try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
-        catch case e: OutOfRangeError => throw Panic(msg"every accessed element should be within range")
+    (0 until value.length by 2).each: i =>
+      try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
+      catch case e: OutOfRangeError => throw Panic(msg"every accessed element should be within range")
 
     data.immutable(using Unsafe)
 
