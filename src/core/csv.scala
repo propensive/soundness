@@ -37,7 +37,7 @@ trait RowFormat:
   def parseLine(line: Text): Csv =
     @tailrec
     def parseLine(items: Vector[Text], index: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
-          : Vector[Text] =
+            : Vector[Text] =
 
       if line.length <= index then
         if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then index else end)}"
