@@ -37,33 +37,33 @@ object Log:
   inline def fine[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
-        : Unit =
+          : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Fine}, 'message, 'log, 'realm, 'textual, 'show)}
   
   inline def info[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
-        : Unit =
+          : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Info}, 'message, 'log, 'realm, 'textual, 'show)}
   
   inline def warn[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
-        : Unit =
+          : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Warn}, 'message, 'log, 'realm, 'textual, 'show)}
   
   inline def fail[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
-        : Unit =
+          : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Fail}, 'message, 'log, 'realm, 'textual, 'show)}
 
   inline def route[TextType](inline routes: PartialFunction[Entry[?], Any])(using monitor: Monitor)
-        : Log[TextType] =
+          : Log[TextType] =
 
     ${Eucalyptus.route[TextType]('routes, 'monitor)}
 
@@ -78,7 +78,7 @@ object Log:
   def envelop[EnvelopeType: Envelope](value: EnvelopeType)[ResultType, TextType]
       (block: Log[TextType] ?=> ResultType)
       (using log: Log[TextType])
-        : ResultType =
+          : ResultType =
 
     val log2: Log[TextType] = new Log[TextType]:
       override val envelopes: List[Text] = summon[Envelope[EnvelopeType]].envelope(value) :: log.envelopes

@@ -58,14 +58,14 @@ object Logger:
         appendable: Appendable[TargetType, TextType],
         format:     LogFormat[TargetType, TextType] )
       (using monitor: Monitor)
-        : Logger[TextType]/*^{monitor}*/ =
+          : Logger[TextType]/*^{monitor}*/ =
 
     LogProcess(target)(using format)(using appendable)
 
 object LogWriter:
   given active[TargetType, TextType](using format: LogFormat[TargetType, TextType])
       (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
-        : LogWriter[TargetType, TextType]/*^{monitor}*/ =
+          : LogWriter[TargetType, TextType]/*^{monitor}*/ =
 
     LogProcess[TargetType, TextType](_)(using format)(using appendable, monitor)
 
