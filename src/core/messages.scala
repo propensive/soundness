@@ -81,12 +81,12 @@ extension (inline context: StringContext)
         import unsafeExceptions.canThrowAny
         
         Message
-          ( context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-            Message.make[tuple.type](tuple, Nil) )
+          (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
+           Message.make[tuple.type](tuple, Nil))
       
       case other =>
         import unsafeExceptions.canThrowAny
 
         Message
-          ( context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-            List(summonInline[Communicable[other.type]].message(other)) )
+          (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
+           List(summonInline[Communicable[other.type]].message(other)))
