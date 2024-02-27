@@ -28,7 +28,7 @@ import language.dynamics
 
 object CssStylesheet:
   given (using charEncoder: CharEncoder)
-      : GenericHttpResponseStream[CssStylesheet] with
+        : GenericHttpResponseStream[CssStylesheet] with
     def mediaType: Text = t"text/css; charset=${charEncoder.encoding.name}"
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
   
@@ -135,7 +135,7 @@ sealed trait Selector(val value: Text):
 object Selector:
   given childSelector[SelectorType, SelectorType2]
       (using selectable: Selectable[SelectorType], selectable2: Selectable[SelectorType2])
-      : CompareGreater[SelectorType, SelectorType2, Selector] with
+        : CompareGreater[SelectorType, SelectorType2, Selector] with
 
     inline def greaterThan(inline left: SelectorType, inline right: SelectorType2): Selector =
       Selector.Child(selectable.selector(left), selectable2.selector(right))

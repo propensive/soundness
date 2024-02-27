@@ -379,19 +379,19 @@ object ShowProperty:
 
   given [PropertyType, PropertyType2]
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2])
-        : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
+          : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
     t"${show.show(tuple(0))} ${show2.show(tuple(1))}"
   
   given [PropertyType, PropertyType2, PropertyType3]
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2],
           show3: ShowProperty[PropertyType3])
-        : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] = tuple =>
+          : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] = tuple =>
     List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2))).join(t" ")
   
   given [PropertyType, PropertyType2, PropertyType3, PropertyType4]
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2],
           show3: ShowProperty[PropertyType3], show4: ShowProperty[PropertyType4])
-        : ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
+          : ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
     List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2)), show4.show(tuple(3))).join(t" ")
   
   given ShowProperty[Font] = _.names.map: f =>
