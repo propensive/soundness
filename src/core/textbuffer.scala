@@ -19,12 +19,10 @@ package gossamer
 import rudiments.*
 import anticipation.*
 
-def append
-    [TextType, ValueType]
-    (using buffer: Buffer[TextType])
-    (using textual: Textual[TextType])
+def append[TextType, ValueType](using buffer: Buffer[TextType])(using textual: Textual[TextType])
     (value: ValueType)
-    (using show: textual.ShowType[ValueType]) =
+    (using show: textual.ShowType[ValueType])
+        : Unit =
   buffer.append(textual.show(value))
 
 extension (textObject: Text.type)

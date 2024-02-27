@@ -54,6 +54,7 @@ extension (value: Bytes)
 object Pue:
   def apply(text: into Text): Bytes =
     val length = text.length
+
     IArray.create[Byte](length): array =>
       var i = 0
       while i < length do
@@ -61,31 +62,29 @@ object Pue:
         i += 1
 
 object Cuttable:
-  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Text] =
-    (text, delimiter, limit) =>
-      val string = textual.string(text)
-      val dLength = delimiter.s.length
-      
-      @tailrec
-      def recur(start: Int, results: List[TextType]): List[TextType] =
-        string.indexOf(delimiter.s) match
-          case -1    => Nil
-          case index => recur(index + dLength, textual.slice(text, start, index) :: results)
+  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Text] = (text, delimiter, limit) =>
+    val string = textual.string(text)
+    val dLength = delimiter.s.length
     
-      IArray.from(recur(0, Nil).reverse)(using textual.classTag)
+    @tailrec
+    def recur(start: Int, results: List[TextType]): List[TextType] =
+      string.indexOf(delimiter.s) match
+        case -1    => Nil
+        case index => recur(index + dLength, textual.slice(text, start, index) :: results)
+  
+    IArray.from(recur(0, Nil).reverse)(using textual.classTag)
 
-  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Regex] =
-    (text, regex, limit) =>
-      val string = textual.string(text)
-      val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
+  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Regex] = (text, regex, limit) =>
+    val string = textual.string(text)
+    val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
+    
+    @tailrec
+    def recur(start: Int, results: List[TextType]): List[TextType] =
+      if matcher.find(start)
+      then recur(matcher.end, textual.slice(text, matcher.start, matcher.end) :: results)
+      else results
       
-      @tailrec
-      def recur(start: Int, results: List[TextType]): List[TextType] =
-        if matcher.find(start)
-        then recur(matcher.end, textual.slice(text, matcher.start, matcher.end) :: results)
-        else results
-        
-      IArray.from(recur(0, Nil).reverse)(using textual.classTag)
+    IArray.from(recur(0, Nil).reverse)(using textual.classTag)
 
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
     text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).immutable(using Unsafe)
@@ -100,11 +99,10 @@ trait Cuttable[TextType, DelimiterType]:
   def cut(value: TextType, delimiter: DelimiterType, limit: Int): IArray[TextType]
 
 extension [TextType](value: TextType)
-  def cut
-      [DelimiterType]
-      (delimiter: DelimiterType, limit: Int = Int.MaxValue)
+  def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
       (using cuttable: Cuttable[TextType, DelimiterType])
-      : IArray[TextType] =
+          : IArray[TextType] =
+
     cuttable.cut(value, delimiter, limit)
 
 extension (words: Iterable[Text])
@@ -215,10 +213,7 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
   
   def displayWidth(using metrics: TextMetrics) = metrics.width(Text(textual.string(text)))
   
-  def pad
-      (length: Int, bidi: Bidi = Ltr, char: Char = ' ')
-      (using TextMetrics)
-      : TextType =
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     if text.displayWidth >= length then text else
       val padding = textual.make(char.toString)*(length - text.displayWidth)
     
@@ -229,10 +224,9 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
   def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
     text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
   
-  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
-    bidi match
-      case Ltr => text.pad(length, bidi, char).take(length, Ltr)
-      case Rtl => text.pad(length, bidi, char).take(length, Rtl)
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType = bidi match
+    case Ltr => text.pad(length, bidi, char).take(length, Ltr)
+    case Rtl => text.pad(length, bidi, char).take(length, Rtl)
   
   def uncamel: IArray[TextType] =
     def recur(text: TextType): List[TextType] = text.where(_.isUpper, 1).lay(List(text.lower)): index =>
@@ -270,16 +264,14 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
   
 extension (text: into Text)
   inline def rsub(from: into Text, to: into Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
-  
-  inline def sub(from: into Text, to: into Text): Text =
-    Text(text.s.replaceAll(Pattern.quote(from.s), to.s).nn)
+  inline def sub(from: into Text, to: into Text): Text = text.s.replaceAll(Pattern.quote(from.s), to.s).nn.tt
   
   def flatMap(lambda: Char => Text): Text =
-    Text(String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))))
+    String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))).tt
 
-  inline def urlEncode: Text = Text(URLEncoder.encode(text.s, "UTF-8").nn)
-  inline def urlDecode: Text = Text(URLDecoder.decode(text.s, "UTF-8").nn)
-  inline def punycode: Text = Text(java.net.IDN.toASCII(text.s).nn)
+  inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
+  inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
+  inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
   
