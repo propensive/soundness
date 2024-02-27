@@ -34,12 +34,12 @@ case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[St
   def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
   
   infix def & [ValueType2 >: ValueType, LocalizationType2](other: Polyglot[ValueType2, LocalizationType2])
-        : Polyglot[ValueType2, LocalizationType2]
+          : Polyglot[ValueType2, LocalizationType2]
 
 object Cosmopolite:
   def access[ValueType: Type, LocalizationType <: Localization: Type](value: Expr[Map[String, ValueType]])
       (using Quotes)
-        : Expr[ValueType] =
+          : Expr[ValueType] =
 
     import quotes.reflect.*
 
