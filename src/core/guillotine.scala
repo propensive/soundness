@@ -36,8 +36,6 @@ import java.io as ji
 
 import language.experimental.captureChecking
 
-given Realm = realm"guillotine"
-
 enum Context:
   case Awaiting, Unquoted, Quotes2, Quotes1
 
@@ -119,10 +117,9 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
     if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
 
 object Process:
-  given appendable
-      [ChunkType]
-      (using writable: Writable[ji.OutputStream, ChunkType])
-      : Appendable[Process[?, ?], ChunkType]^{writable} =
+  given appendable[ChunkType](using writable: Writable[ji.OutputStream, ChunkType])
+          : Appendable[Process[?, ?], ChunkType]^{writable} =
+
     (process, stream) => process.stdin(stream)
   
   given appendableText(using streamCut: Raises[StreamError]): Appendable[Process[?, ?], Text]^{streamCut} =
@@ -132,22 +129,15 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
+  def stdout(): LazyList[Bytes] raises StreamError = Readable.inputStream.read(process.getInputStream.nn)
+  def stderr(): LazyList[Bytes] raises StreamError = Readable.inputStream.read(process.getErrorStream.nn)
   
-  def stdout()(using Raises[StreamError]): LazyList[Bytes] =
-    Readable.inputStream.read(process.getInputStream.nn)
-  
-  def stderr()(using Raises[StreamError]): LazyList[Bytes] =
-    Readable.inputStream.read(process.getErrorStream.nn)
-  
-  def stdin
-      [ChunkType]
-      (stream: LazyList[ChunkType]^)
-      (using writable: Writable[ji.OutputStream, ChunkType])
-      : Unit^{stream, writable} =
+  def stdin[ChunkType](stream: LazyList[ChunkType]^)(using writable: Writable[ji.OutputStream, ChunkType])
+          : Unit^{stream, writable} =
+
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using executor: Executor[ResultType]): ResultType^{executor} =
-    executor.interpret(process)
+  def await()(using executor: Executor[ResultType]): ResultType^{executor} = executor.interpret(process)
   
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
@@ -178,24 +168,18 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 sealed trait Executable:
   type Exec <: Label
 
-  def fork
-      [ResultType]
-      ()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
-      : Process[Exec, ResultType]^{working}
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+          : Process[Exec, ResultType]^{working}
   
-  def exec
-      [ResultType]
-      ()(using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
-      : ResultType^{executor, working} =
+  def exec[ResultType]()
+      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
+          : ResultType^{executor, working} =
     
     fork[ResultType]().await()
 
-  def apply
-      [ResultType]
-      ()
-      (using erased commandOutput: CommandOutput[Exec, ResultType])
+  def apply[ResultType]()(using erased commandOutput: CommandOutput[Exec, ResultType])
       (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
-      : ResultType^{executor, working} =
+          : ResultType^{executor, working} =
     
     fork[ResultType]().await()
 
@@ -231,9 +215,10 @@ object Command:
   given Show[Command] = command => formattedArguments(command.arguments)
   
 case class Command(arguments: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+          : Process[Exec, ResultType] =
+
     val processBuilder = ProcessBuilder(arguments.ss*)
-    
     processBuilder.directory(ji.File(working.directory().s))
     
     //Log.info(msg"Starting process ${this}")
@@ -247,7 +232,9 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError]): Process[Exec, ResultType] =
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+          : Process[Exec, ResultType] =
+
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
       
@@ -280,7 +267,6 @@ object Sh:
       Command(arguments*)
 
     def initial: State = State(Awaiting, false, Nil)
-
     def skip(state: State): State = insert(state, Parameters(t"x"))
 
     def insert(state: State, value: Parameters): State =
@@ -330,7 +316,9 @@ object Sh:
     Parameters(summon[Parameterizable[ValueType]].show(value))
 
 object Parameterizable:
-  given [PathType](using genericPath: GenericPath[PathType]): Parameterizable[PathType]^{genericPath} = _.pathText
+  given [PathType](using genericPath: GenericPath[PathType]): Parameterizable[PathType]^{genericPath} =
+    _.pathText
+  
   given Parameterizable[Int] = _.show
   
   given [ValueType](using encoder: Encoder[ValueType]): Parameterizable[ValueType]^{encoder} =
@@ -340,9 +328,9 @@ object Parameterizable:
 trait Parameterizable[-ValueType]:
   def show(value: ValueType): Text
 
-given realm: Realm = realm"guillotine"
-
 object Guillotine:
+  given Realm = realm"guillotine"
+  
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
     import quotes.reflect.*
     
