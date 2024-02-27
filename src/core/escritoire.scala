@@ -24,7 +24,6 @@ import anticipation.*
 
 import language.experimental.pureFunctions
 
-
 enum BoxLine:
   case None, Thin, Thick, Double
 
@@ -41,7 +40,10 @@ object BoxDrawing:
     simpleChars(vertical.ordinal*4 + horizontal.ordinal)
   
   private val box: IArray[Char] =
-    t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝     ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬".chars
+    List
+      ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
+        t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
+        t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬" ).join.chars
 
   def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
     box(top.ordinal + right.ordinal*4 + bottom.ordinal*16 + left.ordinal*64)
@@ -57,6 +59,7 @@ enum DelimitRows:
 
 object ColumnAlignment:
   val left: ColumnAlignment[Any] = () => Alignment.Left
+
   given byte: ColumnAlignment[Byte] = () => Alignment.Right
   given short: ColumnAlignment[Short] = () => Alignment.Right
   given int: ColumnAlignment[Int] = () => Alignment.Right
@@ -67,6 +70,7 @@ trait ColumnAlignment[-ColumnType]:
   def alignment(): Alignment
 
 object Column:
+
   def apply[RowType, CellType, TextType]
       ( title:  TextType,
         width:  Optional[Int]       = Unset,
@@ -120,10 +124,10 @@ abstract class Tabulation[TextType: ClassTag]():
       val widths: IndexedSeq[Optional[Int]] = columns.indices.map: index =>
         rows.map { cells => columns(index).sizing.width[TextType](cells(index), width, slack).or(0) }.max
       
-      val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.vouched
+      val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.compact
       val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.length)
       
-      Layout(slack, IArray.from(indices), IArray.from(widths.vouched), totalWidth)
+      Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
 
     def bisect(min: Layout, max: Layout): (Layout, Layout) =
       if max.totalWidth - min.totalWidth <= 1 then (min, max) else
@@ -177,6 +181,7 @@ case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowT
     
     new Tabulation[TextType]:
       type Row = RowType
+
       val columns: IArray[Column[Row, TextType]] = table.columns
       val titles: IArray[(IArray[TextType], Int)] = table.titles
       val dataLength: Int = data.length
