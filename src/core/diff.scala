@@ -74,7 +74,7 @@ extends Error(msg"could not read the diff at line $lineNo: $line")
 object Diff:
   def parse(lines: LazyList[Text])(using Raises[DiffParseError]): Diff[Text] =
     def recur(todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
-          : Diff[Text] =
+            : Diff[Text] =
       if pos < target
       then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
       else todo match
@@ -121,7 +121,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
   def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2^{lambda}] = Diff(edits.map(_.map(lambda))*)
 
   def applyTo(seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
-        : LazyList[ElemType] =
+          : LazyList[ElemType] =
     
     def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match
       case Nil                   => seq.to(LazyList)
@@ -186,7 +186,7 @@ case class Chunk[ElemType](pos: Int, rpos: Int, dels: List[Del[ElemType]], inss:
 def diff[ElemType]
     (left: IndexedSeq[ElemType], right: IndexedSeq[ElemType],
         compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
-      : Diff[ElemType] =
+        : Diff[ElemType] =
 
   type Edits = List[Edit[ElemType]]
 
