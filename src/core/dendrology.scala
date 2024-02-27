@@ -35,11 +35,10 @@ package treeStyles:
 trait TreeStyle[LineType]:
   def serialize(tiles: List[TreeTile], node: LineType): LineType
 
-case class TextualTreeStyle
-    [LineType]
-    (space: Text, last: Text, branch: Text, extender: Text)
+case class TextualTreeStyle[LineType](space: Text, last: Text, branch: Text, extender: Text)
     (using textual: Textual[LineType])
 extends TreeStyle[LineType]:
+
   def serialize(tiles: List[TreeTile], node: LineType): LineType =
     textual.make(tiles.map(text(_)).join.s)+node
   
@@ -64,11 +63,7 @@ object TreeDiagram:
   def apply[NodeType](roots: NodeType*)(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
     by[NodeType](expandable.children(_))(roots*)
 
-  def by
-      [NodeType]
-      (getChildren: NodeType => Seq[NodeType])
-      (roots: NodeType*)
-      : TreeDiagram[NodeType] =
+  def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*): TreeDiagram[NodeType] =
     def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(List[TreeTile], NodeType)] =
       val last = input.size - 1
       input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
