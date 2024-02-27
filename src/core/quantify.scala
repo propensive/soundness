@@ -164,47 +164,22 @@ object PhysicalQuantity:
   erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] = ###
   erased given velocity: PhysicalQuantity[Velocity, "velocity"] = ###
   erased given volume: PhysicalQuantity[Volume, "volume"] = ###
+  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity, "electric charge density"] = ###
+  erased given electricDipoleMoment: PhysicalQuantity[ElectricDipoleMoment, "electric dipole moment"] = ###
+  erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength, "electric field strength"] = ###
+  erased given electricalConductance: PhysicalQuantity[ElectricalConductance, "electric conductance"] = ###
+  erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity, "electric conductivity"] = ###
+  erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] = ###
+  erased given electricalResistivity: PhysicalQuantity[ElectricalResistivity, "electric resistivity"] = ###
+  erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] = ###
+  erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] = ###
+  erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] = ###
+  erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] = ###
+  
+  erased given electricDisplacementField
+          : PhysicalQuantity[ElectricDisplacementField, "electric displacement field"] =
+    ###
 
-  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity,
-      "electric charge density"] = ###
-  
-  erased given electricDipoleMoment
-      : PhysicalQuantity[ElectricDipoleMoment, "electric dipole moment"] =
-    ###
-  
-  erased given electricDisplacementField: PhysicalQuantity[ElectricDisplacementField,
-      "electric displacement field"] = ###
-  
-  erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength,
-      "electric field strength"] = ###
-  
-  erased given electricalConductance
-      : PhysicalQuantity[ElectricalConductance, "electric conductance"] =
-    ###
-  
-  erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity,
-      "electric conductivity"] = ###
-  
-  erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] =
-    ###
-  
-  erased given electricalResistivity
-      : PhysicalQuantity[ElectricalResistivity, "electric resistivity"] =
-    ###
-  
-  erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] =
-    ###
-  
-  erased given specificHeatCapacity
-      : PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] =
-    ###
-  
-  erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] =
-    ###
-  
-  erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
-    ###
-  
 sealed trait Measure
 
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
@@ -266,6 +241,7 @@ object Quantitative extends Quantitative2:
 
   extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
     def underlying: Double = quantity
+
     inline def value: Double = compiletime.summonFrom:
       case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
       case _                                   => quantity
@@ -282,15 +258,18 @@ object Quantitative extends Quantitative2:
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
-        : AddOperator[Quantity[LeftType], Quantity[RightType]] =
+            : AddOperator[Quantity[LeftType], Quantity[RightType]] =
+
       ${Quantitative.addTypeclass[LeftType, RightType]}
     
     transparent inline given sub[LeftType <: Measure, RightType <: Measure]
-        : SubOperator[Quantity[LeftType], Quantity[RightType]] =
+            : SubOperator[Quantity[LeftType], Quantity[RightType]] =
+      
       ${Quantitative.subTypeclass[LeftType, RightType]}
 
     transparent inline given mul[LeftType <: Measure, RightType <: Measure]
-        : MulOperator[Quantity[LeftType], Quantity[RightType]] =
+            : MulOperator[Quantity[LeftType], Quantity[RightType]] =
+      
       ${Quantitative.mulTypeclass[LeftType, RightType]}
 
     given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
@@ -298,7 +277,8 @@ object Quantitative extends Quantitative2:
       inline def mul(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
 
     transparent inline given div[LeftType <: Measure, RightType <: Measure]
-        : DivOperator[Quantity[LeftType], Quantity[RightType]] =
+            : DivOperator[Quantity[LeftType], Quantity[RightType]] =
+      
       ${Quantitative.divTypeclass[LeftType, RightType]}
 
     given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
@@ -312,22 +292,20 @@ object Quantitative extends Quantitative2:
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
-    
-    given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] =
-      Quantity(_)
-    
-    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int =>
-      Quantity(int.toDouble)
+    given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
+    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int => Quantity(int.toDouble)
 
-    given inequality
-        [UnitsType <: Measure, UnitsType2 <: Measure]
-        : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with
+    given inequality[UnitsType <: Measure, UnitsType2 <: Measure]
+            : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with
+
       inline def compare
-          (inline left: Quantity[UnitsType], inline right: Quantity[UnitsType2],
-              inline strict: Boolean, inline greaterThan: Boolean)
-          : Boolean =
-        ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict,
-            'greaterThan)}
+          ( inline left:        Quantity[UnitsType],
+            inline right:       Quantity[UnitsType2],
+            inline strict:      Boolean,
+            inline greaterThan: Boolean )
+              : Boolean =
+
+        ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
       
 
     inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =

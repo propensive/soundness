@@ -116,8 +116,7 @@ trait Quantitative2:
           Some(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))))
         
         case UnitPower(unit, power) :: more =>
-          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
-              construct(more).get))
+          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))), construct(more).get))
     
     def sub(dimension: DimensionRef, unit: UnitRef, power: Int): UnitsMap =
       new UnitsMap(map.updated(dimension, UnitPower(unit, power)))
@@ -154,7 +153,8 @@ trait Quantitative2:
 
   class DimensionRef(val dimensionType: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
-      (dimensionType: @unchecked) match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
+      (dimensionType: @unchecked) match
+        case '[ref] => quotes.reflect.TypeRepr.of[ref]
     
     def dimensionality(using Quotes): Dimensionality = Dimensionality(Map(this -> 1))
     
@@ -200,10 +200,10 @@ trait Quantitative2:
     override def hashCode: Int = name.hashCode
     override def toString(): String = name
 
-  def ratio
-      (using Quotes)
+  def ratio(using Quotes)
       (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
-      : Expr[Double] =
+          : Expr[Double] =
+
     import quotes.reflect.*
 
     val principalUnit = from.dimensionRef.principal
@@ -237,13 +237,13 @@ trait Quantitative2:
               case ConstantType(constant) => (constant: @unchecked) match
                 case DoubleConstant(double) => Expr(double**power)
 
-  private def normalize
-      (using Quotes)
+  private def normalize(using Quotes)
       (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
-      : (UnitsMap, Expr[Double]) =
-    def recur
-        (dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
-        : (UnitsMap, Expr[Double]) =
+          : (UnitsMap, Expr[Double]) =
+    
+    def recur(dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
+            : (UnitsMap, Expr[Double]) =
+
       dimensions match
         case Nil =>
           (target, expr)
@@ -277,16 +277,16 @@ trait Quantitative2:
               recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
     
     (Expr.summon[SubstituteUnits[UnitsType]]: @unchecked) match
-      case Some('{$substitute: SubstituteUnits[?]}) =>
-        '{Map[Text, Int](($substitute.name -> 1))}
+      case Some('{$substitute: SubstituteUnits[?]}) => '{Map[Text, Int](($substitute.name -> 1))}
+
       case None =>
         recur('{Map[Text, Int]()}, UnitsMap[UnitsType].map.values.to(List))
 
-  def multiply
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
+  def multiply[LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
       (using Quotes)
-      : Expr[Any] =
+          : Expr[Any] =
+
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
     
@@ -297,11 +297,8 @@ trait Quantitative2:
     val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
     
     (resultUnits.repr.map(_.asType): @unchecked) match
-      case Some('[type units <: Measure; units]) =>
-        '{Quantity[units]($resultValue)}
-      
-      case _ =>
-        resultValue
+      case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
+      case _                                     => resultValue
 
   private def incompatibleTypes(left: UnitsMap, right: UnitsMap)(using Quotes): Nothing =
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
@@ -314,10 +311,9 @@ trait Quantitative2:
       case _ =>
         fail(msg"the operands represent different physical quantities")
 
-  def mulTypeclass
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (using Quotes)
-      : Expr[MulOperator[Quantity[LeftType], Quantity[RightType]]] =
+  def mulTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
+          : Expr[MulOperator[Quantity[LeftType], Quantity[RightType]]] =
+
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
 
@@ -343,10 +339,9 @@ trait Quantitative2:
         }
 
 
-  def divTypeclass
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (using Quotes)
-      : Expr[DivOperator[Quantity[LeftType], Quantity[RightType]]] =
+  def divTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
+          : Expr[DivOperator[Quantity[LeftType], Quantity[RightType]]] =
+
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
 
@@ -373,10 +368,12 @@ trait Quantitative2:
   
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[SquareRoot[Quantity[ValueType]]] =
     val units = UnitsMap[ValueType]
+
     if !units.map.values.all(_.power%2 == 0)
     then fail(msg"only quantities with units in even powers can have square roots calculated")
     else
-      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap).repr.get.asType: @unchecked) match
+      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap)
+          .repr.get.asType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           '{
             new SquareRoot[Quantity[ValueType]]:
@@ -388,10 +385,12 @@ trait Quantitative2:
       
   def cbrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[CubeRoot[Quantity[ValueType]]] =
     val units = UnitsMap[ValueType]
+
     if !units.map.values.all(_.power%3 == 0)
     then fail(msg"only quantities with units in powers which are multiples of 3 can have cube roots calculated")
     else
-      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap).repr.get.asType: @unchecked) match
+      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap)
+          .repr.get.asType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           '{
             new CubeRoot[Quantity[ValueType]]:
@@ -401,12 +400,14 @@ trait Quantitative2:
                 math.cbrt(value.value).asInstanceOf[Quantity[resultType]]
           }
 
-  def greaterThan
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]],
-          strict: Expr[Boolean], invert: Expr[Boolean])
+  def greaterThan[LeftType <: Measure: Type, RightType <: Measure: Type]
+      ( leftExpr:  Expr[Quantity[LeftType]],
+        rightExpr: Expr[Quantity[RightType]],
+        strict:    Expr[Boolean],
+        invert:    Expr[Boolean] )
       (using Quotes)
-      : Expr[Boolean] =
+          : Expr[Boolean] =
+
     import quotes.reflect.*
 
     val left: UnitsMap = UnitsMap[LeftType]
@@ -418,15 +419,14 @@ trait Quantitative2:
 
     if left2 != right2 then incompatibleTypes(left, right)
 
-    if !invert.valueOrAbort then
-      if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
+    if !invert.valueOrAbort then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
     else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
-  def add
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
+  def add[LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Expr[Boolean])
       (using Quotes)
-      : Expr[Any] =
+          : Expr[Any] =
+
     import quotes.reflect.*
 
     val left: UnitsMap = UnitsMap[LeftType]
@@ -442,16 +442,12 @@ trait Quantitative2:
       case None      => '{if $sub then $leftValue - $rightValue else $leftValue + $rightValue}
     
     (left2.repr.map(_.asType): @unchecked) match
-      case Some('[type unitsType <: Measure; unitsType]) =>
-        '{Quantity[unitsType]($resultValue)}
-      
-      case _ =>
-        resultValue
+      case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
+      case _                                             => resultValue
 
-  def subTypeclass
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (using Quotes)
-      : Expr[SubOperator[Quantity[LeftType], Quantity[RightType]]] =
+  def subTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
+          : Expr[SubOperator[Quantity[LeftType], Quantity[RightType]]] =
+
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
@@ -466,10 +462,9 @@ trait Quantitative2:
                   .asInstanceOf[Quantity[resultType]]
         }
 
-  def addTypeclass
-      [LeftType <: Measure: Type, RightType <: Measure: Type]
-      (using Quotes)
-      : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
+  def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
+          : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
+
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
@@ -477,27 +472,23 @@ trait Quantitative2:
         '{
           new AddOperator[Quantity[LeftType], Quantity[RightType]]:
             type Result = Quantity[resultType]
-            def add
-                (left: Quantity[LeftType], right: Quantity[RightType])
-                : Quantity[resultType] =
+            def add(left: Quantity[LeftType], right: Quantity[RightType]): Quantity[resultType] =
               ${Quantitative.add[LeftType, RightType]('left, 'right, '{false})}
-                  .asInstanceOf[Quantity[resultType]]
+                .asInstanceOf[Quantity[resultType]]
         }
 
-  def norm
-      [UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
-      (expr: Expr[Quantity[UnitsType]])(using Quotes)
-      : Expr[Any] =
+  def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
+      (expr: Expr[Quantity[UnitsType]])
+      (using Quotes)
+          : Expr[Any] =
+
     val units: UnitsMap = UnitsMap[UnitsType]
     val norm: UnitsMap = UnitsMap[NormType[1]]
     val (units2, value) = normalize(units, norm, '{$expr.underlying}, true)
 
     (units2.repr.map(_.asType): @unchecked) match
-      case Some('[type unitsType <: Measure; unitsType]) =>
-        '{Quantity[unitsType]($value)}
-      
-      case None =>
-        value
+      case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($value)}
+      case None                                          => value
   
   def describe[UnitsType <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[UnitsType].dimensionality.quantityName match

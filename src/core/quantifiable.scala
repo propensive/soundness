@@ -50,8 +50,8 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
-  transparent inline infix def * [UnitsType2 <: Measure]
-      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def * [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2])
+          : Any =
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
