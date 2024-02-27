@@ -34,10 +34,9 @@ trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
   def fix(error: ErrorType1): ErrorType2
 
 object Raises:
-  given fixStrategy
-      [ErrorType1 <: Error, ErrorType2 <: Error]
+  given fixStrategy[ErrorType1 <: Error, ErrorType2 <: Error]
       (using fix: Fix[ErrorType1, ErrorType2], strategy: Raises[ErrorType2])
-      : Raises[ErrorType1] =
+        : Raises[ErrorType1] =
     strategy.contramap(fix.fix(_))
 
 @capability
@@ -82,9 +81,7 @@ extends Raises[ErrorType]:
     if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
 
 @capability
-class EitherStrategy
-    [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Either[ErrorType, SuccessType]])
+class EitherStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Either[ErrorType, SuccessType]])
     (using @annotation.constructorOnly unexpectedSuccess: Raises[UnexpectedSuccessError[SuccessType]])
 extends Raises[ErrorType]:
 
@@ -101,9 +98,7 @@ extends Raises[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
 @capability
-class AttemptStrategy
-    [ErrorType <: Error, SuccessType]
-    (label: boundary.Label[Attempt[SuccessType, ErrorType]])
+class AttemptStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Attempt[SuccessType, ErrorType]])
 extends Raises[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
@@ -114,59 +109,47 @@ extends Raises[ErrorType]:
 trait Recovery[-ErrorType <: Error, +SuccessType]:
   def recover(error: ErrorType): SuccessType
 
-def raise
-    [SuccessType, ErrorType <: Error]
-    (error: ErrorType)
+def raise[SuccessType, ErrorType <: Error](error: ErrorType)
     (using handler: Raises[ErrorType], recovery: Recovery[ErrorType, SuccessType])
-    : SuccessType =
+      : SuccessType =
   handler.record(error)
   recovery.recover(error)
 
-def raise
-    [SuccessType, ErrorType <: Error]
-    (error: ErrorType)(ersatz: => SuccessType)
+def raise[SuccessType, ErrorType <: Error](error: ErrorType)(ersatz: => SuccessType)
     (using handler: Raises[ErrorType])
-    : SuccessType =
+      : SuccessType =
   handler.record(error)
   ersatz
 
 def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Raises[ErrorType]): Nothing =
   handler.abort(error)
 
-def safely
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
+def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: OptionalStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
-    : Optional[SuccessType] =
+      : Optional[SuccessType] =
+
   try boundary: label ?=>
     block(using OptionalStrategy(label))
   catch case error: Exception => Unset
 
-def unsafely
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
+def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
-    : SuccessType =
+      : SuccessType =
+
   boundary: label ?=>
     import unsafeExceptions.canThrowAny
     block(using ThrowStrategy())
 
-def throwErrors
-    [ErrorType <: Error]
-    (using CanThrow[ErrorType])
-    [SuccessType]
+def throwErrors[ErrorType <: Error](using CanThrow[ErrorType])[SuccessType]
     (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
+      : SuccessType =
+
   block(using ThrowStrategy())
 
-def validate
-    [ErrorType <: Error]
-    (using raise: Raises[AggregateError[ErrorType]])
-    [SuccessType]
+def validate[ErrorType <: Error](using raise: Raises[AggregateError[ErrorType]])[SuccessType]
     (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
+      : SuccessType =
+
   val value: Either[AggregateError[ErrorType], SuccessType] =
     boundary: label ?=>
       val raiser = AggregateStrategy(label)
@@ -176,13 +159,10 @@ def validate
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
     case Right(value) => value
 
-def capture
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
+def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
     (using raise: Raises[UnexpectedSuccessError[SuccessType]])
-    : ErrorType =
+      : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherStrategy(label)))
   
@@ -190,21 +170,17 @@ def capture
     case Left(error)  => error
     case Right(value) => abort(UnexpectedSuccessError(value))
 
-def attempt
-    [ErrorType <: Error]
-    (using DummyImplicit)
-    [SuccessType]
+def attempt[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    : Attempt[SuccessType, ErrorType] =
+      : Attempt[SuccessType, ErrorType] =
+
   boundary: label ?=>
     Attempt.Success(block(using AttemptStrategy[ErrorType, SuccessType](label)))
 
-def failCompilation
-    [ErrorType <: Error]
-    (using Quotes, Realm)
-    [SuccessType]
+def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
     (block: FailStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    : SuccessType =
+      : SuccessType =
+
   given FailStrategy[ErrorType, SuccessType]()
   block
 
