@@ -118,7 +118,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Adversaria is designed to be _small_. Its entire source code currently consists
-of 156 lines of code.
+of 142 lines of code.
 
 ## Building
 
