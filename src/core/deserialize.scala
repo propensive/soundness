@@ -77,11 +77,10 @@ extension (bytes: Bytes)
   def deserialize[DataType](offset: Int = 0)(using deserializer: Deserializer[DataType]): DataType =
     deserializer.deserialize(bytes, offset)
   
-  def deserializeIArray
-      [DataType: ClassTag]
-      (size: Int, offset: Int = 0)
+  def deserializeIArray[DataType: ClassTag](size: Int, offset: Int = 0)
       (using deserializer: Deserializer[DataType])
-      : IArray[DataType] =
+        : IArray[DataType] =
+
     val width = deserializer.width
     
     IArray.create[DataType](size): array =>
