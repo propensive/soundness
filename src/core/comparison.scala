@@ -129,7 +129,7 @@ object Contrast extends Derivation[Contrast]:
 
   inline def compareSeq[ValueType: Contrast: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
-        : Semblance =
+          : Semblance =
     if left == right then Semblance.Identical(leftDebug) else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
