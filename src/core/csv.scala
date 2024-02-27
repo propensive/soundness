@@ -36,9 +36,9 @@ trait RowFormat:
 
   def parseLine(line: Text): Csv =
     @tailrec
-    def parseLine
-        (items: Vector[Text], index: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
-        : Vector[Text] =
+    def parseLine(items: Vector[Text], index: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
+          : Vector[Text] =
+
       if line.length <= index then
         if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then index else end)}"
         else items :+ line.slice(start, if end < 0 then index else end)
@@ -143,8 +143,6 @@ object CsvDecoder extends ProductDerivation[CsvDecoder]:
             typeclass.decode(row)
         
       override def width: Int = contexts { [FieldType] => context => context.width }.sum
-
-        
   
   given decoder[ValueType: Decoder]: CsvDecoder[ValueType] = _.elems.head.decodeAs[ValueType]
 
