@@ -48,14 +48,12 @@ package homeDirectories:
   given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
   //given none(using Raises[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
 
-def workingDirectory
-    [PathType]
-    (using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
-    : PathType^{specificPath} =
+def workingDirectory[PathType](using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
+        : PathType^{specificPath} =
+
   directory.path[PathType]
 
-def homeDirectory
-    [PathType]
-    (using directory: HomeDirectory, specificPath: SpecificPath[PathType])
-    : PathType^{specificPath} =
+def homeDirectory[PathType](using directory: HomeDirectory, specificPath: SpecificPath[PathType])
+        : PathType^{specificPath} =
+
   directory.path[PathType]

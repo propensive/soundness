@@ -89,8 +89,8 @@ object Rudiments:
     val nibbles = expr.valueOrAbort.parts.head
     val nibbles2 = nibbles.map(_.toLower)
 
-    nibbles2.indexWhere: c =>
-      !(c >= '0' && c <= '9') && !(c >= 'a' && c <= 'f') && c != ' ' && c != '\n'
+    nibbles2.indexWhere: char =>
+      !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
     .match
       case -1  => ()
       

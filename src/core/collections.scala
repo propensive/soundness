@@ -52,14 +52,18 @@ extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
   
-  def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] throws DuplicateIndexError =
+  def indexBy[ValueType2](lambda: ValueType -> ValueType2)
+          : Map[ValueType2, ValueType] throws DuplicateIndexError =
+
     val map = iterable.map: value =>
       (lambda(value), value)
     
     if iterable.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
   def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
-    def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int): (Int, Int) =
+    def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
+            : (Int, Int) =
+
       if iterable.isEmpty then (bestStart, bestLength) else
         if predicate(iterable.head) then
           if length >= bestLength then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
@@ -90,16 +94,15 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate
-      (otherMap: Map[KeyType, ValueType])
-      (merge: (ValueType, ValueType) -> ValueType)
-      : Map[KeyType, ValueType] =
+  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
+          : Map[KeyType, ValueType] =
 
-    otherMap.foldLeft(map): (acc, kv) =>
-      acc.updated(kv(0), acc.get(kv(0)).fold(kv(1))(merge(_, kv(1))))
+    right.foldLeft(map): (accumulator, keyValue) =>
+      accumulator.updated(keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
 
-extension [K, V](map: Map[K, List[V]])
-  def plus(key: K, value: V): Map[K, List[V]] = map.updated(key, map.get(key).fold(List(value))(value :: _))
+extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
+  def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
+    map.updated(key, map.get(key).fold(List(value))(value :: _))
 
 extension [ElemType](seq: Seq[ElemType])
   def runs: List[List[ElemType]] = runsBy(identity)
@@ -129,33 +132,38 @@ object Cursor:
       if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length then seq(cursor.index + offset)
       else Unset
 
-  inline def curse
-      [ElemType, ElemType2](seq: IndexedSeq[ElemType])(inline block: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
-      : IndexedSeq[ElemType2] =
+  inline def curse[ElemType, ElemType2](seq: IndexedSeq[ElemType])
+      (inline block: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
+          : IndexedSeq[ElemType2] =
+
     seq.indices.map { index => block(using seq, index) }
 
-inline def cursor
-    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): ElemType =
+inline def cursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+        : ElemType =
+
   cursor.of(seq)
 
-inline def precursor
-    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Optional[ElemType] =
+inline def precursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+        : Optional[ElemType] =
+
   cursor.of(seq, -1)
 
-inline def postcursor
-    [ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor): Optional[ElemType] =
+inline def postcursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+        : Optional[ElemType] =
+
   cursor.of(seq, 1)
 
 inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
 
-inline def cursorOffset
-    [ElemType](n: Int)(using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-    : Optional[ElemType] =
-  cursor.of(seq, n)
+inline def cursorOffset[ElemType](offset: Int)
+    (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+        : Optional[ElemType] =
+  cursor.of(seq, offset)
 
 extension [ElemType](seq: IndexedSeq[ElemType])
-  transparent inline def curse
-      [ElemType2](inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2): IndexedSeq[ElemType2] =
+  transparent inline def curse[ElemType2]
+      (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
+          : IndexedSeq[ElemType2] =
     Cursor.curse(seq)(block)
 
 extension (iarray: IArray.type)
