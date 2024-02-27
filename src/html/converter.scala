@@ -28,8 +28,7 @@ open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node])(using Raises[MarkdownError]): Seq[Html[Flow]] =
     convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
   
-  def slug(str: Text): Text =
-    Text(str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn)
+  def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
 
   def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
     case Markdown(children*) =>
@@ -52,12 +51,10 @@ open class HtmlConverter():
   def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
     val acc = nodes.foldLeft((true, List[Markdown.Ast.Block]())):
       case ((fresh, acc), next) => next match
-        case node: Markdown.Ast.Block  =>
-          (true, node :: acc)
+        case node: Markdown.Ast.Block  => (true, node :: acc)
         
         case node: Markdown.Ast.Inline =>
-          if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc)
-          else
+          if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc) else
             val content = (acc.head: @unchecked) match
               case Markdown.Ast.Block.Paragraph(nodes*) =>
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
@@ -76,23 +73,23 @@ open class HtmlConverter():
     case Markdown.Ast.Block.ThematicBreak()                 => Seq(Hr)
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(honeycomb.Code(escape(value))))
     case Markdown.Ast.Block.Reference(_, _)                 => Seq()
-    case Markdown.Ast.Block.BulletList(num, _, _, items*)   => Seq((if num.absent then Ul else Ol)(
-                                                                   items.flatMap(listItem)*))
     case Markdown.Ast.Block.Table(parts*)                   => Seq(Table(parts.flatMap(tableParts)))
-    case other                                              => Seq()
+    
+    case Markdown.Ast.Block.BulletList(num, _, _, items*) =>
+      Seq((if num.absent then Ul else Ol)(items.flatMap(listItem)*))
+    
+    case other =>
+      Seq()
 
   def tableParts(node: Markdown.Ast.TablePart): Seq[Node["thead" | "tbody"]] = node match
     case Markdown.Ast.TablePart.Head(rows*) => List(Thead(tableRows(true, rows)))
     case Markdown.Ast.TablePart.Body(rows*) => List(Tbody(tableRows(false, rows)))
 
-  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node["tr"]] =
-    rows.map:
-      case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells))
+  def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node["tr"]] = rows.map:
+    case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells))
 
-  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] =
-    cells.map:
-      case Markdown.Ast.Block.Cell(content*) =>
-        (if heading then Th else Td)(content.flatMap(phrasing))
+  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] = cells.map:
+    case Markdown.Ast.Block.Cell(content*) => (if heading then Th else Td)(content.flatMap(phrasing))
 
   def listItem(node: Markdown.Ast.ListItem): Seq[Node["li"]] = node match
     case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))

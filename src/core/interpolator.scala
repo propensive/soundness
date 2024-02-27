@@ -52,6 +52,7 @@ object Md:
       case Input.Block(content)  => state match
         case Input.Block(state)    => Input.Block(t"$state\n$content\n")
         case Input.Inline(state)   => Input.Block(t"$state\n$content")
+
       case Input.Inline(content) => state match
         case Input.Block(state)    => Input.Block(t"$state\n$content\n")
         case Input.Inline(state)   => Input.Inline(t"$state$content")
