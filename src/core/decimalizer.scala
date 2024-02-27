@@ -23,16 +23,16 @@ import anticipation.*
 import language.experimental.captureChecking
 
 case class Decimalizer
-    ( significantFigures: Optional[Int] = Unset,
-      decimalPlaces:      Optional[Int] = Unset,
-      decimalPoint:       Char          = '.',
-      minusSign:          Char          = '-',
-      exponent:           Text          = "×10".tt,
-      exponentThreshold:  Int           = 3,
-      superscript:        Boolean       = true,
-      exponentMultiple:   Int           = 1,
-      infinity:           Text          = "\u221e".tt,
-      nan:                Text          = "\u2209\u211d".tt )
+    (significantFigures: Optional[Int] = Unset,
+     decimalPlaces:      Optional[Int] = Unset,
+     decimalPoint:       Char          = '.',
+     minusSign:          Char          = '-',
+     exponent:           Text          = "×10".tt,
+     exponentThreshold:  Int           = 3,
+     superscript:        Boolean       = true,
+     exponentMultiple:   Int           = 1,
+     infinity:           Text          = "\u221e".tt,
+     nan:                Text          = "\u2209\u211d".tt)
 extends DecimalConverter:
   
   def exponentScale(i: Int, a: Int): Int = if i == 0 then a else exponentScale(i/10, a + 1)
