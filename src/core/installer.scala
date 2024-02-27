@@ -46,11 +46,9 @@ object Installer:
     case Installed(script: Text, path: Text)
     case PathNotWritable
 
-  def candidateTargets
-      ()
-      (using service: DaemonService[?])
+  def candidateTargets()(using service: DaemonService[?])
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
-      : List[Directory] raises InstallError =
+        : List[Directory] raises InstallError =
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
@@ -74,11 +72,10 @@ object Installer:
         case -1    => Int.MaxValue
         case index => index
 
-  def install
-      (force: Boolean = false, target: Optional[Path] = Unset)
+  def install(force: Boolean = false, target: Optional[Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
       (using Effectful)
-      : Result raises InstallError =
+        : Result raises InstallError =
 
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)

@@ -62,10 +62,16 @@ package daemonConfig:
 trait StderrSupport:
   def apply(): Boolean
 
-case class ClientConnection
-    [BusType <: Matchable]
-    (pid: Pid, async: Async[Unit], signals: Funnel[Signal], terminate: Promise[Unit], close: () => Unit,
-        exitPromise: Promise[ExitStatus], bus: Funnel[BusType], stderr: Promise[ji.OutputStream]):
+case class ClientConnection[BusType <: Matchable]
+    ( pid:         Pid,
+      async:       Async[Unit],
+      signals:     Funnel[Signal],
+      terminate:   Promise[Unit],
+      close:       () => Unit,
+      exitPromise: Promise[ExitStatus],
+      bus:         Funnel[BusType],
+      stderr:      Promise[ji.OutputStream] ):
+
   def receive(message: BusType): Unit = bus.put(message)
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
@@ -76,12 +82,12 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
   
   def variable(key: Text): Optional[Text] = map.get(key).getOrElse(Unset)
 
-def daemon[BusType <: Matchable]
-    (using executive: Executive)
+def daemon[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    (using interpreter: CliInterpreter, stderrSupport: StderrSupport = daemonConfig.supportStderr,
-        model: ThreadModel)
-    : Unit =
+    ( using interpreter:   CliInterpreter,
+            stderrSupport: StderrSupport = daemonConfig.supportStderr,
+            model:         ThreadModel )
+      : Unit =
   
   given Realm: Realm = realm"ethereal"
 
@@ -103,10 +109,9 @@ def daemon[BusType <: Matchable]
     Log.info(t"Shutdown daemon")
     pid.let(terminatePid.fulfill(_)).or(termination)
 
-  def client
-      (socket: jn.Socket)
+  def client(socket: jn.Socket)
       (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
-      : Unit =
+        : Unit =
 
     val in = socket.getInputStream.nn
     val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
@@ -269,15 +274,27 @@ def daemon[BusType <: Matchable]
 
     ExitStatus.Ok
   
-case class DaemonService
-    [BusType <: Matchable]
-    (pid: Pid, shutdown: () => Unit, cliInput: CliInput, script: Unix.Path, deliver: BusType => Unit,
-        bus: LazyList[BusType], scriptName: Text)
+case class DaemonService[BusType <: Matchable]
+    ( pid:        Pid,
+      shutdown:   () => Unit,
+      cliInput:   CliInput,
+      script:     Unix.Path,
+      deliver:    BusType => Unit,
+      bus:        LazyList[BusType],
+      scriptName: Text )
 extends ShellContext:
+
   def broadcast(message: BusType): Unit = deliver(message)
 
 enum DaemonEvent:
-  case Init(pid: Pid, work: Text, script: Text, cliInput: CliInput, arguments: List[Text], environment: List[Text])
+  case Init
+      ( pid:         Pid,
+        work:        Text,
+        script:      Text,
+        cliInput:    CliInput,
+        arguments:   List[Text],
+        environment: List[Text] )
+
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
   case Stderr(pid: Pid)
