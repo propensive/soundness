@@ -29,35 +29,35 @@ object Xdg:
 
   def dataHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-        : PathType/*^{specificPath, environment, home}*/ =
+          : PathType/*^{specificPath, environment, home}*/ =
 
     safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
   
   def configHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-        : PathType/*^{specificPath, environment, home}*/ =
+          : PathType/*^{specificPath, environment, home}*/ =
 
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
   
   def cacheHome[PathType]
       (using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-        : PathType/*^{specificPath, environment, home}*/ =
+          : PathType/*^{specificPath, environment, home}*/ =
 
     safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
   
   def stateHome[PathType]
       (using environment: Environment, specificPath: SpecificPath[PathType], home: HomeDirectory)
-        : PathType/*^{specificPath, environment, home}*/ =
+          : PathType/*^{specificPath, environment, home}*/ =
 
     safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
   
   def runtimeDir[PathType](using specificPath: SpecificPath[PathType], environment: Environment)
-        : Optional[PathType/*^{specificPath, environment}*/] =
+          : Optional[PathType/*^{specificPath, environment}*/] =
 
     safely(Environment.xdgRuntimeDir[PathType])
   
   def bin[PathType](using specificPath: SpecificPath[PathType], environment: Environment, home: HomeDirectory)
-        : PathType/*^{specificPath, environment, home}*/ =
+          : PathType/*^{specificPath, environment, home}*/ =
 
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/bin"))
   
