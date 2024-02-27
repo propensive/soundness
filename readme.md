@@ -7,7 +7,7 @@
 __Representations of time, in its various forms__
 
 The representation of time is complex, in part because the domain is
-intrinsically complicated, and in part because we mean mean by "time" is
+intrinsically complicated, and in part because we mean by "time" is
 different in different contexts. _Aviation_ is an attempt to rationalize this
 complexity by providing immutable representations of a variety concepts
 relating to time and operations between them, taking advantage of the
