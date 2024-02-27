@@ -44,7 +44,7 @@ enum HttpBody:
   case Chunked(stream: LazyList[IArray[Byte]])
   case Data(data: IArray[Byte])
 
-  def as[T](using readable: HttpReadable[T]): T = readable.read(HttpStatus.Ok, this)
+  def as[ResultType](using readable: HttpReadable[ResultType]): ResultType = readable.read(HttpStatus.Ok, this)
 
 object QueryEncoder extends ProductDerivation[QueryEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: QueryEncoder[DerivationType] =
@@ -76,23 +76,16 @@ object Postable extends FallbackPostable:
   given bytes: Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given byteStream: Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
   
-  given dataStream
-      [ResponseType]
-      (using Raises[MediaTypeError])
-      (using response: GenericHttpResponseStream[ResponseType])
-      : Postable[ResponseType] =
+  given dataStream[ResponseType](using response: GenericHttpResponseStream[ResponseType])
+          : Postable[ResponseType] raises MediaTypeError =
+
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
   
-class Postable
-    [PostType]
-    (val contentType: MediaType, val content: PostType => LazyList[Bytes]):
+class Postable[PostType](val contentType: MediaType, val content: PostType => LazyList[Bytes]):
   
   def preview(value: PostType): Text = content(value).headOption.fold(t""): bytes =>
     val sample = bytes.take(256)
-    
-    val string: Text =
-      if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
-    
+    val string: Text = if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
     if bytes.length > 128 then t"$string..." else string
 
 object HttpMethod:
@@ -106,8 +99,12 @@ enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
 
 case class HttpRequest
-    (method: HttpMethod, host: Hostname, requestTarget: Text, headers: List[RequestHeader.Value],
-        body: HttpBody):
+    (method:        HttpMethod,
+     host:          Hostname,
+     requestTarget: Text,
+     headers:       List[RequestHeader.Value],
+     body:          HttpBody):
+
   def serialize: LazyList[Bytes] =
     import charEncoders.ascii
     val buffer = StringBuffer()
@@ -182,66 +179,69 @@ trait Locatable[-UrlType]:
   def location(value: UrlType): HttpUrl
 
 object Http:
-  def post
-      [PostType: Postable, UrlType: Locatable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+  def post[PostType: Postable, UrlType: Locatable]
+      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
+      (using Online, Log[Text])
+          : HttpResponse =
+
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Post, headers)
 
-  def put
-      [PostType: Postable, UrlType: Locatable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+  def put[PostType: Postable, UrlType: Locatable]
+      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
+      (using Online, Log[Text])
+          : HttpResponse =
+
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Put, headers)
   
-  def get
-      [UrlType: Locatable]
-      (url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online, Log[Text])
-      : HttpResponse =
+  def get[UrlType: Locatable]
+      (url: UrlType, headers: Seq[RequestHeader.Value] = Nil)
+      (using Online, Log[Text])
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Get, headers)
 
-  def options
-      [UrlType: Locatable]
+  def options[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Options, headers)
 
-  def head
-      [UrlType: Locatable]
+  def head[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Head, headers)
   
-  def delete
-      [UrlType: Locatable]
+  def delete[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Delete, headers)
   
-  def connect
-      [UrlType: Locatable]
+  def connect[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Connect, headers)
   
-  def trace
-      [UrlType: Locatable]
+  def trace[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Trace, headers)
   
-  def patch
-      [UrlType: Locatable]
+  def patch[UrlType: Locatable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-      : HttpResponse =
+          : HttpResponse =
+
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Patch, headers)
 
-  private def request
-      [PostType]
+  private def request[PostType]
       (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
       (using Online, Log[Text])
       (using postable: Postable[PostType])
-      : HttpResponse =
+          : HttpResponse =
+
     Log.info(msg"Sending HTTP $method request to $url")
     headers.each: header =>
       Log.fine(Message(header.show))
