@@ -38,25 +38,20 @@ object Functor:
 trait Functor[FunctorType[_]]:
   def point[ValueType](value: ValueType): FunctorType[ValueType]
   
-  def map
-      [ValueType, ValueType2]
-      (value: FunctorType[ValueType])
-      (lambda: ValueType => ValueType2)
-      : FunctorType[ValueType2]
+  def map[ValueType, ValueType2](value: FunctorType[ValueType])(lambda: ValueType => ValueType2)
+          : FunctorType[ValueType2]
 
 object Monad:
   inline given [MonadType[_]]: Monad[MonadType] = ${Mercator.monad[MonadType]}
 
 trait Monad[MonadType[_]] extends Functor[MonadType]:
-  def flatMap
-      [ValueType, ValueType2]
-      (value: MonadType[ValueType])
-      (lambda: ValueType => MonadType[ValueType2])
-      : MonadType[ValueType2]
+  def flatMap[ValueType, ValueType2](value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
+          : MonadType[ValueType2]
 
 object Mercator:
   def point[TypeConstructorType[_]: Type](using Quotes): Expr[Point[TypeConstructorType]] =
     import quotes.reflect.*
+
     val pointType = TypeRepr.of[TypeConstructorType].typeSymbol
     val companion = Ref(pointType.companionModule)
     
@@ -92,6 +87,7 @@ object Mercator:
 
   def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
     import quotes.reflect.*
+
     val functorType = TypeRepr.of[FunctorType].typeSymbol
     
     val mapMethods = functorType.methodMembers.filter: method =>
@@ -106,15 +102,15 @@ object Mercator:
       new Functor[FunctorType]:
         def point[ValueType](value: ValueType): FunctorType[ValueType] = ${pointExpr}.point(value)
 
-        def map
-            [ValueType, ValueType2]
-            (value: FunctorType[ValueType])(lambda: ValueType => ValueType2): FunctorType[ValueType2] =
+        def map[ValueType, ValueType2](value: FunctorType[ValueType])
+            (lambda: ValueType => ValueType2)
+                : FunctorType[ValueType2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
               .appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
     }
 
-    if mapMethods.length == 1 then makeFunctor else if mapMethods.length == 0 then
-      fail(msg"the type ${functorType.name} has no map methods")
+    if mapMethods.length == 1 then makeFunctor
+    else if mapMethods.length == 0 then fail(msg"the type ${functorType.name} has no map methods")
     else fail(msg"the type ${functorType.name} has more than one possible map method")
     
   def monad[MonadType[_]](using Type[MonadType], Quotes): Expr[Monad[MonadType]] =
@@ -154,12 +150,10 @@ object Mercator:
     then fail(msg"the type ${monadType.name} has no flatMap methods")
     else fail(msg"the type ${monadType.name} has more than one possible flatMap method")
 
-extension [ValueType, FunctorType[_]]
-    (using functor: Functor[FunctorType])(value: FunctorType[ValueType])
+extension [ValueType, FunctorType[_]](using functor: Functor[FunctorType])(value: FunctorType[ValueType])
   def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] = functor.map(value)(lambda)
 
-extension [ValueType, MonadType[_]]
-    (using monad: Monad[MonadType])(value: MonadType[ValueType])
+extension [ValueType, MonadType[_]](using monad: Monad[MonadType])(value: MonadType[ValueType])
   def flatMap[ValueType2](lambda: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
     monad.flatMap(value)(lambda)
 
@@ -167,30 +161,26 @@ extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemTyp
     (elems: CollectionType[MonadType[ElemType]])
     (using monad: Monad[MonadType])
 
-  def sequence
-      (using buildFrom: BuildFrom[List[ElemType], ElemType, CollectionType[ElemType]])
-      : MonadType[CollectionType[ElemType]] =
+  def sequence(using buildFrom: BuildFrom[List[ElemType], ElemType, CollectionType[ElemType]])
+          : MonadType[CollectionType[ElemType]] =
     
-    def recur
-        (todo: Iterable[MonadType[ElemType]], acc: MonadType[List[ElemType]])
-        : MonadType[List[ElemType]] =
-      if todo.isEmpty then acc else recur(todo.tail, acc.flatMap { xs => todo.head.map(_ :: xs) })
+    def recur(todo: Iterable[MonadType[ElemType]], accumulator: MonadType[List[ElemType]])
+            : MonadType[List[ElemType]] =
+      if todo.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => todo.head.map(_ :: xs) })
         
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
     
-extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
-    (elems: CollectionType[ElemType])
+extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType](elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
-      (using monad: Monad[MonadType],
-          buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
-      : MonadType[CollectionType[ElemType2]] =
+      ( using monad:     Monad[MonadType],
+              buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]] )
+          : MonadType[CollectionType[ElemType2]] =
     
-    def recur
-        (todo: Iterable[ElemType], acc: MonadType[List[ElemType2]])
-        : MonadType[List[ElemType2]] =
-      if todo.isEmpty then acc
-      else recur(todo.tail, acc.flatMap { xs => lambda(todo.head).map(_ :: xs) })
+    def recur(todo: Iterable[ElemType], accumulator: MonadType[List[ElemType2]]): MonadType[List[ElemType2]] =
+      if todo.isEmpty then accumulator
+      else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
         
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
     
