@@ -38,11 +38,11 @@ trait Executive:
   type CliType <: Cli
 
   def cli
-      ( fullArguments:    Iterable[Text],
-        environment:      Environment,
-        workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        signals:          LazyList[Signal] )
+      (fullArguments:    Iterable[Text],
+       environment:      Environment,
+       workingDirectory: WorkingDirectory,
+       stdio:            Stdio,
+       signals:          LazyList[Signal])
       (using interpreter: CliInterpreter)
           : CliType
   
@@ -94,11 +94,11 @@ package executives:
     type CliType = CliInvocation
     
     def cli
-        ( arguments:        Iterable[Text],
-          environment:      Environment,
-          workingDirectory: WorkingDirectory,
-          stdio:            Stdio,
-          signals:          LazyList[Signal] )
+        (arguments:        Iterable[Text],
+         environment:      Environment,
+         workingDirectory: WorkingDirectory,
+         stdio:            Stdio,
+         signals:          LazyList[Signal])
         (using interpreter: CliInterpreter)
             : CliInvocation =
       
@@ -122,11 +122,11 @@ def application(using executive: Executive, interpreter: CliInterpreter)
   System.exit(executive.process(cli)(block)())
 
 case class CliInvocation
-    ( arguments:        List[Argument],
-      environment:      Environment,
-      workingDirectory: WorkingDirectory,
-      stdio:            Stdio,
-      signals:          LazyList[Signal] )
+    (arguments:        List[Argument],
+     environment:      Environment,
+     workingDirectory: WorkingDirectory,
+     stdio:            Stdio,
+     signals:          LazyList[Signal])
     (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 

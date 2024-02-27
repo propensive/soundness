@@ -30,10 +30,10 @@ import language.experimental.pureFunctions
 given Realm = realm"exoskeleton"
 
 case class PosixParameters
-    ( positional:     List[Argument]                = Nil,
-      parameters:     Map[Argument, List[Argument]] = Map(),
-      postpositional: List[Argument]                = Nil,
-      focusFlag:      Optional[Argument]            = Unset )
+    (positional:     List[Argument]                = Nil,
+     parameters:     Map[Argument, List[Argument]] = Map(),
+     postpositional: List[Argument]                = Nil,
+     focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
   
   def read[OperandType](flag: Flag[OperandType])
@@ -52,10 +52,10 @@ object PosixCliInterpreter extends CliInterpreter:
   type Parameters = PosixParameters
   def interpret(arguments: List[Argument]): PosixParameters =
     def recur
-        ( todo:       List[Argument],
-          arguments:  List[Argument],
-          current:    Optional[Argument],
-          parameters: PosixParameters )
+        (todo:       List[Argument],
+         arguments:  List[Argument],
+         current:    Optional[Argument],
+         parameters: PosixParameters)
             : PosixParameters =
       
       def push(): PosixParameters = current match
@@ -80,21 +80,21 @@ object PosixCliInterpreter extends CliInterpreter:
 
 object Suggestion:
   def apply
-      ( text: Text,
-        description: Optional[Text | Display],
-        hidden: Boolean = false,
-        incomplete: Boolean = false,
-        aliases: List[Text] = Nil )
+      (text: Text,
+       description: Optional[Text | Display],
+       hidden: Boolean = false,
+       incomplete: Boolean = false,
+       aliases: List[Text] = Nil)
           : Suggestion =
     
     new Suggestion(text, description, hidden, incomplete, aliases)
 
 case class Suggestion
-    ( text:        Text,
-      description: Optional[Text | Display],
-      hidden:      Boolean,
-      incomplete:  Boolean,
-      aliases:     List[Text] )
+    (text:        Text,
+     description: Optional[Text | Display],
+     hidden:      Boolean,
+     incomplete:  Boolean,
+     aliases:     List[Text])
 
 object Suggestions:
   def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
@@ -126,21 +126,21 @@ object Flag:
 
 object Switch:
   def apply
-      ( name: Text | Char,
-        repeatable: Boolean         = false,
-        aliases: List[Text | Char]  = Nil,
-        description: Optional[Text] = Unset,
-        secret: Boolean             = false )
+      (name: Text | Char,
+       repeatable: Boolean         = false,
+       aliases: List[Text | Char]  = Nil,
+       description: Optional[Text] = Unset,
+       secret: Boolean             = false)
           : Flag[Unit] =
 
     Flag[Unit](name, repeatable, aliases, description, secret)(using FlagInterpreter.unit)
 
 case class Flag[OperandType]
-    ( name: Text | Char,
-      repeatable: Boolean         = false,
-      aliases: List[Text | Char]  = Nil,
-      description: Optional[Text] = Unset,
-      secret: Boolean             = false )
+    (name: Text | Char,
+     repeatable: Boolean         = false,
+     aliases: List[Text | Char]  = Nil,
+     description: Optional[Text] = Unset,
+     secret: Boolean             = false)
     (using FlagInterpreter[OperandType]):
   
   def matches(key: Argument): Boolean =
@@ -150,10 +150,10 @@ case class Flag[OperandType]
     flagId == name || aliases.contains(flagId)
 
   def apply()
-      ( using cli:             Cli,
-              interpreter:     CliInterpreter,
-              flagInterpreter: FlagInterpreter[OperandType],
-              suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions )
+      (using cli:             Cli,
+             interpreter:     CliInterpreter,
+             flagInterpreter: FlagInterpreter[OperandType],
+             suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
           : Optional[OperandType] =
 
     cli.register(this, suggestions)

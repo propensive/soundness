@@ -34,21 +34,21 @@ import scala.collection.mutable as scm
 //import language.experimental.captureChecking
 
 case class SuggestionsState
-    ( suggestions: Map[Argument, () => List[Suggestion]],
-      explanation: Optional[Text],
-      known:       Set[Flag[?]],
-      present:     Set[Flag[?]] )
+    (suggestions: Map[Argument, () => List[Suggestion]],
+     explanation: Optional[Text],
+     known:       Set[Flag[?]],
+     present:     Set[Flag[?]])
 
 case class CliCompletion
-    ( fullArguments:    List[Argument],
-      arguments:        List[Argument],
-      environment:      Environment,
-      workingDirectory: WorkingDirectory,
-      shell:            Shell,
-      currentArgument:  Int,
-      focusPosition:    Int,
-      stdio:            Stdio,
-      signals:          LazyList[Signal] )
+    (fullArguments:    List[Argument],
+     arguments:        List[Argument],
+     environment:      Environment,
+     workingDirectory: WorkingDirectory,
+     shell:            Shell,
+     currentArgument:  Int,
+     focusPosition:    Int,
+     stdio:            Stdio,
+     signals:          LazyList[Signal])
     (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
@@ -166,11 +166,11 @@ package executives:
     type Return = Execution
 
     def cli
-        ( arguments:        Iterable[Text],
-          environment:      Environment,
-          workingDirectory: WorkingDirectory,
-          stdio:            Stdio,
-          signals:          LazyList[Signal] )
+        (arguments:        Iterable[Text],
+         environment:      Environment,
+         workingDirectory: WorkingDirectory,
+         stdio:            Stdio,
+         signals:          LazyList[Signal])
         (using interpreter: CliInterpreter)
             : Cli =
       arguments match
