@@ -170,14 +170,14 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
   def log()(using GitCommand, WorkingDirectory, Log[Text], Raises[ExecError]): LazyList[Commit] =
     def recur
-        ( stream:    LazyList[Text],
-          hash:      Optional[CommitHash] = Unset,
-          tree:      Optional[CommitHash] = Unset,
-          parents:   List[CommitHash]     = Nil,
-          author:    Optional[Text]       = Unset,
-          committer: Optional[Text]       = Unset,
-          signature: List[Text]           = Nil,
-          lines:     List[Text]           = Nil )
+        (stream:    LazyList[Text],
+         hash:      Optional[CommitHash] = Unset,
+         tree:      Optional[CommitHash] = Unset,
+         parents:   List[CommitHash]     = Nil,
+         author:    Optional[Text]       = Unset,
+         committer: Optional[Text]       = Unset,
+         signature: List[Text]           = Nil,
+         lines:     List[Text]           = Nil)
             : LazyList[Commit] =
       
       def commit(): LazyList[Commit] =
@@ -274,13 +274,13 @@ object Git:
 
   inline def cloneCommit[SourceType <: Matchable, PathType: GenericPath]
       (source: SourceType, targetPath: PathType, commit: CommitHash)
-      ( using Internet,
-              Decoder[Path],
-              GitCommand,
-              Raises[GitError],
-              Raises[ExecError],
-              Log[Text],
-              WorkingDirectory )
+      (using Internet,
+             Decoder[Path],
+             GitCommand,
+             Raises[GitError],
+             Raises[ExecError],
+             Log[Text],
+             WorkingDirectory)
           : GitProcess[GitRepo] =
 
     val sourceText = inline source match
@@ -292,11 +292,11 @@ object Git:
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone[SourceType <: Matchable, PathType: GenericPath]
-      ( source:     SourceType,
-        targetPath: PathType,
-        bare:       Boolean          = false,
-        branch:     Optional[Branch] = Unset,
-        recursive:  Boolean          = false )
+      (source:     SourceType,
+       targetPath: PathType,
+       bare:       Boolean          = false,
+       branch:     Optional[Branch] = Unset,
+       recursive:  Boolean          = false)
       (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)
       (using gitError: Raises[GitError])
           : GitProcess[GitRepo] =
@@ -312,10 +312,10 @@ object Git:
   private def uncheckedCloneCommit[PathType: GenericPath]
       (source: Text, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand)
-      ( using gitError:         Raises[GitError],
-              exec:             Raises[ExecError],
-              log:              Log[Text],
-              workingDirectory: WorkingDirectory )
+      (using gitError:         Raises[GitError],
+             exec:             Raises[ExecError],
+             log:              Log[Text],
+             workingDirectory: WorkingDirectory)
           : GitProcess[GitRepo]/*^{gitError, log, workingDirectory, exec}*/ =
     
     val gitRepo = init(targetPath)
@@ -327,11 +327,11 @@ object Git:
       gitRepo
 
   private def uncheckedClone[PathType: GenericPath]
-      ( source:     Text,
-        targetPath: PathType,
-        bare:       Boolean          = false,
-        branch:     Optional[Branch] = Unset,
-        recursive:  Boolean          = false )
+      (source:     Text,
+       targetPath: PathType,
+       bare:       Boolean          = false,
+       branch:     Optional[Branch] = Unset,
+       recursive:  Boolean          = false)
       (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Raises[ExecError], GitCommand)
       (using gitError: Raises[GitError])
           : GitProcess[GitRepo]/*^{gitError}*/ =
@@ -412,13 +412,13 @@ object GitCommand:
 case class GitCommand(file: File)
 
 case class Commit
-    ( commit: CommitHash,
-      tree: CommitHash,
-      parent: List[CommitHash],
-      author: Text,
-      committer: Text,
-      signature: Optional[Pem],
-      message: List[Text] )
+    (commit: CommitHash,
+     tree: CommitHash,
+     parent: List[CommitHash],
+     author: Text,
+     committer: Text,
+     signature: Optional[Pem],
+     message: List[Text])
 
 package gitCommands:
   given environmentDefault
