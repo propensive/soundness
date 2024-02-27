@@ -107,8 +107,10 @@ object PathOp:
       t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} $angle ${bit(largeArc)} ${bit(sweep)} $coords"
 
 case class Path
-    (ops: List[PathOp] = Nil, style: Optional[CssStyle] = Unset, id: Optional[SvgId] = Unset,
-        transform: List[Transform] = Nil)
+    (ops:       List[PathOp]       = Nil,
+     style:     Optional[CssStyle] = Unset,
+     id:        Optional[SvgId]    = Unset,
+     transform: List[Transform]    = Nil)
 extends Shape:
   import PathOp.*
   
@@ -122,7 +124,9 @@ extends Shape:
   def move(vector: DxDy): Path = Path(Move(Rel(vector)) :: ops)
   def line(vector: DxDy): Path = Path(Line(Rel(vector)) :: ops)
 
-  def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Path = Path(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
+  def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Path =
+    Path(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
+  
   def curveTo(ctrl1: Xy, ctrl2: Xy, point: Xy): Path = Path(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
   
   def curve(ctrl2: DxDy, vector: DxDy): Path = Path(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
@@ -160,7 +164,13 @@ case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) e
       if circle then t"""<circle cx="${center.x.toDouble}" cy="${center.y.toDouble}" r="${xRadius.toDouble}"/>"""
       else t"""<ellipse cx="${center.x.toDouble}" cy="${center.y.toDouble}" rx="${xRadius.toDouble}" ry="${yRadius.toDouble}"/>"""
 
-case class Svg(width: Quantity[Units[1, Length]], height: Quantity[Units[1, Length]], viewWidth: Float, viewHeight: Float, defs: List[SvgDef], shapes: List[Shape])
+case class Svg
+    (width:      Quantity[Units[1, Length]],
+     height:     Quantity[Units[1, Length]],
+     viewWidth:  Float,
+     viewHeight: Float,
+     defs:       List[SvgDef],
+     shapes:     List[Shape])
 
 sealed trait Shape:
   val transforms: List[Transform] = Nil
