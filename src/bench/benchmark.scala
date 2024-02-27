@@ -23,15 +23,15 @@ import scala.collection.mutable as scm
 
 extension [TestType](test: Test[TestType])
   inline def benchmark[DurationType, ReportType]
-      ( confidence: Optional[Benchmark.Percentiles] = Unset,
-        iterations: Optional[Int]                   = Unset,
-        duration:   Optional[DurationType]          = Unset,
-        warmup:     Optional[DurationType]          = Unset,
-        baseline:   Optional[Baseline]              = Unset )
-      ( using runner:           Runner[ReportType],
-              inc:              Inclusion[ReportType, Benchmark],
-              specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
-              genericDuration:  GenericDuration[DurationType]  = timeInterfaces.long )
+      (confidence: Optional[Benchmark.Percentiles] = Unset,
+       iterations: Optional[Int]                   = Unset,
+       duration:   Optional[DurationType]          = Unset,
+       warmup:     Optional[DurationType]          = Unset,
+       baseline:   Optional[Baseline]              = Unset)
+      (using runner:           Runner[ReportType],
+             inc:              Inclusion[ReportType, Benchmark],
+             specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
+             genericDuration:  GenericDuration[DurationType]  = timeInterfaces.long)
           : Unit =
 
     val action = test.action

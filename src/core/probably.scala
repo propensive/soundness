@@ -154,39 +154,39 @@ extension [TestType](test: Test[TestType])
   
   inline def assert[ReportType]
       (inline predicate: TestType => Boolean)
-      ( using runner:     Runner[ReportType],
-              inclusion:  Inclusion[ReportType, Outcome],
-              inclusion2: Inclusion[ReportType, DebugInfo] )
+      (using runner:     Runner[ReportType],
+             inclusion:  Inclusion[ReportType, Outcome],
+             inclusion2: Inclusion[ReportType, DebugInfo])
           : Unit =
     ${Probably.assert[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
   
   inline def check[ReportType]
       (inline predicate: TestType => Boolean)
-      ( using runner:     Runner[ReportType],
-              inclusion:  Inclusion[ReportType, Outcome],
-              inclusion2: Inclusion[ReportType, DebugInfo] )
+      (using runner:     Runner[ReportType],
+             inclusion:  Inclusion[ReportType, Outcome],
+             inclusion2: Inclusion[ReportType, DebugInfo])
           : TestType =
     ${Probably.check[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[ReportType]()
-      ( using runner:     Runner[ReportType],
-              inclusion:  Inclusion[ReportType, Outcome],
-              inclusion2: Inclusion[ReportType, DebugInfo] )
+      (using runner:     Runner[ReportType],
+             inclusion:  Inclusion[ReportType, Outcome],
+             inclusion2: Inclusion[ReportType, DebugInfo])
           : Unit =
     ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
   
   inline def check[ReportType]()
-      ( using runner:     Runner[ReportType],
-              inclusion:  Inclusion[ReportType, Outcome],
-              inclusion2: Inclusion[ReportType, DebugInfo] )
+      (using runner:     Runner[ReportType],
+             inclusion:  Inclusion[ReportType, Outcome],
+             inclusion2: Inclusion[ReportType, DebugInfo])
           : TestType =
 
     ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
   
   inline def matches[ReportType](inline pf: PartialFunction[TestType, Any])
-      ( using runner: Runner[ReportType],
-              inc:    Inclusion[ReportType, Outcome],
-              inc2:   Inclusion[ReportType, DebugInfo] )
+      (using runner: Runner[ReportType],
+             inc:    Inclusion[ReportType, Outcome],
+             inc2:   Inclusion[ReportType, DebugInfo])
           : Unit =
 
     assert[ReportType](pf.isDefinedAt(_))
