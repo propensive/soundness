@@ -29,11 +29,11 @@ import scala.quoted.*
 object Eucalyptus:
   given Realm = realm"eucalyptus"
   
-  def record
-      [MessageType: Type, TextType: Type]
-      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm], textual: Expr[Textual[TextType]], show: Expr[Any])
+  def record[MessageType: Type, TextType: Type]
+      (level: Expr[Level], message: Expr[MessageType], log: Expr[Log[TextType]], realm: Expr[Realm],
+          textual: Expr[Textual[TextType]], show: Expr[Any])
       (using Quotes)
-      : Expr[Unit] =
+        : Expr[Unit] =
     
     '{
       val time = System.currentTimeMillis
@@ -43,7 +43,10 @@ object Eucalyptus:
       catch case e: Exception => ()
     }
 
-  def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])(using Quotes): Expr[Log[TextType]] =
+  def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])
+      (using Quotes)
+        : Expr[Log[TextType]] =
+
     import quotes.reflect.*
 
     def invalidRoutes(): Nothing = fail(msg"the routes must be specified as one or more case clauses")

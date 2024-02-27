@@ -31,6 +31,7 @@ object Tests extends Suite(t"Eucalyptus tests"):
     import Level.*
     given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
     given LogFormat[Err.type, Display] = logFormats.standardColor[Err.type]
+    
     supervise:
       given Log[Display] = Log.route[Display]:
         case Warn() => Out

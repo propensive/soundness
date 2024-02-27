@@ -36,9 +36,9 @@ enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry[?]): Boolean = entry.level == this
   
-case class Entry
-    [TextType]
+case class Entry[TextType]
     (realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text]):
+
   def map[TextType2](lambda: TextType => TextType2): Entry[TextType2] =
     Entry(realm, level, lambda(message), timestamp, envelopes)
 
@@ -53,19 +53,20 @@ trait Envelope[-EnvelopeType]:
 object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
 
-  def apply
-      [TargetType, TextType]
-      (target: TargetType, appendable: Appendable[TargetType, TextType], format: LogFormat[TargetType, TextType])
+  def apply[TargetType, TextType]
+      ( target:     TargetType,
+        appendable: Appendable[TargetType, TextType],
+        format:     LogFormat[TargetType, TextType] )
       (using monitor: Monitor)
-      : Logger[TextType]/*^{monitor}*/ =
+        : Logger[TextType]/*^{monitor}*/ =
+
     LogProcess(target)(using format)(using appendable)
 
 object LogWriter:
-  given active
-      [TargetType, TextType]
-      (using format: LogFormat[TargetType, TextType])
+  given active[TargetType, TextType](using format: LogFormat[TargetType, TextType])
       (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
-      : LogWriter[TargetType, TextType]/*^{monitor}*/ =
+        : LogWriter[TargetType, TextType]/*^{monitor}*/ =
+
     LogProcess[TargetType, TextType](_)(using format)(using appendable, monitor)
 
 trait LogWriter[TargetType, TextType]:
@@ -74,12 +75,10 @@ trait LogWriter[TargetType, TextType]:
 trait Logger[TextType]:
   def put(entry: Entry[TextType]): Unit
 
-class LogProcess
-    [TargetType, TextType]
-    (target: TargetType)
-    (using format: LogFormat[TargetType, TextType])
+class LogProcess[TargetType, TextType](target: TargetType)(using format: LogFormat[TargetType, TextType])
     (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
 extends Logger[TextType]:
+
   private val funnel: Funnel[Entry[TextType]] = Funnel()
   
   private val async: Async[Unit] = Async:
