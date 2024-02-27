@@ -25,10 +25,10 @@ import language.experimental.captureChecking
 object NumericallyComparable:
   inline given numeric: Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] with
     inline def compare
-        ( inline left:        Boolean,
-          inline right:       Int | Double | Char | Byte | Short | Float | Long,
-          inline strict:      Boolean,
-          inline greaterThan: Boolean )
+        (inline left:        Boolean,
+         inline right:       Int | Double | Char | Byte | Short | Float | Long,
+         inline strict:      Boolean,
+         inline greaterThan: Boolean)
             : Boolean =
 
       ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}

@@ -84,10 +84,10 @@ object Hypotenuse2:
       Expr(int.toByte)
   
   def inequality
-      ( expr: Expr[Boolean],
-        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
-        strict: Expr[Boolean],
-        greaterThan: Expr[Boolean] )
+      (expr: Expr[Boolean],
+       bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
+       strict: Expr[Boolean],
+       greaterThan: Expr[Boolean])
       (using Quotes)
           : Expr[Boolean] =
     
