@@ -49,7 +49,10 @@ trait Browser(name: Text):
   def launch(port: Int)(using WorkingDirectory, Log[Text], Monitor): Server
   def stop(server: Server)(using Log[Text]): Unit
 
-  def session[T](port: Int = 4444)(block: (session: WebDriver#Session) ?=> T)(using WorkingDirectory, Log[Text], Monitor): T =
+  def session[ResultType](port: Int = 4444)(block: (session: WebDriver#Session) ?=> ResultType)
+      (using WorkingDirectory, Log[Text], Monitor)
+          : ResultType =
+
     val server = launch(port)
     try block(using WebDriver(server).startSession()) finally server.stop()
 
@@ -80,7 +83,7 @@ case class WebDriver(server: Browser#Server):
   case class Session(sessionId: Text):
     def webDriver: WebDriver = wd
     
-    private def safe[T](block: => T): T =
+    private def safe[ResultType](block: => ResultType): ResultType =
       try block catch case e: HttpError => e match
         case HttpError(status, body) =>
           val json = body match
@@ -98,8 +101,7 @@ case class WebDriver(server: Browser#Server):
       private def get(address: Text)(using Log[Text]): Json = safe:
         given Online = Online
         val url: HttpUrl = url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
-
-          url.get(RequestHeader.ContentType(media"application/json")).as[Json]
+        url.get(RequestHeader.ContentType(media"application/json")).as[Json]
       
       private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
         given Online = Online
@@ -115,15 +117,18 @@ case class WebDriver(server: Browser#Server):
         post(t"value", Data(text).json)
     
       @targetName("at")
-      infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text]): List[Element] =
+      infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text])
+              : List[Element] =
         case class Data(`using`: Text, value: Text)
+        
         post(t"elements", Data(locator.strategy, locator.value(value)).json)
           .value
           .as[List[Json]]
           .map(_(Wei).as[Text])
           .map(Element(_))
       
-      def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): Element =
+      def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+              : Element =
         case class Data(`using`: Text, value: Text)
         val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
@@ -148,7 +153,9 @@ case class WebDriver(server: Browser#Server):
     def url[UrlType: SpecificUrl]()(using Log[Text]): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
-    infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): List[Element] =
+    infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+            : List[Element] =
+
       case class Data(`using`: Text, value: Text)
       post(t"elements", Data(locator.strategy, locator.value(value)).json)
         .value
@@ -156,7 +163,9 @@ case class WebDriver(server: Browser#Server):
         .map(_(Wei).as[Text])
         .map(Element(_))
     
-    def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text]): Element =
+    def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+            : Element =
+
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
       
