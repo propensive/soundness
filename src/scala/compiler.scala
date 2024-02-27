@@ -100,12 +100,9 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
-  def apply
-      (classpath: LocalClasspath)
-      [PathType: GenericPath]
-      (sources: Map[Text, Text], out: PathType)
+  def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
       (using SystemProperties)
-      : List[Diagnostic] raises ScalacError =
+        : List[Diagnostic] raises ScalacError =
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
