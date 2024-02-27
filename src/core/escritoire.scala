@@ -41,9 +41,9 @@ object BoxDrawing:
   
   private val box: IArray[Char] =
     List
-      ( t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
-        t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
-        t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬" ).join.chars
+      (t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
+       t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
+       t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬").join.chars
 
   def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
     box(top.ordinal + right.ordinal*4 + bottom.ordinal*16 + left.ordinal*64)
@@ -72,12 +72,12 @@ trait ColumnAlignment[-ColumnType]:
 object Column:
 
   def apply[RowType, CellType, TextType]
-      ( title:  TextType,
-        width:  Optional[Int]       = Unset,
-        align:  Optional[Alignment] = Unset,
-        breaks: Breaks              = Breaks.Space,
-        hide:   Boolean             = false,
-        sizing: ColumnSizing )
+      (title:  TextType,
+       width:  Optional[Int]       = Unset,
+       align:  Optional[Alignment] = Unset,
+       breaks: Breaks              = Breaks.Space,
+       hide:   Boolean             = false,
+       sizing: ColumnSizing)
       (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
@@ -88,13 +88,13 @@ object Column:
     Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, sizing)
 
 case class Column[RowType, TextType: Textual]
-    ( title:  TextType,
-      get:    RowType -> TextType,
-      breaks: Breaks,
-      align:  Alignment,
-      width:  Optional[Int],
-      hide:   Boolean,
-      sizing: ColumnSizing )
+    (title:  TextType,
+     get:    RowType -> TextType,
+     breaks: Breaks,
+     align:  Alignment,
+     width:  Optional[Int],
+     hide:   Boolean,
+     sizing: ColumnSizing)
 
 object Table:
   @targetName("make")

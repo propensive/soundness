@@ -33,7 +33,6 @@ def run(): Unit =
     Column(t"Age", sizing = columnSizing.Fixed(10))(_.age.show)
   )
 
-  /* This is a comment. */
   val tabulation = table.tabulate(List(
     Person(t"Jon Pretty", 41),
     Person(t"Kyle Murray", 28),

@@ -51,21 +51,21 @@ package tableStyles:
     TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
 
 case class TableStyle
-    ( pad:         Int,
-      left:        Char,
-      sep:         Char,
-      right:       Char,
-      topLeft:     Char,
-      topSep:      Char,
-      topRight:    Char,
-      bottomLeft:  Char,
-      bottomSep:   Char,
-      bottomRight: Char,
-      midLeft:     Char,
-      midSep:      Char,
-      midRight:    Char,
-      topBar:      Char,
-      midBar:      Char,
-      bottomBar:   Char ):
+    (pad:         Int,
+     left:        Char,
+     sep:         Char,
+     right:       Char,
+     topLeft:     Char,
+     topSep:      Char,
+     topRight:    Char,
+     bottomLeft:  Char,
+     bottomSep:   Char,
+     bottomRight: Char,
+     midLeft:     Char,
+     midSep:      Char,
+     midRight:    Char,
+     topBar:      Char,
+     midBar:      Char,
+     bottomBar:   Char):
 
   def cost(columns: Int): Int = columns*pad*2 + columns + 1
