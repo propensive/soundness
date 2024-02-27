@@ -97,14 +97,14 @@ object Matrix:
 
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using DummyImplicit)[ElementType]
       (rows: Tuple)
-      ( using Tuple.Union[Tuple.Fold[
-                rows.type,
-                EmptyTuple,
-                [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]
-              ] & Tuple] <:< ElementType,
-              Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
-              Rows =:= Tuple.Size[rows.type],
-              ClassTag[ElementType] )
+      (using Tuple.Union[Tuple.Fold[
+               rows.type,
+               EmptyTuple,
+               [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]
+             ] & Tuple] <:< ElementType,
+             Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
+             Rows =:= Tuple.Size[rows.type],
+             ClassTag[ElementType])
       : Any =
 
     val rowCount: Int = valueOf[Rows]
@@ -144,8 +144,8 @@ object Mosquito:
 
   extension [LeftType](left: Euclidean[LeftType, 3])
     def cross[RightType](right: Euclidean[RightType, 3])(using multiply: MulOperator[LeftType, RightType])
-        ( using add:      AddOperator[multiply.Result, multiply.Result],
-                subtract: SubOperator[multiply.Result, multiply.Result] )
+        (using add:      AddOperator[multiply.Result, multiply.Result],
+               subtract: SubOperator[multiply.Result, multiply.Result])
             : Euclidean[add.Result, 3] =
 
       (left(1)*right(2) - left(2)*right(1)) *:
@@ -211,10 +211,10 @@ object Mosquito:
       map(_/right)
 
     def dot[RightType](right: Euclidean[RightType, SizeType])
-        ( using multiply: MulOperator[LeftType, RightType],
-                size:     ValueOf[SizeType],
-                add:      AddOperator[multiply.Result, multiply.Result],
-                equality: add.Result =:= multiply.Result )
+        (using multiply: MulOperator[LeftType, RightType],
+               size:     ValueOf[SizeType],
+               add:      AddOperator[multiply.Result, multiply.Result],
+               equality: add.Result =:= multiply.Result)
             : multiply.Result =
       
       def recur(index: Int, sum: multiply.Result): multiply.Result =
