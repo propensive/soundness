@@ -19,5 +19,4 @@ package gesticulate
 import language.experimental.captureChecking
 
 extension (inline ctx: StringContext)
-  transparent inline def media(inline parts: String*): MediaType =
-    ${Media.Prefix.expand('ctx, 'parts)}
+  transparent inline def media(inline parts: String*): MediaType = ${Media.Prefix.expand('ctx, 'parts)}
