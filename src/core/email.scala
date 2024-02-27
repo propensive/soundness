@@ -54,13 +54,22 @@ object EmailAddressError:
       case LongLocalPart                        => msg"the local part is more than 64 characters long"
       case TerminalPeriod                       => msg"the local part ends in a period, which is not allowed"
       case SuccessivePeriods                    => msg"the local part contains two adjacent periods"
-      case InitialPeriod                        => msg"the local part starts with a period, which is not allowed"
-      case UnescapedQuote                       => msg"the local part contains a quote character which is not escaped"
       case UnclosedQuote                        => msg"the quoted local part has no closing quote"
       case MissingDomain                        => msg"the domain is missing"
       case MissingAtSymbol                      => msg"the at-symbol is missing"
-      case UnclosedIpAddress                    => msg"the domain begins with ${'['} but does not end with ${']'}"
-      case InvalidChar(char)                    => msg"the local part contains the character $char which is not allowed"
+
+      case InitialPeriod =>
+        msg"the local part starts with a period, which is not allowed"
+
+      case UnclosedIpAddress =>
+        msg"the domain begins with ${'['} but does not end with ${']'}"
+
+      case InvalidChar(char) =>
+        msg"the local part contains the character $char which is not allowed"
+
+      case UnescapedQuote =>
+        msg"the local part contains a quote character which is not escaped"
+
 
 import EmailAddressError.Reason.*
 
@@ -84,33 +93,33 @@ object EmailAddress:
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
     
-    def quoted(index: Int, escape: Boolean): (LocalPart, Int) =
-      safely(text(index)) match
-        case '\"' =>
-          if escape then
-            buffer.append('\"')
-            quoted(index + 1, false)
-          else
-            if safely(text(index + 1)) == '@'
-            then (LocalPart.Quoted(buffer.text), index + 2)
-            else abort(EmailAddressError(UnescapedQuote))
-        
-        case '\\' =>
-          if escape then buffer.append('\\')
-          quoted(index + 1, !escape)
-        
-        case char: Char =>
-          buffer.append(char)
+    def quoted(index: Int, escape: Boolean): (LocalPart, Int) = safely(text(index)) match
+      case '\"' =>
+        if escape then
+          buffer.append('\"')
           quoted(index + 1, false)
+        else
+          if safely(text(index + 1)) == '@'
+          then (LocalPart.Quoted(buffer.text), index + 2)
+          else abort(EmailAddressError(UnescapedQuote))
+      
+      case '\\' =>
+        if escape then buffer.append('\\')
+        quoted(index + 1, !escape)
+      
+      case char: Char =>
+        buffer.append(char)
+        quoted(index + 1, false)
 
-        case Unset =>
-          raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
+      case Unset =>
+        raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
     
     def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
       safely(text(index)) match
         case '@' =>
           if dot then raise(EmailAddressError(TerminalPeriod))(())
           if buffer.length > 64 then raise(EmailAddressError(LongLocalPart))(())
+
           (LocalPart.Unquoted(buffer.text), index + 1)
 
         case '.'  =>
@@ -139,8 +148,8 @@ object EmailAddress:
           import errorHandlers.throwUnsafely
           val ipAddress = text.slice(index + 1, text.length - 1)
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5)) else Ipv4.parse(ipAddress)
-        catch case error: IpAddressError =>
-          abort(EmailAddressError(InvalidDomain(error)))
+        catch case error: IpAddressError => abort(EmailAddressError(InvalidDomain(error)))
+
       else
         try
           import errorHandlers.throwUnsafely

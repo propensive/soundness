@@ -66,40 +66,33 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
   
   def initial: Text = t""
   
-  def insert(state: Text, value: UrlInput): Text =
-    value match
-      case UrlInput.Integral(port) =>
-        if !state.ends(t":")
-        then throw InterpolationError(msg"a port number must be specified after a colon")
-        
-        try throwErrors(Url.parse(state+port.show))
-        catch
-          case err: UrlError      => throw InterpolationError(Message(err.message.text))
-          case err: HostnameError => throw InterpolationError(Message(err.message.text))
-        
-        state+port.show
+  def insert(state: Text, value: UrlInput): Text = value match
+    case UrlInput.Integral(port) =>
+      if !state.ends(t":") then throw InterpolationError(msg"a port number must be specified after a colon")
       
-      case UrlInput.Textual(txt) =>
-        if !state.ends(t"/")
-        then throw InterpolationError(msg"a substitution may only be made after a slash")
-        
-        try throwErrors(Url.parse(state+txt.urlEncode))
-        catch
-          case err: UrlError      => throw InterpolationError(Message(err.message.text))
-          case err: HostnameError => throw InterpolationError(Message(err.message.text))
-        
-        state+txt.urlEncode
+      try throwErrors(Url.parse(state+port.show)) catch
+        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case err: HostnameError => throw InterpolationError(Message(err.message.text))
       
-      case UrlInput.RawTextual(txt) =>
-        if !state.ends(t"/")
-        then throw InterpolationError(msg"a substitution may only be made after a slash")
+      state+port.show
+    
+    case UrlInput.Textual(text) =>
+      if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
+      
+      try throwErrors(Url.parse(state+text.urlEncode)) catch
+        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case err: HostnameError => throw InterpolationError(Message(err.message.text))
+      
+      state+text.urlEncode
+    
+    case UrlInput.RawTextual(text) =>
+      if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
 
-        try throwErrors(Url.parse(state+txt.urlEncode))
-        catch
-          case err: UrlError      => throw InterpolationError(Message(err.message.text))
-          case err: HostnameError => throw InterpolationError(Message(err.message.text))
-        
-        state+txt
+      try throwErrors(Url.parse(state+text.urlEncode)) catch
+        case err: UrlError      => throw InterpolationError(Message(err.message.text))
+        case err: HostnameError => throw InterpolationError(Message(err.message.text))
+      
+      state+text
   
   override def substitute(state: Text, sub: Text): Text = state+sub
 
@@ -115,7 +108,10 @@ object Url:
   given GenericUrl[HttpUrl] = _.show
   given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
   given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show(_)
-  given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] = parse(_)
+  
+  given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] =
+    parse(_)
+  
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
   given [SchemeType <: Label]: Navigable[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
@@ -135,7 +131,8 @@ object Url:
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
   
-  given display[SchemeType <: Label]: Displayable[Url[SchemeType]] = url => e"$Underline(${Fg(0x00bfff)}(${show(url)}))"
+  given display[SchemeType <: Label]: Displayable[Url[SchemeType]] =
+    url => e"$Underline(${Fg(0x00bfff)}(${show(url)}))"
 
   given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show(url))
 
@@ -189,9 +186,8 @@ object Url:
         val (pathStart, auth) =
           if value.slice(colon + 1, colon + 3) == t"//" then
             val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.length)
-            authEnd -> Authority.parse(value.slice(colon + 3, authEnd))
-          else
-            (colon + 1) -> Unset
+            (authEnd, Authority.parse(value.slice(colon + 3, authEnd)))
+          else (colon + 1, Unset)
         
         safely(value.where(_ == '?', pathStart)) match
           case Unset => safely(value.where(_ == '#', pathStart)) match
@@ -250,10 +246,12 @@ case class Weblink(ascent: Int, descent: List[PathName[""]])
 
 type HttpUrl = Url["https" | "http"]
 
-case class Url
-    [+SchemeType <: Label]
-    (scheme: Scheme[SchemeType], authority: Optional[Authority], pathText: Text, query: Optional[Text] = Unset,
-        fragment: Optional[Text] = Unset):
+case class Url[+SchemeType <: Label]
+    ( scheme:    Scheme[SchemeType],
+      authority: Optional[Authority],
+      pathText:  Text,
+      query:     Optional[Text]      = Unset,
+      fragment:  Optional[Text]      = Unset ):
   
   lazy val path: List[PathName[""]] =
     // FIXME: This needs to be handled better
