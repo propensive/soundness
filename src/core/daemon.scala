@@ -63,14 +63,14 @@ trait StderrSupport:
   def apply(): Boolean
 
 case class ClientConnection[BusType <: Matchable]
-    ( pid:         Pid,
-      async:       Async[Unit],
-      signals:     Funnel[Signal],
-      terminate:   Promise[Unit],
-      close:       () => Unit,
-      exitPromise: Promise[ExitStatus],
-      bus:         Funnel[BusType],
-      stderr:      Promise[ji.OutputStream] ):
+    (pid:         Pid,
+     async:       Async[Unit],
+     signals:     Funnel[Signal],
+     terminate:   Promise[Unit],
+     close:       () => Unit,
+     exitPromise: Promise[ExitStatus],
+     bus:         Funnel[BusType],
+     stderr:      Promise[ji.OutputStream]):
 
   def receive(message: BusType): Unit = bus.put(message)
 
@@ -84,9 +84,9 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
 
 def daemon[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    ( using interpreter:   CliInterpreter,
-            stderrSupport: StderrSupport = daemonConfig.supportStderr,
-            model:         ThreadModel )
+    (using interpreter:   CliInterpreter,
+           stderrSupport: StderrSupport = daemonConfig.supportStderr,
+           model:         ThreadModel)
       : Unit =
   
   given Realm: Realm = realm"ethereal"
@@ -275,25 +275,25 @@ def daemon[BusType <: Matchable](using executive: Executive)
     ExitStatus.Ok
   
 case class DaemonService[BusType <: Matchable]
-    ( pid:        Pid,
-      shutdown:   () => Unit,
-      cliInput:   CliInput,
-      script:     Unix.Path,
-      deliver:    BusType => Unit,
-      bus:        LazyList[BusType],
-      scriptName: Text )
+    (pid:        Pid,
+     shutdown:   () => Unit,
+     cliInput:   CliInput,
+     script:     Unix.Path,
+     deliver:    BusType => Unit,
+     bus:        LazyList[BusType],
+     scriptName: Text)
 extends ShellContext:
 
   def broadcast(message: BusType): Unit = deliver(message)
 
 enum DaemonEvent:
   case Init
-      ( pid:         Pid,
-        work:        Text,
-        script:      Text,
-        cliInput:    CliInput,
-        arguments:   List[Text],
-        environment: List[Text] )
+      (pid:         Pid,
+       work:        Text,
+       script:      Text,
+       cliInput:    CliInput,
+       arguments:   List[Text],
+       environment: List[Text])
 
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
