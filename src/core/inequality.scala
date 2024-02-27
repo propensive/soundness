@@ -25,15 +25,19 @@ import language.experimental.captureChecking
 object NumericallyComparable:
   inline given numeric: Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] with
     inline def compare
-        (inline left: Boolean, inline right: Int | Double | Char | Byte | Short | Float | Long,
-            inline strict: Boolean, inline greaterThan: Boolean)
-        : Boolean =
+        ( inline left:        Boolean,
+          inline right:       Int | Double | Char | Byte | Short | Float | Long,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+            : Boolean =
+
       ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}
 
   given inequality: Inequality[ByteSize, ByteSize] with
     inline def compare
         (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
-        : Boolean =
+            : Boolean =
+
       !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
 
 trait NumericallyComparable
@@ -52,13 +56,15 @@ trait CompareGreaterEqual[-LeftType, -RightType, +ResultType] extends Numericall
 
 
 trait Inequality[-LeftType, -RightType]
-extends CompareGreaterEqual[LeftType, RightType, Boolean], CompareLess[LeftType, RightType, Boolean],
-    CompareLessEqual[LeftType, RightType, Boolean], CompareGreater[LeftType, RightType, Boolean]:
+extends
+    CompareGreaterEqual[LeftType, RightType, Boolean],
+    CompareLess[LeftType, RightType, Boolean],
+    CompareLessEqual[LeftType, RightType, Boolean],
+    CompareGreater[LeftType, RightType, Boolean]:
 
   inline def compare
-      (inline left: LeftType, inline right: RightType, inline strict: Boolean,
-          inline greaterThan: Boolean)
-      : Boolean
+      (inline left: LeftType, inline right: RightType, inline strict: Boolean, inline greaterThan: Boolean)
+          : Boolean
 
   inline def lessThan(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, true, false)
@@ -76,24 +82,28 @@ extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline infix def < [RightType, ResultType](inline right: RightType)
       (using inline compareLess: CompareLess[LeftType, RightType, ResultType])
-      : ResultType =
+          : ResultType =
+
     compareLess.lessThan(left, right)
   
   @targetName("lte")
   inline infix def <= [RightType, ResultType](inline right: RightType)
       (using inline compareLessEqual: CompareLessEqual[LeftType, RightType, ResultType])
-      : ResultType =
+          : ResultType =
+
     compareLessEqual.lessThanOrEqual(left, right)
   
   @targetName("gt")
   inline infix def > [RightType, ResultType](inline right: RightType)
       (using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
-      : ResultType =
+          : ResultType =
+
     compareGreater.greaterThan(left, right)
   
   @targetName("gte")
   inline infix def >= [RightType, ResultType](inline right: RightType)
       (using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
-      : ResultType =
+          : ResultType =
+
     compareGreaterEqual.greaterThanOrEqual(left, right)
   

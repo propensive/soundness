@@ -84,10 +84,12 @@ object Hypotenuse2:
       Expr(int.toByte)
   
   def inequality
-      (expr: Expr[Boolean], bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
-          strict: Expr[Boolean], greaterThan: Expr[Boolean])
+      ( expr: Expr[Boolean],
+        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
+        strict: Expr[Boolean],
+        greaterThan: Expr[Boolean] )
       (using Quotes)
-      : Expr[Boolean] =
+          : Expr[Boolean] =
     
     val errorMessage = msg"this cannot be written as a range expression"
     
@@ -108,6 +110,7 @@ object Hypotenuse2:
         case '{($bound: Float) > ($value: Float)}    => value
         case '{($bound: Float) >= ($value: Float)}   => value
         case _                                       => fail(errorMessage)
+
       else expr match
         case '{($bound: Int) < ($value: Int)}        => value
         case '{($bound: Int) <= ($value: Int)}       => value
