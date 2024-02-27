@@ -22,15 +22,18 @@ import anticipation.*
 import scala.collection.mutable as scm
 
 extension [TestType](test: Test[TestType])
-  inline def benchmark
-      [DurationType, ReportType]
-      (confidence: Optional[Benchmark.Percentiles] = Unset, iterations: Optional[Int] = Unset,
-          duration: Optional[DurationType] = Unset, warmup: Optional[DurationType] = Unset,
-          baseline: Optional[Baseline] = Unset)
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Benchmark],
-          specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
-          genericDuration: GenericDuration[DurationType] = timeInterfaces.long)
-      : Unit =
+  inline def benchmark[DurationType, ReportType]
+      ( confidence: Optional[Benchmark.Percentiles] = Unset,
+        iterations: Optional[Int]                   = Unset,
+        duration:   Optional[DurationType]          = Unset,
+        warmup:     Optional[DurationType]          = Unset,
+        baseline:   Optional[Baseline]              = Unset )
+      ( using runner:           Runner[ReportType],
+              inc:              Inclusion[ReportType, Benchmark],
+              specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
+              genericDuration:  GenericDuration[DurationType]  = timeInterfaces.long )
+          : Unit =
+
     val action = test.action
     var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
@@ -61,7 +64,7 @@ extension [TestType](test: Test[TestType])
     val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
     val stdDev: Double = math.sqrt(variance)
     
-    val benchmark = Benchmark(total, times.size, min.toDouble, mean, max.toDouble, stdDev,
-        confidence.or(95), baseline)
+    val benchmark =
+      Benchmark(total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
     
     inc.include(runner.report, test.id, benchmark)

@@ -19,11 +19,9 @@ package probably
 import rudiments.*
 
 case class Tolerance(value: Double, tolerance: Double):
-  def covers(right: Double): Boolean =
-    value >= (value - tolerance) && value <= (value + tolerance)
+  def covers(right: Double): Boolean = value >= (value - tolerance) && value <= (value + tolerance)
 
 extension (value: Double)
   @targetName("plusOrMinus")
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
-
   infix def meets (tolerance: Tolerance): Boolean = tolerance.covers(value)

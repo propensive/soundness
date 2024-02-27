@@ -30,21 +30,21 @@ import scala.collection.mutable as scm
 
 given realm: Realm = realm"probably"
 
-extension [T](inline value: T)(using inline test: TestContext)
-  inline def inspect: T = ${Probably.inspect('value, 'test)}
+extension [ValueType](inline value: ValueType)(using inline test: TestContext)
+  inline def inspect: ValueType = ${Probably.inspect('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
     private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
     
-    override def capture[T](name: Text, value: T)(using Debug[T]): T =
-      delegate.map(_.capture[T](name, value)).getOrElse(value)
+    override def capture[ValueType](name: Text, value: ValueType)(using Debug[ValueType]): ValueType =
+      delegate.map(_.capture[ValueType](name, value)).getOrElse(value)
 
 @annotation.capability
 class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
   
-  def capture[T](name: Text, value: T)(using Debug[T]): T =
+  def capture[ValueType](name: Text, value: ValueType)(using Debug[ValueType]): ValueType =
     captured.append(name -> value.debug)
     value
 
@@ -56,7 +56,10 @@ case class TestId(name: Text, suite: Optional[TestSuite], codepoint: Codepoint):
   import textMetrics.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
-  def apply[T](ctx: TestContext ?=> T): Test[T] = Test[T](this, ctx(using _))
+  
+  def apply[ResultType](ctx: TestContext ?=> ResultType): Test[ResultType] =
+    Test[ResultType](this, ctx(using _))
+  
   def depth: Int = suite.let(_.id.depth).or(0) + 1
 
 class TestSuite(val name: Text, val parent: Optional[TestSuite] = Unset)(using codepoint: Codepoint):
@@ -131,53 +134,59 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
 
   def complete(): Unit = reporter.complete(report)
 
-case class Test[+Return](id: TestId, action: TestContext => Return)
+case class Test[+ReturnType](id: TestId, action: TestContext => ReturnType)
 
 def test[ReportType](name: Text)(using suite: TestSuite, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
-def suite
-    [ReportType](name: Text)(using suite: TestSuite, runner: Runner[ReportType])
-    (block: TestSuite ?=> Unit): Unit =
+def suite[ReportType](name: Text)(using suite: TestSuite, runner: Runner[ReportType])
+    (block: TestSuite ?=> Unit)
+        : Unit =
+
   runner.suite(TestSuite(name, suite), block)
 
 extension [TestType](test: Test[TestType])
-  inline def aspire[ReportType]
-      (inline pred: TestType => Boolean)
+  inline def aspire[ReportType](inline predicate: TestType => Boolean)
       (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
     ${Probably.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
   
   inline def assert[ReportType]
-      (inline pred: TestType => Boolean)
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
-          inc2: Inclusion[ReportType, DebugInfo])
-      : Unit =
-    ${Probably.assert[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
+      (inline predicate: TestType => Boolean)
+      ( using runner:     Runner[ReportType],
+              inclusion:  Inclusion[ReportType, Outcome],
+              inclusion2: Inclusion[ReportType, DebugInfo] )
+          : Unit =
+    ${Probably.assert[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
   
   inline def check[ReportType]
-      (inline pred: TestType => Boolean)
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
-          inc2: Inclusion[ReportType, DebugInfo])
-      : TestType =
-    ${Probably.check[TestType, ReportType]('test, 'pred, 'runner, 'inc, 'inc2)}
+      (inline predicate: TestType => Boolean)
+      ( using runner:     Runner[ReportType],
+              inclusion:  Inclusion[ReportType, Outcome],
+              inclusion2: Inclusion[ReportType, DebugInfo] )
+          : TestType =
+    ${Probably.check[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[ReportType]()
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
-          inc2: Inclusion[ReportType, DebugInfo])
-      : Unit =
-    ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inc, 'inc2)}
+      ( using runner:     Runner[ReportType],
+              inclusion:  Inclusion[ReportType, Outcome],
+              inclusion2: Inclusion[ReportType, DebugInfo] )
+          : Unit =
+    ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
   
   inline def check[ReportType]()
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
-          inc2: Inclusion[ReportType, DebugInfo])
-      : TestType =
-    ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inc, 'inc2)}
+      ( using runner:     Runner[ReportType],
+              inclusion:  Inclusion[ReportType, Outcome],
+              inclusion2: Inclusion[ReportType, DebugInfo] )
+          : TestType =
+
+    ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
   
-  inline def matches[ReportType]
-      (inline pf: PartialFunction[TestType, Any])
-      (using runner: Runner[ReportType], inc: Inclusion[ReportType, Outcome],
-          inc2: Inclusion[ReportType, DebugInfo])
-      : Unit =
+  inline def matches[ReportType](inline pf: PartialFunction[TestType, Any])
+      ( using runner: Runner[ReportType],
+              inc:    Inclusion[ReportType, Outcome],
+              inc2:   Inclusion[ReportType, DebugInfo] )
+          : Unit =
+
     assert[ReportType](pf.isDefinedAt(_))
