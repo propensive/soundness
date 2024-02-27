@@ -24,11 +24,9 @@ import scala.compiletime.*
 object Cardinality:
   given Realm = realm"cardinality"
   
-  def apply
-      [LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type]
-      (digits: Expr[String])
-      (using Quotes)
-      : Expr[LeftDoubleType ~ RightDoubleType] =
+  def apply[LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type](digits: Expr[String])(using Quotes)
+        : Expr[LeftDoubleType ~ RightDoubleType] =
+
     import quotes.reflect.*
     
     digits.value match
