@@ -30,15 +30,15 @@ import language.experimental.pureFunctions
 given Realm = realm"exoskeleton"
 
 case class PosixParameters
-    (positional: List[Argument] = Nil, parameters: Map[Argument, List[Argument]] = Map(),
-        postpositional: List[Argument] = Nil, focusFlag: Optional[Argument] = Unset)
+    ( positional:     List[Argument]                = Nil,
+      parameters:     Map[Argument, List[Argument]] = Map(),
+      postpositional: List[Argument]                = Nil,
+      focusFlag:      Optional[Argument]            = Unset )
 extends FlagParameters:
   
-  def read
-      [OperandType]
-      (flag: Flag[OperandType])
+  def read[OperandType](flag: Flag[OperandType])
       (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
-      : Optional[OperandType] =
+        : Optional[OperandType] =
     
     cli.register(flag, suggestions)
 
@@ -52,8 +52,11 @@ object PosixCliInterpreter extends CliInterpreter:
   type Parameters = PosixParameters
   def interpret(arguments: List[Argument]): PosixParameters =
     def recur
-        (todo: List[Argument], arguments: List[Argument], current: Optional[Argument], parameters: PosixParameters)
-        : PosixParameters =
+        ( todo:       List[Argument],
+          arguments:  List[Argument],
+          current:    Optional[Argument],
+          parameters: PosixParameters )
+          : PosixParameters =
       
       def push(): PosixParameters = current match
         case Unset =>
@@ -77,14 +80,21 @@ object PosixCliInterpreter extends CliInterpreter:
 
 object Suggestion:
   def apply
-      (text: Text, description: Optional[Text | Display], hidden: Boolean = false, incomplete: Boolean = false,
-          aliases: List[Text] = Nil)
-      : Suggestion =
+      ( text: Text,
+        description: Optional[Text | Display],
+        hidden: Boolean = false,
+        incomplete: Boolean = false,
+        aliases: List[Text] = Nil )
+        : Suggestion =
     
     new Suggestion(text, description, hidden, incomplete, aliases)
 
 case class Suggestion
-    (text: Text, description: Optional[Text | Display], hidden: Boolean, incomplete: Boolean, aliases: List[Text])
+    ( text:        Text,
+      description: Optional[Text | Display],
+      hidden:      Boolean,
+      incomplete:  Boolean,
+      aliases:     List[Text] )
 
 object Suggestions:
   def noSuggestions[OperandType]: Suggestions[OperandType] = () => Nil
@@ -103,7 +113,7 @@ object FlagInterpreter:
   given decoder[OperandType](using decoder: Decoder[OperandType]): FlagInterpreter[OperandType]/*^{decoder}*/ =
     arguments =>
       (arguments.take(1): @unchecked) match
-      case List(value) => value().decodeAs[OperandType]
+        case List(value) => value().decodeAs[OperandType]
 
 trait FlagInterpreter[OperandType]:
   def operand: Boolean = true
@@ -116,25 +126,36 @@ object Flag:
 
 object Switch:
   def apply
-      (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil,
-          description: Optional[Text] = Unset, secret: Boolean = false): Flag[Unit] =
+      ( name: Text | Char,
+        repeatable: Boolean         = false,
+        aliases: List[Text | Char]  = Nil,
+        description: Optional[Text] = Unset,
+        secret: Boolean             = false )
+        : Flag[Unit] =
+
     Flag[Unit](name, repeatable, aliases, description, secret)(using FlagInterpreter.unit)
 
-case class Flag
-    [OperandType]
-    (name: Text | Char, repeatable: Boolean = false, aliases: List[Text | Char] = Nil,
-        description: Optional[Text] = Unset, secret: Boolean = false)
+case class Flag[OperandType]
+    ( name: Text | Char,
+      repeatable: Boolean         = false,
+      aliases: List[Text | Char]  = Nil,
+      description: Optional[Text] = Unset,
+      secret: Boolean             = false )
     (using FlagInterpreter[OperandType]):
   
   def matches(key: Argument): Boolean =
-    val flagId = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
+    val flagId =
+      if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
     
     flagId == name || aliases.contains(flagId)
 
   def apply()
-      (using cli: Cli, interpreter: CliInterpreter,
-          flagInterpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType] = Suggestions.noSuggestions)
-      : Optional[OperandType] =
+      ( using cli:             Cli,
+              interpreter:     CliInterpreter,
+              flagInterpreter: FlagInterpreter[OperandType],
+              suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions )
+        : Optional[OperandType] =
+
     cli.register(this, suggestions)
     cli.readParameter(this)
 

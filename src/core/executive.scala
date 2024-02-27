@@ -38,10 +38,13 @@ trait Executive:
   type CliType <: Cli
 
   def cli
-      (fullArguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
-          stdio: Stdio, signals: LazyList[Signal])
+      ( fullArguments:    Iterable[Text],
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          LazyList[Signal] )
       (using interpreter: CliInterpreter)
-      : CliType
+        : CliType
   
   def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
 
@@ -91,8 +94,11 @@ package executives:
     type CliType = CliInvocation
     
     def cli
-        (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,
-            signals: LazyList[Signal])
+        ( arguments:        Iterable[Text],
+          environment:      Environment,
+          workingDirectory: WorkingDirectory,
+          stdio:            Stdio,
+          signals:          LazyList[Signal] )
       (using interpreter: CliInterpreter)
         : CliInvocation =
       
@@ -101,11 +107,10 @@ package executives:
     def process(cli: CliInvocation)(exitStatus: CliType ?=> ExitStatus): ExitStatus =
       handler.handle(exitStatus(using cli))(using cli.stdio)
 
-def application
-    (using executive: Executive, interpreter: CliInterpreter)
+def application(using executive: Executive, interpreter: CliInterpreter)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
     (block: Cli ?=> executive.Return)
-    : Unit =
+      : Unit =
   
   def listen: LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()
@@ -117,10 +122,14 @@ def application
   System.exit(executive.process(cli)(block)())
 
 case class CliInvocation
-    (arguments: List[Argument], environment: Environment, workingDirectory: WorkingDirectory, stdio: Stdio,
-        signals: LazyList[Signal])
+    ( arguments:        List[Argument],
+      environment:      Environment,
+      workingDirectory: WorkingDirectory,
+      stdio:            Stdio,
+      signals:          LazyList[Signal] )
     (using interpreter: CliInterpreter)
 extends Cli, Stdio:
+
   export stdio.{out, err, in}
 
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)

@@ -34,8 +34,9 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, cre
 enum TabCompletionsInstallation:
   case CommandNotOnPath(script: Text)
   case Shells
-      (zsh: TabCompletionsInstallation.InstallResult, bash: TabCompletionsInstallation.InstallResult,
-          fish: TabCompletionsInstallation.InstallResult)
+      ( zsh:  TabCompletionsInstallation.InstallResult,
+        bash: TabCompletionsInstallation.InstallResult,
+        fish: TabCompletionsInstallation.InstallResult )
 
 object TabCompletionsInstallation:
   given Communicable[TabCompletionsInstallation] =
@@ -66,11 +67,9 @@ object TabCompletionsInstallation:
     case ShellNotInstalled(shell: Shell)
 
 object TabCompletions:
-  def install
-      (force: Boolean = false)
-      (using service: ShellContext)
-      (using WorkingDirectory, Log[Text], Effectful)
-      : TabCompletionsInstallation raises InstallError =
+  def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Log[Text], Effectful)
+        : TabCompletionsInstallation raises InstallError =
+
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
@@ -105,10 +104,10 @@ object TabCompletions:
       
       TabCompletionsInstallation.Shells(zsh, bash, fish)
 
-  def install
-      (shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
+  def install(shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Effectful)
-      : TabCompletionsInstallation.InstallResult raises InstallError =
+        : TabCompletionsInstallation.InstallResult raises InstallError =
+
     given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes OverwriteError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)

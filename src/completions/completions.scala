@@ -34,13 +34,21 @@ import scala.collection.mutable as scm
 //import language.experimental.captureChecking
 
 case class SuggestionsState
-    (suggestions: Map[Argument, () => List[Suggestion]], explanation: Optional[Text], known: Set[Flag[?]],
-        present: Set[Flag[?]])
+    ( suggestions: Map[Argument, () => List[Suggestion]],
+      explanation: Optional[Text],
+      known:       Set[Flag[?]],
+      present:     Set[Flag[?]] )
 
 case class CliCompletion
-    (fullArguments: List[Argument], arguments: List[Argument], environment: Environment,
-        workingDirectory: WorkingDirectory, shell: Shell, currentArgument: Int, focusPosition: Int,
-        stdio: Stdio, signals: LazyList[Signal])
+    ( fullArguments:    List[Argument],
+      arguments:        List[Argument],
+      environment:      Environment,
+      workingDirectory: WorkingDirectory,
+      shell:            Shell,
+      currentArgument:  Int,
+      focusPosition:    Int,
+      stdio:            Stdio,
+      signals:          LazyList[Signal] )
     (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
@@ -54,11 +62,9 @@ extends Cli:
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
-  def readParameter
-      [OperandType]
-      (flag: Flag[OperandType])
+  def readParameter[OperandType](flag: Flag[OperandType])
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
-      : Optional[OperandType] =
+        : Optional[OperandType] =
 
     given Cli = this
     parameters.read(flag)
@@ -160,8 +166,13 @@ package executives:
     type Return = Execution
 
     def cli
-        (arguments: Iterable[Text], environment: Environment, workingDirectory: WorkingDirectory,
-            stdio: Stdio, signals: LazyList[Signal])(using interpreter: CliInterpreter): Cli =
+        ( arguments:        Iterable[Text],
+          environment:      Environment,
+          workingDirectory: WorkingDirectory,
+          stdio:            Stdio,
+          signals:          LazyList[Signal] )
+        (using interpreter: CliInterpreter)
+          : Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
           val shell = shellName match
