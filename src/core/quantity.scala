@@ -57,11 +57,9 @@ object Abacist:
     
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
-  def describeCount
-      [CountUnits <: Tuple: Type]
-      (count: Expr[Count[CountUnits]])
-      (using Quotes)
-      : Expr[ListMap[Text, Long]] =
+  def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
+        : Expr[ListMap[Text, Long]] =
+
     def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
       slices match
         case Nil =>
@@ -73,11 +71,11 @@ object Abacist:
 
     recur(multipliers[CountUnits], '{ListMap()})
 
-  def multiplyCount
-      [CountUnitsType <: Tuple: Type]
+  def multiplyCount[CountUnitsType <: Tuple: Type]
       (count: Expr[Count[CountUnitsType]], multiplier: Expr[Double], division: Boolean)
       (using Quotes)
-      : Expr[Any] =
+        : Expr[Any] =
+
     '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
 
   def toQuantity[CountUnitsType <: Tuple: Type](count: Expr[Count[CountUnitsType]])(using Quotes): Expr[Any] =
@@ -89,11 +87,11 @@ object Abacist:
       case '[type quantityType <: Measure; quantityType] =>
         '{Quantity[quantityType]($count.longValue*$ratioExpr)}
 
-  def fromQuantity
-      [QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
+  def fromQuantity[QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
       (quantity: Expr[Quantity[QuantityType]])
       (using Quotes)
-      : Expr[Count[CountUnitsType]] =
+        : Expr[Count[CountUnitsType]] =
+
     import quotes.reflect.*
     
     val lastUnit = multipliers[CountUnitsType].last.unitPower
@@ -102,11 +100,10 @@ object Abacist:
 
     '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[CountUnitsType]]}
     
-  def get
-      [UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
-      (value: Expr[Count[UnitsType]])
+  def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type](value: Expr[Count[UnitsType]])
       (using Quotes)
-      : Expr[Int] =
+        : Expr[Int] =
+
     import quotes.reflect.*
     
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
@@ -143,6 +140,7 @@ object Abacist:
     def recur(todo: List[UnitPower], units: List[Multiplier] = Nil): List[Multiplier] = todo match
       case Nil =>
         units
+      
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.headOption.map(_.ref).map(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
