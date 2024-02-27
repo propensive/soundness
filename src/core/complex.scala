@@ -62,9 +62,8 @@ object Complex:
 
     type Result = Complex[addOperator.Result | subOperator.Result]
 
-    def mul
-        (left: Complex[ComponentType], right: Complex[ComponentType])
-          : Complex[addOperator.Result | subOperator.Result] =
+    def mul(left: Complex[ComponentType], right: Complex[ComponentType])
+            : Complex[addOperator.Result | subOperator.Result] =
       val ac: mulOperator.Result = left.real*right.real
       val bd: mulOperator.Result = left.imaginary*right.imaginary
       val ad: mulOperator.Result = left.real*right.imaginary
@@ -81,13 +80,13 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
   @targetName("add")
   inline infix def + [ComponentType2](right: Complex[ComponentType2])
       (using addOperator: AddOperator[ComponentType, ComponentType2])
-        : Complex[addOperator.Result] =
+          : Complex[addOperator.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
   @targetName("sub")
   inline infix def - [ComponentType2](right: Complex[ComponentType2])
       (using subOperator: SubOperator[ComponentType, ComponentType2])
-        : Complex[subOperator.Result] =
+          : Complex[subOperator.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
   
   @targetName("mul")
