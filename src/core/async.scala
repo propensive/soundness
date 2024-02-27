@@ -44,11 +44,7 @@ object Async:
     Runtime.getRuntime.nn.addShutdownHook(thread)
     Hook(thread)
 
-  def race
-      [AsyncType]
-      (asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor)
-      : Async[AsyncType] =
-
+  def race[AsyncType](asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor): Async[AsyncType] =
     Async[Int]:
       val promise: Promise[Int] = Promise()
       
@@ -71,9 +67,7 @@ package threadModels:
   given daemon: ThreadModel = () => DaemonSupervisor
 
 @capability
-class Async
-    [+ResultType]
-    (evaluate: Submonitor[ResultType] ?=> ResultType)
+class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
     (using monitor: Monitor, codepoint: Codepoint):
   async =>
   
@@ -108,10 +102,10 @@ class Async
   def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
   def state(): AsyncState[ResultType] = stateRef.get().nn
   
-  def await
-      [DurationType: GenericDuration]
+  def await[DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
-      : ResultType =
+          : ResultType =
+
     promise.await(duration).also(thread.join())
     result()
   
@@ -119,25 +113,21 @@ class Async
     promise.await().also(thread.join())
     result()
   
-  private def result()(using cancel: Raises[CancelError]): ResultType =
-    state() match
-      case Completed(result) => result
-      case Failed(error)     => throw error
-      case Active            => abort(CancelError())
-      case other             => abort(CancelError())
+  private def result()(using cancel: Raises[CancelError]): ResultType = state() match
+    case Completed(result) => result
+    case Failed(error)     => throw error
+    case Active            => abort(CancelError())
+    case other             => abort(CancelError())
   
-  def suspend(): Unit =
-    stateRef.updateAndGet:
-      case Active               => Suspended(1)
-      case Suspended(n)         => Suspended(n + 1)
-      case other                => other
+  def suspend(): Unit = stateRef.updateAndGet:
+    case Active       => Suspended(1)
+    case Suspended(n) => Suspended(n + 1)
+    case other        => other
 
-  def resume(force: Boolean = false): Unit =
-    stateRef.updateAndGet:
-      case Suspended(1)         => monitor.synchronized(monitor.notifyAll())
-                                   Active
-      case Suspended(n)         => if force then Active else Suspended(n - 1)
-      case other                => other
+  def resume(force: Boolean = false): Unit = stateRef.updateAndGet:
+    case Suspended(1) => Active.also(monitor.synchronized(monitor.notifyAll()))
+    case Suspended(n) => if force then Active else Suspended(n - 1)
+    case other        => other
 
   def map[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
     Async(lambda(async.await()))
@@ -148,11 +138,9 @@ class Async
   def each[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
     Async(lambda(async.await()))
   
-  def flatMap
-      [ResultType2]
-      (lambda: ResultType => Async[ResultType2])
-      (using Raises[CancelError])
-      : Async[ResultType2] =
+  def flatMap[ResultType2](lambda: ResultType => Async[ResultType2])(using Raises[CancelError])
+          : Async[ResultType2] =
+
     Async(lambda(await()).await())
   
   def cancel(): Unit =
@@ -173,5 +161,5 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](asyncs: Seq[Async[ResultType]]^)
-  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] = Async:
-    asyncs.map(_.await())
+  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
+    Async(asyncs.map(_.await()))

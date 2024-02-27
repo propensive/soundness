@@ -36,10 +36,9 @@ trait Covenant[+ValueType]:
 
   def await()(using Raises[CancelError]): ValueType
 
-  def await
-      [DurationType: GenericDuration]
-      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
-      : ValueType
+  def await[DurationType: GenericDuration](duration: DurationType)
+      (using Raises[CancelError], Raises[TimeoutError])
+          : ValueType
 
 case class Promise[ValueType]() extends Covenant[ValueType]:
   private var value: ValueType | Promise.Special = Promise.Incomplete
@@ -72,10 +71,9 @@ case class Promise[ValueType]() extends Covenant[ValueType]:
       value = Promise.Cancelled
       notifyAll()
 
-  def await
-      [DurationType: GenericDuration]
-      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
-      : ValueType =
+  def await[DurationType: GenericDuration](duration: DurationType)
+      (using Raises[CancelError], Raises[TimeoutError])
+          : ValueType =
     
     synchronized:
       if ready then get() else
@@ -90,6 +88,9 @@ case class Trigger():
   def cancel(): Unit = promise.cancel()
   def cancelled: Boolean = promise.cancelled
   
-  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[CancelError], Raises[TimeoutError]): Unit =
+  def await[DurationType: GenericDuration](duration: DurationType)
+      (using Raises[CancelError], Raises[TimeoutError])
+          : Unit =
+
     promise.await(duration)
 

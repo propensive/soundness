@@ -48,11 +48,12 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
 
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
-  def child
-      [ResultType2]
-      (id: Text, state: juca.AtomicReference[AsyncState[ResultType2]], promise: Promise[ResultType2 | Promise.Special])
+  def child[ResultType2]
+      ( id: Text,
+        state: juca.AtomicReference[AsyncState[ResultType2]],
+        promise: Promise[ResultType2 | Promise.Special] )
       (using label: boundary.Label[Unit])
-      : Submonitor[ResultType2] =
+          : Submonitor[ResultType2] =
     
     val monitor = Submonitor[ResultType2](id, this, state, promise)
     
@@ -78,16 +79,17 @@ case object DaemonSupervisor extends Supervisor():
     thread.setDaemon(true)
     thread.start()
 
-def supervise
-    [ResultType]
-    (block: Monitor ?=> ResultType)(using cancel: Raises[CancelError], model: ThreadModel)
-    : ResultType =
+def supervise[ResultType](block: Monitor ?=> ResultType)(using cancel: Raises[CancelError], model: ThreadModel)
+        : ResultType =
+
   block(using model.supervisor())
 
 @capability
-case class Submonitor
-    [ResultType]
-    (identifier: Text, parent: Monitor, stateRef: juca.AtomicReference[AsyncState[ResultType]], promise: Promise[ResultType | Promise.Special])
+case class Submonitor[ResultType]
+    ( identifier: Text,
+      parent: Monitor,
+      stateRef: juca.AtomicReference[AsyncState[ResultType]],
+      promise: Promise[ResultType | Promise.Special] )
     (using label: boundary.Label[Unit])
 extends Monitor(identifier :: parent.name, promise):
 
