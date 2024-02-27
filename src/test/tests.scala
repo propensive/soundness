@@ -26,18 +26,18 @@ import unsafeExceptions.canThrowAny
 
 object Tests extends Suite(t"Cosmopolite Tests"):
   def run(): Unit =
-    test(t"extract language from string (English)") {
+    test(t"extract language from string (English)"):
       val two = en"two" & fr"deux"
       two[En]
-    }.check(_ == t"two")
+    .assert(_ == t"two")
     
-    test(t"extract language from string (French)") {
+    test(t"extract language from string (French)"):
       val two = en"two" & fr"deux"
       two[Fr]
-    }.check(_ == t"deux")
+    .assert(_ == t"deux")
     
-    test(t"extract default language") {
+    test(t"extract default language"):
       val two = en"two" & fr"deux"
       given Language[Fr] = Language[Fr]("fr")
       two()
-    }.check(_ == t"deux")
+    .assert(_ == t"deux")
