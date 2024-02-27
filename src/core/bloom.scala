@@ -26,17 +26,17 @@ import scala.collection.immutable as sci
 import scala.collection.mutable as scm
 
 object BloomFilter:
-  def apply[ElementType: Digestible]
-      (approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
+  def apply[ElementType: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
       [HashType <: HashScheme[?]: HashFunction]
-      : BloomFilter[ElementType, HashType] =
+          : BloomFilter[ElementType, HashType] =
+
     val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
     val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
     new BloomFilter(bitSize, hashCount, sci.BitSet())
 
-case class BloomFilter
-    [ElementType: Digestible, HashType <: HashScheme[?]: HashFunction]
+case class BloomFilter[ElementType: Digestible, HashType <: HashScheme[?]: HashFunction]
     (bitSize: Int, hashCount: Int, bits: sci.BitSet):
+
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
   
   private def hash(value: ElementType): BigInt =
