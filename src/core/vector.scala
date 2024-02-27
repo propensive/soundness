@@ -26,7 +26,9 @@ import vacuous.*
 
 import scala.compiletime.*, ops.int.*
 
-class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, val columns: Int, val elements: IArray[ElementType]):
+class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int]
+    (val rows: Int, val columns: Int, val elements: IArray[ElementType]):
+
   def apply(row: Int, column: Int): ElementType = elements(columns*row + column)
 
   override def equals(right: Any): Boolean = right.asMatchable match
@@ -38,12 +40,10 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
   override def toString(): String = t"[${elements.debug}]".s
 
   @targetName("scalarMul")
-  def * 
-      [RightType]
-      (right: RightType)
-      (using mul: MulOperator[ElementType, RightType])
+  def * [RightType](right: RightType)(using mul: MulOperator[ElementType, RightType])
       (using ClassTag[mul.Result])
-      : Matrix[mul.Result, RowsType, ColumnsType] =
+          : Matrix[mul.Result, RowsType, ColumnsType] =
+
     val elements2 = IArray.create[mul.Result](elements.length): array =>
       elements.indices.foreach: index =>
         array(index) = elements(index)*right
@@ -51,12 +51,10 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
     new Matrix(rows, columns, elements2)
   
   @targetName("scalarDiv")
-  def / 
-      [RightType]
-      (right: RightType)
-      (using div: DivOperator[ElementType, RightType])
+  def / [RightType](right: RightType)(using div: DivOperator[ElementType, RightType])
       (using ClassTag[div.Result])
-      : Matrix[div.Result, RowsType, ColumnsType] =
+          : Matrix[div.Result, RowsType, ColumnsType] =
+
     val elements2 = IArray.create[div.Result](elements.length): array =>
       elements.indices.foreach: index =>
         array(index) = elements(index)/right
@@ -64,15 +62,11 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
     new Matrix(rows, columns, elements2)
 
   @targetName("mul")
-  def *
-      [RightType, RightColumnsType <: Int: ValueOf]
-      (right: Matrix[RightType, ColumnsType, RightColumnsType])
-      (using mul: MulOperator[ElementType, RightType])
-      (using ValueOf[RowsType], ValueOf[ColumnsType])
-      (using ClassTag[mul.Result])
-      (using add: AddOperator[mul.Result, mul.Result])
-      (using add.Result =:= mul.Result)
-      : Matrix[mul.Result, RowsType, RightColumnsType] =
+  def * [RightType, RightColumnsType <: Int: ValueOf](right: Matrix[RightType, ColumnsType, RightColumnsType])
+      (using mul: MulOperator[ElementType, RightType], add: AddOperator[mul.Result, mul.Result])
+      (using add.Result =:= mul.Result, ValueOf[RowsType], ValueOf[ColumnsType], ClassTag[mul.Result])
+          : Matrix[mul.Result, RowsType, RightColumnsType] =
+
     val columns2 = valueOf[RightColumnsType]
     val inner = valueOf[ColumnsType]
     
@@ -84,7 +78,6 @@ class Matrix[+ElementType, RowsType <: Int, ColumnsType <: Int](val rows: Int, v
     new Matrix(rows, columns2, elements)
 
 object Matrix:
-
   given show[ElementType: Show](using TextMetrics): Show[Matrix[ElementType, ?, ?]] = matrix =>
     val textElements = matrix.elements.map(_.show)
     val sizes = textElements.map(_.length)
@@ -102,18 +95,18 @@ object Matrix:
       .join(before, t" ", after)
     .join(t"\n")
 
-    
-
-  transparent inline def apply
-      [Rows <: Int: ValueOf, Columns <: Int: ValueOf]
-      (using DummyImplicit)
-      [ElementType]
+  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using DummyImplicit)[ElementType]
       (rows: Tuple)
-      (using Tuple.Union[Tuple.Fold[rows.type, EmptyTuple, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< ElementType)
-      (using Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]])
-      (using Rows =:= Tuple.Size[rows.type])
-      (using ClassTag[ElementType])
+      ( using Tuple.Union[Tuple.Fold[
+                rows.type,
+                EmptyTuple,
+                [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]
+              ] & Tuple] <:< ElementType,
+              Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
+              Rows =:= Tuple.Size[rows.type],
+              ClassTag[ElementType] )
       : Any =
+
     val rowCount: Int = valueOf[Rows]
     val columnCount = valueOf[Columns]
     
@@ -132,10 +125,9 @@ object Mosquito:
   object Euclidean:
     def apply(elems: Tuple): Euclidean[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    given show
-        [SizeType <: Int: ValueOf, ElemType: Show]
-        (using TextMetrics)
-        : Show[Euclidean[ElemType, SizeType]] =
+    given show[SizeType <: Int: ValueOf, ElemType: Show](using TextMetrics)
+            : Show[Euclidean[ElemType, SizeType]] =
+
       euclidean =>
         val items = euclidean.list.map(_.show)
         val width = items.maxBy(_.length).length
@@ -151,13 +143,11 @@ object Mosquito:
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
   extension [LeftType](left: Euclidean[LeftType, 3])
-    def cross
-        [RightType]
-        (right: Euclidean[RightType, 3])
-        (using multiply: MulOperator[LeftType, RightType])
-        (using add: AddOperator[multiply.Result, multiply.Result],
-            subtract: SubOperator[multiply.Result, multiply.Result])
-        : Euclidean[add.Result, 3] =
+    def cross[RightType](right: Euclidean[RightType, 3])(using multiply: MulOperator[LeftType, RightType])
+        ( using add:      AddOperator[multiply.Result, multiply.Result],
+                subtract: SubOperator[multiply.Result, multiply.Result] )
+            : Euclidean[add.Result, 3] =
+
       (left(1)*right(2) - left(2)*right(1)) *:
           (left(2)*right(0) - left(0)*right(2)) *:
           (left(0)*right(1) - left(1)*right(0)) *:
@@ -177,29 +167,25 @@ object Mosquito:
       recur(left)
 
     @targetName("add")
-    def +
-        [RightType]
-        (right: Euclidean[RightType, SizeType])
-        (using add: AddOperator[LeftType, RightType])
-        : Euclidean[add.Result, SizeType] =
+    def + [RightType](right: Euclidean[RightType, SizeType])(using add: AddOperator[LeftType, RightType])
+            : Euclidean[add.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
           case rightHead *: rightTail =>
             (leftHead.asInstanceOf[LeftType] + rightHead.asInstanceOf[RightType]) *: recur(leftTail, rightTail)
+          
           case _ =>
             EmptyTuple
+        
         case _ =>
           EmptyTuple
 
       recur(left, right)
     
     @targetName("sub")
-    def -
-        [RightType]
-        (right: Euclidean[RightType, SizeType])
-        (using sub: SubOperator[LeftType, RightType])
-        : Euclidean[sub.Result, SizeType] =
+    def - [RightType](right: Euclidean[RightType, SizeType])(using sub: SubOperator[LeftType, RightType])
+            : Euclidean[sub.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
@@ -213,29 +199,23 @@ object Mosquito:
       recur(left, right)
     
     @targetName("scalarMul")
-    def *
-        [RightType]
-        (right: RightType)
-        (using mul: MulOperator[LeftType, RightType])
-        : Euclidean[mul.Result, SizeType] =
+    def * [RightType](right: RightType)(using mul: MulOperator[LeftType, RightType])
+            : Euclidean[mul.Result, SizeType] =
+
       map(_*right)
     
     @targetName("scalarDiv")
-    def *
-        [RightType]
-        (right: RightType)
-        (using div: DivOperator[LeftType, RightType])
-        : Euclidean[div.Result, SizeType] =
+    def * [RightType](right: RightType)(using div: DivOperator[LeftType, RightType])
+            : Euclidean[div.Result, SizeType] =
+
       map(_/right)
 
-    def dot
-        [RightType]
-        (right: Euclidean[RightType, SizeType])
-        (using multiply: MulOperator[LeftType, RightType])
-        (using size: ValueOf[SizeType])
-        (using add: AddOperator[multiply.Result, multiply.Result])
-        (using add.Result =:= multiply.Result)
-        : multiply.Result =
+    def dot[RightType](right: Euclidean[RightType, SizeType])
+        ( using multiply: MulOperator[LeftType, RightType],
+                size:     ValueOf[SizeType],
+                add:      AddOperator[multiply.Result, multiply.Result],
+                equality: add.Result =:= multiply.Result )
+            : multiply.Result =
       
       def recur(index: Int, sum: multiply.Result): multiply.Result =
         if index < 0 then sum else recur(index - 1, sum + left(index)*right(index))
