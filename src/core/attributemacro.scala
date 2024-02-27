@@ -37,11 +37,12 @@ object Node:
   given Show[Seq[Html[?]]] = _.map(_.show).join
   
   given Show[Node[?]] = item =>
-    val filling = item.attributes.map: keyValue =>
-      (keyValue: @unchecked) match
-        case (key, Unset)       => t" $key"
-        case (key, value: Text) => t""" $key="$value""""
-    .join
+    val filling =
+      item.attributes.map: keyValue =>
+        (keyValue: @unchecked) match
+          case (key, Unset)       => t" $key"
+          case (key, value: Text) => t""" $key="$value""""
+      .join
     
     if item.children.isEmpty && !item.verbatim
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
@@ -61,7 +62,9 @@ trait Node[+NameType <: Label]:
       new Node[NameType2]:
         def label: Text = labelValue.show
         export node.{attributes, children, block, unclosed, verbatim}
-    case _ => None
+    
+    case _ =>
+      None
 
 object StartTag:
   given GenericCssSelection[StartTag[?, ?]] = elem =>
@@ -74,25 +77,27 @@ object StartTag:
     t"${elem.label}$tail"
 
 
-case class StartTag
-    [+NameType <: Label, ChildType <: Label]
-    (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean,
-        attributes: Attributes)
+case class StartTag[+NameType <: Label, ChildType <: Label]
+    (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean, attributes: Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.show
+
   def apply(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
     Element(labelString, unclosed, block, verbatim, attributes, children)
 
 object Honeycomb:
   given Realm = realm"honeycomb"
 
-  def read
-      [NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-      (name: Expr[NameType], unclosed: Expr[Boolean], block: Expr[Boolean], verbatim: Expr[Boolean],
-          attributes: Expr[Seq[(Label, Any)]])
+  def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
+      ( name:       Expr[NameType],
+        unclosed:   Expr[Boolean],
+        block:      Expr[Boolean],
+        verbatim:   Expr[Boolean],
+        attributes: Expr[Seq[(Label, Any)]] )
       (using Quotes)
-      : Expr[StartTag[NameType, ReturnType]] =
+          : Expr[StartTag[NameType, ReturnType]] =
+
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Optional[Text])]] = exprs match

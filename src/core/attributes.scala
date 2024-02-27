@@ -142,11 +142,12 @@ enum Wrap:
   case Soft, Hard
 
 object HtmlAttribute:
-  given [L <: Label, V, T](using att: GenericHtmlAttribute[L, V]): HtmlAttribute[L, V, T] with
-    def convert(value: V): Optional[Text] = att.serialize(value).show
+  given [LabelType <: Label, ValueType, T](using att: GenericHtmlAttribute[LabelType, ValueType])
+          : HtmlAttribute[LabelType, ValueType, T] with
+    def convert(value: ValueType): Optional[Text] = att.serialize(value).show
     override def rename: Option[Text] = Some(att.name.show)
 
-  given any[T, L <: Label]: HtmlAttribute[L, Text, T] = identity(_)
+  given any[T, LabelType <: Label]: HtmlAttribute[LabelType, Text, T] = identity(_)
 
   given accept[T]: HtmlAttribute["accept", List[Text], T] = _.join(t",")
   
@@ -209,7 +210,6 @@ object HtmlAttribute:
   
   given fors[T]: HtmlAttribute["for", Seq[DomId], T] with
     def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
-
 
   given form[T]: HtmlAttribute["form", DomId, T] = _.name
   given formaction[T]: HtmlAttribute["formaction", Text, T] = identity(_) // Provided by Scintillate
