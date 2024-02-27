@@ -159,17 +159,19 @@ extends Error(msg"Could not parse JSON because $reason at ${line + 1}:${col + 1}
 export JsonAst.RawJson as JsonAst
 
 object JsonAst:
-  opaque type RawJson = Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) |
-      IArray[Any] | Boolean | Null
+  opaque type RawJson =
+      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
-  def apply(value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) |
-      IArray[Any] | Boolean | Null): JsonAst = value
+  def apply
+      ( value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean |
+                   Null )
+          : JsonAst =
 
-  def parse
-      [SourceType]
-      (source: SourceType)
+    value
+
+  def parse[SourceType](source: SourceType)
       (using readable: Readable[SourceType, Bytes], jsonParse: Raises[JsonParseError])
-      : JsonAst/*^{readable, jsonParse}*/ =
+          : JsonAst/*^{readable, jsonParse}*/ =
 
     val stream = readable.read(source)
     var line: Int = 0
@@ -236,8 +238,7 @@ object JsonAst:
       if penultimate > 2 && block(0) == -17 && block(1) == -69 && block(2) == -65 then cur = 3
 
       def current: Byte = block(cur)
-      def next(): Unit =
-        cur += 1
+      def next(): Unit = cur += 1
       
       inline def getNext(): Byte =
         cur += 1
@@ -317,6 +318,7 @@ object JsonAst:
       def parseArray(): IArray[Any] =
         val arrayItems: ArrayBuffer[Any] = getArrayBuffer()
         var continue = true
+
         while continue do
           skip()
           current match
@@ -366,9 +368,11 @@ object JsonAst:
                 if (ch & bin"0000 0000 1110 0000") == bin"0000 0000 1100 0000" then
                   difference += 1
                   next()
+
                 else if (ch & bin"0000 0000 1111 0000") == bin"0000 0000 1110 0000" then
                   difference += 2
                   cur += 2
+
                 else if (ch & bin"0000 0000 1111 1000") == bin"0000 0000 1110 0000" then
                   difference += 3
                   cur += 3
