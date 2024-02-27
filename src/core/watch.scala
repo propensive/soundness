@@ -37,18 +37,17 @@ case class InotifyError()
 extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises InotifyError =
     Watcher[DirectoryType](dirs*)
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType], Raises[InotifyError]): Watcher[DirectoryType] =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises InotifyError =
     Watcher[DirectoryType](dir)
 
 object Watcher:
-  def apply
-      [DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
+  def apply[DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
       (dirs: DirectoryType*)(using Log[Text], Monitor)
-      : Watcher[DirectoryType] =
+          : Watcher[DirectoryType] =
 
     val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
     val watcher = Watcher[DirectoryType](svc)
@@ -56,9 +55,7 @@ object Watcher:
 
     watcher
 
-case class Watcher
-    [DirectoryType: GenericDirectory: SpecificDirectory]
-    (private val svc: jnf.WatchService)
+case class Watcher[DirectoryType: GenericDirectory: SpecificDirectory](private val svc: jnf.WatchService)
     (using Monitor):
   
   private val watches: HashMap[jnf.WatchKey, jnf.Path] = HashMap()
