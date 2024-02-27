@@ -194,7 +194,7 @@ object CodlDecoder:
       
       def decode
           (value: List[Indexed])(using codlRead: Raises[CodlReadError])
-          : List[ElementType] =
+            : List[ElementType] =
         decoder.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
             decoder.decode(List(CodlDoc(node)))
