@@ -142,8 +142,7 @@ object TextConversion:
   
   inline given vector2[ElemType]: Debug[Vector[ElemType]] =
     new Debug[Vector[ElemType]]:
-      def apply(vector: Vector[ElemType]): Text =
-        vector.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
+      def apply(vector: Vector[ElemType]): Text = vector.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
   
   inline given array[ElemType]: Debug[Array[ElemType]] =
     new Debug[Array[ElemType]]:
