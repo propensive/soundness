@@ -106,7 +106,10 @@ object PhysicalQuantity:
   type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
   type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
-  type MolarEntropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1, AmountOfSubstance]
+  
+  type MolarEntropy =
+    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1, AmountOfSubstance]
+  
   type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
   type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
   type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
