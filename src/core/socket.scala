@@ -56,19 +56,17 @@ object Control:
   
 
   object Conclude:
-    def apply
-        [MessageType, StateType]
-        (message: MessageType, state: Optional[StateType] = Unset)
+    def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
         (using transmissible: Transmissible[MessageType])
-        : Conclude[StateType] =
+          : Conclude[StateType] =
+
       Conclude(transmissible.serialize(message), state)
 
   object Reply:
-    def apply
-        [MessageType, StateType]
-        (message: MessageType, state: Optional[StateType] = Unset)
+    def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
         (using transmissible: Transmissible[MessageType])
-        : Reply[StateType] =
+          : Reply[StateType] =
+
       Reply(transmissible.serialize(message), state)
 
 import Control.*
@@ -294,12 +292,9 @@ trait SocketService:
   def stop(): Unit
 
 extension [SocketType](socket: SocketType)
-  def listen
-      [InputType]
-      (using bindable: Bindable[SocketType], monitor: Monitor)
-      [ResultType]
+  def listen[InputType](using bindable: Bindable[SocketType], monitor: Monitor)[ResultType]
       (lambda: bindable.Input => bindable.Output)
-      : SocketService raises BindError =
+        : SocketService raises BindError =
 
     val binding = bindable.bind(socket)
     var continue: Boolean = true
@@ -316,14 +311,10 @@ extension [SocketType](socket: SocketType)
         safely(async.await())
 
 extension [EndpointType](endpoint: EndpointType)
-  def connect
-      [StateType]
-      (initialState: StateType)
-      [MessageType]
-      (initialMessage: MessageType = Bytes())
+  def connect[StateType](initialState: StateType)[MessageType](initialMessage: MessageType = Bytes())
       (handle: (state: StateType) ?=> MessageType => Control[StateType])
       (using connectable: Connectable[EndpointType], receivable: Receivable[MessageType])
-      : StateType =
+        : StateType =
 
     val connection = connectable.connect(endpoint)
     
@@ -345,9 +336,9 @@ extension [EndpointType](endpoint: EndpointType)
     recur(connectable.receive(connection), initialState).also:
       connectable.close(connection)
 
-  def transmit[MessageType]
-      (message: MessageType)
+  def transmit[MessageType](message: MessageType)
       (using transmissible: Transmissible[MessageType], addressable: Addressable[EndpointType])
       (using Monitor)
-      : Unit raises StreamError =
+        : Unit raises StreamError =
+
     addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
