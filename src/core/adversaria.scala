@@ -27,29 +27,28 @@ import language.experimental.captureChecking
 case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
 
 object Annotations:
-  inline given
-      [AnnotationType <: StaticAnnotation, TargetType]
-      : Annotations[AnnotationType, TargetType] =
+  inline given[AnnotationType <: StaticAnnotation, TargetType]
+        : Annotations[AnnotationType, TargetType] =
+
     ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
 
   transparent inline def field[TargetType](inline lambda: TargetType => Any): List[StaticAnnotation] =
     ${Adversaria.fieldAnnotations[TargetType]('lambda)}
 
-  transparent inline def fields
-      [TargetType <: Product, AnnotationType <: StaticAnnotation]
-      : List[CaseField[TargetType, AnnotationType]] =
+  transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
+        : List[CaseField[TargetType, AnnotationType]] =
+
     ${Adversaria.fields[TargetType, AnnotationType]}
 
-  transparent inline def firstField
-      [TargetType <: Product, AnnotationType <: StaticAnnotation]
-      : CaseField[TargetType, AnnotationType] =
+  transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
+        : CaseField[TargetType, AnnotationType] =
+
     ${Adversaria.firstField[TargetType, AnnotationType]}
 
 object CaseField:
-  def apply
-      [TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
+  def apply[TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
       (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
-      : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
+        : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
     
     inline def initAnnotation = annotation
     
@@ -58,9 +57,9 @@ object CaseField:
       def apply(value: TargetType) = access(value)
       def annotation: AnnotationType = initAnnotation
 
-  transparent inline given
-      [TargetType <: Product, AnnotationType <: StaticAnnotation]
-      : CaseField[TargetType, AnnotationType] =
+  transparent inline given[TargetType <: Product, AnnotationType <: StaticAnnotation]
+        : CaseField[TargetType, AnnotationType] =
+
     Annotations.firstField[TargetType, AnnotationType]
 
 trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val name: Text):
@@ -69,10 +68,9 @@ trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val n
   def annotation: AnnotationType
 
 object Adversaria:
-  def firstField
-      [TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
-      (using Quotes)
-      : Expr[CaseField[TargetType, AnnotationType]] =
+  def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
+        : Expr[CaseField[TargetType, AnnotationType]] =
+    
     import quotes.reflect.*
     
     val targetType = TypeRepr.of[TargetType]
@@ -87,10 +85,9 @@ object Adversaria:
       .reverse
     .head
 
-  def fields
-      [TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
-      (using Quotes)
-      : Expr[List[CaseField[TargetType, AnnotationType]]] =
+  def fields[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
+        : Expr[List[CaseField[TargetType, AnnotationType]]] =
+
     import quotes.reflect.*
     
     val targetType = TypeRepr.of[TargetType]
@@ -107,11 +104,9 @@ object Adversaria:
 
     Expr.ofList(elements)
 
-  def fieldAnnotations
-      [TargetType: Type]
-      (lambda: Expr[TargetType => Any])
-      (using Quotes)
-      : Expr[List[StaticAnnotation]] =
+  def fieldAnnotations[TargetType: Type](lambda: Expr[TargetType => Any])(using Quotes)
+        : Expr[List[StaticAnnotation]] =
+
     import quotes.reflect.*
     
     val targetType = TypeRepr.of[TargetType]
@@ -128,10 +123,9 @@ object Adversaria:
       field.annotations.map(_.asExpr).collect:
         case '{ $annotation: StaticAnnotation } => annotation
 
-  def typeAnnotations
-      [AnnotationType <: StaticAnnotation: Type, TargetType: Type]
-      (using Quotes)
-      : Expr[Annotations[AnnotationType, TargetType]] =
+  def typeAnnotations[AnnotationType <: StaticAnnotation: Type, TargetType: Type](using Quotes)
+        : Expr[Annotations[AnnotationType, TargetType]] =
+
     import quotes.reflect.*
 
     val targetType = TypeRepr.of[TargetType]
