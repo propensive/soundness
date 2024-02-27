@@ -65,7 +65,6 @@ object Classloader:
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
   
 class Classloader(val java: ClassLoader):
-
   def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
   protected def urlClassloader: Optional[jn.URLClassLoader] = java match
@@ -73,6 +72,7 @@ class Classloader(val java: ClassLoader):
     case _                       => parent.let(_.urlClassloader)
   
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
+  
   private[hellenism] def inputStream(path: Text)(using notFound: Raises[ClasspathError]): ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
@@ -121,9 +121,7 @@ object ClasspathRef:
     def separator(ref: ClasspathRef): Text = t"/"
   
   given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
-
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
-
   given show: Show[ClasspathRef] = _.text
 
 case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
@@ -132,8 +130,7 @@ case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
 
 object Resource:
   given readableBytes(using Raises[ClasspathError]): Readable[Resource, Bytes] =
-    Readable.reliableInputStream.contramap: resource =>
-      resource.classloader.inputStream(resource.ref.text)
+    Readable.reliableInputStream.contramap: resource => resource.classloader.inputStream(resource.ref.text)
 
 case class Resource(classloader: Classloader, ref: ClasspathRef)
 
@@ -156,6 +153,7 @@ export Hellenism.ClassRef
 trait Hellenism2:
   def makeClass[ClassType <: AnyKind: Type](using Quotes): Expr[ClassRef] =
     import quotes.reflect.*
+    
     '{ClassRef(Class.forName(${Expr(TypeRepr.of[ClassType].classSymbol.get.fullName)}).nn)}
 
 case class ClasspathError(resource: Text)
