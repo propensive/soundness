@@ -51,7 +51,7 @@ extension [ValueType](optional: Optional[ValueType])
     if absent then Unset else block(using vouch(using Unsafe))
 
 extension [ValueType](iterable: Iterable[Optional[ValueType]])
-  transparent inline def vouched: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
+  transparent inline def compact: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
 object Optional:
   inline def apply[ValueType](value: ValueType | Null): Optional[ValueType] =
