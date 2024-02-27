@@ -357,9 +357,9 @@ sealed trait Entry:
     copyTo(destination / path.descent.head)
 
   def copyTo(destination: Path)
-      ( using overwritePreexisting:     OverwritePreexisting,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents )
+      (using overwritePreexisting:     OverwritePreexisting,
+             dereferenceSymlinks:      DereferenceSymlinks,
+             createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks}*/ =
 
@@ -371,9 +371,9 @@ sealed trait Entry:
       
   def moveInto
       (destination: Directory)
-      ( using overwritePreexisting: OverwritePreexisting,
-              moveAtomically:       MoveAtomically,
-              dereferenceSymlinks:  DereferenceSymlinks )
+      (using overwritePreexisting: OverwritePreexisting,
+             moveAtomically:       MoveAtomically,
+             dereferenceSymlinks:  DereferenceSymlinks)
       (using io: Raises[IoError])
           : Path/*^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks}*/ =
 
@@ -382,10 +382,10 @@ sealed trait Entry:
 
   def moveTo
       (destination: Path)
-      ( using overwritePreexisting:     OverwritePreexisting,
-              moveAtomically:           MoveAtomically,
-              dereferenceSymlinks:      DereferenceSymlinks,
-              createNonexistentParents: CreateNonexistentParents )
+      (using overwritePreexisting:     OverwritePreexisting,
+             moveAtomically:           MoveAtomically,
+             dereferenceSymlinks:      DereferenceSymlinks,
+             createNonexistentParents: CreateNonexistentParents)
       (using io: Raises[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents, moveAtomically, dereferenceSymlinks}*/ =
 
@@ -412,9 +412,9 @@ object PathResolver:
   //       else raise(NotFoundError(path))(Directory(path))
 
   given file
-      ( using createNonexistent:   CreateNonexistent,
-              dereferenceSymlinks: DereferenceSymlinks,
-              io:                  Raises[IoError] )
+      (using createNonexistent:   CreateNonexistent,
+             dereferenceSymlinks: DereferenceSymlinks,
+             io:                  Raises[IoError])
           : PathResolver[File, Path] = path =>
 
     if path.exists() && path.entryType() == PathStatus.File then File(path)
@@ -423,9 +423,9 @@ object PathResolver:
     File(path)
   
   given directory
-      ( using createNonexistent: CreateNonexistent,
-              dereferenceSymlinks: DereferenceSymlinks,
-              io: Raises[IoError] )
+      (using createNonexistent: CreateNonexistent,
+             dereferenceSymlinks: DereferenceSymlinks,
+             io: Raises[IoError])
           : PathResolver[Directory, Path] = path =>
     if path.exists() && path.entryType() == PathStatus.Directory then Directory(path)
     else createNonexistent(path):
@@ -469,12 +469,12 @@ object EntryMaker:
     File(path)
   
   given fifo
-      ( using createNonexistentParents: CreateNonexistentParents,
-              overwritePreexisting:     OverwritePreexisting,
-              working:                  WorkingDirectory,
-              log:                      Log[Text],
-              io:                       Raises[IoError],
-              exec:                     Raises[ExecError] )
+      (using createNonexistentParents: CreateNonexistentParents,
+             overwritePreexisting:     OverwritePreexisting,
+             working:                  WorkingDirectory,
+             log:                      Log[Text],
+             io:                       Raises[IoError],
+             exec:                     Raises[ExecError])
           : EntryMaker[Fifo, Unix.Path] =
 
     path => createNonexistentParents(path):
