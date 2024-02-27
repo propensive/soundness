@@ -276,9 +276,9 @@ object JsonDecoder extends JsonDecoder2:
         if omit then None else Some(decoder.decode(value, false))
 
   given array[CollectionType[ElementType] <: Iterable[ElementType], ElementType]
-      ( using decoder:    JsonDecoder[ElementType],
-              jsonAccess: Raises[JsonAccessError],
-              factory:    Factory[ElementType, CollectionType[ElementType]] )
+      (using decoder:    JsonDecoder[ElementType],
+             jsonAccess: Raises[JsonAccessError],
+             factory:    Factory[ElementType, CollectionType[ElementType]])
       : JsonDecoder[CollectionType[ElementType]]^{jsonAccess} =
 
     new JsonDecoder[CollectionType[ElementType]]:
