@@ -28,11 +28,10 @@ class Mutex[ValueType](initial: ValueType):
   private var count: Int = 0
   private var value: ValueType = initial
 
-  def read
-      [ResultType, ImmutableType]
+  def read[ResultType, ImmutableType]
       (using immutable: Immutable[ValueType, ImmutableType])
       (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
-      : ResultType =
+          : ResultType =
 
     synchronized:
       while count == -1 do wait()
