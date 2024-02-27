@@ -102,7 +102,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
       (using SystemProperties)
-        : List[Diagnostic] raises ScalacError =
+          : List[Diagnostic] raises ScalacError =
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
@@ -119,7 +119,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
     val callbackApi = new dtdi.CompilerCallback:
       override def onClassGenerated
           (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
-          : Unit =
+            : Unit =
         ()
         
       override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
