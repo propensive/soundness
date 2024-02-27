@@ -24,6 +24,7 @@ import scala.compiletime.*
 
 import language.dynamics
 
+given Realm = realm"panopticon"
 
 class Target[FromType, PathType <: Tuple]() extends Dynamic:
   transparent inline def selectDynamic(member: String): Any =
@@ -33,14 +34,12 @@ export Panopticon.Lens
 
 extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
   @targetName("append")
-  infix def ++
-      [ToType2, PathType2 <: Tuple]
-      (right: Lens[ToType, PathType2, ToType2])
-      : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
+  infix def ++ [ToType2, PathType2 <: Tuple](right: Lens[ToType, PathType2, ToType2])
+          : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
+
     Lens.make()
   
-  inline def get(target: FromType): ToType =
-    ${Panopticon.get[FromType, PathType, ToType]('target)}
+  inline def get(target: FromType): ToType = ${Panopticon.get[FromType, PathType, ToType]('target)}
   
   inline def set(target: FromType, newValue: ToType): FromType =
     ${Panopticon.set[FromType, PathType, ToType]('target, 'newValue)}
@@ -56,34 +55,37 @@ object Panopticon:
     def apply[FromType]: InitLens[FromType] = 0
     def make[FromType, PathType <: Tuple, ToType](): Lens[FromType, PathType, ToType] = 0
 
-
   extension [FromType](initLens: InitLens[FromType])
-    def apply
-      [PathType <: Tuple, ToType]
-      (lambda: Target[FromType, EmptyTuple] => Target[ToType, PathType])
-      : Lens[FromType, PathType, ToType] =
-    0
+    def apply[PathType <: Tuple, ToType](lambda: Target[FromType, EmptyTuple] => Target[ToType, PathType])
+            : Lens[FromType, PathType, ToType] =
+      0
   
   private def getPath[TupleType <: Tuple: Type](path: List[String] = Nil)(using Quotes): List[String] =
     import quotes.reflect.*
 
     Type.of[TupleType] match
-      case '[type tail <: Tuple; head *: tail] => (TypeRepr.of[head].asMatchable: @unchecked) match
-        case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
-      case _                                   => path
+      case '[type tail <: Tuple; head *: tail] =>
+        (TypeRepr.of[head].asMatchable: @unchecked) match
+          case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
+      
+      case _ =>
+        path
 
   def getPaths[TupleType <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes): List[List[String]] =
     import quotes.reflect.*
 
     Type.of[TupleType] match
-      case '[type tail <: Tuple; head *: tail] => Type.of[head] match
-        case '[type tupleType <: Tuple; tupleType] => getPath[tupleType]() :: getPaths[tail]()
+      case '[type tail <: Tuple; head *: tail] =>
+        Type.of[head] match
+          case '[type tupleType <: Tuple; tupleType] =>
+            getPath[tupleType]() :: getPaths[tail]()
+      
       case _ =>
         fail(msg"unexpectedly did not match")
 
-  def get
-      [FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])
-      (using Quotes): Expr[ToType] =
+  def get[FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])(using Quotes)
+          : Expr[ToType] =
+
     import quotes.reflect.*
     
     def select[TargetType: Type](path: List[String], expr: Expr[TargetType]): Expr[ToType] = path match
@@ -91,7 +93,8 @@ object Panopticon:
       case next :: tail => ConstantType(StringConstant(next)).asType match
         case '[type nextType <: Label; nextType] =>
           Expr.summon[Dereferencer[TargetType, nextType]] match
-            case Some('{type fieldType; $dereferencer: Dereferencer[TargetType, labelType] { type FieldType = fieldType }}) =>
+            case Some('{ type fieldType
+                         $dereferencer: Dereferencer[TargetType, labelType] { type FieldType = fieldType } }) =>
               select[fieldType](tail, '{$dereferencer.field($expr)})
       
             case None =>
@@ -100,10 +103,10 @@ object Panopticon:
 
     select[FromType](getPath[PathType](), value).asExprOf[ToType]
 
-  def set
-      [FromType: Type, PathType <: Tuple: Type, ToType: Type]
-      (value: Expr[FromType], newValue: Expr[ToType])
-      (using Quotes): Expr[FromType] =
+  def set[FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType], newValue: Expr[ToType])
+      (using Quotes)
+          : Expr[FromType] =
+
     import quotes.reflect.*
 
     val fromTypeRepr: TypeRepr = TypeRepr.of[FromType]
@@ -121,8 +124,7 @@ object Panopticon:
           
           term.tpe.classSymbol match
             case Some(classSymbol) =>
-              Apply(Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor),
-                  newParams)
+              Apply(Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor), newParams)
             
             case None =>
               fail(msg"the type ${fromTypeRepr.show} does not have a primary constructor")
@@ -139,8 +141,8 @@ object Panopticon:
     fieldNameType match
       case '[type fieldNameType <: Label; fieldNameType] =>
         Expr.summon[Dereferencer[TargetType, fieldNameType]] match
-          case Some('{type fieldType; $dereferencer: Dereferencer[TargetType, labelType] { type FieldType =
-              fieldType }}) =>
+          case Some('{ type fieldType
+                       $dereferencer: Dereferencer[TargetType, labelType] { type FieldType = fieldType } }) =>
             '{Target[fieldType, fieldNameType *: TupleType]()}
     
           case None =>
