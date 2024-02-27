@@ -58,7 +58,7 @@ object Abacist:
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
   def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
-        : Expr[ListMap[Text, Long]] =
+          : Expr[ListMap[Text, Long]] =
 
     def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
       slices match
@@ -74,7 +74,7 @@ object Abacist:
   def multiplyCount[CountUnitsType <: Tuple: Type]
       (count: Expr[Count[CountUnitsType]], multiplier: Expr[Double], division: Boolean)
       (using Quotes)
-        : Expr[Any] =
+          : Expr[Any] =
 
     '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
 
@@ -90,7 +90,7 @@ object Abacist:
   def fromQuantity[QuantityType <: Measure: Type, CountUnitsType <: Tuple: Type]
       (quantity: Expr[Quantity[QuantityType]])
       (using Quotes)
-        : Expr[Count[CountUnitsType]] =
+          : Expr[Count[CountUnitsType]] =
 
     import quotes.reflect.*
     
@@ -102,7 +102,7 @@ object Abacist:
     
   def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type](value: Expr[Count[UnitsType]])
       (using Quotes)
-        : Expr[Int] =
+          : Expr[Int] =
 
     import quotes.reflect.*
     
