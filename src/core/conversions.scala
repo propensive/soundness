@@ -57,6 +57,7 @@ case class Xyz(x: Double, y: Double, z: Double):
 
 object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   def initial: Option[Rgb24] = None
+  
   def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
     else if next.s.length == 6 && next.s.all: char =>
@@ -83,10 +84,8 @@ object Rgb24Opaque:
   object Rgb24:
     given underlying: Underlying[Rgb24, Int] = ###
     given RgbColor[Rgb24] = _.asInt
-
-    def apply(red: Int, green: Int, blue: Int): Rgb24 =
-      ((red&255) << 16) + ((green&255) << 8) + (blue&255)
-
+    
+    def apply(red: Int, green: Int, blue: Int): Rgb24 = ((red&255) << 16) + ((green&255) << 8) + (blue&255)
     def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
   
   extension (color: Rgb24)
@@ -97,9 +96,10 @@ object Rgb24Opaque:
     def srgb: Srgb = Srgb(red/255.0, green/255.0, blue/255.0)
     def asInt: Int = color
   
-    def hex: Text = Text:
+    def hex: Text =
       List(red, green, blue).foldLeft("#"): (acc, c) =>
         acc+(c.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
+      .tt
 
 object Rgb32Opaque:
   opaque type Rgb32 = Int
@@ -108,8 +108,7 @@ object Rgb32Opaque:
     given underlying: Underlying[Rgb32, Int] = ###
     given RgbColor[Rgb32] = _.srgb.rgb24.asInt
 
-    def apply(red: Int, green: Int, blue: Int): Rgb32 =
-      ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
+    def apply(red: Int, green: Int, blue: Int): Rgb32 = ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
   
   extension (color: Rgb32)
     def red: Int = (color >> 22)&1023
@@ -124,8 +123,7 @@ object Rgb12Opaque:
     given underlying: Underlying[Rgb12, Int] = ###
     given RgbColor[Rgb12] = _.srgb.rgb24.asInt
 
-    def apply(red: Int, green: Int, blue: Int): Rgb12 =
-      ((red&15) << 8) + ((green&15) << 4) + (blue&15)
+    def apply(red: Int, green: Int, blue: Int): Rgb12 = ((red&15) << 8) + ((green&15) << 4) + (blue&15)
   
   extension (color: Rgb12)
     def red: Int = (color >> 8)&15

@@ -20,10 +20,7 @@ import language.experimental.captureChecking
 
 object colorProfiles:
   given incandescentTungsten: ColorProfile = ColorProfile(109.850, 100, 35.585, 111.144, 100, 35.2)
-  
-  given oldDirectSunlightAtNoon: ColorProfile = ColorProfile(99.0927, 100, 85.313, 99.178, 100,
-      84.3493)
-  
+  given oldDirectSunlightAtNoon: ColorProfile = ColorProfile(99.0927, 100, 85.313, 99.178, 100, 84.3493)
   given oldDaylight: ColorProfile = ColorProfile(98.074, 100, 118.232, 97.285, 100, 116.145)
   given iccProfilePcs: ColorProfile = ColorProfile(96.422, 100, 82.521, 96.720, 100, 81.427)
   given midMorningDaylight: ColorProfile = ColorProfile(95.682, 100, 92.149, 95.799, 100, 90.926)
@@ -32,29 +29,17 @@ object colorProfiles:
   given adobeRgb: ColorProfile = daylight
   given northSkyDaylight: ColorProfile = ColorProfile(94.972, 100, 122.638, 94.416, 100, 120.641)
   given equalEnergy: ColorProfile = ColorProfile(100, 100, 100, 100, 100, 100)
-  
-  given daylightFluorescentF1: ColorProfile = ColorProfile(92.834, 100, 103.665, 94.791, 100,
-      103.191)
-  
+  given daylightFluorescentF1: ColorProfile = ColorProfile(92.834, 100, 103.665, 94.791, 100, 103.191)
   given coolFluorescent: ColorProfile = ColorProfile(99.187, 100, 67.395, 103.280, 100, 69.026)
   given whiteFluorescent: ColorProfile = ColorProfile(103.754, 100, 49.861, 108.968, 100, 51.965)
-  
-  given warmWhiteFluorescent: ColorProfile = ColorProfile(109.147, 100, 38.813, 114.961, 100,
-      40.963)
-  
+  given warmWhiteFluorescent: ColorProfile = ColorProfile(109.147, 100, 38.813, 114.961, 100, 40.963)
   given daylightFluorescentF5: ColorProfile = ColorProfile(90.872, 100, 98.723, 93.369, 100, 98.636)
   given liteWhiteFluorescent: ColorProfile = ColorProfile(97.309, 100, 60.191, 102.148, 100, 62.074)
-  
-  given daylightFluorescentF7: ColorProfile = ColorProfile(95.044, 100, 108.755, 95.792, 100,
-      107.687)
-  
+  given daylightFluorescentF7: ColorProfile = ColorProfile(95.044, 100, 108.755, 95.792, 100, 107.687)
   given d65Simulator: ColorProfile = daylightFluorescentF7
   given sylvaniaF40: ColorProfile = ColorProfile(96.413, 100, 82.333, 97.115, 100, 81.135)
   given d50Simulator: ColorProfile = sylvaniaF40
-  
-  given coolWhiteFluorescent: ColorProfile = ColorProfile(100.365, 100, 67.868, 102.116, 100,
-      67.826)
-  
+  given coolWhiteFluorescent: ColorProfile = ColorProfile(100.365, 100, 67.868, 102.116, 100, 67.826)
   given philipsTl85: ColorProfile = ColorProfile(96.174, 100, 81.712, 99.001, 100, 83.134)
   given ultralume50: ColorProfile = philipsTl85
   given philipsTl84: ColorProfile = ColorProfile(100.966, 100, 64.370, 103.866, 100, 65.627)
