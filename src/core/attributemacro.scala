@@ -90,11 +90,11 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-      ( name:       Expr[NameType],
-        unclosed:   Expr[Boolean],
-        block:      Expr[Boolean],
-        verbatim:   Expr[Boolean],
-        attributes: Expr[Seq[(Label, Any)]] )
+      (name:       Expr[NameType],
+       unclosed:   Expr[Boolean],
+       block:      Expr[Boolean],
+       verbatim:   Expr[Boolean],
+       attributes: Expr[Seq[(Label, Any)]])
       (using Quotes)
           : Expr[StartTag[NameType, ReturnType]] =
 
