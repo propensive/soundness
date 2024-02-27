@@ -69,11 +69,8 @@ object Dates:
     erased given underlying: Underlying[Date, Int] = ###
     def of(day: Int): Date = day
     
-    def apply
-        (using cal: Calendar)
-        (year: cal.Y, month: cal.M, day: cal.D)
-        (using Raises[DateError])
-          : Date =
+    def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D)
+          : Date raises DateError =
       cal.julianDay(year, month, day)
 
     given show: Show[Date] = d =>
