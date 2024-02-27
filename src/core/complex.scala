@@ -30,40 +30,36 @@ object Complex:
   given show[ComponentType: Show]: Show[Complex[ComponentType]] = complex =>
    t"${complex.real.show} + ${complex.imaginary.show}𝒾"
   
-  inline given quantityShow
-      [UnitsType <: Measure]
-      (using Decimalizer)
-      : Show[Complex[Quantity[UnitsType]]] =
+  inline given quantityShow[UnitsType <: Measure](using Decimalizer)
+        : Show[Complex[Quantity[UnitsType]]] =
     
     new Show[Complex[Quantity[UnitsType]]]:
       def apply(value: Complex[Quantity[UnitsType]]): Text =
         t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.renderUnits(value.real.units)}"
 
-  inline given add
-      [ComponentType]
-      (using addOperator: AddOperator[ComponentType, ComponentType])
-      : AddOperator[Complex[ComponentType], Complex[ComponentType]] =
+  inline given add[ComponentType](using addOperator: AddOperator[ComponentType, ComponentType])
+        : AddOperator[Complex[ComponentType], Complex[ComponentType]] =
+
     new AddOperator[Complex[ComponentType], Complex[ComponentType]]:
       type Result = Complex[addOperator.Result]
     
       def add(left: Complex[ComponentType], right: Complex[ComponentType]): Complex[addOperator.Result] =
         Complex[addOperator.Result](left.real + right.real, left.imaginary + right.imaginary)
 
-  inline given sub
-      [ComponentType]
-      (using subOperator: SubOperator[ComponentType, ComponentType])
-      : SubOperator[Complex[ComponentType], Complex[ComponentType]] with
+  inline given sub[ComponentType](using subOperator: SubOperator[ComponentType, ComponentType])
+        : SubOperator[Complex[ComponentType], Complex[ComponentType]] with
+
     type Result = Complex[subOperator.Result]
     
     def sub(left: Complex[ComponentType], right: Complex[ComponentType]): Complex[subOperator.Result] =
       Complex[subOperator.Result](left.real - right.real, left.imaginary - right.imaginary)
   
-  inline given mul
-      [ComponentType]
+  inline given mul[ComponentType]
       (using mulOperator: MulOperator[ComponentType, ComponentType])
       (using addOperator: AddOperator[mulOperator.Result, mulOperator.Result])
       (using subOperator: SubOperator[mulOperator.Result, mulOperator.Result])
-      : MulOperator[Complex[ComponentType], Complex[ComponentType]] with
+        : MulOperator[Complex[ComponentType], Complex[ComponentType]] with
+
     type Result = Complex[addOperator.Result | subOperator.Result]
 
     def mul
@@ -76,11 +72,9 @@ object Complex:
     
       Complex(ac - bd, ad + bc)
 
-  def polar
-      [ComponentType]
-      (modulus: ComponentType, argument: Double)
+  def polar[ComponentType](modulus: ComponentType, argument: Double)
       (using mul: MulOperator[ComponentType, Double])
-      : Complex[mul.Result] =
+        : Complex[mul.Result] =
     Complex(modulus*math.cos(argument), modulus*math.sin(argument))
 
 case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType):
@@ -101,7 +95,7 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
       (using mulOperator: MulOperator[ComponentType, ComponentType2])
       (using addOperator: AddOperator[mulOperator.Result, mulOperator.Result])
       (using subOperator: SubOperator[mulOperator.Result, mulOperator.Result])
-      : Complex[subOperator.Result | addOperator.Result] =
+        : Complex[subOperator.Result | addOperator.Result] =
 
     val ac: mulOperator.Result = real*right.real
     val bd: mulOperator.Result = imaginary*right.imaginary
@@ -118,7 +112,7 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
       (using addOperator2: AddOperator[mulOperator2.Result, mulOperator2.Result])
       (using subOperator: SubOperator[mulOperator.Result, mulOperator.Result])
       (using divOperator: DivOperator[subOperator.Result | addOperator.Result, addOperator2.Result])
-      : Complex[divOperator.Result] =
+        : Complex[divOperator.Result] =
 
     val ac: mulOperator.Result = mulOperator.mul(real, right.real)
     val bd: mulOperator.Result = mulOperator.mul(imaginary, right.imaginary)
@@ -135,14 +129,14 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
       (using sqrt: SquareRoot[add.Result])
       (using div: DivOperator[ComponentType, sqrt.Result])
       (using div.Result =:= Double)
-      : Double =
+        : Double =
     scala.math.atan2(imaginary/modulus, real/modulus)
 
   inline def modulus
       (using mul: MulOperator[ComponentType, ComponentType])
       (using add: AddOperator[mul.Result, mul.Result])
       (using squareRoot: SquareRoot[add.Result])
-      : squareRoot.Result =
+        : squareRoot.Result =
     squareRoot.sqrt(real*real + imaginary*imaginary)
 
   inline def sqrt
@@ -153,7 +147,7 @@ case class Complex[+ComponentType](real: ComponentType, imaginary: ComponentType
       (using div.Result =:= Double)
       (using sqrt2: SquareRoot[sqrt.Result])
       (using mul2: MulOperator[sqrt2.Result, Double])
-      : Complex[mul2.Result] =
+        : Complex[mul2.Result] =
     Complex.polar(modulus.sqrt, argument/2.0)
 
   @targetName("conjugate")
