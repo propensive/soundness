@@ -45,11 +45,11 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
   def apply[PathType]()
-      ( using SpecificPath[PathType],
-              SystemProperties,
-              Raises[SystemPropertyError],
-              Environment,
-              Raises[EnvironmentError] )
+      (using SpecificPath[PathType],
+             SystemProperties,
+             Raises[SystemPropertyError],
+             Environment,
+             Raises[EnvironmentError])
           : PathType =
 
     val path: Text = absolutePath
@@ -57,10 +57,10 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[PathType: SpecificPath]()
-      ( using SystemProperties,
-              Raises[SystemPropertyError],
-              Environment,
-              Raises[EnvironmentError] )
+      (using SystemProperties,
+             Raises[SystemPropertyError],
+             Environment,
+             Raises[EnvironmentError])
           : PathType =
 
     SpecificPath(t"/")
