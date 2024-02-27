@@ -129,17 +129,20 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val ctx = initCtx.fresh
         //val pluginParams = plugins
         //val jsParams = 
-        val args: List[Text] = List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
+        val args: List[Text] =
+          List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
+        
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
       def run(classpath: LocalClasspath): List[Diagnostic] =
         val ctx = currentCtx.fresh
           
-        val ctx2 = ctx
-          .setReporter(reporter)
-          .setCompilerCallback(callbackApi)
-          .setSetting(ctx.settings.language, Nil)
-          .setSetting(ctx.settings.classpath, classpath().s)
+        val ctx2 =
+          ctx
+            .setReporter(reporter)
+            .setCompilerCallback(callbackApi)
+            .setSetting(ctx.settings.language, Nil)
+            .setSetting(ctx.settings.classpath, classpath().s)
           
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
@@ -185,5 +188,4 @@ enum LanguageFeatures:
   case Into
 
 enum JavaVersion:
-  case Java8, Java9, Java10, Java11, Java12, Java13, Java14, Java15, Java16, Java17, Java18, Java19, Java20,
-      Java21
+  case Jdk(version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21)
