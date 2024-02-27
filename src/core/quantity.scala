@@ -401,10 +401,10 @@ trait Quantitative2:
           }
 
   def greaterThan[LeftType <: Measure: Type, RightType <: Measure: Type]
-      ( leftExpr:  Expr[Quantity[LeftType]],
-        rightExpr: Expr[Quantity[RightType]],
-        strict:    Expr[Boolean],
-        invert:    Expr[Boolean] )
+      (leftExpr:  Expr[Quantity[LeftType]],
+       rightExpr: Expr[Quantity[RightType]],
+       strict:    Expr[Boolean],
+       invert:    Expr[Boolean])
       (using Quotes)
           : Expr[Boolean] =
 
