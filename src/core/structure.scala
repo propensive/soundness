@@ -32,27 +32,37 @@ object BaseLayout:
       val slash = if path.isEmpty then t"" else t"/"
       t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
 
-case class BaseLayout
-    (private val part: Optional[Text], readOnly: Boolean = false)
+case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = false)
     (using baseDir: BaseLayout.Dir):
   
-  def absolutePath
-      (using Environment, Raises[EnvironmentError], SystemProperties,
-          Raises[SystemPropertyError])
-      : Text =
+  def absolutePath(using Environment, Raises[EnvironmentError], SystemProperties, Raises[SystemPropertyError])
+          : Text =
+
     val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
     val home2: Text = if home.ends(t"/") then home.drop(1, Rtl) else home
     part.let(baseDir / _).or(baseDir).render(home2)
 
   given newBaseDir: BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[PathType]()(using SpecificPath[PathType], SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
-    val path: Text = absolutePath
+  def apply[PathType]()
+      ( using SpecificPath[PathType],
+              SystemProperties,
+              Raises[SystemPropertyError],
+              Environment,
+              Raises[EnvironmentError] )
+          : PathType =
 
+    val path: Text = absolutePath
     SpecificPath(path)
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: SpecificPath]()(using SystemProperties, Raises[SystemPropertyError], Environment, Raises[EnvironmentError]): PathType =
+  override def apply[PathType: SpecificPath]()
+      ( using SystemProperties,
+              Raises[SystemPropertyError],
+              Environment,
+              Raises[EnvironmentError] )
+          : PathType =
+
     SpecificPath(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
@@ -62,6 +72,7 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   object Root extends BaseLayout(t"root")
   object Srv extends BaseLayout(t"srv")
   object Tmp extends BaseLayout(t"tmp")
+  
   object Run extends BaseLayout(t"run"):
     object Log extends BaseLayout(t"log")
     
