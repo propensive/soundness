@@ -184,9 +184,9 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 case class Chunk[ElemType](pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
 
 def diff[ElemType]
-    ( left:    IndexedSeq[ElemType],
-      right:   IndexedSeq[ElemType],
-      compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
+    (left:    IndexedSeq[ElemType],
+     right:   IndexedSeq[ElemType],
+     compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
         : Diff[ElemType] =
 
   type Edits = List[Edit[ElemType]]
