@@ -55,14 +55,13 @@ object Serpentine:
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
     def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
-    inline def narrow[NameType2 >: NameType <: Label](using Raises[PathError]): PathName[NameType2] = PathName(render)
+    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] raises PathError = PathName(render)
   
   @targetName("Root")
   object `%`:
-    erased given hierarchy
-        [PathType <: Matchable, LinkType <: Matchable]
+    erased given hierarchy[PathType <: Matchable, LinkType <: Matchable]
         (using erased hierarchy: Hierarchy[PathType, LinkType])
-        : Hierarchy[%.type, LinkType] = ###
+            : Hierarchy[%.type, LinkType] = ###
 
     override def equals(other: Any): Boolean = other.asMatchable match
       case anyRef: AnyRef         => (anyRef eq %) || {
@@ -74,39 +73,36 @@ object Serpentine:
     
     override def hashCode: Int = 0
 
-    def precedes
-        [PathType <: Matchable]
-        (using erased hierarchy: Hierarchy[PathType, ?])
-        (path: PathType)
-        : Boolean =
+    def precedes[PathType <: Matchable](using erased hierarchy: Hierarchy[PathType, ?])(path: PathType)
+            : Boolean =
+
       true
 
-    given navigable
-        [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
-        (using erased hierarchy: Hierarchy[PathType, LinkType])
-        (using navigable: Navigable[PathType, NameType, RootType])
-        (using mainRoot: MainRoot[PathType])
-        : Navigable[%.type, NameType, RootType] =
+    given navigable[PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
+        (using erased hierarchy: Hierarchy[PathType, LinkType],
+                      navigable: Navigable[PathType, NameType, RootType],
+                      mainRoot:  MainRoot[PathType])
+            : Navigable[%.type, NameType, RootType] =
+
       new Navigable[%.type, NameType, RootType]:
         def separator(path: %.type): Text = navigable.separator(mainRoot.empty())
         def prefix(root: RootType): Text = navigable.prefix(navigable.root(mainRoot.empty()))
         def root(path: %.type): RootType = navigable.root(mainRoot.empty())
         def descent(path: %.type): List[PathName[NameType]] = Nil
     
-    given show
-        [PathType <: Matchable]
-        (using hierarchy: Hierarchy[PathType, ?])
-        (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] = root =>
-      mainRoot.empty().show
+    given show[PathType <: Matchable](using hierarchy: Hierarchy[PathType, ?])
+        (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] =
+      
+      root => mainRoot.empty().show
       
     @targetName("child")
-    infix def / [PathType <: Matchable, NameType <: Label, AscentType]
-        (using hierarchy: Hierarchy[PathType, ?])
+    infix def / [PathType <: Matchable, NameType <: Label, AscentType](using hierarchy: Hierarchy[PathType, ?])
         (using mainRoot: MainRoot[PathType])
         (using directional: Directional[PathType, NameType, AscentType])
         (name: PathName[NameType])
         (using creator: PathCreator[PathType, NameType, AscentType])
-        : PathType =
+            : PathType =
+
       mainRoot.empty() / name
 
     @targetName("child2")
@@ -117,7 +113,8 @@ object Serpentine:
         (name: Text)
         (using creator: PathCreator[PathType, NameType, AscentType])
         (using path: Raises[PathError])
-        : PathType =
+            : PathType =
+
       mainRoot.empty() / PathName(name)
 
 export Serpentine.%

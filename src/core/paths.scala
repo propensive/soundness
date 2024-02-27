@@ -55,8 +55,7 @@ object SimplePath:
   given pathCreator: PathCreator[SimplePath, ".*\\/.*", Root.type] with
     def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
     
-case class SimplePath(descent: List[PathName[".*\\/.*"]])
-extends PathEquality(using SimplePath.navigable)
+case class SimplePath(descent: List[PathName[".*\\/.*"]]) extends PathEquality(using SimplePath.navigable)
 
 object SimpleLink:
   inline given decoder(using Raises[PathError]): Decoder[SimpleLink] =
