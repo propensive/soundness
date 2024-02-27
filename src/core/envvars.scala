@@ -36,16 +36,17 @@ object Environment extends Dynamic:
   given default(using Quickstart): Environment = environments.virtualMachine
 
   def apply[VariableType](variable: Text)
-      (using environment: Environment, reader: EnvironmentVariable[Label, VariableType],
-          environmentError: Raises[EnvironmentError])
+      ( using environment:      Environment,
+              reader:           EnvironmentVariable[Label, VariableType],
+              environmentError: Raises[EnvironmentError] )
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
     
   inline def selectDynamic[VariableType](key: String)
-      (using environment: Environment,
-          reader: EnvironmentVariable[key.type, VariableType],
-          environmentError: Raises[EnvironmentError])
+      ( using environment:      Environment,
+              reader:           EnvironmentVariable[key.type, VariableType],
+              environmentError: Raises[EnvironmentError] )
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:

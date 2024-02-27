@@ -37,8 +37,9 @@ object Properties extends Dynamic:
   given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
   
   def apply[PropertyType](property: Text)
-      (using properties: SystemProperties, reader: SystemProperty[String, PropertyType],
-          systemProperty: Raises[SystemPropertyError])
+      ( using properties:     SystemProperties,
+              reader:         SystemProperty[String, PropertyType],
+              systemProperty: Raises[SystemPropertyError] )
           : PropertyType^{properties, reader, systemProperty} =
 
     properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
@@ -98,17 +99,18 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
     PropertyAccess[NameType+"."+key.type](property+"."+key)
   
   def applyDynamic[PropertyType](key: String)()
-      (using properties: SystemProperties,
-          reader: SystemProperty[NameType+"."+key.type, PropertyType],
-          systemProperty: Raises[SystemPropertyError])
+      ( using properties:     SystemProperties,
+              reader:         SystemProperty[NameType+"."+key.type, PropertyType],
+              systemProperty: Raises[SystemPropertyError] )
           : PropertyType^{properties, reader, systemProperty} =
 
     properties((property+"."+key).tt).let(reader.read(_)).or:
       abort(SystemPropertyError((property+"."+key).tt))
   
   inline def apply[PropertyType]()
-      (using properties: SystemProperties, reader: SystemProperty[NameType, PropertyType],
-          systemProperty: Raises[SystemPropertyError])
+      ( using properties: SystemProperties,
+              reader: SystemProperty[NameType, PropertyType],
+              systemProperty: Raises[SystemPropertyError] )
           : PropertyType^{properties, reader, systemProperty} =
 
     properties(valueOf[NameType].tt).let(reader.read(_)).or:
