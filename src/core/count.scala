@@ -76,8 +76,7 @@ object CountQuaques:
     transparent inline infix def / (inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, true)}
 
-    transparent inline def collapse(length: Int)
-        (using length.type < Tuple.Size[UnitsType] =:= true)
+    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[UnitsType] =:= true)
           : Count[Tuple.Drop[UnitsType, length.type]] =
 
       count
