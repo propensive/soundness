@@ -53,11 +53,8 @@ class LarcenyTransformer() extends PluginPhase:
           
     collector.transform(ctx.compilationUnit.untpdTree)
     val regions = collector.regions.to(Set)
-
     val source = String(ctx.compilationUnit.source.content)
-
-    val errors: List[CompileError] =
-      Subcompiler.compile(ctx.settings.classpath.value, source, regions)
+    val errors: List[CompileError] = Subcompiler.compile(ctx.settings.classpath.value, source, regions)
 
 
     object transformer extends UntypedTreeMap:
@@ -73,22 +70,26 @@ class LarcenyTransformer() extends PluginPhase:
           ))
 
         case Apply(Ident(name), List(content)) if name.toString == "demilitarize" =>
-          
           val captured = errors.filter: error =>
             try error.point >= content.span.start && error.point <= content.span.end
             catch case err: AssertionError => false
           
           val msgs = captured.map: error =>
-            Apply(Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName), List(
-              Literal(Constant(error.id)),
-              Literal(Constant(error.message)),
-              Literal(Constant(error.code)),
-              Literal(Constant(error.start)),
-              Literal(Constant(error.offset))
-            ))
+            Apply(
+              Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName),
+              List(
+                Literal(Constant(error.id)),
+                Literal(Constant(error.message)),
+                Literal(Constant(error.code)),
+                Literal(Constant(error.start)),
+                Literal(Constant(error.offset))
+              )
+            )
           
-          Apply(Ident(name), List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala),
-              nme.List), msgs))))
+          Apply(
+            Ident(name),
+            List(Block(List(), Apply(Select(Select(Ident(nme.ROOTPKG), nme.scala), nme.List), msgs)))
+          )
         
         case _ =>
           super.transform(tree)
@@ -108,8 +109,7 @@ object Subcompiler:
         val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
         val offset = pos.point - pos.start
         
-        errors += CompileError(diagnostic.msg.errorId.ordinal, diagnostic.msg.message, code,
-            pos.start, offset)
+        errors += CompileError(diagnostic.msg.errorId.ordinal, diagnostic.msg.message, code, pos.start, offset)
       
       catch case err: Throwable => ()
 
@@ -124,15 +124,14 @@ object Subcompiler:
         val ctx2 = ctx.setSetting(ctx.settings.classpath, classpath)
         setup(Array[String](""), ctx2).map(_(1)).get
       
-      def run
-          (source: String, regions: Set[(Int, Int)], errors: List[CompileError])
-          : List[CompileError] =
+      def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError]): List[CompileError] =
         if regions.isEmpty then errors else
           val reporter: CustomReporter = CustomReporter()
           val sourceFile: SourceFile = SourceFile.virtual("<subcompilation>", source)
           val ctx = currentCtx.fresh
           
-          val ctx2 = ctx.setReporter(reporter)
+          val ctx2 =
+            ctx.setReporter(reporter)
               .setSetting(ctx.settings.classpath, classpath)
               .setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
               .setSetting(ctx.settings.color, "never")
@@ -143,17 +142,14 @@ object Subcompiler:
           
           val newErrors = reporter.errors.to(List)
 
-          def recompile
-              (todo: List[CompileError], done: Set[(Int, Int)], source: String)
-              : List[CompileError] =
+          def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String): List[CompileError] =
             todo match
               case Nil =>
                 if done.isEmpty then errors ::: newErrors
                 else run(source, regions -- done, errors ::: newErrors)
+
               case error :: tail =>
-                regions.find: (start, end) =>
-                  error.point >= start && error.point <= end
-                .match
+                regions.find { (start, end) => error.point >= start && error.point <= end }.match
                   case None =>
                     recompile(tail, done, source)
                   
