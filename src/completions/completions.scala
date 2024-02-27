@@ -64,7 +64,7 @@ extends Cli:
 
   def readParameter[OperandType](flag: Flag[OperandType])
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
-        : Optional[OperandType] =
+          : Optional[OperandType] =
 
     given Cli = this
     parameters.read(flag)
@@ -172,7 +172,7 @@ package executives:
           stdio:            Stdio,
           signals:          LazyList[Signal] )
         (using interpreter: CliInterpreter)
-          : Cli =
+            : Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
           val shell = shellName match

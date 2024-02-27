@@ -44,7 +44,7 @@ trait Executive:
         stdio:            Stdio,
         signals:          LazyList[Signal] )
       (using interpreter: CliInterpreter)
-        : CliType
+          : CliType
   
   def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
 
@@ -99,8 +99,8 @@ package executives:
           workingDirectory: WorkingDirectory,
           stdio:            Stdio,
           signals:          LazyList[Signal] )
-      (using interpreter: CliInterpreter)
-        : CliInvocation =
+        (using interpreter: CliInterpreter)
+            : CliInvocation =
       
       CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
@@ -110,7 +110,7 @@ package executives:
 def application(using executive: Executive, interpreter: CliInterpreter)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
     (block: Cli ?=> executive.Return)
-      : Unit =
+        : Unit =
   
   def listen: LazyList[Signal] = 
     val funnel: Funnel[Signal] = Funnel()

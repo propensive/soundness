@@ -38,7 +38,7 @@ enum Shell:
 case class Arguments(sequence: Argument*) extends FlagParameters:
   def read[OperandType](flag: Flag[OperandType])
       (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-        : Optional[OperandType] =
+          : Optional[OperandType] =
     Unset // FIXME
   
   def focusFlag: Optional[Argument] = Unset
@@ -50,7 +50,7 @@ object SimpleParameterInterpreter extends CliInterpreter:
 object Cli:
   def arguments
       (textArguments: Iterable[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset)
-        : List[Argument] =
+          : List[Argument] =
 
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
       Argument(index, text, if focus == index then position else Unset)
@@ -59,9 +59,10 @@ trait Cli extends ProcessContext:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
+  
   def readParameter[OperandType](flag: Flag[OperandType])
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
-        : Optional[OperandType]
+          : Optional[OperandType]
 
   def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag[?]): Unit = ()
@@ -71,7 +72,7 @@ trait Cli extends ProcessContext:
 trait FlagParameters:
   def read[OperandType](flag: Flag[OperandType])
       (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-        : Optional[OperandType]
+          : Optional[OperandType]
 
   def focusFlag: Optional[Argument]
 

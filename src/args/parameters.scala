@@ -38,7 +38,7 @@ extends FlagParameters:
   
   def read[OperandType](flag: Flag[OperandType])
       (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
-        : Optional[OperandType] =
+          : Optional[OperandType] =
     
     cli.register(flag, suggestions)
 
@@ -56,7 +56,7 @@ object PosixCliInterpreter extends CliInterpreter:
           arguments:  List[Argument],
           current:    Optional[Argument],
           parameters: PosixParameters )
-          : PosixParameters =
+            : PosixParameters =
       
       def push(): PosixParameters = current match
         case Unset =>
@@ -85,7 +85,7 @@ object Suggestion:
         hidden: Boolean = false,
         incomplete: Boolean = false,
         aliases: List[Text] = Nil )
-        : Suggestion =
+          : Suggestion =
     
     new Suggestion(text, description, hidden, incomplete, aliases)
 
@@ -131,7 +131,7 @@ object Switch:
         aliases: List[Text | Char]  = Nil,
         description: Optional[Text] = Unset,
         secret: Boolean             = false )
-        : Flag[Unit] =
+          : Flag[Unit] =
 
     Flag[Unit](name, repeatable, aliases, description, secret)(using FlagInterpreter.unit)
 
@@ -154,7 +154,7 @@ case class Flag[OperandType]
               interpreter:     CliInterpreter,
               flagInterpreter: FlagInterpreter[OperandType],
               suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions )
-        : Optional[OperandType] =
+          : Optional[OperandType] =
 
     cli.register(this, suggestions)
     cli.readParameter(this)

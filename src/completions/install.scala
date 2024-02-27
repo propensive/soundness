@@ -68,7 +68,7 @@ object TabCompletionsInstallation:
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Log[Text], Effectful)
-        : TabCompletionsInstallation raises InstallError =
+          : TabCompletionsInstallation raises InstallError =
 
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Environment)
@@ -106,7 +106,7 @@ object TabCompletions:
 
   def install(shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Effectful)
-        : TabCompletionsInstallation.InstallResult raises InstallError =
+          : TabCompletionsInstallation.InstallResult raises InstallError =
 
     given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes OverwriteError) = _ => InstallError(InstallError.Reason.Io)
