@@ -84,7 +84,7 @@ object Compression:
 
     def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
       juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes]
-
+  
 extension (lazyList: LazyList[Bytes])
   def drop(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
@@ -96,16 +96,14 @@ extension (lazyList: LazyList[Bytes])
       
     recur(lazyList, byteSize)
 
-  def compress
-      [CompressionType <: CompressionAlgorithm]
-      (using compression: Compression[CompressionType])
-      : LazyList[Bytes] =
+  def compress[CompressionType <: CompressionAlgorithm](using compression: Compression[CompressionType])
+          : LazyList[Bytes] =
+
     compression.compress(lazyList)
   
-  def decompress
-      [CompressionType <: CompressionAlgorithm]
-      (using compression: Compression[CompressionType])
-      : LazyList[Bytes] =
+  def decompress[CompressionType <: CompressionAlgorithm](using compression: Compression[CompressionType])
+          : LazyList[Bytes] =
+
     compression.decompress(lazyList)
 
   def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = stochastic:

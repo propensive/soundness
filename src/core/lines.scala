@@ -40,7 +40,9 @@ object LineSeparation:
   given default(using Quickstart): LineSeparation = lineSeparation.adaptiveLinefeed
 
   inline def readByte(inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
-                     (lineSeparators: LineSeparation): Unit =
+      (lineSeparators: LineSeparation)
+          : Unit =
+
     val action: Action = read match
       case 10 =>
         next
@@ -78,9 +80,13 @@ object LineSeparation:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
 @capability
-case class LineSeparation(newline: LineSeparation.NewlineSeq, cr: LineSeparation.Action,
-                              lf: LineSeparation.Action, crlf: LineSeparation.Action,
-                              lfcr: LineSeparation.Action):
+case class LineSeparation
+    (newline: LineSeparation.NewlineSeq,
+     cr:      LineSeparation.Action,
+     lf:      LineSeparation.Action,
+     crlf:    LineSeparation.Action,
+     lfcr:    LineSeparation.Action):
+
   def newlineBytes = newline match
     case LineSeparation.NewlineSeq.Cr   => Bytes(13)
     case LineSeparation.NewlineSeq.Lf   => Bytes(10)

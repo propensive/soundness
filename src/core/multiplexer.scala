@@ -44,8 +44,7 @@ case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) =
-    Async(pump(key, stream))
+  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) = Async(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -66,10 +65,9 @@ extension [ElementType](stream: LazyList[ElementType])
       case head #:: tail => head #:: recur(head, tail)
       case _             => LazyList()
 
-  def rate
-      [DurationType: GenericDuration: SpecificDuration](duration: DurationType)
+  def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using monitor: Monitor, cancel: Raises[CancelError])
-      : LazyList[ElementType] =
+          : LazyList[ElementType] =
     
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match
       case head #:: tail =>
@@ -86,15 +84,14 @@ extension [ElementType](stream: LazyList[ElementType])
     unsafely(LazyList.multiplex(stream, that))
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElementType] =
-    def defer
-        (active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
-        : LazyList[ElementType] =
+    def defer(active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+            : LazyList[ElementType] =
+
       recur(active, stream, buffer)
 
     @tailrec
-    def recur
-        (active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
-        : LazyList[ElementType] =
+    def recur(active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+            : LazyList[ElementType] =
       
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
@@ -111,10 +108,10 @@ extension [ElementType](stream: LazyList[ElementType])
 
     LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
-  def cluster
-      [DurationType: GenericDuration]
-      (duration: DurationType, maxSize: Optional[Int] = Unset)(using Monitor)
-      : LazyList[List[ElementType]] =
+  def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
+      (using Monitor)
+          : LazyList[List[ElementType]] =
+
     val Limit = maxSize.or(Int.MaxValue)
     
     def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int): LazyList[List[ElementType]] =

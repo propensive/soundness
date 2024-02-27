@@ -58,7 +58,9 @@ object In:
   def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
 
 object Stdio:
-  def apply(initOut: ji.PrintStream | Null, initErr: ji.PrintStream | Null, initIn: ji.InputStream | Null): Stdio =
+  def apply(initOut: ji.PrintStream | Null, initErr: ji.PrintStream | Null, initIn: ji.InputStream | Null)
+          : Stdio =
+
     val safeOut: ji.PrintStream = if initOut == null then MutePrintStream else initOut
     val safeErr: ji.PrintStream = if initErr == null then MutePrintStream else initErr
     val safeIn: ji.InputStream = if initIn == null then MuteInputStream else initIn

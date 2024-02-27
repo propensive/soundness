@@ -28,34 +28,32 @@ import java.nio as jn
 //import language.experimental.captureChecking
 
 object Writable:
-  given outputStreamBytes
-      (using streamCut: Raises[StreamError])
-      : Writable[ji.OutputStream, Bytes] =
+  given outputStreamBytes(using streamCut: Raises[StreamError]): Writable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
+
       outputStream.close()
   
-  given outputStreamText
-      (using streamCut: Raises[StreamError], encoder: CharEncoder)
-      : Writable[ji.OutputStream, Text] =
+  given outputStreamText(using streamCut: Raises[StreamError], encoder: CharEncoder)
+          : Writable[ji.OutputStream, Text] =
+
     (outputStream, stream) =>
       stream.each: text =>
         outputStream.write(encoder.encode(text).mutable(using Unsafe))
         outputStream.flush()
+      
       outputStream.close()
 
-  given decodingAdapter
-      [TargetType]
-      (using writable: Writable[TargetType, Text], decoder: CharDecoder)
-      : Writable[TargetType, Bytes] =
+  given decodingAdapter[TargetType](using writable: Writable[TargetType, Text], decoder: CharDecoder)
+          : Writable[TargetType, Bytes] =
+
     (target, stream) => writable.write(target, decoder.decode(stream))
   
-  given encodingAdapter
-      [TargetType]
-      (using writable: Writable[TargetType, Bytes], encoder: CharEncoder)
-      : Writable[TargetType, Text] =
+  given encodingAdapter[TargetType](using writable: Writable[TargetType, Bytes], encoder: CharEncoder)
+          : Writable[TargetType, Text] =
+
     (target, stream) => writable.write(target, encoder.encode(stream))
 
 @capability
@@ -85,25 +83,22 @@ object Appendable:
   given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
     (stderr, text) => stdio.printErr(text)
 
-  given outputStreamBytes
-      (using streamCut: Raises[StreamError])
-      : Appendable[ji.OutputStream, Bytes] =
+  given outputStreamBytes(using streamCut: Raises[StreamError]): Appendable[ji.OutputStream, Bytes] =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
         outputStream.flush()
+
       outputStream.close()
   
-  given decodingAdapter
-      [TargetType]
-      (using appendable: Appendable[TargetType, Text], decoder: CharDecoder)
-      : Appendable[TargetType, Bytes] =
+  given decodingAdapter[TargetType](using appendable: Appendable[TargetType, Text], decoder: CharDecoder)
+          : Appendable[TargetType, Bytes] =
+
     (target, stream) => appendable.append(target, decoder.decode(stream))
   
-  given encodingAdapter
-      [TargetType]
-      (using appendable: Appendable[TargetType, Bytes], encoder: CharEncoder)
-      : Appendable[TargetType, Text] =
+  given encodingAdapter[TargetType](using appendable: Appendable[TargetType, Bytes], encoder: CharEncoder)
+          : Appendable[TargetType, Text] =
+
     (target, stream) => appendable.append(target, encoder.encode(stream))
 
 trait Appendable[-TargetType, -ChunkType]:
@@ -125,17 +120,15 @@ object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: Readable[Text, Text] = LazyList(_)
   
-  given encodingAdapter
-      [SourceType]
-      (using readable: Readable[SourceType, Text], encoder: CharEncoder)
-      : Readable[SourceType, Bytes] = source =>
-    encoder.encode(readable.read(source))
+  given encodingAdapter[SourceType](using readable: Readable[SourceType, Text], encoder: CharEncoder)
+          : Readable[SourceType, Bytes] =
+
+    source => encoder.encode(readable.read(source))
   
-  given decodingAdapter
-      [SourceType]
-      (using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
-      : Readable[SourceType, Text] = source =>
-    decoder.decode(readable.read(source))
+  given decodingAdapter[SourceType](using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
+          : Readable[SourceType, Text] =
+
+    source => decoder.decode(readable.read(source))
 
   given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
 
@@ -225,8 +218,8 @@ object Readable:
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
   
-  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ChunkType] = source =>
-    read(lambda(source))
+  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ChunkType] =
+    source => read(lambda(source))
 
 object Aggregable:
   given bytesBytes: Aggregable[Bytes, Bytes] = source =>
@@ -238,18 +231,15 @@ object Aggregable:
   
   given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] = bytesBytes.map(decoder.decode)
 
-  given lazyList
-      [ChunkType, ChunkType2]
-      (using aggregable: Aggregable[ChunkType, ChunkType2])
-      : Aggregable[ChunkType, LazyList[ChunkType2]] = chunk =>
-
-    LazyList(aggregable.aggregate(chunk))
+  given lazyList[ChunkType, ChunkType2](using aggregable: Aggregable[ChunkType, ChunkType2])
+          : Aggregable[ChunkType, LazyList[ChunkType2]] =
+    
+    chunk => LazyList(aggregable.aggregate(chunk))
 
   given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
-    def map
-        [ResultType, ResultType2]
+    def map[ResultType, ResultType2]
         (aggregable: Aggregable[ChunkType, ResultType], lambda: ResultType => ResultType2)
-        : Aggregable[ChunkType, ResultType2] =
+            : Aggregable[ChunkType, ResultType2] =
 
       new Aggregable:
         def aggregate(value: LazyList[ChunkType]): ResultType2 = lambda(aggregable.aggregate(value))
@@ -262,27 +252,19 @@ extension [ValueType](value: ValueType)
   def stream[ChunkType](using readable: Readable[ValueType, ChunkType]): LazyList[ChunkType] =
     readable.read(value)
   
-  def readAs
-      [ResultType]
-      (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
-      : ResultType =
+  def readAs[ResultType](using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
+          : ResultType =
 
     aggregable.aggregate(readable.read(value))
   
-  def writeTo
-      [TargetType]
-      (target: TargetType)
-      [ChunkType]
+  def writeTo[TargetType](target: TargetType)[ChunkType]
       (using readable: Readable[ValueType, ChunkType], writable: Writable[TargetType, ChunkType])
-      : Unit =
+          : Unit =
 
     writable.write(target, readable.read(value))
   
-  def appendTo
-      [TargetType]
-      (target: TargetType)
-      [ChunkType]
+  def appendTo[TargetType](target: TargetType)[ChunkType]
       (using readable: Readable[ValueType, ChunkType], appendable: Appendable[TargetType, ChunkType])
-      : Unit =
+          : Unit =
 
     appendable.append(target, readable.read(value))
