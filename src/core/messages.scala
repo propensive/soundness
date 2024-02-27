@@ -25,10 +25,7 @@ import language.experimental.captureChecking
 object Message:
   def apply(value: Text): Message = Message(List(value))
 
-  transparent inline def make
-      [TupleType <: Tuple]
-      (inline subs: TupleType, done: List[Message])
-      : List[Message] =
+  transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
     inline erasedValue[TupleType] match
       case _: (messageType *: tailType) => (subs: @unchecked) match
         case message *: tail =>
@@ -82,8 +79,14 @@ extension (inline context: StringContext)
     inline subs.asMatchable match
       case tuple: Tuple =>
         import unsafeExceptions.canThrowAny
-        Message(context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List), Message.make[tuple.type](tuple, Nil))
+        
+        Message
+          ( context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
+            Message.make[tuple.type](tuple, Nil) )
       
       case other =>
         import unsafeExceptions.canThrowAny
-        Message(context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List), List(summonInline[Communicable[other.type]].message(other)))
+
+        Message
+          ( context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
+            List(summonInline[Communicable[other.type]].message(other)) )
