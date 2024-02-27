@@ -246,10 +246,10 @@ extension (diff: Diff[Text])
     def recur(todo: List[Region[Text]], acc: List[Replace], last: List[Text]): CasualDiff =
       todo match
         case Nil                            => CasualDiff(acc.reverse)
-        case Region.Unchanged(pars) :: tail => recur(tail, acc, pars.map(_.value).vouched)
+        case Region.Unchanged(pars) :: tail => recur(tail, acc, pars.map(_.value).compact)
         
         case Region.Changed(deletions, insertions) :: tail =>
-          val deletions2 = deletions.map(_.value).vouched
+          val deletions2 = deletions.map(_.value).compact
           val prelude = (last ++ deletions2).to(Array)
           
           def replace(deletions: List[Text], target: Int): Replace =
