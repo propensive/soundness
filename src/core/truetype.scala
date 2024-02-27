@@ -158,34 +158,34 @@ case class Ttf(data: Bytes):
     .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
 
   case class HeadTable
-      ( majorVersion:       U16,
-        minorVersion:       U16,
-        fontRevisionHigh:   U16,
-        fontRevisionLow:    U16,
-        checksumAdjustment: B32,
-        magicNumber:        B32,
-        flags:              B16,
-        unitsPerEm:         U16 )
+      (majorVersion:       U16,
+       minorVersion:       U16,
+       fontRevisionHigh:   U16,
+       fontRevisionLow:    U16,
+       checksumAdjustment: B32,
+       magicNumber:        B32,
+       flags:              B16,
+       unitsPerEm:         U16)
 
   case class HheaTable
-      ( majorVersion:        U16,
-        minorVersion:        U16,
-        ascender:            I16,
-        descender:           I16,
-        lineGap:             I16,
-        advanceWidthMax:     U16,
-        minLeftSideBearing:  I16,
-        minRightSideBearing: I16,
-        xMaxExtent:          I16,
-        caretSlopeRise:      I16,
-        caretSlopeRun:       I16,
-        caretOffset:         I16,
-        reserved0:           U16,
-        reserved1:           U16,
-        reserved2:           U16,
-        reserved4:           U16,
-        metricDataFormat:    I16,
-        numberOfHMetrics:    U16 )
+      (majorVersion:        U16,
+       minorVersion:        U16,
+       ascender:            I16,
+       descender:           I16,
+       lineGap:             I16,
+       advanceWidthMax:     U16,
+       minLeftSideBearing:  I16,
+       minRightSideBearing: I16,
+       xMaxExtent:          I16,
+       caretSlopeRise:      I16,
+       caretSlopeRun:       I16,
+       caretOffset:         I16,
+       reserved0:           U16,
+       reserved1:           U16,
+       reserved2:           U16,
+       reserved4:           U16,
+       metricDataFormat:    I16,
+       numberOfHMetrics:    U16)
 
   case class HmtxTable(offset: Int, count: Int):
     lazy val metrics: IArray[HMetrics] =
@@ -224,11 +224,11 @@ case class Ttf(data: Bytes):
 
               val segments = (0 until segCount).map: n =>
                 Segment
-                  ( B16(data, startCodesStart + n*2).u16.int.toChar,
-                    B16(data, endCodesStart + n*2).u16.int.toChar,
-                    B16(data, idDeltaStart).i16.int,
-                    B16(data, idRangeOffsetsStart).u16.int )
-              
+                  (B16(data, startCodesStart + n*2).u16.int.toChar,
+                   B16(data, endCodesStart + n*2).u16.int.toChar,
+                   B16(data, idDeltaStart).i16.int,
+                   B16(data, idRangeOffsetsStart).u16.int)
+             
               Format4(length, language, segCount, searchRange, entrySelector, rangeShift, IArray.from(segments))
 
             case 12 =>
@@ -252,13 +252,13 @@ case class Ttf(data: Bytes):
         def glyph(char: Char): Glyph[ttf.type] = ???
       
       case class Format4
-          ( length:        Int,
-            language:      Int,
-            segCount:      Int,
-            searchRange:   Int,
-            entrySelector: Int,
-            rangeShift:    Int,
-            segments:      IArray[Segment] )
+          (length:        Int,
+           language:      Int,
+           segCount:      Int,
+           searchRange:   Int,
+           entrySelector: Int,
+           rangeShift:    Int,
+           segments:      IArray[Segment])
       extends Format:
 
         def glyph(char: Char): Glyph[ttf.type] =
