@@ -77,11 +77,11 @@ trait Dispatcher:
   protected def scalac: Scalac[?]
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
   
-  inline def dispatch[OutputType: JsonDecoder]
-      (body: References ?=> Quotes ?=> Expr[OutputType])
+  inline def dispatch[OutputType: JsonDecoder](body: References ?=> Quotes ?=> Expr[OutputType])
       [ScalacVersionType <: ScalacVersions]
       (using codepoint: Codepoint, classloader: Classloader)
-      : Result[OutputType] raises ScalacError =
+          : Result[OutputType] raises ScalacError =
+
     import errorHandlers.throwUnsafely
     val uuid = Uuid()
     
@@ -128,7 +128,7 @@ trait Dispatcher:
     invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
         (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
 
-case class Dispatch
-    [OutputType]
+case class Dispatch[OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
+
   def mainClass: Text = t"superlunary.DispatchRunner"
