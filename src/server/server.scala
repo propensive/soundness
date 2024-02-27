@@ -50,24 +50,23 @@ trait FallbackHandler:
         HttpBody.Chunked(LazyList(value.show.bytes)))
 
 object Handler extends FallbackHandler:
-  given bytes
-      [ResponseType]
+  given bytes[ResponseType]
       (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Raises[MediaTypeError])
-      : SimpleHandler[ResponseType] =
+          : SimpleHandler[ResponseType] =
+
     SimpleHandler(Media.parse(responseStream.mediaType.show),
         value => HttpBody.Chunked(responseStream.content(value).map(identity)))
 
   given Handler[Redirect] with
-    def process(content: Redirect, status: Int, headers: Map[Text, Text],
-                    responder: Responder): Unit =
+    def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
       headers.each(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
   given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[NotFound[ResponseType]] with
-    def process
-        (notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
-        : Unit =
+    def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+            : Unit =
+
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.each(responder.addHeader)
       responder.sendBody(404, handler.stream(notFound.content))
@@ -75,7 +74,7 @@ object Handler extends FallbackHandler:
   given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[ServerError[ResponseType]] with
     def process
         (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
-        : Unit =
+            : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
       headers.each(responder.addHeader)
       responder.sendBody(500, handler.stream(notFound.content))
@@ -91,7 +90,9 @@ case class Redirect(location: Url["http" | "https"])
 trait Handler[ResponseType]:
   def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
-case class SimpleHandler[ResponseType](mediaType: MediaType, stream: ResponseType => HttpBody) extends Handler[ResponseType]:
+case class SimpleHandler[ResponseType](mediaType: MediaType, stream: ResponseType => HttpBody)
+extends Handler[ResponseType]:
+
   def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
     responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
     headers.each(responder.addHeader)
@@ -103,12 +104,16 @@ case class ServerError[ContentType: SimpleHandler](content: ContentType)
 object Cookie:
   given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize
   given genericHttpRequestParam2: GenericHttpRequestParam["cookie", Cookie] = _.serialize
-
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
-case class Cookie(name: Text, value: Text, domain: Optional[Text] = Unset,
-                      path: Optional[Text] = Unset, expiry: Optional[Long] = Unset,
-                      ssl: Boolean = false):
+case class Cookie
+    (name:   Text,
+     value:  Text,
+     domain: Optional[Text] = Unset,
+     path:   Optional[Text] = Unset,
+     expiry: Optional[Long] = Unset,
+     ssl:    Boolean        = false):
+
   def serialize: Text =
     List(
       name        -> Some(value),
@@ -122,10 +127,12 @@ case class Cookie(name: Text, value: Text, domain: Optional[Text] = Unset,
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-case class Response[T](content: T, status: HttpStatus = HttpStatus.Ok,
-                           headers: Map[ResponseHeader, Text] = Map(), cookies: List[Cookie] = Nil)
-                      (using val handler: Handler[T]):
-
+case class Response[contentType]
+    (content: ContentType,
+     status: HttpStatus = HttpStatus.Ok,
+     headers: Map[ResponseHeader, Text] = Map(),
+     cookies: List[Cookie] = Nil)
+    (using val handler: Handler[ContentType]):
 
   def respond(responder: Responder): Unit =
     val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
@@ -140,7 +147,7 @@ object Request:
     
     val headers: Text =
       request.rawHeaders.map:
-        case (k, vs) => t"$k: ${vs.join(t"; ")}"
+        case (key, values) => t"$key: ${values.join(t"; ")}"
       .join(t"\n          ")
     
     val params: Text = request.params.map:
@@ -158,12 +165,18 @@ object Request:
       t"body"     -> bodySample,
       t"headers"  -> headers,
       t"params"   -> params
-    ).map { case (k, v) => t"$k = $v" }.join(t", ")
+    ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
 case class Request
-    (method: HttpMethod, body: HttpBody.Chunked, query: Text, ssl: Boolean, hostname: Text,
-        port: Int, pathText: Text, rawHeaders: Map[Text, List[Text]],
-        queryParams: Map[Text, List[Text]]):
+    (method: HttpMethod,
+     body: HttpBody.Chunked,
+     query: Text,
+     ssl: Boolean,
+     hostname: Text,
+     port: Int,
+     pathText: Text,
+     rawHeaders: Map[Text, List[Text]],
+     queryParams: Map[Text, List[Text]]):
 
   lazy val path: SimplePath raises PathError = pathText.decodeAs[SimplePath]
 
