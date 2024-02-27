@@ -73,7 +73,7 @@ object Dates:
         (using cal: Calendar)
         (year: cal.Y, month: cal.M, day: cal.D)
         (using Raises[DateError])
-        : Date =
+          : Date =
       cal.julianDay(year, month, day)
 
     given show: Show[Date] = d =>
@@ -219,7 +219,7 @@ object Timing:
     inline given inequality: Inequality[Instant, Instant] with
       inline def compare
           (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
-            : Boolean =
+              : Boolean =
         if left == right then !strict else (left < right)^greaterThan
     
     given ordering: Ordering[Instant] = Ordering.Long
