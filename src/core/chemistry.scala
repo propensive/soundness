@@ -190,8 +190,7 @@ object Molecule:
           if !molecule.elements.contains(PeriodicTable.H) then Nil else
             List(PeriodicTable.H -> molecule.elements(PeriodicTable.H))
         
-        val rest =
-          (molecule.elements - PeriodicTable.C - PeriodicTable.H).to(List).sortBy(_(0).symbol)
+        val rest = (molecule.elements - PeriodicTable.C - PeriodicTable.H).to(List).sortBy(_(0).symbol)
         
         carbon :: hydrogen ::: rest
 
@@ -266,6 +265,7 @@ extends Molecular:
 
 object ChemicalFormula:
   def apply(molecule: Molecule): ChemicalFormula = ChemicalFormula(ListMap(molecule -> 1))
+  
   given show: Show[ChemicalFormula] = formula =>
     formula.molecules.to(List).map: (molecule, count) =>
       (if count == 1 then t"" else count.show)+molecule.show
