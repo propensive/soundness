@@ -76,23 +76,23 @@ def select[SelectorType](sel: SelectorType)(using selectable: Selectable[Selecto
 
 extension [SelectorType: Selectable](left: SelectorType)(using selectable: Selectable[SelectorType])
   @targetName("descendant")
-  infix def >>[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+  infix def >> [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) >> selectable2.selector(right)
   
   @targetName("after")
-  infix def ~[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+  infix def ~ [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) + selectable2.selector(right)
   
   @targetName("or")
-  infix def ||[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+  infix def || [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) | selectable2.selector(right)
   
   @targetName("and")
-  infix def &&[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+  infix def && [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) & selectable2.selector(right)
   
   @targetName("before")
-  infix def ~~[SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
+  infix def ~~ [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
     selectable.selector(left) ~ selectable2.selector(right)
   
 object PropertyDef:
@@ -379,13 +379,13 @@ object ShowProperty:
 
   given [PropertyType, PropertyType2]
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2])
-      : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
+        : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
     t"${show.show(tuple(0))} ${show2.show(tuple(1))}"
   
   given [PropertyType, PropertyType2, PropertyType3]
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2],
           show3: ShowProperty[PropertyType3])
-      : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] = tuple =>
+        : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] = tuple =>
     List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2))).join(t" ")
   
   given [PropertyType, PropertyType2, PropertyType3, PropertyType4]
