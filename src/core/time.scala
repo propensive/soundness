@@ -217,7 +217,9 @@ object Timing:
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
     
     inline given inequality: Inequality[Instant, Instant] with
-      inline def compare(inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
+      inline def compare
+          (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
+            : Boolean =
         if left == right then !strict else (left < right)^greaterThan
     
     given ordering: Ordering[Instant] = Ordering.Long
