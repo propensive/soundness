@@ -34,14 +34,18 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
   
   def zero: Money[this.type] = apply(0.00)
 
-case class Price[CurrencyType <: Currency & Singleton: ValueOf](principal: Money[CurrencyType], tax: Money[CurrencyType]):
+case class Price[CurrencyType <: Currency & Singleton: ValueOf]
+    (principal: Money[CurrencyType], tax: Money[CurrencyType]):
+
   def effectiveTaxRate: Double = tax/principal
 
   @targetName("add")
-  infix def + (right: Price[CurrencyType]): Price[CurrencyType] = Price(principal + right.principal, tax + right.tax)
+  infix def + (right: Price[CurrencyType]): Price[CurrencyType] =
+    Price(principal + right.principal, tax + right.tax)
   
   @targetName("subtract")
-  infix def - (right: Price[CurrencyType]): Price[CurrencyType] = Price(principal - right.principal, tax - right.tax)
+  infix def - (right: Price[CurrencyType]): Price[CurrencyType] =
+    Price(principal - right.principal, tax - right.tax)
   
   @targetName("negate")
   def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
@@ -66,6 +70,7 @@ object Plutocrat:
 
   object Money:
     erased given underlying[CurrencyType <: Currency & Singleton]: Underlying[Money[CurrencyType], Int] = ###
+
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
     
@@ -73,15 +78,17 @@ object Plutocrat:
       Ordering.Long match
         case ordering: Ordering[Money[CurrencyType]] => ordering
 
-    given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle): Show[Money[CurrencyType]] = money =>
-      val currency = valueOf[CurrencyType]
-      val units = (money/currency.modulus).toString.show
-      val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
-      
-      currencyStyle.format(currency, units, subunit)
+    given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle)
+            : Show[Money[CurrencyType]] =
+
+      money =>
+        val currency = valueOf[CurrencyType]
+        val units = (money/currency.modulus).toString.show
+        val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
+        
+        currencyStyle.format(currency, units, subunit)
   
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
-
     @targetName("greaterThan")
     infix def > (right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
 
@@ -118,7 +125,6 @@ object Plutocrat:
 
     @targetName("negate")
     def `unary_-`: Money[CurrencyType] = -left
-
     def tax(rate: Double): Price[CurrencyType] = Price(left, (left*rate + 0.5).toLong)
 
     @tailrec
