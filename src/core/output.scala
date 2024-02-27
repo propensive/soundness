@@ -56,9 +56,15 @@ object TextStyle:
   val esc: Char = 27.toChar
 
 case class TextStyle
-    (fg: Optional[Int] = Unset, bg: Optional[Int] = Unset, italic: Boolean = false,
-        bold: Boolean = false, reverse: Boolean = false, underline: Boolean = false,
-        conceal: Boolean = false, strike: Boolean = false):
+    ( fg:        Optional[Int] = Unset,
+      bg:        Optional[Int] = Unset,
+      italic:    Boolean       = false,
+      bold:      Boolean       = false,
+      reverse:   Boolean       = false,
+      underline: Boolean       = false,
+      conceal:   Boolean       = false,
+      strike:    Boolean       = false ):
+
   import escapes.*
   import TextStyle.esc
   
@@ -123,9 +129,11 @@ object Ansi extends Ansi2:
   case class Frame(bracket: Char, start: Int, transform: Transform)
   
   case class State
-      (text: Text = t"", last: Option[Transform] = None, stack: List[Frame] = Nil,
-          spans: TreeMap[CharSpan, Transform] = TreeMap(),
-          insertions: TreeMap[Int, Text] = TreeMap()):
+      ( text:       Text                         = t"",
+        last:       Option[Transform]            = None,
+        stack:      List[Frame]                  = Nil,
+        spans:      TreeMap[CharSpan, Transform] = TreeMap(),
+        insertions: TreeMap[Int, Text]           = TreeMap() ):
 
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
@@ -218,20 +226,15 @@ object Display:
     def map(text: Display, lambda: Char => Char): Display =
       Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-    def slice(text: Display, start: Int, end: Int): Display =
-      text.dropChars(start).takeChars(end - start)
-    
+    def slice(text: Display, start: Int, end: Int): Display = text.dropChars(start).takeChars(end - start)
     val empty: Display = Display.empty
     def concat(left: Display, right: Display): Display = left.append(right)
     def unsafeChar(text: Display, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Display, sub: Text): Int = text.plain.s.indexOf(sub.s)
-    
-    def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) =
-      display(value)
+    def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) = display(value)
 
   val empty: Display = Display(t"")
   given joinable: Joinable[Display] = _.fold(empty)(_ + _)
-
   given printable: Printable[Display] = _.render
 
   given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
@@ -249,16 +252,11 @@ object Display:
           recur(source.take(matcher.group(1).nn.length), limit - 1, output :: acc)
         else source :: acc
 
-
-
     IArray.from(recur(text, limit, Nil))
 
   given Ordering[Display] = Ordering.by(_.plain)
 
-  def make
-      [ValueType]
-      (value: ValueType, transform: Ansi.Transform)(using Show[ValueType])
-      : Display =
+  def make[ValueType](value: ValueType, transform: Ansi.Transform)(using Show[ValueType]): Display =
     val text: Text = value.show
     Display(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
@@ -311,9 +309,12 @@ case class Display
 
     @tailrec
     def recur
-        (spans: TreeMap[CharSpan, Ansi.Transform], pos: Int = 0, style: TextStyle = TextStyle(),
-            stack: List[(CharSpan, TextStyle)] = Nil, insertions: TreeMap[Int, Text] = TreeMap())
-        : Text =
+        ( spans:      TreeMap[CharSpan, Ansi.Transform],
+          pos:        Int                               = 0,
+          style:      TextStyle                         = TextStyle(),
+          stack:      List[(CharSpan, TextStyle)]       = Nil,
+          insertions: TreeMap[Int, Text]                = TreeMap() )
+            : Text =
 
       inline def addSpan(): Text =
         val newInsertions = addText(pos, spans.head(0).start, insertions)
@@ -401,12 +402,8 @@ object Highlight:
   def apply[ValueType](using DummyImplicit)[ColorType: RgbColor](color: ColorType): Highlight[ValueType] =
     value => Fg(color.asRgb24Int)
 
-  def apply
-      [ValueType]
-      (using DummyImplicit)
-      [ColorType: RgbColor]
-      (chooseColor: ValueType -> ColorType)
-      : Highlight[ValueType] =
+  def apply[ValueType](using DummyImplicit)[ColorType: RgbColor](chooseColor: ValueType -> ColorType)
+        : Highlight[ValueType] =
 
     value => Fg(chooseColor(value).asRgb24Int)
 

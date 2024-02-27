@@ -32,10 +32,8 @@ object Displayable:
   given text: Displayable[Text] = text => Display(text)
   given pid: Displayable[Pid] = pid => e"${pid.value.show}"
 
-  given highlighted
-      [ValueType]
-      (using highlight: Highlight[ValueType], show: Show[ValueType])
-      : Displayable[ValueType] =
+  given highlighted[ValueType](using highlight: Highlight[ValueType], show: Show[ValueType])
+        : Displayable[ValueType] =
 
     value => e"${highlight.color(value)}(${value.show})"
 
