@@ -7,7 +7,7 @@ import anticipation.*
 
 trait ColumnSizing:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  def fit[TextType: Textual: ClassTag](lines: IArray[TextType], width: Int): IArray[TextType]
+  def fit[TextType: ClassTag: Textual](lines: IArray[TextType], width: Int): IArray[TextType]
 
 package columnSizing:
   object Prose extends ColumnSizing:
@@ -45,8 +45,7 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
-      given ClassTag[TextType] = summon[Textual[TextType]].classTag
+    def fit[TextType: ClassTag](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
       lines.map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
 
@@ -55,7 +54,7 @@ package columnSizing:
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
+    def fit[TextType: ClassTag](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IArray[TextType] =
       given ClassTag[TextType] = summon[Textual[TextType]].classTag
       lines.map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
@@ -64,5 +63,5 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
-    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
+    def fit[TextType: ClassTag: Textual](lines: IArray[TextType], width: Int): IArray[TextType] = lines
       
