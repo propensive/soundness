@@ -54,9 +54,9 @@ object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
 
   def apply[TargetType, TextType]
-      ( target:     TargetType,
-        appendable: Appendable[TargetType, TextType],
-        format:     LogFormat[TargetType, TextType] )
+      (target:     TargetType,
+       appendable: Appendable[TargetType, TextType],
+       format:     LogFormat[TargetType, TextType])
       (using monitor: Monitor)
           : Logger[TextType]/*^{monitor}*/ =
 

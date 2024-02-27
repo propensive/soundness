@@ -30,12 +30,12 @@ object Eucalyptus:
   given Realm = realm"eucalyptus"
   
   def record[MessageType: Type, TextType: Type]
-      ( level:   Expr[Level],
-        message: Expr[MessageType],
-        log:     Expr[Log[TextType]],
-        realm:   Expr[Realm],
-        textual: Expr[Textual[TextType]],
-        show:    Expr[Any] )
+      (level:   Expr[Level],
+       message: Expr[MessageType],
+       log:     Expr[Log[TextType]],
+       realm:   Expr[Realm],
+       textual: Expr[Textual[TextType]],
+       show:    Expr[Any])
       (using Quotes)
           : Expr[Unit] =
     
