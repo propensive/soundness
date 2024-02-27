@@ -66,7 +66,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
   type Keypress = profanity.Keypress | TerminalInfo
 
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
-    case '\u001b' #:: rest                    =>
+    case '\u001b' #:: rest =>
       safely(Async(rest.head).await(30L)) match
         case Unset => Keypress.Escape #:: process(rest)
         case _ => rest match
@@ -113,18 +113,19 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
             content.cut(t"/") match
               case List(Hex(red), Hex(green), Hex(blue)) =>
                 TerminalInfo.BgColor(red, green, blue) #:: process(continuation)
+
               case _ =>
                 process(continuation)
 
           case rest =>
             process(rest)
 
-    case ('\b' | '\u007f') #:: rest           => Keypress.Backspace #:: process(rest)
-    case '\u0009' #:: rest                    => Keypress.Tab #:: process(rest)
-    case ('\u000a' | '\u000d') #:: rest       => Keypress.Enter #:: process(rest)
-    case char #:: rest if char < 32           => Keypress.Control((char + 64).toChar) #:: process(rest)
-    case other #:: rest                       => Keypress.CharKey(other) #:: process(rest)
-    case _                                    => LazyList()
+    case ('\b' | '\u007f') #:: rest     => Keypress.Backspace #:: process(rest)
+    case '\u0009' #:: rest              => Keypress.Tab #:: process(rest)
+    case ('\u000a' | '\u000d') #:: rest => Keypress.Enter #:: process(rest)
+    case char #:: rest if char < 32     => Keypress.Control((char + 64).toChar) #:: process(rest)
+    case other #:: rest                 => Keypress.CharKey(other) #:: process(rest)
+    case _                              => LazyList()
 
 case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")
 
@@ -139,19 +140,18 @@ object Terminal:
 package keyboards:
   given raw: Keyboard with
     type Keypress = Char
-     def process(stream: LazyList[Char]): LazyList[Keypress] = stream
+    def process(stream: LazyList[Char]): LazyList[Keypress] = stream
 
   given numeric: Keyboard with
     type Keypress = Int
-     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
+    def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
   given standard(using monitor: Monitor): StandardKeyboard^{monitor} = StandardKeyboard()
 
 enum TerminalMode:
   case Dark, Light
 
-case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor)
-extends Stdio:
+case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor) extends Stdio:
   export context.stdio.{in, out, err}
   given stdio: Stdio = context.stdio
 
@@ -231,12 +231,11 @@ trait TerminalSizeDetection:
 
 inline def terminal: Terminal = compiletime.summonInline[Terminal]
 
-def terminal
-    [ResultType]
-    (block: Terminal ?=> ResultType)
+def terminal[ResultType](block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
-    : ResultType =
+        : ResultType =
+
   given terminal: Terminal = Terminal(context.signals)
   if summon[BackgroundColorDetection]() then Out.print(Terminal.reportBackground)
   if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
