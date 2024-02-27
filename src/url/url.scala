@@ -247,11 +247,11 @@ case class Weblink(ascent: Int, descent: List[PathName[""]])
 type HttpUrl = Url["https" | "http"]
 
 case class Url[+SchemeType <: Label]
-    ( scheme:    Scheme[SchemeType],
-      authority: Optional[Authority],
-      pathText:  Text,
-      query:     Optional[Text]      = Unset,
-      fragment:  Optional[Text]      = Unset ):
+    (scheme:    Scheme[SchemeType],
+     authority: Optional[Authority],
+     pathText:  Text,
+     query:     Optional[Text]      = Unset,
+     fragment:  Optional[Text]      = Unset):
   
   lazy val path: List[PathName[""]] =
     // FIXME: This needs to be handled better
