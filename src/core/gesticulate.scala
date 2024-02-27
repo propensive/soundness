@@ -69,14 +69,14 @@ object Media:
 
   lazy val systemMediaTypes: Set[Text] =
     try
-      val stream = Option(getClass.getResourceAsStream("/gesticulate/media.types")).getOrElse:
+      val stream = Optional(getClass.getResourceAsStream("/gesticulate/media.types")).or:
         throw InterpolationError(msg"could not find 'gesticulate/media.types' on the classpath")
-      .nn
 
       val lines: Iterator[Text] =
         scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
       
       lines.to(Set)
+
     catch case err: InterpolationError => Set()
 
   object Prefix extends Interpolator[Unit, Text, MediaType]:
@@ -102,6 +102,7 @@ object Media:
               ${parsed.basic} is not a registered media type; did you mean $suggestion or
               ${parsed.basic.sub(t"/", t"/x-")}?
             """)
+
         case _ =>
           ()
       
@@ -131,15 +132,16 @@ object Media:
           Group.Text *: parseInit(string)
 
     def parseGroup(str: Text): Group =
-      try Group.valueOf(str.lower.capitalize.s)
-      catch IllegalArgumentException =>
+      try Group.valueOf(str.lower.capitalize.s) catch IllegalArgumentException =>
         raise(MediaTypeError(string, MediaTypeError.Nature.InvalidGroup))(Group.Text)
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
+      
       str.chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Nature.InvalidChar(char))):
           Subtype.X(str.chars.filter(!notAllowed(_)).text)
+      
       .getOrElse:
         if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
         else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
@@ -173,8 +175,13 @@ object MediaTypeError:
 case class MediaTypeError(value: Text, nature: MediaTypeError.Nature)
 extends Error(msg"the value $value is not a valid media type; ${nature.message}")
 
-case class MediaType(group: Media.Group, subtype: Media.Subtype, suffixes: List[Media.Suffix] = Nil,
-                        parameters: List[(Text, Text)] = Nil) extends Dynamic:
+case class MediaType
+    ( group:      Media.Group,
+      subtype:    Media.Subtype,
+      suffixes:   List[Media.Suffix] = Nil,
+      parameters: List[(Text, Text)] = Nil )
+extends Dynamic:
+
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
   
