@@ -79,7 +79,7 @@ extension (bytes: Bytes)
   
   def deserializeIArray[DataType: ClassTag](size: Int, offset: Int = 0)
       (using deserializer: Deserializer[DataType])
-        : IArray[DataType] =
+          : IArray[DataType] =
 
     val width = deserializer.width
     
