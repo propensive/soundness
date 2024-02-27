@@ -163,8 +163,8 @@ object JsonAst:
       Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
   def apply
-      ( value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean |
-                   Null )
+      (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean |
+                  Null)
           : JsonAst =
 
     value
