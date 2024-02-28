@@ -33,7 +33,7 @@ export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHa
     MapHasAsJava, EnumerationHasAsScala}
 
 export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
-    capability, allowConversions as convertible}
+    capability}
 
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
