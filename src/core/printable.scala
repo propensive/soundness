@@ -22,12 +22,32 @@ import fulminate.*
 import language.experimental.captureChecking
 
 object Printable:
-  given text: Printable[Text] = identity(_)
-  given string: Printable[String] = _.tt
-  given char: Printable[Char] = _.toString.tt
-  given message: Printable[Message] = _.text
+  given text: Printable[Text] = (text, termcap) => text
+  given string: Printable[String] = (string, termcap) => string.tt
+  given char: Printable[Char] = (char, termcap) => char.toString.tt
+  given message: Printable[Message] = (message, termcap) => message.text
+
+enum ColorCapability:
+  case NoColor, Color8, Color16, Color256, TrueColor
+
+object Termcap:
+  val basic: Termcap = new Termcap:
+    def ansi: Boolean = false
+    def color: ColorCapability = ColorCapability.NoColor
+  
+  val xterm256: Termcap = new Termcap:
+    def ansi: Boolean = true
+    def color: ColorCapability = ColorCapability.Color256
+  
+  val xtermTrueColor: Termcap = new Termcap:
+    def ansi: Boolean = true
+    def color: ColorCapability = ColorCapability.TrueColor
+
+trait Termcap:
+  def ansi: Boolean
+  def color: ColorCapability
 
 @capability
 trait Printable[-TextType]:
-  def print(text: TextType): Text
+  def print(text: TextType, termcap: Termcap): Text
 
