@@ -23,7 +23,9 @@ import anticipation.*
 import java.io as ji
 
 package stdioSources:
-  given virtualMachine: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn)
+  package virtualMachine:
+    given textOnly: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.basic)
+    given ansi: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.xterm256)
 
 import language.experimental.captureChecking
 
@@ -34,8 +36,10 @@ trait Io:
 
 object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
-  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType]): Unit =
-    stdio.printErr(printable.print(text))
+  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType])
+          : Unit =
+
+    stdio.printErr(printable.print(text, stdio.termcap))
   
   def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
     print(text)
@@ -46,7 +50,7 @@ object Err:
 object Out:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
   def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType]): Unit =
-    stdio.print(printable.print(text))
+    stdio.print(printable.print(text, stdio.termcap))
   
   def println()(using Stdio): Unit = print("\n".tt)
   
@@ -58,7 +62,11 @@ object In:
   def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
 
 object Stdio:
-  def apply(initOut: ji.PrintStream | Null, initErr: ji.PrintStream | Null, initIn: ji.InputStream | Null)
+  def apply
+      (initOut: ji.PrintStream | Null,
+       initErr: ji.PrintStream | Null,
+       initIn:  ji.InputStream | Null,
+       initTermcap: Termcap)
           : Stdio =
 
     val safeOut: ji.PrintStream = if initOut == null then MutePrintStream else initOut
@@ -69,6 +77,7 @@ object Stdio:
       def out: ji.PrintStream = safeOut
       def err: ji.PrintStream = safeErr
       def in: ji.InputStream = safeIn
+      def termcap: Termcap = initTermcap
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()
@@ -87,6 +96,7 @@ object Stdio:
     override def available(): Int = 0
 
 trait Stdio extends Io:
+  def termcap: Termcap
   def out: ji.PrintStream
   def err: ji.PrintStream
   def in: ji.InputStream
