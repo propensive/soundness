@@ -38,22 +38,40 @@ object Show:
   given specializable: Show[Specializable] = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
-object Debug extends Derivation[Debug]:
+object Debug:
+  inline given derived[ValueType]: Debug[ValueType] = value => compiletime.summonFrom:
+    case given Reflection[ValueType] => DebugDerivation.derived[ValueType](value)
+    case encoder: Encoder[ValueType] => encoder.encode(value)
+    case given Show[ValueType]       => value.show
+    case _                           => s"⦉${value.toString.tt}⦊".tt
 
-  inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
-    fields(value):
-      [FieldType] => field =>
-        val text = context.let(_.contextually(field.debug)).or(field.debug)
-        if tuple then text else s"$label:$text"
-    .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+  given debugChar: Debug[Char] = char => ("'"+escape(char).s+"'").tt
+  given debugLong: Debug[Long] = long => (long.toString+"L").tt
+  given debugString: Debug[String] = string => debugText(string.tt).s.substring(1).nn.tt
+  given debugByte: Debug[Byte] = byte => (byte.toString+".toByte").tt
+  given debugShort: Debug[Short] = short => (short.toString+".toShort").tt
+  
+  given debugText: Debug[Text] = text =>
+    val builder: StringBuilder = new StringBuilder()
+    text.s.map(escape(_, true)).each(builder.append)
+    
+    ("t\""+builder.toString+"\"").tt
+  
+  given debugFloat: Debug[Float] =
+    case Float.PositiveInfinity => "Float.PositiveInfinity".tt
+    case Float.NegativeInfinity => "Float.NegativeInfinity".tt
+    case float if float.isNaN   => "Float.NaN".tt
+    case float                  => (float.toString+"F").tt
+  
+  given debugDouble: Debug[Double] = 
+    case Double.PositiveInfinity => "Double.PositiveInfinity".tt
+    case Double.NegativeInfinity => "Double.NegativeInfinity".tt
+    case double if double.isNaN  => "Double.NaN".tt
+    case double                  => double.toString.tt
 
-  inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
-    variant(value):
-      [VariantType <: DerivationType] => variant =>
-        context.let(_.contextually(variant.debug)).or(variant.debug)
-
-object TextConversion:
-  val any: Debug[Any] = value => value.toString.tt
+  given debugBoolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
+  given debugReflectEnum: Debug[reflect.Enum] = _.toString.show
+  given debugPid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n' => "\\n".tt
@@ -71,67 +89,6 @@ object TextConversion:
     case ch =>
       if ch < 128 && ch >= 32 then ch.toString.tt else String.format("\\u%04x", ch.toInt).nn.tt
 
-  given debugChar: Debug[Char] = char => ("'"+escape(char).s+"'").tt
-  given debugLong: Debug[Long] = long => (long.toString+"L").tt
-  given debugString: Debug[String] = string => summon[Debug[Text]](string.tt).s.substring(1).nn.tt
-  given debugByte: Debug[Byte] = byte => (byte.toString+".toByte").tt
-  given debugShort: Debug[Short] = short => (short.toString+".toShort").tt
-  given debugMessage: Debug[Message] = Debug.derived[Message]
-  
-  given debugText: Debug[Text] = text =>
-    val builder: StringBuilder = new StringBuilder()
-    text.s.map(escape(_, true)).each(builder.append)
-    
-    ("t\""+builder.toString+"\"").tt
-
-  given textualize[ValueType](using textualizer: Textualizer[ValueType]): Show[ValueType] =
-    textualizer.textual(_)
-
-  given text: Show[Text] = identity(_)
-  given string: Show[String] = _.tt
-  given char: Show[Char] = char => char.toString.tt
-  given long: Show[Long] = long => long.toString.tt
-  given int: Show[Int] = int => int.toString.tt
-  given short: Show[Short] = short => short.toString.tt
-  given byte: Show[Byte] = byte => byte.toString.tt
-  given message: Show[Message] = _.text
-  given double(using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
-  given pid: Show[Pid] = pid => ("\u21af"+pid.value).tt
-  
-  given debugFloat: Debug[Float] =
-    case Float.PositiveInfinity => "Float.PositiveInfinity".tt
-    case Float.NegativeInfinity => "Float.NegativeInfinity".tt
-    case float if float.isNaN   => "Float.NaN".tt
-    case float                  => (float.toString+"F").tt
-  
-  given debugDouble: Debug[Double] = 
-    case Double.PositiveInfinity => "Double.PositiveInfinity".tt
-    case Double.NegativeInfinity => "Double.NegativeInfinity".tt
-    case double if double.isNaN  => "Double.NaN".tt
-    case double                  => double.toString.tt
-
-  given boolean(using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
-  given debugBoolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
-
-  given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
-    case Some(value) => show(value)
-    case None        => "none".tt
-  
-  given uuid: Show[Uuid] = _.text
-  given byteSize: Show[ByteSize] = _.text
-  given reflectEnum: Show[reflect.Enum] = _.toString.show
-  given debugReflectEnum: Debug[reflect.Enum] = _.toString.show
-  given debugPid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
-
-  given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
-    set.map(_.show).mkString("{", ", ", "}").tt
-  
-  given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
-    list.map(_.show).mkString("[", ", ", "]").tt
-  
-  given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
-    vector => vector.map(_.show).mkString("[ ", " ", " ]").tt
-  
   inline given set2[ElemType]: Debug[Set[ElemType]] =
     new Debug[Set[ElemType]]:
       def apply(set: Set[ElemType]): Text = set.map(_.debug).mkString("{", ", ", "}").tt
@@ -195,31 +152,62 @@ object TextConversion:
     arrayType+dimension+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
 
   inline given option[ValueType]: Debug[Option[ValueType]] =
-    case None =>
-      "None".tt
-    
-    case Some(value) =>
-      val valueText: Text = compiletime.summonFrom:
-        case given Debug[ValueType]      => value.debugText
-        case encoder: Encoder[ValueType] => encoder.encode(value)
-        case given Show[ValueType]       => value.show
-        case _                           => s"⦉${value.toString.tt}⦊".tt
-      
-      s"Some($valueText)".tt
+    case None        => "None".tt
+    case Some(value) => s"Some(${value.debug.s})".tt
+  
+  given none: Debug[None.type] = none => "None".tt
+  
+object DebugDerivation extends Derivation[Debug]:
+  inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
+    fields(value):
+      [FieldType] => field =>
+        val text = context.let(_.contextually(field.debug)).or(field.debug)
+        if tuple then text else s"$label:$text"
+    .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+
+  inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
+    variant(value):
+      [VariantType <: DerivationType] => variant =>
+        context.let(_.contextually(variant.debug)).or(variant.debug)
+
+object TextConversion:
+  given textualize[ValueType](using textualizer: Textualizer[ValueType]): Show[ValueType] =
+    textualizer.textual(_)
+
+  given text: Show[Text] = identity(_)
+  given string: Show[String] = _.tt
+  given char: Show[Char] = char => char.toString.tt
+  given long: Show[Long] = long => long.toString.tt
+  given int: Show[Int] = int => int.toString.tt
+  given short: Show[Short] = short => short.toString.tt
+  given byte: Show[Byte] = byte => byte.toString.tt
+  given message: Show[Message] = _.text
+  given double(using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
+  given pid: Show[Pid] = pid => ("\u21af"+pid.value).tt
+  given boolean(using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
+
+  given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
+    case Some(value) => show(value)
+    case None        => "none".tt
+  
+  given uuid: Show[Uuid] = _.text
+  given byteSize: Show[ByteSize] = _.text
+  given reflectEnum: Show[reflect.Enum] = _.toString.show
+
+  given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
+    set.map(_.show).mkString("{", ", ", "}").tt
+  
+  given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
+    list.map(_.show).mkString("[", ", ", "]").tt
+  
+  given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
+    vector => vector.map(_.show).mkString("[ ", " ", " ]").tt
   
   given none: Show[None.type] = none => "none".tt
-  given showNone: Debug[None.type] = none => "None".tt
   
 extension [ValueType](value: ValueType)
   inline def show(using display: Show[ValueType]): Text = display(value)
-
-  def debugText(using debug: Debug[ValueType]): Text = debug(value)
-
-  inline def debug: Text = compiletime.summonFrom:
-    case display: Debug[ValueType]   => display(value)
-    case encoder: Encoder[ValueType] => encoder.encode(value)
-    case display: Show[ValueType]    => display(value)
-    case _                           => ("§["+value.toString.tt+"]").tt
+  inline def debug(using debug: Debug[ValueType]): Text = debug(value)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
