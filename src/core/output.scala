@@ -85,10 +85,6 @@ case class TextStyle
     if conceal != next.conceal then buf.add(t"${esc}${next.concealEsc}")
     if strike != next.strike then buf.add(t"${esc}${next.strikeEsc}")
 
-object rendering:
-  given plain: Show[Display] = _.plain
-  given output: Show[Display] = _.render
-  
 object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
 
@@ -205,16 +201,16 @@ object Display:
     inline def add(left: Display, right: Display): Display = left.append(right)
 
   given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Display] = (out, output) =>
-    stdio.print(output.render)
+    stdio.print(output.render(stdio.termcap))
   
   given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Display] = (err, output) =>
-    stdio.printErr(output.render)
+    stdio.printErr(output.render(stdio.termcap))
 
   given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Display] =
-    (target, output) => appendable.append(target, output.map(_.render))
+    (target, output) => appendable.append(target, output.map(_.render(Termcap.basic)))
   
   given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
-    (target, output) => writable.write(target, output.map(_.render))
+    (target, output) => writable.write(target, output.map(_.render(Termcap.basic)))
 
   given textual: Textual[Display] with
     type ShowType[-ValueType] = Displayable[ValueType]
@@ -235,7 +231,7 @@ object Display:
 
   val empty: Display = Display(t"")
   given joinable: Joinable[Display] = _.fold(empty)(_ + _)
-  given printable: Printable[Display] = _.render
+  given printable: Printable[Display] = _.render(_)
 
   given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
@@ -264,7 +260,7 @@ case class Display
     (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
         insertions: TreeMap[Int, Text] = TreeMap()):
   
-  def explicit: Text = render.flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
+  def explicit: Text = render(Termcap.xterm256).flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
 
   @targetName("add")
   infix def append(text: Text): Display = Display(t"$plain$text", spans)
@@ -304,7 +300,7 @@ case class Display
       
       Display(plain.take(n), newSpans)
 
-  def render: Text =
+  def render(termcap: Termcap): Text =
     val buf = StringBuilder()
 
     @tailrec
@@ -350,7 +346,7 @@ case class Display
           recur(spans, stack.head(0).end, newStyle, stack.tail, newInsertions)
         else addSpan()
 
-    recur(spans, insertions = insertions)
+    if termcap.ansi then recur(spans, insertions = insertions) else plain
 
 object Bold
 object Italic
