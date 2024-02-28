@@ -58,11 +58,13 @@ case class ZipPath(zipFile: ZipFile, ref: ZipRef):
   def entry()(using streamCut: Raises[StreamError]): ZipEntry = zipFile.entry(ref)
 
 object ZipRef:
-  def apply
-      (text: Text)
-      (using pathError: Raises[PathError], navigable: Navigable[ZipRef, InvalidZipNames, Unset.type],
-          rootParser: RootParser[ZipRef, Unset.type], creator: PathCreator[ZipRef, InvalidZipNames, Unset.type])
-      : ZipRef =
+  def apply(text: Text)
+      (using pathError:  Raises[PathError],
+             navigable:  Navigable[ZipRef, InvalidZipNames, Unset.type],
+             rootParser: RootParser[ZipRef, Unset.type],
+             creator:    PathCreator[ZipRef, InvalidZipNames, Unset.type])
+          : ZipRef =
+
     Navigable.decode[ZipRef](text)
   
   @targetName("child")
@@ -82,11 +84,9 @@ object ZipRef:
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
 object ZipEntry:
-  def apply
-      [ResourceType]
-      (path: ZipRef, resource: ResourceType)
-      (using readable: Readable[ResourceType, Bytes])
-      : ZipEntry =
+  def apply[ResourceType](path: ZipRef, resource: ResourceType)(using readable: Readable[ResourceType, Bytes])
+          : ZipEntry =
+
     new ZipEntry(path, () => resource.stream[Bytes])
 
   given Readable[ZipEntry, Bytes] = Readable.lazyList[Bytes].contramap(_.content())
@@ -97,17 +97,16 @@ object ZipEntry:
 case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
-  def apply[FileType]
-      (file: FileType)
+  def apply[FileType](file: FileType)
       (using genericFile: /*{*}*/ GenericFile[FileType], stream: Raises[StreamError])
-      : /*{genericFile, streamCut}*/ ZipFile =
+          : ZipFile =
+
     val pathname: Text = file.fileText
     new ZipFile(pathname)
 
-  def create[PathType]
-      (path: PathType)
-      (using genericPath: GenericPath[PathType], streamCut: Raises[StreamError])
-      : ZipFile =
+  def create[PathType](path: PathType)(using genericPath: GenericPath[PathType], streamCut: Raises[StreamError])
+          : ZipFile =
+
     val pathname: Text = path.pathText
     val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
     
@@ -137,11 +136,9 @@ case class ZipFile(private val filename: Text):
   def entry(ref: ZipRef)(using streamCut: Raises[StreamError]): ZipEntry =
     ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
-  def append
-      [InstantType: GenericInstant]
-      (entries: LazyList[ZipEntry], /*prefix: Optional[Bytes] = Unset, */timestamp: Optional[InstantType] = Unset)
-      (using env: Environment)
-      : Unit raises ZipError raises StreamError =
+  def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
+      (using Environment)
+          : Unit raises ZipError raises StreamError =
     
     val writeTimestamp: jnf.attribute.FileTime =
       jnf.attribute.FileTime.fromMillis(timestamp.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)).nn
