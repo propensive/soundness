@@ -29,6 +29,7 @@ object VariantError:
   inline def apply[DerivationType]()(using reflection: SumReflection[DerivationType]): VariantError =
     val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
     val sum = constValue[reflection.MirroredLabel].tt
+
     VariantError(sum, variants)
 
 case class VariantError(sum: Text, validVariants: List[Text])
@@ -61,15 +62,12 @@ type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationT
 type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
 
 object Wisteria:
-
   inline def default[ProductType, FieldType](index: Int): Optional[FieldType] =
     ${getDefault[ProductType, FieldType]('index)}
 
-  def getDefault
-      [ProductType: Type, FieldType: Type]
-      (index: Expr[Int])
-      (using Quotes)
-      : Expr[Optional[FieldType]] =
+  def getDefault[ProductType: Type, FieldType: Type](index: Expr[Int])(using Quotes)
+          : Expr[Optional[FieldType]] =
+
     import quotes.reflect.*
 
     val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
