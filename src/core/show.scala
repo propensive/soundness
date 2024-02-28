@@ -24,7 +24,6 @@ import anticipation.*
 import fulminate.*
 
 import scala.deriving.*
-import scala.compiletime.*
 
 import language.experimental.captureChecking
 
@@ -39,11 +38,12 @@ object Show:
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
 object Debug:
-  inline given derived[ValueType]: Debug[ValueType] = value => compiletime.summonFrom:
-    case given Reflection[ValueType] => DebugDerivation.derived[ValueType](value)
-    case encoder: Encoder[ValueType] => encoder.encode(value)
-    case given Show[ValueType]       => value.show
-    case _                           => s"⦉${value.toString.tt}⦊".tt
+  inline given derived[ValueType]: Debug[ValueType] = new Debug[ValueType]:
+    def apply(value: ValueType): Text = compiletime.summonFrom:
+      case encoder: Encoder[ValueType] => encoder.encode(value)
+      case given Reflection[ValueType] => DebugDerivation.derived[ValueType](value)
+      case given Show[ValueType]       => value.show
+      case _                           => s"⧛${value.toString.tt}⧚".tt
 
   given debugChar: Debug[Char] = char => ("'"+escape(char).s+"'").tt
   given debugLong: Debug[Long] = long => (long.toString+"L").tt
