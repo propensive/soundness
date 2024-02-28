@@ -36,7 +36,9 @@ class UmbrageousTransformer(options: List[String]) extends PluginPhase:
       options.flatMap: opt =>
         opt.split(":").nn.to(List).map(_.nn) match
           case List(from, to) => List((from, to))
-          case other          => report.warning(s"umbrageous: the option '$opt' is not a valid shading mapping; please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
+          case other =>
+            report.warning(s"umbrageous: the option '$opt' is not a valid shading mapping; "+
+                "please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
 
     object transformer extends UntypedTreeMap:
       private def rewritePackage
