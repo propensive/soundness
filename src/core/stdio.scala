@@ -24,8 +24,8 @@ import java.io as ji
 
 package stdioSources:
   package virtualMachine:
-    given textOnly: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.basic)
-    given ansi: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.xterm256)
+    given textOnly: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.Basic)
+    given ansi: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.Xterm256)
 
 import language.experimental.captureChecking
 
