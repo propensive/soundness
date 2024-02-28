@@ -42,15 +42,17 @@ object XmlInterpolation:
   case class ParseStateNode(name: Text, namespaces: Set[Text])
 
   case class ParseState
-      (offset: Int, context: ContextType, stack: List[ParseStateNode], current: Text, source: Text,
-          ns: Boolean):
+      (offset: Int,
+       context: ContextType,
+       stack: List[ParseStateNode],
+       current: Text,
+       source: Text,
+       ns: Boolean):
     
     def apply(newContext: ContextType, char: Char) =
       copy(context = newContext, current = t"$current$char", offset = offset + 1)
     
-    def apply(newContext: ContextType): ParseState =
-      copy(context = newContext, offset = offset + 1, ns = false)
-    
+    def apply(newContext: ContextType): ParseState = copy(context = newContext, offset = offset + 1, ns = false)
     def apply(char: Char): ParseState = copy(offset = offset + 1, current = t"$current$char")
     def apply(): ParseState = copy(offset = offset + 1)
     def reset: ParseState = copy(current = t"")
@@ -66,8 +68,7 @@ object XmlInterpolation:
     def rollback(difference: Int): ParseState = copy(offset = offset - difference)
     
     def pop: ParseState throws InterpolationError = stack.headOption match
-      case Some(tag) if tag.name == current =>
-        copy(stack = stack.tail)
+      case Some(tag) if tag.name == current => copy(stack = stack.tail)
       
       case Some(tag) =>
         throw InterpolationError(msg"closing tag '$current' does not match expected tag '${tag.name}'", offset -
@@ -84,10 +85,10 @@ object XmlInterpolation:
 
   object XmlInterpolator extends Interpolator[XmlInput, ParseState, XmlDoc]:
     import ContextType.*
+
     val Letters = ('a' to 'z').to(Set) ++ ('A' to 'Z').to(Set)
     val Digits = ('0' to '9').to(Set)
     val TagChar = CharExtractor(Letters ++ Digits + '.' + '-' + '_')
-
     def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
     private def escape(str: Text): Text =
@@ -105,9 +106,11 @@ object XmlInterpolation:
         case AttributeValue | Body => value match
           case XmlInput.Flat(str)       => parse(state, escape(str))
           case XmlInput.Structured(xml) => parse(state, xml.show)
+
         case AttributeEquals       => value match
-            case XmlInput.Flat(str)       => parse(state, t"\"${escape(str)}\"")
-            case XmlInput.Structured(xml) => parse(state, t"\"${escape(xml.show)}\"")
+          case XmlInput.Flat(str)       => parse(state, t"\"${escape(str)}\"")
+          case XmlInput.Structured(xml) => parse(state, t"\"${escape(xml.show)}\"")
+
         case _ =>
           throw InterpolationError(msg"a substitution cannot be made in this position")
     

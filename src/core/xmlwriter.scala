@@ -43,12 +43,19 @@ object XmlEncoder extends Derivation[XmlEncoder]:
     variant(value):
       [VariantType <: DerivationType] => variant =>
         val xml = context.write(variant)
-        XmlAst.Element(XmlName(typeName), xml.children, xml.attributes.updated(XmlName("type".tt), xml.name.name), xml.namespaces)
+        
+        XmlAst.Element
+          (XmlName(typeName),
+           xml.children,
+           xml.attributes.updated(XmlName("type".tt), xml.name.name),
+           xml.namespaces)
     
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
 trait XmlEncoder[-ValueType]:
   def write(value: ValueType): XmlAst.Element
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] = value => write(lambda(value))
+  
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] =
+    value => write(lambda(value))
 

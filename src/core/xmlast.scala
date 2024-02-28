@@ -37,8 +37,11 @@ object XmlAst:
 
 enum XmlAst:
   case Element
-      (name: XmlName, children: List[XmlAst], attributes: Map[XmlName, Text] = Map(),
-          namespaces: List[Namespace] = Nil)
+      (name:       XmlName,
+       children:   List[XmlAst],
+       attributes: Map[XmlName, Text] = Map(),
+       namespaces: List[Namespace]    = Nil)
+
   case Comment(content: Text)
   case ProcessingInstruction(target: Text, content: Text)
   case Textual(content: Text)
