@@ -31,18 +31,29 @@ case class UnsetValueError() extends Error(Message("the value was not set".tt))
 extension [ValueType](optional: Optional[ValueType])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
-  inline def or(inline value: => ValueType): ValueType = if absent then value else optional.asInstanceOf[ValueType]
+  inline def or(inline value: => ValueType): ValueType =
+    if absent then value else optional.asInstanceOf[ValueType]
+  
   inline def vouch(using Unsafe): ValueType = or(throw Panic(msg"a value was vouched but was absent"))
   
   def presume(using default: Default[ValueType]): ValueType = or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
-  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} = or(throw UnsetValueError())
   
-  inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2): ValueType2 =
+  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} =
+    or(throw UnsetValueError())
+
+
+  inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2)
+          : ValueType2 =
+
     if absent then alternative else lambda(vouch(using Unsafe))
 
-  inline def layGiven[ValueType2](inline alternative: => ValueType2)(inline block: ValueType ?=> ValueType2): ValueType2 =
+
+  inline def layGiven[ValueType2](inline alternative: => ValueType2)(inline block: ValueType ?=> ValueType2)
+          : ValueType2 =
+
     if absent then alternative else block(using vouch(using Unsafe))
+
 
   inline def let[ValueType2](inline lambda: ValueType => ValueType2): Optional[ValueType2] =
     if absent then Unset else lambda(vouch(using Unsafe))
