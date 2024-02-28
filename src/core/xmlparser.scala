@@ -71,8 +71,11 @@ object XmlInterpolation:
       case Some(tag) if tag.name == current => copy(stack = stack.tail)
       
       case Some(tag) =>
-        throw InterpolationError(msg"closing tag '$current' does not match expected tag '${tag.name}'", offset -
-            current.length, current.length)
+        throw
+          InterpolationError
+            (msg"closing tag '$current' does not match expected tag '${tag.name}'",
+             offset - current.length,
+             current.length)
       
       case None =>
         throw InterpolationError(msg"spurious closing tag: $current", offset - current.length, current.length)
@@ -150,14 +153,18 @@ object XmlInterpolation:
           case TagChar() => state(char)
           
           case ':' =>
-            if state.ns then throw InterpolationError(
-                msg"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
+            if state.ns then throw
+              InterpolationError
+                (msg"the tag name can contain at most one ':' character to indicate a namespace",
+                 state.offset,
+                 1)
             else state(char).namespace
           
           case '>' =>
             if state.checkNs then state(Body)
-            else throw InterpolationError(
-                msg"the tag uses a namespace that has not been declared with an xmlns attribute")
+            else throw
+              InterpolationError
+                (msg"the tag uses a namespace that has not been declared with an xmlns attribute")
           
           case _ => throw InterpolationError(msg"expected '>'", state.offset, 1)
         
@@ -167,8 +174,11 @@ object XmlInterpolation:
           case ' ' | '\n' | '\t' | '\r' => state()
           
           case ':' =>
-            if state.ns then throw InterpolationError(
-                msg"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
+            if state.ns then throw
+              InterpolationError
+                (msg"the tag name can contain at most one ':' character to indicate a namespace",
+                 state.offset,
+                 1)
             else state(char).namespace
           
           case _ =>
@@ -186,9 +196,11 @@ object XmlInterpolation:
             else state(AttributeEquals)
           
           case ':' =>
-            if state.ns then throw InterpolationError(
-                msg"the attribute name can contain at most one ':' character to indicate a namespace",
-                state.offset, 1)
+            if state.ns then throw
+              InterpolationError
+                (msg"the attribute name can contain at most one ':' character to indicate a namespace",
+                 state.offset,
+                 1)
             else state(char).namespace
           
           case char =>
@@ -207,14 +219,13 @@ object XmlInterpolation:
         case InTagBody => char match
           case ' ' | '\n' | '\r' | '\t' => state(InTagBody)
           case TagChar()                => state(InAttributeName, char)
+          case '/'                      => state(TagClose)
           
           case '>' =>
             if state.checkNs then state(Body)
-            else throw InterpolationError(
-                msg"the tag uses a namespace that has not been declared with an xmlns attribute")
-          
-          case '/' =>
-            state(TagClose)
+            else throw
+              InterpolationError
+                (msg"the tag uses a namespace that has not been declared with an xmlns attribute")
           
           case char =>
             throw InterpolationError(msg"character $char is not permitted in a tag name", state.offset)
