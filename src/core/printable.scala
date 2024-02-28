@@ -31,15 +31,15 @@ enum ColorCapability:
   case NoColor, Color8, Color16, Color256, TrueColor
 
 object Termcap:
-  val basic: Termcap = new Termcap:
+  object Basic extends Termcap:
     def ansi: Boolean = false
     def color: ColorCapability = ColorCapability.NoColor
   
-  val xterm256: Termcap = new Termcap:
+  object Xterm256 extends Termcap:
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.Color256
   
-  val xtermTrueColor: Termcap = new Termcap:
+  object XtermTrueColor extends Termcap:
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.TrueColor
 
