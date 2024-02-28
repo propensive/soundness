@@ -3,13 +3,19 @@
 
 repo propensive/probably
 
-target escritoire/test
+target escritoire/example
 
 project escritoire
   module core
     compiler  scala
     include   gossamer/core contingency/core
     sources   src/core
+  
+  module example
+    compiler  scala
+    include   escritoire/core turbulence/core
+    sources   src/example
+    main      escritoire.run
   
   module test
     compiler  scala

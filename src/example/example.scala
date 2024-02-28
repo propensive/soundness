@@ -19,6 +19,7 @@ package escritoire
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import turbulence.*, stdioSources.virtualMachine.textOnly
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
 
@@ -26,19 +27,16 @@ case class Person(name: Text, age: Int)
 
 @main
 def run(): Unit =
-  println(t"Hello world")
-  
-  val table = Table[Person](
-    Column(t"Name", sizing = columnSizing.Fixed(20))(_.name),
-    Column(t"Age", sizing = columnSizing.Fixed(10))(_.age.show)
-  )
+  val table = Table[Person](Column(t"Name", sizing = columnSizing.Prose)(_.name),
+                            Column(t"Age", sizing = columnSizing.Prose)(_.age.show))
 
-  val tabulation = table.tabulate(List(
-    Person(t"Jon Pretty", 41),
-    Person(t"Kyle Murray", 28),
-    Person(t"Jimmy O'Dougherty", 59)
-  ))
+  val tabulation = table.tabulate(List(Person(t"Jon Pretty", 41),
+                                       Person(t"Kyle Murray", 28),
+                                       Person(t"Jimmy O'Dougherty", 59)))
 
   import tableStyles.default
-
-  tabulation.layout(100).rows.each(println(_))
+  given Decimalizer = Decimalizer(3)
+  //Out.println(tabulation.layout(10).widths.debug)
+  //tabulation.layout(10).render.foreach(Out.println(_))
+  //Out.println()
+  tabulation.layout(56).render.foreach(Out.println(_))

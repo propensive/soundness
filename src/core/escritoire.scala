@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import gossamer.*
 import hieroglyph.*
+import spectacular.*
 import anticipation.*
 
 import language.experimental.pureFunctions
@@ -77,11 +78,11 @@ object Column:
        align:  Optional[Alignment] = Unset,
        breaks: Breaks              = Breaks.Space,
        hide:   Boolean             = false,
-       sizing: ColumnSizing)
+       sizing: ColumnSizing        = columnSizing.Prose)
       (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
       (using textual.ShowType[CellType])
-        : Column[RowType, TextType] =
+          : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
@@ -89,7 +90,7 @@ object Column:
 
 case class Column[RowType, TextType: Textual]
     (title:  TextType,
-     get:    RowType -> TextType,
+     get:    RowType => TextType,
      breaks: Breaks,
      align:  Alignment,
      width:  Optional[Int],
@@ -100,19 +101,20 @@ object Table:
   @targetName("make")
   def apply[RowType](using classTag: ClassTag[RowType])[TextType: ClassTag: Textual]
       (initColumns: Column[RowType, TextType]*)
-        : Table[RowType, TextType] =
+          : Table[RowType, TextType] =
 
     new Table(initColumns*)
 
 abstract class Tabulation[TextType: ClassTag]():
   type Row
+  
   def columns: IArray[Column[Row, TextType]]
-  def titles: IArray[(IArray[TextType], Int)] // rows of columns of lines
-  def rows: Seq[IArray[IArray[TextType]]] // rows of columns of lines
+  def titles: IArray[(IArray[TextType], Int)]
+  def rows: Seq[IArray[IArray[TextType]]]
   def dataLength: Int
 
   def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
-        : TableLayout[TextType] =
+          : TableLayout[TextType] =
     
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val columnWidths: IArray[(Int, Column[Row, TextType], Int)] = IArray.from:
@@ -126,41 +128,44 @@ abstract class Tabulation[TextType: ClassTag]():
       
       val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.compact
       val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.length)
-      
+    
       Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
 
-    def bisect(min: Layout, max: Layout): (Layout, Layout) =
-      if max.totalWidth - min.totalWidth <= 1 then (min, max) else
+    def bisect(min: Layout, max: Layout, countdown: Int): (Layout, Layout) =
+      if countdown == 0 then (min, max)
+      else if max.totalWidth - min.totalWidth <= 1 then (min, max) else
         val point = layout((min.slack + max.slack)/2)
         
         if point.totalWidth == width then (point, point)
-        else if point.totalWidth > width then bisect(min, point)
-        else bisect(point, max)
+        else if point.totalWidth > width then bisect(min, point, countdown - 1)
+        else bisect(point, max, countdown - 1)
       
-    val rowLayout = bisect(layout(0), layout(1))(0)
+    val rowLayout = bisect(layout(0), layout(1), 10)(0)
 
     // We may be able to increase the slack in some of the remaining columns
 
-    def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[IArray[IArray[TextType]]] =
+    def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[IArray[IndexedSeq[TextType]]] =
       data.to(LazyList).map: cells =>
         rowLayout.columnWidths.map: (index, column, width) =>
           column.sizing.fit(cells(index), width)
     
-    TableLayout(rowLayout.columnWidths.map(_(0)), lines(rows))
+    TableLayout(rowLayout.columnWidths.map(_(2)), lines(rows))
 
-case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[IArray[IArray[TextType]]]):
-  def render(using metrics: TextMetrics, textual: Textual[TextType]): LazyList[TextType] =
-    def recur(rows: LazyList[IArray[IArray[TextType]]]): LazyList[TextType] = rows match
+case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[IArray[IndexedSeq[TextType]]]):
+  def render(using metrics: TextMetrics, textual: Textual[TextType], style: TableStyle): LazyList[TextType] =
+    val leftEdge = textual.make(t"${style.left} ".s)
+    val rightEdge = textual.make(t" ${style.right}".s)
+    val midEdge = textual.make(t" ${style.sep} ".s)
+    
+    def recur(rows: LazyList[IArray[IndexedSeq[TextType]]]): LazyList[TextType] = rows match
       case row #:: tail =>
         val height = row.map(_.length).max
         val lines = (0 until height).map: lineNumber =>
           widths.indices.map: index =>
             val cell = row(index)
-            
-            if cell.length < lineNumber then cell(lineNumber).pad(widths(index))
+            if cell.length > lineNumber then cell(lineNumber).pad(widths(index))
             else textual.make((t" "*widths(index)).s)
-          
-          .join(textual.make(t" | ".s))
+          .join(leftEdge, midEdge, rightEdge)
         
         lines.to(LazyList) #::: recur(tail)
       
@@ -177,15 +182,10 @@ case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowT
   val columns: IArray[Column[RowType, TextType]] = IArray.from(initColumns.filterNot(_.hide))
   val titles: IArray[(IArray[TextType], Int)] = IArray.from(columns.map(_.title.cut(t"\n") -> 1))
 
-  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } =
-    
-    new Tabulation[TextType]:
-      type Row = RowType
+  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } = new Tabulation[TextType]:
+    type Row = RowType
 
-      val columns: IArray[Column[Row, TextType]] = table.columns
-      val titles: IArray[(IArray[TextType], Int)] = table.titles
-      val dataLength: Int = data.length
-      
-      val rows: Seq[IArray[IArray[TextType]]] =
-        data.map { row => IArray.from(columns.map(_.get(row).cut(t"\n"))) }
-      
+    val columns: IArray[Column[Row, TextType]] = table.columns
+    val titles: IArray[(IArray[TextType], Int)] = table.titles
+    val dataLength: Int = data.length
+    val rows: Seq[IArray[IArray[TextType]]] = data.map { row => columns.map(_.get(row).cut(t"\n")) }
