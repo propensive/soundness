@@ -30,9 +30,15 @@ import hypotenuse.*
 import scala.compiletime.*
 
 case class PtyState
-    (cursor: Int = 0, savedCursor: Int = 0, style: Style = Style(), focusDetectionMode: Boolean = false,
-        focus: Boolean = true, bracketedPasteMode: Boolean = false, hideCursor: Boolean = false,
-        title: Text = t"", link: Text = t"")
+    (cursor:             Int     = 0,
+     savedCursor:        Int     = 0,
+     style:              Style   = Style(),
+     focusDetectionMode: Boolean = false,
+     focus:              Boolean = true,
+     bracketedPasteMode: Boolean = false,
+     hideCursor:         Boolean = false,
+     title:              Text    = t"",
+     link:               Text    = t"")
 
 object Pty:
   def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Funnel())
@@ -45,7 +51,6 @@ object Pty:
     case _ => LazyList()
 
 object PtyEscapeError:
-
   object Reason:
     given communicable: Communicable[Reason] =
       case BadSgrParameters(ns)         => msg"${ns} is not a valid SGR parameter sequence"
@@ -149,7 +154,6 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
 
     def title(text: Text): Unit = state = state.copy(title = text)
     def setLink(text: Text): Unit = link = text
-
     def su(n: Int): Unit = buffer2.scroll(n)
     def sd(n: Int): Unit = buffer2.scroll(-n)
     def hvp(n: Int, m: Int): Unit = cup(n, m)
@@ -257,8 +261,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case _  => throw Panic(msg"tried to access non-existent palette color")
 
     def color8(n: Int): Rgb24 = n match
-      case n if 0 <= n <= 15 =>
-        palette(n)
+      case n if 0 <= n <= 15 => palette(n)
       
       case n if 232 <= n <= 255 =>
         val gray = n - 232
@@ -309,6 +312,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       then Pty(buffer2, state.copy(cursor = cursor(), style = style, link = link), output = output)
       else
        val current: Char = unsafely(input(index))
+       
        context match
         case Normal => (current: @switch) match
           case '\u0000' => proceed(Normal) // nul()

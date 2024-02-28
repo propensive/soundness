@@ -42,12 +42,12 @@ object Yossarian:
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
     def find(text: Text): Optional[ScreenBuffer] = line.render.s.indexOf(text.s) match
-      case -1 =>
-        Unset
+      case -1 => Unset
       
       case index =>
         (text.length, styleBuffer.slice(index, index + text.length),
-            charBuffer.slice(index, index + text.length), linkBuffer.slice(index, index + text.length))
+         charBuffer.slice(index, index + text.length),
+         linkBuffer.slice(index, index + text.length))
 
     def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
 
@@ -117,18 +117,17 @@ object Yossarian:
     val Background = Bits(16, 0xffffff000000ffffL)
 
     given Debug[Style] = style =>
-      Map(
-        t"Bo" -> Bit.Bold(style),
-        t"F"  -> Bit.Faint(style),
-        t"I"  -> Bit.Italic(style),
-        t"S"  -> Bit.Strike(style),
-        t"Bl" -> Bit.Blink(style),
-        t"U"  -> Bit.Underline(style),
-        t"C"  -> Bit.Conceal(style),
-        t"R"  -> Bit.Reverse(style),
-      )
-        .map { (key, value) => if value then key else t"!$key" }
-        .join(t"[", t" ", t" ${Foreground(style).debug} ${Background(style).debug}]")
+      Map
+        (t"Bo" -> Bit.Bold(style),
+         t"F"  -> Bit.Faint(style),
+         t"I"  -> Bit.Italic(style),
+         t"S"  -> Bit.Strike(style),
+         t"Bl" -> Bit.Blink(style),
+         t"U"  -> Bit.Underline(style),
+         t"C"  -> Bit.Conceal(style),
+         t"R"  -> Bit.Reverse(style))
+      .map { (key, value) => if value then key else t"!$key" }
+      .join(t"[", t" ", t" ${Foreground(style).debug} ${Background(style).debug}]")
 
     enum Bit:
       case Bold, Faint, Italic, Strike, Blink, Underline, Conceal, Reverse
