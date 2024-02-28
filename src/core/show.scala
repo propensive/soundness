@@ -89,43 +89,31 @@ object Debug:
     case ch =>
       if ch < 128 && ch >= 32 then ch.toString.tt else String.format("\\u%04x", ch.toInt).nn.tt
 
-  inline given set2[ElemType]: Debug[Set[ElemType]] =
-    new Debug[Set[ElemType]]:
-      def apply(set: Set[ElemType]): Text = set.map(_.debug).mkString("{", ", ", "}").tt
+  given set[ElemType: Debug]: Debug[Set[ElemType]] = _.map(_.debug).mkString("{", ", ", "}").tt
+  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.debug).mkString("[", ", ", "]").tt
+  given vector[ElemType: Debug]: Debug[Vector[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
+  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
   
-  inline given list2[ElemType]: Debug[List[ElemType]] =
-    new Debug[List[ElemType]]:
-      def apply(list: List[ElemType]): Text = list.map(_.debug).mkString("[", ", ", "]").tt
+  given array[ElemType: Debug]: Debug[Array[ElemType]] = array =>
+    array.zipWithIndex.map: (value, index) =>
+      val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+      (subscript+value.debug.s).tt
+    .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
   
-  inline given vector2[ElemType]: Debug[Vector[ElemType]] =
-    new Debug[Vector[ElemType]]:
-      def apply(vector: Vector[ElemType]): Text = vector.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
-  
-  inline given array[ElemType]: Debug[Array[ElemType]] =
-    new Debug[Array[ElemType]]:
-      def apply(array: Array[ElemType]): Text = Text:
-        array.zipWithIndex.map: (value, index) =>
-          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-          (subscript+value.debug.s).tt
-        .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌")
+  given lazyList[ElemType: Debug]: Debug[LazyList[ElemType]] = lazyList =>
+    def recur(lazyList: LazyList[ElemType], todo: Int): Text =
+      if todo <= 0 then "..?".tt
+      else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
+      else if lazyList.isEmpty then "⯁ ".tt
+      else (lazyList.head.debug.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
+    
+    recur(lazyList, 3)
 
-  inline given lazyList[ElemType]: Debug[LazyList[ElemType]] =
-    new Debug[LazyList[ElemType]]:
-      def apply(value: LazyList[ElemType]): Text = recur(value, 3)
-      
-      private def recur(lazyList: LazyList[ElemType], todo: Int): Text =
-        if todo <= 0 then "..?".tt
-        else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
-        else if lazyList.isEmpty then "⯁ ".tt
-        else (lazyList.head.debug.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
-
-  inline given iarray[ElemType]: Debug[IArray[ElemType]] =
-    new Debug[IArray[ElemType]]:
-      def apply(iarray: IArray[ElemType]): Text = Text:
-        iarray.zipWithIndex.map: (value, index) =>
-          val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-          subscript+value.debug.s.tt
-        .mkString("⁅"+arrayPrefix(iarray.toString), "╱", "⁆")
+  given iarray[ElemType: Debug]: Debug[IArray[ElemType]] = iarray =>
+    iarray.zipWithIndex.map: (value, index) =>
+      val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+      subscript+value.debug.s.tt
+    .mkString("⁅"+arrayPrefix(iarray.toString), "╱", "⁆").tt
   
   private def renderBraille(str: String): String =
     ("0"*(str.length%2)+str).grouped(2).flatMap: pair =>
