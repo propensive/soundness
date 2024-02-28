@@ -63,21 +63,19 @@ object In:
 
 object Stdio:
   def apply
-      (initOut: ji.PrintStream | Null,
-       initErr: ji.PrintStream | Null,
-       initIn:  ji.InputStream | Null,
-       initTermcap: Termcap)
+      (out: ji.PrintStream | Null, err: ji.PrintStream | Null, in:  ji.InputStream | Null, termcap: Termcap)
           : Stdio =
 
-    val safeOut: ji.PrintStream = if initOut == null then MutePrintStream else initOut
-    val safeErr: ji.PrintStream = if initErr == null then MutePrintStream else initErr
-    val safeIn: ji.InputStream = if initIn == null then MuteInputStream else initIn
+    val safeOut: ji.PrintStream = if out == null then MutePrintStream else out
+    val safeErr: ji.PrintStream = if err == null then MutePrintStream else err
+    val safeIn: ji.InputStream = if in == null then MuteInputStream else in
+    val termcap2: Termcap = termcap
   
     new Stdio:
       def out: ji.PrintStream = safeOut
       def err: ji.PrintStream = safeErr
       def in: ji.InputStream = safeIn
-      def termcap: Termcap = initTermcap
+      def termcap: Termcap = termcap2
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()
