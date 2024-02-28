@@ -126,20 +126,17 @@ object XmlInterpolation:
       case (state@ParseState(_, _, _, _, _, _), char) => state.context match
         
         case InTagName => char match
-          case TagChar() =>
-            state(char)
+          case TagChar()                => state(char)
+          case ' ' | '\n' | '\r' | '\t' => state.push(InTagBody)
           
-          case ' ' | '\n' | '\r' | '\t' =>
-            state.push(InTagBody)
+          case '/' =>
+            if state.current.empty then state(ClosingTag) else state(SelfClosingTagName)
           
           case ':' =>
             if state.ns then throw InterpolationError(msg"""
               the tag name can contain at most one ':' character to indicate a namespace
             """, state.offset, 1)
             else state(char).namespace
-          
-          case '/' =>
-            if state.current.empty then state(ClosingTag) else state(SelfClosingTagName)
           
           case '>' =>
             if state.push.checkNs then state.push(Body)
@@ -150,7 +147,7 @@ object XmlInterpolation:
             throw InterpolationError(msg"""not a valid tag name character""", state.offset, 1)
         
         case SelfClosingTagName => char match
-          case TagChar()          => state(char)
+          case TagChar() => state(char)
           
           case ':' =>
             if state.ns then throw InterpolationError(
@@ -165,29 +162,21 @@ object XmlInterpolation:
           case _ => throw InterpolationError(msg"expected '>'", state.offset, 1)
         
         case ClosingTag => char match
-          case TagChar() =>
-            state(char)
+          case TagChar()                => state(char)
+          case '>'                      => state.pop(Body)
+          case ' ' | '\n' | '\t' | '\r' => state()
           
           case ':' =>
             if state.ns then throw InterpolationError(
                 msg"the tag name can contain at most one ':' character to indicate a namespace", state.offset, 1)
             else state(char).namespace
           
-          case '>' =>
-            state.pop(Body)
-          
-          case ' ' | '\n' | '\t' | '\r' =>
-            state()
-          
           case _ =>
             throw InterpolationError(msg"expected '>' or whitespace", state.offset, 1)
 
         case InAttributeName => char match
-          case TagChar() =>
-            state(char)
-          
-          case ' ' | '\n' | '\r' | '\t' =>
-            state(InAttributeName)
+          case TagChar()                => state(char)
+          case ' ' | '\n' | '\r' | '\t' => state(InAttributeName)
           
           case '>' =>
             throw InterpolationError(msg"attribute value has not been specified", state.offset, 1)
@@ -202,35 +191,22 @@ object XmlInterpolation:
                 state.offset, 1)
             else state(char).namespace
           
-          case ch =>
-            throw InterpolationError(msg"character $ch is not valid in an attribute name", state.offset, 1)
+          case char =>
+            throw InterpolationError(msg"character $char is not valid in an attribute name", state.offset, 1)
         
         case AttributeEquals => char match
-          case ' ' | '\n' | '\r' | '\t' =>
-            state()
-          
-          case '"' =>
-            state(AttributeValue)
-          
-          case _ =>
-            throw InterpolationError(msg"expected '\"'", state.offset, 1)
+          case ' ' | '\n' | '\r' | '\t' => state()
+          case '"'                      => state(AttributeValue)
+          case _                        => throw InterpolationError(msg"expected '\"'", state.offset, 1)
         
         case AttributeValue => char match
-          case '"' =>
-            state(InTagBody)
-          
-          case '&' =>
-            state(InAttributeEntity)
-          
-          case ch =>
-            state(ch)
+          case '"'  => state(InTagBody)
+          case '&'  => state(InAttributeEntity)
+          case char => state(char)
         
         case InTagBody => char match
-          case ' ' | '\n' | '\r' | '\t' =>
-            state(InTagBody)
-          
-          case TagChar() =>
-            state(InAttributeName, char)
+          case ' ' | '\n' | '\r' | '\t' => state(InTagBody)
+          case TagChar()                => state(InAttributeName, char)
           
           case '>' =>
             if state.checkNs then state(Body)
@@ -240,41 +216,29 @@ object XmlInterpolation:
           case '/' =>
             state(TagClose)
           
-          case ch =>
-            throw InterpolationError(msg"character '$ch' is not permitted in a tag name", state.offset)
+          case char =>
+            throw InterpolationError(msg"character $char is not permitted in a tag name", state.offset)
 
         case TagClose => char match
-          case '>' =>
-            state.pop(Body)
-          
-          case _ =>
-            throw InterpolationError(msg"expected '>'", state.offset, 1)
+          case '>' => state.pop(Body)
+          case _   => throw InterpolationError(msg"expected >", state.offset, 1)
         
         case Body => char match
-          case '<' =>
-            state(InTagName)
-          
-          case '&' =>
-            state(InBodyEntity)
-          
-          case _ =>
-            state()
+          case '<' => state(InTagName)
+          case '&' => state(InBodyEntity)
+          case _   => state()
         
         case InBodyEntity => char match
-          case ';' =>
-            state()
+          case ';' => state()
           
-          case ch =>
-            throw InterpolationError(msg"character '$ch' is not valid in an entity name", state.offset, 1)
+          case char =>
+            throw InterpolationError(msg"character $char is not valid in an entity name", state.offset, 1)
 
         case InAttributeEntity  => char match
-          case ';' =>
-            state()
+          case ';'       => state()
+          case TagChar() => state()
           
-          case TagChar() =>
-            state()
-          
-          case ch =>
-            throw InterpolationError(msg"character '$ch' is not valid in an entity name", state.offset, 1)
+          case char =>
+            throw InterpolationError(msg"character $char is not valid in an entity name", state.offset, 1)
 
     .copy(source = t"${state.source}$string")
