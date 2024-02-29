@@ -23,8 +23,6 @@ import hieroglyph.*
 import spectacular.*
 import anticipation.*
 
-import scala.collection.immutable.BitSet
-
 import language.experimental.pureFunctions
 
 enum BoxLine:
@@ -164,7 +162,9 @@ abstract class Tabulation[TextType: ClassTag]():
 
         TableRow(tableCells, false, height)
     
-    TableLayout(rowLayout.columnWidths.map(_(2)), lines(titles) #::: lines(rows))
+    val widths = rowLayout.columnWidths.map(_(2))
+
+    TableLayout(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))))
 
 case class TableCell[TextType](width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int):
   def apply(line: Int): TextType = lines(line)
@@ -172,14 +172,15 @@ case class TableCell[TextType](width: Int, span: Int, lines: IndexedSeq[TextType
 case class TableRow[TextType](cells: IArray[TableCell[TextType]], title: Boolean, height: Int):
   def apply(column: Int): TableCell[TextType] = cells(column)
 
-case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[TableRow[TextType]]):
+case class TableSection[TextType](widths: IArray[Int], rows: LazyList[TableRow[TextType]])
+case class TableLayout[TextType](sections: List[TableSection[TextType]]):
 
   def render(using metrics: TextMetrics, textual: Textual[TextType], style: TableStyle): LazyList[TextType] =
     val leftEdge = textual.make(t"${style.left} ".s)
     val rightEdge = textual.make(t" ${style.right}".s)
     val midEdge = textual.make(t" ${style.separator} ".s)
     
-    def recur(rows: LazyList[TableRow[TextType]], descenders: BitSet): LazyList[TextType] =
+    def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -189,12 +190,36 @@ case class TableLayout[TextType](widths: IArray[Int], rows: LazyList[TableRow[Te
               else textual.make((t" "*widths(index)).s)
             .join(leftEdge, midEdge, rightEdge)
           
-          lines.to(LazyList) #::: recur(tail, BitSet())
+          lines.to(LazyList) #::: recur(widths, tail)
         
         case _ =>
           LazyList()
     
-    recur(rows, BitSet())
+    val line1 = sections.head.widths.to(List).map: width =>
+      textual.make(style.topBar.s*(width + style.padding.length*2))
+    .join
+      (textual.make(style.topLeft.s),
+       textual.make(style.topSeparator.s),
+       textual.make(style.topRight.s))
+      
+    val rule = sections.head.widths.to(List).map: width =>
+      textual.make(style.midBar.s*(width + style.padding.length*2))
+    .join
+      (textual.make(style.midLeft.s),
+        textual.make(style.midSeparator.s),
+        textual.make(style.midRight.s))
+
+    val lastLine = sections.head.widths.to(List).map: width =>
+      textual.make(style.bottomBar.s*(width + style.padding.length*2))
+    .join
+      (textual.make(style.bottomLeft.s),
+       textual.make(style.bottomSeparator.s),
+       textual.make(style.bottomRight.s))
+      
+    val body = sections.to(LazyList).flatMap: section =>
+      rule #:: recur(section.widths, section.rows)
+
+    line1 #:: body.tail #::: LazyList(lastLine)
       
 
 case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowType, TextType]*)

@@ -54,21 +54,21 @@ package tableStyles:
     TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ")
 
 case class TableStyle
-    (padding:      Text,
-     left:         Text,
-     separator:    Text,
-     right:        Text,
-     topLeft:      Text,
-     topSeparator: Text,
-     topRight:     Text,
-     bottomLeft:   Text,
-     bottomSep:    Text,
-     bottomRight:  Text,
-     midLeft:      Text,
-     midSeparator: Text,
-     midRight:     Text,
-     topBar:       Text,
-     midBar:       Text,
-     bottomBar:    Text):
+    (padding:         Text,
+     left:            Text,
+     separator:       Text,
+     right:           Text,
+     topLeft:         Text,
+     topSeparator:    Text,
+     topRight:        Text,
+     bottomLeft:      Text,
+     bottomSeparator: Text,
+     bottomRight:     Text,
+     midLeft:         Text,
+     midSeparator:    Text,
+     midRight:        Text,
+     topBar:          Text,
+     midBar:          Text,
+     bottomBar:       Text):
 
   def cost(columns: Int): Int = columns*padding.length*2 + columns + 1

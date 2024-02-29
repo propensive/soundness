@@ -27,7 +27,7 @@ case class Person(name: Text, age: Int)
 
 @main
 def run(): Unit =
-  val table = Table[Person](Column(t"Name", sizing = columnSizing.Prose)(_.name),
+  val table = Table[Person](Column(t"Name of the person", sizing = columnSizing.Prose)(_.name),
                             Column(t"Age", sizing = columnSizing.Prose)(_.age.show))
 
   val tabulation = table.tabulate(List(Person(t"Jon Pretty", 41),
