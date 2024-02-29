@@ -1,4 +1,4 @@
-package wharfinger
+package embarcadero
 
 import anticipation.*
 import telekinesis.*
@@ -8,7 +8,7 @@ case class ContainerImage(id: Text)
 
 case class Container(id: Text)
 
-case class DockerEngine()
+case class DockerEngine(port: Int)
 
 @main
 def run(): Unit =
