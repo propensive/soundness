@@ -36,7 +36,4 @@ def run(): Unit =
 
   import tableStyles.default
   given Decimalizer = Decimalizer(3)
-  //Out.println(tabulation.layout(10).widths.debug)
-  //tabulation.layout(10).render.foreach(Out.println(_))
-  //Out.println()
-  tabulation.layout(56).render.foreach(Out.println(_))
+  tabulation.layout(156).render.foreach(Out.println(_))

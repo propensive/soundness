@@ -20,7 +20,6 @@ import rudiments.*
 import gossamer.*
 import vacuous.*
 import anticipation.*
-import spectacular.*
 
 trait ColumnSizing:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
@@ -40,7 +39,8 @@ package columnSizing:
 
       lines.map(longestWord(_, 0, 0, 0)).max.min((slack*maxWidth).toInt)
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IndexedSeq[TextType] =
+    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+            : IndexedSeq[TextType] =
       
       def format(text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
               : List[TextType] =
@@ -60,7 +60,8 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IndexedSeq[TextType] =
+    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+            : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
@@ -70,7 +71,8 @@ package columnSizing:
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType]): IndexedSeq[TextType] =
+    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+            : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line

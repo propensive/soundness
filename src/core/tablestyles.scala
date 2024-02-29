@@ -16,56 +16,59 @@
 
 package escritoire
 
+import gossamer.*
+import anticipation.*
+
 package tableStyles:
   given default: TableStyle =
-    TableStyle(1, '│', '│', '│', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '─', '─', '─')
+    TableStyle(t" ", t"│", t"│", t"│", t"┌", t"┬", t"┐", t"└", t"┴", t"┘", t"├", t"┼", t"┤", t"─", t"─", t"─")
  
   given horizontal: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ', ' ', '─', ' ', '─', '─', '─')
+    TableStyle(t" ", t" ", t" ", t" ", t" ", t"─", t" ", t" ", t"─", t" ", t" ", t"─", t" ", t"─", t"─", t"─")
  
   given minimalist: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', ' ', ' ', '─', ' ')
+    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"─", t" ", t" ", t"─", t" ")
  
   given horizontalGaps: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '─', '─', '─')
+    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"─", t"─", t"─")
  
   given horizontalDots: TableStyle =
-    TableStyle(1, ' ', ' ', ' ', ' ', '╌', ' ', ' ', '╌', ' ', ' ', '╌', ' ', '╌', '╌', '╌')
+    TableStyle(t" ", t" ", t" ", t" ", t" ", t"╌", t" ", t" ", t"╌", t" ", t" ", t"╌", t" ", t"╌", t"╌", t"╌")
  
   given doubled: TableStyle =
-    TableStyle(1, '║', '│', '║', '╔', '╤', '╗', '╚', '╧', '╝', '╟', '┼', '╢', '═', '─', '═')
+    TableStyle(t" ", t"║", t"│", t"║", t"╔", t"╤", t"╗", t"╚", t"╧", t"╝", t"╟", t"┼", t"╢", t"═", t"─", t"═")
  
   given rounded: TableStyle =
-    TableStyle(1, '│', '│', '│', '╭', '┬', '╮', '╰', '┴', '╯', '├', '┼', '┤', '─', '─', '─')
+    TableStyle(t" ", t"│", t"│", t"│", t"╭", t"┬", t"╮", t"╰", t"┴", t"╯", t"├", t"┼", t"┤", t"─", t"─", t"─")
  
   given dotted: TableStyle =
-    TableStyle(1, '┊', '┊', '┊', '┌', '┬', '┐', '└', '┴', '┘', '├', '┼', '┤', '╌', '╌', '╌')
+    TableStyle(t" ", t"┊", t"┊", t"┊", t"┌", t"┬", t"┐", t"└", t"┴", t"┘", t"├", t"┼", t"┤", t"╌", t"╌", t"╌")
  
   given outline: TableStyle =
-    TableStyle(1, '┊', '┊', '┊', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', '╌', '╌', '╌')
+    TableStyle(t" ", t"┊", t"┊", t"┊", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"╌", t"╌", t"╌")
  
   given ascii: TableStyle =
-    TableStyle(1, '|', '|', '|', '+', '+', '+', '+', '+', '+', '+', '+', '+', '-', '-', '-')
+    TableStyle(t" ", t"|", t"|", t"|", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"-", t"-", t"-")
  
   given borderless: TableStyle =
-    TableStyle(0, ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ')
+    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ")
 
 case class TableStyle
-    (pad:         Int,
-     left:        Char,
-     sep:         Char,
-     right:       Char,
-     topLeft:     Char,
-     topSep:      Char,
-     topRight:    Char,
-     bottomLeft:  Char,
-     bottomSep:   Char,
-     bottomRight: Char,
-     midLeft:     Char,
-     midSep:      Char,
-     midRight:    Char,
-     topBar:      Char,
-     midBar:      Char,
-     bottomBar:   Char):
+    (padding:      Text,
+     left:         Text,
+     separator:    Text,
+     right:        Text,
+     topLeft:      Text,
+     topSeparator: Text,
+     topRight:     Text,
+     bottomLeft:   Text,
+     bottomSep:    Text,
+     bottomRight:  Text,
+     midLeft:      Text,
+     midSeparator: Text,
+     midRight:     Text,
+     topBar:       Text,
+     midBar:       Text,
+     bottomBar:    Text):
 
-  def cost(columns: Int): Int = columns*pad*2 + columns + 1
+  def cost(columns: Int): Int = columns*padding.length*2 + columns + 1
