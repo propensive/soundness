@@ -17,6 +17,10 @@
 package escritoire
 
 import gossamer.*
+import wisteria.*, derivationContext.required
+import anticipation.*
+import vacuous.*
+import spectacular.*
 
 extension [RowType](data: Seq[RowType])
   def table[TextType](using textual: Textual[TextType], tabulable: Tabulable[RowType, TextType])
@@ -28,3 +32,32 @@ trait Tabulable[RowType, TextType]:
   def table(): Table[RowType, TextType]
   private lazy val tableValue: Table[RowType, TextType] = table()
   def tabulate(data: Seq[RowType]): Tabulation[TextType] = tableValue.tabulate(data)
+
+trait TableRelabelling[+TargetType]:
+  def relabelling(): Map[Text, Text]
+  private lazy val labels: Map[Text, Text] = relabelling()
+  def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
+
+object Tabulable extends ProductDerivation[[RowType] =>> Tabulable[RowType, Text]]:
+  inline def join[DerivationType <: Product: ProductReflection]: Tabulable[DerivationType, Text] = () =>
+    val columns: IArray[Column[DerivationType, Text]] =
+      val labels: Map[Text, Text] = compiletime.summonFrom:
+        case labels: TableRelabelling[DerivationType] => labels.relabelling()
+        case _                                        => Map()
+
+      contexts:
+        [FieldType] => tabulable =>
+          tabulable.table().columns.map(_.contramap(dereference).retitle:
+            labels.get(label).getOrElse(label.capitalize))
+      .flatten
+
+    Table[DerivationType](columns*)
+  
+  given Tabulable[Int, Text] = () =>
+    Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnSizing.Collapsible(0.3))(_.show))
+  
+  given (using Decimalizer): Tabulable[Double, Text] = () =>
+    Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnSizing.Collapsible(0.3))(_.show))
+  
+  given Tabulable[Text, Text] = () =>
+    Table[Text, Text](Column(t"", TextAlignment.Left, Unset, columnSizing.Prose)(identity))

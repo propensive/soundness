@@ -36,10 +36,18 @@ def run(): Unit =
                             Column(t"Size", sizing = columnSizing.Collapsible(0.4))(_.size.show),
                             Column(t"Description", textAlign = TextAlignment.Justify, sizing = columnSizing.Prose)(_.description))
 
-  val tabulation = table.tabulate:
+  val data =
     List(Person(t"Jon Prety", 41, 3.14159, t"The quick brown fox jumps over the lazy dog."),
          Person(t"Kyle Murray", 28, 2.718, t"Peter piper picked a peck of pickled pepper."),
          Person(t"Jimmy O'Dougherty", 59, 1.0, t"She sells seashells on the sea-shore."))
 
+  given TableRelabelling[Person] = () => Map(
+    t"name" -> t"Addressee",
+    t"age"  -> t"Years old"
+  )
+
+  val tabulation = table.tabulate(data)
+
   import tableStyles.default
-  for width <- 90 to 1 by -1 do tabulation.layout(width).render.foreach(Out.println(_))
+
+  Out.println(data.table.layout(70))
