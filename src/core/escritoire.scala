@@ -44,47 +44,77 @@ package insufficientSpaceHandling:
 enum Breaks:
   case Never, Space, Zwsp, Character
 
-enum Alignment:
-  case Left, Right, Center
+object TextAlignment:
+  object Right extends TextAlignment:
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
+      Textual(t" "*(width - text.length))+text
+  
+  object Left extends TextAlignment:
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
+      text+Textual(t" "*(width - text.length))
+  
+  object Center extends TextAlignment:
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
+      val space = width - text.length
+      val before = Textual(t" "*(space/2))
+      val after = Textual(t" "*(space - space/2))
+      
+      before+text+after
+  
+  object Justify extends TextAlignment:
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
+      if last then text+Textual(t" "*(width - text.length))
+      else
+        val words = text.cut(t" ")
+        val wordCount = words.length
+        val spare = width - words.sumBy(_.length)
+        
+        def recur(spare: Int, count: Int, done: TextType): TextType =
+          if count == 0 then done+Textual(t" "*spare) else
+            val space = spare/count
+            recur(spare - space, count - 1, done+Textual(t" "*space)+words(wordCount - count))
+        
+        recur(spare, wordCount - 1, words.head)
+    
+
+trait TextAlignment:
+  def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType
+
+enum VerticalAlignment:
+  case Top, Bottom
 
 object ColumnAlignment:
-  val left: ColumnAlignment[Any] = () => Alignment.Left
+  val topLeft: ColumnAlignment[Any] = ColumnAlignment(TextAlignment.Left, VerticalAlignment.Top)
+  given byte: ColumnAlignment[Byte] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
+  given short: ColumnAlignment[Short] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
+  given int: ColumnAlignment[Int] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
+  given long: ColumnAlignment[Long] = ColumnAlignment(TextAlignment.Right, VerticalAlignment.Top)
+  given text: ColumnAlignment[Text] = ColumnAlignment(TextAlignment.Left, VerticalAlignment.Top)
 
-  given byte: ColumnAlignment[Byte] = () => Alignment.Right
-  given short: ColumnAlignment[Short] = () => Alignment.Right
-  given int: ColumnAlignment[Int] = () => Alignment.Right
-  given long: ColumnAlignment[Long] = () => Alignment.Right
-  given text: ColumnAlignment[Text] = () => Alignment.Left
-
-trait ColumnAlignment[-ColumnType]:
-  def alignment(): Alignment
+case class ColumnAlignment[-ColumnType](text: TextAlignment, vertical: VerticalAlignment)
 
 object Column:
-
   def apply[RowType, CellType, TextType]
-      (title:  TextType,
-       width:  Optional[Int]       = Unset,
-       align:  Optional[Alignment] = Unset,
-       breaks: Breaks              = Breaks.Space,
-       hide:   Boolean             = false,
-       sizing: ColumnSizing        = columnSizing.Prose)
+      (title:         TextType,
+       textAlign:     Optional[TextAlignment]     = Unset,
+       verticalAlign: Optional[VerticalAlignment] = Unset,
+       sizing:        ColumnSizing                = columnSizing.Prose)
       (get: RowType -> CellType)
-      (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.left)
+      (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
       (using textual.ShowType[CellType])
           : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
     
-    Column(title, contents, breaks, align.or(columnAlignment.alignment()), width, hide, sizing)
+    Column
+      (title, contents, textAlign.or(columnAlignment.text), verticalAlign.or(columnAlignment.vertical), sizing)
 
 case class Column[RowType, TextType: Textual]
-    (title:  TextType,
-     get:    RowType => TextType,
-     breaks: Breaks,
-     align:  Alignment,
-     width:  Optional[Int],
-     hide:   Boolean,
-     sizing: ColumnSizing)
+    (title:         TextType,
+     get:           RowType => TextType,
+     textAlign:     TextAlignment,
+     verticalAlign: VerticalAlignment,
+     sizing:        ColumnSizing)
 
 object Table:
   @targetName("make")
@@ -155,8 +185,8 @@ abstract class Tabulation[TextType: ClassTag]():
     def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[TableRow[TextType]] =
       data.to(LazyList).map: cells =>
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
-          val lines = column.sizing.fit(cells(index), width)
-          TableCell(width, 1, lines, lines.length)
+          val lines = column.sizing.fit(cells(index), width, column.textAlign)
+          TableCell(width, 1, lines, lines.length, column.textAlign)
         
         val height = tableCells.maxBy(_.minHeight).minHeight
 
@@ -166,7 +196,8 @@ abstract class Tabulation[TextType: ClassTag]():
 
     TableLayout(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))))
 
-case class TableCell[TextType](width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int):
+case class TableCell[TextType]
+    (width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int, textAlign: TextAlignment):
   def apply(line: Int): TextType = lines(line)
 
 case class TableRow[TextType](cells: IArray[TableCell[TextType]], title: Boolean, height: Int):
@@ -177,9 +208,9 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]]):
 
   def render(using metrics: TextMetrics, textual: Textual[TextType], style: TableStyle): LazyList[TextType] =
     val pad = t" "*style.padding
-    val leftEdge = textual.make(t"${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}$pad".s)
-    val rightEdge = textual.make(t"$pad${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}".s)
-    val midEdge = textual.make(t"$pad${BoxDrawing(top = style.innerLines, bottom = style.innerLines)}$pad".s)
+    val leftEdge = Textual(t"${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}$pad")
+    val rightEdge = Textual(t"$pad${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}")
+    val midEdge = Textual(t"$pad${BoxDrawing(top = style.innerLines, bottom = style.innerLines)}$pad")
     
     def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
       rows match
@@ -187,8 +218,10 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]]):
           val lines = (0 until row.height).map: lineNumber =>
             widths.indices.map: index =>
               val cell = row(index)
-              if cell.minHeight > lineNumber then cell(lineNumber).pad(widths(index))
-              else textual.make((t" "*widths(index)).s)
+              if cell.minHeight > lineNumber
+              then
+                cell.textAlign.pad(cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
+              else Textual((t" "*widths(index)))
             .join(leftEdge, midEdge, rightEdge)
           
           lines.to(LazyList) #::: recur(widths, tail)
@@ -206,7 +239,7 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]]):
       val horizontal =
         if above.absent then style.topLine else if below.absent then style.bottomLine else style.titleLine
 
-      textual.make:
+      Textual:
         Text.fill(width): index =>
           def vertical(bitSet: sci.BitSet, line: BoxLine): BoxLine =
             if bitSet.contains(index) then line else BoxLine.Blank
@@ -229,8 +262,6 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]]):
                right  = horizontal,
                bottom = vertical(descenders, style.innerLines),
                left   = horizontal)
-        .s
-  
 
     val topLine = rule(Unset, sections.head.widths)
     val midRule = rule(sections.head.widths, sections.head.widths)
@@ -243,7 +274,7 @@ case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowT
     (using textual: Textual[TextType]):
   table =>
   
-  val columns: IArray[Column[RowType, TextType]] = IArray.from(initColumns.filterNot(_.hide))
+  val columns: IArray[Column[RowType, TextType]] = IArray.from(initColumns)
   val titles: Seq[IArray[IArray[TextType]]] = Seq(IArray.from(columns.map(_.title.cut(t"\n"))))
 
   def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } = new Tabulation[TextType]:

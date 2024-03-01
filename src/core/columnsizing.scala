@@ -23,7 +23,9 @@ import anticipation.*
 
 trait ColumnSizing:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  def fit[TextType: Textual](lines: IArray[TextType], width: Int): IndexedSeq[TextType]
+  
+  def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
+          : IndexedSeq[TextType]
 
 package columnSizing:
   object Prose extends ColumnSizing:
@@ -40,7 +42,8 @@ package columnSizing:
       val longestLine = lines.map(_.length).max
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
+        (using textual: Textual[TextType])
             : IndexedSeq[TextType] =
       
       def format(text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
@@ -61,7 +64,8 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
+        (using textual: Textual[TextType])
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
@@ -72,7 +76,8 @@ package columnSizing:
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
     
-    def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
+    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
+        (using textual: Textual[TextType])
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
@@ -82,5 +87,8 @@ package columnSizing:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
-    def fit[TextType: Textual](lines: IArray[TextType], width: Int): IndexedSeq[TextType] = lines.to(IndexedSeq)
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
+            : IndexedSeq[TextType] =
+
+      lines.to(IndexedSeq)
       

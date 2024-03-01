@@ -34,7 +34,7 @@ def run(): Unit =
   val table = Table[Person](Column(t"Name of the person", sizing = columnSizing.Prose)(_.name),
                             Column(t"Age", sizing = columnSizing.Collapsible(0.6))(_.age.show),
                             Column(t"Size", sizing = columnSizing.Collapsible(0.4))(_.size.show),
-                            Column(t"Description", sizing = columnSizing.Prose)(_.description))
+                            Column(t"Description", textAlign = TextAlignment.Justify, sizing = columnSizing.Prose)(_.description))
 
   val tabulation = table.tabulate:
     List(Person(t"Jon Prety", 41, 3.14159, t"The quick brown fox jumps over the lazy dog."),
