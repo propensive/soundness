@@ -54,6 +54,8 @@ trait Textual[TextType]:
     infix def + (right: TextType): TextType = concat(left, right)
 
 object Textual:
+  def apply[TextType](using textual: Textual[TextType])(text: Text): TextType = textual.make(text.s)
+
   given text: Textual[Text] with
     type ShowType[-ValueType] = Show[ValueType]
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
