@@ -36,7 +36,7 @@ extension [ValueType](value: ValueType)
   def waive: Any => ValueType = _ => value
   def twin: (ValueType, ValueType) = (value, value)
   def triple: (ValueType, ValueType, ValueType) = (value, value, value)
-  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else point
+  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else value
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
 
   transparent inline def matchable(using Unsafe): ValueType & Matchable =
