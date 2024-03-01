@@ -69,7 +69,7 @@ object Cuttable:
     @tailrec
     def recur(start: Int, results: List[TextType]): List[TextType] =
       string.indexOf(delimiter.s) match
-        case -1    => Nil
+        case -1    => List(textual.slice(text, start, text.length))
         case index => recur(index + dLength, textual.slice(text, start, index) :: results)
   
     IArray.from(recur(0, Nil).reverse)(using textual.classTag)
