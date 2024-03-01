@@ -19,22 +19,27 @@ package escritoire
 import gossamer.*
 import rudiments.*
 import spectacular.*
+import contingency.*, errorHandlers.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine.textOnly
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
 
-case class Person(name: Text, age: Int, description: Text)
+case class Person(name: Text, age: Int, size: Double, description: Text)
+given Decimalizer = Decimalizer(3)
+
+import insufficientSpaceHandling.fail
 
 @main
 def run(): Unit =
   val table = Table[Person](Column(t"Name of the person", sizing = columnSizing.Prose)(_.name),
-                            Column(t"Age", sizing = columnSizing.Prose)(_.age.show),
+                            Column(t"Age", sizing = columnSizing.Collapsible(0.6))(_.age.show),
+                            Column(t"Size", sizing = columnSizing.Collapsible(0.4))(_.size.show),
                             Column(t"Description", sizing = columnSizing.Prose)(_.description))
 
-  val tabulation = table.tabulate(List(Person(t"Jon Prety", 41, t"The quick brown fox jumps over the lazy dog."),
-                                       Person(t"Kyle Murray", 28, t"Peter piper picked a peck of pickled pepper."),
-                                       Person(t"Jimmy O'Dougherty", 59, t"She sells seashells on the sea-shore.")))
+  val tabulation = table.tabulate:
+    List(Person(t"Jon Prety", 41, 3.14159, t"The quick brown fox jumps over the lazy dog."),
+         Person(t"Kyle Murray", 28, 2.718, t"Peter piper picked a peck of pickled pepper."),
+         Person(t"Jimmy O'Dougherty", 59, 1.0, t"She sells seashells on the sea-shore."))
 
-  import tableStyles.rounded
-  given Decimalizer = Decimalizer(3)
-  for width <- 30 to 80 do tabulation.layout(width).render.foreach(Out.println(_))
+  import tableStyles.default
+  for width <- 90 to 1 by -1 do tabulation.layout(width).render.foreach(Out.println(_))

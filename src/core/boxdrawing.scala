@@ -20,23 +20,44 @@ import anticipation.*
 import gossamer.*
 
 enum BoxLine:
-  case None, Thin, Thick, Double
+  case Blank, Thin, Thick, Double
+
+enum LineCharset:
+  case Default, Rounded, Ascii
+
+  def apply(): IArray[Char] = this match
+    case Default => BoxDrawing.defaultChars
+    case Rounded => BoxDrawing.roundedChars
+    case Ascii   => BoxDrawing.asciiChars
 
 object BoxDrawing:
-  private val lineChars: IArray[Char] =
+  val asciiChars: IArray[Char] =
+    List
+      (t" -- |+++|++  + +--- +++ +++ +++ --- +++++++  + +   -+ ++   -+ ++|+++|+++|+++    +++ +++ +++     ++++",
+       t"++++++++    + +++ +++ ++    |++ |+++|++  + ++++ +++ +++ +++ +++ +++++ +  + +   -+ ++   -+ ++ + +    ",
+       t" + +|+|++++     +++ +++  + +     + +|+|++ ++    + +++ ++").join.chars
+
+  val defaultChars: IArray[Char] =
     List
       (t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
        t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
        t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬").join.chars
   
-  private def roundCorners(chars: IArray[Char]): IArray[Char] = chars.map:
+  val roundedChars: IArray[Char] = defaultChars.map:
     case '┌'  => '╭'
     case '┘'  => '╯'
     case '┐'  => '╮'
     case '└'  => '╰'
     case char => char
 
-  def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
-    lineChars(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+  def apply
+      (top: BoxLine = BoxLine.Blank,
+       right: BoxLine = BoxLine.Blank,
+       bottom: BoxLine = BoxLine.Blank,
+       left: BoxLine = BoxLine.Blank,
+       charset: LineCharset = LineCharset.Default)
+          : Char =
+    charset()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
   
-  def apply(vertical: BoxLine, horizontal: BoxLine): Char = apply(vertical, horizontal, vertical, horizontal)
+  def simple(vertical: BoxLine, horizontal: BoxLine, charset: LineCharset): Char =
+    apply(vertical, horizontal, vertical, horizontal, charset)

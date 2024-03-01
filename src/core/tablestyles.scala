@@ -16,59 +16,18 @@
 
 package escritoire
 
-import gossamer.*
-import anticipation.*
-
 package tableStyles:
-  given default: TableStyle =
-    TableStyle(t" ", t"│", t"│", t"│", t"┌", t"┬", t"┐", t"└", t"┴", t"┘", t"├", t"┼", t"┤", t"─", t"─", t"─")
- 
-  given horizontal: TableStyle =
-    TableStyle(t" ", t" ", t" ", t" ", t" ", t"─", t" ", t" ", t"─", t" ", t" ", t"─", t" ", t"─", t"─", t"─")
- 
-  given minimalist: TableStyle =
-    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"─", t" ", t" ", t"─", t" ")
- 
-  given horizontalGaps: TableStyle =
-    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"─", t"─", t"─")
- 
-  given horizontalDots: TableStyle =
-    TableStyle(t" ", t" ", t" ", t" ", t" ", t"╌", t" ", t" ", t"╌", t" ", t" ", t"╌", t" ", t"╌", t"╌", t"╌")
- 
-  given doubled: TableStyle =
-    TableStyle(t" ", t"║", t"│", t"║", t"╔", t"╤", t"╗", t"╚", t"╧", t"╝", t"╟", t"┼", t"╢", t"═", t"─", t"═")
- 
-  given rounded: TableStyle =
-    TableStyle(t" ", t"│", t"│", t"│", t"╭", t"┬", t"╮", t"╰", t"┴", t"╯", t"├", t"┼", t"┤", t"─", t"─", t"─")
- 
-  given dotted: TableStyle =
-    TableStyle(t" ", t"┊", t"┊", t"┊", t"┌", t"┬", t"┐", t"└", t"┴", t"┘", t"├", t"┼", t"┤", t"╌", t"╌", t"╌")
- 
-  given outline: TableStyle =
-    TableStyle(t" ", t"┊", t"┊", t"┊", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t"╌", t"╌", t"╌")
- 
-  given ascii: TableStyle =
-    TableStyle(t" ", t"|", t"|", t"|", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"+", t"-", t"-", t"-")
- 
-  given borderless: TableStyle =
-    TableStyle(t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ", t" ")
+  import BoxLine.*
+  given default: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, LineCharset.Default)
 
 case class TableStyle
-    (padding:         Text,
-     left:            Text,
-     separator:       Text,
-     right:           Text,
-     topLeft:         Text,
-     topSeparator:    Text,
-     topRight:        Text,
-     bottomLeft:      Text,
-     bottomSeparator: Text,
-     bottomRight:     Text,
-     midLeft:         Text,
-     midSeparator:    Text,
-     midRight:        Text,
-     topBar:          Text,
-     midBar:          Text,
-     bottomBar:       Text):
+    (padding:    Int,
+     topLine:    BoxLine,
+     bottomLine: BoxLine,
+     titleLine:  BoxLine,
+     sideLines:  BoxLine,
+     innerLines: BoxLine,
+     charset:    LineCharset):
 
-  def cost(columns: Int): Int = columns*padding.length*2 + columns + 1
+  def columnCost: Int = padding*2 + 1
+  def cost(columns: Int): Int = columns*columnCost + 1
