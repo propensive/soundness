@@ -48,10 +48,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       [ResultType]
       (inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
-                              (typeclass: requirement.Optionality[TypeclassType[FieldType]],
-                               default:   Default[Optional[FieldType]],
-                               label:     Text,
-                               index:     Int & FieldIndex[FieldType]) ?=>
+                              (typeclass:   requirement.Optionality[TypeclassType[FieldType]],
+                               default:     Default[Optional[FieldType]],
+                               label:       Text,
+                               dereference: DerivationType => FieldType,
+                               index:       Int & FieldIndex[FieldType]) ?=>
                                   ResultType)
           : IArray[ResultType] =
     
@@ -118,7 +119,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   // The two implementations of `fold` are very similar. We would prefer to have a single implementation (closer
   // to the non-erased `fold`), but it's difficult to abstract over the erasedness of the tuple.
 
-  private transparent inline def fold[DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
+  private transparent inline def fold
+      [DerivationType <: Product, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (using requirement: ContextRequirement)
       (inline tuple: FieldsType, accumulator: ResultType, index: Int)
       (inline lambda: ResultType =>
@@ -150,7 +152,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                 (moreFields, accumulator2, index + 1)
                 (lambda)
 
-  private transparent inline def fold[DerivationType, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
+  private transparent inline def fold
+      [DerivationType <: Product, FieldsType <: Tuple, LabelsType <: Tuple, ResultType]
       (using requirement: ContextRequirement)
       (inline accumulator: ResultType, index: Int)
       (inline lambda: ResultType =>
@@ -158,6 +161,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                               requirement.Optionality[TypeclassType[FieldType]] =>
                                   (default: Default[Optional[FieldType]],
                                    label: Text,
+                                   dereference: DerivationType => FieldType,
                                    index: Int & FieldIndex[FieldType]) ?=>
                                       ResultType)
           : ResultType =
@@ -171,7 +175,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
             val typeclass = requirement.summon[TypeclassType[fieldType]]
             val fieldIndex: Int & FieldIndex[fieldType] = index.asInstanceOf[Int & FieldIndex[fieldType]]
             val default = Default(Wisteria.default[DerivationType, fieldType](index))
-            val accumulator2 = lambda(accumulator)[fieldType](typeclass)(using default, label.tt, fieldIndex)
+            val dereference: DerivationType => fieldType = _.productElement(fieldIndex).asInstanceOf[fieldType]
+            
+            val accumulator2 =
+              lambda(accumulator)[fieldType](typeclass)(using default, label.tt, dereference, fieldIndex)
             
             fold[DerivationType, moreFieldsType, moreLabelsType, ResultType](accumulator2, index + 1)(lambda)
   
