@@ -37,7 +37,8 @@ package columnSizing:
           else longestWord(text, position + 1, lastStart, max)
         else max.max(position - lastStart)
 
-      lines.map(longestWord(_, 0, 0, 0)).max.min((slack*maxWidth).toInt)
+      val longestLine = lines.map(_.length).max
+      lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
     
     def fit[TextType](lines: IArray[TextType], width: Int)(using textual: Textual[TextType])
             : IndexedSeq[TextType] =

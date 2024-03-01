@@ -12,6 +12,13 @@ object BoxDrawing:
       (t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
        t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
        t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬").join.chars
+  
+  private def roundCorners(chars: IArray[Char]): IArray[Char] = chars.map:
+    case '┌'  => '╭'
+    case '┘'  => '╯'
+    case '┐'  => '╮'
+    case '└'  => '╰'
+    case char => char
 
   def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
     lineChars(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)

@@ -23,17 +23,18 @@ import turbulence.*, stdioSources.virtualMachine.textOnly
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
 
-case class Person(name: Text, age: Int)
+case class Person(name: Text, age: Int, description: Text)
 
 @main
 def run(): Unit =
   val table = Table[Person](Column(t"Name of the person", sizing = columnSizing.Prose)(_.name),
-                            Column(t"Age", sizing = columnSizing.Prose)(_.age.show))
+                            Column(t"Age", sizing = columnSizing.Prose)(_.age.show),
+                            Column(t"Description", sizing = columnSizing.Prose)(_.description))
 
-  val tabulation = table.tabulate(List(Person(t"Jon Pretty", 41),
-                                       Person(t"Kyle Murray", 28),
-                                       Person(t"Jimmy O'Dougherty", 59)))
+  val tabulation = table.tabulate(List(Person(t"Jon Prety", 41, t"The quick brown fox jumps over the lazy dog."),
+                                       Person(t"Kyle Murray", 28, t"Peter piper picked a peck of pickled pepper."),
+                                       Person(t"Jimmy O'Dougherty", 59, t"She sells seashells on the sea-shore.")))
 
   import tableStyles.rounded
   given Decimalizer = Decimalizer(3)
-  tabulation.layout(156).render.foreach(Out.println(_))
+  for width <- 30 to 80 do tabulation.layout(width).render.foreach(Out.println(_))

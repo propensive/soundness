@@ -117,7 +117,7 @@ abstract class Tabulation[TextType: ClassTag]():
     
       Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
 
-    def bisect(min: Layout, max: Layout, countdown: Int): (Layout, Layout) =
+    def bisect(min: Layout, max: Layout, countdown: Int = 8): (Layout, Layout) =
       if countdown == 0 then (min, max)
       else if max.totalWidth - min.totalWidth <= 1 then (min, max) else
         val point = layout((min.slack + max.slack)/2)
@@ -126,8 +126,8 @@ abstract class Tabulation[TextType: ClassTag]():
         else if point.totalWidth > width then bisect(min, point, countdown - 1)
         else bisect(point, max, countdown - 1)
       
-    val rowLayout = bisect(layout(0), layout(1), 10)(0)
-
+    val rowLayout = bisect(layout(0), layout(1))(0)
+    
     // We may be able to increase the slack in some of the remaining columns
 
     def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[TableRow[TextType]] =
