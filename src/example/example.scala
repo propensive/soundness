@@ -34,6 +34,6 @@ def run(): Unit =
                                        Person(t"Kyle Murray", 28),
                                        Person(t"Jimmy O'Dougherty", 59)))
 
-  import tableStyles.default
+  import tableStyles.rounded
   given Decimalizer = Decimalizer(3)
   tabulation.layout(156).render.foreach(Out.println(_))

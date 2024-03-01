@@ -23,31 +23,9 @@ import hieroglyph.*
 import spectacular.*
 import anticipation.*
 
+import scala.collection.immutable as sci
+
 import language.experimental.pureFunctions
-
-enum BoxLine:
-  case None, Thin, Thick, Double
-
-case class BoxDrawingCharacter(vertical: BoxLine, horizontal: BoxLine)
-
-object BoxDrawing:
-  val simpleChars: IArray[Char] = IArray(
-      ' ', '─', '━', '═',
-      '│', '┼', '┿', '╪',
-      '┃', '╂', '╋', '═',
-      '║', '╫', '║', '╬')
-  
-  def simple(vertical: BoxLine, horizontal: BoxLine): Char =
-    simpleChars(vertical.ordinal*4 + horizontal.ordinal)
-  
-  private val box: IArray[Char] =
-    List
-      (t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
-       t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
-       t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬").join.chars
-
-  def apply(top: BoxLine, right: BoxLine, bottom: BoxLine, left: BoxLine): Char =
-    box(top.ordinal + right.ordinal*4 + bottom.ordinal*16 + left.ordinal*64)
 
 enum Breaks:
   case Never, Space, Zwsp, Character
@@ -195,31 +173,31 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]]):
         case _ =>
           LazyList()
     
-    val line1 = sections.head.widths.to(List).map: width =>
-      textual.make(style.topBar.s*(width + style.padding.length*2))
-    .join
-      (textual.make(style.topLeft.s),
-       textual.make(style.topSeparator.s),
-       textual.make(style.topRight.s))
-      
-    val rule = sections.head.widths.to(List).map: width =>
-      textual.make(style.midBar.s*(width + style.padding.length*2))
-    .join
-      (textual.make(style.midLeft.s),
-        textual.make(style.midSeparator.s),
-        textual.make(style.midRight.s))
+    def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): TextType =
+      val width = above.or(below).vouch(using Unsafe).pipe: widths =>
+        widths.sum + widths.length*3 + 1
 
-    val lastLine = sections.head.widths.to(List).map: width =>
-      textual.make(style.bottomBar.s*(width + style.padding.length*2))
-    .join
-      (textual.make(style.bottomLeft.s),
-       textual.make(style.bottomSeparator.s),
-       textual.make(style.bottomRight.s))
-      
+      val ascenders = above.let(_.scan(0)(_ + _ + 3).to(sci.BitSet)).or(sci.BitSet())
+      val descenders = below.let(_.scan(0)(_ + _ + 3).to(sci.BitSet)).or(sci.BitSet())
+
+      textual.make:
+        Text.fill(width): index =>
+          BoxDrawing
+            (top    = if ascenders.contains(index)  then BoxLine.Thin else BoxLine.None,
+             right  = if index == (width - 1)       then BoxLine.None  else BoxLine.Thin,
+             bottom = if descenders.contains(index) then BoxLine.Thin else BoxLine.None,
+             left   = if index == 0                 then BoxLine.None  else BoxLine.Thin)
+        .s
+  
+
+    val topLine = rule(Unset, sections.head.widths)
+    val midRule = rule(sections.head.widths, sections.head.widths)
+    val bottomLine = rule(sections.head.widths, Unset)
+
     val body = sections.to(LazyList).flatMap: section =>
-      rule #:: recur(section.widths, section.rows)
+      midRule #:: recur(section.widths, section.rows)
 
-    line1 #:: body.tail #::: LazyList(lastLine)
+    topLine #:: body.tail #::: LazyList(bottomLine)
       
 
 case class Table[RowType: ClassTag, TextType: ClassTag](initColumns: Column[RowType, TextType]*)
