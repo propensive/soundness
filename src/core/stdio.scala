@@ -71,11 +71,7 @@ object Stdio:
     val safeIn: ji.InputStream = if in == null then MuteInputStream else in
     val termcap2: Termcap = termcap
   
-    new Stdio:
-      def out: ji.PrintStream = safeOut
-      def err: ji.PrintStream = safeErr
-      def in: ji.InputStream = safeIn
-      def termcap: Termcap = termcap2
+    new Stdio(termcap2, safeOut, safeErr, safeIn)
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()
@@ -93,12 +89,8 @@ object Stdio:
     override def close(): Unit = ()
     override def available(): Int = 0
 
-trait Stdio extends Io:
-  def termcap: Termcap
-  def out: ji.PrintStream
-  def err: ji.PrintStream
-  def in: ji.InputStream
-
+class Stdio(val termcap: Termcap, val out: ji.PrintStream, val err: ji.PrintStream, val in: ji.InputStream)
+extends Io:
   protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
   
   def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
