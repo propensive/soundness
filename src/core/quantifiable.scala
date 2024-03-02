@@ -50,13 +50,13 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
-  transparent inline infix def * [UnitsType2 <: Measure](@convertible inline quantity2: Quantity[UnitsType2])
+  transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: into Quantity[UnitsType2])
           : Any =
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("divide2")
   transparent inline infix def / [UnitsType2 <: Measure]
-      (@convertible inline quantity2: Quantity[UnitsType2]): Any =
+      (inline quantity2: into Quantity[UnitsType2]): Any =
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
   transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
