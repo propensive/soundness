@@ -130,7 +130,8 @@ case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
 
 object Resource:
   given readableBytes(using Raises[ClasspathError]): Readable[Resource, Bytes] =
-    Readable.reliableInputStream.contramap: resource => resource.classloader.inputStream(resource.ref.text)
+    Readable.reliableInputStream.contramap: resource =>
+      resource.classloader.inputStream(resource.ref.text)
 
 case class Resource(classloader: Classloader, ref: ClasspathRef)
 
