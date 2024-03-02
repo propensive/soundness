@@ -207,10 +207,10 @@ object Display:
     stdio.printErr(output.render(stdio.termcap))
 
   given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Display] =
-    (target, output) => appendable.append(target, output.map(_.render(Termcap.Basic)))
+    (target, output) => appendable.append(target, output.map(_.render(termcapDefinitions.basic)))
   
   given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
-    (target, output) => writable.write(target, output.map(_.render(Termcap.Basic)))
+    (target, output) => writable.write(target, output.map(_.render(termcapDefinitions.basic)))
 
   given textual: Textual[Display] with
     type ShowType[-ValueType] = Displayable[ValueType]
@@ -260,7 +260,8 @@ case class Display
     (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
         insertions: TreeMap[Int, Text] = TreeMap()):
   
-  def explicit: Text = render(Termcap.Xterm256).flatMap { ch => if ch.toInt == 27 then t"\\e" else ch.show }
+  def explicit: Text = render(termcapDefinitions.xtermTrueColor).flatMap: char =>
+    if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")
   infix def append(text: Text): Display = Display(t"$plain$text", spans)
