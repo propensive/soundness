@@ -28,19 +28,28 @@ object Printable:
   given char: Printable[Char] = (char, termcap) => char.toString.tt
   given message: Printable[Message] = (message, termcap) => message.text
 
-enum ColorCapability:
-  case NoColor, Color8, Color16, Color256, TrueColor
+object ColorCapability:
+  def apply(colors: Int): ColorCapability = colors match
+    case 8               => ColorCapability.Indexed8
+    case 15 | 16         => ColorCapability.Indexed16
+    case 52 | 64 | 88    => ColorCapability.Cube4
+    case 256             => ColorCapability.Cube6
+    case 6536 | 16777216 => ColorCapability.TrueColor
+    case _               => ColorCapability.NoColor
 
-object Termcap:
-  object Basic extends Termcap:
+enum ColorCapability:
+  case NoColor, Indexed8, Indexed16, Cube4, Cube6, TrueColor
+
+package termcapDefinitions:
+  given basic: Termcap with
     def ansi: Boolean = false
     def color: ColorCapability = ColorCapability.NoColor
   
-  object Xterm256 extends Termcap:
+  given xterm256: Termcap with
     def ansi: Boolean = true
-    def color: ColorCapability = ColorCapability.Color256
+    def color: ColorCapability = ColorCapability.Cube6
   
-  object XtermTrueColor extends Termcap:
+  given xtermTrueColor: Termcap with
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.TrueColor
 
