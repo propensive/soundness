@@ -217,7 +217,7 @@ object Markdown:
     case node: cvfa.ImageRef       => Image(node.getText.toString.show, resolveReference(root, node))
     case node: cvfa.Link           => Weblink(node.getUrl.toString.show, phraseChildren(root, node)*)
     case node: cvfa.LinkRef        => Weblink(resolveReference(root, node), phraseChildren(root, node)*)
-    case node: cvfa.MailLink       => Weblink(node.getText.toString.show, Copy(t"mailto:${node.getText.nn}"))
+    case node: cvfa.MailLink       => Weblink(node.getText.toString.show, Copy(s"mailto:${node.getText.nn}".tt))
     case node: cvfa.Text           => Copy(format(node.getChars.toString.show))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
