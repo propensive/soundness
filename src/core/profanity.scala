@@ -93,7 +93,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
               val sequence = other.takeWhile(!_.isLetter)
 
               other.drop(sequence.length) match
-                case 'R' #:: tail => sequence.map(_.show).join.cut(';') match
+                case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
                   case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: process(tail)
                   case _                                  => TerminalInfo.WindowSize(20, 30) #:: process(tail)
 
@@ -110,7 +110,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
             val content = rest.takeWhile(_ != '\u001b').mkString.tt
             val continuation = rest.drop(content.length + 2)
 
-            content.cut(t"/") match
+            content.cut(t"/").to(List) match
               case List(Hex(red), Hex(green), Hex(blue)) =>
                 TerminalInfo.BgColor(red, green, blue) #:: process(continuation)
 
@@ -151,9 +151,8 @@ package keyboards:
 enum TerminalMode:
   case Dark, Light
 
-case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor) extends Stdio:
+case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor):
   export context.stdio.{in, out, err}
-  given stdio: Stdio = context.stdio
 
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
   val initRows: Promise[Int] = Promise()
@@ -162,6 +161,13 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
+  val termcap: Termcap = new Termcap:
+    def ansi: Boolean = true
+    def color: ColorCapability = ColorCapability.TrueColor
+    override def width = columns
+
+  given stdio: Stdio = new Stdio(termcap, context.stdio.out, context.stdio.err, context.stdio.in)
+  
   def knownColumns: Int = safely(initColumns.await(50L)).or(80)
 
   private val signalHandler: Async[Unit] = Async:
@@ -230,6 +236,8 @@ trait TerminalSizeDetection:
   def apply(): Boolean
 
 inline def terminal: Terminal = compiletime.summonInline[Terminal]
+
+given stdio(using terminal: Terminal): Stdio = terminal.stdio
 
 def terminal[ResultType](block: Terminal ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor)
