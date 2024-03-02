@@ -60,13 +60,13 @@ object SystemProperty:
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
           : SystemProperty["java.library.path", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given javaClassPath[PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
           : SystemProperty["java.class.path", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
@@ -75,7 +75,7 @@ object SystemProperty:
       (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
           : SystemProperty["java.ext.dirs", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given fileSeparator: SystemProperty["file.separator", Char] = _.decodeAs[Char]
   given pathSeparator: SystemProperty["path.separator", Char] = _.decodeAs[Char]

@@ -71,17 +71,17 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given path[PathType: SpecificPath](using systemProperties: SystemProperties)
           : EnvironmentVariable["path", List[PathType]]^{systemProperties} =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
   
   given xdgDataDirs[PathType: SpecificPath](using systemProperties: SystemProperties)
           : EnvironmentVariable["xdgDataDirs", List[PathType]]^{systemProperties} =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
   
   given xdgConfigDirs[PathType: SpecificPath](using systemProperties: SystemProperties)
           : EnvironmentVariable["xdgConfigDirs", List[PathType]]^{systemProperties} =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given xdgDataHome[PathType](using specificPath: SpecificPath[PathType])
           : EnvironmentVariable["xdgDataHome", PathType]^{specificPath} =
