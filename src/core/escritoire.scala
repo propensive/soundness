@@ -128,6 +128,14 @@ object Table:
 
     new Table(initColumns*)
 
+object Tabulation:
+  given printable[TextType: Textual](using TextMetrics, TableStyle, InsufficientSpaceHandler)
+      (using printable: Printable[TextType])
+          : Printable[Tabulation[TextType]] =
+    (tabulation, termcap) =>
+      tabulation.layout(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
+
+
 abstract class Tabulation[TextType: ClassTag]():
   type Row
   

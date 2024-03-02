@@ -50,4 +50,4 @@ def run(): Unit =
 
   import tableStyles.default
 
-  Out.println(data.table.layout(70))
+  Out.println(data.table)
