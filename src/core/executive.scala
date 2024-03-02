@@ -81,11 +81,11 @@ package unhandledErrors:
   given stackTrace: UnhandledErrorHandler with
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
-        Out.println(StackTrace(error).display.render)
+        Out.println(StackTrace(error).display)
         ExitStatus(1)
       
       case error: Throwable =>
-        Out.println(StackTrace(error).display.render)
+        Out.println(StackTrace(error).display)
         ExitStatus(2)
 
 package executives:
@@ -116,8 +116,9 @@ def application(using executive: Executive, interpreter: CliInterpreter)
     val funnel: Funnel[Signal] = Funnel()
     signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
     funnel.stream
-
-  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine, listen)
+  
+  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
+  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, listen)
   
   System.exit(executive.process(cli)(block)())
 
