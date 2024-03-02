@@ -105,7 +105,7 @@ extends Cli:
     shell match
       case Shell.Zsh =>
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
-        val termcap: Termcap = Termcap.XtermTrueColor
+        val termcap: Termcap = termcapDefinitions.xtermTrueColor
         
         lazy val width = items.map(_.text.length).max
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
