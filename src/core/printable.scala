@@ -18,6 +18,7 @@ package rudiments
 
 import anticipation.*
 import fulminate.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
@@ -46,8 +47,8 @@ object Termcap:
 trait Termcap:
   def ansi: Boolean
   def color: ColorCapability
+  def width: Optional[Int] = Unset
 
 @capability
 trait Printable[-TextType]:
   def print(text: TextType, termcap: Termcap): Text
-
