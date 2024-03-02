@@ -90,7 +90,7 @@ object Dates:
       type Result = Date
       def add(date: Date, period: Period): Date = calendar.add(date, period)
     
-    def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-") match
+    def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-").to(List) match
       // FIXME: This compiles successfully, but never seems to match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
       case y :: m :: d :: Nil =>
