@@ -76,7 +76,7 @@ case class ClientConnection[BusType <: Matchable]
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
-    variables.map(_.cut(t"=", 2)).collect:
+    variables.map(_.cut(t"=", 2).to(List)).collect:
       case List(key, value) => (key, value)
     .to(Map)
   
@@ -148,8 +148,8 @@ def daemon[BusType <: Matchable](using executive: Executive)
         val script: Text = line()
         val pwd: Text = line()
         val argCount: Int = line().decodeAs[Int]
-        val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount)
-        val environment: List[Text] = chunk().cut(t"\u0000").init
+        val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
+        val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
         DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
       
@@ -198,8 +198,17 @@ def daemon[BusType <: Matchable](using executive: Executive)
               override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
                 wrapped.write(bytes, offset, length)
   
+          val environment: Environment = LazyEnvironment(env)
+
+          val termcap: Termcap = new Termcap:
+            def ansi: Boolean = true
+            
+            val color: ColorCapability =
+              import workingDirectories.default
+              ColorCapability(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
+
           val stdio: Stdio =
-            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in)
+            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
           
           def deliver(sourcePid: Pid, message: BusType): Unit = clients.each: (pid, client) =>
             if sourcePid != pid then client.receive(message)
@@ -207,8 +216,6 @@ def daemon[BusType <: Matchable](using executive: Executive)
           val client: DaemonService[BusType] =
             DaemonService[BusType](pid, () => shutdown(pid), shellInput, scriptName.decodeAs[Unix.Path],
                 deliver(pid, _), busFunnel.stream, name)
-          
-          val environment = LazyEnvironment(env)
           val workingDirectory: WorkingDirectory = () => directory
           
           val async = Async:
@@ -238,7 +245,7 @@ def daemon[BusType <: Matchable](using executive: Executive)
               exitPromise, busFunnel, stderrPromise)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
-    import stdioSources.virtualMachine
+    import stdioSources.virtualMachine.ansi
     import workingDirectories.default
 
     Async.onShutdown:
