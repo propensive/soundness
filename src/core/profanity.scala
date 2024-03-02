@@ -161,12 +161,16 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
-  val termcap: Termcap = new Termcap:
+  val cap: Termcap = new Termcap:
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.TrueColor
     override def width = columns
 
-  given stdio: Stdio = new Stdio(termcap, context.stdio.out, context.stdio.err, context.stdio.in)
+  given stdio: Stdio = new Stdio:
+    val termcap = cap
+    val out = context.stdio.out
+    val err = context.stdio.err
+    val in = context.stdio.in
   
   def knownColumns: Int = safely(initColumns.await(50L)).or(80)
 
