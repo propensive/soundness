@@ -131,7 +131,7 @@ case class CliInvocation
     (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 
-  export stdio.{out, err, in}
+  export stdio.{termcap, out, err, in}
 
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 

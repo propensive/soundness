@@ -86,7 +86,7 @@ object TabCompletions:
         if sh"sh -c 'command -v zsh'".exec[ExitStatus]() != ExitStatus.Ok
         then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Zsh)
         else
-          val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",")
+          val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",").to(List)
           val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.compact
           install(Shell.Zsh, command, PathName(t"_$command"), dirs)
         

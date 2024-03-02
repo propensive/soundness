@@ -105,6 +105,7 @@ extends Cli:
     shell match
       case Shell.Zsh =>
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
+        val termcap: Termcap = Termcap.XtermTrueColor
         
         lazy val width = items.map(_.text.length).max
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
@@ -122,7 +123,7 @@ extends Cli:
                 sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
               
               case description: Display =>
-                sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l $hiddenParam -- $text"
+                sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l $hiddenParam -- $text"
             
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
@@ -133,7 +134,7 @@ extends Cli:
                   sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
                 
                 case description: Display =>
-                  sh"'${text.fit(width)} $aliasText -- ${description.render}' -d desc -l -n -- $text"
+                  sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l -n -- $text"
             
             mainLine :: aliasLines
         
