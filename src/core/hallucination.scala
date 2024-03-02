@@ -72,7 +72,7 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
 
   def render: Text = Text.make:
     for y <- 0 until (height - 1) by 2 do
-      for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render)
+      for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcapDefinitions.xtermTrueColor))
       append('\n')
 
   def serialize(using codec: ImageCodec[ImageFormatType]): LazyList[Bytes] =
