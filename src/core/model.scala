@@ -38,13 +38,13 @@ object CodlNode:
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
   
-  given contrast: Contrast[CodlNode] = (left, right) =>
-    if left == right then Semblance.Identical(left.debugText) else
+  given contrast(using Debug[CodlNode]): Contrast[CodlNode] = (left, right) =>
+    if left == right then Semblance.Identical(left.debug) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debugText).toString.tt)
-          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debugText)
-          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debugText).toString.tt, t"—")
+          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
+          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
           
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
@@ -94,14 +94,14 @@ object CodlDoc:
 
   inline given contrast: Contrast[CodlDoc] = new Contrast[CodlDoc]:
     def apply(left: CodlDoc, right: CodlDoc) =
-      inline if left == right then Semblance.Identical(left.debugText) else
+      inline if left == right then Semblance.Identical(left.debug) else
         val comparison = IArray.from:
           (t"[schema]", left.schema.contrastWith(right.schema)) +:
           (t"[margin]", left.margin.contrastWith(right.margin)) +:
           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debugText).toString.tt)
-            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debugText)
-            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debugText).toString.tt, t"—")
+            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
+            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
             case Sub(_, v, lv, rv) =>
               val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
               key -> lv.contrastWith(rv)
@@ -200,7 +200,6 @@ extends Indexed:
 
 
 case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Optional[Text] = Unset)
-derives Debug//, Contrast
 
 object Layout:
   final val empty = Layout(0, false, 0)

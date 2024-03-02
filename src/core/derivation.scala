@@ -68,6 +68,8 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
       def schema: CodlSchema =
         val elements = contexts:
           [FieldType] => context =>
+            
+            // FIXME: Move this outside of `contexts`
             val label2 = summonFrom:
               case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
               case _                                            => label
