@@ -29,12 +29,12 @@ package filesystemInterfaces:
           : (SpecificPath[PathType] & SpecificFile[File] & SpecificDirectory[Directory] &
                 GenericPath[PathType] & GenericFile[File] & GenericDirectory[Directory]) =
     
-    new SpecificPath[PathType] with
-            SpecificFile[File] with
-            SpecificDirectory[Directory] with
-            GenericPath[PathType] with
-            GenericFile[File] with
-            GenericDirectory[Directory]:
+    new SpecificPath[PathType]
+            with SpecificFile[File]
+            with SpecificDirectory[Directory]
+            with GenericPath[PathType]
+            with GenericFile[File]
+            with GenericDirectory[Directory]:
 
       def path(name: Text): PathType = name.decodeAs[PathType]
       def file(name: Text): File = path(name).as[File]
