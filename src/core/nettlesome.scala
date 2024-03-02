@@ -154,7 +154,7 @@ object Nettlesome:
       def apply(value: Long): MacAddress = value
       
       def parse(text: Text): MacAddress raises MacAddressError =
-        val groups = text.cut(t"-")
+        val groups = text.cut(t"-").to(List)
         
         if groups.length != 6
         then raise(MacAddressError(MacAddressError.Reason.WrongGroupCount(groups.length)))(())
@@ -310,10 +310,10 @@ object Nettlesome:
     private val zeroes: List[Text] = List.fill(8)(t"0")
 
     def parse(text: Text): Ipv6 raises IpAddressError =
-      val groups: List[Text] = text.cut(t"::") match
+      val groups: List[Text] = text.cut(t"::").to(List) match
         case List(left, right) =>
-          val leftGroups = left.cut(t":").filter(_ != t"")
-          val rightGroups = right.cut(t":").filter(_ != t"")
+          val leftGroups = left.cut(t":").to(List).filter(_ != t"")
+          val rightGroups = right.cut(t":").to(List).filter(_ != t"")
           
           if leftGroups.length + rightGroups.length > 7
           then raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))(())
@@ -324,7 +324,7 @@ object Nettlesome:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(zeroes) else groups
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(zeroes) else groups.to(List)
         
         case _ =>
           raise(IpAddressError(Ipv6MultipleDoubleColons))(zeroes)
