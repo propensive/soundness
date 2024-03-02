@@ -256,7 +256,7 @@ case class Url[+SchemeType <: Label]
   lazy val path: List[PathName[""]] =
     // FIXME: This needs to be handled better
     import errorHandlers.throwUnsafely
-    pathText.drop(1).cut(t"/").reverse.map(_.urlDecode).map(PathName(_))
+    pathText.drop(1).cut(t"/").to(List).reverse.map(_.urlDecode).map(PathName(_))
 
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
 
