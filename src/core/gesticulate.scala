@@ -119,7 +119,7 @@ object Media:
         raise(MediaTypeError(string, MediaTypeError.Nature.InvalidSuffix(suffix)))(Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
-      val xs: List[Text] = str.cut(t"+")
+      val xs: List[Text] = str.cut(t"+").to(List)
       
       (xs: @unchecked) match
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
@@ -148,7 +148,7 @@ object Media:
         else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
         
-    val xs: List[Text] = string.cut(t";").map(_.trim)
+    val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
     
     (xs: @unchecked) match
       case (h: Text) :: _ =>
