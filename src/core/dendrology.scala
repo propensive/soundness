@@ -19,6 +19,7 @@ package dendrology
 import rudiments.*
 import anticipation.*
 import gossamer.*
+import spectacular.*
 
 import language.experimental.captureChecking
 
@@ -39,8 +40,7 @@ case class TextualTreeStyle[LineType](space: Text, last: Text, branch: Text, ext
     (using textual: Textual[LineType])
 extends TreeStyle[LineType]:
 
-  def serialize(tiles: List[TreeTile], node: LineType): LineType =
-    textual.make(tiles.map(text(_)).join.s)+node
+  def serialize(tiles: List[TreeTile], node: LineType): LineType = textual.make(tiles.map(text(_)).join.s)+node
   
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
@@ -62,6 +62,10 @@ import TreeTile.*
 object TreeDiagram:
   def apply[NodeType](roots: NodeType*)(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
     by[NodeType](expandable.children(_))(roots*)
+
+  given printable[NodeType](using show: Show[NodeType], style: TreeStyle[Text]): Printable[TreeDiagram[NodeType]] =
+    (diagram, termcap) =>
+      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
   def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*): TreeDiagram[NodeType] =
     def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(List[TreeTile], NodeType)] =

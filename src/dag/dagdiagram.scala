@@ -18,6 +18,7 @@ package dendrology
 
 import rudiments.*
 import anticipation.*
+import spectacular.*
 import gossamer.*
 import acyclicity.*
 
@@ -87,6 +88,10 @@ object DagDiagram:
       layout.to(List).map: row =>
         val tiles = row.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
+
+  given printable[NodeType](using show: Show[NodeType], style: DagStyle[Text]): Printable[DagDiagram[NodeType]] =
+    (diagram, termcap) =>
+      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
 case class DagDiagram[NodeType](lines: List[(List[DagTile], NodeType)]):
   def render[LineType](line: NodeType => LineType)(using style: DagStyle[LineType]): List[LineType] =
