@@ -24,8 +24,8 @@ import java.io as ji
 
 package stdioSources:
   package virtualMachine:
-    given textOnly: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.Basic)
-    given ansi: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, Termcap.Xterm256)
+    given textOnly: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
+    given ansi: Stdio = Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
 
 import language.experimental.captureChecking
 
@@ -36,26 +36,28 @@ trait Io:
 
 object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
-  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType])
+  def print[TextType](text: Termcap ?=> TextType)(using stdio: Stdio, printable: Printable[TextType])
           : Unit =
 
-    stdio.printErr(printable.print(text, stdio.termcap))
+    stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
   
-  def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
-    print(text)
+  def println[TextType](text: Termcap ?=> TextType)(using stdio: Stdio, printable: Printable[TextType]): Unit =
+    print(text(using stdio.termcap))
     println()
   
   def println()(using Stdio): Unit = print("\n".tt)
 
 object Out:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
-  def print[TextType](text: TextType)(using stdio: Stdio)(using printable: Printable[TextType]): Unit =
-    stdio.print(printable.print(text, stdio.termcap))
+  def print[TextType](text: Termcap ?=> TextType)(using stdio: Stdio)(using printable: Printable[TextType])
+          : Unit =
+
+    stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
   
   def println()(using Stdio): Unit = print("\n".tt)
   
-  def println[TextType](text: TextType)(using Stdio, Printable[TextType]): Unit =
-    print(text)
+  def println[TextType](text: Termcap ?=> TextType)(using stdio: Stdio, printable: Printable[TextType]): Unit =
+    print(text(using stdio.termcap))
     println()
 
 object In:
