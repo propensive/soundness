@@ -32,28 +32,25 @@ case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UU
 
 object Uuid:
   def parse(text: Text)(using Raises[UuidError]): Uuid =
-    try
-      val uuid = ju.UUID.fromString(text.s).nn
+    try ju.UUID.fromString(text.s).nn.pipe: uuid =>
       Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
     catch case _: Exception => raise(UuidError(text))(Uuid(0L, 0L))
 
   def unapply(text: Text): Option[Uuid] =
     try Some:
-      val uuid = ju.UUID.fromString(text.s).nn
-      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+      ju.UUID.fromString(text.s).nn.pipe: uuid =>
+        Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
     catch case err: Exception => None
 
-  def apply(): Uuid =
-    val uuid = ju.UUID.randomUUID().nn
+  def apply(): Uuid = ju.UUID.randomUUID().nn.pipe: uuid =>
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
+  def text: Text = this.java.toString.tt
   
   def bytes: Bytes =
     (Bytes(msb).mutable(using Unsafe) ++ Bytes(lsb).mutable(using Unsafe)).immutable(using Unsafe)
-
-  def text: Text = this.java.toString.tt
   
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)
