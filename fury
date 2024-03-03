@@ -30,6 +30,11 @@ project anticipation
     compiler  scala
     include   anticipation/text
     sources   src/html
+  
+  module print
+    compiler  scala
+    include   anticipation/text
+    sources   src/print
 
   module http
     compiler  scala
@@ -60,6 +65,7 @@ project anticipation
     include anticipation/http
     include anticipation/path
     include anticipation/time
+    include anticipation/print
     include anticipation/url
     include anticipation/color
     include anticipation/transport
