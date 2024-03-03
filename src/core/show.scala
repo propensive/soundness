@@ -19,7 +19,7 @@ package spectacular
 import rudiments.*
 import inimitable.*
 import vacuous.*
-import wisteria.*, derivationContext.relaxed
+import wisteria.*
 import anticipation.*
 import fulminate.*
 
@@ -31,68 +31,66 @@ trait TextConversion[-ValueType]:
   def apply(value: ValueType): Text
 
 trait Show[-ValueType] extends TextConversion[ValueType]
-trait Debug[-ValueType] extends TextConversion[ValueType]
+trait Debug[ValueType] extends TextConversion[ValueType]
 
 object Show:
   given specializable: Show[Specializable] = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
 object Debug:
-  inline given derived[ValueType]: Debug[ValueType] = new Debug[ValueType]:
-    def apply(value: ValueType): Text = compiletime.summonFrom:
-      case encoder: Encoder[ValueType] => encoder.encode(value)
-      case given Reflection[ValueType] => DebugDerivation.derived[ValueType](value)
-      case given Show[ValueType]       => value.show
-      case _                           => s"⧛${value.toString.tt}⧚".tt
+  inline given derived[ValueType]: Debug[ValueType] = compiletime.summonFrom:
+    case encoder: Encoder[ValueType]   => encoder.encode(_)
+    case given Reflection[ValueType]   => DebugDerivation.derived[ValueType](_)
+    case given Show[ValueType]         => _.show
+    case _                             => value => s"⸉${value.toString.tt}⸊".tt
 
-  given debugChar: Debug[Char] = char => ("'"+escape(char).s+"'").tt
-  given debugLong: Debug[Long] = long => (long.toString+"L").tt
-  given debugString: Debug[String] = string => debugText(string.tt).s.substring(1).nn.tt
-  given debugByte: Debug[Byte] = byte => (byte.toString+".toByte").tt
-  given debugShort: Debug[Short] = short => (short.toString+".toShort").tt
+  given char: Debug[Char] = char => ("'"+escape(char).s+"'").tt
+  given long: Debug[Long] = long => (long.toString+"L").tt
+  given string: Debug[String] = string => text(string.tt).s.substring(1).nn.tt
+  given byte: Debug[Byte] = byte => (byte.toString+".toByte").tt
+  given short: Debug[Short] = short => (short.toString+".toShort").tt
   
-  given debugText: Debug[Text] = text =>
+  given text: Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.map(escape(_, true)).each(builder.append)
     
     ("t\""+builder.toString+"\"").tt
   
-  given debugFloat: Debug[Float] =
+  given float: Debug[Float] =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
   
-  given debugDouble: Debug[Double] = 
+  given double: Debug[Double] = 
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
     case double                  => double.toString.tt
 
-  given debugBoolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
-  given debugReflectEnum: Debug[reflect.Enum] = _.toString.show
-  given debugPid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
+  given boolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
+  given reflectEnum: Debug[reflect.Enum] = _.toString.show
+  given pid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
-    case '\n' => "\\n".tt
-    case '\t' => "\\t".tt
-    case '\r' => "\\r".tt
-    case '\\' => "\\\\".tt
-    case '\"' => "\\\"".tt
-    case '\'' => "\\\'".tt
-    case '\b' => "\\b".tt
-    case '\f' => "\\f".tt
+    case '\n'                => "\\n".tt
+    case '\t'                => "\\t".tt
+    case '\r'                => "\\r".tt
+    case '\\'                => "\\\\".tt
+    case '\"'                => "\\\"".tt
+    case '\''                => "\\\'".tt
+    case '\b'                => "\\b".tt
+    case '\f'                => "\\f".tt
+    case '\u001b' if eEscape => "\\e".tt
     
-    case '\u001b' if eEscape =>
-      "\\e".tt
-    
-    case ch =>
-      if ch < 128 && ch >= 32 then ch.toString.tt else String.format("\\u%04x", ch.toInt).nn.tt
+    case char =>
+      if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
   given set[ElemType: Debug]: Debug[Set[ElemType]] = _.map(_.debug).mkString("{", ", ", "}").tt
-  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.debug).mkString("[", ", ", "]").tt
   given vector[ElemType: Debug]: Debug[Vector[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
-  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
+  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩ᵢ").tt
+  given iterable[ElemType: Debug]: Debug[Iterable[ElemType]] = _.map(_.debug).mkString("⦗", ", ", "⦘").tt
+  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.debug).mkString("[", ", ", "]").tt
   
   given array[ElemType: Debug]: Debug[Array[ElemType]] = array =>
     array.zipWithIndex.map: (value, index) =>
@@ -113,8 +111,8 @@ object Debug:
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.debug.s.tt
-    .mkString("⁅"+arrayPrefix(iarray.toString), "╱", "⁆").tt
-  
+    .mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
+ 
   private def renderBraille(str: String): String =
     ("0"*(str.length%2)+str).grouped(2).flatMap: pair =>
       (16*pair(0) + pair(1) - 39*(16*(pair(0)/48) + (pair(1)/48)) + 10087).toChar.toString
@@ -124,32 +122,36 @@ object Debug:
     val brackets = str.count(_ == '[')
     
     val arrayType = str(brackets) match
-      case 'B' => "𝔹" // Byte
-      case 'C' => "ℂ" // Char
-      case 'D' => "𝔻" // Double
-      case 'F' => "𝔽" // Float
-      case 'I' => "𝕀" // Int
-      case 'J' => "𝕁" // Long
-      case 'L' => "𝕃" // Object
-      case 'S' => "𝕊" // Short
-      case 'Z' => "ℤ" // Boolean
-      case _   => ""  // Unknown
+      case 'B' => "🅱" // Byte
+      case 'C' => "🅲" // Char
+      case 'D' => "🅳" // Double
+      case 'F' => "🅵" // Float
+      case 'I' => "🅸" // Int
+      case 'J' => "🅹" // Long
+      case 'L' => "🅻" // Object
+      case 'S' => "🆂" // Short
+      case 'Z' => "🆉" // Boolean
+      case _   => "🯄" // Unknown
     
     val dimension = if brackets < 2 then "".tt else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)).tt
     
-    arrayType+dimension+"¦"+renderBraille(str.split("@").nn(1).nn)+"¦"
+    arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
 
-  inline given option[ValueType]: Debug[Option[ValueType]] =
+  given option[ValueType: Debug]: Debug[Option[ValueType]] =
     case None        => "None".tt
     case Some(value) => s"Some(${value.debug.s})".tt
   
   given none: Debug[None.type] = none => "None".tt
+
+  given optional[ValueType](using debug: Debug[ValueType]): Debug[Optional[ValueType]] =
+    case Unset            => "⸄⸅".tt
+    case value: ValueType => s"⸂${debug(value)}⸃".tt
   
 object DebugDerivation extends Derivation[Debug]:
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
     fields(value):
       [FieldType] => field =>
-        val text = context.let(_.contextually(field.debug)).or(field.debug)
+        val text = context(field)
         if tuple then text else s"$label:$text"
     .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
@@ -194,8 +196,8 @@ object TextConversion:
   given none: Show[None.type] = none => "none".tt
   
 extension [ValueType](value: ValueType)
-  inline def show(using display: Show[ValueType]): Text = display(value)
-  inline def debug(using debug: Debug[ValueType]): Text = debug(value)
+  def show(using display: Show[ValueType]): Text = display(value)
+  def debug(using debug: Debug[ValueType]): Text = debug(value)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
