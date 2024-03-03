@@ -164,7 +164,7 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.TrueColor
-    override def width = columns
+    override def width: Int = columns.or(Int.MaxValue)
 
   given stdio: Stdio = new Stdio:
     val termcap = cap
