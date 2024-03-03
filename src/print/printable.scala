@@ -24,7 +24,6 @@ object Printable:
   given text: Printable[Text] = (text, termcap) => text
   given string: Printable[String] = (string, termcap) => string.tt
   given char: Printable[Char] = (char, termcap) => char.toString.tt
-  //given message: Printable[Message] = (message, termcap) => message.text
 
 object ColorCapability:
   def apply(colors: Int): ColorCapability = colors match
