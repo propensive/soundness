@@ -266,7 +266,7 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
           if index == 0 then
             BoxDrawing
               (top    = vertical(ascenders, style.sideLines),
-               right  = horizontal,
+               right  = horizontal.or(BoxLine.Blank),
                bottom = vertical(descenders, style.sideLines),
                left   = BoxLine.Blank)
           else if index == (width - 1) then
@@ -274,20 +274,20 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
               (top    = vertical(ascenders, style.sideLines),
                right  = BoxLine.Blank,
                bottom = vertical(descenders, style.sideLines),
-               left   = horizontal)
+               left   = horizontal.or(BoxLine.Blank))
           else
             BoxDrawing
               (top    = vertical(ascenders, style.innerLines),
-               right  = horizontal,
+               right  = horizontal.or(BoxLine.Blank),
                bottom = vertical(descenders, style.innerLines),
-               left   = horizontal)
+               left   = horizontal.or(BoxLine.Blank))
 
-    val topLine = rule(Unset, sections.head.widths)
+    val topLine = if style.topLine.absent then LazyList() else LazyList(rule(Unset, sections.head.widths))
     val midRule = rule(sections.head.widths, sections.head.widths)
-    val bottomLine = rule(sections.head.widths, Unset)
+    val bottomLine = if style.bottomLine.absent then LazyList() else LazyList(rule(sections.head.widths, Unset))
     val body = sections.to(LazyList).flatMap { section => midRule #:: recur(section.widths, section.rows) }
 
-    topLine #:: body.tail #::: LazyList(bottomLine)
+    topLine #::: body.tail #::: bottomLine
 
 case class Table[RowType, TextType: ClassTag](initColumns: Column[RowType, TextType]*)
     (using textual: Textual[TextType]):
