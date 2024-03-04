@@ -39,7 +39,7 @@ case class ScalacError() extends Error(msg"there was a compilation error")
 
 type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
 
-case class CompileOption[CompilerType <: ScalacVersions](flags: Text*)
+case class CompileOption[-CompilerType <: ScalacVersions](flags: Text*)
 
 enum Unused[CompilerType]:
   case All extends Unused[3.1 | 3.2 | 3.3]
