@@ -32,7 +32,7 @@ backOut() {
   if [ -f "$failFile" ]
   then
     test -t 0 && stty "$ttystate"
-    printf "The daemon process failed to start.\n" >&2
+    printf "\nThe %s daemon process failed to start.\n" "$name" >&2
     printf "Remove the file %s before trying again.\n" "$failFile" >&2
     exit 1
   fi
@@ -48,9 +48,11 @@ launch() {
   (nohup "$javaHome/bin/java" -Dethereal.name="$name" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2>&1 || abort) &
   launchPid=$!
 
-  while [[ ! -s "$portFile" ]]
+  while [[ ! -s "$portFile" ]] && [[ ! -f "$failFile" ]]
   do sleep 0.05
   done
+
+  backOut
 
   rm -f "$initFile"
   setup
