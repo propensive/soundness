@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import serpentine.*
 import fulminate.*
+import galilei.*, filesystemOptions.{dereferenceSymlinks}
 import spectacular.*
 import ambience.*
 import gossamer.*
@@ -107,6 +108,15 @@ extends Classpath:
       case ClasspathEntry.Jarfile(jarfile)     => List(jarfile)
       case _                                   => Nil
     .join(unsafely(Properties.path.separator()))
+
+  @targetName("append")
+  infix def + [PathType: GenericPath](path: PathType): LocalClasspath raises PathError raises IoError =
+    Path(path).pipe: path =>
+      val classpathEntry: ClasspathEntry.Directory | ClasspathEntry.Jarfile = path.entryType() match
+        case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
+        case _                    => ClasspathEntry.Jarfile(path.fullname)
+      
+      LocalClasspath(classpathEntry :: entries)
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
