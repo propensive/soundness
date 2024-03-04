@@ -105,6 +105,9 @@ object Path:
   given encoder: Encoder[Path] = _.render
   given debug: Debug[Path] = _.render
 
+  inline def apply[PathType: GenericPath](path: PathType): Path raises PathError =
+    Navigable.decode(path.pathText)
+
 sealed trait Path:
   this: Path =>
   
