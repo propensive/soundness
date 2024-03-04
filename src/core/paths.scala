@@ -45,6 +45,8 @@ import java.nio.channels as jnc
 type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
 object Path:
+  given genericPath: GenericPath[Path] = _.fullname
+
   inline given add(using path: Raises[PathError], followable: Followable[Link, GeneralForbidden, ?, ?])
           : AddOperator[Path, Link] with
 
