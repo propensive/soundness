@@ -173,8 +173,8 @@ object Link:
     case link: Windows.Link => link.render
     case link: SafeLink     => link.render
   
-  given encoder: Encoder[Link] = show(_)
-  given debug: Debug[Link] = show(_)
+  given encoder: Encoder[Link] = show.text(_)
+  given debug: Debug[Link] = show.text(_)
 
 sealed trait Link
 
