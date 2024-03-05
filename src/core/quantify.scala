@@ -313,11 +313,11 @@ object Quantitative extends Quantitative2:
 
     inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =
       new Show[Quantity[UnitsType]]:
-        def apply(value: Quantity[UnitsType]): Text = value.render
+        def text(value: Quantity[UnitsType]): Text = value.render
     
     inline given [UnitsType <: Measure](using Decimalizer): Debug[Quantity[UnitsType]] =
       new Debug[Quantity[UnitsType]]:
-        def apply(value: Quantity[UnitsType]): Text = value.render
+        def text(value: Quantity[UnitsType]): Text = value.render
   
     def renderUnits(units: Map[Text, Int]): Text =
       units.to(List).map: (unit, power) =>
