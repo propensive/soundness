@@ -36,10 +36,10 @@ case class Xy(x: Float, y: Float)
 case class DxDy(dx: Float, dy: Float)
 
 object DxDy:
-  given show: Show[DxDy] = value => t"${value.dx.toString} ${value.dy.toString}"
+  given encoder: Encoder[DxDy] = value => t"${value.dx.toString} ${value.dy.toString}"
 
 object Xy:
-  given show: Show[Xy] = value => t"${value.x.toString} ${value.y.toString}"
+  given encoder: Encoder[Xy] = value => t"${value.x.toString} ${value.y.toString}"
   
 object Savagery:
   opaque type Degrees = Double
@@ -51,7 +51,7 @@ object Savagery:
   object Degrees:
     def apply(degrees: Double): Degrees = degrees
 
-    given Show[Degrees] = _.toString.show
+    given encoder: Encoder[Degrees] = _.toString.tt
     
   extension (point: Xy)
     @targetName("plus")
@@ -67,9 +67,9 @@ object Savagery:
 export Savagery.{Degrees, SvgId}
 
 object Coords:
-  given Show[Coords] =
-    case Rel(vector) => vector.show
-    case Abs(point)  => point.show
+  given Encoder[Coords] =
+    case Rel(vector) => vector.encode
+    case Abs(point)  => point.encode
 
 enum Coords:
   case Rel(vector: DxDy)
@@ -92,7 +92,7 @@ enum PathOp:
 object PathOp:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
   
-  given Show[PathOp] =
+  given Encoder[PathOp] =
     case Move(coords)                => t"${coords.key('m')} $coords"
     case Line(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
     case Line(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
@@ -104,7 +104,7 @@ object PathOp:
     case Quadratic(ctrl1, coords)    => t"${coords.key('q')} ${ctrl1.option.get}, $coords"
     
     case Arc(rx, ry, angle, largeArc, sweep, coords) =>
-      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} $angle ${bit(largeArc)} ${bit(sweep)} $coords"
+      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep)} ${coords.encode}"
 
 case class Path
     (ops:       List[PathOp]       = Nil,
@@ -115,7 +115,7 @@ extends Shape:
   import PathOp.*
   
   def xml: Xml =
-    val d: Text = ops.reverse.map(_.show).join(t" ")
+    val d: Text = ops.reverse.map(_.encode).join(t" ")
     // FIXME
     unsafely(Xml.parse(t"""<path d="$d"/>"""))
   
