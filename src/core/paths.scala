@@ -63,8 +63,8 @@ object Path:
   
   given writableBytes(using io: Raises[IoError], streamCut: Raises[StreamError]): Writable[Path, Bytes] =
     Writable.outputStreamBytes.contramap: path =>
-      if !path.java.toFile.nn.canWrite then abort(IoError(path))
-      ji.BufferedOutputStream(ji.FileOutputStream(path.java.toFile, false))
+      if !path.stdlib.toFile.nn.canWrite then abort(IoError(path))
+      ji.BufferedOutputStream(ji.FileOutputStream(path.stdlib.toFile, false))
 
   given navigable: Navigable[Path, GeneralForbidden, Optional[Windows.Drive]] with
     def root(path: Path): Optional[Windows.Drive] = path match
@@ -115,17 +115,17 @@ sealed trait Path:
   
   def fullname: Text
   def name: Text
-  def java: jnf.Path = jnf.Path.of(fullname.s).nn
-  def exists(): Boolean = jnf.Files.exists(java)
-  def touch()(using Raises[IoError]): Unit = jnf.Files.write(java, Array[Byte]())
+  def stdlib: jnf.Path = jnf.Path.of(fullname.s).nn
+  def exists(): Boolean = jnf.Files.exists(stdlib)
+  def touch()(using Raises[IoError]): Unit = jnf.Files.write(stdlib, Array[Byte]())
   
   def wipe()(using deleteRecursively: DeleteRecursively)(using io: Raises[IoError]): Path = this.also:
-    deleteRecursively.conditionally(this)(jnf.Files.deleteIfExists(java))
+    deleteRecursively.conditionally(this)(jnf.Files.deleteIfExists(stdlib))
     
   def entryType()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Raises[IoError])
           : PathStatus =
     
-    try (jnf.Files.getAttribute(java, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
+    try (jnf.Files.getAttribute(stdlib, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
       case mode: Int => (mode & 61440) match
         case  4096 => PathStatus.Fifo
         case  8192 => PathStatus.CharDevice
@@ -309,32 +309,32 @@ sealed trait Entry:
   def stillExists(): Boolean = path.exists()
   
   def hidden()(using Raises[IoError]): Boolean =
-    try jnf.Files.isHidden(path.java) catch case error: ji.IOException => raise(IoError(path))(false)
+    try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path))(false)
   
   object readable:
-    def apply(): Boolean = jnf.Files.isReadable(path.java)
-    def update(status: Boolean): Unit = path.java.toFile.nn.setReadable(status)
+    def apply(): Boolean = jnf.Files.isReadable(path.stdlib)
+    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setReadable(status)
   
   object writable:
-    def apply(): Boolean = jnf.Files.isWritable(path.java)
-    def update(status: Boolean): Unit = path.java.toFile.nn.setWritable(status)
+    def apply(): Boolean = jnf.Files.isWritable(path.stdlib)
+    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setWritable(status)
   
   object executable:
-    def apply(): Boolean = jnf.Files.isExecutable(path.java)
-    def update(status: Boolean): Unit = path.java.toFile.nn.setExecutable(status)
+    def apply(): Boolean = jnf.Files.isExecutable(path.stdlib)
+    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setExecutable(status)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError]): Int =
-    try jnf.Files.getAttribute(path.java, "unix:nlink", dereferenceSymlinks.options()*) match
+    try jnf.Files.getAttribute(path.stdlib, "unix:nlink", dereferenceSymlinks.options()*) match
       case count: Int => count
       case _          => raise(IoError(path))(1)
     catch case error: IllegalArgumentException => raise(IoError(path))(1)
 
   def volume: Volume =
-    val fileStore = jnf.Files.getFileStore(path.java).nn
+    val fileStore = jnf.Files.getFileStore(path.stdlib).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
 
   def delete()(using deleteRecursively: DeleteRecursively, io: Raises[IoError]): Path =
-    try deleteRecursively.conditionally(path)(jnf.Files.delete(path.java)) catch
+    try deleteRecursively.conditionally(path)(jnf.Files.delete(path.stdlib)) catch
       case error: jnf.NoSuchFileException        => raise(IoError(path))(())
       case error: ji.FileNotFoundException       => raise(IoError(path))(())
       case error: ji.IOException                 => raise(IoError(path))(())
@@ -349,7 +349,7 @@ sealed trait Entry:
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createSymbolicLink(destination.java, path.java)
+        jnf.Files.createSymbolicLink(destination.stdlib, path.stdlib)
 
     destination
   
@@ -370,7 +370,7 @@ sealed trait Entry:
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.copy(path.java, destination.java, dereferenceSymlinks.options()*)
+        jnf.Files.copy(path.stdlib, destination.stdlib, dereferenceSymlinks.options()*)
 
     destination
       
@@ -398,12 +398,12 @@ sealed trait Entry:
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.move(path.java, destination.java, options*)
+        jnf.Files.move(path.stdlib, destination.stdlib, options*)
 
     destination
 
   def lastModified[InstantType: SpecificInstant]: InstantType =
-    SpecificInstant(jnf.Files.getLastModifiedTime(path.java).nn.toInstant.nn.toEpochMilli)
+    SpecificInstant(jnf.Files.getLastModifiedTime(path.stdlib).nn.toInstant.nn.toEpochMilli)
 
 object PathResolver:
   // given entry
@@ -423,7 +423,7 @@ object PathResolver:
           : PathResolver[File, Path] = path =>
 
     if path.exists() && path.entryType() == PathStatus.File then File(path)
-    else createNonexistent(path)(jnf.Files.createFile(path.java))
+    else createNonexistent(path)(jnf.Files.createFile(path.stdlib))
     
     File(path)
   
@@ -434,7 +434,7 @@ object PathResolver:
           : PathResolver[Directory, Path] = path =>
     if path.exists() && path.entryType() == PathStatus.Directory then Directory(path)
     else createNonexistent(path):
-      jnf.Files.createDirectory(path.java)
+      jnf.Files.createDirectory(path.stdlib)
     
     Directory(path)
 
@@ -449,7 +449,7 @@ object EntryMaker:
           : EntryMaker[Directory, Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
-        jnf.Files.createDirectory(path.java)
+        jnf.Files.createDirectory(path.stdlib)
     
     Directory(path)
   
@@ -459,7 +459,7 @@ object EntryMaker:
           : EntryMaker[Socket, Unix.Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
-        val address = java.net.UnixDomainSocketAddress.of(path.java).nn
+        val address = java.net.UnixDomainSocketAddress.of(path.stdlib).nn
         val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
         channel.bind(address)
         Socket(path, channel)
@@ -469,7 +469,7 @@ object EntryMaker:
           : EntryMaker[File, Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
-        jnf.Files.createFile(path.java)
+        jnf.Files.createFile(path.stdlib)
     
     File(path)
   
@@ -500,7 +500,7 @@ object Directory:
     jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
 case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
-  def children: LazyList[Path] = jnf.Files.list(path.java).nn.toScala(LazyList).map: child =>
+  def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
 
   def descendants(using DereferenceSymlinks, Raises[IoError], PathResolver[Directory, Path]): LazyList[Path] =
@@ -517,23 +517,23 @@ object File:
 
   given readableBytes(using streamCut: Raises[StreamError], io: Raises[IoError]): Readable[File, Bytes] =
     Readable.inputStream.contramap: file =>
-      try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.java))
+      try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
   
   given writableBytes(using io: Raises[IoError], streamCut: Raises[StreamError])
           : Writable[File, Bytes] =
     Writable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
-      ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, false))
+      ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, false))
 
   given appendableBytes(using io: Raises[IoError], streamCut: Raises[StreamError])
           : Appendable[File, Bytes] =
     Appendable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
-      ji.BufferedOutputStream(ji.FileOutputStream(file.path.java.toFile, true))
+      ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, true))
 
 case class File(path: Path) extends Unix.Entry, Windows.Entry:
-  def size(): ByteSize = jnf.Files.size(path.java).b
+  def size(): ByteSize = jnf.Files.size(path.stdlib).b
   
   def hardLinkTo(destination: Path)
       (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
@@ -542,7 +542,7 @@ case class File(path: Path) extends Unix.Entry, Windows.Entry:
     
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createLink(destination.java, path.java)
+        jnf.Files.createLink(destination.stdlib, path.stdlib)
 
     destination
 
@@ -663,7 +663,7 @@ package filesystemOptions:
         
         if path.exists() then
           if path.is[Directory] then path.as[Directory].children.each(conditionally(_)(()))
-          jnf.Files.delete(path.java)
+          jnf.Files.delete(path.stdlib)
         
         operation
           
@@ -691,7 +691,7 @@ package filesystemOptions:
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
          
           if !parent.exists() || !parent.is[Directory]
-          then jnf.Files.createDirectories(parent.java)
+          then jnf.Files.createDirectories(parent.stdlib)
       
         operation
 
