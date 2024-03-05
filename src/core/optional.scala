@@ -21,6 +21,8 @@ import fulminate.*
 
 import language.experimental.captureChecking
 
+import _root_.java.util as ju
+
 object Unset:
   override def toString(): String = "∅"
 
@@ -35,7 +37,8 @@ extension [ValueType](optional: Optional[ValueType])
     if absent then value else optional.asInstanceOf[ValueType]
   
   inline def vouch(using Unsafe): ValueType = or(throw Panic(msg"a value was vouched but was absent"))
-  
+
+  def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
   def presume(using default: Default[ValueType]): ValueType = or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
   
@@ -71,6 +74,15 @@ object Optional:
 extension [ValueType](option: Option[ValueType])
   inline def optional: Unset.type | ValueType = option.getOrElse(Unset)
   def presume(using default: Default[ValueType]) = option.getOrElse(default())
+
+extension [ValueType](value: ValueType)
+  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else value
+  
+  def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
+    (partial.orElse { _ => Unset })(value)
+
+extension [ValueType](java: ju.Optional[ValueType])
+  def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn
 
 erased trait Unsafe
 erased val Unsafe: Unsafe = compiletime.erasedValue
