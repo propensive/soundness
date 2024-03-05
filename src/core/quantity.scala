@@ -24,6 +24,8 @@ import vacuous.*
 import scala.collection.immutable.*
 import scala.quoted.*
 
+given Realm = realm"abacist"
+
 object Abacist:
 
   import Quantitative.*
