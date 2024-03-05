@@ -22,6 +22,8 @@ import scala.quoted.*
 import scala.compiletime.*
 import scala.collection.BuildFrom
 
+given Realm = realm"mercator"
+
 object Point:
   given Point[[T] =>> Either[?, T]] with
     def point[ValueType](value: ValueType): Either[Nothing, ValueType] = Right(value)
