@@ -94,7 +94,7 @@ trait Ansi2:
       def embed(value: ValueType) = Ansi.Input.TextInput:
         compiletime.summonFrom:
           case display: Displayable[ValueType] => display(value)
-          case show: Show[ValueType]           => Display(show(value))
+          case given Show[ValueType]           => Display(value.show)
   
 
 object Ansi extends Ansi2:

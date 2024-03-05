@@ -48,7 +48,7 @@ object Displayable:
     case Some(v) => summon[Displayable[T]](v)
   
   given show[ValueType](using show: Show[ValueType]): Displayable[ValueType] = value =>
-    Display(show(value))
+    Display(show.text(value))
 
   given exception(using TextMetrics): Displayable[Exception] = e =>
     summon[Displayable[StackTrace]](StackTrace.apply(e))
