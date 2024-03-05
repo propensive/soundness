@@ -24,7 +24,7 @@ import escapade.*
 import iridescence.*
 import vacuous.*
 import dendrology.*
-import escritoire.*
+import escritoire.*, insufficientSpaceHandling.ignore
 import spectacular.*
 import hieroglyph.*
 import anticipation.*
@@ -39,7 +39,7 @@ enum Semblance:
 object Semblance:
   given (using calc: TextMetrics): Displayable[Semblance] =
     case Semblance.Breakdown(cmp, l, r) =>
-      import tableStyles.horizontalGaps
+      import tableStyles.default
       
       def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
         case Identical(value)                   => Nil
@@ -48,7 +48,7 @@ object Semblance:
       
       case class Row(treeLine: Text, left: Display, right: Display, difference: Display)
 
-      given TreeStyle[Row] = (tiles, row) =>
+      given (using textual: Textual[Text]): TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
 
       def mkLine(data: (Text, Semblance)) =
@@ -67,12 +67,12 @@ object Semblance:
       
       val table = Table[Row](
         Column(e"")(_.treeLine),
-        Column(e"Expected", align = Alignment.Right)(_.left),
+        Column(e"Expected", textAlign = TextAlignment.Right)(_.left),
         Column(e"Found")(_.right),
         Column(e"Difference")(_.difference.or(e""))
       )
 
-      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine))(maxWidth = 200).join(e"\n")
+      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).layout(200).render.join(e"\n")
     
     case Different(left, right, difference) =>
       val whitespace = if right.contains('\n') then e"\n" else e" "
