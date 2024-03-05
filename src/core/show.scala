@@ -158,7 +158,7 @@ object DebugDerivation extends Derivation[Debug]:
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        context.let(_.contextually(variant.debug)).or(variant.debug)
+        context.let(_.give(variant.debug)).or(variant.debug)
 
 object TextConversion:
   given textualize[ValueType](using textualizer: Textualizer[ValueType]): Show[ValueType] =
