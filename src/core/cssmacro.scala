@@ -28,6 +28,8 @@ import scala.quoted.*
 import annotation.targetName
 import language.dynamics
 
+given Realm = realm"cataclysm"
+
 private[cataclysm] type Label = String & Singleton
 
 given decimalizer: Decimalizer = Decimalizer(6)
