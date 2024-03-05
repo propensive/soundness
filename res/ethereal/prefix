@@ -125,9 +125,9 @@ printf '%s\0' "${args[@]}" >&7
 printf "\n##\n" >&7
 env -0 >&7
 printf "\n##\n" >&7
-cat >&7 <&0 &
+cat >&7 <&0 2> /dev/null &
 stdoutPid=$!
-cat <&7 &
+cat <&7 2> /dev/null &
 pipePid=$!
 
 if [ "$stderr" = "1" ]
