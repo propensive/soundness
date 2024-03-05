@@ -36,7 +36,7 @@ import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import ju.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
 import java.lang as jl
 
-case class Base32Alphabet(chars: IArray[Char], padding: Char)
+case class Base32Alphabet(chars: IArray[Char], padding: Text)
 case class HexAlphabet(chars: IArray[Char])
 
 sealed trait HashScheme[Size <: Nat]
@@ -195,8 +195,9 @@ package hashFunctions:
 
 package alphabets:
   package base32:
-    given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, '=')
-    given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, '=')
+    given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
+    given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
+    given zBase32Unpadded: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
 
   package hex:
     given upperCase: HexAlphabet = HexAlphabet(t"0123456789ABCDEF".chars)
