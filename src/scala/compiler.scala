@@ -21,10 +21,13 @@ import galilei.*
 import contingency.*
 import fulminate.*
 import ambience.*
+import eucalyptus.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import hellenism.*
+
+given Realm = realm"anthology"
 
 import scala.collection.mutable as scm
 
@@ -101,7 +104,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties)
+      (using SystemProperties, Log[Text])
           : List[Diagnostic] raises ScalacError =
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
@@ -131,6 +134,8 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         //val jsParams = 
         val args: List[Text] =
           List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
+
+        Log.info(t"Running scalac with arguments: ${args.debug}")
         
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
