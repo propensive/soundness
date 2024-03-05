@@ -204,7 +204,7 @@ object JsonEncoderDerivation extends Derivation[JsonEncoder]:
   
   inline def split[DerivationType: SumReflection]: JsonEncoder[DerivationType] = value =>
     variant(value): [VariantType <: DerivationType] =>
-      value => summonInline[Raises[JsonAccessError]].contextually:
+      value => summonInline[Raises[JsonAccessError]].give:
         context.tag(label).encode(value)
 
 trait JsonEncoder[-ValueType]:
@@ -305,7 +305,7 @@ object JsonDecoder extends JsonDecoder2:
 
 object JsonDecoderDerivation extends Derivation[JsonDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Raises[JsonAccessError]].contextually:
+    summonInline[Raises[JsonAccessError]].give:
       val keyValues = json.obj
       val values = keyValues(0).zip(keyValues(1)).to(Map)
 
@@ -316,8 +316,8 @@ object JsonDecoderDerivation extends Derivation[JsonDecoder]:
           context.decode(value, omit)
   
   inline def split[DerivationType: SumReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Raises[JsonAccessError]].contextually:
-      summonInline[Raises[VariantError]].contextually:
+    summonInline[Raises[JsonAccessError]].give:
+      summonInline[Raises[VariantError]].give:
         val values = json.obj
         
         values(0).indexOf("_type") match
