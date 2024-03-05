@@ -333,7 +333,7 @@ object Interpolation:
   case class Input(txt: Text)
 
   given [ValueType](using show: Show[ValueType]): Insertion[Input, ValueType] =
-    value => Input(show(value))
+    value => Input(show.text(value))
 
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")

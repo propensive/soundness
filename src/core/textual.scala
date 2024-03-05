@@ -69,7 +69,7 @@ object Textual:
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
     
-    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show(value)
+    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
     
   // given string: Textual[String] with
   //   def string(string: String): String = string
