@@ -28,7 +28,7 @@ import scala.deriving.*
 import language.experimental.captureChecking
 
 trait TextConversion[-ValueType]:
-  def apply(value: ValueType): Text
+  def text(value: ValueType): Text
 
 trait Show[-ValueType] extends TextConversion[ValueType]
 trait Debug[ValueType] extends TextConversion[ValueType]
@@ -40,13 +40,13 @@ object Show:
 object Debug:
   inline given derived[ValueType]: Debug[ValueType] = compiletime.summonFrom:
     case encoder: Encoder[ValueType]   => encoder.encode(_)
-    case given Reflection[ValueType]   => DebugDerivation.derived[ValueType](_)
+    case given Reflection[ValueType]   => DebugDerivation.derived[ValueType].text(_)
     case given Show[ValueType]         => _.show
     case _                             => value => s"⸉${value.toString.tt}⸊".tt
 
   given char: Debug[Char] = char => ("'"+escape(char).s+"'").tt
   given long: Debug[Long] = long => (long.toString+"L").tt
-  given string: Debug[String] = string => text(string.tt).s.substring(1).nn.tt
+  given string: Debug[String] = string => text.text(string.tt).s.substring(1).nn.tt
   given byte: Debug[Byte] = byte => (byte.toString+".toByte").tt
   given short: Debug[Short] = short => (short.toString+".toShort").tt
   
@@ -145,13 +145,13 @@ object Debug:
 
   given optional[ValueType](using debug: Debug[ValueType]): Debug[Optional[ValueType]] =
     case Unset            => "⸄⸅".tt
-    case value: ValueType => s"⸂${debug(value)}⸃".tt
+    case value: ValueType => s"⸂${debug.text(value)}⸃".tt
   
 object DebugDerivation extends Derivation[Debug]:
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
     fields(value):
       [FieldType] => field =>
-        val text = context(field)
+        val text = context.text(field)
         if tuple then text else s"$label:$text"
     .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
@@ -177,7 +177,7 @@ object TextConversion:
   given boolean(using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
 
   given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
-    case Some(value) => show(value)
+    case Some(value) => show.text(value)
     case None        => "none".tt
   
   given uuid: Show[Uuid] = _.text
@@ -196,8 +196,8 @@ object TextConversion:
   given none: Show[None.type] = none => "none".tt
   
 extension [ValueType](value: ValueType)
-  def show(using display: Show[ValueType]): Text = display(value)
-  def debug(using debug: Debug[ValueType]): Text = debug(value)
+  def show(using show: Show[ValueType]): Text = show.text(value)
+  def debug(using debug: Debug[ValueType]): Text = debug.text(value)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
