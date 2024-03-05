@@ -190,7 +190,7 @@ extends Dynamic:
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
-  given GenericHttpRequestParam["content-type", MediaType] = show(_)
+  given GenericHttpRequestParam["content-type", MediaType] = show.text(_)
 
   given show: Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
