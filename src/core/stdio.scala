@@ -41,9 +41,12 @@ object Err:
 
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
   
-  def println[TextType](text: Termcap ?=> TextType)(using stdio: Stdio, printable: Printable[TextType]): Unit =
-    print(text(using stdio.termcap))
-    println()
+  def println[TextType](lines: Termcap ?=> TextType*)(using stdio: Stdio, printable: Printable[TextType]): Unit =
+    lines.map(_(using stdio.termcap)).pipe: lines =>
+      stdio.err.synchronized:
+        lines.foreach: line =>
+          print(line)
+          println()
   
   def println()(using Stdio): Unit = print("\n".tt)
 
@@ -56,9 +59,12 @@ object Out:
   
   def println()(using Stdio): Unit = print("\n".tt)
   
-  def println[TextType](text: Termcap ?=> TextType)(using stdio: Stdio, printable: Printable[TextType]): Unit =
-    print(text(using stdio.termcap))
-    println()
+  def println[TextType](lines: Termcap ?=> TextType*)(using stdio: Stdio, printable: Printable[TextType]): Unit =
+    lines.map(_(using stdio.termcap)).pipe: lines =>
+      stdio.out.synchronized:
+        lines.foreach: line =>
+          print(line)
+          println()
 
 object In:
   def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
