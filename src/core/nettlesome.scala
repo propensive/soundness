@@ -183,8 +183,8 @@ object Nettlesome:
 
     object TcpPort:
       erased given underlying: Underlying[TcpPort, Int] = ###
-      given show: Show[TcpPort] = port => TextConversion.int(port.number)
-      given encoder: Encoder[TcpPort] = port => TextConversion.int(port.number)
+      given show: Show[TcpPort] = port => TextConversion.int.text(port.number)
+      given encoder: Encoder[TcpPort] = port => TextConversion.int.text(port.number)
       
       given decoder(using Raises[NumberError], Raises[PortError]): Decoder[TcpPort] =
         text => apply(Decoder.int.decode(text))
@@ -196,8 +196,8 @@ object Nettlesome:
 
     object UdpPort:
       erased given underlying: Underlying[UdpPort, Int] = ###
-      given show: Show[UdpPort] = port => TextConversion.int(port.number)
-      given encoder: Encoder[UdpPort] = port => TextConversion.int(port.number)
+      given show: Show[UdpPort] = port => TextConversion.int.text(port.number)
+      given encoder: Encoder[UdpPort] = port => TextConversion.int.text(port.number)
       
       given decoder(using Raises[NumberError], Raises[PortError]): Decoder[UdpPort] =
         text => apply(Decoder.int.decode(text))

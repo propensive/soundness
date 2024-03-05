@@ -107,7 +107,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 object Url:
   given GenericUrl[HttpUrl] = _.show
   given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
-  given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show(_)
+  given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show.text(_)
   
   given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] =
     parse(_)
@@ -132,9 +132,9 @@ object Url:
     t"${url.scheme}:$auth${url.pathText}$rest"
   
   given display[SchemeType <: Label]: Displayable[Url[SchemeType]] =
-    url => e"$Underline(${Fg(0x00bfff)}(${show(url)}))"
+    url => e"$Underline(${Fg(0x00bfff)}(${show.text(url)}))"
 
-  given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show(url))
+  given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show.text(url))
 
   given action[SchemeType <: Label]: GenericHtmlAttribute["action", Url[SchemeType]] with
     def name: Text = t"action"
