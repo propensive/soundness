@@ -24,7 +24,7 @@ import spectacular.*
 import scala.quoted.*
 import scala.compiletime.ops.int.*
 
-object CountQuaques:
+object CountOpaques:
   opaque type Count[UnitsType <: Tuple] = Long
 
   object Count extends Count2:
@@ -81,7 +81,7 @@ object CountQuaques:
 
       count
 
-export CountQuaques.Count
+export CountOpaques.Count
 
 type TimeMinutes = (Hours[1], Minutes[1])
 type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
