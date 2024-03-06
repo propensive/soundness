@@ -54,10 +54,10 @@ object Tabulable extends ProductDerivation[[RowType] =>> Tabulable[RowType, Text
     Table[DerivationType](columns*)
   
   given Tabulable[Int, Text] = () =>
-    Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnSizing.Collapsible(0.3))(_.show))
+    Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
   
   given (using Decimalizer): Tabulable[Double, Text] = () =>
-    Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnSizing.Collapsible(0.3))(_.show))
+    Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
   
   given Tabulable[Text, Text] = () =>
-    Table[Text, Text](Column(t"", TextAlignment.Left, Unset, columnSizing.Prose)(identity))
+    Table[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))

@@ -21,14 +21,14 @@ import gossamer.*
 import vacuous.*
 import anticipation.*
 
-trait ColumnSizing:
+trait Columnar:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
   
   def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
           : IndexedSeq[TextType]
 
-package columnSizing:
-  object Prose extends ColumnSizing:
+package columnar:
+  object Prose extends Columnar:
     def width[TextType](lines: IArray[TextType], maxWidth: Int, slack: Double)(using textual: Textual[TextType])
             : Optional[Int] =
 
@@ -60,7 +60,7 @@ package columnSizing:
       
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
-  case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
+  case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
     
@@ -71,7 +71,7 @@ package columnSizing:
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
 
-  case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends ColumnSizing:
+  case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
@@ -83,7 +83,7 @@ package columnSizing:
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
 
-  case class Collapsible(threshold: Double) extends ColumnSizing:
+  case class Collapsible(threshold: Double) extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 

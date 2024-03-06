@@ -98,7 +98,7 @@ object Column:
       (title:         TextType,
        textAlign:     Optional[TextAlignment]     = Unset,
        verticalAlign: Optional[VerticalAlignment] = Unset,
-       sizing:        ColumnSizing                = columnSizing.Prose)
+       sizing:        Columnar                    = columnar.Prose)
       (get: RowType -> CellType)
       (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
       (using textual.ShowType[CellType])
@@ -114,7 +114,7 @@ case class Column[RowType, TextType: Textual]
      get:           RowType => TextType,
      textAlign:     TextAlignment,
      verticalAlign: VerticalAlignment,
-     sizing:        ColumnSizing):
+     sizing:        Columnar):
   
   def contramap[RowType2](lambda: RowType2 => RowType): Column[RowType2, TextType] =
     Column[RowType2, TextType](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
