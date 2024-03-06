@@ -111,8 +111,8 @@ def daemon[BusType <: Matchable](using executive: Executive)
   def client(socket: jn.Socket)
       (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
         : Unit =
+    
     Async:
-
       val in = socket.getInputStream.nn
       val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
 
