@@ -154,9 +154,12 @@ extends Cli:
                 case description: Text    => t"$text\t$description"
                 case description: Display => t"$text\t${description.plain}"
       
-case class Execution(execute: CliInvocation => ExitStatus)
+case class Execution(exitStatus: ExitStatus)
 
-def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus): Execution = Execution(block(using ###)(using _))
+def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus)(using cli: Cli): Execution =
+  (cli: @unchecked) match
+    case completion: CliCompletion => Execution(ExitStatus.Ok)
+    case invocation: CliInvocation => Execution(block(using ###)(using invocation))
 
 def explain(explanation: (previous: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
@@ -195,4 +198,4 @@ package executives:
         ExitStatus.Ok
 
       case invocation: CliInvocation =>
-        handler.handle(execution(using invocation).execute(invocation))(using invocation.stdio)
+        handler.handle(execution(using invocation).exitStatus)(using invocation.stdio)
