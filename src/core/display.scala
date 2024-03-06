@@ -56,9 +56,9 @@ object Displayable:
   given error: Displayable[Error] = _.message.display
 
   given (using TextMetrics): Displayable[StackTrace] = stack =>
-    val methodWidth = stack.frames.map(_.method.method.length).max
-    val classWidth = stack.frames.map(_.method.className.length).max
-    val fileWidth = stack.frames.map(_.file.length).max
+    val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
+    val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
     
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
