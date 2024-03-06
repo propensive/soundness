@@ -206,6 +206,8 @@ object Timing:
 
 
   object Instant:
+    def apply[InstantType: GenericInstant](instant: InstantType): Instant = of(instant.millisecondsSinceEpoch)
+
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
     
