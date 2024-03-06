@@ -22,6 +22,8 @@ import contingency.*
 import fulminate.*
 import ambience.*
 import eucalyptus.*
+import turbulence.*
+import parasite.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
@@ -29,9 +31,8 @@ import hellenism.*
 
 given Realm = realm"anthology"
 
-import scala.collection.mutable as scm
-
 import dotty.tools.*, dotc.*, reporting.*, interfaces as dtdi, util as dtdu, core.*
+import dotty.tools.dotc.sbt.interfaces as dtdsi
 
 import language.adhocExtensions
 
@@ -60,6 +61,8 @@ enum UnusedFeature[CompilerType](val name: Text):
 
 package scalacOptions:
   val newSyntax = CompileOption[ScalacVersions](t"-new-syntax")
+  def sourceFuture = CompileOption[ScalacVersions](t"-source", t"future")
+  val experimental = CompileOption[3.4](t"-experimental")
 
   package warnings:
     val feature = CompileOption[ScalacVersions](t"-feature")
@@ -85,31 +88,48 @@ package scalacOptions:
 
   package language:
     package experimental:
-      val clauseInterleaving = CompileOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
-      val givenLoopPrevention = CompileOption[3.4](t"-language:experimental.givenLoopPrevention")
-      val fewerBraces = CompileOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
-      val into = CompileOption[3.4](t"-language:experimental.into")
+      val clauseInterleaving =      CompileOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
+      val givenLoopPrevention =     CompileOption[3.4](t"-language:experimental.givenLoopPrevention")
+      val fewerBraces =             CompileOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
+      val into =                    CompileOption[3.4](t"-language:experimental.into")
       val relaxedExtensionImports = CompileOption[3.3](t"-language:experimental.relaxedExtensionImports")
-      val erasedDefinitions = CompileOption[ScalacVersions](t"-language:experimental.erasedDefinitions")
-      val saferExceptions = CompileOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
-      val namedTypeArguments = CompileOption[ScalacVersions](t"-language:experimental.namedTypeArguments")
-      val pureFunctions = CompileOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
-      val captureChecking = CompileOption[3.3 | 3.4](t"-language:experimental.captureChecking")
+      val erasedDefinitions =       CompileOption[ScalacVersions](t"-language:experimental.erasedDefinitions")
+      val genericNumberLiterals =   CompileOption[ScalacVersions](t"-language:experimental.genericNumberLiterals")
+      val saferExceptions =         CompileOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
+      val namedTypeArguments =      CompileOption[ScalacVersions](t"-language:experimental.namedTypeArguments")
+      val pureFunctions =           CompileOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
+      val captureChecking =         CompileOption[3.3 | 3.4](t"-language:experimental.captureChecking")
 
 object Scalac:
   var Scala3: Compiler = new Compiler()
+
+enum Importance:
+  case Info, Warning, Error
+
+object Notice:
+  def apply(diagnostic: Diagnostic): Notice =
+    val importance: Importance = Importance.fromOrdinal(diagnostic.level)
+    val message: Text = diagnostic.message.tt
+    val content: Text = diagnostic.position.map(_.nn.lineContent.nn.tt).nn.orElse(t"").nn
+    
+    Notice(importance, message, content)
+
+case class Notice(importance: Importance, message: Text, code: Text)
 
 case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text])
-          : List[Diagnostic] raises ScalacError =
+      (using SystemProperties, Log[Text], Monitor)
+          : ScalacProcess raises ScalacError =
+    
+    val scalacProcess: ScalacProcess = ScalacProcess()
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-      val errors: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
-      def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit = errors += diagnostic
+      def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit =
+        Log.fine(Notice(diagnostic).debug)
+        scalacProcess.put(Notice(diagnostic))
     
     given (ScalacError fixes SystemPropertyError) =
       case SystemPropertyError(_) => ScalacError()
@@ -122,10 +142,24 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
     val callbackApi = new dtdi.CompilerCallback:
       override def onClassGenerated
           (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
-            : Unit =
-        ()
+              : Unit =
+
+        return ()
         
       override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
+    
+    val progressApi = new dtdsi.ProgressCallback:
+      private var last: Int = -1
+      override def informUnitStarting(stage: String, unit: CompilationUnit): Unit = ()
+      
+      override def progress(current: Int, total: Int, currentStage: String, nextStage: String): Boolean =
+        val int = (100.0*current/total).toInt
+        
+        if int > last then
+          last = int
+          scalacProcess.put(CompileProgress(last/100.0, currentStage.tt))
+        
+        true
       
     object driver extends dotc.Driver:
       val currentCtx =
@@ -135,40 +169,49 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val args: List[Text] =
           List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
 
-        Log.info(t"Running scalac with arguments: ${args.debug}")
-        
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
-      def run(classpath: LocalClasspath): List[Diagnostic] =
-        val ctx = currentCtx.fresh
-          
-        val ctx2 =
-          ctx
-            .setReporter(reporter)
-            .setCompilerCallback(callbackApi)
-            .setSetting(ctx.settings.language, Nil)
-            .setSetting(ctx.settings.classpath, classpath().s)
-          
+      def run(): ScalacProcess =
+        given Contexts.Context = currentCtx.fresh.pipe: ctx =>
+          ctx.setReporter(reporter).setCompilerCallback(callbackApi).setProgressCallback(progressApi)
+        
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
           
-        Scalac.Scala3.newRun(using ctx2).tap: run =>
-          run.compileSources(sourceFiles)
-          if !reporter.hasErrors then finish(Scalac.Scala3, run)(using ctx2)
-          
-        reporter.errors.to(List)
-      
-    driver.run(classpath)
-          
+        Async:
+          Scalac.Scala3.newRun.tap: run =>
+            run.compileSources(sourceFiles)
+            if !reporter.hasErrors then finish(Scalac.Scala3, run)
             
-enum CompileResult:
-  case Success(warnings: List[Text])
-  case Failure(errors: List[Text])
-  case Crash(details: Text)
-  case Aborted
+            scalacProcess.put:
+              if reporter.hasErrors then CompileResult.Failed else CompileResult.Succeeded
 
-enum Syntax:
-  case Old, New
+        scalacProcess
+      
+    driver.run()
+
+case class CompileProgress(complete: Double, stage: Text)
+
+class ScalacProcess():
+  private val completion: Promise[CompileResult] = Promise()
+  private val noticesFunnel: Funnel[Notice] = Funnel()
+  private val progressFunnel: Funnel[CompileProgress] = Funnel()
+
+  def put(notice: Notice): Unit = noticesFunnel.put(notice)
+  def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
+  def put(result: CompileResult): Unit = completion.offer(result)
+
+  def complete()(using Log[Text]): CompileResult raises CancelError =
+    completion.await().also:
+      noticesFunnel.stop()
+      progressFunnel.stop()
+
+  lazy val progress: LazyList[CompileProgress] = progressFunnel.stream
+  lazy val notices: LazyList[Notice] = noticesFunnel.stream
+
+enum CompileResult:
+  case Failed
+  case Succeeded
 
 enum WarningFlag:
   case Deprecation, Feature
