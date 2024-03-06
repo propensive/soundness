@@ -43,7 +43,7 @@ import spectacular.*
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 import java.net as jn
 import java.io as ji
