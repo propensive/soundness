@@ -64,7 +64,6 @@ trait StderrSupport:
 
 case class ClientConnection[BusType <: Matchable]
     (pid:         Pid,
-     async:       Async[Unit],
      signals:     Funnel[Signal],
      terminate:   Promise[Unit],
      close:       () => Unit,
@@ -112,113 +111,113 @@ def daemon[BusType <: Matchable](using executive: Executive)
   def client(socket: jn.Socket)
       (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
         : Unit =
+    Async:
 
-    val in = socket.getInputStream.nn
-    val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
+      val in = socket.getInputStream.nn
+      val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
 
-    def line(): Text = reader.readLine().nn.tt
-    
-    def chunk(): Text =
-      var buffer: Text = line()
-      var current: Text = t""
+      def line(): Text = reader.readLine().nn.tt
       
-      while
-        current = line()
-        current != t"##"
-      do buffer += t"\n$current"
-      
-      buffer
-
-    val message: Optional[DaemonEvent] = line() match
-      case t"e" =>
-        val pid: Pid = line().decodeAs[Pid]
-        DaemonEvent.Stderr(pid)
-
-      case t"s" =>
-        val pid: Pid = line().decodeAs[Pid]
-        val signal: Signal = line().decodeAs[Signal]
-        DaemonEvent.Trap(pid, signal)
-      
-      case t"x" =>
-        DaemonEvent.Exit(line().decodeAs[Pid])
-      
-      case t"i" =>
-        val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
-        val pid: Pid = Pid(line().decodeAs[Int])
-        val script: Text = line()
-        val pwd: Text = line()
-        val argCount: Int = line().decodeAs[Int]
-        val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
-        val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
-
-        DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
-      
-      case _ =>
-        Unset
-    
-    message match
-      case Unset =>
-        Log.warn(t"Received unrecognized message")
-        socket.close()
-
-      case DaemonEvent.Trap(pid, signal) =>
-        Log.fine(t"Received signal $signal")
-        clients(pid).signals.put(signal)
-        socket.close()
-      
-      case DaemonEvent.Exit(pid) =>
-        Log.fine(t"Received exit status request from $pid")
-        val exitStatus: ExitStatus = clients(pid).exitPromise.await()
+      def chunk(): Text =
+        var buffer: Text = line()
+        var current: Text = t""
         
-        socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
-        socket.close()
-        clients -= pid
-        if terminatePid() == pid then termination
+        while
+          current = line()
+          current != t"##"
+        do buffer += t"\n$current"
+        
+        buffer
+
+      val message: Optional[DaemonEvent] = line() match
+        case t"e" =>
+          val pid: Pid = line().decodeAs[Pid]
+          DaemonEvent.Stderr(pid)
+
+        case t"s" =>
+          val pid: Pid = line().decodeAs[Pid]
+          val signal: Signal = line().decodeAs[Signal]
+          DaemonEvent.Trap(pid, signal)
+        
+        case t"x" =>
+          DaemonEvent.Exit(line().decodeAs[Pid])
+        
+        case t"i" =>
+          val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
+          val pid: Pid = Pid(line().decodeAs[Int])
+          val script: Text = line()
+          val pwd: Text = line()
+          val argCount: Int = line().decodeAs[Int]
+          val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
+          val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
+
+          DaemonEvent.Init(pid, pwd, script, cliInput, textArguments, environment)
+        
+        case _ =>
+          Unset
       
-      case DaemonEvent.Stderr(pid) =>
-        Log.fine(t"Received STDERR connection request from $pid")
-        clients(pid).stderr.offer(socket.getOutputStream.nn)
+      message match
+        case Unset =>
+          Log.warn(t"Received unrecognized message")
+          socket.close()
 
-      case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
-        Log.envelop(pid):
-          Log.fine(t"Received init")
-          val promise: Promise[Unit] = Promise()
-          val exitPromise: Promise[ExitStatus] = Promise()
-          val signalFunnel: Funnel[Signal] = Funnel()
-          val busFunnel: Funnel[BusType] = Funnel()
-          val stderrPromise: Promise[ji.OutputStream] = Promise()
+        case DaemonEvent.Trap(pid, signal) =>
+          Log.fine(t"Received signal $signal")
+          clients(pid).signals.put(signal)
+          socket.close()
+        
+        case DaemonEvent.Exit(pid) =>
+          Log.fine(t"Received exit status request from $pid")
+          val exitStatus: ExitStatus = clients(pid).exitPromise.await()
+          
+          socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
+          socket.close()
+          clients -= pid
+          if terminatePid() == pid then termination
+        
+        case DaemonEvent.Stderr(pid) =>
+          Log.fine(t"Received STDERR connection request from $pid")
+          clients(pid).stderr.offer(socket.getOutputStream.nn)
 
-          val lazyStderr: ji.OutputStream =
-            if !stderrSupport() then socket.getOutputStream.nn
-            else new ji.OutputStream():
-              private lazy val wrapped = stderrPromise.await()
-              def write(i: Int): Unit = wrapped.write(i)
-              override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
+        case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
+          Log.envelop(pid):
+            Log.fine(t"Received init")
+            val promise: Promise[Unit] = Promise()
+            val exitPromise: Promise[ExitStatus] = Promise()
+            val signalFunnel: Funnel[Signal] = Funnel()
+            val busFunnel: Funnel[BusType] = Funnel()
+            val stderrPromise: Promise[ji.OutputStream] = Promise()
+
+            val lazyStderr: ji.OutputStream =
+              if !stderrSupport() then socket.getOutputStream.nn
+              else new ji.OutputStream():
+                private lazy val wrapped = stderrPromise.await()
+                def write(i: Int): Unit = wrapped.write(i)
+                override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
+                
+                override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+                  wrapped.write(bytes, offset, length)
+    
+            val environment: Environment = LazyEnvironment(env)
+
+            val termcap: Termcap = new Termcap:
+              def ansi: Boolean = true
               
-              override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
-                wrapped.write(bytes, offset, length)
-  
-          val environment: Environment = LazyEnvironment(env)
+              val color: ColorCapability =
+                import workingDirectories.default
+                ColorCapability(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
 
-          val termcap: Termcap = new Termcap:
-            def ansi: Boolean = true
+            val stdio: Stdio =
+              Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
             
-            val color: ColorCapability =
-              import workingDirectories.default
-              ColorCapability(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
-
-          val stdio: Stdio =
-            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
-          
-          def deliver(sourcePid: Pid, message: BusType): Unit = clients.each: (pid, client) =>
-            if sourcePid != pid then client.receive(message)
-  
-          val client: DaemonService[BusType] =
-            DaemonService[BusType](pid, () => shutdown(pid), shellInput, scriptName.decodeAs[Unix.Path],
-                deliver(pid, _), busFunnel.stream, name)
-          val workingDirectory: WorkingDirectory = () => directory
-          
-          val async = Async:
+            def deliver(sourcePid: Pid, message: BusType): Unit = clients.each: (pid, client) =>
+              if sourcePid != pid then client.receive(message)
+    
+            val client: DaemonService[BusType] =
+              DaemonService[BusType](pid, () => shutdown(pid), shellInput, scriptName.decodeAs[Unix.Path],
+                  deliver(pid, _), busFunnel.stream, name)
+            val workingDirectory: WorkingDirectory = () => directory
+            
             Log.pin()
             Log.info(t"Creating new CLI")
             try
@@ -240,9 +239,9 @@ def daemon[BusType <: Matchable](using executive: Executive)
             finally
               socket.close()
               Log.fine(t"Closed connection to ${pid.value}")
-        
-          clients(pid) = ClientConnection[BusType](pid, async, signalFunnel, promise, () => socket.close(),
-              exitPromise, busFunnel, stderrPromise)
+          
+            clients(pid) = ClientConnection[BusType](pid, signalFunnel, promise, () => socket.close(),
+                exitPromise, busFunnel, stderrPromise)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.virtualMachine.ansi
