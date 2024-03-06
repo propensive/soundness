@@ -82,7 +82,6 @@ object Installer:
     given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes NumberError) = _ => InstallError(InstallError.Reason.Environment)
     
-    given (InstallError fixes NotFoundError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Io)
     given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
