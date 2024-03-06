@@ -21,9 +21,10 @@ import galilei.*
 import contingency.*
 import fulminate.*
 import ambience.*
+import parasite.*
 import eucalyptus.*
 import turbulence.*
-import parasite.*
+import vacuous.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
@@ -148,7 +149,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         
       override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
     
-    val progressApi = new dtdsi.ProgressCallback:
+    object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
       override def informUnitStarting(stage: String, unit: CompilationUnit): Unit = ()
       
@@ -159,7 +160,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
           last = int
           scalacProcess.put(CompileProgress(last/100.0, currentStage.tt))
         
-        true
+        scalacProcess.continue
       
     object driver extends dotc.Driver:
       val currentCtx =
@@ -173,7 +174,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         
       def run(): ScalacProcess =
         given Contexts.Context = currentCtx.fresh.pipe: ctx =>
-          ctx.setReporter(reporter).setCompilerCallback(callbackApi).setProgressCallback(progressApi)
+          ctx.setReporter(reporter).setCompilerCallback(callbackApi).setProgressCallback(ProgressApi)
         
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
@@ -185,7 +186,8 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
             
             scalacProcess.put:
               if reporter.hasErrors then CompileResult.Failed else CompileResult.Succeeded
-
+          .unit
+  
         scalacProcess
       
     driver.run()
@@ -193,6 +195,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
 case class CompileProgress(complete: Double, stage: Text)
 
 class ScalacProcess():
+  private[anthology] var continue: Boolean = true
   private val completion: Promise[CompileResult] = Promise()
   private val noticesFunnel: Funnel[Notice] = Funnel()
   private val progressFunnel: Funnel[CompileProgress] = Funnel()
@@ -205,6 +208,9 @@ class ScalacProcess():
     completion.await().also:
       noticesFunnel.stop()
       progressFunnel.stop()
+  
+  def abort(): Unit = continue = false
+  def cancelled: Boolean = continue == false
 
   lazy val progress: LazyList[CompileProgress] = progressFunnel.stream
   lazy val notices: LazyList[Notice] = noticesFunnel.stream
