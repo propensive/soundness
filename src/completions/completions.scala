@@ -125,6 +125,8 @@ extends Cli:
               case description: Display =>
                 sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l $hiddenParam -- $text"
             
+            val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
+              
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
                 case Unset             =>
@@ -136,7 +138,7 @@ extends Cli:
                 case description: Display =>
                   sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l -n -- $text"
             
-            mainLine :: aliasLines
+            mainLine :: duplicateLine ::: aliasLines
         
         (title ++ itemLines).map(_.arguments.join(t"\t"))
             
