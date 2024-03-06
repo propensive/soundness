@@ -81,7 +81,7 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
         try
-          val result = eval(child)
+          val result = evaluate(using child)
           stateRef.set(Completed(result))
         catch case NonFatal(error) => stateRef.set(Failed(error))
         finally
@@ -96,8 +96,7 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
     
     monitor.supervisor.newThread(runnable)
   
-  private def identifier: Text = Text(s"${codepoint.text}")
-  private def eval(monitor: Submonitor[ResultType]): ResultType = evaluate(using monitor)
+  private def identifier: Text = s"${codepoint.text}".tt
 
   def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
   def state(): AsyncState[ResultType] = stateRef.get().nn
