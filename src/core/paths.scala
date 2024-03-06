@@ -38,6 +38,7 @@ import scala.jdk.StreamConverters.*
 import java.io as ji
 import java.nio as jn
 import java.nio.file as jnf
+import java.nio.file.attribute as jnfa
 import java.nio.channels as jnc
 
 //import language.experimental.captureChecking
@@ -308,6 +309,10 @@ sealed trait Entry:
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
   
+  def touch()(using Raises[IoError]): Unit =
+    try jnf.Files.setLastModifiedTime(path.stdlib, jnfa.FileTime.fromMillis(System.currentTimeMillis))
+    catch case error: ji.IOException => raise(IoError(path))(())
+  
   def hidden()(using Raises[IoError]): Boolean =
     try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path))(false)
   
@@ -407,14 +412,14 @@ sealed trait Entry:
 
 object PathResolver:
   // given entry
-  //     (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError], notFound: Raises[NotFoundError])
+  //     (using dereferenceSymlinks: DereferenceSymlinks, io: Raises[IoError])
   //     : PathResolver[Entry, Path] =
   //   new PathResolver[Entry, Path]:
   //     def apply(path: Path): Entry =
   //       if path.exists() then path.entryType() match
   //         case PathStatus.Directory => Directory(path)
   //         case _                    => File(path)
-  //       else raise(NotFoundError(path))(Directory(path))
+  //       else raise(IoError(path))(Directory(path))
 
   given file
       (using createNonexistent:   CreateNonexistent,
@@ -505,7 +510,7 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
 
   def descendants(using DereferenceSymlinks, Raises[IoError], PathResolver[Directory, Path]): LazyList[Path] =
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
-    
+  
   @targetName("child")
   infix def / (name: PathName[GeneralForbidden]): Path = path / name
   
@@ -653,7 +658,7 @@ package filesystemOptions:
   given doNotCopyAttributes: CopyAttributes with
     def options(): List[jnf.CopyOption] = Nil
 
-  given deleteRecursively(using io: Raises[IoError], notFound: Raises[NotFoundError])
+  given deleteRecursively(using io: Raises[IoError])
           : DeleteRecursively =
 
     new DeleteRecursively:
@@ -695,12 +700,11 @@ package filesystemOptions:
       
         operation
 
-  given doNotCreateNonexistentParents(using notFound: Raises[NotFoundError])
-          : CreateNonexistentParents =
+  given doNotCreateNonexistentParents(using io: Raises[IoError]): CreateNonexistentParents =
 
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: ji.FileNotFoundException => abort(NotFoundError(path))
+        try operation catch case error: ji.FileNotFoundException => abort(IoError(path))
 
   given createNonexistent(using createNonexistentParents: CreateNonexistentParents)
           : CreateNonexistent =
@@ -718,10 +722,7 @@ package filesystemOptions:
     def options(): List[jnf.StandardOpenOption] = Nil
 
 
-case class IoError(path: Path) extends Error(msg"an I/O error occurred")
-
-case class NotFoundError(path: Path)
-extends Error(msg"no filesystem node was found at the path $path")
+case class IoError(path: Path) extends Error(msg"an I/O error occurred involving $path")
 
 case class OverwriteError(path: Path)
 extends Error(msg"cannot overwrite a pre-existing filesystem node $path")
