@@ -144,8 +144,7 @@ object Debug:
   given none: Debug[None.type] = none => "None".tt
 
   given optional[ValueType](using debug: Debug[ValueType]): Debug[Optional[ValueType]] =
-    case Unset            => "⸄⸅".tt
-    case value: ValueType => s"⸂${debug.text(value)}⸃".tt
+    _.let { value => s"⸂${debug.text(value)}⸃".tt }.or("⸄⸅".tt)
   
 object DebugDerivation extends Derivation[Debug]:
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
