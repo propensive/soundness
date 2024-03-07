@@ -45,7 +45,7 @@ object Async:
     Hook(thread)
 
   def race[AsyncType](asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor): Async[AsyncType] =
-    Async[Int]:
+    async[Int]:
       val promise: Promise[Int] = Promise()
       
       asyncs.zipWithIndex.foreach: (async, index) =>
@@ -66,18 +66,25 @@ package threadModels:
   given virtual: ThreadModel = () => VirtualSupervisor
   given daemon: ThreadModel = () => DaemonSupervisor
 
+def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint): Async[Unit] =
+  Async[Unit](evaluate, daemon = true)
+
+def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, Codepoint)
+        : Async[ResultType] =
+
+  Async(evaluate, daemon = false)
+
 @capability
-class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
+class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean)
     (using monitor: Monitor, codepoint: Codepoint):
-  async =>
   
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
   def covenant: Covenant[ResultType | Promise.Special] = promise
 
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
-  private final val thread: Thread^{async} =
-    def runnable: Runnable^{async} = () =>
+  private final val thread: Thread^{this} =
+    def runnable: Runnable^{this} = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
         try
@@ -129,18 +136,18 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
     case other        => other
 
   def map[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
-    Async(lambda(async.await()))
+    async(lambda(await()))
   
   def foreach[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
-    Async(lambda(async.await()))
+    async(lambda(await()))
   
   def each[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
-    Async(lambda(async.await()))
+    async(lambda(await()))
   
   def flatMap[ResultType2](lambda: ResultType => Async[ResultType2])(using Raises[CancelError])
           : Async[ResultType2] =
 
-    Async(lambda(await()).await())
+    async(lambda(await()).await())
   
   def cancel(): Unit =
     thread.interrupt()
@@ -161,4 +168,4 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
 
 extension [ResultType](asyncs: Seq[Async[ResultType]]^)
   def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
-    Async(asyncs.map(_.await()))
+    async(asyncs.map(_.await()))

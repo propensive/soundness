@@ -36,11 +36,12 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
   def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
 
   def cancel(): Unit =
-    promise.cancel()
     children.each: (id, child) =>
       child match
         case child: Monitor => child.cancel()
         case _              => ()
+    
+    promise.cancel()
 
   def terminate(): Unit = this match
     case supervisor: Supervisor                         => supervisor.cancel()
