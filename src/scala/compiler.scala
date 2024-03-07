@@ -179,7 +179,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
           
-        Async:
+        async:
           Scalac.Scala3.newRun.tap: run =>
             run.compileSources(sourceFiles)
             if !reporter.hasErrors then finish(Scalac.Scala3, run)
