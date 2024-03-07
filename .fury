@@ -11,6 +11,7 @@
 ecosystem vent 3 https://github.com/propensive/vent main
 
 command build jacinta/core
+  description  Build the project
 
 project jacinta
   name         Jacinta
