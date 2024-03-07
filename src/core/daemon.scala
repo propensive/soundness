@@ -112,7 +112,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
       (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
         : Unit =
     
-    Async:
+    async:
       val in = socket.getInputStream.nn
       val reader = ji.BufferedReader(ji.InputStreamReader(in, "UTF-8"))
 
@@ -256,12 +256,12 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       Log.pin()
 
-      Async:
+      daemon:
         sh"flock -u -x -n $portFile cat".exec[Unit]()
         Log.info(t"The file $portFile was changed; terminating immediately")
         termination
 
-      Async:
+      daemon:
         safely(baseDir.watch()).let: watcher =>
           watcher.stream.each:
             case Delete(_, t"port") =>
