@@ -67,7 +67,7 @@ class StandardKeyboard()(using Monitor) extends Keyboard:
 
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
     case '\u001b' #:: rest =>
-      safely(Async(rest.head).await(30L)) match
+      safely(async(rest.head).await(30L)) match
         case Unset => Keypress.Escape #:: process(rest)
         case _ => rest match
           case 'O' #:: key #:: rest => Keypress.FunctionKey(key.toInt - 79) #:: process(rest)
