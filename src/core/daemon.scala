@@ -81,7 +81,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
   
   def variable(key: Text): Optional[Text] = map.get(key).getOrElse(Unset)
 
-def daemon[BusType <: Matchable](using executive: Executive)
+def cliService[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
     (using interpreter:   CliInterpreter,
            stderrSupport: StderrSupport = daemonConfig.supportStderr,
@@ -105,7 +105,7 @@ def daemon[BusType <: Matchable](using executive: Executive)
     System.exit(0)
   
   def shutdown(pid: Optional[Pid])(using Stdio, Log[Text]): Unit =
-    Log.info(t"Shutdown daemon")
+    Log.info(t"Shutdown CLI service")
     pid.let(terminatePid.fulfill(_)).or(termination)
 
   def client(socket: jn.Socket)
