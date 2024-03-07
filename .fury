@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 :<< "##"
-    This file contains build definitions for use with Fury.
-
-    Fury is available at:
-
-      https://github.com/propensive/fury/
-
-    To get started, run this file.
+    ┌─────────────────────────────────────────────────────────┐
+    │ Rudiments                                               │
+    │ ‾‾‾‾‾‾‾‾‾                                               │
+    │ This file contains a Fury build definition.             │
+    │ Fury can be downloaded from https://fury.build/         │
+    │ or your can just run this file on the command line.     │
+    └─────────────────────────────────────────────────────────┘
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
