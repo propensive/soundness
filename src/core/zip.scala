@@ -22,13 +22,14 @@ import vacuous.*
 import contingency.*
 import serpentine.*
 import diuretic.*
+import feudalism.*
 import fulminate.*
 import anticipation.*
 import turbulence.*
 import spectacular.*
 import ambience.*
 
-import scala.collection.mutable as scm
+import scala.collection.concurrent as scc
 
 import java.io as ji
 import java.nio.file as jnf
@@ -116,25 +117,29 @@ object ZipFile:
 
     ZipFile(pathname.show)
 
-  private val cache: scm.HashMap[Text, jnf.FileSystem] = scm.HashMap()
+  private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
 case class ZipFile(private val filename: Text):
   private lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(filename.s)).nn
   
-  private def javaFs(): jnf.FileSystem raises ZipError =
-    val uri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
+  private val filesystemUri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
     
-    try jnf.FileSystems.newFileSystem(uri, Map("zipinfo-time" -> "false").asJava).nn
-    catch case exception: jnf.ProviderNotFoundException => abort(ZipError(filename))
-  
   @targetName("child")
   infix def / (name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
 
-  def filesystem(): jnf.FileSystem raises ZipError =
-    ZipFile.cache.getOrElseUpdate(filename, synchronized(javaFs()))
+  private def semaphore: Semaphore = ZipFile.cache.getOrElseUpdate(filename, Semaphore())
 
+  private def withFilesystem[ResultType](lambda: jnf.FileSystem => ResultType): ResultType raises ZipError =
+    semaphore.write:
+      val filesystem =
+        try jnf.FileSystems.newFileSystem(filesystemUri, Map("zipinfo-time" -> "false").asJava).nn
+        catch case exception: jnf.ProviderNotFoundException => abort(ZipError(filename))
+
+      lambda(filesystem).also(filesystem.close())
+    
   def entry(ref: ZipRef)(using streamCut: Raises[StreamError]): ZipEntry =
-    ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
+    semaphore.read:
+      ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
       (using Environment)
@@ -147,30 +152,27 @@ case class ZipFile(private val filename: Text):
       case head #:: tail => recur(tail, if set.contains(head.ref) then set else set + head.ref)
       case _             => set
       
-    val fs: jnf.FileSystem = filesystem()
-    
     val directories = recur(entries, Set()).flatMap(_.descent.tails.map(ZipRef(_)).to(Set)).to(List)
     val directories2 = directories.map(_.render+t"/").sorted
 
-    directories2.each: directory =>
-      val directoryPath = fs.getPath(directory.s).nn
+    withFilesystem: filesystem =>
+      directories2.each: directory =>
+        val directoryPath = filesystem.getPath(directory.s).nn
       
-      if jnf.Files.notExists(directoryPath) then
-        jnf.Files.createDirectory(directoryPath)
-        jnf.Files.setAttribute(directoryPath, "creationTime", writeTimestamp)
-        jnf.Files.setAttribute(directoryPath, "lastAccessTime", writeTimestamp)
-        jnf.Files.setAttribute(directoryPath, "lastModifiedTime", writeTimestamp)
+        if jnf.Files.notExists(directoryPath) then
+          jnf.Files.createDirectory(directoryPath)
+          jnf.Files.setAttribute(directoryPath, "creationTime", writeTimestamp)
+          jnf.Files.setAttribute(directoryPath, "lastAccessTime", writeTimestamp)
+          jnf.Files.setAttribute(directoryPath, "lastModifiedTime", writeTimestamp)
 
-    entries.each: entry =>
-      val entryPath = fs.getPath(entry.ref.render.s).nn
-      val in = entry.content().inputStream
-      jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
-      jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
-      jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
-      jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
+      entries.each: entry =>
+        val entryPath = filesystem.getPath(entry.ref.render.s).nn
+        val in = entry.content().inputStream
+        jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
+        jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
+        jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
+        jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
       
-    fs.close()
-
     //val fileOut = ji.BufferedOutputStream(ji.FileOutputStream(ji.File(filename.s)).nn)
     
     // prefix.option.each: prefix =>
