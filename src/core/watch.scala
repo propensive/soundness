@@ -65,7 +65,7 @@ case class Watcher[DirectoryType: GenericDirectory: SpecificDirectory](private v
   private def toDirectory(path: jnf.Path): DirectoryType = SpecificDirectory(path.toString.tt)
 
   private val funnel = Funnel[Optional[WatchEvent]]
-  private val pumpAsync = Async(pump())
+  private val pumpAsync = daemon(pump())
   
   def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect:
     case event: WatchEvent => event
