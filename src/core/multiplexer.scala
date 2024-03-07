@@ -44,7 +44,7 @@ case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) = Async(pump(key, stream))
+  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) = async(pump(key, stream))
  
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
@@ -78,7 +78,7 @@ extension [ElementType](stream: LazyList[ElementType])
       case _ =>
         LazyList()
 
-    Async(recur(stream, System.currentTimeMillis)).await()
+    async(recur(stream, System.currentTimeMillis)).await()
 
   def multiplexWith(that: LazyList[ElementType])(using monitor: Monitor): LazyList[ElementType] =
     unsafely(LazyList.multiplex(stream, that))
@@ -116,7 +116,7 @@ extension [ElementType](stream: LazyList[ElementType])
     
     def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int): LazyList[List[ElementType]] =
       count match
-        case 0 => safely(Async(stream.isEmpty).await()) match
+        case 0 => safely(async(stream.isEmpty).await()) match
           case Unset => recur(stream, Nil, 0)
           case false => recur(stream.tail, stream.head :: list, count + 1)
           case true  => LazyList()
@@ -124,7 +124,7 @@ extension [ElementType](stream: LazyList[ElementType])
         case Limit =>
           list.reverse #:: recur(stream, Nil, 0)
         
-        case _ => safely(Async(stream.isEmpty).await(duration)) match
+        case _ => safely(async(stream.isEmpty).await(duration)) match
           case Unset => list.reverse #:: recur(stream, Nil, 0)
           case false => recur(stream.tail, stream.head :: list, count + 1)
           case true  => LazyList(list.reverse)
@@ -134,8 +134,8 @@ extension [ElementType](stream: LazyList[ElementType])
   def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
     val out: Funnel[ElementType2] = Funnel()
     
-    Async:
+    async:
       stream.map: elem =>
-        Async(out.put(lambda(elem)))
+        async(out.put(lambda(elem)))
     
     out.stream
