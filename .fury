@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-    
-ecosystem vent 2 https://github.com/propensive/vent 191d64e599f246813910978251e1d7f5cb52b95d
+:<< "##"
+    ┌─────────────────────────────────────────────────────────┐
+    │ Anticipation                                            │
+    │ ‾‾‾‾‾‾‾‾‾‾‾‾                                            │
+    │ This file contains a Fury build definition.             │
+    │ Fury can be downloaded from https://fury.build/         │
+    │ or your can just run this file on the command line.     │
+    └─────────────────────────────────────────────────────────┘ 
 
-command build anticipation/core
+ecosystem vent 5 https://github.com/propensive/vent 191d64e599f246813910978251e1d7f5cb52b95d
 
 project anticipation
   name         Anticipation
@@ -41,11 +47,20 @@ project anticipation
   module color
     compiler  scala
     sources   src/color
+  
+  module opaque
+    compiler  scala
+    sources   src/opaque
 
   module path
     compiler  scala
     include   anticipation/text
     sources   src/path
+
+  module print
+    compiler  scala
+    include   anticipation/text
+    sources   src/print
 
   module time
     compiler  scala
@@ -61,3 +76,9 @@ project anticipation
     include anticipation/url
     include anticipation/color
 
+##
+code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
+vpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHsCUQUxJ467qpYHmNWwOb+lqVdcqL6gimJ\
+palTrxowW5Q5bhOr2gE9vsebNS7jum2BPu8hcQw9WzdG1oWy1XN4eE2+HeduBUXmM/AX7tcfLiVLsvoHviUC3bq03YbCnl6zqGWMLgcUJ8qTjFt\
+BPXXiXF3QGjUzlqNIblIOdgs8P/FzAjEENAwXPJMho9hOmfBMs2oz6nH53JJA+5nfQEj4kiVGD3Xdqi1B3vpW3McJBoohto8YvwCkFcY9LsBAAA=
+eval "$(echo $code | base64 -d | gzip -d)"
