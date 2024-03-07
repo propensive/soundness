@@ -67,6 +67,35 @@ class Mutex[ValueType](initial: ValueType):
       count = 0
       notify()
 
+class Semaphore():
+  private var count: Int = 0
+
+  def read[ResultType](lambda: => ResultType): ResultType =
+    synchronized:
+      while count == -1 do wait()
+      count += 1
+    
+    val result: ResultType = lambda
+    
+    synchronized:
+      count -= 1
+      notify()
+
+    result
+  
+  def write[ResultType](lambda: => ResultType): ResultType =
+    synchronized:
+      while count != 0 do wait()
+      count = -1
+
+    val result: ResultType = lambda
+
+    synchronized:
+      count = 0
+      notify()
+
+    result
+  
 trait Immutable[MutableType, ImmutableType]:
   def snapshot(ref: ImmutableType): ImmutableType = ref
   def make(ref: MutableType): ImmutableType
