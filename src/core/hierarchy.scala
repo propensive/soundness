@@ -118,8 +118,8 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, Root
              navigable2:  Navigable[PathType2, NameType, RootType])
       : LinkType =
     
-    val common = navigable.depth(left.conjunction(right))
-    linkCreator.path(navigable.depth(left) - common, navigable.descent(right).dropRight(common))
+    val common = navigable.depth(right.conjunction(left))
+    linkCreator.path(navigable.depth(right) - common, navigable.descent(left).dropRight(common))
   
 extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
   def keep(n: Int)
@@ -201,7 +201,7 @@ object Navigable:
       val root: RootType = rootRest.asInstanceOf[(RootType, Text)](0)
       val rest: Text = rootRest.asInstanceOf[(RootType, Text)](1)
       
-      val names = rest.cut(navigable.separator(creator.path(root, Nil))).reverse match
+      val names = rest.cut(navigable.separator(creator.path(root, Nil))).to(List).reverse match
         case t"" :: tail => tail
         case names       => names
   
@@ -260,7 +260,7 @@ object Followable:
           if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
           else if text == parentRef then creator.path(ascent + 1, Nil)
           else
-            val names = text.cut(foundSeparator).reverse match
+            val names = text.cut(foundSeparator).to(List).reverse match
               case t"" :: tail => tail
               case names       => names
             
