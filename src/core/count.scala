@@ -36,14 +36,14 @@ object CountOpaques:
 
     inline given [UnitsType <: Tuple](using names: UnitsNames[UnitsType]): Show[Count[UnitsType]] =
       new Show[Count[UnitsType]]:
-        def apply(count: Count[UnitsType]): Text =
+        def text(count: Count[UnitsType]): Text =
           val nonzeroUnits = count.components.filter(_(1) != 0).map(_(1).toString.tt).to(List)
           val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
           units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
     
   trait Count2:
     inline given [UnitsType <: Tuple]: Show[Count[UnitsType]] = new Show[Count[UnitsType]]:
-      def apply(count: Count[UnitsType]): Text =
+      def text(count: Count[UnitsType]): Text =
         count.components.filter(_(1) != 0).map { (unit, count) => count.toString+unit }.mkString(" ").tt
     
   extension [UnitsType <: Tuple](count: Count[UnitsType])
