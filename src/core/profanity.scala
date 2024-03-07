@@ -161,26 +161,25 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
+  def knownColumns: Int = columns.or(safely(initColumns.await(50L))).or(80)
+  
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
     def color: ColorCapability = ColorCapability.TrueColor
-    override def width: Int = columns.or(Int.MaxValue)
+    override def width: Int = knownColumns
 
   given stdio: Stdio = new Stdio:
     val termcap = cap
     val out = context.stdio.out
     val err = context.stdio.err
     val in = context.stdio.in
-  
-  def knownColumns: Int = safely(initColumns.await(50L)).or(80)
-
-  private val signalHandler: Async[Unit] = Async:
-    signals.each:
-      case Signal.Winch => print(Terminal.reportSize)
-      case _            => ()
 
   def events: LazyList[TerminalEvent]^{monitor} = LazyList.defer:
     keyboard.process(In.stream[Char]).multiplexWith(signals).map:
+      case Signal.Winch =>
+        out.print(Terminal.reportSize)
+        Signal.Winch
+
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
         initRows.offer(rows2)
@@ -209,7 +208,6 @@ object ProcessContext:
     new ProcessContext:
       val stdio: Stdio = initStdio
       def signals: LazyList[Signal] = initSignals
-
 
 trait ProcessContext:
   val stdio: Stdio
