@@ -80,9 +80,7 @@ class LogProcess[TargetType, TextType](target: TargetType)(using format: LogForm
 extends Logger[TextType]:
 
   private val funnel: Funnel[Entry[TextType]] = Funnel()
-  
-  private val async: Async[Unit] = Async:
-    appendable.append(target, unsafely(funnel.stream.map(format(_))))
+  private val async: Async[Unit] = daemon(appendable.append(target, unsafely(funnel.stream.map(format(_)))))
   
   def put(entry: Entry[TextType]): Unit = funnel.put(entry)
 
