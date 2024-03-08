@@ -173,19 +173,6 @@ case class ZipFile(private val filename: Text):
         jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
         jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
       
-    //val fileOut = ji.BufferedOutputStream(ji.FileOutputStream(ji.File(filename.s)).nn)
-    
-    // prefix.option.each: prefix =>
-    //   fileOut.write(prefix.mutable(using Unsafe))
-    //   fileOut.flush()
-    
-    // val tmpDir: ji.File = Xdg.Var.Tmp()
-    // val tmpFile: ji.File = ji.File.createTempFile("tmp", ".zip", tmpDir).nn
-    
-    //fileOut.write(jnf.Files.readAllBytes(tmpFile.toPath.nn))
-    //fileOut.close()
-    //java.nio.file.Files.delete(tmpFile.toPath.nn)
-
   def entries(): LazyList[ZipEntry] raises StreamError =
     zipFile.entries.nn.asScala.to(LazyList).filter(!_.getName.nn.endsWith("/")).map: entry =>
       ZipEntry(unsafely(ZipRef(entry.getName.nn.show)), zipFile.getInputStream(entry).nn)
