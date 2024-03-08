@@ -407,7 +407,7 @@ object Timestamp:
     def add(left: Timestamp, right: Timespan): Timestamp = ???
 
 case class Timestamp(date: Date, time: Time)(using cal: Calendar):
-  def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
+  infix def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
 
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
@@ -544,6 +544,9 @@ case class Timezone private(name: Text)
 
 case class TimezoneError(name: Text)
 extends Error(msg"the name $name does not refer to a known timezone")
+
+object LocalTime:
+  given generic(using RomanCalendar): GenericInstant[LocalTime] = _.instant.millisecondsSinceEpoch
 
 case class LocalTime(date: Date, time: Time, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
