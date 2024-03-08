@@ -37,9 +37,9 @@ case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Tex
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
     case CharKey(ch)      => copy(t"${value.take(position)}$ch${value.drop(position)}", position + 1)
-    case Control('U')     => copy(value.drop(position), 0)
+    case Ctrl('U')        => copy(value.drop(position), 0)
 
-    case Control('W')     => val prefix = value.take(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+    case Ctrl('W')        => val prefix = value.take(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
                              copy(t"$prefix${value.drop(position)}", prefix.length)
 
     case Delete      => copy(t"${value.take(position)}${value.drop(position + 1)}")
@@ -81,11 +81,11 @@ trait Interaction[ResultType, QuestionType]:
     render(oldState, state)
 
     stream match
-      case Keypress.Enter #:: tail              => Some((result(state), tail))
-      case Keypress.Control('C' | 'D') #:: tail => None
-      case Keypress.Escape #:: tail             => None
-      case other #:: tail                       => recur(tail, key(state, other), state)(key)
-      case _                                    => None
+      case Keypress.Enter #:: tail           => Some((result(state), tail))
+      case Keypress.Ctrl('C' | 'D') #:: tail => None
+      case Keypress.Escape #:: tail          => None
+      case other #:: tail                    => recur(tail, key(state, other), state)(key)
+      case _                                 => None
 
   def apply(stream: LazyList[TerminalEvent], state: QuestionType)
       (key: (QuestionType, TerminalEvent) => QuestionType)

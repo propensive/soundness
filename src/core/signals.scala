@@ -48,15 +48,31 @@ object Keypress:
   type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type | Delete.type |
       Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type | Down.type
 
+object CtrlChar:
+  def unapply(code: Char)
+          : Option
+             ['A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' |
+              'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@'] =
+    (code + 64).toChar match
+      case char: ('@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' |
+                  'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' |
+                  '^' | '_' | '@') =>
+        Some(char)
+
+      case _ =>
+        None
+    
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up, Down
   case CharKey(char: Char)
   case FunctionKey(number: Int)
-  case Control(char: Char)
   case EscapeSeq(id: Char, content: Char*)
   case Shift(keypress: Keypress.EditKey | FunctionKey)
   case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
-  case Ctrl(keypress: Alt | Shift | Keypress.EditKey | FunctionKey)
+  case Ctrl
+      (keypress: Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' |
+                   'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' |
+                   'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@')
   case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)
 
 
