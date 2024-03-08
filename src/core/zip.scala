@@ -82,6 +82,7 @@ object ZipRef:
       (Unset, if text.length > 0 && unsafely(text(0)) == '/' then text.drop(1) else text)
 
   given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
+  given show: Show[ZipRef] = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]])
 
@@ -175,6 +176,6 @@ case class ZipFile(private val filename: Text):
         jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
       
   def entries(): LazyList[ZipEntry] raises StreamError =
-    zipFile.entries.nn.asScala.to(LazyList).filter(!_.getName.nn.endsWith("/")).map: entry =>
+    zipFile.entries.nn.asScala.filter(!_.getName.nn.endsWith("/")).to(LazyList).map: entry =>
       ZipEntry(unsafely(ZipRef(entry.getName.nn.show)), zipFile.getInputStream(entry).nn)
 
