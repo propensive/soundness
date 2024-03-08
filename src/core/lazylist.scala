@@ -166,34 +166,31 @@ object LazyListInputStream:
   def apply(input: => LazyList[Bytes]): LazyListInputStream = new LazyListInputStream(input)
 
 class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
-  private var current: LazyList[Bytes] = input
+  private var stream: LazyList[Bytes] = input
   private var offset: Int = 0
+  private var focus: Bytes = IArray.empty[Byte]
   
-  private def next(): Unit =
-    current = current.tail
-    offset = 0
-
-  override def available(): Int = current match
-    case head #:: tail =>
-      if head.length >= offset then head.length - offset else
-        next()
-        available()
-
-    case _ =>
-      0
+  override def available(): Int =
+    val diff = focus.length - offset
+    if diff > 0 then diff
+    else if stream.isEmpty then 0
+    else
+      focus = stream.head
+      stream = stream.tail
+      offset = 0
+      available()
 
   override def close(): Unit = ()
   
-  def read(): Int =
-    if current.isEmpty then -1 else if available() > 0 then (current.head(offset) & 0xff).also(offset += 1) else
-      next()
-      read()
-  
+  def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
+
   override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int = if length == 0 then 0 else
     val count = length.min(available())
-    if count > 0 then System.arraycopy(current.head, offset, array, arrayOffset, count)
-    offset += count
-    if count == 0 then -1 else count
+    
+    if count == 0 then -1 else
+      if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
+      offset += count
+      count
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
