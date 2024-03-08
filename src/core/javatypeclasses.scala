@@ -31,3 +31,4 @@ package filesystemInterfaces:
 
 package urlApi:
   given javaNet: JavaNetUrl.type = JavaNetUrl
+

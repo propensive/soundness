@@ -77,24 +77,3 @@ object JavaNetUrl extends GenericUrl[jn.URL], SpecificUrl[jn.URL]:
   def text(value: jn.URL): Text = value.toString.tt
   def url(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
 
-extension (stream: LazyList[IArray[Byte]])
-  def inputStream: ji.InputStream = new ji.InputStream:
-    private var lazyList: LazyList[IArray[Byte]] = stream
-    private var total: Int = 0
-    private var index: Int = -1
-    private var current: IArray[Byte] = IArray[Byte]()
-
-    def read(): Int =
-      index += 1
-      if index < current.length then current(index)
-      else lazyList match
-        case head #:: tail =>
-          lazyList = tail
-          current = head
-          total += index
-          index = -1
-          read()
-        
-        case _ =>
-          -1
-
