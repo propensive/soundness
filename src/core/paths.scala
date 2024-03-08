@@ -504,6 +504,8 @@ object Directory:
   given GenericWatchService[Directory] = () =>
     jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
+  given generic: GenericDirectory[Directory] = _.path.fullname
+
 case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
     path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
@@ -536,6 +538,8 @@ object File:
     Appendable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, true))
+
+  given generic: GenericFile[File] = _.path.fullname
 
 case class File(path: Path) extends Unix.Entry, Windows.Entry:
   def size(): ByteSize = jnf.Files.size(path.stdlib).b
