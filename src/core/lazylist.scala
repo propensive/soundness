@@ -189,12 +189,11 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
       next()
       read()
   
-  override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
-    val copyLength = length.min(available())
-    System.arraycopy(current.head, offset, array, arrayOffset, copyLength)
-    offset += copyLength
-    if available() == 0 then next()
-    copyLength
+  override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int = if length == 0 then 0 else
+    val count = length.min(available())
+    if count > 0 then System.arraycopy(current.head, offset, array, arrayOffset, count)
+    offset += count
+    if count == 0 then -1 else count
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
