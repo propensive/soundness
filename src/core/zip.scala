@@ -169,7 +169,7 @@ case class ZipFile(private val filename: Text):
 
       entries.each: entry =>
         val entryPath = filesystem.getPath(entry.ref.render.s).nn
-        val in = entry.content().inputStream
+        val in = LazyListInputStream(entry.content())
         jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
         jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
         jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
