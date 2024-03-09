@@ -70,7 +70,7 @@ class Mutex[ValueType](initial: ValueType):
 class Semaphore():
   private var count: Int = 0
 
-  def read[ResultType](lambda: => ResultType): ResultType =
+  def attend[ResultType](lambda: => ResultType): ResultType =
     synchronized:
       while count == -1 do wait()
       count += 1
@@ -83,7 +83,7 @@ class Semaphore():
 
     result
   
-  def write[ResultType](lambda: => ResultType): ResultType =
+  def isolate[ResultType](lambda: => ResultType): ResultType =
     synchronized:
       while count != 0 do wait()
       count = -1
