@@ -132,7 +132,7 @@ case class ZipFile(private val filename: Text):
   private def semaphore: Semaphore = ZipFile.cache.getOrElseUpdate(filename, Semaphore())
 
   private def withFilesystem[ResultType](lambda: jnf.FileSystem => ResultType): ResultType raises ZipError =
-    semaphore.write:
+    semaphore.isolate:
       val filesystem =
         try jnf.FileSystems.newFileSystem(filesystemUri, Map("zipinfo-time" -> "false").asJava).nn
         catch case exception: jnf.ProviderNotFoundException => abort(ZipError(filename))
@@ -140,8 +140,7 @@ case class ZipFile(private val filename: Text):
       lambda(filesystem).also(filesystem.close())
     
   def entry(ref: ZipRef)(using streamCut: Raises[StreamError]): ZipEntry =
-    semaphore.read:
-      ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn)
+    semaphore.attend(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
       (using Environment)
