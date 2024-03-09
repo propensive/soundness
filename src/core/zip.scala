@@ -21,7 +21,6 @@ import gossamer.*
 import vacuous.*
 import contingency.*
 import serpentine.*
-import diuretic.*
 import feudalism.*
 import fulminate.*
 import anticipation.*

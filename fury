@@ -7,17 +7,16 @@ repo propensive/serpentine
 repo propensive/ambience
 repo propensive/feudalism
 repo propensive/imperial
-repo propensive/diuretic
 repo propensive/turbulence
 
 project zeppelin
   module core
     compiler  scala
     sources   src/core
-    include   ambience/core imperial/core anticipation/path serpentine/core diuretic/core turbulence/core vacuous/core anticipation/time feudalism/core
+    include   ambience/core imperial/core anticipation/path serpentine/core turbulence/core vacuous/core anticipation/time feudalism/core
 
   module test
     compiler  scala
     sources   src/test
-    include   zeppelin/core probably/cli galilei/core diuretic/core
+    include   zeppelin/core probably/cli galilei/core
     main      zeppelin.Tests
