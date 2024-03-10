@@ -79,7 +79,6 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
     (using monitor: Monitor, codepoint: Codepoint):
   
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
-  def covenant: Covenant[ResultType | Promise.Special] = promise
 
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 

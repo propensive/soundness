@@ -29,18 +29,7 @@ object Promise:
   case object Cancelled extends Special
   case object Incomplete extends Special
 
-trait Covenant[+ValueType]:
-  inline def cancelled: Boolean
-  inline def incomplete: Boolean
-  inline def ready: Boolean
-
-  def await()(using Raises[CancelError]): ValueType
-
-  def await[DurationType: GenericDuration](duration: DurationType)
-      (using Raises[CancelError], Raises[TimeoutError])
-          : ValueType
-
-case class Promise[ValueType]() extends Covenant[ValueType]:
+case class Promise[ValueType]():
   private var value: ValueType | Promise.Special = Promise.Incomplete
 
   inline def cancelled: Boolean = value == Promise.Cancelled
