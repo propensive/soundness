@@ -203,6 +203,12 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
 
+  def failure: Boolean = this match
+    case Success(_) => false
+    case Failure(_) => true
+
+  def success: Boolean = !failure
+
   def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
