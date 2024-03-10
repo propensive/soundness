@@ -79,23 +79,20 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
     (using monitor: Monitor, codepoint: Codepoint):
   
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
-
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
   private final val thread: Thread^{this} =
     def runnable: Runnable^{this} = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
-        try
-          val result = evaluate(using child)
-          stateRef.set(Completed(result))
+        
+        try evaluate(using child).tap { result => stateRef.set(Completed(result)) }
         catch case NonFatal(error) => stateRef.set(Failed(error))
-        finally
-          stateRef.get().nn match
-            case Completed(value) => promise.offer(value)
-            case Active           => promise.offer(Promise.Cancelled)
-            case Suspended(_)     => promise.offer(Promise.Cancelled)
-            case Failed(_)        => promise.offer(Promise.Incomplete)
+        finally stateRef.get().nn match
+          case Completed(value) => promise.offer(value)
+          case Active           => promise.offer(Promise.Cancelled)
+          case Suspended(_)     => promise.offer(Promise.Cancelled)
+          case Failed(_)        => promise.offer(Promise.Incomplete)
 
           child.cancel()
           boundary.break()
@@ -115,7 +112,8 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
     result()
   
   def await()(using cancel: Raises[CancelError]): ResultType =
-    promise.await().also(thread.join())
+    promise.attend()
+    thread.join()
     result()
   
   private def result()(using cancel: Raises[CancelError]): ResultType = state() match

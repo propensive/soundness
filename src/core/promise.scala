@@ -55,6 +55,9 @@ case class Promise[ValueType]():
     while !ready do wait()
     get()
 
+  def attend(): Unit = synchronized:
+    while !ready do wait()
+
   def cancel(): Unit = synchronized:
     if incomplete then
       value = Promise.Cancelled
