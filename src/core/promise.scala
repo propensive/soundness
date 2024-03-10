@@ -72,6 +72,15 @@ case class Promise[ValueType]():
         wait(duration.milliseconds)
         if !ready then abort(TimeoutError()) else get()
 
+  def attend[DurationType: GenericDuration](duration: DurationType)
+      (using Raises[CancelError], Raises[TimeoutError])
+          : Unit =
+    
+    synchronized:
+      if ready then get() else
+        wait(duration.milliseconds)
+        if !ready then abort(TimeoutError())
+
 case class Trigger():
   private val promise: Promise[Unit] = Promise()
   def apply(): Unit = promise.offer(())

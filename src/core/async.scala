@@ -23,7 +23,7 @@ import digression.*
 
 import java.util.concurrent.atomic as juca
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 enum AsyncState[+ValueType]:
   case Active
@@ -39,7 +39,7 @@ class Hook(private val thread: Thread):
 object Async:
 
   def onShutdown(block: => Unit): Hook =
-    val runnable: Runnable^{block} = () => block
+    val runnable: Runnable = () => block
     val thread: Thread = Thread(runnable)
     Runtime.getRuntime.nn.addShutdownHook(thread)
     Hook(thread)
@@ -81,8 +81,8 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
   private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
 
-  private final val thread: Thread^{this} =
-    def runnable: Runnable^{this} = () =>
+  private final val thread: Thread =
+    def runnable: Runnable = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
         
@@ -108,7 +108,8 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
           : ResultType =
 
-    promise.await(duration).also(thread.join())
+    promise.attend(duration)
+    thread.join()
     result()
   
   def await()(using cancel: Raises[CancelError]): ResultType =
@@ -163,6 +164,6 @@ def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: 
 def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor: Monitor): Unit =
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
-extension [ResultType](asyncs: Seq[Async[ResultType]]^)
-  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType^{}]] =
+extension [ResultType](asyncs: Seq[Async[ResultType]])
+  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType]] =
     async(asyncs.map(_.await()))
