@@ -217,7 +217,7 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
-  transparent inline def get: SuccessType raises ErrorType = this match
+  transparent inline def apply(): SuccessType raises ErrorType = this match
     case Success(value) => value
     case Failure(error) => abort(error)
 
