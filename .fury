@@ -6,11 +6,15 @@
     │ This file contains a Fury build definition.             │
     │ Fury can be downloaded from https://fury.build/         │
     │ or your can just run this file on the command line.     │
-    └─────────────────────────────────────────────────────────┘ 
+    └─────────────────────────────────────────────────────────┘
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
+command package xylophone/package
+  description  Create a distributable xylophone.jar package
+
 command build xylophone/core
+  description  Build the project
 
 project xylophone
   name         Xylophone
@@ -21,9 +25,9 @@ project xylophone
     compiler  scala
     sources   src/core
     include   gossamer/core
-    include   wisteria/core
     include   anticipation/transport
     include   turbulence/core
+    include   wisteria/core
 
 ##
 
