@@ -99,9 +99,16 @@ trait Classpath:
 
 case class OnlineClasspath(entries: List[ClasspathEntry]) extends Classpath
 
-case class LocalClasspath
-    (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
+object LocalClasspath:
+  def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
+          : LocalClasspath =
+    new LocalClasspath(entries, entries.to(Set))
+
+class LocalClasspath private
+    (val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type],
+     val entrySet: Set[ClasspathEntry])
 extends Classpath:
+
   def apply()(using SystemProperties): Text =
     entries.flatMap:
       case ClasspathEntry.Directory(directory) => List(directory)
@@ -115,8 +122,9 @@ extends Classpath:
       val classpathEntry: ClasspathEntry.Directory | ClasspathEntry.Jarfile = path.entryType() match
         case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
         case _                    => ClasspathEntry.Jarfile(path.fullname)
-      
-      LocalClasspath(classpathEntry :: entries)
+
+      if entrySet.contains(classpathEntry) then this
+      else new LocalClasspath(classpathEntry :: entries, entrySet + classpathEntry)
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
