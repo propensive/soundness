@@ -103,6 +103,7 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
 
   def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
   def state(): AsyncState[ResultType] = stateRef.get().nn
+  def ready: Boolean = promise.ready
   
   def await[DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
