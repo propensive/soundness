@@ -94,6 +94,7 @@ object DagDiagram:
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
 case class DagDiagram[NodeType](lines: List[(List[DagTile], NodeType)]):
+  val size: Int = lines.length
   def render[LineType](line: NodeType => LineType)(using style: DagStyle[LineType]): List[LineType] =
     lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
   
