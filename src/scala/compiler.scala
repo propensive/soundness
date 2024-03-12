@@ -190,6 +190,7 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         val args: List[Text] =
           List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
 
+        Log.fine(args.join(t"Running: scalac ", t" ", t""))
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
       def run(): ScalacProcess =
