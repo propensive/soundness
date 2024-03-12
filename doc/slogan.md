@@ -1,1 +1,1 @@
-To make I/O in Scala elegant and typesafe
+Representation-agnostic filewatching with streams in Scala
