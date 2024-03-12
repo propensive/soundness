@@ -123,7 +123,7 @@ trait Dispatcher:
         (out, fn)
     
     val classpath = (classloaders.threadContext.classpath: @unchecked) match
-      case LocalClasspath(entries) => LocalClasspath(entries :+ ClasspathEntry.Directory(out.encode))
+      case classpath: LocalClasspath => LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
     
     invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
         (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
