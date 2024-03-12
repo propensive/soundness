@@ -31,18 +31,17 @@ object Serpentine:
 
   @targetName("Slash")
   object `/`:
-    def unapply
-        [PathType <: Matchable, NameType <: Label, RootType]
-        (using hierarchy: Hierarchy[PathType, ?])
-        (using navigable: Navigable[PathType, NameType, RootType])
-        (using creator: PathCreator[PathType, NameType, RootType])
+    def unapply[PathType <: Matchable, NameType <: Label, RootType]
+        (using hierarchy: Hierarchy[PathType, ?],
+               navigable: Navigable[PathType, NameType, RootType],
+               creator:   PathCreator[PathType, NameType, RootType])
         (path: PathType)
-        : Option[(PathType | RootType | %.type, PathName[NameType])] =
+            : Option[(PathType | RootType | %.type, PathName[NameType])] =
+
       navigable.descent(path) match
         case Nil          => None
         case head :: Nil  => Some((navigable.root(path), head))
         case head :: tail => Some((creator.path(navigable.root(path), tail), head))
-    
 
   object PathName:
     given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
