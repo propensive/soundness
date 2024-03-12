@@ -53,12 +53,12 @@ enum Unused[CompilerType]:
 
 enum UnusedFeature[CompilerType](val name: Text):
   case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
-  case Privates extends UnusedFeature[3.3](t"privates")
-  case Locals extends UnusedFeature[3.3](t"locals")
-  case Explicits extends UnusedFeature[3.3](t"explicits")
-  case Implicits extends UnusedFeature[3.3](t"implicits")
-  case Params extends UnusedFeature[3.3](t"params")
-  case Linted extends UnusedFeature[3.3](t"linted")
+  case Privates extends UnusedFeature[3.3 | 3.4](t"privates")
+  case Locals extends UnusedFeature[3.3 | 3.4](t"locals")
+  case Explicits extends UnusedFeature[3.3 | 3.4](t"explicits")
+  case Implicits extends UnusedFeature[3.3 | 3.4](t"implicits")
+  case Params extends UnusedFeature[3.3 | 3.4](t"params")
+  case Linted extends UnusedFeature[3.3 | 3.4](t"linted")
 
 package scalacOptions:
   val newSyntax = CompileOption[ScalacVersions](t"-new-syntax")
@@ -68,7 +68,11 @@ package scalacOptions:
   package warnings:
     val feature = CompileOption[ScalacVersions](t"-feature")
     val deprecation = CompileOption[ScalacVersions](t"-deprecation")
-    val implausiblePatterns = CompileOption[3.3](t"-Wimplausible-patterns")
+    val implausiblePatterns = CompileOption[3.3 | 3.4](t"-Wimplausible-patterns")
+    val enumCommentDiscard = CompileOption[3.4](t"-Wenum-comment-discard")
+    val unstableInlineAccessors = CompileOption[3.4](t"-WunstableInlineAccessors")
+    val nonUnitStatement = CompileOption[3.4](t"-Wnonunit-statement")
+    val valueDiscard = CompileOption[3.4](t"-Wvalue-discard")
     
     def unused[CompilerType <: ScalacVersions](selection: Unused[CompilerType]) =
       val option = (selection: @unchecked) match
@@ -78,15 +82,19 @@ package scalacOptions:
 
       CompileOption[CompilerType](option)
 
+    package lint:
+      val privateShadow = CompileOption[3.4](t"-Xlint:private-shadow")
+      val typeParameterShadow = CompileOption[3.4](t"-Xlint:type-parameter-shadow")
+
   package internal:
     val requireTargetName = CompileOption[ScalacVersions](t"-Yrequire-targetName")
     val safeInit = CompileOption[ScalacVersions](t"-Ysafe-init")
     val explicitNulls = CompileOption[ScalacVersions](t"-Yexplicit-nulls")
     val checkPatterns = CompileOption[ScalacVersions](t"-Ycheck-all-patmat")
+    val ccNew = CompileOption[ScalacVersions](t"-Ycc-new")
 
   package advanced:
     def maxInlines(n: Int): CompileOption[ScalacVersions] = CompileOption(t"-Xmax-inlines", n.show)
-
   package language:
     package experimental:
       val clauseInterleaving =      CompileOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
@@ -107,15 +115,27 @@ object Scalac:
 enum Importance:
   case Info, Warning, Error
 
+case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
+
 object Notice:
   def apply(diagnostic: Diagnostic): Notice =
     val importance: Importance = Importance.fromOrdinal(diagnostic.level)
+    val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
     val message: Text = diagnostic.message.tt
     val content: Text = diagnostic.position.map(_.nn.lineContent.nn.tt).nn.orElse(t"").nn
-    
-    Notice(importance, message, content)
 
-case class Notice(importance: Importance, message: Text, code: Text)
+    diagnostic.position.map: position =>
+      position.nn.pipe: position =>
+        val codeRange =
+          CodeRange(position.startLine.nn, position.startColumn.nn, position.endLine.nn, position.endColumn.nn)
+
+        Notice(importance, file, message, content, codeRange)
+
+    .nn.orElse:
+      Notice(importance, file, message, content, Unset)
+    .nn
+    
+case class Notice(importance: Importance, file: Text, message: Text, code: Text, codeRange: Optional[CodeRange])
 
 case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
 
