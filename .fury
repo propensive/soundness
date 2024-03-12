@@ -23,7 +23,6 @@ project gossamer
     include   hieroglyph/core
     include   contextual/core
     include   spectacular/core
-    include   kaleidoscope/core
 
 ##
 
