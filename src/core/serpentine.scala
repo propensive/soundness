@@ -117,3 +117,5 @@ object Serpentine:
       mainRoot.empty() / PathName(name)
 
 export Serpentine.%
+export Serpentine./
+export Serpentine.PathName

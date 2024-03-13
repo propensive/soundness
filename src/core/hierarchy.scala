@@ -48,8 +48,6 @@ object PathError:
     case Reason.ParentOfRoot          => msg"it has no parent"
     case Reason.NotRooted             => msg"it is not rooted"
 
-export Serpentine.PathName
-
 case class PathError(path: Text, reason: PathError.Reason)
 extends Error(msg"the path $path is invalid because $reason")
 
@@ -362,5 +360,3 @@ trait PathEquality[PathType <: Matchable](using directional: Directional[PathTyp
       false
   
   override def hashCode: Int = if directional.descent(this) == Nil then 0 else super.hashCode
-
-export Serpentine.`/`
