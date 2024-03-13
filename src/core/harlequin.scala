@@ -59,7 +59,7 @@ object ScalaSyntax:
     val trees = Trees()
     val parser = Parsers.Parser(source)(using ctx)
     
-    parser.blockStatSeq().each(trees.traverse(_)(using ctx))
+    trees.traverse(parser.compilationUnit())(using ctx)
     
     val scanner = Scanners.Scanner(source)(using ctx)
     
@@ -131,7 +131,7 @@ object ScalaSyntax:
         case _: TypTree =>
           if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
         
-        case _ =>
+        case other =>
           ()
       
       traverseChildren(tree)
