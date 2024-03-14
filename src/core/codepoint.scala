@@ -19,6 +19,7 @@ package digression
 import rudiments.*
 import anticipation.*
 import fulminate.*
+import contingency.*
 
 import scala.quoted.*
 
@@ -40,7 +41,7 @@ object Digression:
 
     '{Codepoint(Text($path), $line)}
 
-  private val javaKeywords: Set[String] =
+  val javaKeywords: Set[String] =
     Set
      ("abstract", "continue", "for", "new", "switch", "assert", "default", "if", "package", "synchronized",
       "boolean", "do", "goto", "private", "this", "break", "double", "implements", "protected", "throw",
@@ -50,21 +51,10 @@ object Digression:
 
   def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
     import quotes.reflect.*
-    val parts = IArray.from(context.valueOrAbort.parts.head.split("\\.").nn.map(_.nn))
-    
-    parts.foreach: part =>
-      if part.length == 0 then fail(msg"a package name cannot be the empty string")
-      if javaKeywords.has(part) then fail(msg"a package cannot be named $part, because it is a Java keyword")
-      
-      def valid(char: Char): Boolean =
-        char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' || char == '_'
+    failCompilation:
+      val parts = Fqcn(context.valueOrAbort.parts.head.tt).parts
 
-      if !part.all(valid) then fail(msg"a package name may only contain the characters A-Z, a-z, 0-9 and _")
-
-      if part.head >= '0' && part.head <= '9' then fail(msg"a package name cannot start with a digit")
-      
-
-    '{Fqcn(${Expr(parts.map(_.tt))})}
+      '{new Fqcn(${Expr(parts)})}
 
 extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${Digression.fqcn('context)}

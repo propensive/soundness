@@ -4,12 +4,13 @@
 target digression/test
 
 repo propensive/rudiments
+repo propensive/contingency
 
 project digression
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   rudiments/core contingency/core
 
   module test
     compiler  scala

@@ -25,6 +25,7 @@ project digression
     compiler  scala
     sources   src/core
     include   rudiments/core
+    include   contingency/core
 
 ##
 code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
