@@ -25,6 +25,15 @@ import language.experimental.captureChecking
 
 extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
 
+//case class FqcnError(name: Text) extends Error(msg"the class name $name is not valid")
+
+object Fqcn
+
+case class Fqcn(parts: IArray[Text]):
+  def text: Text = parts.mkString(".").tt
+  def className: Text = parts.last
+  def packageName: Text = parts.init.mkString(".").tt
+
 object StackTrace:
   case class Method(className: Text, method: Text)
   case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
