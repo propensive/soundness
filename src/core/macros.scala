@@ -52,7 +52,7 @@ object Probably:
     exp match
       case Some('{ $expr: t }) =>
         val debug: Expr[Debug[t | TestType]] =
-          Expr.summon[Debug[t | TestType]].getOrElse('{ TextConversion.any })
+          Expr.summon[Debug[t | TestType]].getOrElse('{ _.toString.tt })
         
         val contrast = '{Contrast.general[t | TestType]}
         //val contrast = Expr.summon[Contrast[t | TestType]].getOrElse('{Contrast.general[t | TestType]})
@@ -65,7 +65,7 @@ object Probably:
         '{
           assertion[TestType, TestType, ReportType, ResultType]
               ($runner, $test, $predicate, $action, Contrast.nothing[TestType], None, $inc, $inc2,
-                  TextConversion.any)
+                  _.toString.tt)
         }
   
   def check[TestType: Type, ReportType: Type]
@@ -124,8 +124,8 @@ object Probably:
           try if predicate(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
-                inc2.include(runner.report, test.id, DebugInfo.Compare(display(exp),
-                    display(value), contrast(exp, value)))
+                inc2.include(runner.report, test.id, DebugInfo.Compare(display.text(exp),
+                    display.text(value), contrast(exp, value)))
               case None =>
                 //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Contrast[Any]].compare(value, 1)))
             
@@ -145,6 +145,6 @@ object Probably:
       case _                        => t"<unknown>"
     
     val debug: Expr[Debug[TestType]] =
-      Expr.summon[Debug[TestType]].getOrElse('{ TextConversion.any })
+      Expr.summon[Debug[TestType]].getOrElse('{ _.toString.tt })
     
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }

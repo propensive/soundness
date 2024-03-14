@@ -25,9 +25,9 @@ import fulminate.*
 import contingency.*
 import chiaroscuro.*
 import ambience.*
-import escritoire.*, tableStyles.rounded
+import escritoire.*, tableStyles.default
 import dendrology.*
-import escapade.*
+import escapade.*, insufficientSpaceHandling.ignore
 import turbulence.*
 import iridescence.*
 import spectacular.*
@@ -272,15 +272,15 @@ class TestReport(using Environment):
         
         Column(e"$Bold(Test)")(_.indentedName),
         
-        Column(e"$Bold(Count)", align = Alignment.Right, hide = !showStats): s =>
+        Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
           e"${colors.SteelBlue}(${s.iterations})",
         
-        Column(e"$Bold(Min)", align = Alignment.Right, hide = !showStats): s =>
+        Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.minTime,
         
-        Column(e"$Bold($timeTitle)", align = Alignment.Right)(_.avgTime),
+        Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
         
-        Column(e"$Bold(Max)", align = Alignment.Right, hide = !showStats): s =>
+        Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.maxTime
       )
       
@@ -322,26 +322,26 @@ class TestReport(using Environment):
           .map(_.copy(children = Nil))
 
       Table[(Surface, Display)](
-        Column(e"") { row => if row(0).juncture.branch then e"⎇" else e"" },
-        Column(e"") { row =>
+        Column(e""): row =>
+          if row(0).juncture.branch then e"⎇" else e"",
+        Column(e""): row =>
           if coverage.hits.contains(row(0).juncture.id) then e"${Bg(ForestGreen)}(  )"
           else if coverage.oldHits.contains(row(0).juncture.id) then e"${Bg(Goldenrod)}(  )"
-          else e"${Bg(Brown)}(  )"
-        },
+          else e"${Bg(Brown)}(  )",
         Column(e"Juncture")(_(1)),
         Column(e"Line"): row =>
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
         Column(e"Symbol")(_(0).juncture.symbolName)
-      ).tabulate(render(junctures2))(columns)(using tableStyles.horizontal).each(Out.println)
+      ).tabulate(render(junctures2)).layout(columns)(using tableStyles.horizontal).render.each(Out.println(_))
       
       Out.println(e"")
     
       Table[CoverageData](
-        Column(e"Source file", align = Alignment.Left): data =>
+        Column(e"Source file", textAlign = TextAlignment.Left): data =>
           data.path,
-        Column(e"Hits", align = Alignment.Right)(_.hitsText),
-        Column(e"Size", align = Alignment.Right)(_.branches),
-        Column(e"Coverage", align = Alignment.Right): data =>
+        Column(e"Hits", textAlign = TextAlignment.Right)(_.hitsText),
+        Column(e"Size", textAlign = TextAlignment.Right)(_.branches),
+        Column(e"Coverage", textAlign = TextAlignment.Right): data =>
           e"${(100*(data.hits + data.oldHits)/data.branches.toDouble)}%",
         Column(e""): data =>
           def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
@@ -355,7 +355,7 @@ class TestReport(using Environment):
               colors.Brown -> notCovered)
           
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
-      ).tabulate(data)(columns).each(Out.println(_))
+      ).tabulate(data).layout(columns).render.each(Out.println(_))
       
       Out.println(e"")
     
@@ -367,7 +367,7 @@ class TestReport(using Environment):
       Out.println(e"${escapes.Reset}")
       Out.println(e"$Bold($Underline(Test results))")
 
-      table.tabulate(summaryLines)(columns, delimitRows = DelimitRows.SpaceIfMultiline).each(Out.println(_))
+      table.tabulate(summaryLines).layout(columns).render.each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
       Out.println(e" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
       Out.println(t"─"*72)
@@ -405,22 +405,22 @@ class TestReport(using Environment):
           Column(e"$Bold(Test)"): s =>
             e"${s.test.name}",
 
-          Column(e"$Bold(Min)", align = Alignment.Right): s =>
+          Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
             showTime(s.benchmark.min.toLong),
         
-          Column(e"$Bold(Mean)", align = Alignment.Right): s =>
+          Column(e"$Bold(Mean)", textAlign = TextAlignment.Right): s =>
             showTime(s.benchmark.mean.toLong),
           
-          Column(e"$Bold(Confidence)", align = Alignment.Right): s =>
+          Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): s =>
             e"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
           
-          Column(e"$Bold(Throughput)", align = Alignment.Right): s =>
+          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${opsPerS(s.benchmark)}"
         ) ::: (
           comparisons.map: c =>
             import Baseline.*
             val baseline = c.benchmark.baseline.vouch(using Unsafe)
-            Column(e"$Bold(${colors.CadetBlue}(${c.test.id}))", align = Alignment.Right): (bench: ReportLine.Bench) =>
+            Column(e"$Bold(${colors.CadetBlue}(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
                 case Ratio      => left/right
@@ -449,7 +449,7 @@ class TestReport(using Environment):
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))(columns).each(Out.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput)).layout(columns).render.each(Out.println(_))
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
@@ -488,9 +488,9 @@ class TestReport(using Environment):
           
           case DebugInfo.Captures(map) =>
             Table[(Text, Text), Display](
-              Column(e"Expression", align = Alignment.Right)(_(0)),
+              Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)),
-            ).tabulate(map.to(List))(140).each(Out.println(_))
+            ).tabulate(map.to(List)).layout(140).render.each(Out.println(_))
           
           case DebugInfo.Message(text) =>
             Out.println(text)
@@ -510,4 +510,4 @@ class TestReport(using Environment):
       Out.println()
       
       Out.println(Ribbon(colors.Crimson.srgb, colors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
-      Out.println(StackTrace(error).display.render)
+      Out.println(StackTrace(error).display)
