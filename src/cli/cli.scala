@@ -29,7 +29,7 @@ import digression.*
 import language.adhocExtensions
 
 abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
-  val suiteIo = safely(stdioSources.virtualMachine).vouch(using Unsafe)
+  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch(using Unsafe)
 
   given runner: Runner[TestReport] =
     given Stdio = suiteIo

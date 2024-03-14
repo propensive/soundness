@@ -33,6 +33,17 @@ project probably
     include   chiaroscuro/core
     include   ambience/core
 
+  module cli
+    compiler  scala
+    sources   src/cli
+    include   probably/core
+    include   escritoire/core
+
+  module bench
+    compiler  scala
+    sources   src/bench
+    include   probably/core
+
 ##
 
 code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
