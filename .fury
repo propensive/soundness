@@ -20,4 +20,8 @@ project fulminate
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css  anticipation/http  anticipation/text  anticipation/http  anticipation/print
+    include   anticipation/css
+    include   anticipation/http
+    include   anticipation/text
+    include   anticipation/http
+    include   anticipation/print
