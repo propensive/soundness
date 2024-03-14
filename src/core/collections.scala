@@ -30,7 +30,7 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
     iterable.collect { case value: FilterType => value }
   
-  inline def has(value: ValueType): Boolean = iterable.contains(value)
+  inline def has(value: ValueType): Boolean = iterable.exists(_ == value)
 
   inline def where(inline predicate: ValueType => Boolean): Optional[ValueType] =
     iterable.find(predicate).getOrElse(Unset)
