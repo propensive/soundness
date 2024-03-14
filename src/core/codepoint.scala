@@ -50,11 +50,7 @@ object Digression:
       "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while")
 
   def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
-    import quotes.reflect.*
-    failCompilation:
-      val parts = Fqcn(context.valueOrAbort.parts.head.tt).parts
-
-      '{new Fqcn(${Expr(parts)})}
+    failCompilation('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
 
 extension (inline context: StringContext)
   inline def fqcn(): Fqcn = ${Digression.fqcn('context)}
