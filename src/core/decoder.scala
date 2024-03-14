@@ -21,6 +21,7 @@ import fulminate.*
 import contingency.*
 import anticipation.*
 import inimitable.*
+import digression.*
 
 import language.experimental.captureChecking
 
@@ -34,6 +35,7 @@ object Decoder:
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int))(0)
 
+  given fqcn(using fqcn: Raises[FqcnError]): Decoder[Fqcn] = Fqcn(_)
   given uuid(using uuid: Raises[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
   given byte(using number: Raises[NumberError]): Decoder[Byte] = text =>
@@ -87,6 +89,7 @@ object Encoder:
   given char: Encoder[Char] = _.toString.tt
   given uuid: Encoder[Uuid] = _.text
   given pid: Encoder[Pid] = long.contramap(_.value)
+  given fqcn: Encoder[Fqcn] = _.text
 
 @capability
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:

@@ -4,6 +4,7 @@
 repo propensive/probably
 repo propensive/larceny
 repo propensive/inimitable
+repo propensive/digression
 repo propensive/wisteria
 
 target spectacular/test
@@ -12,7 +13,7 @@ project spectacular
   module core
     sources   src/core
     compiler  scala
-    include   rudiments/core inimitable/core contingency/core wisteria/core
+    include   rudiments/core inimitable/core contingency/core wisteria/core digression/core
 
   module test
     sources   src/test

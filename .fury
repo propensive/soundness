@@ -23,6 +23,7 @@ project spectacular
     include   rudiments/core
     include   inimitable/core
     include   contingency/core
+    include   digression/core
     include   wisteria/core
 
 ##
