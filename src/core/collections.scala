@@ -30,6 +30,9 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
     iterable.collect { case value: FilterType => value }
 
+  inline def where(inline predicate: ValueType => Boolean): Optional[ValueType] =
+    iterable.find(predicate).getOrElse(Unset)
+
   transparent inline def interleave(right: Iterable[ValueType]): Iterable[ValueType] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
@@ -39,7 +42,7 @@ extension [ValueType](iterator: Iterator[ValueType])
 
 extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def each(lambda: ValueType => Unit): Unit = iterable.foreach(lambda)
-  
+
   def sumBy[NumberType](lambda: ValueType => NumberType)(using numeric: Numeric[NumberType]): NumberType =
     var count = numeric.zero
     
@@ -93,6 +96,9 @@ extension [ElemType](value: Array[ElemType])
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
+
+  inline def has(key: KeyType): Boolean = map.contains(key)
+  inline def see(key: KeyType): Optional[ValueType] = if map.contains(key) then map(key) else Unset
 
   def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
           : Map[KeyType, ValueType] =
