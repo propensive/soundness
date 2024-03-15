@@ -75,8 +75,8 @@ object Semblance:
       table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).layout(200).render.join(e"\n")
     
     case Different(left, right, difference) =>
-      val whitespace = if right.contains('\n') then e"\n" else e" "
-      val whitespace2 = if left.contains('\n') then e"\n" else e" "
+      val whitespace = if right.has('\n') then e"\n" else e" "
+      val whitespace2 = if left.has('\n') then e"\n" else e" "
       e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
     
     case Identical(value) =>
