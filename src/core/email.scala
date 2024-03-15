@@ -129,7 +129,7 @@ object EmailAddress:
           unquoted(index + 1, true)
 
         case char: Char =>
-          if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || t"!#$$%&'*+-/=?^_`{|}~".contains(char)
+          if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || t"!#$$%&'*+-/=?^_`{|}~".has(char)
           then buffer.append(char)
           else raise(EmailAddressError(InvalidChar(char)))(())
           unquoted(index + 1, false)
