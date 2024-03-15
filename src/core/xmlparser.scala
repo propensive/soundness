@@ -37,7 +37,7 @@ object XmlInterpolation:
 
   case class CharExtractor(chars: Set[Char]):
     val charSet = chars.to(Set)
-    def unapply(char: Char): Boolean = charSet.contains(char)
+    def unapply(char: Char): Boolean = charSet.has(char)
 
   case class ParseStateNode(name: Text, namespaces: Set[Text])
 
@@ -63,7 +63,7 @@ object XmlInterpolation:
       copy(stack = stack.head.copy(namespaces = stack.head.namespaces + ns) :: stack.tail)
 
     def checkNs: Boolean =
-      !stack.head.name.contains(':') || stack.flatMap(_.namespaces).contains(stack.head.name.cut(t":")(0))
+      !stack.head.name.has(':') || stack.flatMap(_.namespaces).contains(stack.head.name.cut(t":")(0))
 
     def rollback(difference: Int): ParseState = copy(offset = offset - difference)
     
