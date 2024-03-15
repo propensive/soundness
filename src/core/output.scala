@@ -361,6 +361,10 @@ object Bg:
 
 case class Bg(color: Int):
   def fg: Fg = Fg(color)
+
+  def highContrast: Fg =
+    Fg(if ((color&255)*2 + ((color >> 8)&255)*5 + ((color >> 16)&255))*3 > 3839 then 0 else 16777215)
+
   def ansi(bits: 8 | 24): Text =
     val red = (color >> 16)&255
     val green = (color >> 8)&255

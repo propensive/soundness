@@ -31,13 +31,11 @@ case class Ribbon(colors: Bg*):
     import escapes.*
     IArray.from(colors.zip(parts)).curse:
       val (background, text) = cursor
-      
-      val i = background.color
-      val fg = Fg(if ((i&255)*2 + ((i >> 8)&255)*5 + ((i >> 16)&255))*3 > 3839 then 0 else 16777215)
+      val bg = background.color
       
       val arrow = postcursor.lay(e"$Reset${background.fg}()"): (color, _) =>
         e"${background.fg}($color())"
       
-      e"$background( $fg($text) )$arrow"
+      e"$background( ${background.highContrast}($text) )$arrow"
     .join
     
