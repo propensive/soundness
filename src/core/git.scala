@@ -371,8 +371,8 @@ object Octogenarian:
         if part.contains(t"..") then raise(GitRefError(text))(text)
         if part.length == 0 then raise(GitRefError(text))(text)
 
-        for ch <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(ch) then raise(GitRefError(text))(text)
+        for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
+        do if part.has(char) then raise(GitRefError(text))(text)
 
       text
     
