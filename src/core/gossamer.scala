@@ -160,7 +160,7 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
     recur(0, textual.empty)
   
   def contains(substring: into Text): Boolean = textual.indexOf(text, substring) != -1
-  def contains(char: Char): Boolean = textual.indexOf(text, char.show) != -1
+  def has(char: Char): Boolean = textual.indexOf(text, char.show) != -1
 
   def apply(index: Int): Char throws OutOfRangeError =
     if index >= 0 && index < text.length then textual.unsafeChar(text, index)
