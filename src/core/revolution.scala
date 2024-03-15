@@ -17,7 +17,12 @@ object ManifestDecoder:
     new ManifestDecoder["Main-Class"]:
       type Value = Fqcn
       def decode(text: Text): Fqcn = Fqcn(text)
-
+  
+  given createdBy: ManifestDecoder["Created-By"] { type Value = Text } =
+    new ManifestDecoder["Created-By"]:
+      type Value = Text
+      def decode(creator: Text): Text = creator
+  
 trait ManifestDecoder[KeyType <: Label]:
   type Value
   def decode(text: Text): Value
@@ -26,6 +31,14 @@ object ManifestEncoder:
   given mainClass: ManifestEncoder["Main-Class"] with
     type Value = Fqcn
     def encode(fqcn: Fqcn): Text = fqcn.text
+  
+  given manifestVersion: ManifestEncoder["Manifest-Version"] with
+    type Value = VersionNumber
+    def encode(version: VersionNumber): Text = version.text
+  
+  given createdBy: ManifestEncoder["Created-By"] with
+    type Value = Text
+    def encode(creator: Text): Text = creator
 
 trait ManifestEncoder[KeyType <: Label]:
   type Value
@@ -95,8 +108,9 @@ case class Manifest(entries: Map[Text, Text]):
         
         def putValue(index: Int, space: Int): Unit =
           buffer.append(value.slice(index, index + space))
+          buffer.append(t"\r\n")
           if index + space > 70 then
-            buffer.append(t"\r\n ")
+            buffer.append(t" ")
             putValue(index + space, 69)
   
         putValue(0, 68 - key.length)
