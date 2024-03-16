@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target quantitative/test
+target quantitative/core
 
 repo propensive/probably
 repo propensive/larceny
@@ -10,7 +10,7 @@ project quantitative
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core hypotenuse/core anticipation/opaque
+    include   gossamer/core hypotenuse/core anticipation/opaque anticipation/time
 
   module test
     compiler  scala

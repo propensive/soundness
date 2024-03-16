@@ -62,10 +62,10 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
   
   @targetName("divide3")
-  transparent inline infix def / [UnitsType2 <: Measure](inline double: Double): Any =
-    quantity/Quantity(double)
+  transparent inline infix def / [UnitsType2 <: Measure](inline double: Double): Any = quantity/Quantity(double)
 
-  transparent inline def sqrt(using sqrt: SquareRoot[Quantity[UnitsType]]): sqrt.Result = sqrt.sqrt(quantity)
+  inline def sqrt(using root: RootOperator[2, Quantity[UnitsType]]): root.Result = root.root(quantity)
+  inline def cbrt(using root: RootOperator[3, Quantity[UnitsType]]): root.Result = root.root(quantity)
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[UnitsType]}

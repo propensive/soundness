@@ -291,10 +291,10 @@ object Quantitative extends Quantitative2:
       type Result = Quantity[LeftType]
       inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
-    transparent inline given squareRoot[ValueType <: Measure]: SquareRoot[Quantity[ValueType]] =
+    transparent inline given squareRoot[ValueType <: Measure]: RootOperator[2, Quantity[ValueType]] =
       ${Quantitative.sqrtTypeclass[ValueType]}
     
-    transparent inline given cubeRoot[ValueType <: Measure]: CubeRoot[Quantity[ValueType]] =
+    transparent inline given cubeRoot[ValueType <: Measure]: RootOperator[3, Quantity[ValueType]] =
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
