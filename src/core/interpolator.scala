@@ -56,18 +56,19 @@ object Md:
       case Input.Inline(content) => state match
         case Input.Block(state)    => Input.Block(t"$state\n$content\n")
         case Input.Inline(state)   => Input.Inline(t"$state$content")
-     
+    
+    def parseInline(text: Text): Optional[Input.Inline] = safely:
+      Markdown.parseInline(text)
+      Input.Inline(text)
+    
+    def parseBlock(text: Text): Optional[Input.Block] = safely:
+      Markdown.parse(text)
+      Input.Block(text)
+
     def parse(state: Input, next: Text): Input = state match
       case Input.Inline(state) =>
-        safely:
-          Markdown.parseInline(t"$state$next")
-          Input.Inline(t"$state$next")
-        .or:
-          safely:
-            Markdown.parse(t"$state$next")
-            Input.Block(t"$state$next")
-          .or
-            throw InterpolationError(msg"the markdown could not be parsed")
+        parseInline(t"$state$next").or(parseBlock(t"$state$next")).or:
+          throw InterpolationError(msg"the markdown could not be parsed")
 
       case Input.Block(state) =>
         safely:
