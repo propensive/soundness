@@ -297,18 +297,18 @@ extension [SocketType](socket: SocketType)
           : SocketService raises BindError =
 
     val binding = bindable.bind(socket)
-    var continue: Boolean = true
     
-    val async = Async:
-      while continue do
-        val connection = bindable.connect(binding)
-        Async(bindable.transmit(binding, connection, lambda(connection)))
+    val bindLoop = loop:
+      val connection = bindable.connect(binding)
+      async(bindable.transmit(binding, connection, lambda(connection)))
+
+    val task = async(bindLoop.start())
 
     new SocketService:
       def stop(): Unit =
-        continue = false
+        bindLoop.stop()
         bindable.stop(binding)
-        safely(async.await())
+        safely(task.await())
 
 extension [EndpointType](endpoint: EndpointType)
   def connect[StateType](initialState: StateType)[MessageType](initialMessage: MessageType = Bytes())
