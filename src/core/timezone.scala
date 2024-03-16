@@ -76,10 +76,11 @@ object Tzdb:
 
   def parseFile(name: Text)(using Log[Text], Raises[TzdbError]): List[Tzdb.Entry] =
     val lines: LazyList[Text] =
-      val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn).or:
+      val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
+      val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
 
-      Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
+      Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
 
     parse(name, lines)
 
