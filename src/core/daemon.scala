@@ -251,8 +251,10 @@ def cliService[BusType <: Matchable](using executive: Executive)
       portFile.wipe()
       
     supervise:
-      given Log[Text] = Log.route[Text]:
-        case _ => Syslog(t"ethereal")
+      //given Log[Text] = Log.route[Text]:
+      //  case _ => Syslog(t"ethereal")
+
+      given Log[Text] = logging.silent
 
       Log.pin()
 
@@ -262,21 +264,23 @@ def cliService[BusType <: Matchable](using executive: Executive)
         termination
 
       daemon:
-        safely(baseDir.watch()).let: watcher =>
-          watcher.stream.each:
-            case Delete(_, t"port") =>
-              Log.info(t"The file $portFile was deleted; terminating immediately")
-              termination
-            
-            case _ =>
-              ()
+        safely:
+          portFile.watch: watcher =>
+            watcher.stream.each:
+              case Delete(_, t"port") =>
+                Log.info(t"The file $portFile was deleted; terminating immediately")
+                termination
+              
+              case _ =>
+                ()
           
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = (Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]
+      val buildId = safely((Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       t"$port $buildId $stderr".writeTo(portFile)
-      while continue do safely(client(socket.accept().nn))
+      
+      loop(safely(client(socket.accept().nn))).start()
 
     ExitStatus.Ok
   
