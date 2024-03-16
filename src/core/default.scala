@@ -35,4 +35,3 @@ trait Default[+ValueType]:
   def apply(): ValueType
 
 inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
-

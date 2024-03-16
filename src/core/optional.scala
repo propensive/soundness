@@ -19,7 +19,9 @@ package vacuous
 import anticipation.*
 import fulminate.*
 
-import language.experimental.captureChecking
+import scala.quoted.*
+
+import language.experimental.pureFunctions
 
 import _root_.java.util as ju
 
@@ -30,21 +32,19 @@ type Optional[ValueType] = Unset.type | ValueType
 
 case class UnsetValueError() extends Error(Message("the value was not set".tt))
 
+extension [ValueType](inline optional: Optional[ValueType])
+  inline def or(inline value: => ValueType): ValueType = ${Vacuous.optimizeOr('optional, 'value)}
+
 extension [ValueType](optional: Optional[ValueType])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
-  inline def or(inline value: => ValueType): ValueType =
-    if absent then value else optional.asInstanceOf[ValueType]
-  
-  inline def vouch(using Unsafe): ValueType = or(throw Panic(msg"a value was vouched but was absent"))
+  inline def vouch(using Unsafe): ValueType =
+    optional.or(throw Panic(msg"a value was vouched but was absent"))
 
   def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
-  def presume(using default: Default[ValueType]): ValueType = or(default())
+  def presume(using default: Default[ValueType]): ValueType = optional.or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
-  
-  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType^{absentValue} =
-    or(throw UnsetValueError())
-
+  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType = optional.or(throw UnsetValueError())
 
   inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2)
           : ValueType2 =
