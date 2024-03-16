@@ -16,7 +16,11 @@
 
 package vacuous
 
+import fulminate.*
+
 import scala.quoted.*
+
+given Realm = realm"vacuous"
 
 inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueType]): Optional[ValueType] =
   lambda(Unset)
@@ -24,6 +28,7 @@ inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueT
 object Vacuous:
   def optimizeOr[ValueType: Type](optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
           : Expr[ValueType] =
+
     import quotes.reflect.*
 
     def optimize(term: Term): Term = term match
@@ -32,13 +37,17 @@ object Vacuous:
           case Typed(Apply(select, List(_)), typeTree) =>
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
           
-          case other =>
-            inlined
+          case term =>
+            '{  $optional match
+                  case Unset => $default
+                  case term  => term.asInstanceOf[ValueType]  }.asTerm
       
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))
       
-      case other =>
-        other
+      case term =>
+        '{  $optional match
+              case Unset => $default
+              case term  => term.asInstanceOf[ValueType]  }.asTerm
   
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[ValueType]}.asExprOf[ValueType]
