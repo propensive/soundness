@@ -100,7 +100,7 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
   inline def has(key: KeyType): Boolean = map.contains(key)
-  inline def see(key: KeyType): Optional[ValueType] = if map.contains(key) then map(key) else Unset
+  inline def at(key: KeyType): Optional[ValueType] = if map.contains(key) then map(key) else Unset
 
   def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
           : Map[KeyType, ValueType] =
