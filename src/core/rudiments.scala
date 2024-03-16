@@ -57,6 +57,24 @@ case class Counter(first: Int = 0):
   private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
   def apply(): Int = atomicInt.incrementAndGet()
 
+def loop(block: => Unit): Loop^{block} = Loop({ () => block })
+
+object Loop:
+  enum State:
+    case Active, Stopping, Finished
+
+class Loop(iteration: () => Unit):
+  private var state: Loop.State = Loop.State.Active
+  
+  def stop(): Unit = synchronized:
+    if state == Loop.State.Active then state = Loop.State.Stopping
+  
+  def start(): Unit =
+    while state == Loop.State.Active do iteration()
+    
+    synchronized:
+      state = Loop.State.Finished
+
 export Rudiments.&
 
 extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
