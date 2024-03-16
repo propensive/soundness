@@ -33,15 +33,15 @@ import scala.collection.mutable.HashMap
 import java.nio.file as jnf
 import jnf.StandardWatchEventKinds.*
 
-case class InotifyError()
+case class WatchError()
 extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises InotifyError =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises WatchError =
     Watcher[DirectoryType](dirs*)
 
 extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises InotifyError =
+  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises WatchError =
     Watcher[DirectoryType](dir)
 
 object Watcher:
