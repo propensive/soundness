@@ -52,10 +52,8 @@ object Abacist:
               case None =>
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
           
-          case Nil =>
-            fail(msg"""
-              ${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units
-            """)
+          case Nil => fail:
+            msg"${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units"
     
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
