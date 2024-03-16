@@ -21,6 +21,7 @@ import fulminate.*
 import vacuous.*
 
 import scala.compiletime.*
+import scala.collection as sc
 
 import java.io as ji
 
@@ -66,6 +67,7 @@ extension [ValueType](iterable: Iterable[ValueType])
     if iterable.size != map.size then throw DuplicateIndexError() else map.to(Map)
 
   def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
+    @tailrec
     def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
             : (Int, Int) =
 
@@ -95,12 +97,18 @@ extension [ElemType](value: Array[ElemType])
     System.arraycopy(value, 0, newArray, 0, value.length)
     newArray.immutable(using Unsafe)
 
+
+extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
+  inline def has(key: KeyType): Boolean = map.contains(key)
+  
+  transparent inline def at(key: KeyType): Optional[ValueType] = optimizable[ValueType]: default =>
+    if map.has(key) then map(key) else default
+
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  inline def has(key: KeyType): Boolean = map.contains(key)
-  inline def at(key: KeyType): Optional[ValueType] = if map.contains(key) then map(key) else Unset
+  
 
   def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
           : Map[KeyType, ValueType] =
