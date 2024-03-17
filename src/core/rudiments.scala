@@ -69,7 +69,7 @@ class Loop(iteration: () => Unit):
   def stop(): Unit = synchronized:
     if state == Loop.State.Active then state = Loop.State.Stopping
   
-  def start(): Unit =
+  def run(): Unit =
     while state == Loop.State.Active do iteration()
     
     synchronized:
