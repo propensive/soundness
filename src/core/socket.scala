@@ -302,7 +302,7 @@ extension [SocketType](socket: SocketType)
       val connection = bindable.connect(binding)
       async(bindable.transmit(binding, connection, lambda(connection)))
 
-    val task = async(bindLoop.start())
+    val task = async(bindLoop.run())
 
     new SocketService:
       def stop(): Unit =

@@ -10,7 +10,7 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build coaxial/core
+command compile coaxial/core
 
 project coaxial
   name         Coaxial
