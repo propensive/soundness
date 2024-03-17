@@ -53,17 +53,17 @@ object Watch:
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
       .toMap
-    
 
+  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop)(using Monitor):
+    def stop(): Unit = pollLoop.stop()
+    val task: Async[Unit] = async(pollLoop.start())
 
-  private case class Service(watchService: jnf.WatchService, pump: Async[Unit])
+  private val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
+  private var serviceValue: Optional[WatchService] = Unset
 
-  val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
-  private var serviceValue: Optional[Service] = Unset
-
-  private def service(using Monitor): Service = serviceValue.or:
+  private def service(using Monitor): WatchService = serviceValue.or:
     jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
-      Service(watchService, async(pump(watchService))).tap: service =>
+      WatchService(watchService, pollLoop(watchService)).tap: service =>
         serviceValue = service
 
   private def register(paths: Map[jnf.Path, Text => Boolean])(using Monitor): WatchSet =
@@ -109,17 +109,15 @@ object Watch:
         
         catch case err: Exception => ()
 
-  private def pump(service: jnf.WatchService): Unit =
+  private def pollLoop(service: jnf.WatchService): Loop = loop:
     service.take().nn match
       case key: jnf.WatchKey =>
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
           watches.read: ref =>
             ref()(key)
           .each(put(_, event))
-
+  
         key.reset()
-    
-    pump(service)
 
 class WatchSet(funnel: Funnel[WatchEvent], private[surveillance] val watches: Set[Watch]):
   def stream: LazyList[WatchEvent] = funnel.stream
