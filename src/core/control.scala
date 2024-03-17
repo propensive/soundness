@@ -133,12 +133,12 @@ def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
   catch case error: Exception => Unset
 
 def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
-    (block: ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
         : SuccessType =
 
   boundary: label ?=>
     import unsafeExceptions.canThrowAny
-    block(using ThrowStrategy())
+    block(using Unsafe)(using ThrowStrategy())
 
 def throwErrors[ErrorType <: Error](using CanThrow[ErrorType])[SuccessType]
     (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
