@@ -56,7 +56,7 @@ object Watch:
 
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop)(using Monitor):
     def stop(): Unit = pollLoop.stop()
-    val task: Async[Unit] = async(pollLoop.start())
+    val task: Async[Unit] = async(pollLoop.run())
 
   private val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
   private var serviceValue: Optional[WatchService] = Unset
