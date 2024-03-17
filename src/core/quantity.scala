@@ -19,6 +19,7 @@ package abacist
 import quantitative.*
 import anticipation.*
 import fulminate.*
+import rudiments.*
 import vacuous.*
 
 import scala.collection.immutable.*
@@ -36,7 +37,8 @@ object Abacist:
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
       values match
-        case Nil => expr
+        case Nil =>
+          expr
         
         case unitValue :: valuesTail => multipliers match
           case Multiplier(unitPower, subdivision, max) :: tail =>
@@ -108,7 +110,7 @@ object Abacist:
     
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
     
-    val multiplier: Multiplier = multipliers[UnitsType].find(_.unitPower == lookupUnit).getOrElse:
+    val multiplier: Multiplier = multipliers[UnitsType].where(_.unitPower == lookupUnit).or:
       fail(msg"the Count does not include this unit")
     
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
@@ -126,8 +128,7 @@ object Abacist:
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
             then fail(msg"""
-              the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
-              ${current.name}
+              the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and ${current.name}
             """)
           
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)

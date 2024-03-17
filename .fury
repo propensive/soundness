@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build abacist/core
+command compile abacist/core
+default compile
 
 project abacist
   name         Abacist
