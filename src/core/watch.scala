@@ -16,116 +16,119 @@
 
 package surveillance
 
-import eucalyptus.*
 import turbulence.*
-import gossamer.*
 import rudiments.*
 import vacuous.*
 import digression.*
 import parasite.*
+import feudalism.*
 import fulminate.*
 import contingency.*
 import spectacular.*
 import anticipation.*
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable as scm
 
-import java.nio.file as jnf
-import jnf.StandardWatchEventKinds.*
+import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 case class WatchError()
-extends Error(msg"the limit on the number of paths that can be watched has been exceeded")
+extends Error(msg"the operating system's limit on the number of paths that can be watched has been exceeded")
 
-extension [DirectoryType: SpecificDirectory: GenericDirectory](dirs: Seq[DirectoryType])(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises WatchError =
-    Watcher[DirectoryType](dirs*)
+extension [PathType: GenericPath](path: PathType)(using Monitor)
+  def watch[ResultType](lambda: WatchSet => ResultType): ResultType raises WatchError =
+    val watchSet = Watch(List(path))
+    lambda(watchSet).also:
+      Watch.unregister(watchSet)
 
-extension [DirectoryType: SpecificDirectory: GenericDirectory](dir: DirectoryType)(using Monitor)
-  def watch()(using Log[Text], GenericWatchService[DirectoryType]): Watcher[DirectoryType] raises WatchError =
-    Watcher[DirectoryType](dir)
+extension [PathType: GenericPath](paths: Iterable[PathType])(using Monitor)
+  def watch[ResultType](lambda: WatchSet => ResultType): ResultType raises WatchError =
+    val watchSet = Watch(paths)
+    lambda(watchSet).also:
+      Watch.unregister(watchSet)
 
-object Watcher:
-  def apply[DirectoryType: GenericWatchService: SpecificDirectory: GenericDirectory]
-      (dirs: DirectoryType*)(using Log[Text], Monitor)
-          : Watcher[DirectoryType] =
+object Watch:
+  def apply[PathType: GenericPath](paths: Iterable[PathType])(using Monitor): WatchSet =
+    register:
+      paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
+        if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
+        else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
+      .toMap
+    
 
-    val svc: jnf.WatchService = summon[GenericWatchService[DirectoryType]]()
-    val watcher = Watcher[DirectoryType](svc)
-    dirs.each(watcher.add(_))
 
-    watcher
+  private case class Service(watchService: jnf.WatchService, pump: Async[Unit])
 
-case class Watcher[DirectoryType: GenericDirectory: SpecificDirectory](private val svc: jnf.WatchService)
-    (using Monitor):
-  
-  private val watches: HashMap[jnf.WatchKey, jnf.Path] = HashMap()
-  private val dirs: HashMap[jnf.Path, jnf.WatchKey] = HashMap()
-  
-  private def dirPath(directory: DirectoryType): jnf.Path = jnf.Paths.get(directory.fullPath.s).nn
-  private def toDirectory(path: jnf.Path): DirectoryType = SpecificDirectory(path.toString.tt)
+  val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
+  private var serviceValue: Optional[Service] = Unset
 
-  private val funnel = Funnel[Optional[WatchEvent]]
-  private val pumpAsync = daemon(pump())
-  
-  def stream: LazyList[WatchEvent] = funnel.stream.takeWhile(_ != Unset).collect:
-    case event: WatchEvent => event
-  
-  def removeAll()(using Log[Text]): Unit = watches.values.map(toDirectory(_)).each(remove(_))
+  private def service(using Monitor): Service = serviceValue.or:
+    jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
+      Service(watchService, async(pump(watchService))).tap: service =>
+        serviceValue = service
 
-  @tailrec
-  private def pump(): Unit =
-    svc.take().nn match
-      case k: jnf.WatchKey =>
-        val key = k.nn
-        key.pollEvents().nn.iterator.nn.asScala.flatMap(process(key, _)).each(funnel.put(_))
+  private def register(paths: Map[jnf.Path, Text => Boolean])(using Monitor): WatchSet =
+    val funnel = Funnel[WatchEvent]()
+
+    val watchSet =
+      paths.map: (path, filter) =>
+        val key = path.register(service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+        new Watch(key, path, funnel, filter).tap: watch =>
+          watches.mutate: map =>
+            map(key) = map.at(key).or(Set()) + watch
+      .to(Set)
+    
+    WatchSet(funnel, watchSet)
+
+  private[surveillance] def unregister(watchSet: WatchSet): Unit =
+    watches.mutate: map =>
+      watchSet.watches.each: watch =>
+        map(watch.key) = map.at(watch.key).or(Set()) - watch
+      
+        if map(watch.key).isEmpty then
+          watch.key.cancel()
+          map.remove(watch.key)
+
+  private def put(watch: Watch, event: jnf.WatchEvent[?]): Unit =
+    (event.context.nn: @unchecked) match
+      case path: jnf.Path =>
+        val name = path.toString.tt
+        if watch.filter(name) then try event.kind match
+          case ENTRY_CREATE =>
+            if watch.base.resolve(path).nn.toFile.nn.isDirectory
+            then watch.funnel.put(WatchEvent.NewDirectory(watch.base.toString.show, name))
+            else watch.funnel.put(WatchEvent.NewFile(watch.base.toString.show, name))
+          
+          case ENTRY_MODIFY =>
+            watch.funnel.put(WatchEvent.Modify(watch.base.toString.show, name))
+          
+          case ENTRY_DELETE =>
+            watch.funnel.put(WatchEvent.Delete(watch.base.toString.show, name))
+          
+          case _ => 
+            ()
+        
+        catch case err: Exception => ()
+
+  private def pump(service: jnf.WatchService): Unit =
+    service.take().nn match
+      case key: jnf.WatchKey =>
+        key.pollEvents().nn.iterator.nn.asScala.each: event =>
+          watches.read: ref =>
+            ref()(key)
+          .each(put(_, event))
+
         key.reset()
     
-    pump()
+    pump(service)
 
-  private def process(key: jnf.WatchKey, event: jnf.WatchEvent[?]): List[WatchEvent] =
-    val base = watches(key)
-    val eventCtx = event.context.nn
+class WatchSet(funnel: Funnel[WatchEvent], private[surveillance] val watches: Set[Watch]):
+  def stream: LazyList[WatchEvent] = funnel.stream
 
-    val absolute = (eventCtx: @unchecked) match
-      case path: jnf.Path => base.resolve(path).nn
-    
-    val relative = (eventCtx: @unchecked) match
-      case path: jnf.Path => path.toString.show
-    
-    try event.kind match
-      case ENTRY_CREATE =>
-        if absolute.toFile.nn.isDirectory
-        then List(WatchEvent.NewDirectory(base.toString.show, relative))
-        else List(WatchEvent.NewFile(base.toString.show, relative))
-      
-      case ENTRY_MODIFY =>
-        List(WatchEvent.Modify(base.toString.show, relative))
-      
-      case ENTRY_DELETE =>
-        List(WatchEvent.Delete(base.toString.show, relative))
-      
-      case _ =>
-        Nil
-    
-    catch case err: Exception => List()
-
-  def add(dir: DirectoryType)(using Log[Text]): Unit = synchronized:
-    val path = dirPath(dir)
-    val watchKey = path.register(svc, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
-    watches(watchKey) = path
-    dirs(path) = watchKey
-    Log.info(t"Started watching ${path.toString.show}")
-  
-  def remove(dir: DirectoryType)(using Log[Text]): Unit = synchronized:
-    val path = dirPath(dir)
-    val watchKey = dirs(path)
-    watchKey.cancel()
-    dirs.remove(path)
-    watches.remove(watchKey)
-    Log.info(t"Stopped watching ${path.toString.show}")
-    if dirs.isEmpty then funnel.put(Unset)
-  
-  def directories: Set[DirectoryType] = dirs.keySet.to(Set).map(toDirectory(_))
+class Watch
+    (private[surveillance] val key: jnf.WatchKey,
+     private[surveillance] val base: jnf.Path,
+                           val funnel: Funnel[WatchEvent],
+                           val filter: Text => Boolean)
 
 enum WatchEvent:
   case NewFile(dir: Text, file: Text)

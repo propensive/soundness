@@ -2,14 +2,15 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/eucalyptus
+repo propensive/feudalism
 
-target surveillance/test
+target surveillance/core
 
 project surveillance
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/path eucalyptus/core
+    include   anticipation/path eucalyptus/core feudalism/core
   
   module test
     compiler  scala
