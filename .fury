@@ -13,7 +13,7 @@ ecosystem vent 3 https://github.com/propensive/vent main
 command build contingency/core
 
 project contingency
-  name         Perforate
+  name         Contingency
   website      https://github.com/propensive/contingency
   description  Advanced error-handling in Scala
 
