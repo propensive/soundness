@@ -20,7 +20,7 @@ import turbulence.*
 import rudiments.*
 import vacuous.*
 import digression.*
-import parasite.*
+import parasite.*, threadModels.platform
 import feudalism.*
 import fulminate.*
 import contingency.*
@@ -34,39 +34,40 @@ import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 case class WatchError()
 extends Error(msg"the operating system's limit on the number of paths that can be watched has been exceeded")
 
-extension [PathType: GenericPath](path: PathType)(using Monitor)
+extension [PathType: GenericPath](path: PathType)
   def watch[ResultType](lambda: WatchSet => ResultType): ResultType raises WatchError =
     val watchSet = Watch(List(path))
     lambda(watchSet).also:
       Watch.unregister(watchSet)
 
-extension [PathType: GenericPath](paths: Iterable[PathType])(using Monitor)
+extension [PathType: GenericPath](paths: Iterable[PathType])
   def watch[ResultType](lambda: WatchSet => ResultType): ResultType raises WatchError =
     val watchSet = Watch(paths)
     lambda(watchSet).also:
       Watch.unregister(watchSet)
 
 object Watch:
-  def apply[PathType: GenericPath](paths: Iterable[PathType])(using Monitor): WatchSet =
+  def apply[PathType: GenericPath](paths: Iterable[PathType]): WatchSet =
     register:
       paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
         if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
         else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
       .toMap
 
-  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop)(using Monitor):
+  private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     def stop(): Unit = pollLoop.stop()
-    val task: Async[Unit] = async(pollLoop.run())
+    val task: Optional[Async[Unit]] = safely(supervise(daemon(pollLoop.run())))
 
   private val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
   private var serviceValue: Optional[WatchService] = Unset
 
-  private def service(using Monitor): WatchService = serviceValue.or:
-    jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
-      WatchService(watchService, pollLoop(watchService)).tap: service =>
-        serviceValue = service
+  private def service: WatchService = serviceValue.or:
+    synchronized:
+      jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
+        WatchService(watchService, pollLoop(watchService)).tap: service =>
+          serviceValue = service
 
-  private def register(paths: Map[jnf.Path, Text => Boolean])(using Monitor): WatchSet =
+  private def register(paths: Map[jnf.Path, Text => Boolean]): WatchSet =
     val funnel = Funnel[WatchEvent]()
 
     val watchSet =
@@ -87,6 +88,12 @@ object Watch:
         if map(watch.key).isEmpty then
           watch.key.cancel()
           map.remove(watch.key)
+        
+        if map.isEmpty then synchronized:
+          serviceValue.let: service =>
+            service.stop()
+            serviceValue = Unset
+
 
   private def put(watch: Watch, event: jnf.WatchEvent[?]): Unit =
     (event.context.nn: @unchecked) match
