@@ -20,6 +20,7 @@ import anticipation.*
 import rudiments.*
 import contingency.*
 import digression.*
+import vacuous.*
 
 import java.util.concurrent.atomic as juca
 
@@ -37,7 +38,6 @@ class Hook(private val thread: Thread):
   def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
 
 object Async:
-
   def onShutdown(block: => Unit): Hook =
     val runnable: Runnable = () => block
     val thread: Thread = Thread(runnable)
@@ -67,15 +67,21 @@ package threadModels:
   given daemon: ThreadModel = () => DaemonSupervisor
 
 def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint): Async[Unit] =
-  Async[Unit](evaluate, daemon = true)
+  Async[Unit](evaluate, daemon = true, name = Unset)
 
 def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, Codepoint)
         : Async[ResultType] =
 
-  Async(evaluate, daemon = false)
+  Async(evaluate, daemon = false, name = Unset)
+
+def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor)
+        : Async[ResultType] =
+  
+  Async(evaluate, daemon = false, name = name)
 
 @capability
-class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean)
+class Async[+ResultType]
+    (evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean, name: Optional[Text])
     (using monitor: Monitor, codepoint: Codepoint):
   
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
@@ -97,7 +103,7 @@ class Async[+ResultType](evaluate: Submonitor[ResultType] ?=> ResultType, daemon
           child.cancel()
           boundary.break()
     
-    monitor.supervisor.newThread(runnable)
+    monitor.supervisor.newPlatformThread(name.or("async".tt), runnable)
   
   private def identifier: Text = s"${codepoint.text}".tt
 

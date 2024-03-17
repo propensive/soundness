@@ -68,17 +68,21 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
 sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
   def newThread(runnable: Runnable^): Thread^{runnable}
   def supervisor: Supervisor = this
+  
+  def newPlatformThread(name: Text, runnable: Runnable^): Thread^{runnable} =
+    Thread.ofPlatform().nn.start(runnable).nn.tap(_.setName(name.s))
 
 case object VirtualSupervisor extends Supervisor():
   def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
-
+  
 case object PlatformSupervisor extends Supervisor():
   def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
 
 case object DaemonSupervisor extends Supervisor():
-  def newThread(runnable: Runnable^): Thread^{runnable} = new Thread(runnable).nn.tap: thread =>
-    thread.setDaemon(true)
-    thread.start()
+  def newThread(runnable: Runnable^): Thread^{runnable} =
+    new Thread(runnable).nn.tap: thread =>
+      thread.setDaemon(true)
+      thread.start()
 
 def supervise[ResultType](block: Monitor ?=> ResultType)(using cancel: Raises[CancelError], model: ThreadModel)
         : ResultType =
