@@ -58,13 +58,10 @@ extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
   
-  def indexBy[ValueType2](lambda: ValueType -> ValueType2)
-          : Map[ValueType2, ValueType] throws DuplicateIndexError =
-
-    val map = iterable.map: value =>
+  def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] =
+    iterable.map: value =>
       (lambda(value), value)
-    
-    if iterable.size != map.size then throw DuplicateIndexError() else map.to(Map)
+    .to(Map)
 
   def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
     @tailrec
@@ -78,11 +75,6 @@ extension [ValueType](iterable: Iterable[ValueType])
         else recur(index + 1, iterable.tail, bestStart, bestLength, 0)
 
     recur(0, iterable, 0, 0, 0)
-
-case class KeyNotFoundError(name: Text) extends Error(msg"the key $name was not found")
-
-case class DuplicateIndexError()
-extends Error(msg"the sequence contained more than one element that mapped to the same index")
 
 extension [ElemType](value: IArray[ElemType])
   inline def mutable(using Unsafe): Array[ElemType] = (value.asMatchable: @unchecked) match
@@ -107,8 +99,6 @@ extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
-
-  
 
   def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
           : Map[KeyType, ValueType] =
