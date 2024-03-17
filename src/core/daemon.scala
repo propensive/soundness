@@ -280,7 +280,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
       val stderr = if stderrSupport() then 1 else 0
       t"$port $buildId $stderr".writeTo(portFile)
       
-      loop(safely(client(socket.accept().nn))).start()
+      loop(safely(client(socket.accept().nn))).run()
 
     ExitStatus.Ok
   
