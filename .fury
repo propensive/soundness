@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build surveillance/core
+command compile surveillance/core
+default compile
 
 project surveillance
   name         Surveillance
@@ -20,7 +21,6 @@ project surveillance
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/path
     include   eucalyptus/core
     include   feudalism/core
 
