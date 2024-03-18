@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build punctuation/core
+command compile punctuation/core
+default compile
 
 project flexmark
   name         Flexmark
