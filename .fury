@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build cellulose/core
+command compile cellulose/core
+default compile
 
 project cellulose
   name         Cellulose
@@ -20,11 +21,8 @@ project cellulose
   module core
     compiler  scala
     sources   src/core
-    include   eucalyptus/core
     include   chiaroscuro/core
-    include   kaleidoscope/core
     include   polyvinyl/core
-    include   anticipation/transport
 
 ##
 
