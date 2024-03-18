@@ -24,7 +24,6 @@ project gossamer
     sources   src/core
     include   hieroglyph/core
     include   contextual/core
-    include   spectacular/core
 
 ##
 
