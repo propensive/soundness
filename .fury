@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build spectacular/core
+command compile spectacular/core
+default compile
 
 project spectacular
   name         Spectacular
@@ -22,7 +23,6 @@ project spectacular
     compiler  scala
     include   rudiments/core
     include   inimitable/core
-    include   contingency/core
     include   digression/core
     include   wisteria/core
 
