@@ -203,9 +203,9 @@ def cliService[BusType <: Matchable](using executive: Executive)
             val termcap: Termcap = new Termcap:
               def ansi: Boolean = true
               
-              val color: ColorCapability =
+              val color: ColorDepth =
                 import workingDirectories.default
-                ColorCapability(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
+                ColorDepth(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
 
             val stdio: Stdio =
               Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
