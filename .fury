@@ -10,7 +10,9 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build anthology/core
+command compile anthology/scala
+
+default compile
 
 project anthology
   name         Anthology
