@@ -371,17 +371,14 @@ case class Bg(color: Int):
     val blue = color&255
     
     colorDepth match
-      case ColorDepth.Cube6 =>
-        val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
-          36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
-
-        t"\e[48;5;${n}m"
-
       case ColorDepth.TrueColor =>
         t"\e[48;2;$red;$green;${blue}m"
 
       case _ =>
-        t""
+        val n = 16 +
+          (if blue == red && red == green then 216 + red*23/255 else red*5/255*36 + green*5/255*6 + blue*5/255)
+
+        t"\e[48;5;${n}m"
 
 case class Fg(color: Int):
   def bg: Bg = Bg(color)
@@ -391,17 +388,14 @@ case class Fg(color: Int):
     val blue = color&255
     
     colorDepth match
-      case ColorDepth.Cube6 =>
-        val n = if red == green && green == blue then 232 + (red*23 + 0.99).toInt else 16 +
-          36*(red*5 + 0.99).toInt + 6*(green*5 + 0.99).toInt + (blue*5 + 0.99).toInt
-
-        t"\e[38;5;${n}m"
-
       case ColorDepth.TrueColor =>
         t"\e[38;2;$red;$green;${blue}m"
 
-      case other =>
-        t""
+      case _ =>
+        val n = 16 +
+          (if blue == red && red == green then 216 + red*23/255 else red*5/255*36 + green*5/255*6 + blue*5/255)
+
+        t"\e[38;5;${n}m"
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
