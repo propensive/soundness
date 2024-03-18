@@ -10,7 +10,8 @@
 
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build galilei/core
+command compile galilei/core
+default compile
 
 project galilei
   name         Galilei
@@ -22,7 +23,6 @@ project galilei
     sources   src/core
     include   serpentine/core
     include   guillotine/core
-    include   digression/core
 
 ##
 
