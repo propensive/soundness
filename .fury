@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build zeppelin/core
+command compile zeppelin/core
+default compile
 
 project zeppelin
   name         Zeppelin
@@ -20,13 +21,9 @@ project zeppelin
   module core
     compiler  scala
     sources   src/core
-    include   ambience/core
     include   imperial/core
-    include   anticipation/path
     include   serpentine/core
     include   turbulence/core
-    include   vacuous/core
-    include   anticipation/time
     include   feudalism/core
 
 ##
