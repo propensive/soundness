@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build vacuous/core
+command compile vacuous/core
   description  Build the core module
 
 command tests vacuous/test
   description  Test Vacuous
+
+default compile
 
 project vacuous
   name         Vacuous
