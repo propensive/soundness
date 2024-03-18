@@ -196,7 +196,7 @@ object Windows:
     given creator: PathCreator[Path, Forbidden, Drive] = Path(_, _)
     
     given rootParser: RootParser[Path, Drive] = text => text.only:
-      case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter(0)).toUpper), text.drop(3))
+      case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter.at(0).vouch).toUpper), text.drop(3))
 
     given show: Show[Path] = _.render
     given encoder: Encoder[Path] = _.render
