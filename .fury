@@ -13,8 +13,9 @@ ecosystem vent 3 https://github.com/propensive/vent main
 command package xylophone/package
   description  Create a distributable xylophone.jar package
 
-command build xylophone/core
+command compile xylophone/core
   description  Build the project
+default compile
 
 project xylophone
   name         Xylophone
@@ -25,9 +26,6 @@ project xylophone
     compiler  scala
     sources   src/core
     include   gossamer/core
-    include   anticipation/transport
-    include   turbulence/core
-    include   wisteria/core
 
 ##
 
