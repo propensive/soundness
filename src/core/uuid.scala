@@ -31,8 +31,7 @@ import language.experimental.captureChecking
 case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
 
 object Uuid extends Extractor[Text, Uuid]:
-  def parse(text: Text)(using Raises[UuidError]): Uuid =
-    extract(text).or(raise(UuidError(text))(Uuid(0L, 0L)))
+  def parse(text: Text)(using Raises[UuidError]): Uuid = extract(text).or(raise(UuidError(text))(Uuid(0L, 0L)))
 
   def extract(text: Text): Optional[Uuid] = safely:
     ju.UUID.fromString(text.s).nn.pipe: uuid =>
@@ -56,9 +55,7 @@ object Inimitable:
   given Realm = realm"inimitable"
 
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
-    val text = expr.valueOrAbort.parts.head.tt
-    val uuid = failCompilation(Uuid.parse(text))
-    
+    val uuid = failCompilation(Uuid.parse(expr.valueOrAbort.parts.head.tt))
     '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}
     
 extension (inline context: StringContext)
