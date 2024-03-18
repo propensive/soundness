@@ -175,8 +175,10 @@ extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
   
   transparent inline def at(index: Int): Optional[ElemType] = optimizable[ElemType]: default =>
-    if seq.has(index) then seq(index) else default
-
+    if has(index) then seq(index) else default
+  
+  inline def prim: Optional[ElemType] = at(0)
+  inline def ult: Optional[ElemType] = at(seq.length - 1)
 
 extension (iarray: IArray.type)
   def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
