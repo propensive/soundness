@@ -27,6 +27,7 @@ project jacinta
     compiler  scala
     sources   src/core
     include   merino/core
+    include   gossamer/core
 
   artifact package jacinta.jar
     include  jacinta/core
