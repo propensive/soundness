@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build feudalism/core
+command compile feudalism/core
+default compile
 
 project feudalism
   name         Feudalism
