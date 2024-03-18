@@ -75,6 +75,12 @@ class Loop(iteration: () => Unit):
     synchronized:
       state = Loop.State.Finished
 
+def lazily[ValueType](block: => ValueType): Lazy[ValueType]^{block} = new Lazy(() => block)
+
+class Lazy[ValueType](block: () => ValueType):
+  lazy val value = block()
+  def apply(): ValueType = value
+
 export Rudiments.&
 
 extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
