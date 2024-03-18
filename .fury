@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build rudiments/core
+command compile rudiments/core
+default compile
 
 project rudiments
   name         Rudiments
@@ -22,7 +23,6 @@ project rudiments
     sources   src/core
     include   vacuous/core
     include   anticipation/path
-    include   anticipation/css
 
 ##
 
