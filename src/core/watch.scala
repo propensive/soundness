@@ -56,7 +56,7 @@ object Watch:
 
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     def stop(): Unit = pollLoop.stop()
-    val task: Optional[Async[Unit]] = safely(supervise(daemon(pollLoop.run())))
+    val async: Optional[Async[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
   private val watches: Mutex[scm.HashMap[jnf.WatchKey, Set[Watch]]] = Mutex(scm.HashMap())
   private var serviceValue: Optional[WatchService] = Unset
