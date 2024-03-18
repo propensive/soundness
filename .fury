@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build parasite/core
+command compile parasite/core
   description  Build the core module
 
 command test parasite/test
   description  Test Sybolism
+
+default compile
 
 project parasite
   name         Parasite
@@ -26,7 +28,6 @@ project parasite
     sources   src/core
     include   rudiments/core
     include   digression/core
-    include   gossamer/core
     include   anticipation/time
   
   module test
