@@ -136,26 +136,26 @@ case class Ttf(data: Bytes):
     .to(Map)
 
   def head: HeadTable raises FontError =
-    tables.get(TtfTag.Head).map: ref =>
+    tables.at(TtfTag.Head).let: ref =>
       data.deserialize[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))(())
         
-    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
+    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
 
   def cmap: CmapTable raises FontError =
-    tables.get(TtfTag.Cmap).map: ref =>
+    tables.at(TtfTag.Cmap).let: ref =>
       CmapTable(ref.offset)
-    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Cmap))))
+    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Cmap))))
   
   def hhea: HheaTable raises FontError =
-    tables.get(TtfTag.Hhea).map: ref =>
+    tables.at(TtfTag.Hhea).let: ref =>
       data.deserialize[HheaTable](ref.offset)
-    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
+    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
   
   def hmtx: HmtxTable raises FontError =
-    tables.get(TtfTag.Hmtx).map: ref =>
+    tables.at(TtfTag.Hmtx).let: ref =>
       HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    .getOrElse(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
+    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
 
   case class HeadTable
       (majorVersion:       U16,
