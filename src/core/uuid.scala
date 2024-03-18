@@ -30,17 +30,16 @@ import language.experimental.captureChecking
 
 case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
 
-object Uuid:
+object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text)(using Raises[UuidError]): Uuid =
     try ju.UUID.fromString(text.s).nn.pipe: uuid =>
       Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
     catch case _: Exception => raise(UuidError(text))(Uuid(0L, 0L))
 
-  def unapply(text: Text): Option[Uuid] =
-    try Some:
-      ju.UUID.fromString(text.s).nn.pipe: uuid =>
-        Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
-    catch case err: Exception => None
+  def extract(text: Text): Optional[Uuid] =
+    try ju.UUID.fromString(text.s).nn.pipe: uuid =>
+      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+    catch case err: Exception => Unset
 
   def apply(): Uuid = ju.UUID.randomUUID().nn.pipe: uuid =>
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
