@@ -93,13 +93,13 @@ object EmailAddress:
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
     
-    def quoted(index: Int, escape: Boolean): (LocalPart, Int) = safely(text(index)) match
+    def quoted(index: Int, escape: Boolean): (LocalPart, Int) = text.at(index) match
       case '\"' =>
         if escape then
           buffer.append('\"')
           quoted(index + 1, false)
         else
-          if safely(text(index + 1)) == '@'
+          if text.at(index + 1) == '@'
           then (LocalPart.Quoted(buffer.text), index + 2)
           else abort(EmailAddressError(UnescapedQuote))
       
@@ -115,7 +115,7 @@ object EmailAddress:
         raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
     
     def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
-      safely(text(index)) match
+      text.at(index) match
         case '@' =>
           if dot then raise(EmailAddressError(TerminalPeriod))(())
           if buffer.length > 64 then raise(EmailAddressError(LongLocalPart))(())
@@ -142,7 +142,7 @@ object EmailAddress:
 
     val domain =
       if text.length < index + 1 then abort(EmailAddressError(MissingDomain))
-      else if safely(text(index)) == '[' then
+      else if text.at(index) == '[' then
         try
           if text.last != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import errorHandlers.throwUnsafely

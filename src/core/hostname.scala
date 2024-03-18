@@ -68,7 +68,7 @@ object Hostname:
   def parse(text: Text): Hostname raises HostnameError =
     val buffer: TextBuffer = TextBuffer()
 
-    def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = safely(text(index)) match
+    def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
       case '.' | Unset =>
         val label = buffer()
         if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))(())
