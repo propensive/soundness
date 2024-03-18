@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build probably/core
+command compile probably/cli
+default compile
 
 project probably
   name         Probably
@@ -20,15 +21,11 @@ project probably
   module coverage
     compiler  scala
     sources   src/coverage
-    include   gossamer/core
-    include   digression/core
     include   dendrology/core
 
   module core
     compiler  scala
     sources   src/core
-    include   eucalyptus/core
-    include   turbulence/core
     include   probably/coverage
     include   chiaroscuro/core
     include   ambience/core
@@ -37,7 +34,6 @@ project probably
     compiler  scala
     sources   src/cli
     include   probably/core
-    include   escritoire/core
 
   module bench
     compiler  scala
