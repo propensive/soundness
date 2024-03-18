@@ -162,9 +162,8 @@ extension [TextType](text: TextType)(using textual: Textual[TextType])
   def contains(substring: into Text): Boolean = textual.indexOf(text, substring) != -1
   def has(char: Char): Boolean = textual.indexOf(text, char.show) != -1
 
-  def apply(index: Int): Char throws OutOfRangeError =
-    if index >= 0 && index < text.length then textual.unsafeChar(text, index)
-    else throw OutOfRangeError(index, 0, text.length)
+  inline def at(index: Int): Optional[Char] = optimizable[Char]: default =>
+    if index < 0 || index >= length then default else textual.unsafeChar(text, index)
   
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(text.length)
