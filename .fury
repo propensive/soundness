@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build capricious/core
+command compile capricious/core
   description  Build the core module
 
 command test capricious/test
   description  Test Capricious
+
+default compile
 
 project capricious
   name         Capricious
@@ -26,7 +28,6 @@ project capricious
     sources   src/core
     include   wisteria/core
     include   hypotenuse/core
-    include   anticipation/text
   
   module test
     compiler  scala
