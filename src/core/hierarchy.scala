@@ -251,7 +251,7 @@ object Followable:
       def decode(text: Text): LinkType =
         import followable.*
         
-        val foundSeparator: Char = unsafely(text.where(separators.contains(_)).let(text(_))).or('/')
+        val foundSeparator: Char = unsafely(text.where(separators.contains(_)).let(text.at(_))).or('/')
         val ascentPrefix: Text = t"$parentRef$foundSeparator"
         
         def recur(text: Text, ascent: Int = 0): LinkType =
