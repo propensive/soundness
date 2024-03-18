@@ -17,8 +17,10 @@
 package rudiments
 
 import vacuous.*
+import fulminate.*
 
 import scala.deriving.*
+import scala.collection.mutable as scm
 
 import java.util.concurrent.atomic as juca
 
@@ -74,12 +76,6 @@ class Loop(iteration: () => Unit):
     
     synchronized:
       state = Loop.State.Finished
-
-def lazily[ValueType](block: => ValueType): Lazy[ValueType]^{block} = new Lazy(() => block)
-
-class Lazy[ValueType](block: () => ValueType):
-  lazy val value = block()
-  def apply(): ValueType = value
 
 export Rudiments.&
 
