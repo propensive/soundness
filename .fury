@@ -10,7 +10,8 @@
 
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build fulminate/core
+command compile fulminate/core
+default compile
 
 project fulminate
   name         Fulminate
@@ -20,6 +21,4 @@ project fulminate
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css
-    include   anticipation/http
     include   anticipation/print
