@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build chiaroscuro/core
+command compile chiaroscuro/core
+default compile
 
 project chiaroscuro
   name         Chiaroscuro
@@ -20,13 +21,10 @@ project chiaroscuro
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core
     include   dissonance/core
     include   escritoire/core
     include   dendrology/core
     include   escapade/core
-    include   iridescence/core
-    include   wisteria/core
 
 ##
 
