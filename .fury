@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build symbolism/core
+command compile symbolism/core
   description  Build the core module
 
 command test symbolism/test
   description  Test Symbolism
+
+default compile
 
 project symbolism
   name         Symbolism
