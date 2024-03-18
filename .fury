@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build diuretic/core
+command compile diuretic/core
   description  Build the core module
 
 command test diuretic/test
   description  Test Diuretic
+
+default compile
 
 project diuretic
   name         Diuretic
