@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build ambience/core
+command compile ambience/core
+default compile
 
 project ambience
   name         Ambience
@@ -20,11 +21,7 @@ project ambience
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
-    include   anticipation/path
-    include   spectacular/core
     include   gossamer/core
-    include   contingency/core
 
 ##
 
