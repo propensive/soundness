@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build hieroglyph/core
+command compile hieroglyph/core
+default compile
 
 project hieroglyph
   name         Hieroglyph
@@ -20,7 +21,9 @@ project hieroglyph
   module core
     compiler  scala
     sources   src/core
-    include   kaleidoscope/core  contingency/core  spectacular/core
+    include   kaleidoscope/core
+    include   contingency/core
+    include   spectacular/core
 
 ##
 
