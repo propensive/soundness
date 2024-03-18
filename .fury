@@ -10,7 +10,9 @@
     
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build gossamer/core
+command compile gossamer/core
+
+default compile
 
 project gossamer
   name         Gossamer
