@@ -144,10 +144,8 @@ case class Flag[OperandType]
     (using FlagInterpreter[OperandType]):
   
   def matches(key: Argument): Boolean =
-    val flagId =
-      if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then safely(key()(1)) else Unset
-    
-    flagId == name || aliases.contains(flagId)
+    val flag = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then key().at(1) else Unset
+    flag == name || aliases.contains(flag)
 
   def apply()
       (using cli:             Cli,
