@@ -21,7 +21,6 @@ project spectacular
   module core
     sources   src/core
     compiler  scala
-    include   rudiments/core
     include   inimitable/core
     include   digression/core
     include   wisteria/core
