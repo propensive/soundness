@@ -113,6 +113,8 @@ extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
 extension [ElemType](seq: Seq[ElemType])
   def runs: List[List[ElemType]] = runsBy(identity)
 
+  inline def prim: Optional[ElemType] = if seq.isEmpty then Unset else seq.head
+
   def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
     @tailrec
     def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
@@ -177,7 +179,6 @@ extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def at(index: Int): Optional[ElemType] = optimizable[ElemType]: default =>
     if has(index) then seq(index) else default
   
-  inline def prim: Optional[ElemType] = at(0)
   inline def ult: Optional[ElemType] = at(seq.length - 1)
 
 extension (iarray: IArray.type)
