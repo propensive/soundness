@@ -171,6 +171,12 @@ extension [ElemType](seq: IndexedSeq[ElemType])
       (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
           : IndexedSeq[ElemType2] =
     Cursor.curse(seq)(block)
+  
+  transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
+  
+  transparent inline def at(index: Int): Optional[ElemType] = optimizable[ElemType]: default =>
+    if seq.has(index) then seq(index) else default
+
 
 extension (iarray: IArray.type)
   def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
