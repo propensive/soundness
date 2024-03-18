@@ -84,10 +84,10 @@ enum TtfTag extends TableTag:
     case Cvt   => t"cvt "
     case table => table.toString.tt.lower
 
-object TtfTag:
-  def unapply(text: Text): Option[TtfTag] = text match
-    case t"cvt " => Some(Cvt)
-    case other   => try Some(TtfTag.valueOf(other.lower.capitalize.s)) catch case error: Exception => None
+object TtfTag extends Extractor[Text, TtfTag]:
+  def extract(text: Text): Optional[TtfTag] = text match
+    case t"cvt " => Cvt
+    case other   => safely(TtfTag.valueOf(other.lower.capitalize.s))
 
 enum OtfTag extends TableTag:
   case Base, Cbdt, Cblc, Cff, Cff2, Colr, Cpal, Dsig, Ebdt, Eblc, Ebsc, Gdef, Gpos, Gsub, Hvar, Jstf, Ltsh,
@@ -98,11 +98,11 @@ enum OtfTag extends TableTag:
     case Cff   => t"CFF "
     case table => table.toString.tt.upper
 
-object OtfTag:
-  def unapply(text: Text): Option[OtfTag] = text match
-    case t"OS/2" => Some(Os2)
-    case t"CFF " => Some(Cff)
-    case other   => try Some(OtfTag.valueOf(other.lower.capitalize.s)) catch case error: Exception => None
+object OtfTag extends Extractor[Text, OtfTag]:
+  def extract(text: Text): Optional[OtfTag] = text match
+    case t"OS/2" => Os2
+    case t"CFF " => Cff
+    case other   => safely(OtfTag.valueOf(other.lower.capitalize.s))
 
 case class Ttf(data: Bytes):
   ttf =>
