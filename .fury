@@ -22,6 +22,4 @@ project fulminate
     sources   src/core
     include   anticipation/css
     include   anticipation/http
-    include   anticipation/text
-    include   anticipation/http
     include   anticipation/print
