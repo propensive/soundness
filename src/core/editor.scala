@@ -47,10 +47,10 @@ case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Tex
     case Home        => copy(position = 0)
     case End         => copy(position = value.length)
     case Left        => copy(position = (position - 1) max 0)
-    case Ctrl(Left)  => copy(position = (position - 2 max 0 to 0 by -1).find(value(_) == ' ').fold(0)(_ + 1))
+    case Ctrl(Left)  => copy(position = (position - 2 max 0 to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
 
     case Ctrl(Right) => val range = ((position + 1) min (value.length - 1)) to (value.length - 1)
-                        val position2 = range.find(value(_) == ' ').fold(value.length)(_ + 1)
+                        val position2 = range.where(value.at(_) == ' ').lay(value.length)(_ + 1)
                         copy(position = position2 min value.length)
     case Right       => copy(position = (position + 1) min value.length)
     case _           => this
