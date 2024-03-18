@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build imperial/core
+command compile imperial/core
+default compile
 
 project imperial
   name         Imperial
