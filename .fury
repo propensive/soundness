@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build dendrology/core
+command compile dendrology/core
+default compile
 
 project dendrology
   name         Dendrology
