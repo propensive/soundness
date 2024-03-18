@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build escapade/core
+command compile escapade/core
+default compile
 
 project escapade
   name         Escapade
@@ -21,10 +22,9 @@ project escapade
     compiler  scala
     sources   src/core
     include   gossamer/core
-    include   anticipation/color
+    include   anticipation/url
     include   iridescence/core
     include   turbulence/core
-    include   contingency/core
   
 ##
 
