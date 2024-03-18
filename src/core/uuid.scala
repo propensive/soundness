@@ -32,14 +32,11 @@ case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UU
 
 object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text)(using Raises[UuidError]): Uuid =
-    try ju.UUID.fromString(text.s).nn.pipe: uuid =>
-      Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
-    catch case _: Exception => raise(UuidError(text))(Uuid(0L, 0L))
+    extract(text).or(raise(UuidError(text))(Uuid(0L, 0L)))
 
-  def extract(text: Text): Optional[Uuid] =
-    try ju.UUID.fromString(text.s).nn.pipe: uuid =>
+  def extract(text: Text): Optional[Uuid] = safely:
+    ju.UUID.fromString(text.s).nn.pipe: uuid =>
       Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
-    catch case err: Exception => Unset
 
   def apply(): Uuid = ju.UUID.randomUUID().nn.pipe: uuid =>
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
@@ -47,9 +44,7 @@ object Uuid extends Extractor[Text, Uuid]:
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def text: Text = this.java.toString.tt
-  
-  def bytes: Bytes =
-    (Bytes(msb).mutable(using Unsafe) ++ Bytes(lsb).mutable(using Unsafe)).immutable(using Unsafe)
+  def bytes: Bytes = unsafely((Bytes(msb).mutable ++ Bytes(lsb).mutable).immutable)
   
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)
