@@ -56,16 +56,19 @@ class Mutex[ValueType](initial: ValueType):
       count = 0
       notify()
   
-  def replace(lambda: ValueType => ValueType): Unit =
+  def replace(lambda: ValueType => ValueType): ValueType =
     synchronized:
       while count != 0 do wait()
       count = -1
     
     value = lambda(value)
-    
+    val result = value
+
     synchronized:
       count = 0
       notify()
+    
+    result
 
 class Semaphore():
   private var count: Int = 0
