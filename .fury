@@ -32,7 +32,7 @@ project flexmark
 project punctuation
   name         Punctuation
   website      https://github.com/propensive/punctuation
-  description  Precise navigation of paths
+  description  Typesafe parsing and rendering of markdown
 
   module core
     compiler  scala
