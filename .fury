@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build profanity/core
+command compile profanity/core
+default compile
 
 project profanity
   name         Profanity
@@ -21,6 +22,7 @@ project profanity
     compiler  scala
     sources   src/core
     include   eucalyptus/core
+    include   diuretic/core
 
 ##
 
