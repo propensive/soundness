@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build wisteria/core
+command compile wisteria/core
   description  Build the core module
 
 command test wisteria/test
   description  Test Wisteria
+
+default compile
 
 project wisteria
   name         Wisteria
@@ -24,8 +26,6 @@ project wisteria
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
-    include   fulminate/core
     include   contingency/core
   
   module test
