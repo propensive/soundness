@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build gastronomy/core
+command compile gastronomy/core
+default compile
 
 project gastronomy
   name         Gastronomy
@@ -21,9 +22,6 @@ project gastronomy
     compiler  scala
     sources   src/core
     include   gossamer/core
-    include   turbulence/core
-    include   hieroglyph/core
-    include   wisteria/core
 
 ##
 
