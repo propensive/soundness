@@ -20,12 +20,7 @@ project rudiments
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/http
-    include   symbolism/core
     include   vacuous/core
-    include   anticipation/text
-    include   anticipation/http
-    include   fulminate/core
     include   anticipation/path
     include   anticipation/css
 
