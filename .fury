@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build contingency/core
+command compile contingency/core
+default compile
 
 project contingency
   name         Contingency
@@ -20,7 +21,7 @@ project contingency
   module core
     compiler  scala
     sources   src/core
-    include   fulminate/core  rudiments/core
+    include   rudiments/core
 
 ##
 
