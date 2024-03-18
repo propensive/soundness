@@ -10,7 +10,8 @@
     
 ecosystem vent 3 https://github.com/propensive/vent main
 
-command build cardinality/core
+command compile cardinality/core
+default compile
 
 project cardinality
   name         Cardinality
