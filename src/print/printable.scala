@@ -25,34 +25,34 @@ object Printable:
   given string: Printable[String] = (string, termcap) => string.tt
   given char: Printable[Char] = (char, termcap) => char.toString.tt
 
-object ColorCapability:
-  def apply(colors: Int): ColorCapability = colors match
-    case 8               => ColorCapability.Indexed8
-    case 15 | 16         => ColorCapability.Indexed16
-    case 52 | 64 | 88    => ColorCapability.Cube4
-    case 256             => ColorCapability.Cube6
-    case 6536 | 16777216 => ColorCapability.TrueColor
-    case _               => ColorCapability.NoColor
+object ColorDepth:
+  def apply(colors: Int): ColorDepth = colors match
+    case 8                => ColorDepth.Indexed8
+    case 15 | 16          => ColorDepth.Indexed16
+    case 52 | 64 | 88     => ColorDepth.Cube4
+    case 256              => ColorDepth.Cube6
+    case 65536 | 16777216 => ColorDepth.TrueColor
+    case _                => ColorDepth.NoColor
 
-enum ColorCapability:
+enum ColorDepth:
   case NoColor, Indexed8, Indexed16, Cube4, Cube6, TrueColor
 
 package termcapDefinitions:
   given basic: Termcap with
     def ansi: Boolean = false
-    def color: ColorCapability = ColorCapability.NoColor
+    def color: ColorDepth = ColorDepth.NoColor
   
   given xterm256: Termcap with
     def ansi: Boolean = true
-    def color: ColorCapability = ColorCapability.Cube6
+    def color: ColorDepth = ColorDepth.Cube6
   
   given xtermTrueColor: Termcap with
     def ansi: Boolean = true
-    def color: ColorCapability = ColorCapability.TrueColor
+    def color: ColorDepth = ColorDepth.TrueColor
 
 trait Termcap:
   def ansi: Boolean
-  def color: ColorCapability
+  def color: ColorDepth
   def width: Int = Int.MaxValue
 
 @capability
