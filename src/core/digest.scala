@@ -264,8 +264,7 @@ object ByteDecoder:
     val data = Array.fill[Byte](value.length/2)(0)
     
     (0 until value.length by 2).each: i =>
-      try data(i/2) = ((digit(value(i), 16) << 4) + digit(value(i + 1), 16)).toByte
-      catch case e: OutOfRangeError => throw Panic(msg"every accessed element should be within range")
+      data(i/2) = unsafely(((digit(value.at(i).vouch, 16) << 4) + digit(value.at(i + 1).vouch, 16)).toByte)
 
     data.immutable(using Unsafe)
 
