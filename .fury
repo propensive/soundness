@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build serpentine/core
+command compile serpentine/core
+default compile
 
 project serpentine
   name         Serpentine
@@ -20,11 +21,7 @@ project serpentine
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/html
     include   gossamer/core
-    include   kaleidoscope/core
-    include   spectacular/core
-    include   contingency/core
 
 ##
 
