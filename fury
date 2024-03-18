@@ -7,7 +7,7 @@ repo propensive/capricious
 repo propensive/hieroglyph
 repo propensive/probably
 
-target turbulence/test
+target turbulence/core
 
 project turbulence
   module core

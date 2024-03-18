@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build turbulence/core
+command compile turbulence/core
   description  Build the core module
 
 command tests turbulence/core turbulence/test
   description  Test Turbulence
+
+default compile
 
 project turbulence
   name         Turbulence
@@ -29,7 +31,7 @@ project turbulence
     include   diuretic/core
     include   contingency/core
     include   capricious/core
-  
+
   module test
     compiler  scala
     sources   src/test
