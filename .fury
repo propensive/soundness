@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build exoskeleton/core
+command compile exoskeleton/core
+default compile
 
 project exoskeleton
   name         Exoskeleton
@@ -21,11 +22,8 @@ project exoskeleton
     compiler  scala
     sources   src/args
     include   escapade/core
-    include   spectacular/core
-    include   gossamer/core
     include   ambience/core
     include   profanity/core
-    include   eucalyptus/core
 
   module core
     compiler  scala
