@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build acyclicity/core
+command compile acyclicity/core
+default compile
 
 project acyclicity
   name         Acyclicity
