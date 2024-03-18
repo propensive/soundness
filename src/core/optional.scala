@@ -86,3 +86,7 @@ extension [ValueType](java: ju.Optional[ValueType])
 
 erased trait Unsafe
 erased val Unsafe: Unsafe = compiletime.erasedValue
+
+trait Extractor[-ScrutineeType, +ExtractionType]:
+  def extract(value: ScrutineeType): Optional[ExtractionType]
+  def unapply(value: ScrutineeType): Option[ExtractionType] = extract(value).option
