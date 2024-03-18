@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build hypotenuse/core
+command compile hypotenuse/core
   description  Build the core module
 
 command test hypotenuse/test
   description  Test Hypotenuse
+
+default compile
 
 project hypotenuse
   name         Hypotenuse
@@ -24,7 +26,6 @@ project hypotenuse
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
     include   contingency/core
     include   anticipation/opaque
 
