@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build revolution/core
+command compile revolution/core
+default compile
 
 project revolution
   name         Revolution
@@ -20,7 +21,6 @@ project revolution
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/text
     include   turbulence/core
     include   serpentine/core
 
