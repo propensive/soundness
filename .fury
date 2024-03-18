@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build aviation/core
+command compile aviation/core
+default compile
 
 project aviation
   name         Aviation
@@ -21,11 +22,7 @@ project aviation
     compiler  scala
     sources   src/core
     include   eucalyptus/core
-    include   cardinality/core
-    include   kaleidoscope/core
     include   quantitative/core
-    include   hypotenuse/core
-    include   anticipation/opaque
 
 ##
 
