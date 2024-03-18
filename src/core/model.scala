@@ -70,7 +70,7 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
     case data: Data => data
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): List[Data] =
-    data.option.getOrElse(abort(MissingValueError(key.show))).selectDynamic(key)
+    data.or(abort(MissingValueError(key.show))).selectDynamic(key)
   
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
 
@@ -177,14 +177,13 @@ extends Indexed:
       schema.subschemas(idx).key -> idx
     .to(Map)
 
-  def uniqueId: Optional[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
-    case Some(CodlSchema.Entry(name: Text, schema)) =>
-      paramIndex.get(name).map(children(_).fieldValue).getOrElse(Unset)
-    case _ => Unset
+  def uniqueId: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique).let:
+    case CodlSchema.Entry(name: Text, schema) => paramIndex.at(name).let(children(_).fieldValue)
+    case _                                    => Unset
 
-  def id: Optional[Text] = schema.subschemas.find(_.schema.arity == Arity.Unique) match
-    case Some(CodlSchema.Entry(name: Text, schema)) =>
-      index(name).let(_.headOption.optional).let(children(_).fieldValue)
+  def id: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique) match
+    case CodlSchema.Entry(name: Text, schema) =>
+      index(name).let(_.prim).let(children(_).fieldValue)
     case _ => key
 
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))
@@ -231,9 +230,9 @@ trait Indexed extends Dynamic:
   def ids: Set[Text] = idIndex.keySet
 
   def apply(idx: Int = 0)(using Raises[MissingIndexValueError]): CodlNode =
-    children.lift(idx).getOrElse(abort(MissingIndexValueError(idx)))
+    children.at(idx).or(abort(MissingIndexValueError(idx)))
   
-  def apply(key: Text): List[CodlNode] = index.get(key).getOrElse(Nil).map(children(_))
+  def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] =
     paramIndex.lift(key) match
@@ -249,7 +248,10 @@ trait Indexed extends Dynamic:
     index(key.show).map(children(_).data).collect:
       case data: Data => data
   
-  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Raises[MissingValueError]): Data = selectDynamic(key)(idx)
+  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Raises[MissingValueError])
+          : Data =
+
+    selectDynamic(key)(idx)
 
 erased trait DynamicCodlEnabler
 

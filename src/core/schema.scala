@@ -65,7 +65,7 @@ extends Dynamic:
           : CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
   
-  def apply(key: Text): Optional[CodlSchema] = dictionary.get(key).orElse(dictionary.get(Unset)).getOrElse(Unset)
+  def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 
   private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.is[Field]) match

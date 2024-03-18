@@ -122,7 +122,7 @@ object Codl:
          tabs:    List[Int])
             : CodlDoc =
       
-      def schema: CodlSchema = stack.headOption.fold(baseSchema)(_.head.schema.option.get)
+      def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema.option.get)
       
       inline def go
           (tokens:  LazyList[CodlToken]           = tokens.tail,
