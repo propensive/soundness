@@ -28,8 +28,6 @@ project turbulence
     sources   src/core
     include   hieroglyph/core
     include   parasite/core
-    include   diuretic/core
-    include   contingency/core
     include   capricious/core
 
   module test
