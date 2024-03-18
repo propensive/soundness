@@ -23,6 +23,7 @@ project rudiments
     sources   src/core
     include   vacuous/core
     include   anticipation/path
+    include   anticipation/http
 
 ##
 
