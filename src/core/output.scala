@@ -144,11 +144,11 @@ object Ansi extends Ansi2:
 
     def parse(state: State, text: Text): State =
       state.last.fold(closures(state, text)): transform =>
-        safely(text(0)) match
+        text.at(0) match
           case '\\' =>
             closures(state.copy(last = None), text.drop(1))
           case '[' | '(' | '<' | '«' | '{' =>
-            val frame = Frame(unsafely(complement(text(0))), state.text.length, transform)
+            val frame = Frame(complement(text.at(0).vouch(using Unsafe)), state.text.length, transform)
             closures(state.copy(stack = frame :: state.stack, last = None), text.drop(1))
   
           case _ =>

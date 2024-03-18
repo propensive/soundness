@@ -5,14 +5,15 @@ repo propensive/probably
 repo propensive/anticipation
 repo propensive/turbulence
 repo propensive/yossarian
+repo propensive/iridescence
 
-target escapade/test
+target escapade/core
 
 project escapade
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core anticipation/color contingency/core turbulence/core anticipation/url
+    include   gossamer/core anticipation/color contingency/core turbulence/core anticipation/url iridescence/core
   
   module test
     compiler  scala
