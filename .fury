@@ -10,7 +10,8 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build superlunary/core
+command compile superlunary/core
+default compile
 
 project superlunary
   name         Superlunary
@@ -20,14 +21,8 @@ project superlunary
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css
-    include   anticipation/http
-    include   symbolism/core
-    include   anticipation/text
     include   jacinta/core
-    include   inimitable/core
     include   gastronomy/core
-    include   ambience/core
     include   anthology/scala
 
   module jvm
