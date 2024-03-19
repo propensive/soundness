@@ -35,6 +35,8 @@ given Realm = realm"anthology"
 import dotty.tools.*, dotc.*, reporting.*, interfaces as dtdi, util as dtdu, core.*
 import dotty.tools.dotc.sbt.interfaces as dtdsi
 
+import scala.util.control as suc
+
 import language.adhocExtensions
 
 object Compiler:
@@ -83,8 +85,8 @@ package scalacOptions:
       CompileOption[CompilerType](option)
 
     package lint:
-      val privateShadow = CompileOption[3.4](t"-Xlint:private-shadow")
-      val typeParameterShadow = CompileOption[3.4](t"-Xlint:type-parameter-shadow")
+      val privateShadow = CompileOption[3.4](t"-Wshadow:private-shadow")
+      val typeParameterShadow = CompileOption[3.4](t"-Wshadow:type-parameter-shadow")
 
   package internal:
     val requireTargetName = CompileOption[ScalacVersions](t"-Yrequire-targetName")
@@ -201,13 +203,16 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
           dtdu.SourceFile.virtual(name.s, content.s)
           
         async:
-          Scalac.Scala3.newRun.tap: run =>
-            run.compileSources(sourceFiles)
-            if !reporter.hasErrors then finish(Scalac.Scala3, run)
-            
-            scalacProcess.put:
-              if reporter.hasErrors then CompileResult.Failed else CompileResult.Succeeded
-          .unit
+          try
+            Scalac.Scala3.newRun.tap: run =>
+              run.compileSources(sourceFiles)
+              if !reporter.hasErrors then finish(Scalac.Scala3, run)
+              
+              scalacProcess.put:
+                if reporter.hasErrors then CompileResult.Failed else CompileResult.Succeeded
+            .unit
+          catch case suc.NonFatal(error) =>
+            CompileResult.Crashed
   
         scalacProcess
       
@@ -239,6 +244,7 @@ class ScalacProcess():
 enum CompileResult:
   case Failed
   case Succeeded
+  case Crashed
 
 enum WarningFlag:
   case Deprecation, Feature
