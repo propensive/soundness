@@ -29,6 +29,7 @@ import spectacular.*
 import ambience.*
 
 import scala.collection.concurrent as scc
+import scala.collection.mutable as scm
 
 import java.io as ji
 import java.nio.file as jnf
@@ -83,7 +84,10 @@ object ZipRef:
   given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
   given show: Show[ZipRef] = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
 
-case class ZipRef(descent: List[PathName[InvalidZipNames]])
+case class ZipRef(descent: List[PathName[InvalidZipNames]]):
+  def parent: Optional[ZipRef] = descent match
+    case Nil       => Unset
+    case _ :: tail => ZipRef(tail)
 
 object ZipEntry:
   def apply[ResourceType](path: ZipRef, resource: ResourceType)(using readable: Readable[ResourceType, Bytes])
@@ -147,27 +151,26 @@ case class ZipFile(private val filename: Text):
     
     val writeTimestamp: jnf.attribute.FileTime =
       jnf.attribute.FileTime.fromMillis(timestamp.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)).nn
-  
-    def recur(refs: LazyList[ZipEntry], set: Set[ZipRef]): Set[ZipRef] = refs match
-      case head #:: tail => recur(tail, if set.contains(head.ref) then set else set + head.ref)
-      case _             => set
-      
-    val directories = recur(entries, Set()).flatMap(_.descent.tails.map(ZipRef(_)).to(Set)).to(List)
-    val directories2 = directories.map(_.render+t"/").sorted
-
+    
     withFilesystem: filesystem =>
-      directories2.each: directory =>
-        val directoryPath = filesystem.getPath(directory.s).nn
-      
-        if jnf.Files.notExists(directoryPath) then
-          jnf.Files.createDirectory(directoryPath)
-          jnf.Files.setAttribute(directoryPath, "creationTime", writeTimestamp)
-          jnf.Files.setAttribute(directoryPath, "lastAccessTime", writeTimestamp)
-          jnf.Files.setAttribute(directoryPath, "lastModifiedTime", writeTimestamp)
+      val directories: scm.HashSet[ZipRef] = scm.HashSet()
+
+      def addParents(ref: ZipRef): Unit = ref.parent.let: parent =>
+        if !directories.has(parent) then
+          addParents(parent)
+          val directoryPath = filesystem.getPath(t"${parent.render}/".s).nn
+          if jnf.Files.notExists(directoryPath) then
+            jnf.Files.createDirectory(directoryPath)
+            jnf.Files.setAttribute(directoryPath, "creationTime", writeTimestamp)
+            jnf.Files.setAttribute(directoryPath, "lastAccessTime", writeTimestamp)
+            jnf.Files.setAttribute(directoryPath, "lastModifiedTime", writeTimestamp)
+          directories += parent
 
       entries.each: entry =>
+        addParents(entry.ref)
         val entryPath = filesystem.getPath(entry.ref.render.s).nn
         val in = LazyListInputStream(entry.content())
+          
         jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
         jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
         jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
