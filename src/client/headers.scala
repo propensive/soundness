@@ -17,6 +17,7 @@
 package telekinesis
 
 import rudiments.*
+import contingency.*
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
@@ -26,12 +27,10 @@ import spectacular.*
 trait RequestHeader[LabelType <: Label]():
   def header: Text
   
-  def apply
-      [ValueType]
-      (content: ValueType)
-      (using ghrp: GenericHttpRequestParam[LabelType, ValueType])
-      : RequestHeader.Value =
-    RequestHeader.Value(this, ghrp(content))
+  def apply[ValueType](content: ValueType)(using param: GenericHttpRequestParam[LabelType, ValueType])
+          : RequestHeader.Value =
+
+    RequestHeader.Value(this, param(content))
 
 class SimpleRequestHeader[LabelType <: Label: ValueOf]() extends RequestHeader[LabelType]():
   def header: Text = Text(summon[ValueOf[LabelType]].value)
@@ -120,7 +119,7 @@ object RequestHeader:
   case object Warning extends SimpleRequestHeader["warning"]()
   
 object ResponseHeader:
-  lazy val standard: Map[Text, ResponseHeader] = List(AcceptCharset, AccessControlAllowOrigin,
+  lazy val standard: Map[Text, ResponseHeader[?]] = List(AcceptCharset, AccessControlAllowOrigin,
       AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
       AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
       AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
@@ -130,61 +129,68 @@ object ResponseHeader:
       TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
     .bi.map(_.header -> _).to(Map)
   
-  def unapply(str: Text): Some[ResponseHeader] =
+  def unapply(str: Text): Some[ResponseHeader[?]] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
 
-  given Show[ResponseHeader] = _.header
+enum ResponseHeader[ValueType](val header: Text):
+  case AcceptCharset extends ResponseHeader[Text](t"accept-charset")
+  case AccessControlAllowOrigin extends ResponseHeader[Text](t"access-control-allow-origin")
+  case AccessControlAllowCredentials extends ResponseHeader[Text](t"access-control-allow-credentials")
+  case AccessControlExposeHeaders extends ResponseHeader[Text](t"access-control-expose-headers")
+  case AccessControlMaxAge extends ResponseHeader[Text](t"access-control-max-age")
+  case AccessControlAllowMethods extends ResponseHeader[Text](t"access-control-allow-methods")
+  case AccessControlAllowHeaders extends ResponseHeader[Text](t"access-control-allow-headers")
+  case AcceptPatch extends ResponseHeader[Text](t"accept-patch")
+  case AcceptRanges extends ResponseHeader[Text](t"accept-ranges")
+  case Age extends ResponseHeader[Text](t"age")
+  case Allow extends ResponseHeader[Text](t"allow")
+  case AltSvc extends ResponseHeader[Text](t"alt-svc")
+  case CacheControl extends ResponseHeader[Text](t"cache-control")
+  case Connection extends ResponseHeader[Text](t"connection")
+  case ContentDisposition extends ResponseHeader[Text](t"content-disposition")
+  case ContentEncoding extends ResponseHeader[Text](t"content-encoding")
+  case ContentLanguage extends ResponseHeader[Text](t"content-language")
+  case ContentLength extends ResponseHeader[Text](t"content-length")
+  case ContentLocation extends ResponseHeader[Text](t"content-location")
+  case ContentMd5 extends ResponseHeader[Text](t"content-md5")
+  case ContentRange extends ResponseHeader[Text](t"content-range")
+  case ContentType extends ResponseHeader[Text](t"content-type")
+  case Date extends ResponseHeader[Text](t"date")
+  case DeltaBase extends ResponseHeader[Text](t"delta-base")
+  case ETag extends ResponseHeader[Text](t"etag")
+  case Expires extends ResponseHeader[Text](t"expires")
+  case Im extends ResponseHeader[Text](t"im")
+  case LastModified extends ResponseHeader[Text](t"last-modified")
+  case Link extends ResponseHeader[Text](t"link")
+  case Location extends ResponseHeader[Text](t"Location")
+  case P3p extends ResponseHeader[Text](t"p3p")
+  case Pragma extends ResponseHeader[Text](t"pragma")
+  case PreferenceApplied extends ResponseHeader[Text](t"preference-applied")
+  case ProxyAuthenticate extends ResponseHeader[Text](t"proxy-authenticate")
+  case PublicKeyPins extends ResponseHeader[Text](t"public-key-pins")
+  case RetryAfter extends ResponseHeader[Text](t"retry-after")
+  case Server extends ResponseHeader[Text](t"server")
+  case SetCookie extends ResponseHeader[Text](t"set-cookie")
+  case StrictTransportSecurity extends ResponseHeader[Text](t"strict-transport-security")
+  case Trailer extends ResponseHeader[Text](t"trailer")
+  case TransferEncoding extends ResponseHeader[Text](t"transfer-encoding")
+  case Tk extends ResponseHeader[Text](t"tk")
+  case Upgrade extends ResponseHeader[Text](t"upgrade")
+  case Vary extends ResponseHeader[Text](t"vary")
+  case Via extends ResponseHeader[Text](t"via")
+  case Warning extends ResponseHeader[Text](t"warning")
+  case WwwAuthenticate extends ResponseHeader[Text](t"www-authenticate")
+  case XFrameOptions extends ResponseHeader[Text](t"x-frame-options")
+  case Custom(name: Text) extends ResponseHeader[Text](name.lower)
 
-enum ResponseHeader(val header: Text):
-  case AcceptCharset extends ResponseHeader(t"accept-charset")
-  case AccessControlAllowOrigin extends ResponseHeader(t"access-control-allow-origin")
-  case AccessControlAllowCredentials extends ResponseHeader(t"access-control-allow-credentials")
-  case AccessControlExposeHeaders extends ResponseHeader(t"access-control-expose-headers")
-  case AccessControlMaxAge extends ResponseHeader(t"access-control-max-age")
-  case AccessControlAllowMethods extends ResponseHeader(t"access-control-allow-methods")
-  case AccessControlAllowHeaders extends ResponseHeader(t"access-control-allow-headers")
-  case AcceptPatch extends ResponseHeader(t"accept-patch")
-  case AcceptRanges extends ResponseHeader(t"accept-ranges")
-  case Age extends ResponseHeader(t"age")
-  case Allow extends ResponseHeader(t"allow")
-  case AltSvc extends ResponseHeader(t"alt-svc")
-  case CacheControl extends ResponseHeader(t"cache-control")
-  case Connection extends ResponseHeader(t"connection")
-  case ContentDisposition extends ResponseHeader(t"content-disposition")
-  case ContentEncoding extends ResponseHeader(t"content-encoding")
-  case ContentLanguage extends ResponseHeader(t"content-language")
-  case ContentLength extends ResponseHeader(t"content-length")
-  case ContentLocation extends ResponseHeader(t"content-location")
-  case ContentMd5 extends ResponseHeader(t"content-md5")
-  case ContentRange extends ResponseHeader(t"content-range")
-  case ContentType extends ResponseHeader(t"content-type")
-  case Date extends ResponseHeader(t"date")
-  case DeltaBase extends ResponseHeader(t"delta-base")
-  case ETag extends ResponseHeader(t"etag")
-  case Expires extends ResponseHeader(t"expires")
-  case Im extends ResponseHeader(t"im")
-  case LastModified extends ResponseHeader(t"last-modified")
-  case Link extends ResponseHeader(t"link")
-  case Location extends ResponseHeader(t"Location")
-  case P3p extends ResponseHeader(t"p3p")
-  case Pragma extends ResponseHeader(t"pragma")
-  case PreferenceApplied extends ResponseHeader(t"preference-applied")
-  case ProxyAuthenticate extends ResponseHeader(t"proxy-authenticate")
-  case PublicKeyPins extends ResponseHeader(t"public-key-pins")
-  case RetryAfter extends ResponseHeader(t"retry-after")
-  case Server extends ResponseHeader(t"server")
-  case SetCookie extends ResponseHeader(t"set-cookie")
-  case StrictTransportSecurity extends ResponseHeader(t"strict-transport-security")
-  case Trailer extends ResponseHeader(t"trailer")
-  case TransferEncoding extends ResponseHeader(t"transfer-encoding")
-  case Tk extends ResponseHeader(t"tk")
-  case Upgrade extends ResponseHeader(t"upgrade")
-  case Vary extends ResponseHeader(t"vary")
-  case Via extends ResponseHeader(t"via")
-  case Warning extends ResponseHeader(t"warning")
-  case WwwAuthenticate extends ResponseHeader(t"www-authenticate")
-  case XFrameOptions extends ResponseHeader(t"x-frame-options")
-  case Custom(name: Text) extends ResponseHeader(name.lower)
+object HttpHeaderDecoder:
+  given text: HttpHeaderDecoder[Text] = identity(_)
+  
+  given byteSize(using Raises[NumberError]): HttpHeaderDecoder[ByteSize] =
+    value => ByteSize(value.decodeAs[Int])
+
+trait HttpHeaderDecoder[ValueType]:
+  def decode(text: Text): ValueType
 
 object Auth:
   given Show[Auth] =

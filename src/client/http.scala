@@ -166,12 +166,17 @@ trait HttpReadable[+BodyType]:
   def read(status: HttpStatus, body: HttpBody): BodyType
 
 case class HttpResponse
-    (status: HttpStatus, headers: Map[ResponseHeader, List[String]], body: HttpBody):
+    (status: HttpStatus, headers: Map[ResponseHeader[?], List[Text]], body: HttpBody):
 
   def as[BodyType](using readable: HttpReadable[BodyType]): BodyType raises HttpError =
     (status: @unchecked) match
       case status: FailureCase => abort(HttpError(status, body))
       case status              => readable.read(status, body)
+
+  def apply[ValueType](header: ResponseHeader[ValueType])(using decoder: HttpHeaderDecoder[ValueType])
+          : List[ValueType] =
+
+    headers.at(header).or(Nil).map(decoder.decode(_))
 
 object Locatable:
   given httpUrl: Locatable[HttpUrl] = identity(_)
@@ -279,13 +284,13 @@ object Http:
         val HttpStatus(status) = conn.getResponseCode: @unchecked
         Log.info(msg"Received response with HTTP status ${status.show}")
 
-        val responseHeaders =
+        val responseHeaders: Map[ResponseHeader[?], List[Text]] =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
           
           scalaMap.flatMap: value =>
             (value: @unchecked) match
               case (null, v)              => Nil
-              case (ResponseHeader(k), v) => List((k, v.asScala.to(List)))
+              case (ResponseHeader(k), v) => List((k, v.asScala.to(List).map(_.tt)))
           .to(Map)
 
         HttpResponse(status, responseHeaders, body)
