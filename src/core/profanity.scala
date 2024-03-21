@@ -174,25 +174,29 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
     val err = context.stdio.err
     val in = context.stdio.in
 
-  def events: LazyList[TerminalEvent]^{monitor} = LazyList.defer:
-    keyboard.process(In.stream[Char]).multiplexWith(signals).map:
+  val events: Funnel[TerminalEvent] = Funnel()
+
+  val pumpSignals: Async[Unit] = daemon:
+    signals.each:
       case Signal.Winch =>
         out.print(Terminal.reportSize)
-        Signal.Winch
+        events.put(Signal.Winch)
 
+  val pumpInput: Async[Unit] = daemon:
+    keyboard.process(In.stream[Char]).each:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
         initRows.offer(rows2)
         columns = columns2
         initColumns.offer(columns2)
-        resize
+        events.put(resize)
       
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
         mode = if (0.299*red + 0.587*green + 0.114*blue) > 32768 then TerminalMode.Light else TerminalMode.Dark
-        bgColor
+        events.put(bgColor)
 
       case other =>
-        other
+        events.put(other)
 
 package terminalOptions:
   given bracketedPasteMode: BracketedPasteMode = () => true
