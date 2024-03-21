@@ -67,6 +67,8 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def remove(key: NodeType, value: NodeType): Dag[NodeType] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
+  def has(key: NodeType): Boolean = edgeMap.contains(key)
+
   def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2): Map[NodeType, NodeType2] =
     sorted.foldLeft(Map[NodeType, NodeType2]()):
       (map, next) => map.updated(next, lambda(apply(next).map(map), next))
