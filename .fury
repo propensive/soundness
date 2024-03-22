@@ -32,7 +32,7 @@ project eucalyptus
   
   module syslog
     compiler  scala
-    sources   src/ansi
+    sources   src/syslog
     include   eucalyptus/core
     include   guillotine/core
 
