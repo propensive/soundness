@@ -149,6 +149,10 @@ sealed trait Path:
 
   def as[EntryType <: Entry](using resolver: PathResolver[EntryType, this.type]): EntryType = resolver(this)
   
+  inline def at[EntryType <: Entry](using PathResolver[EntryType, this.type], DereferenceSymlinks)
+          : Optional[EntryType] raises IoError =
+    if is[EntryType] then as[EntryType] else Unset
+  
   inline def is[EntryType <: Entry](using DereferenceSymlinks, Raises[IoError]): Boolean =
     inline erasedValue[EntryType] match
       case _: Directory   => entryType() == PathStatus.Directory
@@ -515,7 +519,7 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   
   def size()(using PathResolver[Directory, Path], PathResolver[File, Path]): ByteSize raises IoError =
     import filesystemOptions.doNotDereferenceSymlinks
-    descendants.map { path => if path.is[File] then path.as[File].size() else 0.b }.foldLeft(0.b)(_ + _)
+    descendants.map(_.at[File].let(_.size()).or(0.b)).foldLeft(0.b)(_ + _)
   
   @targetName("child")
   infix def / (name: PathName[GeneralForbidden]): Path = path / name
