@@ -513,6 +513,10 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def descendants(using DereferenceSymlinks, Raises[IoError], PathResolver[Directory, Path]): LazyList[Path] =
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
   
+  def size()(using PathResolver[Directory, Path], PathResolver[File, Path]): ByteSize raises IoError =
+    import filesystemOptions.doNotDereferenceSymlinks
+    descendants.map { path => if path.is[File] then path.as[File].size() else 0.b }.foldLeft(0.b)(_ + _)
+  
   @targetName("child")
   infix def / (name: PathName[GeneralForbidden]): Path = path / name
   
