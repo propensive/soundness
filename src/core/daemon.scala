@@ -96,12 +96,14 @@ def cliService[BusType <: Matchable](using executive: Executive)
   val name: Text = Properties.ethereal.name[Text]()
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
+  val pidFile: Path = baseDir / p"pid"
   val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
   var continue: Boolean = true
   val terminatePid: Promise[Pid] = Promise()
   
   lazy val termination: Unit =
     portFile.wipe()
+    pidFile.wipe()
     System.exit(0)
   
   def shutdown(pid: Optional[Pid])(using Stdio, Log[Text]): Unit =
@@ -249,36 +251,38 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
     Async.onShutdown:
       portFile.wipe()
+      pidFile.wipe()
       
     supervise:
-      //given Log[Text] = Log.route[Text]:
-      //  case _ => Syslog(t"ethereal")
-
-      given Log[Text] = logging.silent
+      given Log[Text] = Log.route[Text]:
+        case _ => Syslog(t"ethereal")
 
       Log.pin()
 
-      daemon:
-        sh"flock -u -x -n $portFile cat".exec[Unit]()
-        Log.info(t"The file $portFile was changed; terminating immediately")
-        termination
-
+      Log.info(t"Connecting socket")
+      val socket: jn.ServerSocket = jn.ServerSocket(0)
+      Log.info(t"Getting port")
+      val port: Int = socket.getLocalPort
+      Log.info(t"Reading build ID")
+      val buildId = safely((Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]).or(0)
+      Log.info(t"Connecting to STDERR")
+      val stderr = if stderrSupport() then 1 else 0
+      Log.info(t"Writing port")
+      t"$port $buildId $stderr".writeTo(portFile.as[File])
+      Log.info(t"Writing PID")
+      OsProcess().pid.value.show.writeTo(pidFile.as[File])
+      Log.info(t"Starting loop")
+      
       daemon:
         safely:
-          portFile.watch: watcher =>
+          baseDir.path.watch: watcher =>
             watcher.stream.each:
-              case Delete(_, t"port") =>
-                Log.info(t"The file $portFile was deleted; terminating immediately")
+              case Delete(_, t"port" | t"pid") | Modify(_, t"port" | t"pid") =>
+                Log.info(t"The port or PID file was deleted; terminating immediately")
                 termination
               
-              case _ =>
+              case other =>
                 ()
-          
-      val socket: jn.ServerSocket = jn.ServerSocket(0)
-      val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]).or(0)
-      val stderr = if stderrSupport() then 1 else 0
-      t"$port $buildId $stderr".writeTo(portFile)
       
       loop(safely(client(socket.accept().nn))).run()
 

@@ -23,6 +23,7 @@ project ethereal
     sources   src/core
     include   surveillance/core
     include   hellenism/core
+    include   eucalyptus/syslog
     include   exoskeleton/core
 
 ##
