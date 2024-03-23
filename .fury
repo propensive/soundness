@@ -10,11 +10,13 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command build digression/core
+command compile digression/core
   description  Build the core module
 
 command test digression/test
   description  Test Sybolism
+
+default compile
 
 project digression
   name         Digression
@@ -24,7 +26,6 @@ project digression
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
     include   contingency/core
 
 ##
