@@ -148,6 +148,12 @@ object HttpReadable:
       case HttpBody.Empty         => IArray()
       case HttpBody.Data(body)    => body
       case HttpBody.Chunked(body) => body.readAs[Bytes]
+  
+  given byteStream: HttpReadable[LazyList[Bytes]] with
+    def read(status: HttpStatus, body: HttpBody): LazyList[Bytes] = body match
+      case HttpBody.Empty         => LazyList()
+      case HttpBody.Data(body)    => LazyList(body)
+      case HttpBody.Chunked(body) => body
 
   given genericHttpReader
       [ContentType]
