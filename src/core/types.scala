@@ -20,6 +20,8 @@ import scala.quoted.*
 
 erased trait TypeList[+TupleType <: Tuple]
 erased trait TypeMap[+TupleType <: Tuple]
+erased trait TypeSet[+ElementType <: TypeElement[?]]
+erased trait TypeElement[ElementType]
 
 transparent inline def reify[PhantomType]: Any = ${Typonym.reify[PhantomType]}
 
