@@ -151,7 +151,14 @@ package keyboards:
 enum TerminalMode:
   case Dark, Light
 
-case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor):
+object Interactivity:
+  def apply[EventType](stream: LazyList[EventType]): Interactivity[EventType] = () => stream
+
+trait Interactivity[EventType]:
+  def eventStream(): LazyList[EventType]
+
+case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor)
+extends Interactivity[TerminalEvent]:
   export context.stdio.{in, out, err}
 
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
@@ -175,6 +182,7 @@ case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, mo
     val in = context.stdio.in
 
   val events: Funnel[TerminalEvent] = Funnel()
+  def eventStream(): LazyList[TerminalEvent] = events.stream
 
   val pumpSignals: Async[Unit] = daemon:
     signals.each:

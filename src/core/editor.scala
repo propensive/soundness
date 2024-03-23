@@ -57,15 +57,13 @@ case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Tex
 
   catch case e: OutOfRangeError => this
 
-  def unapply(stream: LazyList[TerminalEvent])(using interaction: Interaction[Text, LineEditor])
-          : Option[(Text, LazyList[TerminalEvent])] =
-
-    interaction(stream, this)(_(_))
-
-  def ask(stream: LazyList[TerminalEvent])(using Interaction[Text, LineEditor])
-          : (Text, LazyList[TerminalEvent]) raises DismissError =
-
-    unapply(stream).getOrElse(abort(DismissError()))
+  def ask(using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
+      [ResultType]
+      (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
+          : ResultType raises DismissError =
+    
+    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
+      lambda(using Interactivity(stream))(result)
 
 trait Interaction[ResultType, QuestionType]:
   def before(): Unit = ()
@@ -76,26 +74,26 @@ trait Interaction[ResultType, QuestionType]:
   @tailrec
   final def recur(stream: LazyList[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
       (key: (QuestionType, TerminalEvent) => QuestionType)
-          : Option[(ResultType, LazyList[TerminalEvent])] =
+          : Optional[(ResultType, LazyList[TerminalEvent])] =
     
     render(oldState, state)
 
     stream match
-      case Keypress.Enter #:: tail           => Some((result(state), tail))
-      case Keypress.Ctrl('C' | 'D') #:: tail => None
-      case Keypress.Escape #:: tail          => None
+      case Keypress.Enter #:: tail           => (result(state), tail)
+      case Keypress.Ctrl('C' | 'D') #:: tail => Unset
+      case Keypress.Escape #:: tail          => Unset
       case other #:: tail                    => recur(tail, key(state, other), state)(key)
-      case _                                 => None
+      case _                                 => Unset
 
   def apply(stream: LazyList[TerminalEvent], state: QuestionType)
       (key: (QuestionType, TerminalEvent) => QuestionType)
-          : Option[(ResultType, LazyList[TerminalEvent])] =
+          : Optional[(ResultType, LazyList[TerminalEvent])] =
     
     before()
     recur(stream, state, Unset)(key).also(after())
 
 object Interaction:
-  given [ItemType: Show](using Stdio): Interaction[ItemType, SelectMenu[ItemType]] with
+  given selectMenu[ItemType: Show](using Stdio): Interaction[ItemType, SelectMenu[ItemType]] with
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
@@ -106,18 +104,16 @@ object Interaction:
 
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
-  given (using Stdio): Interaction[Text, LineEditor] with
-
-    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit =
-      val buffer = StringBuilder()
-      val prior = editor.or(editor2)
-      if prior.position > 0 then buffer.append(t"\e[${prior.position}D")
-      val line = t"${editor2.value}${t" "*(prior.value.length - editor2.value.length)}"
-      buffer.append(t"\e[K")
-      buffer.append(line)
-      if line.length > 0 then buffer.append(t"\e[${line.length}D")
-      if editor2.position > 0 then buffer.append(t"\e[${editor2.position}C")
-      Out.print(buffer.text)
+  given lineEditor(using Stdio): Interaction[Text, LineEditor] with
+    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.println:
+      Text.make:
+        val prior = editor.or(editor2)
+        if prior.position > 0 then append(t"\e[${prior.position}D")
+        val line = t"${editor2.value}${t" "*(prior.value.length - editor2.value.length)}"
+        append(t"\e[K")
+        append(line)
+        if line.length > 0 then append(t"\e[${line.length}D")
+        if editor2.position > 0 then append(t"\e[${editor2.position}C")
 
     def result(editor: LineEditor): Text = editor.value
 
@@ -133,15 +129,14 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
 
   catch case e: OutOfRangeError => this
 
-  def unapply(stream: LazyList[TerminalEvent])(using interaction: Interaction[ItemType, SelectMenu[ItemType]])
-      : Option[(ItemType, LazyList[TerminalEvent])] =
-
-    interaction(stream, this)(_(_))
+  def ask
+      (using interactivity: Interactivity[TerminalEvent],
+             interaction: Interaction[ItemType, SelectMenu[ItemType]])
+      [ResultType]
+      (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
+          : ResultType raises DismissError =
   
-  def ask(stream: LazyList[TerminalEvent])(using Interaction[ItemType, SelectMenu[ItemType]])
-          : (ItemType, LazyList[TerminalEvent]) raises DismissError =
-
-    unapply(stream).getOrElse(abort(DismissError()))
-
+    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
+      lambda(using Interactivity(stream))(result)
 
 given realm: Realm = realm"profanity"
