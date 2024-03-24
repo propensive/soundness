@@ -32,7 +32,8 @@ case class DismissError() extends Error(msg"the user dismissed an interaction")
 trait Question[AnswerType]:
   def apply(keypress: TerminalEvent): Question[AnswerType]
 
-case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Text]:
+case class LineEditor(value: Text = t"", initPosition: Optional[Int] = Unset) extends Question[Text]:
+  val position = initPosition.or(value.length)
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
@@ -44,15 +45,15 @@ case class LineEditor(value: Text = t"", position: Int = 0) extends Question[Tex
 
     case Delete      => copy(t"${value.take(position)}${value.drop(position + 1)}")
     case Backspace   => copy(t"${value.take(position - 1)}${value.drop(position)}", (position - 1) max 0)
-    case Home        => copy(position = 0)
-    case End         => copy(position = value.length)
-    case Left        => copy(position = (position - 1) max 0)
-    case Ctrl(Left)  => copy(position = (position - 2 max 0 to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
+    case Home        => copy(initPosition = 0)
+    case End         => copy(initPosition = value.length)
+    case Left        => copy(initPosition = (position - 1) max 0)
+    case Ctrl(Left)  => copy(initPosition = (position - 2 max 0 to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
 
     case Ctrl(Right) => val range = ((position + 1) min (value.length - 1)) to (value.length - 1)
                         val position2 = range.where(value.at(_) == ' ').lay(value.length)(_ + 1)
-                        copy(position = position2 min value.length)
-    case Right       => copy(position = (position + 1) min value.length)
+                        copy(initPosition = position2 min value.length)
+    case Right       => copy(initPosition = (position + 1) min value.length)
     case _           => this
 
   catch case e: OutOfRangeError => this
@@ -105,12 +106,13 @@ object Interaction:
     def result(state: SelectMenu[ItemType]): ItemType = state.current
 
   given lineEditor(using Stdio): Interaction[Text, LineEditor] with
-    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.println:
+    override def after(): Unit = Out.println()
+
+    def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.print:
       Text.make:
-        val prior = editor.or(editor2)
-        if prior.position > 0 then append(t"\e[${prior.position}D")
-        val line = t"${editor2.value}${t" "*(prior.value.length - editor2.value.length)}"
+        editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
         append(t"\e[K")
+        val line = t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
         append(line)
         if line.length > 0 then append(t"\e[${line.length}D")
         if editor2.position > 0 then append(t"\e[${editor2.position}C")
