@@ -24,3 +24,8 @@ object Bytes:
   def apply(xs: Byte*): Bytes = IArray(xs*)
   def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
   def empty: Bytes = IArray()
+  
+  def construct(count: Int)(lambda: Array[Byte] => Unit): Bytes =
+    val array: Array[Byte] = new Array[Byte](count)
+    lambda(array)
+    array.asInstanceOf[IArray[Byte]]
