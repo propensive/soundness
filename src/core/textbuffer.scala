@@ -26,10 +26,7 @@ def append[TextType, ValueType](using buffer: Buffer[TextType])(using textual: T
   buffer.append(textual.show(value))
 
 extension (textObject: Text.type)
-  def create(length: Int)(lambda: Array[Char] => Unit): Text =
-    new String(new Array[Char](length).tap(lambda(_))).tt
-
-  def make(block: (buffer: TextBuffer) ?=> Unit): Text =
+  def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
     val buffer = TextBuffer()
     block(using buffer)
     buffer()
