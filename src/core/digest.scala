@@ -238,7 +238,7 @@ object ByteEncoder:
   given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
   
   given ByteEncoder[Binary] = bytes =>
-    Text.make:
+    Text.construct:
       bytes.each:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
