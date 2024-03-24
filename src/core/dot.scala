@@ -77,7 +77,7 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-  def serialize(tokens: LazyList[Text]): Text = Text.make:
+  def serialize(tokens: LazyList[Text]): Text = Text.construct:
     var level: Int = 0
     var end: Boolean = true
 
