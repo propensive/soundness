@@ -131,7 +131,7 @@ case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached t
 
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
-  def reportSize: Text = t"\e[s\e[4095C\e[4095B\e[6n\e[u"
+  def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
   def enableFocus: Text = t"\e[?1004h"
   def disableFocus: Text = t"\e[?1004l"
   def enablePaste: Text = t"\e[?2004h"
