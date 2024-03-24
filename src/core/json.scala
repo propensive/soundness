@@ -445,7 +445,7 @@ package jsonPrinters:
   given minimal: JsonPrinter = MinimalJsonPrinter
 
 object MinimalJsonPrinter extends JsonPrinter:
-  def print(json: JsonAst): Text = Text.make:
+  def print(json: JsonAst): Text = Text.construct:
     def appendString(str: String): Unit =
       str.each:
         case '\t' => append("\\t")
@@ -504,7 +504,7 @@ object MinimalJsonPrinter extends JsonPrinter:
 
 // FIXME: Implement this
 object IndentedJsonPrinter extends JsonPrinter:
-  def print(json: JsonAst): Text = Text.make:
+  def print(json: JsonAst): Text = Text.construct:
     def appendString(string: String): Unit =
       string.each:
         case '\t' => append("\\t")
