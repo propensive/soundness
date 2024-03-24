@@ -76,10 +76,15 @@ object Watch:
 
   def apply[PathType: GenericPath](paths: Iterable[PathType]): Watch =
     Watch.register:
-      paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
-        if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
-        else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
-      .toMap
+      val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
+        paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
+          if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
+          else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
+        .groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+      
+      pathGroups.view.mapValues: predicates =>
+        (value: Text) => predicates.exists(_(value))
+      .to(Map)
 
 class Watch():
   private val funnel: Funnel[WatchEvent] = Funnel()
