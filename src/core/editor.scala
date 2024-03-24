@@ -109,7 +109,7 @@ object Interaction:
     override def after(): Unit = Out.println()
 
     def render(editor: Optional[LineEditor], editor2: LineEditor): Unit = Out.print:
-      Text.make:
+      Text.construct:
         editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
         append(t"\e[K")
         val line = t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
