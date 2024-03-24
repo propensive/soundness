@@ -116,7 +116,7 @@ case class Manifest(entries: Map[Text, Text]):
     if entries.contains(attribute.key) then decoder.decode(entries(attribute.key)) else Unset
   
   def serialize: Bytes =
-    Text.make:
+    Text.construct:
       entries.each: (key, value) =>
         buffer.append(key)
         buffer.append(t": ")
