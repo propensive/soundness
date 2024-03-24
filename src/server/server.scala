@@ -127,15 +127,15 @@ case class Cookie
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-case class Response[contentType]
+case class Response[ContentType]
     (content: ContentType,
      status: HttpStatus = HttpStatus.Ok,
-     headers: Map[ResponseHeader, Text] = Map(),
+     headers: Map[ResponseHeader[?], Text] = Map(),
      cookies: List[Cookie] = Nil)
     (using val handler: Handler[ContentType]):
 
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader, Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
+    val cookieHeaders: List[(ResponseHeader[?], Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
     
     handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
@@ -267,12 +267,12 @@ case class HttpServer(port: Int) extends RequestHandler:
     
     val cancel: Promise[Unit] = Promise[Unit]()
     
-    val async = Async:
+    val asyncTask = async:
       val server = startServer()
       try throwErrors(cancel.await()) catch case err: CancelError => ()
       server.stop(1)
     
-    HttpService(port, async, () => safely(cancel.fulfill(())))
+    HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
     
   
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
