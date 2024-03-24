@@ -51,10 +51,10 @@ object Executor:
     reader.lines().nn.toScala(LazyList).map(_.show)
   
   given text: Executor[Text] = proc =>
-    Text.make(stream.interpret(proc).map(_.s).each(append(_)))
+    Text.construct(stream.interpret(proc).map(_.s).each(append(_)))
 
   given string: Executor[String] = proc =>
-    Text.make(stream.interpret(proc).map(_.s).each(append(_))).s
+    Text.construct(stream.interpret(proc).map(_.s).each(append(_))).s
 
   given dataStream(using streamCut: Raises[StreamError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
