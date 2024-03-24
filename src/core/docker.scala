@@ -11,5 +11,4 @@ case class Container(id: Text)
 case class DockerEngine(port: Int)
 
 @main
-def run(): Unit =
-  url"http://localhost/images/json"
+def run(): Unit = ()

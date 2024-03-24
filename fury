@@ -10,6 +10,8 @@ project embarcadero
   module core
     compiler  scala
     sources   src/core
-    include   telekinesis/core jacinta/core
+    include   telekinesis/core
+    include   jacinta/core
+    include   bitumen/core
 
 
