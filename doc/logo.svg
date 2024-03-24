@@ -2,13 +2,13 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="210mm"
-   height="297mm"
-   viewBox="0 0 210 297"
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
    version="1.1"
    id="svg5"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="bitumen.svg"
+   sodipodi:docname="logo.svg"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:xlink="http://www.w3.org/1999/xlink"
@@ -26,18 +26,20 @@
      inkscape:document-units="mm"
      showgrid="true"
      inkscape:zoom="1.1893044"
-     inkscape:cx="407.38099"
-     inkscape:cy="583.11396"
-     inkscape:window-width="2653"
-     inkscape:window-height="2981"
+     inkscape:cx="218.61518"
+     inkscape:cy="242.99919"
+     inkscape:window-width="2248"
+     inkscape:window-height="1490"
      inkscape:window-x="0"
-     inkscape:window-y="17"
+     inkscape:window-y="1508"
      inkscape:window-maximized="1"
      inkscape:current-layer="layer1">
     <inkscape:grid
        type="xygrid"
        id="grid132"
-       dotted="true" />
+       dotted="true"
+       originx="-49.999993"
+       originy="-90" />
   </sodipodi:namedview>
   <defs
      id="defs2">
@@ -87,9 +89,11 @@
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
-     id="layer1">
+     id="layer1"
+     transform="translate(-49.999992,-90)">
     <g
-       id="g2133">
+       id="g2133"
+       transform="matrix(0.79186746,0,0,0.79186746,22.894578,31.219881)">
       <circle
          style="fill:url(#linearGradient2114);fill-opacity:1;fill-rule:evenodd;stroke:none;stroke-width:0.0162365;stroke-opacity:1;stop-color:#000000"
          id="path1598"
