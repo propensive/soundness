@@ -52,17 +52,16 @@ case class UnixMode
     if otherExec then sum += 1
     sum
   
-  def bytes: Bytes = int.octal.pad(8, Rtl, '0').bytes
+  def bytes: Bytes = int.octal.pad(7, Rtl, '0').bytes
 
-case class Uid(value: Int):
-  def bytes: Bytes = value.octal.pad(8, Rtl, '0').bytes
+case class UnixUser(value: Int, name: Optional[Text] = Unset):
+  def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
 
-case class Gid(value: Int):
-  def bytes: Bytes = value.octal.pad(8, Rtl, '0').bytes
+case class UnixGroup(value: Int, name: Optional[Text] = Unset):
+  def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
 
 enum TypeFlag:
   case File
-  case AFile
   case Link
   case Symlink
   case CharSpecial
@@ -75,7 +74,6 @@ enum TypeFlag:
 
   def id: Char = this match
     case File            => '0'
-    case AFile           => '\u0000'
     case Link            => '1'
     case Symlink         => '2'
     case CharSpecial     => '3'
@@ -91,53 +89,100 @@ object TarEntry:
       (name:  Text,
        data:  DataType,
        mode:  UnixMode              = UnixMode(),
-       uid:   Uid                   = Uid(0),
-       gid:   Gid                   = Gid(0),
+       user:  UnixUser              = UnixUser(0),
+       group: UnixGroup             = UnixGroup(0),
        mtime: Optional[InstantType] = Unset)
       (using Readable[DataType, Bytes])
           : TarEntry =
     
     val mtimeLong: Long = mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000
-    TarEntry.File(name, mode, uid, gid, mtimeLong, data.stream[Bytes])
+    TarEntry.File(name, mode, user, group, mtimeLong, data.stream[Bytes])
 
-enum TarEntry(name: Text, mode: UnixMode, uid: Uid, gid: Gid, mtime: Long):
-  case File(name: Text, mode: UnixMode, uid: Uid, gid: Gid, mtime: Long, data: LazyList[Bytes])
-  extends TarEntry(name, mode, uid, gid, mtime)
+enum TarEntry(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long):
+  case File(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, data: LazyList[Bytes])
+  extends TarEntry(name, mode, user, group, mtime)
 
-  case Directory(name: Text, mode: UnixMode, uid: Uid, gid: Gid, mtime: Long)
-  extends TarEntry(name, mode, uid, gid, mtime)
+  case Directory(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long)
+  extends TarEntry(name, mode, user, group, mtime)
+  
+  case Link(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, target: Text)
+  extends TarEntry(name, mode, user, group, mtime)
+  
+  case Symlink(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, target: Text)
+  extends TarEntry(name, mode, user, group, mtime)
+  
+  case CharSpecial
+      (name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, device: (Int, Int))
+  extends TarEntry(name, mode, user, group, mtime)
+  
+  case BlockSpecial
+      (name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, device: (Int, Int))
+  extends TarEntry(name, mode, user, group, mtime)
+  
+  case Fifo(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long)
+  extends TarEntry(name, mode, user, group, mtime)
+
 
   def size: Int = this match
     case file: File => file.data.sumBy(_.length)
-    case directory  => 0
+    case _          => 0
   
   def dataBlocks: LazyList[Bytes] = this match
     case file: File => file.data.chunked(512)
     case directory  => LazyList()
 
   def typeFlag: TypeFlag = this match
-    case file: File           => TypeFlag.File
-    case directory: Directory => TypeFlag.Directory
+    case _: File         => TypeFlag.File
+    case _: Link         => TypeFlag.Link
+    case _: Symlink      => TypeFlag.Symlink
+    case _: CharSpecial  => TypeFlag.CharSpecial
+    case _: BlockSpecial => TypeFlag.BlockSpecial
+    case _: Directory    => TypeFlag.Directory
+    case _: Fifo         => TypeFlag.Fifo
+
+  
+  def link: Optional[Text] = this match
+    case Link(_, _, _, _, _, target)    => target
+    case Symlink(_, _, _, _, _, target) => target
+    case _                              => Unset
+  
+  def deviceNumbers: Optional[(Int, Int)] = this match
+    case special: CharSpecial  => special.device
+    case special: BlockSpecial => special.device
+    case _                     => Unset
 
   lazy val header: Bytes = Bytes.construct(512): array =>
     array.place(name.bytes, 0)
     array.place(mode.bytes, 100)
-    array.place(uid.bytes, 108)
-    array.place(gid.bytes, 116)
-    array.place(size.octal.pad(12, Rtl, '0').bytes, 124)
-    array.place(mtime.octal.pad(12, Rtl, '0').bytes, 136)
+    array.place(user.bytes, 108)
+    array.place(group.bytes, 116)
+    array.place(size.octal.pad(11, Rtl, '0').bytes, 124)
+    array.place(mtime.octal.pad(11, Rtl, '0').bytes, 136)
     array.place(t"        ".bytes, 148)
     array(156) = typeFlag.id.toByte
+    
+    link.let { link => array.place(link.bytes, 157) }
+    
+    deviceNumbers.let: (devMajor, devMinor) =>
+      array.place(devMajor.octal.pad(7, Rtl, '0').bytes, 329)
+      array.place(devMinor.octal.pad(7, Rtl, '0').bytes, 337)
+
+    user.name.let { name => array.place(name.bytes, 265) }
+    group.name.let { name => array.place(name.bytes, 297) }
+    
     array.place(t"ustar\u0000".bytes, 257)
     array.place(t"00".bytes, 263)
+    
+
     val total = array.sumBy(java.lang.Byte.toUnsignedInt(_))
-    array.place(total.octal.pad(8, Rtl, '0').bytes, 148)
+    array.place(total.octal.pad(7, Rtl, '0').bytes, 148)
 
   def serialize: LazyList[Bytes] = header #:: dataBlocks
 
 object Tar:
   val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
 
+  given readable: Readable[Tar, Bytes] = _.serialize
+
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Bytes] = entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
-  
