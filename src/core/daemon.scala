@@ -259,25 +259,18 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       Log.pin()
 
-      Log.info(t"Connecting socket")
       val socket: jn.ServerSocket = jn.ServerSocket(0)
-      Log.info(t"Getting port")
       val port: Int = socket.getLocalPort
-      Log.info(t"Reading build ID")
       val buildId = safely((Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]).or(0)
-      Log.info(t"Connecting to STDERR")
       val stderr = if stderrSupport() then 1 else 0
-      Log.info(t"Writing port")
       t"$port $buildId $stderr".writeTo(portFile.as[File])
-      Log.info(t"Writing PID")
       OsProcess().pid.value.show.writeTo(pidFile.as[File])
-      Log.info(t"Starting loop")
       
       daemon:
         safely:
-          baseDir.path.watch: watcher =>
+          List(portFile, pidFile).watch: watcher =>
             watcher.stream.each:
-              case Delete(_, t"port" | t"pid") | Modify(_, t"port" | t"pid") =>
+              case Delete(_, _) | Modify(_, _) =>
                 Log.info(t"The port or PID file was deleted; terminating immediately")
                 termination
               
