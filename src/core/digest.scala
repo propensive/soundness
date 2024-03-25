@@ -202,6 +202,7 @@ package alphabets:
   package hex:
     given upperCase: HexAlphabet = HexAlphabet(t"0123456789ABCDEF".chars)
     given lowerCase: HexAlphabet = HexAlphabet(t"0123456789abcdef".chars)
+    given bioctal: HexAlphabet = HexAlphabet(t"01234567cjzwfsbv".chars)
 
 object ByteEncoder:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
