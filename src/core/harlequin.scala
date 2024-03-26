@@ -18,6 +18,7 @@ package harlequin
 
 import rudiments.*
 import anticipation.*
+import anthology.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
@@ -41,6 +42,13 @@ enum Token:
 
 enum Accent:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
+
+extension (range: CodeRange)
+  def of(source: ScalaSource): ScalaSource =
+    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+    if range.startLine != range.endLine
+    then source.fragment(range.startLine, (range.endLine + 2).min(source.lastLine), focus)
+    else source.fragment(range.startLine, (range.endLine + 1).min(source.lastLine), focus)
 
 case class ScalaSource
     (offset: Int,

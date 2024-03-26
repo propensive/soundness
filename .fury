@@ -22,6 +22,7 @@ project harlequin
     compiler  scala
     sources   src/core
     include   gossamer/core
+    include   anthology/scala
 
   module ansi
     compiler  scala

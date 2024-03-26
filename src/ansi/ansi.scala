@@ -27,16 +27,22 @@ package syntaxHighlighting:
 
   given numbered: Displayable[ScalaSource] = source =>
     val indent = source.lastLine.show.length
+    lazy val error = e"${rgb"#cc0033"}(║)"
     
     val markup = source.focus.lay(e""):
       case ((startLine, startColumn), (endLine, endColumn)) =>
-        if startLine != endLine then e"" else
+        if startLine != endLine then e"\n" else
           if startColumn == endColumn then e"\n${t" "*(startColumn + indent + 1)}${rgb"#ff0033"}(╱╲)"
           else e"\n${t" "*(startColumn + indent + 2)}${rgb"#ff0033"}(${t"‾"*(endColumn - startColumn)})"
       
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.display).join
-      e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $content"
+      source.focus.mask:
+        case ((startLine, _), (endLine, _)) => startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
+      .let: focus =>
+        e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋))  $content"
+      .or:
+        e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $error$content"
 
     .join(e"", e"\n", markup)
   
