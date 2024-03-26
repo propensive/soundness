@@ -78,15 +78,17 @@ extension [ElemType](value: IArray[ElemType])
   inline def mutable(using Unsafe): Array[ElemType] = (value.asMatchable: @unchecked) match
     case array: Array[ElemType] => array
 
-extension [ElemType](value: Array[ElemType])
-  def immutable(using Unsafe): IArray[ElemType] = (value: @unchecked) match
+extension [ElemType](array: Array[ElemType])
+  def immutable(using Unsafe): IArray[ElemType] = (array: @unchecked) match
     case array: IArray[ElemType] => array
 
   def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
-    val newArray = new Array[ElemType](value.length)
-    System.arraycopy(value, 0, newArray, 0, value.length)
+    val newArray = new Array[ElemType](array.length)
+    System.arraycopy(array, 0, newArray, 0, array.length)
     newArray.immutable(using Unsafe)
 
+  inline def place(value: IArray[ElemType], index: Int = 0): Unit =
+    System.arraycopy(value.asInstanceOf[Array[ElemType]], 0, array, index, value.length)
 
 extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
   inline def has(key: KeyType): Boolean = map.contains(key)
@@ -112,6 +114,8 @@ extension [ElemType](seq: Seq[ElemType])
   def runs: List[List[ElemType]] = runsBy(identity)
 
   inline def prim: Optional[ElemType] = if seq.isEmpty then Unset else seq.head
+  inline def sec: Optional[ElemType] = if seq.length < 2 then Unset else seq(1)
+  inline def ter: Optional[ElemType] = if seq.length < 3 then Unset else seq(2)
 
   def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
     @tailrec
