@@ -67,19 +67,17 @@ object XmlInterpolation:
 
     def rollback(difference: Int): ParseState = copy(offset = offset - difference)
     
-    def pop: ParseState throws InterpolationError = stack.headOption match
-      case Some(tag) if tag.name == current => copy(stack = stack.tail)
+    def pop: ParseState throws InterpolationError =
+      val tag = stack.prim.or:
+        throw InterpolationError(msg"spurious closing tag: $current", offset - current.length, current.length)
       
-      case Some(tag) =>
+      if tag.name == current then copy(stack = stack.tail) else
         throw
           InterpolationError
             (msg"closing tag '$current' does not match expected tag '${tag.name}'",
              offset - current.length,
              current.length)
       
-      case None =>
-        throw InterpolationError(msg"spurious closing tag: $current", offset - current.length, current.length)
-
   given Substitution[XmlInput, Text, "t"] with
     def embed(value: Text) = XmlInput.Flat(value)
 

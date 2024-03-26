@@ -209,9 +209,9 @@ case class Attribute(node: XmlNode, attribute: Text):
       (using decoder: XmlDecoder[ValueType])
       (using Raises[XmlReadError], Raises[XmlAccessError]): ValueType =
 
-    val attributes = Xml.normalize(node).headOption match
-      case Some(XmlAst.Element(_, _, attributes, _)) => attributes
-      case _                                         => abort(XmlReadError())
+    val attributes = Xml.normalize(node).prim match
+      case XmlAst.Element(_, _, attributes, _) => attributes
+      case _                                   => abort(XmlReadError())
 
     decoder.read(List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
 
