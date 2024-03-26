@@ -372,7 +372,7 @@ case class Bg(color: Int):
     
     colorDepth match
       case ColorDepth.TrueColor =>
-        if red + green + blue == 0 then t"\e[40m" else t"\e[48;2;$red;$green;${blue}m"
+        t"\e[48;2;$red;$green;${blue}m"
 
       case _ =>
         val n = 16 +
@@ -389,7 +389,7 @@ case class Fg(color: Int):
     
     colorDepth match
       case ColorDepth.TrueColor =>
-        if red + green + blue == 0 then t"\e[30m" else t"\e[38;2;$red;$green;${blue}m"
+        t"\e[38;2;$red;$green;${blue}m"
 
       case _ =>
         val n = 16 +
