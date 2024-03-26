@@ -20,6 +20,7 @@ import rudiments.*
 import anticipation.*
 import gossamer.*
 import spectacular.*
+import vacuous.*
 import kaleidoscope.*
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
@@ -41,7 +42,18 @@ enum Token:
 enum Accent:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
 
-object ScalaSyntax: 
+case class ScalaSource
+    (offset: Int,
+     lines:  IArray[Seq[Token]],
+     focus:  Optional[((Int, Int), (Int, Int))] = Unset):
+
+  def lastLine: Int = offset + lines.length - 1
+  def apply(line: Int): Seq[Token] = lines(line - offset)
+
+  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset): ScalaSource =
+    ScalaSource(startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
+
+object ScalaSource:
   def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
     else if token == 3 || token == 10 || token == 13 then Accent.String
@@ -52,7 +64,7 @@ object ScalaSyntax:
     else if token >= 63 && token <= 84 then Accent.Symbol
     else Accent.Parens
   
-  def highlight(text: Text): IArray[Seq[Token]] =
+  def highlight(text: Text): ScalaSource =
     val initCtx = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
     val source = SourceFile.virtual("<highlighting>", text.s)
     val ctx = initCtx.setCompilationUnit(CompilationUnit(source, mustExist = false)(using initCtx))
@@ -100,7 +112,7 @@ object ScalaSyntax:
         case -1  => xs :: acc
         case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
         
-    IArray(lines(stream().to(List)).reverse*)
+    ScalaSource(1, IArray(lines(stream().to(List)).reverse*))
 
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:

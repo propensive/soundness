@@ -1,13 +1,18 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target harlequin/test
+target harlequin/ansi
 repo propensive/kaleidoscope
+repo propensive/escapade
 repo propensive/gossamer
 
 project harlequin
   module core
     sources src/core
     include gossamer/core kaleidoscope/core
+  
+  module ansi
+    sources src/ansi
+    include harlequin/core escapade/core
   
   module test
     compiler  scala

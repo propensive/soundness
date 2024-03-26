@@ -10,7 +10,7 @@
 
 ecosystem vent 6 https://github.com/propensive/vent main
 
-command compile harlequin/core
+command compile harlequin/ansi
 default compile
 
 project harlequin
@@ -22,6 +22,12 @@ project harlequin
     compiler  scala
     sources   src/core
     include   gossamer/core
+
+  module ansi
+    compiler  scala
+    sources   src/ansi
+    include   harlequin/core
+    include   escapade/core
 
 ##
 
