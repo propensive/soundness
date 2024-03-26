@@ -44,12 +44,22 @@ trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
   def addHeader(key: Text, value: Text): Unit
 
+case class Content(media: MediaType, stream: LazyList[Bytes])
+
 trait FallbackHandler:
   given [ResponseType: Show](using encoder: CharEncoder): SimpleHandler[ResponseType] =
     SimpleHandler(media"text/plain"(charset = encoder.encoding.name), value =>
         HttpBody.Chunked(LazyList(value.show.bytes)))
 
 object Handler extends FallbackHandler:
+
+  given content: Handler[Content] with
+    def process(content: Content, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+      responder.addHeader(ResponseHeader.ContentType.header, content.media.show)
+      headers.each(responder.addHeader)
+      responder.sendBody(200, HttpBody.Chunked(content.stream))
+
+
   given bytes[ResponseType]
       (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Raises[MediaTypeError])
           : SimpleHandler[ResponseType] =
