@@ -155,7 +155,7 @@ object Request:
     .join(t"\n          ")
 
     ListMap[Text, Text](
-      t"content"  -> request.contentType.show,
+      t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
       t"method"   -> request.method.show,
       t"query"    -> request.query.show,
       t"ssl"      -> request.ssl.show,
@@ -184,10 +184,10 @@ case class Request
   val params: Map[Text, Text] =
     try
       queryParams.map:
-        case (k, vs) => k.urlDecode -> vs.headOption.getOrElse(t"").urlDecode
+        case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
       .to(Map) ++ {
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
-            (contentType == Some(media"application/x-www-form-urlencoded") || contentType == None)
+            (contentType == Some(media"application/x-www-form-urlencoded") || contentType.absent)
         then
           Map[Text, Text](body.stream.readAs[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
@@ -208,8 +208,8 @@ case class Request
         body.stream.map(_.length).sum
     catch case err: NumberError => abort(StreamError(0.b))
   
-  lazy val contentType: Option[MediaType] =
-    headers.get(RequestHeader.ContentType).flatMap(_.headOption).flatMap(MediaType.unapply(_))
+  lazy val contentType: Optional[MediaType] =
+    headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
   
 trait RequestHandler:
   def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): HttpService
