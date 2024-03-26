@@ -83,8 +83,7 @@ object Postable extends FallbackPostable:
     Postable(Media.parse(response.mediaType.show), response.content(_).map(identity))
   
 class Postable[PostType](val contentType: MediaType, val content: PostType => LazyList[Bytes]):
-  
-  def preview(value: PostType): Text = content(value).headOption.fold(t""): bytes =>
+  def preview(value: PostType): Text = content(value).prim.lay(t""): bytes =>
     val sample = bytes.take(256)
     val string: Text = if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
     if bytes.length > 128 then t"$string..." else string
