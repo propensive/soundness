@@ -7,4 +7,4 @@
   classpath
 - compiler invocation is typed according to the major compiler version
 - options are typechecked against the compiler version
-- supports compilation with [https://scala-js.org/](Scala.js)
+- supports compilation with [Scala.js](https://scala-js.org/)
