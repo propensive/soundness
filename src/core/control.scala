@@ -216,6 +216,13 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
   def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
+  
+  def acknowledge(block: PartialFunction[ErrorType, Unit]): Attempt[SuccessType, ErrorType] =
+    this match
+      case Failure(value) => if block.isDefinedAt(value) then block(value)
+      case _              => ()
+    
+    this
 
   transparent inline def apply(): SuccessType raises ErrorType = this match
     case Success(value) => value
