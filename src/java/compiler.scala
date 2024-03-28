@@ -1,0 +1,86 @@
+package anthology
+
+import anticipation.*
+import fulminate.*
+import parasite.*
+import digression.*
+import ambience.*
+import eucalyptus.*
+import hellenism.*
+import gossamer.*
+import contingency.*
+import vacuous.*
+
+import scala.jdk.CollectionConverters.*
+import scala.util.control as suc
+
+import javax.tools as jt
+import java.util as ju
+import java.net as jn
+
+given realm: Realm = realm"anthology"
+
+case class JavacOption(flags: Text*)
+
+object Javac:
+  private var Javac: jt.JavaCompiler = jt.ToolProvider.getSystemJavaCompiler().nn
+  def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
+  def compiler(): jt.JavaCompiler = Javac
+
+case class Javac(options: List[JavacOption]):
+  case class JavaSource(name: Text, code: Text)
+  extends jt.SimpleJavaFileObject(jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
+    override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
+
+  def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
+      (using SystemProperties, Log[Text], Monitor)
+          : CompileProcess raises CompileError =
+    Log.info(t"Starting Java compilation")
+    val process = CompileProcess()
+    
+    val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
+
+      def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject]): Unit =
+        val importance = diagnostic.getKind match
+          case jt.Diagnostic.Kind.ERROR             => Importance.Error
+          case jt.Diagnostic.Kind.WARNING           => Importance.Warning
+          case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
+          case _                                    => Importance.Info
+
+        val codeRange: Optional[CodeRange] = if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
+          CodeRange
+           (diagnostic.getLineNumber.toInt,
+            diagnostic.getColumnNumber.toInt,
+            diagnostic.getLineNumber.toInt,
+            (diagnostic.getColumnNumber + diagnostic.getEndPosition - diagnostic.getPosition).toInt)
+
+        process.put:
+          Notice(importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
+    
+    val options = List(t"-classpath", classpath(), t"-d", out.pathText)
+    val javaSources = sources.map(JavaSource(_, _)).asJava
+    Log.fine(t"javac ${options.join(t" ")}")
+
+    async:
+      try
+        val success =
+          process.put(CompileProgress(0.1, t"javac"))
+          Javac.compiler().getTask
+           (null,
+            null,
+            diagnostics,
+            options.map(_.s).asJava,
+            null,
+            javaSources).nn.call().nn
+        
+        if success then process.put(CompileProgress(1.0, t"javac"))
+
+        process.put(if success then CompileResult.Success else CompileResult.Failure)
+
+      catch case suc.NonFatal(error) =>
+        Javac.refresh()
+        Log.warn(error.stackTrace)
+        process.put(CompileResult.Crash(error.stackTrace))
+
+    process
+

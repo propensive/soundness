@@ -20,6 +20,7 @@ import anticipation.*
 import galilei.*
 import contingency.*
 import fulminate.*
+import digression.*
 import ambience.*
 import parasite.*
 import eucalyptus.*
@@ -32,21 +33,18 @@ import hellenism.*
 
 given Realm = realm"anthology"
 
-import dotty.tools.*, dotc.*, reporting.*, interfaces as dtdi, util as dtdu, core.*
+import dotty.tools.*, dotc as dtd, dtd.reporting.*, dtd.interfaces as dtdi, dtd.util as dtdu, dtd.core as dtdc
 import dotty.tools.dotc.sbt.interfaces as dtdsi
 
 import scala.util.control as suc
 
 import language.adhocExtensions
 
-object Compiler:
-  private var Scala3 = new dotty.tools.dotc.Compiler()
+// Using a type alias does not seem to work (even though it worked previously). The type has been inlined below
+// as a workaround.
+//type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
 
-case class ScalacError() extends Error(msg"there was a compilation error")
-
-type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
-
-case class CompileOption[-CompilerType <: ScalacVersions](flags: Text*)
+case class ScalacOption[-CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](flags: Text*)
 
 enum Unused[CompilerType]:
   case All extends Unused[3.1 | 3.2 | 3.3]
@@ -63,117 +61,104 @@ enum UnusedFeature[CompilerType](val name: Text):
   case Linted extends UnusedFeature[3.3 | 3.4](t"linted")
 
 package scalacOptions:
-  val newSyntax = CompileOption[ScalacVersions](t"-new-syntax")
-  def sourceFuture = CompileOption[ScalacVersions](t"-source", t"future")
-  val experimental = CompileOption[3.4](t"-experimental")
+  val newSyntax = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-new-syntax")
+  def sourceFuture = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-source", t"future")
+  val experimental = ScalacOption[3.4](t"-experimental")
 
   package warnings:
-    val feature = CompileOption[ScalacVersions](t"-feature")
-    val deprecation = CompileOption[ScalacVersions](t"-deprecation")
-    val implausiblePatterns = CompileOption[3.3 | 3.4](t"-Wimplausible-patterns")
-    val enumCommentDiscard = CompileOption[3.4](t"-Wenum-comment-discard")
-    val unstableInlineAccessors = CompileOption[3.4](t"-WunstableInlineAccessors")
-    val nonUnitStatement = CompileOption[3.4](t"-Wnonunit-statement")
-    val valueDiscard = CompileOption[3.4](t"-Wvalue-discard")
+    val feature = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-feature")
+    val deprecation = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-deprecation")
+    val implausiblePatterns = ScalacOption[3.3 | 3.4](t"-Wimplausible-patterns")
+    val enumCommentDiscard = ScalacOption[3.4](t"-Wenum-comment-discard")
+    val unstableInlineAccessors = ScalacOption[3.4](t"-WunstableInlineAccessors")
+    val nonUnitStatement = ScalacOption[3.4](t"-Wnonunit-statement")
+    val valueDiscard = ScalacOption[3.4](t"-Wvalue-discard")
     
-    def unused[CompilerType <: ScalacVersions](selection: Unused[CompilerType]) =
+    def unused[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](selection: Unused[CompilerType]) =
       val option = (selection: @unchecked) match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
         case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
 
-      CompileOption[CompilerType](option)
+      ScalacOption[CompilerType](option)
 
     package lint:
-      val privateShadow = CompileOption[3.4](t"-Wshadow:private-shadow")
-      val typeParameterShadow = CompileOption[3.4](t"-Wshadow:type-parameter-shadow")
+      val privateShadow = ScalacOption[3.4](t"-Wshadow:private-shadow")
+      val typeParameterShadow = ScalacOption[3.4](t"-Wshadow:type-parameter-shadow")
 
   package internal:
-    val requireTargetName = CompileOption[ScalacVersions](t"-Yrequire-targetName")
-    val safeInit = CompileOption[ScalacVersions](t"-Ysafe-init")
-    val explicitNulls = CompileOption[ScalacVersions](t"-Yexplicit-nulls")
-    val checkPatterns = CompileOption[ScalacVersions](t"-Ycheck-all-patmat")
-    val ccNew = CompileOption[ScalacVersions](t"-Ycc-new")
+    val requireTargetName = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Yrequire-targetName")
+    val safeInit = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Ysafe-init")
+    val explicitNulls = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Yexplicit-nulls")
+    val checkPatterns = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Ycheck-all-patmat")
+    val ccNew = ScalacOption[3.4](t"-Ycc-new")
 
   package advanced:
-    def maxInlines(n: Int): CompileOption[ScalacVersions] = CompileOption(t"-Xmax-inlines", n.show)
+    def maxInlines(n: Int): ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5] = ScalacOption(t"-Xmax-inlines", n.show)
   package language:
     package experimental:
-      val clauseInterleaving =      CompileOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
-      val givenLoopPrevention =     CompileOption[3.4](t"-language:experimental.givenLoopPrevention")
-      val fewerBraces =             CompileOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
-      val into =                    CompileOption[3.4](t"-language:experimental.into")
-      val relaxedExtensionImports = CompileOption[3.3](t"-language:experimental.relaxedExtensionImports")
-      val erasedDefinitions =       CompileOption[ScalacVersions](t"-language:experimental.erasedDefinitions")
-      val genericNumberLiterals =   CompileOption[ScalacVersions](t"-language:experimental.genericNumberLiterals")
-      val saferExceptions =         CompileOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
-      val namedTypeArguments =      CompileOption[ScalacVersions](t"-language:experimental.namedTypeArguments")
-      val pureFunctions =           CompileOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
-      val captureChecking =         CompileOption[3.3 | 3.4](t"-language:experimental.captureChecking")
+      val clauseInterleaving =      ScalacOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
+      val givenLoopPrevention =     ScalacOption[3.4](t"-language:experimental.givenLoopPrevention")
+      val fewerBraces =             ScalacOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
+      val into =                    ScalacOption[3.4](t"-language:experimental.into")
+      val relaxedExtensionImports = ScalacOption[3.3](t"-language:experimental.relaxedExtensionImports")
+      val erasedDefinitions =       ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.erasedDefinitions")
+      val genericNumberLiterals =   ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.genericNumberLiterals")
+      val saferExceptions =         ScalacOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
+      val namedTypeArguments =      ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.namedTypeArguments")
+      val pureFunctions =           ScalacOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
+      val captureChecking =         ScalacOption[3.3 | 3.4](t"-language:experimental.captureChecking")
 
 object Scalac:
-  var Scala3: Compiler = new Compiler()
+  private var Scala3: dtd.Compiler = new dtd.Compiler()
+  def refresh(): Unit = Scala3 = new dtd.Compiler()
+  def compiler(): dtd.Compiler = Scala3
 
-enum Importance:
-  case Info, Warning, Error
-
-case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
-
-object Notice:
+extension (companion: Notice.type)
   def apply(diagnostic: Diagnostic): Notice =
     val importance: Importance = Importance.fromOrdinal(diagnostic.level)
     val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
     val message: Text = diagnostic.message.tt
-    val content: Text = diagnostic.position.map(_.nn.lineContent.nn.tt).nn.orElse(t"").nn
 
     diagnostic.position.map: position =>
       position.nn.pipe: position =>
         val codeRange =
           CodeRange(position.startLine.nn, position.startColumn.nn, position.endLine.nn, position.endColumn.nn)
 
-        Notice(importance, file, message, content, codeRange)
+        Notice(importance, file, message, codeRange)
 
     .nn.orElse:
-      Notice(importance, file, message, content, Unset)
+      Notice(importance, file, message, Unset)
     .nn
     
-case class Notice(importance: Importance, file: Text, message: Text, code: Text, codeRange: Optional[CodeRange])
-
-case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[CompilerType]]):
+case class Scalac[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](options: List[ScalacOption[CompilerType]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
       (using SystemProperties, Log[Text], Monitor)
-          : ScalacProcess raises ScalacError =
+          : CompileProcess raises CompileError =
     
-    val scalacProcess: ScalacProcess = ScalacProcess()
+    val scalacProcess: CompileProcess = CompileProcess()
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
-      def doReport(diagnostic: Diagnostic)(using core.Contexts.Context): Unit =
+      def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
         Log.fine(Notice(diagnostic).debug)
         scalacProcess.put(Notice(diagnostic))
     
-    given (ScalacError fixes SystemPropertyError) =
-      case SystemPropertyError(_) => ScalacError()
+    given (CompileError fixes SystemPropertyError) =
+      case SystemPropertyError(_) => CompileError()
 
-    given (ScalacError fixes IoError) =
-      case IoError(_) => ScalacError()
+    given (CompileError fixes IoError) =
+      case IoError(_) => CompileError()
     
     val separator: Text = Properties.path.separator().show
       
-    val callbackApi = new dtdi.CompilerCallback:
-      override def onClassGenerated
-          (source: dtdi.SourceFile, generatedClass: dtdi.AbstractFile, className: String)
-              : Unit =
-
-        return ()
-        
-      override def onSourceCompiled(source: dtdi.SourceFile): Unit = ()
+    val callbackApi = new dtdi.CompilerCallback {}
     
     object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
-      override def informUnitStarting(stage: String, unit: CompilationUnit): Unit = ()
+      override def informUnitStarting(stage: String, unit: dtd.CompilationUnit): Unit = ()
       
       override def progress(current: Int, total: Int, currentStage: String, nextStage: String): Boolean =
         val int = (100.0*current/total).toInt
@@ -195,8 +180,8 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
         Log.fine(args.join(t"Running: scalac ", t" ", t""))
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
         
-      def run(): ScalacProcess =
-        given Contexts.Context = currentCtx.fresh.pipe: ctx =>
+      def run(): CompileProcess =
+        given dtdc.Contexts.Context = currentCtx.fresh.pipe: ctx =>
           ctx.setReporter(reporter).setCompilerCallback(callbackApi).setProgressCallback(ProgressApi)
         
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
@@ -204,47 +189,20 @@ case class Scalac[CompilerType <: ScalacVersions](options: List[CompileOption[Co
           
         async:
           try
-            Scalac.Scala3.newRun.tap: run =>
+            Scalac.compiler().newRun.tap: run =>
               run.compileSources(sourceFiles)
               if !reporter.hasErrors then finish(Scalac.Scala3, run)
               
               scalacProcess.put:
-                if reporter.hasErrors then CompileResult.Failed else CompileResult.Succeeded
+                if reporter.hasErrors then CompileResult.Failure else CompileResult.Success
             .unit
           catch case suc.NonFatal(error) =>
-            CompileResult.Crashed
+            Scalac.refresh()
+            CompileResult.Crash(error.stackTrace)
   
         scalacProcess
       
     driver.run()
-
-case class CompileProgress(complete: Double, stage: Text)
-
-class ScalacProcess():
-  private[anthology] var continue: Boolean = true
-  private val completion: Promise[CompileResult] = Promise()
-  private val noticesFunnel: Funnel[Notice] = Funnel()
-  private val progressFunnel: Funnel[CompileProgress] = Funnel()
-
-  def put(notice: Notice): Unit = noticesFunnel.put(notice)
-  def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
-  def put(result: CompileResult): Unit = completion.offer(result)
-
-  def complete()(using Log[Text]): CompileResult raises CancelError =
-    completion.await().also:
-      noticesFunnel.stop()
-      progressFunnel.stop()
-  
-  def abort(): Unit = continue = false
-  def cancelled: Boolean = continue == false
-
-  lazy val progress: LazyList[CompileProgress] = progressFunnel.stream
-  lazy val notices: LazyList[Notice] = noticesFunnel.stream
-
-enum CompileResult:
-  case Failed
-  case Succeeded
-  case Crashed
 
 enum WarningFlag:
   case Deprecation, Feature
@@ -269,4 +227,4 @@ enum LanguageFeatures:
   case Into
 
 enum JavaVersion:
-  case Jdk(version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21)
+  case Jdk(version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22)
