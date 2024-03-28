@@ -33,6 +33,7 @@ import AsyncState.*
 @capability
 sealed trait Monitor(val name: List[Text], promise: Promise[?]):
   private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
+
   def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
 
   def cancel(): Unit =
@@ -106,7 +107,7 @@ extends Monitor(identifier :: parent.name, promise):
     promise.offer(value)
     boundary.break()
   
-  def acquiesce(): Unit = synchronized:
+  def relent(): Unit = synchronized:
     stateRef.get().nn match
       case Active            => ()
       case Suspended(_)      => wait()

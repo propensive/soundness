@@ -107,7 +107,7 @@ class Async[+ResultType]
   
   private def identifier: Text = s"${codepoint.text}".tt
 
-  def id: Text = Text((identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", ""))
+  def id: Text = (identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", "").tt
   def state(): AsyncState[ResultType] = stateRef.get().nn
   def ready: Boolean = promise.ready
   
@@ -117,11 +117,13 @@ class Async[+ResultType]
 
     promise.attend(duration)
     thread.join()
+    // cancel or wait?
     result()
   
   def await()(using cancel: Raises[CancelError]): ResultType =
     promise.attend()
     thread.join()
+    // cancel or wait?
     result()
   
   private def result()(using cancel: Raises[CancelError]): ResultType = state() match
@@ -158,7 +160,7 @@ class Async[+ResultType]
     thread.interrupt()
     monitor.cancel()
 
-def acquiesce[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.acquiesce()
+def relent[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.relent()
 def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()
 def terminate()(using monitor: Monitor): Unit = monitor.terminate()
 

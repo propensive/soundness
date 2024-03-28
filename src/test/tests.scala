@@ -205,7 +205,7 @@ object Tests extends Suite(t"Parasite tests"):
           
           val task = Async:
             sleep(50L)
-            acquiesce()
+            relent()
             value = true
           
           task.cancel()
