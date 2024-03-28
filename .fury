@@ -14,7 +14,7 @@ command compile digression/core
   description  Build the core module
 
 command test digression/test
-  description  Test Sybolism
+  description  Test Digression
 
 default compile
 
