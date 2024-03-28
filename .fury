@@ -14,7 +14,7 @@ command compile parasite/core
   description  Build the core module
 
 command test parasite/test
-  description  Test Sybolism
+  description  Test Parasite
 
 default compile
 
@@ -29,7 +29,7 @@ project parasite
     include   rudiments/core
     include   digression/core
     include   anticipation/time
-  
+
   module test
     compiler  scala
     sources   src/test
