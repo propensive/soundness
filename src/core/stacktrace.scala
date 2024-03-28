@@ -60,8 +60,6 @@ object Fqcn:
       then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)))(())
     
     new Fqcn(parts.map(_.tt))
-    
-
 
 class Fqcn(val parts: IArray[Text]):
   def text: Text = parts.mkString(".").tt
@@ -72,17 +70,17 @@ object StackTrace:
   case class Method(className: Text, method: Text)
   case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
   
-  val legend: Map[Text, Text] = Map(
-    Text("λₙ") -> Text("anonymous function"),
-    Text("αₙ") -> Text("anonymous class"),
-    Text("ι")  -> Text("initialization"),
-    Text("ς")  -> Text("super reference"),
-    Text("⋮ε") -> Text("extension method"),
-    Text("ϕ")  -> Text("direct"),
-    Text("⋮π") -> Text("package file"),
-    Text("ⲛ")  -> Text("class initializer"),
-    Text("ℓ")  -> Text("lazy initializer")
-  )
+  val legend: Map[Text, Text] =
+    Map
+     ("λₙ".tt -> "anonymous function".tt,
+      "αₙ".tt -> "anonymous class".tt,
+      "ι".tt  -> "initialization".tt,
+      "ς".tt  -> "super reference".tt,
+      "⋮ε".tt -> "extension method".tt,
+      "ϕ".tt  -> "direct".tt,
+      "⋮π".tt -> "package file".tt,
+      "ⲛ".tt  -> "class initializer".tt,
+      "ℓ".tt  -> "lazy initializer".tt)
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
