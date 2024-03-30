@@ -26,13 +26,16 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.pureFunctions
 
-enum AsyncState[+ValueType]:
+enum Completion[+ValueType]:
   case Active
   case Suspended(count: Int)
   case Completed(value: ValueType)
   case Failed(error: Throwable)
 
-import AsyncState.*
+import Completion.*
+
+trait OrphanCompletion:
+  def cleanup(monitor: Monitor): Unit
 
 class Hook(private val thread: Thread):
   def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
@@ -44,20 +47,6 @@ object Async:
     Runtime.getRuntime.nn.addShutdownHook(thread)
     Hook(thread)
 
-  def race[AsyncType](asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor): Async[AsyncType] =
-    async[Int]:
-      val promise: Promise[Int] = Promise()
-      
-      asyncs.zipWithIndex.foreach: (async, index) =>
-        async.each: result =>
-          promise.offer(index)
-      
-      promise.await()
-    
-    .flatMap:
-      case -1 => abort(CancelError())
-      case n  => asyncs(n)
-
 trait ThreadModel:
   def supervisor(): Supervisor
 
@@ -66,15 +55,19 @@ package threadModels:
   given virtual: ThreadModel = () => VirtualSupervisor
   given daemon: ThreadModel = () => DaemonSupervisor
 
-def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint): Async[Unit] =
+package orphans:
+  given awaitCompletion: OrphanCompletion = _.delegate(_.attend())
+  given cancelIncomplete: OrphanCompletion = _.delegate(_.cancel())
+
+def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint, OrphanCompletion): Async[Unit] =
   Async[Unit](evaluate, daemon = true, name = Unset)
 
-def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, Codepoint)
+def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, Codepoint, OrphanCompletion)
         : Async[ResultType] =
 
   Async(evaluate, daemon = false, name = Unset)
 
-def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor)
+def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, OrphanCompletion)
         : Async[ResultType] =
   
   Async(evaluate, daemon = false, name = name)
@@ -82,16 +75,17 @@ def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> Resul
 @capability
 class Async[+ResultType]
     (evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean, name: Optional[Text])
-    (using monitor: Monitor, codepoint: Codepoint):
+    (using monitor: Monitor, codepoint: Codepoint)
+    (using OrphanCompletion):
   
   private final val promise: Promise[ResultType | Promise.Special] = Promise()
-  private final val stateRef: juca.AtomicReference[AsyncState[ResultType]] = juca.AtomicReference(Active)
+  private final val stateRef: juca.AtomicReference[Completion[ResultType]] = juca.AtomicReference(Active)
 
   private final val thread: Thread =
     def runnable: Runnable = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
-        
+
         try evaluate(using child).tap { result => stateRef.set(Completed(result)) }
         catch case NonFatal(error) => stateRef.set(Failed(error))
         finally stateRef.get().nn match
@@ -100,17 +94,17 @@ class Async[+ResultType]
           case Suspended(_)     => promise.offer(Promise.Cancelled)
           case Failed(_)        => promise.offer(Promise.Incomplete)
 
-          child.cancel()
+          summon[OrphanCompletion].cleanup(child)
           boundary.break()
     
     monitor.supervisor.newPlatformThread(name.or("async".tt), runnable)
-  
+
   private def identifier: Text = s"${codepoint.text}".tt
 
   def id: Text = (identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", "").tt
-  def state(): AsyncState[ResultType] = stateRef.get().nn
+  def state(): Completion[ResultType] = stateRef.get().nn
   def ready: Boolean = promise.ready
-  
+
   def await[DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
           : ResultType =
@@ -119,19 +113,19 @@ class Async[+ResultType]
     thread.join()
     // cancel or wait?
     result()
-  
+
   def await()(using cancel: Raises[CancelError]): ResultType =
     promise.attend()
     thread.join()
     // cancel or wait?
     result()
-  
+
   private def result()(using cancel: Raises[CancelError]): ResultType = state() match
     case Completed(result) => result
     case Failed(error)     => throw error
     case Active            => abort(CancelError())
     case other             => abort(CancelError())
-  
+
   def suspend(): Unit = stateRef.updateAndGet:
     case Active       => Suspended(1)
     case Suspended(n) => Suspended(n + 1)
@@ -174,5 +168,20 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](asyncs: Seq[Async[ResultType]])
-  def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType]] =
+  def sequence(using Monitor, OrphanCompletion)(using cancel: Raises[CancelError]): Async[Seq[ResultType]] =
     async(asyncs.map(_.await()))
+
+extension [ResultType](asyncs: IndexedSeq[Async[ResultType]])
+  def race(using Raises[CancelError], Monitor, OrphanCompletion): Async[ResultType] =
+    async[Int]:
+      val promise: Promise[Int] = Promise()
+      
+      asyncs.zipWithIndex.foreach: (async, index) =>
+        async.each: result =>
+          promise.offer(index)
+      
+      promise.await()
+    
+    .flatMap:
+      case -1 => abort(CancelError())
+      case n  => asyncs(n)

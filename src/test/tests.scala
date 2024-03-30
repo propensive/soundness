@@ -27,6 +27,7 @@ import anticipation.*, timeInterfaces.long
 import errorHandlers.throwUnsafely
 
 import threadModels.platform
+import orphans.cancelIncomplete
 
 object Tests extends Suite(t"Parasite tests"):
 
@@ -94,7 +95,7 @@ object Tests extends Suite(t"Parasite tests"):
             bus.waitFor(t"task2")
             t"TASK2"
           
-          val task3 = Async.race(Vector(task1, task2))
+          val task3 = Vector(task1, task2).race
           bus.put(t"task2")
           sleep(15L)
           bus.put(t"task1")

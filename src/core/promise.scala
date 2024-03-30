@@ -22,7 +22,7 @@ import vacuous.*
 
 import language.experimental.captureChecking
 
-import AsyncState.*
+import Completion.*
 
 object Promise:
   sealed trait Special

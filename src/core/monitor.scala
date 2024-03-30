@@ -28,31 +28,37 @@ import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
-import AsyncState.*
+import Completion.*
 
 @capability
 sealed trait Monitor(val name: List[Text], promise: Promise[?]):
-  private val children: scm.HashMap[Text, AnyRef] = scm.HashMap()
-
-  def id: Text = Text(name.reverse.map(_.s).mkString(" / "))
+  private val childSet: scm.HashSet[AnyRef] = scm.HashSet()
 
   def cancel(): Unit =
-    children.each: (id, child) =>
-      child match
-        case child: Monitor => child.cancel()
-        case _              => ()
+    childSet.each:
+      case child: Monitor => child.cancel()
+      case _              => ()
     
     promise.cancel()
 
   def terminate(): Unit = this match
     case supervisor: Supervisor                         => supervisor.cancel()
     case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
-
+  
+  def attend(): Unit =
+    childSet.each:
+      case monitor: Monitor => monitor.attend()
+  
+  def delegate(lambda: Monitor -> Unit): Unit =
+    childSet.each:
+      case monitor: Monitor => lambda(monitor)
+      case _                => ()
+  
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
   def child[ResultType2]
       (id: Text,
-       state: juca.AtomicReference[AsyncState[ResultType2]],
+       state: juca.AtomicReference[Completion[ResultType2]],
        promise: Promise[ResultType2 | Promise.Special])
       (using label: boundary.Label[Unit])
           : Submonitor[ResultType2] =
@@ -60,7 +66,7 @@ sealed trait Monitor(val name: List[Text], promise: Promise[?]):
     val monitor = Submonitor[ResultType2](id, this, state, promise)
     
     synchronized:
-      children(id) = monitor
+      childSet += monitor
     
     monitor
 
@@ -94,12 +100,12 @@ def supervise[ResultType](block: Monitor ?=> ResultType)(using cancel: Raises[Ca
 case class Submonitor[ResultType]
     (identifier: Text,
      parent: Monitor,
-     stateRef: juca.AtomicReference[AsyncState[ResultType]],
+     stateRef: juca.AtomicReference[Completion[ResultType]],
      promise: Promise[ResultType | Promise.Special])
     (using label: boundary.Label[Unit])
 extends Monitor(identifier :: parent.name, promise):
 
-  def state(): AsyncState[ResultType] = stateRef.get().nn
+  def state(): Completion[ResultType] = stateRef.get().nn
   def supervisor: Supervisor = parent.supervisor
   
   def complete(value: ResultType): Nothing =
@@ -107,7 +113,7 @@ extends Monitor(identifier :: parent.name, promise):
     promise.offer(value)
     boundary.break()
   
-  def relent(): Unit = synchronized:
+  def relent(): Unit = //synchronized:
     stateRef.get().nn match
       case Active            => ()
       case Suspended(_)      => wait()
