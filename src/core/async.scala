@@ -44,20 +44,6 @@ object Async:
     Runtime.getRuntime.nn.addShutdownHook(thread)
     Hook(thread)
 
-  def race[AsyncType](asyncs: Vector[Async[AsyncType]])(using Raises[CancelError], Monitor): Async[AsyncType] =
-    async[Int]:
-      val promise: Promise[Int] = Promise()
-      
-      asyncs.zipWithIndex.foreach: (async, index) =>
-        async.each: result =>
-          promise.offer(index)
-      
-      promise.await()
-    
-    .flatMap:
-      case -1 => abort(CancelError())
-      case n  => asyncs(n)
-
 trait ThreadModel:
   def supervisor(): Supervisor
 
@@ -91,7 +77,7 @@ class Async[+ResultType]
     def runnable: Runnable = () =>
       boundary[Unit]:
         val child = monitor.child[ResultType](identifier, stateRef, promise)
-        
+
         try evaluate(using child).tap { result => stateRef.set(Completed(result)) }
         catch case NonFatal(error) => stateRef.set(Failed(error))
         finally stateRef.get().nn match
@@ -104,13 +90,13 @@ class Async[+ResultType]
           boundary.break()
     
     monitor.supervisor.newPlatformThread(name.or("async".tt), runnable)
-  
+
   private def identifier: Text = s"${codepoint.text}".tt
 
   def id: Text = (identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", "").tt
   def state(): AsyncState[ResultType] = stateRef.get().nn
   def ready: Boolean = promise.ready
-  
+
   def await[DurationType: GenericDuration]
       (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
           : ResultType =
@@ -119,19 +105,19 @@ class Async[+ResultType]
     thread.join()
     // cancel or wait?
     result()
-  
+
   def await()(using cancel: Raises[CancelError]): ResultType =
     promise.attend()
     thread.join()
     // cancel or wait?
     result()
-  
+
   private def result()(using cancel: Raises[CancelError]): ResultType = state() match
     case Completed(result) => result
     case Failed(error)     => throw error
     case Active            => abort(CancelError())
     case other             => abort(CancelError())
-  
+
   def suspend(): Unit = stateRef.updateAndGet:
     case Active       => Suspended(1)
     case Suspended(n) => Suspended(n + 1)
@@ -176,3 +162,18 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
 extension [ResultType](asyncs: Seq[Async[ResultType]])
   def sequence(using cancel: Raises[CancelError], mon: Monitor): Async[Seq[ResultType]] =
     async(asyncs.map(_.await()))
+
+extension [ResultType](asyncs: IndexedSeq[Async[ResultType]])
+  def race(using Raises[CancelError], Monitor): Async[ResultType] =
+    async[Int]:
+      val promise: Promise[Int] = Promise()
+      
+      asyncs.zipWithIndex.foreach: (async, index) =>
+        async.each: result =>
+          promise.offer(index)
+      
+      promise.await()
+    
+    .flatMap:
+      case -1 => abort(CancelError())
+      case n  => asyncs(n)
