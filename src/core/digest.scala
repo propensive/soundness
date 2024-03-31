@@ -197,7 +197,9 @@ package alphabets:
   package base32:
     given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
     given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
-    given zBase32Unpadded: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
+    
+    given zBase32Unpadded: Base32Alphabet =
+      Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
 
   package hex:
     given upperCase: HexAlphabet = HexAlphabet(t"0123456789ABCDEF".chars)
@@ -217,8 +219,8 @@ object ByteEncoder:
     Text(String(array))
 
 
-  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] =
-    bytes => val buf: StringBuilder = StringBuilder()
+  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] = bytes =>
+    val buf: StringBuilder = StringBuilder()
     
     @tailrec
     def recur(acc: Int, index: Int, unused: Int): Text =
@@ -227,7 +229,10 @@ object ByteEncoder:
       if index >= bytes.length then
         buf.append(alphabet.chars((acc >> 6) & 31))
         if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
-        if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
+        
+        if buf.length%8 != 0
+        then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
+        
         buf.toString.tt
 
       else
