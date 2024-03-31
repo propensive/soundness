@@ -256,3 +256,16 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorit
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 
 case class PemError(detail: Text) extends Error(msg"could not parse PEM-encoded content: $detail")
+
+object Feistel:
+  def apply(subkeys: List[Int], round: (Int, Int) => Int)(input: Long): Long =
+    def recur(value: Long, subkeys: List[Int]): Long =
+      subkeys match
+        case Nil => value
+        case head :: tail =>
+          val left: Int = (value >> 32).toInt
+          val right: Int = value.toInt
+          recur((right.toLong << 32) | (left ^ round(right, head)).toLong, tail)
+    
+    recur(input, subkeys)
+      
