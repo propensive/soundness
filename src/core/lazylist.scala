@@ -106,36 +106,42 @@ extension (lazyList: LazyList[Bytes])
 
     compression.decompress(lazyList)
 
-  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] = stochastic:
-    given Distribution = Gamma.approximate(mean, variance)
-    
-    def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
-    
-    def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int): LazyList[Bytes] =
-      stream match
-        case source #:: more =>
-          val ready = source.length - sourcePos
-          val free = dest.length - destPos
-
-          if ready < free then
-            System.arraycopy(source, sourcePos, dest, destPos, ready)
-            recur(more, 0, dest, destPos + ready)
-          else if free < ready then
-            System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
-          else // free == ready
-            System.arraycopy(source, sourcePos, dest, destPos, free)
-            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
-        
-        case _ =>
-          if destPos == 0 then LazyList() else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
-
-    recur(lazyList, 0, newArray(), 0)
+  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] =
+    stochastic:
+      given Distribution = Gamma.approximate(mean, variance)
+      
+      def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
+      
+      def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
+              : LazyList[Bytes] =
+  
+        stream match
+          case source #:: more =>
+            val ready = source.length - sourcePos
+            val free = dest.length - destPos
+  
+            if ready < free then
+              System.arraycopy(source, sourcePos, dest, destPos, ready)
+              recur(more, 0, dest, destPos + ready)
+            else if free < ready then
+              System.arraycopy(source, sourcePos, dest, destPos, free)
+              dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+            else // free == ready
+              System.arraycopy(source, sourcePos, dest, destPos, free)
+              dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+          
+          case _ =>
+            if destPos == 0 then LazyList()
+            else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
+  
+      recur(lazyList, 0, newArray(), 0)
 
   def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Bytes] =
     def newArray(): Array[Byte] = new Array[Byte](size)
     
-    def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int): LazyList[Bytes] =
+    def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
+            : LazyList[Bytes] =
+
       stream match
         case source #:: more =>
           val ready = source.length - sourcePos
@@ -153,7 +159,8 @@ extension (lazyList: LazyList[Bytes])
         
         case _ =>
           if destPos == 0 then LazyList()
-          else LazyList((if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe))
+          else LazyList:
+            (if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe)
 
     recur(lazyList, 0, newArray(), 0)
 
@@ -207,19 +214,24 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
   
   def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
 
-  override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int = if length == 0 then 0 else
-    val count = length.min(available())
-    
-    if count == 0 then -1 else
-      if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
-      offset += count
-      count
+  override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
+    if length == 0 then 0 else
+      val count = length.min(available())
+      
+      if count == 0 then -1 else
+        if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
+        offset += count
+        count
 
 extension (obj: LazyList.type)
-  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor): LazyList[ElemType] =
+  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor, Mitigator)
+          : LazyList[ElemType] =
+
     multiplexer(streams*).stream
   
-  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor): Multiplexer[Any, ElemType] =
+  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor, Mitigator)
+          : Multiplexer[Any, ElemType] =
+
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).each(multiplexer.add)
     multiplexer
@@ -234,6 +246,6 @@ extension (obj: LazyList.type)
       try
         sleepUntil(startTime + duration.milliseconds*iteration)
         () #:: pulsar(duration)
-      catch case err: CancelError => LazyList()
+      catch case err: ConcurrencyError => LazyList()
     
     recur(0)

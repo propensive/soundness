@@ -16,7 +16,7 @@
 
 package turbulence
 
-import parasite.*
+import parasite.*, asyncOptions.waitForOrphans
 import rudiments.*
 import vacuous.*
 import anticipation.*
@@ -24,12 +24,12 @@ import contingency.*
 
 import java.util.concurrent as juc
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 object Multiplexer:
   private object Termination
 
-case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
+case class Multiplexer[KeyType, ElementType]()(using Monitor, Mitigator):
   private val tasks: TrieMap[KeyType, Async[Unit]] = TrieMap()
   
   private val queue: juc.LinkedBlockingQueue[ElementType | Multiplexer.Termination.type] =
@@ -40,7 +40,7 @@ case class Multiplexer[KeyType, ElementType]()(using monitor: Monitor):
   @tailrec
   private def pump(key: KeyType, stream: LazyList[ElementType])(using Submonitor[Unit]): Unit =
     if stream.isEmpty then remove(key) else
-      acquiesce()
+      relent()
       queue.put(stream.head)
       pump(key, stream.tail)
 
@@ -66,7 +66,7 @@ extension [ElementType](stream: LazyList[ElementType])
       case _             => LazyList()
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-      (using monitor: Monitor, cancel: Raises[CancelError])
+      (using Monitor, Mitigator, Raises[ConcurrencyError])
           : LazyList[ElementType] =
     
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match
@@ -80,17 +80,23 @@ extension [ElementType](stream: LazyList[ElementType])
 
     async(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[ElementType])(using monitor: Monitor): LazyList[ElementType] =
+  def multiplexWith(that: LazyList[ElementType])(using Monitor, Mitigator): LazyList[ElementType] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor): LazyList[ElementType] =
-    def defer(active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+  def regulate(tap: Tap)(using Monitor, Mitigator): LazyList[ElementType] =
+    def defer
+        (active: Boolean,
+         stream: LazyList[Some[ElementType] | Tap.Regulation],
+         buffer: List[ElementType])
             : LazyList[ElementType] =
 
       recur(active, stream, buffer)
 
     @tailrec
-    def recur(active: Boolean, stream: LazyList[Some[ElementType] | Tap.Regulation], buffer: List[ElementType])
+    def recur
+        (active: Boolean,
+         stream: LazyList[Some[ElementType] | Tap.Regulation],
+         buffer: List[ElementType])
             : LazyList[ElementType] =
       
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
@@ -109,12 +115,14 @@ extension [ElementType](stream: LazyList[ElementType])
     LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
-      (using Monitor)
+      (using Monitor, Mitigator)
           : LazyList[List[ElementType]] =
 
     val Limit = maxSize.or(Int.MaxValue)
     
-    def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int): LazyList[List[ElementType]] =
+    def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int)
+            : LazyList[List[ElementType]] =
+
       count match
         case 0 => safely(async(stream.isEmpty).await()) match
           case Unset => recur(stream, Nil, 0)
@@ -131,7 +139,9 @@ extension [ElementType](stream: LazyList[ElementType])
     
     LazyList.defer(recur(stream, Nil, 0))
 
-  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor): LazyList[ElementType2] =
+  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor, Mitigator)
+          : LazyList[ElementType2] =
+
     val out: Funnel[ElementType2] = Funnel()
     
     async:

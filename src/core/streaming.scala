@@ -159,16 +159,17 @@ object Readable:
     
     LazyList.defer(recur(0L.b))
 
-  given bufferedReader(using streamCut: Raises[StreamError]): Readable[ji.BufferedReader, Line] = reader =>
-    def recur(count: ByteSize): LazyList[Line] =
-      try reader.readLine match
-        case null         => LazyList()
-        case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
-      catch case err: ji.IOException =>
-        reader.close()
-        raise(StreamError(count))(LazyList())
-    
-    LazyList.defer(recur(0L.b))
+  given bufferedReader(using streamCut: Raises[StreamError]): Readable[ji.BufferedReader, Line] =
+    reader =>
+      def recur(count: ByteSize): LazyList[Line] =
+        try reader.readLine match
+          case null         => LazyList()
+          case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
+        catch case err: ji.IOException =>
+          reader.close()
+          raise(StreamError(count))(LazyList())
+      
+      LazyList.defer(recur(0L.b))
 
   given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
@@ -229,7 +230,8 @@ object Aggregable:
     
     recur(ji.ByteArrayOutputStream(), source)
   
-  given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] = bytesBytes.map(decoder.decode)
+  given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] =
+    bytesBytes.map(decoder.decode)
 
   given lazyList[ChunkType, ChunkType2](using aggregable: Aggregable[ChunkType, ChunkType2])
           : Aggregable[ChunkType, LazyList[ChunkType2]] =
@@ -252,7 +254,8 @@ extension [ValueType](value: ValueType)
   def stream[ChunkType](using readable: Readable[ValueType, ChunkType]): LazyList[ChunkType] =
     readable.read(value)
   
-  def readAs[ResultType](using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
+  def readAs[ResultType]
+      (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
           : ResultType =
 
     aggregable.aggregate(readable.read(value))
@@ -264,7 +267,8 @@ extension [ValueType](value: ValueType)
     writable.write(target, readable.read(value))
   
   def appendTo[TargetType](target: TargetType)[ChunkType]
-      (using readable: Readable[ValueType, ChunkType], appendable: Appendable[TargetType, ChunkType])
+      (using readable:   Readable[ValueType, ChunkType],
+             appendable: Appendable[TargetType, ChunkType])
           : Unit =
 
     appendable.append(target, readable.read(value))

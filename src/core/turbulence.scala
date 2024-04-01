@@ -35,7 +35,7 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
     if !continue then LazyList() else try
       sleep(duration)
       () #:: stream
-    catch case err: CancelError => LazyList()
+    catch case err: ConcurrencyError => LazyList()
 
 object Tap:
   enum Regulation:
