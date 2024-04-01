@@ -31,7 +31,9 @@ import scala.collection.mutable as scm
 import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 case class WatchError()
-extends Error(msg"the operating system's limit on the number of paths that can be watched has been exceeded")
+extends Error(msg"""
+    the operating system's limit on the number of paths that can be watched has been exceeded
+  """)
 
 extension [PathType: GenericPath](path: PathType)
   def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
@@ -48,6 +50,7 @@ extension [PathType: GenericPath](paths: Iterable[PathType])
 
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
+    import asyncOptions.{ignoreExceptions, waitForOrphans}
     def stop(): Unit = pollLoop.stop()
     val async: Optional[Async[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
@@ -68,7 +71,7 @@ object Watch:
     service.take().nn match
       case key: jnf.WatchKey =>
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
-          watches.read: ref =>
+          watches.use: ref =>
             ref()(key)
           .each(_.put(event))
   
