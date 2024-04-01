@@ -20,102 +20,96 @@ import anticipation.*
 import rudiments.*
 import contingency.*
 import fulminate.*
+import feudalism.*
+import digression.*
 
 import scala.annotation.*
 import scala.collection.mutable as scm
-
-import java.util.concurrent.atomic as juca
 
 import language.experimental.captureChecking
 
 import Completion.*
 
 @capability
-sealed trait Monitor(val name: List[Text], promise: Promise[?]):
-  private val childSet: scm.HashSet[AnyRef] = scm.HashSet()
+sealed trait Monitor(val stack: List[Codepoint], promise: Promise[?]):
+  private val submonitors: scm.HashSet[AnyRef] = scm.HashSet()
+  private def name: String = stack.map(_.text.s).mkString("supervisor://", "/", "")
+  override def toString(): String = name
 
   def cancel(): Unit =
-    childSet.each:
+    submonitors.each:
       case child: Monitor => child.cancel()
       case _              => ()
     
     promise.cancel()
-
+  
   def terminate(): Unit = this match
     case supervisor: Supervisor                         => supervisor.cancel()
     case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
   
-  def attend(): Unit =
-    childSet.each:
-      case monitor: Monitor => monitor.attend()
+  def attend(): Unit = promise.attend()
+  def ready: Boolean = promise.ready
   
-  def delegate(lambda: Monitor -> Unit): Unit =
-    childSet.each:
-      case monitor: Monitor => lambda(monitor)
-      case _                => ()
+  def delegate(lambda: Monitor -> Unit): Unit = submonitors.each:
+    case submonitor: Monitor => lambda(submonitor)
+    case _                   => ()
   
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
   def child[ResultType2]
-      (id: Text,
-       state: juca.AtomicReference[Completion[ResultType2]],
+      (codepoint: Codepoint,
+       state: Mutex[Completion[ResultType2]],
        promise: Promise[ResultType2 | Promise.Special])
-      (using label: boundary.Label[Unit])
           : Submonitor[ResultType2] =
     
-    val monitor = Submonitor[ResultType2](id, this, state, promise)
-    
-    synchronized:
-      childSet += monitor
-    
-    monitor
+    Submonitor[ResultType2](codepoint, this, state, promise).tap: submonitor =>
+      submonitors += submonitor
+  
+  def remove(monitor: Submonitor[?]): Unit = synchronized:
+    submonitors -= monitor
 
   def supervisor: Supervisor
 
 sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
-  def newThread(runnable: Runnable^): Thread^{runnable}
+  def fork(runnable: Runnable^): Thread^{runnable}
   def supervisor: Supervisor = this
   
   def newPlatformThread(name: Text, runnable: Runnable^): Thread^{runnable} =
     Thread.ofPlatform().nn.start(runnable).nn.tap(_.setName(name.s))
 
 case object VirtualSupervisor extends Supervisor():
-  def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
+  def fork(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
   
 case object PlatformSupervisor extends Supervisor():
-  def newThread(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
+  def fork(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
 
 case object DaemonSupervisor extends Supervisor():
-  def newThread(runnable: Runnable^): Thread^{runnable} =
+  def fork(runnable: Runnable^): Thread^{runnable} =
     new Thread(runnable).nn.tap: thread =>
       thread.setDaemon(true)
       thread.start()
 
-def supervise[ResultType](block: Monitor ?=> ResultType)(using cancel: Raises[CancelError], model: ThreadModel)
-        : ResultType =
+def supervise[ResultType]
+    (block: Monitor ?=> ResultType)(using model: ThreadModel)
+        : ResultType raises ConcurrencyError =
 
   block(using model.supervisor())
 
 @capability
 case class Submonitor[ResultType]
-    (identifier: Text,
+    (frame: Codepoint,
      parent: Monitor,
-     stateRef: juca.AtomicReference[Completion[ResultType]],
+     stateMutex: Mutex[Completion[ResultType]],
      promise: Promise[ResultType | Promise.Special])
-    (using label: boundary.Label[Unit])
-extends Monitor(identifier :: parent.name, promise):
+extends Monitor(frame :: parent.stack, promise):
 
-  def state(): Completion[ResultType] = stateRef.get().nn
+  def state(): Completion[ResultType] = stateMutex()
   def supervisor: Supervisor = parent.supervisor
   
-  def complete(value: ResultType): Nothing =
-    stateRef.set(Completed(value))
-    promise.offer(value)
-    boundary.break()
-  
-  def relent(): Unit = //synchronized:
-    stateRef.get().nn match
-      case Active            => ()
-      case Suspended(_)      => wait()
-      case Completed(value)  => throw Panic(msg"should not be acquiescing after completion")
-      case Failed(error)     => throw Panic(msg"should not be acquiescing after failure")
+  def relent(): Unit = stateMutex() match
+    case Active            => ()
+    case Initializing      => ()
+    case Suspended(_)      => wait()
+    case Completed(value)  => throw Panic(msg"should not be relenting after completion")
+    case Delivered(value)  => throw Panic(msg"should not be relenting after completion")
+    case Failed(error)     => throw Panic(msg"should not be relenting after failure")

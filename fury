@@ -4,11 +4,12 @@ target parasite/test
 
 repo propensive/digression
 repo propensive/anticipation
+repo propensive/feudalism
 
 project parasite
   module core
     compiler  scala
-    include   digression/core anticipation/time
+    include   digression/core anticipation/time feudalism/core
     include   gossamer/core
     sources   src/core
   

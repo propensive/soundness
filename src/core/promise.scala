@@ -36,14 +36,19 @@ case class Promise[ValueType]():
   inline def incomplete: Boolean = value == Promise.Incomplete
   inline def ready: Boolean = !incomplete
 
-  private def get()(using Raises[CancelError]): ValueType =
-    if cancelled then abort(CancelError()) else value.asInstanceOf[ValueType]
+  private def get(): ValueType raises ConcurrencyError =
+    if cancelled then abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+    else value.asInstanceOf[ValueType]
 
   def apply(): Optional[ValueType] = if ready then value.asInstanceOf[ValueType] else Unset
 
-  def fulfill(supplied: -> ValueType)(using complete: Raises[AlreadyCompleteError]): Unit^{complete} =
+  def fulfill(supplied: -> ValueType)(using concurrency: Raises[ConcurrencyError])
+          : Unit^{concurrency} =
+
     synchronized:
-      if !incomplete then raise(AlreadyCompleteError())(()) else value = supplied
+      if !incomplete then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
+      else value = supplied
+
       notifyAll()
   
   def offer(supplied: -> ValueType): Unit = synchronized:
@@ -51,12 +56,11 @@ case class Promise[ValueType]():
       value = supplied
       notifyAll()
 
-  def await()(using Raises[CancelError]): ValueType = synchronized:
+  def await(): ValueType raises ConcurrencyError = synchronized:
     while !ready do wait()
     get()
 
-  def attend(): Unit = synchronized:
-    while !ready do wait()
+  def attend(): Unit = synchronized { while !ready do wait() }
 
   def cancel(): Unit = synchronized:
     if incomplete then
@@ -64,34 +68,15 @@ case class Promise[ValueType]():
       notifyAll()
 
   def await[DurationType: GenericDuration](duration: DurationType)
-      (using Raises[CancelError], Raises[TimeoutError])
-          : ValueType =
+          : ValueType raises ConcurrencyError =
     
     synchronized:
       if ready then get() else
         wait(duration.milliseconds)
-        if !ready then abort(TimeoutError()) else get()
+        if ready then get() else abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))
 
-  def attend[DurationType: GenericDuration](duration: DurationType)
-      (using Raises[CancelError], Raises[TimeoutError])
-          : Unit =
-    
+  def attend[DurationType: GenericDuration](duration: DurationType): Unit raises ConcurrencyError =
     synchronized:
       if ready then get() else
         wait(duration.milliseconds)
-        if !ready then abort(TimeoutError())
-
-case class Trigger():
-  private val promise: Promise[Unit] = Promise()
-  def apply(): Unit = promise.offer(())
-  def pull()(using Raises[AlreadyCompleteError]): Unit = promise.fulfill(())
-  def await()(using Raises[CancelError]): Unit = promise.await()
-  def cancel(): Unit = promise.cancel()
-  def cancelled: Boolean = promise.cancelled
-  
-  def await[DurationType: GenericDuration](duration: DurationType)
-      (using Raises[CancelError], Raises[TimeoutError])
-          : Unit =
-
-    promise.await(duration)
-
+        if ready then get() else abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))

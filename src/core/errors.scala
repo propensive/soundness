@@ -21,7 +21,15 @@ import fulminate.*
 
 import language.experimental.captureChecking
 
-case class CancelError() extends Error(msg"the operation was cancelled")
-case class IncompleteError() extends Error(msg"the task was not completed")
-case class AlreadyCompleteError() extends Error(msg"the promise was already completed")
-case class TimeoutError() extends Error(msg"the operation timed out")
+object ConcurrencyError:
+  object Reason:
+    given communicable: Communicable[Reason] =
+      case Cancelled       => msg"the operation was cancelled"
+      case Incomplete      => msg"the task was not completed"
+      case AlreadyComplete => msg"the promise was already completed"
+      case Timeout         => msg"the operation timed out"
+
+  enum Reason:
+    case Cancelled, Incomplete, AlreadyComplete, Timeout
+
+case class ConcurrencyError(reason: ConcurrencyError.Reason) extends Error(reason.communicate)

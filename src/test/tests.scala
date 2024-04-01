@@ -27,7 +27,7 @@ import anticipation.*, timeInterfaces.long
 import errorHandlers.throwUnsafely
 
 import threadModels.platform
-import orphans.cancelIncomplete
+import orphans.awaitCompletion
 
 object Tests extends Suite(t"Parasite tests"):
 
@@ -135,7 +135,7 @@ object Tests extends Suite(t"Parasite tests"):
           val promise = Promise[Int]()
           promise.cancel()
           capture(promise.await())
-        .assert(_ == CancelError())
+        .assert(_ == ConcurrencyError(ConcurrencyError.Reason.Cancelled))
     
       suite(t"Asyncs"):
         test(t"Simple task produces a result"):
@@ -234,9 +234,11 @@ object Tests extends Suite(t"Parasite tests"):
           var value = 1
           val task = async:
             value = 2
+            
             val task2 = async:
               sleep(100L)
               value = 3
+            
             task2.await()
           
           sleep(20L)
@@ -245,15 +247,41 @@ object Tests extends Suite(t"Parasite tests"):
           value
         .assert(_ == 2)
 
+        test(t"Incomplete child is awaited"):
+          import orphans.awaitCompletion
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              sleep(40L)
+              value = 3
+          sleep(20L)
+          task.await()
+          value
+        .assert(_ == 3)
+        
+        test(t"Incomplete child is cancelled"):
+          import orphans.cancelIncomplete
+          var value = 1
+          val task = async:
+            value = 2
+            val task2 = async:
+              sleep(40L)
+              value = 3
+          sleep(20L)
+          task.await()
+          value
+        .assert(_ == 2)
+
         test(t"Cancel read on slow LazyList"):
           var count = 0
           val ll = LazyList.continually:
             count += 1
-            sleep(10L)
+            sleep(20L)
           .take(10)
 
           val task = async(ll.to(List))
-          sleep(15L)
+          sleep(30L)
           task.cancel()
           count
         .assert(_ == 2)

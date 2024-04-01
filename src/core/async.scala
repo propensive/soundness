@@ -21,15 +21,16 @@ import rudiments.*
 import contingency.*
 import digression.*
 import vacuous.*
-
-import java.util.concurrent.atomic as juca
+import feudalism.*
 
 import language.experimental.pureFunctions
 
 enum Completion[+ValueType]:
+  case Initializing
   case Active
   case Suspended(count: Int)
   case Completed(value: ValueType)
+  case Delivered(value: ValueType)
   case Failed(error: Throwable)
 
 import Completion.*
@@ -58,16 +59,24 @@ package threadModels:
 package orphans:
   given awaitCompletion: OrphanCompletion = _.delegate(_.attend())
   given cancelIncomplete: OrphanCompletion = _.delegate(_.cancel())
+  
+  given failUncompleted(using Raises[ConcurrencyError]): OrphanCompletion = _.delegate: child =>
+    if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
+    
 
-def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint, OrphanCompletion): Async[Unit] =
+def daemon(evaluate: Submonitor[Unit] ?=> Unit)(using Monitor, Codepoint, OrphanCompletion)
+        : Async[Unit] =
+
   Async[Unit](evaluate, daemon = true, name = Unset)
 
-def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, Codepoint, OrphanCompletion)
+def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
+    (using Monitor, Codepoint, OrphanCompletion)
         : Async[ResultType] =
 
   Async(evaluate, daemon = false, name = Unset)
 
-def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)(using Monitor, OrphanCompletion)
+def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)
+    (using Monitor, OrphanCompletion)
         : Async[ResultType] =
   
   Async(evaluate, daemon = false, name = name)
@@ -75,78 +84,82 @@ def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> Resul
 @capability
 class Async[+ResultType]
     (evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean, name: Optional[Text])
-    (using monitor: Monitor, codepoint: Codepoint)
-    (using OrphanCompletion):
+    (using monitor: Monitor, codepoint: Codepoint, orphans: OrphanCompletion):
   
-  private final val promise: Promise[ResultType | Promise.Special] = Promise()
-  private final val stateRef: juca.AtomicReference[Completion[ResultType]] = juca.AtomicReference(Active)
+  private val promise: Promise[ResultType | Promise.Special] = Promise()
+  private val stateMutex: Mutex[Completion[ResultType]] = Mutex(Initializing)
+  private val submonitor = monitor.child(codepoint, stateMutex, promise)
 
   private final val thread: Thread =
-    def runnable: Runnable = () =>
-      boundary[Unit]:
-        val child = monitor.child[ResultType](identifier, stateRef, promise)
+    def runnable: Runnable = () => boundary[Unit]:
+      given Submonitor[ResultType] = submonitor
 
-        try evaluate(using child).tap { result => stateRef.set(Completed(result)) }
-        catch case NonFatal(error) => stateRef.set(Failed(error))
-        finally stateRef.get().nn match
+      try
+        stateMutex() = Active
+        evaluate.tap: result =>
+          stateMutex() = Completed(result)
+      catch case NonFatal(error) => stateMutex() = Failed(error)
+      finally
+        orphans.cleanup(submonitor)
+        
+        stateMutex() match
           case Completed(value) => promise.offer(value)
           case Active           => promise.offer(Promise.Cancelled)
           case Suspended(_)     => promise.offer(Promise.Cancelled)
           case Failed(_)        => promise.offer(Promise.Incomplete)
+        
+        monitor.remove(submonitor)
+        boundary.break()
+  
+    monitor.supervisor.fork(runnable)
 
-          summon[OrphanCompletion].cleanup(child)
-          boundary.break()
-    
-    monitor.supervisor.newPlatformThread(name.or("async".tt), runnable)
-
-  private def identifier: Text = s"${codepoint.text}".tt
-
-  def id: Text = (identifier :: monitor.name).reverse.map(_.s).mkString("// ", " / ", "").tt
-  def state(): Completion[ResultType] = stateRef.get().nn
+  def state(): Completion[ResultType] = submonitor.state()
   def ready: Boolean = promise.ready
 
   def await[DurationType: GenericDuration]
-      (duration: DurationType)(using Raises[CancelError], Raises[TimeoutError])
+      (duration: DurationType)(using Raises[ConcurrencyError])
           : ResultType =
 
     promise.attend(duration)
     thread.join()
-    // cancel or wait?
     result()
 
-  def await()(using cancel: Raises[CancelError]): ResultType =
+  def await()(using cancel: Raises[ConcurrencyError]): ResultType =
     promise.attend()
     thread.join()
-    // cancel or wait?
     result()
 
-  private def result()(using cancel: Raises[CancelError]): ResultType = state() match
-    case Completed(result) => result
-    case Failed(error)     => throw error
-    case Active            => abort(CancelError())
-    case other             => abort(CancelError())
+  private def result()(using cancel: Raises[ConcurrencyError]): ResultType = state() match
+    case Completed(result) => result.also { stateMutex() = Delivered(result) }
+    case Delivered(result) => result
+    case Failed(error)     => throw error  // FIXME: This should raise instead
+    case Active            => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+    case Initializing      => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+    case Suspended(_)      => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
 
-  def suspend(): Unit = stateRef.updateAndGet:
+  def suspend(): Unit = stateMutex.replace:
     case Active       => Suspended(1)
     case Suspended(n) => Suspended(n + 1)
     case other        => other
 
-  def resume(force: Boolean = false): Unit = stateRef.updateAndGet:
+  def resume(force: Boolean = false): Unit = stateMutex.replace:
     case Suspended(1) => Active.also(monitor.synchronized(monitor.notifyAll()))
     case Suspended(n) => if force then Active else Suspended(n - 1)
     case other        => other
 
-  def map[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Async[ResultType2] =
+  def map[ResultType2](lambda: ResultType => ResultType2)
+          : Async[ResultType2] raises ConcurrencyError =
+
     async(lambda(await()))
   
-  def foreach[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+  def foreach[ResultType2](lambda: ResultType => ResultType2): Unit raises ConcurrencyError =
     async(lambda(await()))
   
-  def each[ResultType2](lambda: ResultType => ResultType2)(using Raises[CancelError]): Unit =
+  def each[ResultType2](lambda: ResultType => ResultType2): Unit raises ConcurrencyError =
     async(lambda(await()))
   
-  def flatMap[ResultType2](lambda: ResultType => Async[ResultType2])(using Raises[CancelError])
-          : Async[ResultType2] =
+  def flatMap[ResultType2](lambda: ResultType => Async[ResultType2])
+          : Async[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()).await())
   
@@ -158,8 +171,8 @@ def relent[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.
 def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()
 def terminate()(using monitor: Monitor): Unit = monitor.terminate()
 
-def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType]): Nothing =
-  monitor.complete(value)
+// def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType]): Nothing =
+//   monitor.complete(value)
 
 def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: Monitor): Unit =
   monitor.sleep(duration.milliseconds)
@@ -168,11 +181,13 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](asyncs: Seq[Async[ResultType]])
-  def sequence(using Monitor, OrphanCompletion)(using cancel: Raises[CancelError]): Async[Seq[ResultType]] =
+  def sequence(using Monitor, OrphanCompletion)
+          : Async[Seq[ResultType]] raises ConcurrencyError =
+
     async(asyncs.map(_.await()))
 
 extension [ResultType](asyncs: IndexedSeq[Async[ResultType]])
-  def race(using Raises[CancelError], Monitor, OrphanCompletion): Async[ResultType] =
+  def race(using Monitor, OrphanCompletion): Async[ResultType] raises ConcurrencyError =
     async[Int]:
       val promise: Promise[Int] = Promise()
       
@@ -183,5 +198,5 @@ extension [ResultType](asyncs: IndexedSeq[Async[ResultType]])
       promise.await()
     
     .flatMap:
-      case -1 => abort(CancelError())
+      case -1 => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
       case n  => asyncs(n)

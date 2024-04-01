@@ -27,6 +27,7 @@ project parasite
     compiler  scala
     sources   src/core
     include   rudiments/core
+    include   feudalism/core
     include   digression/core
     include   anticipation/time
 
