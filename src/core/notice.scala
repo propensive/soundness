@@ -51,7 +51,7 @@ class CompileProcess():
   def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
   def put(result: CompileResult): Unit = completion.offer(result)
 
-  def complete()(using Log[Text]): CompileResult raises CancelError =
+  def complete()(using Log[Text]): CompileResult raises ConcurrencyError =
     completion.await().also:
       noticesFunnel.stop()
       progressFunnel.stop()

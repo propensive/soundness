@@ -33,10 +33,10 @@ case class Javac(options: List[JavacOption]):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor)
+      (using SystemProperties, Log[Text], Monitor, Mitigator, OrphanCompletion)
           : CompileProcess raises CompileError =
     Log.info(t"Starting Java compilation")
-    val process = CompileProcess()
+    val process: CompileProcess = CompileProcess()
     
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
 
@@ -65,13 +65,10 @@ case class Javac(options: List[JavacOption]):
       try
         val success =
           process.put(CompileProgress(0.1, t"javac"))
-          Javac.compiler().getTask
-           (null,
-            null,
-            diagnostics,
-            options.map(_.s).asJava,
-            null,
-            javaSources).nn.call().nn
+          
+          Javac.compiler()
+           .getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
+           .nn.call().nn
         
         if success then process.put(CompileProgress(1.0, t"javac"))
 

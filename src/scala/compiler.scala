@@ -136,7 +136,7 @@ case class Scalac[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](options: Li
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor)
+      (using SystemProperties, Log[Text], Monitor, OrphanCompletion, Mitigator)
           : CompileProcess raises CompileError =
     
     val scalacProcess: CompileProcess = CompileProcess()
