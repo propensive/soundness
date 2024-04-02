@@ -41,6 +41,9 @@ extension [ValueType](optional: Optional[ValueType])
   inline def vouch(using Unsafe): ValueType =
     optional.or(throw Panic(msg"a value was vouched but was absent"))
 
+  inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
+    optional.let { value => if predicate(value) then Unset else value }
+  
   def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
