@@ -24,6 +24,7 @@ project embarcadero
     sources   src/core
     include   telekinesis/client
     include   jacinta/core
+    include   bitumen/core
 
 ##
 

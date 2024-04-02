@@ -5,6 +5,7 @@ target embarcadero/test
 repo propensive/probably
 repo propensive/jacinta
 repo propensive/telekinesis
+repo propensive/bitumen
 
 project embarcadero
   module core
