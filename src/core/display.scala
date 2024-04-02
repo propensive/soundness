@@ -75,9 +75,8 @@ object Displayable:
         
         e"$msg\n  ${Fg(0x808080)}(at) $className${Fg(0x808080)}($dot)$method $file${Fg(0x808080)}(:)$line"
     
-    stack.cause.option match
-      case None        => root
-      case Some(cause) => e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
+    stack.cause.lay(root): cause =>
+      e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
   
   given (using TextMetrics): Displayable[StackTrace.Frame] = frame =>
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
