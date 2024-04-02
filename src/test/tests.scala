@@ -29,6 +29,11 @@ import errorHandlers.throwUnsafely
 import threadModels.platform
 import orphans.awaitCompletion
 
+given Mitigator = (path, error) =>
+  println(s"An async exception occurred in ${path.map(_.text).join(t"/")}:")
+  error.printStackTrace()
+  Mitigation.Escalate
+
 object Tests extends Suite(t"Parasite tests"):
 
   def thread(block: => Unit): () => Unit =
@@ -284,4 +289,14 @@ object Tests extends Suite(t"Parasite tests"):
           sleep(30L)
           task.cancel()
           count
+        .assert(_ == 2)
+
+        test(t"Check that asynchronous exceptions are handled"):
+          async:
+            sleep(10L)
+            async:
+              sleep(10L)
+              unsafely(throw new Exception("Async Exception"))
+            1
+          2
         .assert(_ == 2)

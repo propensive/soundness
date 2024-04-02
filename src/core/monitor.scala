@@ -44,8 +44,8 @@ sealed trait Monitor(val stack: List[Codepoint], promise: Promise[?]):
     promise.cancel()
   
   def terminate(): Unit = this match
-    case supervisor: Supervisor                         => supervisor.cancel()
-    case monitor@Submonitor(id, parent, state, promise) => monitor.terminate()
+    case supervisor: Supervisor            => supervisor.cancel()
+    case monitor@Submonitor(_, _, _, _, _) => monitor.terminate()
   
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
@@ -56,19 +56,16 @@ sealed trait Monitor(val stack: List[Codepoint], promise: Promise[?]):
   
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
-  def child[ResultType2]
-      (codepoint: Codepoint,
-       state: Mutex[Completion[ResultType2]],
-       promise: Promise[ResultType2 | Promise.Special])
-          : Submonitor[ResultType2] =
-    
-    Submonitor[ResultType2](codepoint, this, state, promise).tap: submonitor =>
+  def child[ResultType2](codepoint: Codepoint, mitigator: Mitigator): Submonitor[ResultType2] =
+    Submonitor(codepoint, this, Mutex(Initializing), Promise(), mitigator).tap: submonitor =>
       submonitors += submonitor
   
   def remove(monitor: Submonitor[?]): Unit = synchronized:
     submonitors -= monitor
 
   def supervisor: Supervisor
+
+  def mitigate(stack: List[Codepoint], error: Throwable): Unit
 
 sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
   def fork(runnable: Runnable^): Thread^{runnable}
@@ -79,37 +76,45 @@ sealed abstract class Supervisor() extends Monitor(Nil, Promise()):
 
 case object VirtualSupervisor extends Supervisor():
   def fork(runnable: Runnable^): Thread^{runnable} = Thread.ofVirtual().nn.start(runnable).nn
+  def mitigate(path: List[Codepoint], error: Throwable): Unit = ()
   
 case object PlatformSupervisor extends Supervisor():
   def fork(runnable: Runnable^): Thread^{runnable} = Thread.ofPlatform().nn.start(runnable).nn
+  def mitigate(path: List[Codepoint], error: Throwable): Unit = ()
 
 case object DaemonSupervisor extends Supervisor():
+  def mitigate(path: List[Codepoint], error: Throwable): Unit = ()
   def fork(runnable: Runnable^): Thread^{runnable} =
     new Thread(runnable).nn.tap: thread =>
       thread.setDaemon(true)
       thread.start()
 
-def supervise[ResultType]
-    (block: Monitor ?=> ResultType)(using model: ThreadModel)
+def supervise[ResultType](block: Monitor ?=> ResultType)(using model: ThreadModel)
         : ResultType raises ConcurrencyError =
 
   block(using model.supervisor())
 
 @capability
 case class Submonitor[ResultType]
-    (frame: Codepoint,
-     parent: Monitor,
-     stateMutex: Mutex[Completion[ResultType]],
-     promise: Promise[ResultType | Promise.Special])
+    (frame:     Codepoint,
+     parent:    Monitor,
+     state:     Mutex[Completion[ResultType]],
+     promise:   Promise[ResultType | Promise.Special],
+     mitigator: Mitigator)
 extends Monitor(frame :: parent.stack, promise):
 
-  def state(): Completion[ResultType] = stateMutex()
   def supervisor: Supervisor = parent.supervisor
   
-  def relent(): Unit = stateMutex() match
+  def relent(): Unit = state() match
     case Active            => ()
     case Initializing      => ()
     case Suspended(_)      => wait()
     case Completed(value)  => throw Panic(msg"should not be relenting after completion")
     case Delivered(value)  => throw Panic(msg"should not be relenting after completion")
     case Failed(error)     => throw Panic(msg"should not be relenting after failure")
+
+  def mitigate(stack: List[Codepoint], error: Throwable): Unit =
+    mitigator.mitigate(stack, error) match
+      case Mitigation.Escalate => parent.mitigate(stack, error)
+      case Mitigation.Cancel   => cancel()
+      case Mitigation.Suppress => ()
