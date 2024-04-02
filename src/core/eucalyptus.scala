@@ -53,7 +53,8 @@ object Eucalyptus:
 
     import quotes.reflect.*
 
-    def invalidRoutes(): Nothing = fail(msg"the routes must be specified as one or more case clauses")
+    def invalidRoutes(): Nothing =
+      fail(msg"the routes must be specified as one or more case clauses")
     
     val count: Int = routes.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(_, caseDefs)))), _)) =>
