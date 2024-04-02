@@ -67,6 +67,7 @@ project anticipation
     sources   src/time
 
   module all
+    compiler  scala
     include anticipation/css
     include anticipation/html
     include anticipation/text
