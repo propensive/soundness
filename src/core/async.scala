@@ -70,19 +70,19 @@ def daemon(evaluate: Submonitor[Unit] ?=> Unit)
     (using Monitor, Codepoint, OrphanCompletion, Mitigator)
         : Async[Unit] =
 
-  Async[Unit](evaluate, daemon = true, name = Unset)
+  Async[Unit](evaluate(using _), daemon = true, name = Unset)
 
 def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
     (using Monitor, Codepoint, OrphanCompletion, Mitigator)
         : Async[ResultType] =
 
-  Async(evaluate, daemon = false, name = Unset)
+  Async(evaluate(using _), daemon = false, name = Unset)
 
 def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)
     (using Monitor, OrphanCompletion, Mitigator)
         : Async[ResultType] =
   
-  Async(evaluate, daemon = false, name = name)
+  Async(evaluate(using _), daemon = false, name = name)
 
 enum Mitigation:
   case Suppress, Escalate, Cancel
@@ -92,18 +92,16 @@ trait Mitigator:
 
 @capability
 class Async[+ResultType]
-    (evaluate: Submonitor[ResultType] ?=> ResultType, daemon: Boolean, name: Optional[Text])
+    (evaluate: Submonitor[ResultType] => ResultType, daemon: Boolean, name: Optional[Text])
     (using monitor: Monitor, codepoint: Codepoint, orphans: OrphanCompletion, mitigator: Mitigator):
   
   private val submonitor: Submonitor[ResultType] = monitor.child(codepoint, mitigator)
 
   private final val thread: Thread =
     def runnable: Runnable = () => boundary[Unit]:
-      given Submonitor[ResultType] = submonitor
-
       try
         submonitor.state() = Active
-        evaluate.tap: result =>
+        evaluate(submonitor).tap: result =>
           submonitor.state() = Completed(result)
       catch
         case error: Throwable =>
