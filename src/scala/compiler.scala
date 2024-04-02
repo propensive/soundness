@@ -31,8 +31,6 @@ import rudiments.*
 import spectacular.*
 import hellenism.*
 
-given Realm = realm"anthology"
-
 import dotty.tools.*, dotc as dtd, dtd.reporting.*, dtd.interfaces as dtdi, dtd.util as dtdu, dtd.core as dtdc
 import dotty.tools.dotc.sbt.interfaces as dtdsi
 

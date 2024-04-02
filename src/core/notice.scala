@@ -28,6 +28,8 @@ import rudiments.*
 import hellenism.*
 import ambience.*
 
+given realm: Realm = realm"anthology"
+
 enum Importance:
   case Info, Warning, Error
 

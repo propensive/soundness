@@ -34,8 +34,6 @@ import javax.tools as jt
 import java.util as ju
 import java.net as jn
 
-given realm: Realm = realm"anthology"
-
 case class JavacOption(flags: Text*)
 
 object Javac:
