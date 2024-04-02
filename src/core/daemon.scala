@@ -26,6 +26,7 @@ import rudiments.*, homeDirectories.default
 import vacuous.*
 import contingency.*
 import exoskeleton.*
+import feudalism.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
 import profanity.*
@@ -62,16 +63,15 @@ package daemonConfig:
 trait StderrSupport:
   def apply(): Boolean
 
-case class ClientConnection[BusType <: Matchable]
-    (pid:         Pid,
-     signals:     Funnel[Signal],
-     terminate:   Promise[Unit],
-     close:       () => Unit,
-     exitPromise: Promise[ExitStatus],
-     bus:         Funnel[BusType],
-     stderr:      Promise[ji.OutputStream]):
-
+case class ClientConnection[BusType <: Matchable](pid: Pid):
+  val stderr: Promise[ji.OutputStream] = Promise()
+  val signals: Funnel[Signal] = Funnel()
+  val bus: Funnel[BusType] = Funnel()
+  val terminatePid: Promise[Pid] = Promise()
+  val exitPromise: Promise[ExitStatus] = Promise()
   def receive(message: BusType): Unit = bus.put(message)
+  val socket: Promise[jn.Socket] = Promise()
+  def close(): Unit = safely(socket.await(1000L).close())
 
 class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
@@ -97,10 +97,16 @@ def cliService[BusType <: Matchable](using executive: Executive)
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val pidFile: Path = baseDir / p"pid"
-  val clients: scm.HashMap[Pid, ClientConnection[BusType]] = scm.HashMap()
+  val clients: Mutex[Map[Pid, ClientConnection[BusType]]] = Mutex(Map())
   var continue: Boolean = true
   val terminatePid: Promise[Pid] = Promise()
-  
+
+  def client(pid: Pid): ClientConnection[BusType] =
+    val map = clients.replace: clients =>
+      if clients.has(pid) then clients else clients.updated(pid, ClientConnection(pid))
+    
+    map(pid)
+
   lazy val termination: Unit =
     portFile.wipe()
     pidFile.wipe()
@@ -110,9 +116,9 @@ def cliService[BusType <: Matchable](using executive: Executive)
     Log.info(t"Shutdown CLI service")
     pid.let(terminatePid.fulfill(_)).or(termination)
 
-  def client(socket: jn.Socket)
-      (using Monitor, Log[Text], Stdio, Raises[StreamError], Raises[UndecodableCharError], Raises[NumberError])
-        : Unit =
+  def makeClient(socket: jn.Socket)
+      (using Monitor, Log[Text], Stdio, Mitigator, OrphanCompletion)
+        : Unit raises StreamError raises UndecodableCharError raises NumberError =
     
     async:
       val in = socket.getInputStream.nn
@@ -165,89 +171,96 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
         case DaemonEvent.Trap(pid, signal) =>
           Log.fine(t"Received signal $signal")
-          clients(pid).signals.put(signal)
+          client(pid).signals.put(signal)
           socket.close()
         
         case DaemonEvent.Exit(pid) =>
           Log.fine(t"Received exit status request from $pid")
-          val exitStatus: ExitStatus = clients(pid).exitPromise.await()
+          val exitStatus: ExitStatus = client(pid).exitPromise.await()
           
           socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
           socket.close()
-          clients -= pid
+          clients.replace(_ - pid)
           if terminatePid() == pid then termination
         
         case DaemonEvent.Stderr(pid) =>
           Log.fine(t"Received STDERR connection request from $pid")
-          clients(pid).stderr.offer(socket.getOutputStream.nn)
+          client(pid).stderr.offer(socket.getOutputStream.nn)
 
         case DaemonEvent.Init(pid, directory, scriptName, shellInput, textArguments, env) =>
           Log.envelop(pid):
             Log.fine(t"Received init")
-            val promise: Promise[Unit] = Promise()
-            val exitPromise: Promise[ExitStatus] = Promise()
-            val signalFunnel: Funnel[Signal] = Funnel()
-            val busFunnel: Funnel[BusType] = Funnel()
-            val stderrPromise: Promise[ji.OutputStream] = Promise()
+            val connection = client(pid)
+            connection.socket.fulfill(socket)
 
             val lazyStderr: ji.OutputStream =
               if !stderrSupport() then socket.getOutputStream.nn
               else new ji.OutputStream():
-                private lazy val wrapped = stderrPromise.await()
+                private lazy val wrapped = connection.stderr.await()
                 def write(i: Int): Unit = wrapped.write(i)
                 override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
                 
                 override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
                   wrapped.write(bytes, offset, length)
     
-            val environment: Environment = LazyEnvironment(env)
+            given environment: Environment = LazyEnvironment(env)
 
             val termcap: Termcap = new Termcap:
               def ansi: Boolean = true
               
-              val color: ColorDepth =
+              lazy val color: ColorDepth =
                 import workingDirectories.default
-                ColorDepth(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
+                if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
+                else ColorDepth(safely(sh"tput colors".exec[Text]().decodeAs[Int]).or(-1))
 
             val stdio: Stdio =
               Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
             
-            def deliver(sourcePid: Pid, message: BusType): Unit = clients.each: (pid, client) =>
-              if sourcePid != pid then client.receive(message)
+            def deliver(sourcePid: Pid, message: BusType): Unit = clients.use: clients =>
+              clients().each: (pid, client) =>
+                if sourcePid != pid then client.receive(message)
     
-            val client: DaemonService[BusType] =
-              DaemonService[BusType](pid, () => shutdown(pid), shellInput, scriptName.decodeAs[Unix.Path],
-                  deliver(pid, _), busFunnel.stream, name)
+            val service: DaemonService[BusType] =
+              DaemonService[BusType]
+               (pid,
+                () => shutdown(pid),
+                shellInput,
+                scriptName.decodeAs[Unix.Path],
+                deliver(pid, _),
+                connection.bus.stream,
+                name)
+
             val workingDirectory: WorkingDirectory = () => directory
             
             Log.pin()
             Log.info(t"Creating new CLI")
+
             try
               val cli: executive.CliType =
-                executive.cli(textArguments, environment, workingDirectory, stdio, signalFunnel.stream)
+                executive.cli
+                 (textArguments, environment, workingDirectory, stdio, connection.signals.stream)
               
-              val result = block(using client)(using cli)
+              val result = block(using service)(using cli)
               val exitStatus: ExitStatus = executive.process(cli)(result)
               
-              exitPromise.fulfill(exitStatus)
+              connection.exitPromise.fulfill(exitStatus)
 
             catch
               case exception: Exception =>
                 Log.fail(exception.toString.show)
                 Optional(exception.getStackTrace).let: stackTrace =>
-                  stackTrace.each: frame =>
-                    Log.fail(frame.toString.tt)
-                exitPromise.fulfill(ExitStatus.Fail(1))
+                  stackTrace.map(_.toString.tt).each(Log.fail(_))
+
+                connection.exitPromise.fulfill(ExitStatus.Fail(1))
+
             finally
               socket.close()
               Log.fine(t"Closed connection to ${pid.value}")
-          
-            clients(pid) = ClientConnection[BusType](pid, signalFunnel, promise, () => socket.close(),
-                exitPromise, busFunnel, stderrPromise)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.virtualMachine.ansi
     import workingDirectories.default
+    import asyncOptions.{waitForOrphans, escalateExceptions}
 
     Async.onShutdown:
       portFile.wipe()
@@ -277,7 +290,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
               case other =>
                 ()
       
-      loop(safely(client(socket.accept().nn))).run()
+      loop(safely(makeClient(socket.accept().nn))).run()
 
     ExitStatus.Ok
   
