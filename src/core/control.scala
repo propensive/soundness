@@ -185,7 +185,10 @@ def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
   block
 
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
-extends Error(Communicable.listMessage.message(errors.map(_.message)))
+extends Error(Communicable.listMessage.message(errors.map(_.message))):
+  @targetName("add")
+  def + [ErrorType2 <: Error](error: AggregateError[ErrorType2]): AggregateError[ErrorType | ErrorType2] =
+    AggregateError(errors ++ error.errors)
 
 case class UnexpectedSuccessError[ResultType](result: ResultType)
 extends Error(msg"the expression was expected to fail, but succeeded")
