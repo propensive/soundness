@@ -28,7 +28,20 @@ class Mutex[ValueType](initial: ValueType):
   private var count: Int = 0
   private var value: ValueType = initial
 
-  def read[ResultType, ImmutableType]
+  def apply(): ValueType =
+    synchronized:
+      while count == -1 do wait()
+      count += 1
+
+    val result = value
+    
+    synchronized:
+      count -= 1
+      notify()
+
+    value
+
+  def use[ResultType, ImmutableType]
       (using immutable: Immutable[ValueType, ImmutableType])
       (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
           : ResultType =
@@ -69,6 +82,17 @@ class Mutex[ValueType](initial: ValueType):
       notify()
     
     result
+
+  def update(value2: => ValueType): Unit =
+    synchronized:
+      while count != 0 do wait()
+      count = -1
+    
+    value = value2
+
+    synchronized:
+      count = 0
+      notify()
 
 class Semaphore():
   private var count: Int = 0
