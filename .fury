@@ -24,6 +24,7 @@ project bitumen
     include   bifurcate/core
     include   gossamer/core
     include   turbulence/core
+    include   serpentine/core
 
 ##
 

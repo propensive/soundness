@@ -21,8 +21,11 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 import gossamer.*
+import contingency.*
+import serpentine.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
-import hypotenuse.*
+import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import spectacular.*
 
 case class UnixMode
     (setUid:     Boolean = false,
@@ -60,6 +63,41 @@ case class UnixUser(value: Int, name: Optional[Text] = Unset):
 case class UnixGroup(value: Int, name: Optional[Text] = Unset):
   def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
 
+type InvalidTarNames = ".*[\u0000-\u0019].*" | ".*\u007f-\uffff.*" | ".*\\/.*" | ".*\\\\.*"
+
+case class TarPath(tarFile: Tar, ref: TarRef):
+  def entry: TarEntry = ???
+
+case class TarRef(descent: List[PathName[InvalidTarNames]]):
+  def parent: Optional[TarRef] = descent match
+    case Nil       => Unset
+    case _ :: tail => TarRef(tail)
+
+object TarRef:
+  def apply(text: Text)
+      (using pathError:  Raises[PathError],
+             navigable:  Navigable[TarRef, InvalidTarNames, Unset.type],
+             rootParser: RootParser[TarRef, Unset.type],
+             creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
+          : TarRef =
+    Navigable.decode[TarRef](text)
+
+  @targetName("child")
+  infix def / (name: PathName[InvalidTarNames]): TarRef = TarRef(List(name))
+
+  given navigable: Navigable[TarRef, InvalidTarNames, Unset.type] with
+    def root(path: TarRef): Unset.type = Unset
+    def descent(path: TarRef): List[PathName[InvalidTarNames]] = path.descent
+    def prefix(ref: Unset.type): Text = t""
+    def separator(path: TarRef): Text = t"/"
+  
+  given rootParser: RootParser[TarRef, Unset.type] with
+    def parse(text: Text): (Unset.type, Text) =
+      (Unset, if text.length > 0 && text.as(0) == '/' then text.drop(1) else text)
+  
+  given pathCreator: PathCreator[TarRef, InvalidTarNames, Unset.type] = (root, descent) => TarRef(descent)
+  given show: Show[TarRef] = _.descent.reverse.map(_.render).join(t"/")
+
 enum TypeFlag:
   case File
   case Link
@@ -86,7 +124,7 @@ enum TypeFlag:
 
 object TarEntry:
   def apply[DataType, InstantType: GenericInstant]
-      (name:  Text,
+      (name:  TarRef,
        data:  DataType,
        mode:  UnixMode              = UnixMode(),
        user:  UnixUser              = UnixUser(0),
@@ -95,36 +133,36 @@ object TarEntry:
       (using Readable[DataType, Bytes])
           : TarEntry =
     
-    val mtimeLong: Long = mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000
-    TarEntry.File(name, mode, user, group, mtimeLong, data.stream[Bytes])
+    val mtimeU32: U32 = (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
+    TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Bytes])
 
-enum TarEntry(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long):
-  case File(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, data: LazyList[Bytes])
-  extends TarEntry(name, mode, user, group, mtime)
+enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
+  case File(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, data: LazyList[Bytes])
+  extends TarEntry(path, mode, user, group, mtime)
 
-  case Directory(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long)
-  extends TarEntry(name, mode, user, group, mtime)
+  case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
+  extends TarEntry(path, mode, user, group, mtime)
   
-  case Link(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, target: Text)
-  extends TarEntry(name, mode, user, group, mtime)
+  case Link(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+  extends TarEntry(path, mode, user, group, mtime)
   
-  case Symlink(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, target: Text)
-  extends TarEntry(name, mode, user, group, mtime)
+  case Symlink(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+  extends TarEntry(path, mode, user, group, mtime)
   
   case CharSpecial
-      (name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, device: (Int, Int))
-  extends TarEntry(name, mode, user, group, mtime)
+      (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+  extends TarEntry(path, mode, user, group, mtime)
   
   case BlockSpecial
-      (name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long, device: (Int, Int))
-  extends TarEntry(name, mode, user, group, mtime)
+      (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+  extends TarEntry(path, mode, user, group, mtime)
   
-  case Fifo(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: Long)
-  extends TarEntry(name, mode, user, group, mtime)
+  case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
+  extends TarEntry(path, mode, user, group, mtime)
 
 
-  def size: Int = this match
-    case file: File => file.data.sumBy(_.length)
+  def size: U32 = this match
+    case file: File => file.data.sumBy(_.length).bits.u32
     case _          => 0
   
   def dataBlocks: LazyList[Bytes] = this match
@@ -140,32 +178,36 @@ enum TarEntry(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtim
     case _: Directory    => TypeFlag.Directory
     case _: Fifo         => TypeFlag.Fifo
 
+  def entryName: Text = this match
+    case directory: Directory => t"${directory.path}/"
+    case other                => this.path.show
+
+  def link: Optional[Text] = this.only:
+    case link: Link       => link.target
+    case symlink: Symlink => symlink.target
   
-  def link: Optional[Text] = this match
-    case Link(_, _, _, _, _, target)    => target
-    case Symlink(_, _, _, _, _, target) => target
-    case _                              => Unset
-  
-  def deviceNumbers: Optional[(Int, Int)] = this match
+  def deviceNumbers: Optional[(U32, U32)] = this.only:
     case special: CharSpecial  => special.device
     case special: BlockSpecial => special.device
-    case _                     => Unset
+
+  def format(number: U32, width: Int): Bytes =
+    number.octal.pad(width - 1).bytes
 
   lazy val header: Bytes = Bytes.construct(512): array =>
-    array.place(name.bytes, 0)
+    array.place(entryName.bytes, 0)
     array.place(mode.bytes, 100)
     array.place(user.bytes, 108)
     array.place(group.bytes, 116)
-    array.place(size.octal.pad(11, Rtl, '0').bytes, 124)
-    array.place(mtime.octal.pad(11, Rtl, '0').bytes, 136)
+    array.place(format(size, 12), 124)
+    array.place(format(mtime, 12), 136)
     array.place(t"        ".bytes, 148)
     array(156) = typeFlag.id.toByte
     
     link.let { link => array.place(link.bytes, 157) }
     
     deviceNumbers.let: (devMajor, devMinor) =>
-      array.place(devMajor.octal.pad(7, Rtl, '0').bytes, 329)
-      array.place(devMinor.octal.pad(7, Rtl, '0').bytes, 337)
+      array.place(format(devMajor, 8), 329)
+      array.place(format(devMinor, 8), 337)
 
     user.name.let { name => array.place(name.bytes, 265) }
     group.name.let { name => array.place(name.bytes, 297) }
@@ -173,9 +215,8 @@ enum TarEntry(name: Text, mode: UnixMode, user: UnixUser, group: UnixGroup, mtim
     array.place(t"ustar\u0000".bytes, 257)
     array.place(t"00".bytes, 263)
     
-
-    val total = array.sumBy(java.lang.Byte.toUnsignedInt(_))
-    array.place(total.octal.pad(7, Rtl, '0').bytes, 148)
+    val total = array.map(_.bits.u8.u32).reduce(_ + _)
+    array.place(format(total, 8), 148)
 
   def serialize: LazyList[Bytes] = header #:: dataBlocks
 
