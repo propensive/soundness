@@ -354,9 +354,8 @@ object Hypotenuse:
 
     given textualizer: Textualizer[U32] = JInt.toUnsignedString(_).nn.tt
     inline def apply(bits: B32): U32 = bits
-  
+
     inline given inequality: Inequality[U32, U32] with
-      
       inline def compare
           (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
