@@ -25,35 +25,37 @@ import language.experimental.captureChecking
 import Completion.*
 
 object Promise:
-  sealed trait Special
-  case object Cancelled extends Special
-  case object Incomplete extends Special
+  enum State:
+    case Incomplete, Cancelled, Ready
 
 case class Promise[ValueType]():
-  private var value: ValueType | Promise.Special = Promise.Incomplete
+  private var state: Promise.State = Promise.State.Incomplete
+  private var value: ValueType | Null = null
 
-  inline def cancelled: Boolean = value == Promise.Cancelled
-  inline def incomplete: Boolean = value == Promise.Incomplete
-  inline def ready: Boolean = !incomplete
+  def cancelled: Boolean = state == Promise.State.Cancelled
 
   private def get(): ValueType raises ConcurrencyError =
     if cancelled then abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
     else value.asInstanceOf[ValueType]
 
-  def apply(): Optional[ValueType] = if ready then value.asInstanceOf[ValueType] else Unset
+  def apply(): Optional[ValueType] = if ready then value.nn else Unset
+  def ready: Boolean = state != Promise.State.Incomplete
 
   def fulfill(supplied: -> ValueType)(using concurrency: Raises[ConcurrencyError])
           : Unit^{concurrency} =
 
     synchronized:
-      if !incomplete then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
-      else value = supplied
+      if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
+      else
+        value = supplied
+        state = Promise.State.Ready
 
       notifyAll()
   
   def offer(supplied: -> ValueType): Unit = synchronized:
-    if incomplete then
+    if !ready then
       value = supplied
+      state = Promise.State.Ready
       notifyAll()
 
   def await(): ValueType raises ConcurrencyError = synchronized:
@@ -63,8 +65,8 @@ case class Promise[ValueType]():
   def attend(): Unit = synchronized { while !ready do wait() }
 
   def cancel(): Unit = synchronized:
-    if incomplete then
-      value = Promise.Cancelled
+    if !ready then
+      state = Promise.State.Cancelled
       notifyAll()
 
   def await[DurationType: GenericDuration](duration: DurationType)

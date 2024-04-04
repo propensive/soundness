@@ -53,7 +53,6 @@ trait ThreadModel:
 package threadModels:
   given platform: ThreadModel = () => PlatformSupervisor
   given virtual: ThreadModel = () => VirtualSupervisor
-  given daemon: ThreadModel = () => DaemonSupervisor
 
 package asyncOptions:
   given waitForOrphans: OrphanCompletion = _.delegate(_.attend())
@@ -66,19 +65,20 @@ package asyncOptions:
   given ignoreExceptions: Mitigator = (path, error) => Mitigation.Suppress
     
 
-def daemon(evaluate: Submonitor[Unit] ?=> Unit)
-    (using Monitor, Codepoint, OrphanCompletion, Mitigator)
+def daemon(using Codepoint)(evaluate: Submonitor[Unit] ?=> Unit)
+    (using Monitor, OrphanCompletion, Mitigator)
         : Async[Unit] =
 
   Async[Unit](evaluate(using _), daemon = true, name = Unset)
 
-def async[ResultType](evaluate: Submonitor[ResultType] ?=> ResultType)
-    (using Monitor, Codepoint, OrphanCompletion, Mitigator)
+def async[ResultType](using Codepoint)(evaluate: Submonitor[ResultType] ?=> ResultType)
+    (using Monitor, OrphanCompletion, Mitigator)
         : Async[ResultType] =
 
   Async(evaluate(using _), daemon = false, name = Unset)
 
-def task[ResultType](name: into Text)(evaluate: Submonitor[ResultType] ?=> ResultType)
+def task[ResultType](using Codepoint)(name: into Text)
+    (evaluate: Submonitor[ResultType] ?=> ResultType)
     (using Monitor, OrphanCompletion, Mitigator)
         : Async[ResultType] =
   
@@ -88,38 +88,17 @@ enum Mitigation:
   case Suppress, Escalate, Cancel
 
 trait Mitigator:
-  def mitigate(path: List[Codepoint], error: Throwable): Mitigation
+  def mitigate(monitor: Monitor, error: Throwable): Mitigation
 
 @capability
 class Async[+ResultType]
     (evaluate: Submonitor[ResultType] => ResultType, daemon: Boolean, name: Optional[Text])
     (using monitor: Monitor, codepoint: Codepoint, orphans: OrphanCompletion, mitigator: Mitigator):
   
-  private val submonitor: Submonitor[ResultType] = monitor.child(codepoint, mitigator)
-
-  private final val thread: Thread =
-    def runnable: Runnable = () => boundary[Unit]:
-      try
-        submonitor.state() = Active
-        evaluate(submonitor).tap: result =>
-          submonitor.state() = Completed(result)
-      catch
-        case error: Throwable =>
-          submonitor.mitigate(submonitor.stack, error)
-          submonitor.state() = Failed(error)
-      finally
-        orphans.cleanup(submonitor)
-        
-        submonitor.state() match
-          case Completed(value) => submonitor.promise.offer(value)
-          case Active           => submonitor.promise.offer(Promise.Cancelled)
-          case Suspended(_)     => submonitor.promise.offer(Promise.Cancelled)
-          case Failed(_)        => submonitor.promise.offer(Promise.Incomplete)
-        
-        monitor.remove(submonitor)
-        boundary.break()
+  private val submonitor: Submonitor[ResultType] =
+    monitor.child(name, daemon, codepoint, mitigator, evaluate, orphans)
   
-    monitor.supervisor.fork(runnable)
+  submonitor.thread
 
   def state(): Completion[ResultType] = submonitor.state()
   def ready: Boolean = submonitor.promise.ready
@@ -128,22 +107,13 @@ class Async[+ResultType]
           : ResultType =
 
     submonitor.promise.attend(duration)
-    thread.join()
-    result()
+    submonitor.join()
+    submonitor.result()
 
   def await()(using cancel: Raises[ConcurrencyError]): ResultType =
     submonitor.promise.attend()
-    thread.join()
-    result()
-
-  private def result()(using cancel: Raises[ConcurrencyError]): ResultType =
-    submonitor.state() match
-      case Initializing      => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-      case Active            => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-      case Suspended(_)      => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-      case Completed(result) => result.also { submonitor.state() = Delivered(result) }
-      case Delivered(result) => result
-      case Failed(error)     => throw error
+    submonitor.join()
+    submonitor.result()
 
   def suspend(): Unit = submonitor.state.replace:
     case Active       => Suspended(1)
@@ -171,9 +141,7 @@ class Async[+ResultType]
 
     async(lambda(await()).await())
   
-  def cancel(): Unit =
-    thread.interrupt()
-    monitor.cancel()
+  def cancel(): Unit = submonitor.cancel()
 
 def relent[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.relent()
 def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()

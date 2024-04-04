@@ -30,7 +30,7 @@ import threadModels.platform
 import orphans.awaitCompletion
 
 given Mitigator = (path, error) =>
-  println(s"An async exception occurred in ${path.map(_.text).join(t"/")}:")
+  println(s"An async exception occurred in ${path.stack}:")
   error.printStackTrace()
   Mitigation.Escalate
 
@@ -107,9 +107,6 @@ object Tests extends Suite(t"Parasite tests"):
           task3.await()
         .assert(_ == t"TASK2")
 
-          
-
-
       suite(t"Promises"):
         test(t"New promise is incomplete"):
           val promise = Promise[Int]()
@@ -135,7 +132,7 @@ object Tests extends Suite(t"Parasite tests"):
             promise.fulfill(42)
           promise.await()
         .assert(_ == 42)
-
+        
         test(t"Canceled promise contains exception"):
           val promise = Promise[Int]()
           promise.cancel()
