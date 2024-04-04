@@ -128,13 +128,13 @@ class Watch():
         val key = path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
         
         new PathWatch(key, path, funnel, filter).tap: watch =>
-          Watch.watches.mutate: map =>
+          Watch.watches.isolate: map =>
             map(key) = map.at(key).or(Set()) + watch
     
     synchronized(watches ++= watches2)
 
   def unregister(): Unit =
-    Watch.watches.mutate: map =>
+    Watch.watches.isolate: map =>
       watches.each: watch =>
         map(watch.key) = map.at(watch.key).or(Set()) - watch
       
