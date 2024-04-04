@@ -58,7 +58,7 @@ class Mutex[ValueType](initial: ValueType):
 
     result
   
-  def mutate(lambda: ValueType => Unit): Unit =
+  def isolate(lambda: ValueType => Unit): Unit =
     synchronized:
       while count != 0 do wait()
       count = -1
