@@ -12,15 +12,20 @@ repo propensive/symbolism
 repo propensive/vacuous
 
 project anthology
+  module core
+    compiler  scala
+    sources   src/core
+    include   hellenism/core
+
   module scala
     compiler  scala
     sources   src/scala
-    include   rudiments/core galilei/core ambience/core hellenism/core eucalyptus/core
+    include   rudiments/core galilei/core ambience/core eucalyptus/core anthology/core
 
   module kotlin
     compiler  scala
     sources   src/kotlin
-    include   rudiments/core galilei/core ambience/core hellenism/core
+    include   rudiments/core galilei/core ambience/core anthology/core
     lib       kotlin-compiler https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-compiler/1.9.22/kotlin-compiler-1.9.22.jar
     lib       kotlin-script-runtime https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-script-runtime/1.9.22/kotlin-script-runtime-1.9.22.jar
     lib       kotlin-stdlib https://repo1.maven.org/maven2/org/jetbrains/kotlin/kotlin-stdlib-jdk8/1.9.22/kotlin-stdlib-jdk8-1.9.22.jar

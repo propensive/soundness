@@ -19,7 +19,7 @@ package anthology
 import anticipation.*
 import vacuous.*
 import digression.*
-import parasite.*
+import parasite.*, asyncOptions.cancelOrphans
 import turbulence.*
 import fulminate.*
 import eucalyptus.*
@@ -46,7 +46,8 @@ enum CompileResult:
 case class CompileProgress(complete: Double, stage: Text)
 
 trait Compiler:
-  def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
+  def apply(classpath: LocalClasspath)[PathType: GenericPath]
+      (sources: Map[Text, Text], out: PathType)
       (using SystemProperties, Log[Text], Monitor)
           : CompileProcess raises CompileError
 
@@ -55,6 +56,7 @@ class CompileProcess():
   private val completion: Promise[CompileResult] = Promise()
   private val noticesFunnel: Funnel[Notice] = Funnel()
   private val progressFunnel: Funnel[CompileProgress] = Funnel()
+  private var compilation: Optional[Async[?]] = Unset
   private var errorCount: Int = 0
   private var warningCount: Int = 0
 
@@ -68,9 +70,11 @@ class CompileProcess():
 
   def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
   def put(result: CompileResult): Unit = completion.offer(result)
+  def put(task: Async[?]): Unit = compilation = task
 
-  def complete()(using Log[Text]): CompileResult raises ConcurrencyError =
+  def complete()(using Monitor, Mitigator, Log[Text]): CompileResult raises ConcurrencyError =
     completion.await().also:
+      compilation.let(_.await())
       noticesFunnel.stop()
       progressFunnel.stop()
   

@@ -40,7 +40,7 @@ import language.adhocExtensions
 
 // Using a type alias does not seem to work (even though it worked previously). The type has been inlined below
 // as a workaround.
-//type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
+type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
 
 case class ScalacOption[-CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](flags: Text*)
 
