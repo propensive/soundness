@@ -22,6 +22,11 @@ project anthology
     sources   src/scala
     include   rudiments/core galilei/core ambience/core eucalyptus/core anthology/core
 
+  module java
+    compiler  scala
+    sources   src/java
+    include   rudiments/core galilei/core ambience/core eucalyptus/core anthology/core
+
   module kotlin
     compiler  scala
     sources   src/kotlin
