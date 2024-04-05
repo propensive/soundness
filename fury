@@ -4,11 +4,12 @@ target harlequin/ansi
 repo propensive/kaleidoscope
 repo propensive/escapade
 repo propensive/gossamer
+repo propensive/anthology
 
 project harlequin
   module core
     sources src/core
-    include gossamer/core kaleidoscope/core
+    include gossamer/core kaleidoscope/core anthology/scala
   
   module ansi
     sources src/ansi
