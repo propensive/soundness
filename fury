@@ -8,12 +8,14 @@ repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
 repo propensive/wisteria
+repo propensive/serpentine
 
 project bitumen
   module core
     compiler  scala
     sources   src/core
     include   bifurcate/core
+    include   serpentine/core
     include   gossamer/core
     include   turbulence/core
 
