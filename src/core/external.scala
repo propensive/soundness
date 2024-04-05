@@ -80,7 +80,7 @@ trait Dispatcher:
   inline def dispatch[OutputType: JsonDecoder](body: References ?=> Quotes ?=> Expr[OutputType])
       [ScalacVersionType <: ScalacVersions]
       (using codepoint: Codepoint, classloader: Classloader)
-          : Result[OutputType] raises ScalacError =
+          : Result[OutputType] raises CompileError =
 
     import errorHandlers.throwUnsafely
     val uuid = Uuid()
