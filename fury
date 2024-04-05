@@ -9,6 +9,7 @@ repo propensive/symbolism
 repo propensive/vacuous
 repo propensive/wisteria
 repo propensive/serpentine
+repo propensive/bifurcate
 
 project bitumen
   module core
