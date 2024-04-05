@@ -25,7 +25,6 @@ import vacuous.*
 import digression.*
 
 import scala.annotation.*
-import scala.collection.mutable as scm
 
 import language.experimental.pureFunctions
 
@@ -33,48 +32,42 @@ import Completion.*
 
 @capability
 sealed trait Monitor(promise: Promise[?]):
-  protected val submonitors: scm.HashSet[Monitor] = scm.HashSet()
+  protected val children: Mutex[Set[Submonitor[?]]] = Mutex(Set())
+  protected var callbacks: List[() => Unit] = Nil
+
   def name: Optional[Text]
   def stack: Text
-  
-  def terminate(): Unit = this match
-    case supervisor: Supervisor    => supervisor.cancel()
-    case submonitor: Submonitor[?] => submonitor.terminate()
-  
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
-  
-  def delegate(lambda: Monitor -> Unit): Unit = submonitors.each:
-    case submonitor: Submonitor[?] =>
-      if submonitor.daemon then submonitor.cancel() else lambda(submonitor)
-    
-    case _ => ()
-  
+  def cancel(): Unit
+  def remove(monitor: Submonitor[?]): Unit =
+    children.replace(_ - monitor)
+    //synchronized { submonitors -= monitor }
+
+  def supervisor: Supervisor
+  def mitigate(monitor: Monitor, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
+  
+  def delegate(lambda: Monitor -> Unit): Unit = children().each: child =>
+    if child.daemon then child.cancel() else lambda(child)
 
   def child[ResultType2]
-      (name: Optional[Text],
-       daemon: Boolean,
+      (name:      Optional[Text],
+       daemon:    Boolean,
        codepoint: Codepoint,
        mitigator: Mitigator,
-       evaluate: Submonitor[ResultType2] => ResultType2,
-       orphans: OrphanCompletion)
+       evaluate:  Submonitor[ResultType2] => ResultType2,
+       probate:   Probate)
           : Submonitor[ResultType2] =
 
     val submonitor =
-      Submonitor(codepoint, name, daemon, this, Mutex(Initializing), Promise(), mitigator, evaluate, orphans)
+      Submonitor(codepoint, name, daemon, this, Mutex(Initializing), Promise(), mitigator, evaluate, probate)
     
     submonitor.tap: submonitor =>
-      submonitors += submonitor
-  
-  def cancel(): Unit
-  def remove(monitor: Submonitor[?]): Unit = synchronized:
-    submonitors -= monitor
+      children.replace(_ + submonitor)
+      // synchronized:
+      //   submonitors += submonitor
 
-  def supervisor: Supervisor
-
-  def mitigate(monitor: Monitor, error: Throwable): Unit
-  
 sealed abstract class Supervisor() extends Monitor(Promise()):
   def name: Text
   def fork(runnable: Runnable): Thread
@@ -84,6 +77,8 @@ sealed abstract class Supervisor() extends Monitor(Promise()):
   
   def newPlatformThread(name: Text, runnable: Runnable): Thread =
     Thread.ofPlatform().nn.start(runnable).nn.tap(_.setName(name.s))
+
+  def shutdown(): Unit = children().each(_.cancel())
 
 case object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
@@ -111,8 +106,10 @@ case class Submonitor[ResultType]
      promise:   Promise[ResultType],
      mitigator: Mitigator,
      evaluate:  Submonitor[ResultType] => ResultType,
-     orphans:   OrphanCompletion)
+     probate:   Probate)
 extends Monitor(promise):
+  private var startTime: Long = -1L
+  private var runTime: Long = -1L
 
   def supervisor: Supervisor = parent.supervisor
 
@@ -140,27 +137,28 @@ extends Monitor(promise):
       case Mitigation.Suppress => ()
 
   lazy val thread: Thread =
-    val runnable: Runnable = () =>
-      boundary[Unit]:
-        try
-          state() = Active
-          evaluate(this).tap: result =>
-            state() = Completed(result)
-        catch
-          case error: Throwable =>
-            mitigate(this, error)
-            state() = Failed(error)
-        finally
-          orphans.cleanup(this)
-          
-          state() match
-            case Completed(value) => promise.offer(value)
-            case Active           => promise.cancel()
-            case Suspended(_)     => promise.cancel()
-            case Failed(_)        => promise.cancel()
-          
-          parent.remove(this)
-          boundary.break()
+    val runnable: Runnable = () => boundary[Unit]:
+      try
+        startTime = System.currentTimeMillis
+        state() = Active
+        evaluate(this).tap: result =>
+          state() = Completed(result)
+      catch
+        case error: Throwable =>
+          mitigate(this, error)
+          state() = Failed(error)
+      finally
+        probate.cleanup(this)
+        
+        state() match
+          case Completed(value) => promise.offer(value)
+          case Active           => promise.cancel()
+          case Suspended(_)     => promise.cancel()
+          case Failed(_)        => promise.cancel()
+        
+        runTime = System.currentTimeMillis - startTime
+        parent.remove(this)
+        boundary.break()
   
     parent.supervisor.fork(runnable)
 
@@ -170,7 +168,9 @@ extends Monitor(promise):
   def cancel(): Unit =
     thread.interrupt()
     promise.cancel()
-    submonitors.each(_.cancel())
+    children.isolate: children =>
+      children.each(_.cancel())
+    //synchronized { submonitors.each(_.cancel()) }
     join()
   
   def result()(using cancel: Raises[ConcurrencyError]): ResultType = state() match
@@ -180,3 +180,25 @@ extends Monitor(promise):
     case Completed(result) => result.also { state() = Delivered(result) }
     case Delivered(result) => result
     case Failed(error)     => throw error
+
+  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[ConcurrencyError])
+          : ResultType =
+
+    promise.attend(duration)
+    join()
+    result()
+
+  def await()(using cancel: Raises[ConcurrencyError]): ResultType =
+    promise.attend()
+    join()
+    result()
+
+  def suspend(): Unit = state.replace:
+    case Active       => Suspended(1)
+    case Suspended(n) => Suspended(n + 1)
+    case other        => other
+
+  def resume(force: Boolean = false): Unit = state.replace:
+    case Suspended(1) => Active.also(synchronized(notifyAll()))
+    case Suspended(n) => if force then Active else Suspended(n - 1)
+    case other        => other
