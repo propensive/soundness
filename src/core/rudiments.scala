@@ -17,10 +17,8 @@
 package rudiments
 
 import vacuous.*
-import fulminate.*
 
 import scala.deriving.*
-import scala.collection.mutable as scm
 
 import java.util.concurrent.atomic as juca
 
