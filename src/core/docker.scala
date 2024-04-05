@@ -17,8 +17,6 @@
 package embarcadero
 
 import anticipation.*
-import telekinesis.*
-import jacinta.*
 
 case class ContainerImage(id: Text)
 
