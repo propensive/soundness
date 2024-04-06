@@ -143,7 +143,7 @@ case class ZipFile(private val filename: Text):
       lambda(filesystem).also(filesystem.close())
     
   def entry(ref: ZipRef)(using streamCut: Raises[StreamError]): ZipEntry =
-    semaphore.attend(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
+    semaphore.access(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
       (using Environment)
