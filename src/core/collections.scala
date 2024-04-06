@@ -20,6 +20,7 @@ import vacuous.*
 
 import scala.compiletime.*
 import scala.collection as sc
+import sc.mutable as scm
 
 import java.io as ji
 
@@ -105,6 +106,9 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
 
     right.foldLeft(map): (accumulator, keyValue) =>
       accumulator.updated(keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
+
+extension [KeyType, ValueType](map: scm.Map[KeyType, ValueType])
+  def ascertain(key: KeyType)(evaluate: => ValueType): ValueType = map.getOrElseUpdate(key, evaluate)
 
 extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
   def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
