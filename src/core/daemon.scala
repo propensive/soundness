@@ -117,7 +117,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
   def makeClient(socket: jn.Socket)
-      (using Monitor, Log[Text], Stdio, Mitigator, OrphanCompletion)
+      (using Monitor, Log[Text], Stdio, Mitigator, Probate)
         : Unit raises StreamError raises UndecodableCharError raises NumberError =
     
     async:
@@ -262,7 +262,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
     import workingDirectories.default
     import asyncOptions.{waitForOrphans, escalateExceptions}
 
-    Async.onShutdown:
+    Hook.onShutdown:
       portFile.wipe()
       pidFile.wipe()
       
