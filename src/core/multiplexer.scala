@@ -30,7 +30,7 @@ object Multiplexer:
   private object Termination
 
 case class Multiplexer[KeyType, ElementType]()(using Monitor, Mitigator):
-  private val tasks: TrieMap[KeyType, Async[Unit]] = TrieMap()
+  private val tasks: TrieMap[KeyType, Task[Unit]] = TrieMap()
   
   private val queue: juc.LinkedBlockingQueue[ElementType | Multiplexer.Termination.type] =
     juc.LinkedBlockingQueue()
@@ -38,7 +38,7 @@ case class Multiplexer[KeyType, ElementType]()(using Monitor, Mitigator):
   def close(): Unit = tasks.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: LazyList[ElementType])(using Submonitor[Unit]): Unit =
+  private def pump(key: KeyType, stream: LazyList[ElementType])(using Subordinate): Unit =
     if stream.isEmpty then remove(key) else
       relent()
       queue.put(stream.head)
