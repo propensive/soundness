@@ -185,13 +185,13 @@ extends Interactivity[TerminalEvent]:
   val events: Funnel[TerminalEvent] = Funnel()
   def eventStream(): LazyList[TerminalEvent] = events.stream
 
-  val pumpSignals: Async[Unit] = daemon:
+  val pumpSignals: Task[Unit] = daemon:
     signals.each:
       case Signal.Winch =>
         out.print(Terminal.reportSize)
         events.put(Signal.Winch)
 
-  val pumpInput: Async[Unit] = daemon:
+  val pumpInput: Task[Unit] = daemon:
     keyboard.process(In.stream[Char]).each:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
