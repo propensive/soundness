@@ -52,7 +52,7 @@ object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     import asyncOptions.{ignoreExceptions, waitForOrphans}
     def stop(): Unit = pollLoop.stop()
-    val async: Optional[Async[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
+    val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
   private var serviceValue: Optional[WatchService] = Unset
 
