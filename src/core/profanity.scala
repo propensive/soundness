@@ -163,13 +163,14 @@ extends Interactivity[TerminalEvent]:
   export context.stdio.{in, out, err}
 
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
-  val initRows: Promise[Int] = Promise()
-  val initColumns: Promise[Int] = Promise()
+  val rows0: Promise[Int] = Promise()
+  val columns0: Promise[Int] = Promise()
   var mode: Optional[TerminalMode] = Unset
   var rows: Optional[Int] = Unset
   var columns: Optional[Int] = Unset
 
-  def knownColumns: Int = columns.or(safely(initColumns.await(50L))).or(80)
+  def knownColumns: Int = columns.or(safely(columns0.await(50L))).or(80)
+  def knownRows: Int = rows.or(safely(rows0.await(50L))).or(80)
   
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
@@ -201,9 +202,9 @@ extends Interactivity[TerminalEvent]:
     keyboard.process(In.stream[Char]).each:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
-        initRows.offer(rows2)
+        rows0.offer(rows2)
         columns = columns2
-        initColumns.offer(columns2)
+        columns0.offer(columns2)
         events.put(resize)
       
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
