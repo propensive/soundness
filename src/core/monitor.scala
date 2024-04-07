@@ -29,6 +29,7 @@ import scala.annotation.*
 import language.experimental.pureFunctions
 
 import Completion.*
+import ConcurrencyError.Reason
 
 @capability
 sealed trait Monitor:
@@ -47,17 +48,6 @@ sealed trait Monitor:
   def mitigate(monitor: Monitor, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
   
-  def subordinate[ResultType]
-     (name:      Optional[Text],
-      daemon:    Boolean,
-      codepoint: Codepoint,
-      mitigator: Mitigator,
-      probate:   Probate)
-     (eval: Subordinate => ResultType)
-          : SubordinateTask[ResultType] =
-
-    SubordinateTask[ResultType](codepoint, name, daemon, this, mitigator, probate, eval)
-    
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
   val promise: Promise[Unit] = Promise()
@@ -67,10 +57,6 @@ sealed abstract class Supervisor() extends Monitor:
   def supervisor: Supervisor = this
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
-  
-  def newPlatformThread(name: Text, runnable: Runnable): Thread =
-    Thread.ofPlatform().nn.start(runnable).nn.tap(_.setName(name.s))
-
   def shutdown(): Unit = subordinates.each(_.cancel())
 
 object VirtualSupervisor extends Supervisor():
@@ -154,36 +140,21 @@ extends Monitor:
       
   
   def result()(using cancel: Raises[ConcurrencyError]): Result =
-    val delivered = state.replace:
-      case Initializing =>
-        abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-  
-      case Active(_) =>
-        abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-  
-      case Suspended(_, _) =>
-        abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-  
-      case Completed(duration, result) =>
-        Delivered(duration, result)
-  
-      case Delivered(duration, result) =>
-        Delivered(duration, result)
-  
-      case Failed(error) =>
-        throw error
-  
-      case Cancelled =>
-        abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+    state.replace:
+      case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
+      case Active(_)                   => abort(ConcurrencyError(Reason.Incomplete))
+      case Suspended(_, _)             => abort(ConcurrencyError(Reason.Incomplete))
+      case Completed(duration, result) => Delivered(duration, result)
+      case Delivered(duration, result) => Delivered(duration, result)
+      case Failed(error)               => throw error
+      case Cancelled                   => abort(ConcurrencyError(Reason.Cancelled))
     
-    delivered match
+    .match
       case Delivered(_, result) => result
       case other                => throw Panic(msg"impossible state")
     
 
-  def await[DurationType: GenericDuration](duration: DurationType)
-          : Result raises ConcurrencyError =
-
+  def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =
     promise.attend(duration)
     thread.join()
     result()
@@ -258,16 +229,3 @@ extends Monitor:
         boundary.break()
   
   thread
-
-@capability
-class SubordinateTask[ResultType]
-    (frame: Codepoint,
-     val name: Optional[Text],
-     val daemon: Boolean,
-     parent: Monitor,
-     mitigator: Mitigator,
-     probate: Probate,
-     eval: Subordinate => ResultType)
-extends Subordinate(frame, parent, mitigator, probate), Task[ResultType]:
-  type Result = ResultType
-  def evaluate(subordinate: Subordinate): Result = eval(subordinate)

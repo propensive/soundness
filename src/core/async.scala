@@ -67,11 +67,10 @@ package asyncOptions:
   given ignoreExceptions: Mitigator = (path, error) => Mitigation.Suppress
     
 
-def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)
-    (using Monitor, Probate, Mitigator)
-        : Task[Unit] =
+def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Probate, Mitigator)
+        : Daemon =
 
-  Task[Unit](evaluate(using _), daemon = true, name = Unset)
+  Daemon(evaluate(using _))
 
 def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)
     (using Monitor, Probate, Mitigator)
@@ -97,12 +96,19 @@ object Task:
       (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
       (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator)
           : Task[ResultType] =
+    inline def evaluate0: Subordinate => ResultType = evaluate
+    inline def name0: Optional[Text] = name
     
-    monitor.subordinate(name, daemon, codepoint, mitigator, probate)(evaluate)
+    new Subordinate(codepoint, monitor, mitigator, probate) with Task[ResultType]:
+      type Result = ResultType
+      def name: Optional[Text] = name0
+      def daemon: Boolean = false
+      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
     
 trait Task[+ResultType]:
   def ready: Boolean
   def await(): ResultType raises ConcurrencyError
+  def attend(): Unit
   def suspend(): Unit
   def resume(force: Boolean = false): Unit
   def cancel(): Unit
@@ -117,6 +123,24 @@ trait Task[+ResultType]:
   def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate, Mitigator)
           : Task[ResultType2] raises ConcurrencyError
 
+object Daemon:
+  def apply(evaluate: Subordinate => Unit)
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator)
+          : Daemon =
+    inline def evaluate0: Subordinate => Unit = evaluate
+    
+    new Subordinate(codepoint, monitor, mitigator, probate) with Daemon:
+      type Result = Unit
+      def name: Optional[Text] = Unset
+      def daemon: Boolean = true
+      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
+
+trait Daemon:
+  def suspend(): Unit
+  def resume(force: Boolean = false): Unit
+  def attend(): Unit
+  def cancel(): Unit
+  
 def relent[ResultType]()(using monitor: Subordinate): Unit = monitor.relent()
 def cancel[ResultType]()(using monitor: Monitor): Unit = monitor.cancel()
 
