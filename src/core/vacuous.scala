@@ -38,16 +38,16 @@ object Vacuous:
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
           
           case term =>
-            '{  $optional match
-                  case Unset => $default
-                  case term  => term.asInstanceOf[ValueType]  }.asTerm
+           '{ $optional match
+                case Unset => $default
+                case term  => term.asInstanceOf[ValueType] }.asTerm
       
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))
       
       case term =>
-        '{  $optional match
-              case Unset => $default
-              case term  => term.asInstanceOf[ValueType]  }.asTerm
+       '{ $optional match
+            case Unset => $default
+            case term  => term.asInstanceOf[ValueType] }.asTerm
   
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[ValueType]}.asExprOf[ValueType]
