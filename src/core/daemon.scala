@@ -238,7 +238,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
             try
               val cli: executive.CliType =
                 executive.cli
-                 (textArguments, environment, workingDirectory, stdio, connection.signals.stream)
+                 (textArguments, environment, workingDirectory, stdio, connection.signals)
               
               val result = block(using service)(using cli)
               val exitStatus: ExitStatus = executive.process(cli)(result)
@@ -279,7 +279,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
       t"$port $buildId $stderr".writeTo(portFile.as[File])
       OsProcess().pid.value.show.writeTo(pidFile.as[File])
       
-      daemon:
+      task(t"pid-watcher"):
         safely:
           List(portFile, pidFile).watch: watcher =>
             watcher.stream.each:
