@@ -158,7 +158,7 @@ object Interactivity:
 trait Interactivity[EventType]:
   def eventStream(): LazyList[EventType]
 
-case class Terminal(signals: LazyList[Signal])(using context: ProcessContext, monitor: Monitor, mitigator: Mitigator, probate: Probate)
+case class Terminal(signals: Funnel[Signal])(using context: ProcessContext, monitor: Monitor, mitigator: Mitigator, probate: Probate)
 extends Interactivity[TerminalEvent]:
   export context.stdio.{in, out, err}
 
@@ -186,12 +186,18 @@ extends Interactivity[TerminalEvent]:
   def eventStream(): LazyList[TerminalEvent] = events.stream
 
   val pumpSignals: Task[Unit] = daemon:
-    signals.each:
+    signals.stream.each:
       case Signal.Winch =>
         out.print(Terminal.reportSize)
         events.put(Signal.Winch)
+      
+      case signal =>
+        events.put(signal)
 
-  val pumpInput: Task[Unit] = daemon:
+  private def dark(red: Int, green: Int, blue: Int): Boolean =
+    (0.299*red + 0.587*green + 0.114*blue) < 32768
+
+  val pumpInput: Task[Unit] = task(t"stdin"):
     keyboard.process(In.stream[Char]).each:
       case resize@TerminalInfo.WindowSize(rows2, columns2) =>
         rows = rows2
@@ -201,7 +207,7 @@ extends Interactivity[TerminalEvent]:
         events.put(resize)
       
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if (0.299*red + 0.587*green + 0.114*blue) > 32768 then TerminalMode.Light else TerminalMode.Dark
+        mode = if dark(red, green, blue) then TerminalMode.Dark else TerminalMode.Light
         events.put(bgColor)
 
       case other =>
@@ -214,17 +220,17 @@ package terminalOptions:
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
 object ProcessContext:
-  def apply(stdio: Stdio, signals: LazyList[Signal] = LazyList()): ProcessContext =
+  def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext =
     inline def initStdio: Stdio = stdio
-    inline def initSignals: LazyList[Signal] = signals
+    inline def initSignals: Funnel[Signal] = signals
     
     new ProcessContext:
       val stdio: Stdio = initStdio
-      def signals: LazyList[Signal] = initSignals
+      def signals: Funnel[Signal] = initSignals
 
 trait ProcessContext:
   val stdio: Stdio
-  def signals: LazyList[Signal]
+  def signals: Funnel[Signal]
 
 object BracketedPasteMode:
   given default: BracketedPasteMode = () => false
@@ -266,6 +272,11 @@ def terminal[ResultType](block: Terminal ?=> ResultType)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
   
   try block(using terminal) finally
+    terminal.signals.stop()
+    terminal.stdio.in.close()
+    terminal.events.stop()
+    safely(terminal.pumpSignals.await())
+    safely(terminal.pumpInput.await())
     if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
 
