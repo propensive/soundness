@@ -185,7 +185,7 @@ extends Interactivity[TerminalEvent]:
   val events: Funnel[TerminalEvent] = Funnel()
   def eventStream(): LazyList[TerminalEvent] = events.stream
 
-  val pumpSignals: Task[Unit] = daemon:
+  val pumpSignals: Daemon = daemon:
     signals.stream.each:
       case Signal.Winch =>
         out.print(Terminal.reportSize)
@@ -275,7 +275,7 @@ def terminal[ResultType](block: Terminal ?=> ResultType)
     terminal.signals.stop()
     terminal.stdio.in.close()
     terminal.events.stop()
-    safely(terminal.pumpSignals.await())
+    safely(terminal.pumpSignals.attend())
     safely(terminal.pumpInput.await())
     if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
