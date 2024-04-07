@@ -33,13 +33,9 @@ class Mutex[ValueType](initial: ValueType):
       while count == -1 do wait()
       count += 1
 
-    val result = value
-    
-    synchronized:
+    try value finally synchronized:
       count -= 1
       notify()
-
-    value
 
   def use[ResultType, ImmutableType]
       (using immutable: Immutable[ValueType, ImmutableType])
@@ -50,22 +46,16 @@ class Mutex[ValueType](initial: ValueType):
       while count == -1 do wait()
       count += 1
     
-    val result = lambda(MutexRef(immutable.make(value), immutable.snapshot(_)))
-    
-    synchronized:
+    try lambda(MutexRef(immutable.make(value), immutable.snapshot(_))) finally synchronized:
       count -= 1
       notify()
-
-    result
   
-  def isolate(lambda: ValueType => Unit): Unit =
+  def isolate[ResultType](lambda: ValueType => ResultType): ResultType =
     synchronized:
       while count != 0 do wait()
       count = -1
 
-    lambda(value)
-    
-    synchronized:
+    try lambda(value) finally synchronized:
       count = 0
       notify()
   
@@ -74,54 +64,43 @@ class Mutex[ValueType](initial: ValueType):
       while count != 0 do wait()
       count = -1
     
-    value = lambda(value)
-    val result = value
-
-    synchronized:
-      count = 0
-      notify()
-    
-    result
+    try
+      value = lambda(value)
+      value
+    finally
+      synchronized:
+        count = 0
+        notify()
 
   def update(value2: => ValueType): Unit =
     synchronized:
       while count != 0 do wait()
       count = -1
     
-    value = value2
-
-    synchronized:
+    try value = value2 finally synchronized:
       count = 0
       notify()
 
 class Semaphore():
   private var count: Int = 0
 
-  def attend[ResultType](lambda: => ResultType): ResultType =
+  def access[ResultType](evaluate: => ResultType): ResultType =
     synchronized:
       while count == -1 do wait()
       count += 1
     
-    val result: ResultType = lambda
-    
-    synchronized:
+    try evaluate finally synchronized:
       count -= 1
       notify()
-
-    result
   
-  def isolate[ResultType](lambda: => ResultType): ResultType =
+  def isolate[ResultType](evaluate: => ResultType): ResultType =
     synchronized:
       while count != 0 do wait()
       count = -1
 
-    val result: ResultType = lambda
-
-    synchronized:
+    try evaluate finally synchronized:
       count = 0
       notify()
-
-    result
   
 trait Immutable[MutableType, ImmutableType]:
   def snapshot(ref: ImmutableType): ImmutableType = ref
