@@ -31,46 +31,47 @@ import language.experimental.pureFunctions
 import Completion.*
 
 @capability
-sealed trait Monitor(promise: Promise[?]):
-  protected val children: Mutex[Set[Submonitor[?]]] = Mutex(Set())
-  protected var callbacks: List[() => Unit] = Nil
+sealed trait Monitor:
+  type Result
+  val promise: Promise[Result]
+  protected val semaphore: Semaphore = Semaphore()
+  protected var subordinates: Set[Subordinate] = Set()
 
   def name: Optional[Text]
   def stack: Text
+  def daemon: Boolean
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Submonitor[?]): Unit =
-    children.replace(_ - monitor)
-    //synchronized { submonitors -= monitor }
-
+  def remove(monitor: Subordinate): Unit = semaphore.isolate(subordinates -= monitor)
   def supervisor: Supervisor
   def mitigate(monitor: Monitor, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
   
-  def delegate(lambda: Monitor -> Unit): Unit = children().each: child =>
-    if child.daemon then child.cancel() else lambda(child)
+  def delegate(lambda: Monitor -> Unit): Unit = semaphore.access:
+    subordinates.each { child => if child.daemon then child.cancel() else lambda(child) }
 
-  def child[ResultType2]
-      (name:      Optional[Text],
-       daemon:    Boolean,
-       codepoint: Codepoint,
-       mitigator: Mitigator,
-       evaluate:  Submonitor[ResultType2] => ResultType2,
-       probate:   Probate)
-          : Submonitor[ResultType2] =
+  def subordinate[ResultType]
+     (name:      Optional[Text],
+      daemon:    Boolean,
+      codepoint: Codepoint,
+      mitigator: Mitigator,
+      probate:   Probate)
+     (eval: Subordinate => ResultType)
+          : SubordinateTask[ResultType] =
 
-    val submonitor =
-      Submonitor(codepoint, name, daemon, this, Mutex(Initializing), Promise(), mitigator, evaluate, probate)
+    val submonitor: SubordinateTask[ResultType] =
+      SubordinateTask[ResultType](codepoint, name, daemon, this, mitigator, probate, eval)
     
     submonitor.tap: submonitor =>
-      children.replace(_ + submonitor)
-      // synchronized:
-      //   submonitors += submonitor
+      semaphore.isolate(subordinates += submonitor)
 
-sealed abstract class Supervisor() extends Monitor(Promise()):
+sealed abstract class Supervisor() extends Monitor:
+  type Result = Unit
+  val promise: Promise[Unit] = Promise()
+  val daemon: Boolean = true
   def name: Text
-  def fork(runnable: Runnable): Thread
+  def fork(name: Optional[Text])(block: => Unit): Thread
   def supervisor: Supervisor = this
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
@@ -78,57 +79,52 @@ sealed abstract class Supervisor() extends Monitor(Promise()):
   def newPlatformThread(name: Text, runnable: Runnable): Thread =
     Thread.ofPlatform().nn.start(runnable).nn.tap(_.setName(name.s))
 
-  def shutdown(): Unit = children().each(_.cancel())
+  def shutdown(): Unit = semaphore.access:
+    subordinates.each(_.cancel())
 
-case object VirtualSupervisor extends Supervisor():
+object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
-  def fork(runnable: Runnable): Thread = Thread.ofVirtual().nn.start(runnable).nn
   def mitigate(monitor: Monitor, error: Throwable): Unit = ()
   
-case object PlatformSupervisor extends Supervisor():
+  def fork(name: Optional[Text])(block: => Unit): Thread =
+    Thread.ofVirtual().nn.start(() => block).nn
+  
+object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
-  def fork(runnable: Runnable): Thread = Thread.ofPlatform().nn.start(runnable).nn
   def mitigate(monitor: Monitor, error: Throwable): Unit = ()
+  
+  def fork(name: Optional[Text])(block: => Unit): Thread =
+    Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
+      name.let(_.s).let(thread.setName(_))
 
 def supervise[ResultType](block: Monitor ?=> ResultType)(using model: ThreadModel)
         : ResultType raises ConcurrencyError =
 
   block(using model.supervisor())
 
-
 @capability
-case class Submonitor[ResultType]
-    (frame:     Codepoint,
-     name:      Optional[Text],
-     daemon:    Boolean,
-     parent:    Monitor,
-     state:     Mutex[Completion[ResultType]],
-     promise:   Promise[ResultType],
-     mitigator: Mitigator,
-     evaluate:  Submonitor[ResultType] => ResultType,
-     probate:   Probate)
-extends Monitor(promise):
-  private var startTime: Long = -1L
-  private var runTime: Long = -1L
-
+abstract class Subordinate
+    (frame: Codepoint, parent: Monitor, mitigator: Mitigator, probate: Probate)
+extends Monitor:
+  def evaluate(subordinate: Subordinate): Result
+  val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
+  def apply(): Optional[Result] = promise()
 
   def stack: Text =
-    val prefix = parent match
-      case supervisor: Supervisor    => supervisor.name.s+":/"
-      case submonitor: Submonitor[?] => submonitor.stack.s
-    
     val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
     
-    (prefix+"#"+ref).tt
-  
+    parent match
+      case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
+      case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
+
   def relent(): Unit = state() match
-    case Initializing      => ()
-    case Active            => ()
-    case Suspended(_)      => wait()
-    case Completed(value)  => throw Panic(msg"should not be relenting after completion")
-    case Delivered(value)  => throw Panic(msg"should not be relenting after completion")
-    case Failed(error)     => throw Panic(msg"should not be relenting after failure")
+    case Initializing    => ()
+    case Active(_)       => ()
+    case Suspended(_, _) => synchronized(wait())
+    case Completed(_, _) => throw Panic(msg"should not be relenting after completion")
+    case Delivered(_, _) => throw Panic(msg"should not be relenting after completion")
+    case Failed(_)       => throw Panic(msg"should not be relenting after failure")
 
   def mitigate(monitor: Monitor, error: Throwable): Unit =
     mitigator.mitigate(monitor, error) match
@@ -136,69 +132,99 @@ extends Monitor(promise):
       case Mitigation.Cancel   => cancel()
       case Mitigation.Suppress => ()
 
-  lazy val thread: Thread =
-    val runnable: Runnable = () => boundary[Unit]:
-      try
-        startTime = System.currentTimeMillis
-        state() = Active
-        evaluate(this).tap: result =>
-          state() = Completed(result)
-      catch
-        case error: Throwable =>
-          mitigate(this, error)
-          state() = Failed(error)
-      finally
-        probate.cleanup(this)
-        
-        state() match
-          case Completed(value) => promise.offer(value)
-          case Active           => promise.cancel()
-          case Suspended(_)     => promise.cancel()
-          case Failed(_)        => promise.cancel()
-        
-        runTime = System.currentTimeMillis - startTime
-        parent.remove(this)
-        boundary.break()
-  
-    parent.supervisor.fork(runnable)
+  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate, Mitigator)
+          : Task[ResultType2] raises ConcurrencyError =
 
-  def join(): Unit =
-    try thread.join() catch case _: InterruptedException => Thread.currentThread.nn.interrupt()
+    async(lambda(await()))
+  
+  def flatMap[ResultType2](lambda: Result => Task[ResultType2])
+      (using Monitor, Probate, Mitigator)
+          : Task[ResultType2] raises ConcurrencyError =
+
+    async(lambda(await()).await())
 
   def cancel(): Unit =
     thread.interrupt()
-    promise.cancel()
-    children.isolate: children =>
-      children.each(_.cancel())
-    //synchronized { submonitors.each(_.cancel()) }
-    join()
+    thread.join()
   
-  def result()(using cancel: Raises[ConcurrencyError]): ResultType = state() match
-    case Initializing      => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-    case Active            => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-    case Suspended(_)      => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
-    case Completed(result) => result.also { state() = Delivered(result) }
-    case Delivered(result) => result
-    case Failed(error)     => throw error
+  def result()(using cancel: Raises[ConcurrencyError]): Result = state() match
+    case Initializing                => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
+    case Active(_)                   => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
+    case Suspended(_, _)             => abort(ConcurrencyError(ConcurrencyError.Reason.Incomplete))
+    case Completed(duration, result) => result.also { state() = Delivered(duration, result) }
+    case Delivered(_, result)        => result
+    case Failed(error)               => throw error
 
-  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[ConcurrencyError])
-          : ResultType =
+  def await[DurationType: GenericDuration](duration: DurationType)
+          : Result raises ConcurrencyError =
 
     promise.attend(duration)
-    join()
+    thread.join()
     result()
 
-  def await()(using cancel: Raises[ConcurrencyError]): ResultType =
+  def await(): Result raises ConcurrencyError =
     promise.attend()
-    join()
+    thread.join()
     result()
 
   def suspend(): Unit = state.replace:
-    case Active       => Suspended(1)
-    case Suspended(n) => Suspended(n + 1)
-    case other        => other
+    case Active(startTime)       => Suspended(startTime, 1)
+    case Suspended(startTime, n) => Suspended(startTime, n + 1)
+    case other                   => other
 
   def resume(force: Boolean = false): Unit = state.replace:
-    case Suspended(1) => Active.also(synchronized(notifyAll()))
-    case Suspended(n) => if force then Active else Suspended(n - 1)
-    case other        => other
+    case Suspended(startTime, 1) => Active(startTime).also(synchronized(notifyAll()))
+    case Suspended(startTime, n) => if force then Active(startTime) else Suspended(startTime, n - 1)
+    case other                   => other
+  
+  private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
+
+  private lazy val thread: Thread = parent.supervisor.fork(stack):
+    boundary[Unit]:
+      val startTime = System.currentTimeMillis
+      try
+        state() = Active(startTime)
+
+        evaluate(this).tap: result =>
+          state() = Completed(System.currentTimeMillis - startTime, result)
+      
+      catch
+        case error: InterruptedException =>
+          state() = Failed(error)
+          subordinates.each { child => if child.daemon then child.cancel() }
+          Thread.interrupted()
+
+        case error: Throwable =>
+          mitigate(this, error)
+          state() = Failed(error)
+          subordinates.each { child => if child.daemon then child.cancel() }
+      
+      finally
+        probate.cleanup(this)
+        val runTime = System.currentTimeMillis - startTime
+        
+        state() match
+          case Initializing               => promise.cancel()
+          case Active(_)                  => promise.cancel()
+          case Completed(duration, value) => promise.offer(value)
+          case Delivered(duration, value) => ()
+          case Suspended(_, _)            => promise.cancel()
+          case Failed(_)                  => promise.cancel()
+        
+        parent.remove(this)
+        boundary.break()
+  
+  thread
+
+@capability
+class SubordinateTask[ResultType]
+    (frame: Codepoint,
+     val name: Optional[Text],
+     val daemon: Boolean,
+     parent: Monitor,
+     mitigator: Mitigator,
+     probate: Probate,
+     eval: Subordinate => ResultType)
+extends Subordinate(frame, parent, mitigator, probate), Task[ResultType]:
+  type Result = ResultType
+  def evaluate(subordinate: Subordinate): Result = eval(subordinate)

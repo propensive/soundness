@@ -27,7 +27,7 @@ import anticipation.*, timeInterfaces.long
 import errorHandlers.throwUnsafely
 
 import threadModels.platform
-import orphans.awaitCompletion
+import asyncOptions.cancelOrphans
 
 given Mitigator = (path, error) =>
   println(s"An async exception occurred in ${path.stack}:")
@@ -100,7 +100,7 @@ object Tests extends Suite(t"Parasite tests"):
             bus.waitFor(t"task2")
             t"TASK2"
           
-          val task3 = Vector(task1, task2).race
+          val task3 = async(Vector(task1, task2).race())
           bus.put(t"task2")
           sleep(15L)
           bus.put(t"task1")
@@ -233,24 +233,35 @@ object Tests extends Suite(t"Parasite tests"):
         // .assert(_ == CancelError())
 
         test(t"Canceled task cancels child"):
+          println("a")
           var value = 1
+          println("b")
           val task = async:
+            println("c")
             value = 2
             
             val task2 = async:
-              sleep(100L)
+              println("d")
+              sleep(100L) // halt
+              println("e")
               value = 3
+            println("f")
             
-            task2.await()
+            task2.await() // halt
+            println("g")
           
+          println("h")
           sleep(20L)
-          task.cancel()
+          println("i")
+          task.cancel() // halt
+          println("j")
           safely(task.await())
+          println("k")
           value
         .assert(_ == 2)
 
         test(t"Incomplete child is awaited"):
-          import orphans.awaitCompletion
+          import asyncOptions.waitForOrphans
           var value = 1
           val task = async:
             value = 2
@@ -261,9 +272,10 @@ object Tests extends Suite(t"Parasite tests"):
           task.await()
           value
         .assert(_ == 3)
+        println("C")
         
         test(t"Incomplete child is cancelled"):
-          import orphans.cancelIncomplete
+          import asyncOptions.cancelOrphans
           var value = 1
           val task = async:
             value = 2
@@ -297,3 +309,4 @@ object Tests extends Suite(t"Parasite tests"):
             1
           2
         .assert(_ == 2)
+

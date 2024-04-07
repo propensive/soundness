@@ -31,39 +31,24 @@ object Promise:
 
 case class Promise[ValueType]():
   private var state: Promise.State = Promise.State.Incomplete
-  private var value: ValueType | Null = null
-  private var callbacks: List[() => Unit] = Nil
-
+  private var value: Optional[ValueType] = Unset
+  private[parasite] def get(): ValueType = value.asInstanceOf[ValueType]
+  
   def cancelled: Boolean = state == Promise.State.Cancelled
-
-  def onComplete(block: => Unit): Unit =
-    val immediate = synchronized:
-      if ready then true else
-        callbacks = (() => block) :: callbacks
-        false
-    
-    if immediate then block
-
-  private[parasite] def get(): ValueType raises ConcurrencyError =
-    if cancelled then abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
-    else value.asInstanceOf[ValueType]
-
-  def apply(): Optional[ValueType] = if ready then value.nn else Unset
+  def apply(): Optional[ValueType] = if ready then value else Unset
   def ready: Boolean = state != Promise.State.Incomplete
   def complete: Boolean = state == Promise.State.Complete
 
-  private def set(supplied: ValueType): List[() => Unit] =
+  private def set(supplied: ValueType): Unit =
     value = supplied
     state = Promise.State.Complete
-    notifyAll() // FIXME: Check whether notify should be before or after callbacks
-    callbacks
+    notifyAll()
 
   def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError = synchronized:
     if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
-    else set(supplied).each(_())
+    else set(supplied)
   
-  def offer(supplied: -> ValueType): Unit = synchronized:
-    if !ready then set(supplied).each(_())
+  def offer(supplied: -> ValueType): Unit = synchronized { if !ready then set(supplied) }
 
   def await(): ValueType raises ConcurrencyError = synchronized:
     while !ready do wait()

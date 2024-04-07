@@ -28,10 +28,10 @@ import language.experimental.pureFunctions
 
 enum Completion[+ValueType]:
   case Initializing
-  case Active
-  case Suspended(count: Int)
-  case Completed(value: ValueType)
-  case Delivered(value: ValueType)
+  case Active(startTime: Long)
+  case Suspended(startTame: Long, count: Int)
+  case Completed(duration: Long, value: ValueType)
+  case Delivered(duration: Long, value: ValueType)
   case Failed(error: Throwable)
 
 import Completion.*
@@ -42,7 +42,7 @@ trait Probate:
 class Hook(private val thread: Thread):
   def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
 
-object Async:
+object Hook:
   def onShutdown(block: => Unit): Hook =
     val runnable: Runnable = () => block
     val thread: Thread = Thread(runnable)
@@ -67,24 +67,24 @@ package asyncOptions:
   given ignoreExceptions: Mitigator = (path, error) => Mitigation.Suppress
     
 
-def daemon(using Codepoint)(evaluate: Submonitor[Unit] ?=> Unit)
+def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)
     (using Monitor, Probate, Mitigator)
-        : Async[Unit] =
+        : Task[Unit] =
 
-  Async[Unit](evaluate(using _), daemon = true, name = Unset)
+  Task[Unit](evaluate(using _), daemon = true, name = Unset)
 
-def async[ResultType](using Codepoint)(evaluate: Submonitor[ResultType] ?=> ResultType)
+def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)
     (using Monitor, Probate, Mitigator)
-        : Async[ResultType] =
+        : Task[ResultType] =
 
-  Async(evaluate(using _), daemon = false, name = Unset)
+  Task(evaluate(using _), daemon = false, name = Unset)
 
 def task[ResultType](using Codepoint)(name: into Text)
-    (evaluate: Submonitor[ResultType] ?=> ResultType)
+    (evaluate: Subordinate ?=> ResultType)
     (using Monitor, Probate, Mitigator)
-        : Async[ResultType] =
+        : Task[ResultType] =
   
-  Async(evaluate(using _), daemon = false, name = name)
+  Task(evaluate(using _), daemon = false, name = name)
 
 enum Mitigation:
   case Suppress, Escalate, Cancel
@@ -92,58 +92,33 @@ enum Mitigation:
 trait Mitigator:
   def mitigate(monitor: Monitor, error: Throwable): Mitigation
 
-@capability
-class Async[+ResultType]
-    (evaluate: Submonitor[ResultType] => ResultType, daemon: Boolean, name: Optional[Text])
-    (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator):
-  
-  private val submonitor: Submonitor[ResultType] =
-    monitor.child(name, daemon, codepoint, mitigator, evaluate, probate)
-  
-  def onComplete(callback: => Unit): Unit = submonitor.promise.onComplete(callback)
-  
-  submonitor.thread
-
-  private[parasite] def get(): ResultType raises ConcurrencyError = submonitor.promise.get()
-
-  def state(): Completion[ResultType] = submonitor.state()
-  def ready: Boolean = submonitor.promise.ready
-
-  def await[DurationType: GenericDuration](duration: DurationType)(using Raises[ConcurrencyError])
-          : ResultType =
+object Task:
+  def apply[ResultType]
+      (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator)
+          : Task[ResultType] =
     
-    submonitor.await(duration)
-
-  def await()(using cancel: Raises[ConcurrencyError]): ResultType =
-    submonitor.await()
-
-  def suspend(): Unit = submonitor.suspend()
-
-  def resume(force: Boolean = false): Unit = submonitor.resume(force)
-
-  def map[ResultType2](lambda: ResultType => ResultType2)
-          : Async[ResultType2] raises ConcurrencyError =
-
-    async(lambda(await()))
+    monitor.subordinate(name, daemon, codepoint, mitigator, probate)(evaluate)
+    
+trait Task[+ResultType]:
+  def ready: Boolean
+  def await(): ResultType raises ConcurrencyError
+  def suspend(): Unit
+  def resume(force: Boolean = false): Unit
+  def cancel(): Unit
   
-  def foreach[ResultType2](lambda: ResultType => ResultType2): Unit raises ConcurrencyError =
-    async(lambda(await()))
+  def await[DurationType: GenericDuration](duration: DurationType)
+          : ResultType raises ConcurrencyError
   
-  def each[ResultType2](lambda: ResultType => ResultType2): Unit raises ConcurrencyError =
-    async(lambda(await()))
+  def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])
+      (using Monitor, Probate, Mitigator)
+          : Task[ResultType2] raises ConcurrencyError
   
-  def flatMap[ResultType2](lambda: ResultType => Async[ResultType2])
-          : Async[ResultType2] raises ConcurrencyError =
+  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate, Mitigator)
+          : Task[ResultType2] raises ConcurrencyError
 
-    async(lambda(await()).await())
-  
-  def cancel(): Unit = submonitor.cancel()
-
-def relent[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.relent()
-def cancel[ResultType]()(using monitor: Submonitor[ResultType]): Unit = monitor.cancel()
-
-// def complete[ResultType](value: ResultType)(using monitor: Submonitor[ResultType]): Nothing =
-//   monitor.complete(value)
+def relent[ResultType]()(using monitor: Subordinate): Unit = monitor.relent()
+def cancel[ResultType]()(using monitor: Monitor): Unit = monitor.cancel()
 
 def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: Monitor): Unit =
   monitor.sleep(duration.milliseconds)
@@ -151,29 +126,13 @@ def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: 
 def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor: Monitor): Unit =
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
-extension [ResultType](asyncs: Seq[Async[ResultType]])
-  def sequence(using Monitor, Probate, Mitigator)
-          : Async[Seq[ResultType]] raises ConcurrencyError =
-    val count = asyncs.length
-    val latch = juc.CountDownLatch(count)
-    asyncs.each(_.onComplete(latch.countDown()))
-    
-    async:
-      latch.await()
-      asyncs.map(_.get())
+extension [ResultType](tasks: Seq[Task[ResultType]])
+  def sequence(using Monitor, Probate, Mitigator): Task[Seq[ResultType]] raises ConcurrencyError =
+    async(tasks.map(_.await()))
 
-
-extension [ResultType](asyncs: IndexedSeq[Async[ResultType]])
-  def race(using Monitor, Probate, Mitigator): Async[ResultType] raises ConcurrencyError =
-    async[Int]:
-      val promise: Promise[Int] = Promise()
-      
-      asyncs.zipWithIndex.foreach: (async, index) =>
-        async.each: result =>
-          promise.offer(index)
-      
-      promise.await()
+extension [ResultType](tasks: Iterable[Task[ResultType]])
+  def race()(using Monitor, Probate, Mitigator): ResultType raises ConcurrencyError =
+    val promise: Promise[ResultType] = Promise()
+    tasks.each(_.map(promise.offer(_)))
     
-    .flatMap:
-      case -1 => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
-      case n  => asyncs(n)
+    promise.await()
