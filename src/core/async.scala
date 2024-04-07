@@ -27,7 +27,7 @@ import java.util.concurrent as juc
 import language.experimental.pureFunctions
 
 enum Completion[+ValueType]:
-  case Initializing
+  case Initializing, Cancelled
   case Active(startTime: Long)
   case Suspended(startTame: Long, count: Int)
   case Completed(duration: Long, value: ValueType)
@@ -37,7 +37,7 @@ enum Completion[+ValueType]:
 import Completion.*
 
 trait Probate:
-  def cleanup(monitor: Monitor): Unit
+  def cleanup(subordinate: Subordinate): Unit
 
 class Hook(private val thread: Thread):
   def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
