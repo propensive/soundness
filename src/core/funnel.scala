@@ -35,3 +35,9 @@ class Funnel[ItemType]():
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
+
+def funnel[ItemType](using DummyImplicit)[ResultType](lambda: Funnel[ItemType] => ResultType)
+        : ResultType =
+
+  val funnel: Funnel[ItemType] = Funnel()
+  try lambda(funnel) finally funnel.stop()

@@ -80,6 +80,7 @@ object Out:
 
 object In:
   def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
+  def close()(using stdio: Stdio): Unit = stdio.in.close()
 
 object Stdio:
   def apply
@@ -122,7 +123,7 @@ trait Stdio extends Io:
   val err: ji.PrintStream
   val in: ji.InputStream
 
-  protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in, "UTF-8")
+  protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in)
   
   def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)

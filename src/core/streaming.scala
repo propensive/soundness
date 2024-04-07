@@ -173,7 +173,7 @@ object Readable:
 
   given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
-    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](4096)).nn
+    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
     def recur(): LazyList[Bytes] =
       try channel.read(buf) match
@@ -182,7 +182,7 @@ object Readable:
         
         case count =>
           buf.flip()
-          val size: Int = count.min(4096)
+          val size: Int = count.min(1024)
           val array: Array[Byte] = new Array[Byte](size)
           buf.get(array)
           buf.clear()
@@ -195,7 +195,7 @@ object Readable:
 
   given inputStream(using streamCut: Raises[StreamError]): Readable[ji.InputStream, Bytes] = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
-    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](4096)).nn
+    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
     def recur(total: Long): LazyList[Bytes] =
       try channel.read(buf) match
@@ -204,7 +204,7 @@ object Readable:
         
         case count =>
           buf.flip()
-          val size: Int = count.min(4096)
+          val size: Int = count.min(1024)
           val array: Array[Byte] = new Array[Byte](size)
           buf.get(array)
           buf.clear()
