@@ -42,7 +42,7 @@ trait Executive:
        environment:      Environment,
        workingDirectory: WorkingDirectory,
        stdio:            Stdio,
-       signals:          LazyList[Signal])
+       signals:          Funnel[Signal])
       (using interpreter: CliInterpreter)
           : CliType
   
@@ -98,7 +98,7 @@ package executives:
          environment:      Environment,
          workingDirectory: WorkingDirectory,
          stdio:            Stdio,
-         signals:          LazyList[Signal])
+         signals:          Funnel[Signal])
         (using interpreter: CliInterpreter)
             : CliInvocation =
       
@@ -112,13 +112,11 @@ def application(using executive: Executive, interpreter: CliInterpreter)
     (block: Cli ?=> executive.Return)
         : Unit =
   
-  def listen: LazyList[Signal] = 
-    val funnel: Funnel[Signal] = Funnel()
-    signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
-    funnel.stream
+  val funnel: Funnel[Signal] = Funnel()
+  signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
   
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
-  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, listen)
+  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, funnel)
   
   System.exit(executive.process(cli)(block)())
 
@@ -127,7 +125,7 @@ case class CliInvocation
      environment:      Environment,
      workingDirectory: WorkingDirectory,
      stdio:            Stdio,
-     signals:          LazyList[Signal])
+     signals:          Funnel[Signal])
     (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 

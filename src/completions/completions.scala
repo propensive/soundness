@@ -48,7 +48,7 @@ case class CliCompletion
      currentArgument:  Int,
      focusPosition:    Int,
      stdio:            Stdio,
-     signals:          LazyList[Signal])
+     signals:          Funnel[Signal])
     (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
@@ -176,7 +176,7 @@ package executives:
          environment:      Environment,
          workingDirectory: WorkingDirectory,
          stdio:            Stdio,
-         signals:          LazyList[Signal])
+         signals:          Funnel[Signal])
         (using interpreter: CliInterpreter)
             : Cli =
       arguments match
