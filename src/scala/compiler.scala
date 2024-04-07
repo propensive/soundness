@@ -134,7 +134,7 @@ case class Scalac[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](options: Li
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor, OrphanCompletion, Mitigator)
+      (using SystemProperties, Log[Text], Monitor, Probate, Mitigator)
           : CompileProcess raises CompileError =
     
     val scalacProcess: CompileProcess = CompileProcess()
@@ -184,19 +184,19 @@ case class Scalac[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](options: Li
         
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
-          
-        async:
-          try
-            Scalac.compiler().newRun.tap: run =>
-              run.compileSources(sourceFiles)
-              if !reporter.hasErrors then finish(Scalac.Scala3, run)
-              
-              scalacProcess.put:
-                if reporter.hasErrors then CompileResult.Failure else CompileResult.Success
-            .unit
-          catch case suc.NonFatal(error) =>
-            Scalac.refresh()
-            CompileResult.Crash(error.stackTrace)
+        
+        scalacProcess.put:
+          task(t"scalac"):
+            try
+              Scalac.compiler().newRun.tap: run =>
+                run.compileSources(sourceFiles)
+                if !reporter.hasErrors then finish(Scalac.Scala3, run)
+                
+              scalacProcess.put(if reporter.hasErrors then CompileResult.Failure else CompileResult.Success)
+
+            catch case suc.NonFatal(error) =>
+              scalacProcess.put(CompileResult.Crash(error.stackTrace))
+              Scalac.refresh()
   
         scalacProcess
       

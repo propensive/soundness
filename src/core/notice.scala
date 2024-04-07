@@ -56,7 +56,7 @@ class CompileProcess():
   private val completion: Promise[CompileResult] = Promise()
   private val noticesFunnel: Funnel[Notice] = Funnel()
   private val progressFunnel: Funnel[CompileProgress] = Funnel()
-  private var compilation: Optional[Async[?]] = Unset
+  private var compilation: Optional[Task[Unit]] = Unset
   private var errorCount: Int = 0
   private var warningCount: Int = 0
 
@@ -70,13 +70,13 @@ class CompileProcess():
 
   def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
   def put(result: CompileResult): Unit = completion.offer(result)
-  def put(task: Async[?]): Unit = compilation = task
+  def put(task: Task[Unit]): Unit = compilation = task
 
   def complete()(using Monitor, Mitigator, Log[Text]): CompileResult raises ConcurrencyError =
-    completion.await().also:
-      compilation.let(_.await())
-      noticesFunnel.stop()
-      progressFunnel.stop()
+    try completion.await() finally
+      safely(compilation.let(_.await()))
+      safely(noticesFunnel.stop())
+      safely(progressFunnel.stop())
   
   def abort(): Unit = continue = false
   def cancelled: Boolean = !continue
