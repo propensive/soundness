@@ -292,7 +292,7 @@ trait SocketService:
   def stop(): Unit
 
 extension [SocketType](socket: SocketType)
-  def listen[InputType](using bindable: Bindable[SocketType], monitor: Monitor)[ResultType]
+  def listen[InputType](using bindable: Bindable[SocketType])(using Monitor, Probate, Mitigator)[ResultType]
       (lambda: bindable.Input => bindable.Output)
           : SocketService raises BindError =
 
