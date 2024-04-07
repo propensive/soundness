@@ -90,9 +90,9 @@ object Stdio:
        termcap: Termcap)
           : Stdio =
 
-    val safeOut: ji.PrintStream = if out == null then MutePrintStream else out
-    val safeErr: ji.PrintStream = if err == null then MutePrintStream else err
-    val safeIn: ji.InputStream = if in == null then MuteInputStream else in
+    val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
+    val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
+    val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
     val termcap2: Termcap = termcap
   
     new Stdio:
