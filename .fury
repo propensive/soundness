@@ -16,6 +16,7 @@ default compile
 project hieroglyph
   name         Hieroglyph
   website      https://github.com/propensive/hieroglyph
+  license      apache-2
   description  Tools for working with characters in Scala
 
   module core
