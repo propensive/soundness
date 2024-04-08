@@ -16,6 +16,7 @@ default compile
 project profanity
   name         Profanity
   website      https://github.com/propensive/profanity
+  license      apache-2
   description  A library for realtime interactive terminal software
 
   module core
