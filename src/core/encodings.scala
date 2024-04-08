@@ -55,11 +55,11 @@ object Encoding:
   def apply(name: Text, canEncode: Boolean): Encoding { type CanEncode = canEncode.type } =
     new Encoding(name) { type CanEncode = canEncode.type }
 
-class Encoding(initName: Text):
+class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
   type CanEncode <: Boolean
   def decoder(using BadEncodingHandler): CharDecoder = CharDecoder(this)
-  lazy val charset: jnc.Charset = jnc.Charset.forName(initName.s).nn
+  lazy val charset: jnc.Charset = jnc.Charset.forName(name0.s).nn
 
   override def toString: String = s"enc\"${charset.displayName}\""
 
