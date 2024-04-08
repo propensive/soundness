@@ -17,6 +17,7 @@ default compile
 project anthology
   name         Anthology
   website      https://github.com/propensive/anthology
+  license      apache-2
   description  A typesafe interface to the Scala compiler
 
   module core
