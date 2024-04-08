@@ -16,6 +16,7 @@ default compile
 project phoenicia
   name         Phoenicia
   website      https://github.com/propensive/phoenicia
+  license      apache-2
   description  Read TrueType and OpenType fonts in Scala
 
   module core
