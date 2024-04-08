@@ -16,6 +16,7 @@ default compile
 project aviation
   name         Aviation
   website      https://github.com/propensive/aviation
+  license      apache-2
   description  Representations of time, in its various forms
 
   module core
