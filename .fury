@@ -13,6 +13,7 @@ ecosystem vent 5 https://github.com/propensive/vent 191d64e599f246813910978251e1
 project anticipation
   name         Anticipation
   website      https://github.com/propensive/anticipation
+  license      apache-2
   description  Minimalistic typeclass interfaces foreseen for downstream needs
 
   module text
