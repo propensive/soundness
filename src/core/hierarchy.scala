@@ -89,7 +89,7 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label](left
              Directional[PathType, NameType, RootType],
              SpecificPath[PathType],
              PathCreator[PathType, NameType, RootType],
-             Raises[PathError])
+             Errant[PathError])
           : PathType =
     workingDirectory + left
 
@@ -103,7 +103,7 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, Root
       (using Directional[PathType, NameType, RootType],
              PathCreator[PathType, NameType, RootType],
              Followable[LinkType, NameType, ?, ?],
-             Raises[PathError])
+             Errant[PathError])
           : PathType =
 
     left.append(link)
@@ -188,7 +188,7 @@ object Navigable:
       (using navigable:  Navigable[PathType, NameType, RootType],
              rootParser: RootParser[PathType, RootType],
              creator:    PathCreator[PathType, NameType, RootType])
-      (using path: Raises[PathError])
+      (using path: Errant[PathError])
       : PathType =
     val rootRest: Optional[(RootType, Text)] = rootParser.parse(text)
     if rootRest.absent
@@ -241,7 +241,7 @@ object Followable:
 
         creator.path(ascent2, descent2)
 
-  inline def decoder[LinkType <: Matchable](using path: Raises[PathError])
+  inline def decoder[LinkType <: Matchable](using path: Errant[PathError])
       [NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
       (using followable: Followable[LinkType, NameType, ParentRefType, SelfRefType],
              creator: PathCreator[LinkType, NameType, Int])
@@ -315,7 +315,7 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
 
   // FIXME: This should be called `/`, but it causes a spurious compiler error. 
   @targetName("child2")
-  inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Raises[PathError]): PathType =
+  inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Errant[PathError]): PathType =
     directional.child(path, PathName(name))
   
   def render: Text = directional.render(path)
@@ -326,7 +326,7 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
   transparent inline def ancestor(n: Int): Optional[PathType] = directional.ancestor(path, n)
   
   inline def append[LinkType <: Matchable](inline link: LinkType)
-      (using followable: Followable[LinkType, NameType, ?, ?], pathHandler: Raises[PathError])
+      (using followable: Followable[LinkType, NameType, ?, ?], pathHandler: Errant[PathError])
           : PathType =
 
     if followable.ascent(link) > directional.descent(path).length

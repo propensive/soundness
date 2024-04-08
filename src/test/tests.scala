@@ -32,10 +32,10 @@ object Example:
   type Forbidden = ".*abc" | ".*\\\\.*" | ".*/.*" | "lpt1.*" | ".* "
   
   object TestPath:
-    given (using Raises[PathError]): Decoder[TestPath] = Navigable.decode[TestPath](_)
+    given (using Errant[PathError]): Decoder[TestPath] = Navigable.decode[TestPath](_)
     given pathCreator: PathCreator[TestPath, Forbidden, Drive] = TestPath(_, _)
     given Show[TestPath] = _.render
-    def parse(text: Text)(using Raises[PathError]): TestPath = text.decodeAs[TestPath]
+    def parse(text: Text)(using Errant[PathError]): TestPath = text.decodeAs[TestPath]
 
     given rootParser: RootParser[TestPath, Drive] with
       def parse(text: Text): Optional[(Drive, Text)] = text.only:
@@ -50,12 +50,12 @@ object Example:
   case class TestPath(root: Drive, descent: List[PathName[Forbidden]])
 
   object TestLink:
-    inline given (using Raises[PathError]): Decoder[TestLink] = Followable.decoder[TestLink]
+    inline given (using Errant[PathError]): Decoder[TestLink] = Followable.decoder[TestLink]
     given linkCreator: PathCreator[TestLink, Forbidden, Int] = TestLink(_, _)
     inline given add: AddOperator[TestLink, TestLink] = Followable.add[TestLink, Forbidden]
 
     given Show[TestLink] = _.render
-    def parse(text: Text)(using Raises[PathError]): TestLink = text.decodeAs[TestLink]
+    def parse(text: Text)(using Errant[PathError]): TestLink = text.decodeAs[TestLink]
 
     given pathlike: Followable[TestLink, Forbidden, "..", "."] with
       def separator(path: TestLink): Text = t"\\"
