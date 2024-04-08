@@ -17,6 +17,7 @@ default compile
 project embarcadero
   name         Embarcadero
   website      https://github.com/propensive/embarcadero
+  license      apache-2
   description  Control Docker from Scala
 
   module core
