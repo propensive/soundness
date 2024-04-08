@@ -61,7 +61,7 @@ object Handler extends FallbackHandler:
 
 
   given bytes[ResponseType]
-      (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Raises[MediaTypeError])
+      (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Errant[MediaTypeError])
           : SimpleHandler[ResponseType] =
 
     SimpleHandler(Media.parse(responseStream.mediaType.show),
