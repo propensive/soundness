@@ -16,6 +16,7 @@ default compile
 project eucalyptus
   name         Eucalyptus
   website      https://github.com/propensive/eucalyptus
+  license      apache-2
   description  Versatile logging
 
   module core
