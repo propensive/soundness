@@ -16,6 +16,7 @@ default compile
 project inimitable
   name         Inimitable
   website      https://github.com/propensive/inimitable
+  license      apache-2
   description  Representations of UUIDs in Scala
 
   module core
