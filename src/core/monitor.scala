@@ -183,7 +183,7 @@ extends Monitor:
             Active(System.currentTimeMillis)
           
           case other =>
-            throw InterruptedException()
+            boundary.break()
 
         evaluate(this).tap: result =>
           state.replace:
