@@ -17,6 +17,7 @@ default compile
 project gossamer
   name         Gossamer
   website      https://github.com/propensive/gossamer
+  license      apache-2
   description  Lightweight string utilities
 
   module core
