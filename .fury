@@ -16,6 +16,7 @@ default compile
 project acyclicity
   name         Acyclicity
   website      https://github.com/propensive/acyclicity
+  license      apache-2
   description  Monadic directed acyclic graph datastructures
 
   module core
