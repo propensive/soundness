@@ -16,6 +16,7 @@ default compile
 project imperial
   name         Imperial
   website      https://github.com/propensive/imperial
+  license      apache-2
   description  Access the operating system's standard directory structure
 
   module core
