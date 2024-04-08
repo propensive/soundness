@@ -16,6 +16,7 @@ default compile
 project ambience
   name         Ambience
   website      https://github.com/propensive/ambience
+  license      apache-2
   description  Safely access environment variables and system properties
 
   module core
