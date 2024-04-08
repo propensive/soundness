@@ -96,7 +96,7 @@ object Rudiments:
       
       case idx =>
         val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        fail(msg"${nibbles(idx)} is not a valid hexadecimal character")
+        fail(msg"${nibbles(idx)} is not a valid hexadecimal character", pos)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 
