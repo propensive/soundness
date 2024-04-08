@@ -36,7 +36,7 @@ trait InsufficientSpaceHandler:
   def apply(minimumWidth: Int, availableWidth: Int): Unit
 
 package insufficientSpaceHandling:
-  given fail(using Raises[TableError]): InsufficientSpaceHandler =
+  given fail(using Errant[TableError]): InsufficientSpaceHandler =
     (minimum, available) => raise(TableError(minimum, available))(())
   
   given ignore: InsufficientSpaceHandler = (minimum, available) => ()
