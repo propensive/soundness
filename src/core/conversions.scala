@@ -144,7 +144,7 @@ case class Srgb(red: Double, green: Double, blue: Double):
   
   def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def srgb: Srgb = this
-  def highContrast: Srgb = if hsl.lightness >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
+  def highContrast(using ColorProfile): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
 
   def xyz(using ColorProfile): Xyz =
     def limit(v: Double): Double = if v > 0.04045 then ((v + 0.055)/1.055)**2.4 else v/12.92
