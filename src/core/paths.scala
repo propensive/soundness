@@ -211,8 +211,8 @@ object Windows:
     def name: Text = if descent.isEmpty then drive.name else descent.head.show
     def fullname: Text = t"${Path.navigable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
 
-  class SafePath(initDrive: Drive, val safeDescent: List[PathName[GeneralForbidden]])
-  extends Path(initDrive, safeDescent.map(_.widen[Forbidden]))
+  class SafePath(drive0: Drive, val safeDescent: List[PathName[GeneralForbidden]])
+  extends Path(drive0, safeDescent.map(_.widen[Forbidden]))
   
   object Link: 
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
