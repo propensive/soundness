@@ -16,6 +16,7 @@ default compile
 project harlequin
   name         Harlequin
   website      https://github.com/propensive/harlequin
+  license      apache-2
   description  Syntax highlighting for Scala code
 
   module core
