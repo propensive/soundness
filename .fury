@@ -16,6 +16,7 @@ default compile
 project honeycomb
   name         Honeycomb
   website      https://github.com/propensive/honeycomb
+  license      apache-2
   description  Perfectly-nested HTML
 
   module core
