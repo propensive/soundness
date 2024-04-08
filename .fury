@@ -16,6 +16,7 @@ default compile
 project contingency
   name         Contingency
   website      https://github.com/propensive/contingency
+  license      apache-2
   description  Advanced error-handling in Scala
 
   module core
