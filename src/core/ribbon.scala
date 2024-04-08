@@ -31,8 +31,6 @@ case class Ribbon(colors: Bg*):
     import escapes.*
     IArray.from(colors.zip(parts)).curse:
       val (background, text) = cursor
-      val bg = background.color
-      
       val arrow = postcursor.lay(e"$Reset${background.fg}()"): (color, _) =>
         e"${background.fg}($color())"
       
