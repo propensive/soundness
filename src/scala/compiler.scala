@@ -38,14 +38,14 @@ import scala.util.control as suc
 
 import language.adhocExtensions
 
-case class ScalacOption[-CompilerType <: Scalac.All](flags: Text*)
+case class ScalacOption[-VersionType <: Scalac.All](flags: Text*)
 
-enum Unused[CompilerType]:
+enum Unused[VersionType]:
   case All extends Unused[3.1 | 3.2 | 3.3]
   case None extends Unused[3.1 | 3.2 | 3.3]
-  case Subset[CompilerType <: 3.3](features: List[UnusedFeature[CompilerType]]) extends Unused[CompilerType]
+  case Subset[VersionType <: 3.3](features: List[UnusedFeature[VersionType]]) extends Unused[VersionType]
 
-enum UnusedFeature[CompilerType](val name: Text):
+enum UnusedFeature[VersionType](val name: Text):
   case Imports(strict: Boolean) extends UnusedFeature[3.3](t"imports")
   case Privates extends UnusedFeature[3.3 | 3.4](t"privates")
   case Locals extends UnusedFeature[3.3 | 3.4](t"locals")
@@ -68,13 +68,13 @@ package scalacOptions:
     val nonUnitStatement = ScalacOption[3.4](t"-Wnonunit-statement")
     val valueDiscard = ScalacOption[3.4](t"-Wvalue-discard")
     
-    def unused[CompilerType <: Scalac.All](selection: Unused[CompilerType]) =
+    def unused[VersionType <: Scalac.All](selection: Unused[VersionType]) =
       val option = (selection: @unchecked) match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
         case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
 
-      ScalacOption[CompilerType](option)
+      ScalacOption[VersionType](option)
 
     package lint:
       val privateShadow = ScalacOption[3.4](t"-Wshadow:private-shadow")
@@ -126,7 +126,7 @@ extension (companion: Notice.type)
       Notice(importance, file, message, Unset)
     .nn
     
-case class Scalac[CompilerType <: Scalac.All](options: List[ScalacOption[CompilerType]]):
+case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionType]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
