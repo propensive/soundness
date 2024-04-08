@@ -261,7 +261,7 @@ trait ByteEncoder[SchemeType <: EncodingScheme]:
   def encode(bytes: Bytes): Text
 
 object ByteDecoder:
-  given (using Raises[DecodeError]): ByteDecoder[Base64] = value =>
+  given (using Errant[DecodeError]): ByteDecoder[Base64] = value =>
     try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
     catch case _: IllegalArgumentException => abort(DecodeError(t"an invalid BASE-64 character found"))
   

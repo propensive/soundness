@@ -87,13 +87,13 @@ case class PrivateKey[AlgorithmType <: CryptoAlgorithm[?]](private[gastronomy] v
     PublicKey(summon[AlgorithmType].privateToPublic(privateBytes))
   
   inline def decrypt[ValueType: ByteCodec](message: MessageData[AlgorithmType])
-      (using AlgorithmType & Encryption, Raises[DecodeError])
+      (using AlgorithmType & Encryption, Errant[DecodeError])
           : ValueType =
 
     decrypt(message.bytes)
   
   inline def decrypt[ValueType: ByteCodec](bytes: Bytes)
-      (using AlgorithmType & Encryption, Raises[DecodeError])
+      (using AlgorithmType & Encryption, Errant[DecodeError])
           : ValueType =
 
     summon[ByteCodec[ValueType]].decode(summon[AlgorithmType].decrypt(bytes, privateBytes))
@@ -129,17 +129,17 @@ case class DecodeError(detail: Text) extends Error(msg"could not decode the encr
 
 trait ByteCodec[ValueType]:
   def encode(value: ValueType): Bytes
-  def decode(bytes: Bytes)(using Raises[DecodeError]): ValueType
+  def decode(bytes: Bytes)(using Errant[DecodeError]): ValueType
 
 object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes)(using Raises[DecodeError]): Bytes = bytes
+    def decode(bytes: Bytes)(using Errant[DecodeError]): Bytes = bytes
    
   given (using CharDecoder, CharEncoder): ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
 
-    def decode(bytes: Bytes)(using Raises[DecodeError]): Text =
+    def decode(bytes: Bytes)(using Errant[DecodeError]): Text =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
       
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
