@@ -108,7 +108,7 @@ object Media:
       
       parsed
 
-  def parse(string: Text)(using Raises[MediaTypeError]): MediaType =
+  def parse(string: Text)(using Errant[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
       then raise(MediaTypeError(string, MediaTypeError.Nature.MissingParam))(())
