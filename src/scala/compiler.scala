@@ -38,11 +38,7 @@ import scala.util.control as suc
 
 import language.adhocExtensions
 
-// Using a type alias does not seem to work (even though it worked previously). The type has been inlined below
-// as a workaround.
-type ScalacVersions = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
-
-case class ScalacOption[-CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](flags: Text*)
+case class ScalacOption[-CompilerType <: Scalac.All](flags: Text*)
 
 enum Unused[CompilerType]:
   case All extends Unused[3.1 | 3.2 | 3.3]
@@ -59,20 +55,20 @@ enum UnusedFeature[CompilerType](val name: Text):
   case Linted extends UnusedFeature[3.3 | 3.4](t"linted")
 
 package scalacOptions:
-  val newSyntax = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-new-syntax")
-  def sourceFuture = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-source", t"future")
+  val newSyntax = ScalacOption[Scalac.All](t"-new-syntax")
+  def sourceFuture = ScalacOption[Scalac.All](t"-source", t"future")
   val experimental = ScalacOption[3.4](t"-experimental")
 
   package warnings:
-    val feature = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-feature")
-    val deprecation = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-deprecation")
+    val feature = ScalacOption[Scalac.All](t"-feature")
+    val deprecation = ScalacOption[Scalac.All](t"-deprecation")
     val implausiblePatterns = ScalacOption[3.3 | 3.4](t"-Wimplausible-patterns")
     val enumCommentDiscard = ScalacOption[3.4](t"-Wenum-comment-discard")
     val unstableInlineAccessors = ScalacOption[3.4](t"-WunstableInlineAccessors")
     val nonUnitStatement = ScalacOption[3.4](t"-Wnonunit-statement")
     val valueDiscard = ScalacOption[3.4](t"-Wvalue-discard")
     
-    def unused[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](selection: Unused[CompilerType]) =
+    def unused[CompilerType <: Scalac.All](selection: Unused[CompilerType]) =
       val option = (selection: @unchecked) match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
@@ -85,14 +81,14 @@ package scalacOptions:
       val typeParameterShadow = ScalacOption[3.4](t"-Wshadow:type-parameter-shadow")
 
   package internal:
-    val requireTargetName = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Yrequire-targetName")
-    val safeInit = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Ysafe-init")
-    val explicitNulls = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Yexplicit-nulls")
-    val checkPatterns = ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-Ycheck-all-patmat")
+    val requireTargetName = ScalacOption[Scalac.All](t"-Yrequire-targetName")
+    val safeInit = ScalacOption[Scalac.All](t"-Ysafe-init")
+    val explicitNulls = ScalacOption[Scalac.All](t"-Yexplicit-nulls")
+    val checkPatterns = ScalacOption[Scalac.All](t"-Ycheck-all-patmat")
     val ccNew = ScalacOption[3.4](t"-Ycc-new")
 
   package advanced:
-    def maxInlines(n: Int): ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5] = ScalacOption(t"-Xmax-inlines", n.show)
+    def maxInlines(n: Int): ScalacOption[Scalac.All] = ScalacOption(t"-Xmax-inlines", n.show)
   package language:
     package experimental:
       val clauseInterleaving =      ScalacOption[3.3 | 3.4](t"-language:experimental.clauseInterleaving")
@@ -100,14 +96,15 @@ package scalacOptions:
       val fewerBraces =             ScalacOption[3.1 | 3.2 | 3.3 | 3.4](t"-language:experimental.fewerBraces")
       val into =                    ScalacOption[3.4](t"-language:experimental.into")
       val relaxedExtensionImports = ScalacOption[3.3](t"-language:experimental.relaxedExtensionImports")
-      val erasedDefinitions =       ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.erasedDefinitions")
-      val genericNumberLiterals =   ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.genericNumberLiterals")
+      val erasedDefinitions =       ScalacOption[Scalac.All](t"-language:experimental.erasedDefinitions")
+      val genericNumberLiterals =   ScalacOption[Scalac.All](t"-language:experimental.genericNumberLiterals")
       val saferExceptions =         ScalacOption[3.2 | 3.3 | 3.4](t"-language:experimental.saferExceptions")
-      val namedTypeArguments =      ScalacOption[3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](t"-language:experimental.namedTypeArguments")
+      val namedTypeArguments =      ScalacOption[Scalac.All](t"-language:experimental.namedTypeArguments")
       val pureFunctions =           ScalacOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
       val captureChecking =         ScalacOption[3.3 | 3.4](t"-language:experimental.captureChecking")
 
 object Scalac:
+  type All = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
   private var Scala3: dtd.Compiler = new dtd.Compiler()
   def refresh(): Unit = Scala3 = new dtd.Compiler()
   def compiler(): dtd.Compiler = Scala3
@@ -129,7 +126,7 @@ extension (companion: Notice.type)
       Notice(importance, file, message, Unset)
     .nn
     
-case class Scalac[CompilerType <: 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5](options: List[ScalacOption[CompilerType]]):
+case class Scalac[CompilerType <: Scalac.All](options: List[ScalacOption[CompilerType]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
@@ -226,3 +223,4 @@ enum LanguageFeatures:
 
 enum JavaVersion:
   case Jdk(version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22)
+  case Jre(version: 8 | 9 | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | 19 | 20 | 21 | 22)
