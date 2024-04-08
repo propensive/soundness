@@ -16,6 +16,7 @@ default compile
 project nettlesome
   name         Nettlesome
   website      https://github.com/propensive/nettlesome
+  license      apache-2
   description  Typesafe representations of network concepts
 
   module core
