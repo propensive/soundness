@@ -16,6 +16,7 @@ default compile
 project iridescence
   name         Iridescence
   website      https://github.com/propensive/iridescence
+  license      apache-2
   description  Sophisticated representation of color
 
   module core
