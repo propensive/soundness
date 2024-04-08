@@ -60,7 +60,7 @@ package asyncOptions:
   given waitForOrphans: Probate = _.delegate(_.attend())
   given cancelOrphans: Probate = _.delegate(_.cancel())
   
-  given failIfOrphansExist(using Raises[ConcurrencyError]): Probate = _.delegate: child =>
+  given failIfOrphansExist(using Errant[ConcurrencyError]): Probate = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
 
   given escalateExceptions: Mitigator = (path, error) => Mitigation.Escalate

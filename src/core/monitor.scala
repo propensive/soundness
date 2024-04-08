@@ -139,7 +139,7 @@ extends Monitor:
     if state2 == Cancelled then thread.join()
       
   
-  def result()(using cancel: Raises[ConcurrencyError]): Result =
+  def result()(using cancel: Errant[ConcurrencyError]): Result =
     state.replace:
       case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
       case Active(_)                   => abort(ConcurrencyError(Reason.Incomplete))
