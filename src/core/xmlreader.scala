@@ -27,7 +27,7 @@ trait XmlDecoder[ValueType]:
   def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
-  given text(using Raises[XmlReadError]): XmlDecoder[Text] = list =>
+  given text(using Errant[XmlReadError]): XmlDecoder[Text] = list =>
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
     if elements.length == 0 then raise(XmlReadError())("".tt) else elements.head
   
