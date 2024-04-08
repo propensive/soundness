@@ -16,6 +16,7 @@ default compile
 project hallucination
   name         Hallucination
   website      https://github.com/propensive/hallucination
+  license      apache-2
   description  A library for working with images in Scala
 
   module core
