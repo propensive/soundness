@@ -16,6 +16,7 @@ default compile
 project bitumen
   name         Bitumen
   website      https://github.com/propensive/bitumen
+  license      apache-2
   description  Reading and writing of Tape ARchives
 
   module core
