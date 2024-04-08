@@ -16,6 +16,7 @@ default compile
 project cataclysm
   name         Cataclysm
   website      https://github.com/propensive/cataclysm
+  license      apache-2
   description  Typesafe CSS in Scala
 
   module core
