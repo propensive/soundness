@@ -16,6 +16,7 @@ default compile
 project quantitative
   name         Quantitative
   website      https://github.com/propensive/quantitative
+  license      apache-2
   description  Statically-checked physical units with seamless syntax
 
   module core
