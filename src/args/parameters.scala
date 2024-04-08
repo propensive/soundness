@@ -42,10 +42,9 @@ extends FlagParameters:
     
     cli.register(flag, suggestions)
 
-    parameters.find { (key, value) => flag.matches(key) }.map: (_, operands) =>
+    parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
       cli.present(flag)
       safely(interpreter.interpret(operands))
-    .getOrElse(Unset)
 
 
 object PosixCliInterpreter extends CliInterpreter:
