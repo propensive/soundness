@@ -16,6 +16,7 @@ default compile
 project guillotine
   name         Guillotine
   website      https://github.com/propensive/guillotine
+  license      apache-2
   description  A small library for executing stuff
 
   module core
