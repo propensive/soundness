@@ -21,6 +21,7 @@ default compile
 project parasite
   name         Parasite
   website      https://github.com/propensive/parasite
+  license      apache-2
   description  Safe, structured asynchronous tasks
 
   module core
