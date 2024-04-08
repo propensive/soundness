@@ -31,45 +31,45 @@ extends Error(msg"$text is not a valid ${specializable.show}")
 case class EnumCaseError(text: Text) extends Error(msg"$text is not a valid enumeration case")
 
 object Decoder:
-  given int(using number: Raises[NumberError]): Decoder[Int] = text =>
+  given int(using number: Errant[NumberError]): Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int))(0)
 
-  given fqcn(using fqcn: Raises[FqcnError]): Decoder[Fqcn] = Fqcn(_)
-  given uuid(using uuid: Raises[UuidError]): Decoder[Uuid] = Uuid.parse(_)
+  given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
+  given uuid(using uuid: Errant[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
-  given byte(using number: Raises[NumberError]): Decoder[Byte] = text =>
+  given byte(using number: Errant[NumberError]): Decoder[Byte] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Byte))(0)
     
     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte))(0.toByte)
     else int.toByte
   
-  given short(using number: Raises[NumberError]): Decoder[Short] = text =>
+  given short(using number: Errant[NumberError]): Decoder[Short] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Short))(0)
     
     if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short))(0.toShort)
     else int.toShort
   
-  given long(using number: Raises[NumberError]): Decoder[Long] = text =>
+  given long(using number: Errant[NumberError]): Decoder[Long] = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long))(0L)
 
-  given double(using number: Raises[NumberError]): Decoder[Double] = text =>
+  given double(using number: Errant[NumberError]): Decoder[Double] = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double))(0.0)
   
-  given float(using number: Raises[NumberError]): Decoder[Float] = text =>
+  given float(using number: Errant[NumberError]): Decoder[Float] = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Float))(0.0F)
 
   given char: Decoder[Char] = _.s(0)
   given text: Decoder[Text] = identity(_)
   given string: Decoder[String] = _.s
-  given pid(using number: Raises[NumberError]): Decoder[Pid] = long.map(Pid(_))
+  given pid(using number: Errant[NumberError]): Decoder[Pid] = long.map(Pid(_))
 
-  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Raises[EnumCaseError]): Decoder[EnumType] = text =>
+  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Errant[EnumCaseError]): Decoder[EnumType] = text =>
   //  Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
 @capability
