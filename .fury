@@ -16,6 +16,7 @@ default compile
 project superlunary
   name         Superlunary
   website      https://github.com/propensive/superlunary
+  license      apache-2
   description  Exploiting lightweight modular staging
 
   module core
