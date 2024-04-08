@@ -132,7 +132,7 @@ def main(): Unit =
   import Tree.*
   println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
   
-  given Raises[VariantError] = errorHandlers.throwUnsafely
+  given Errant[VariantError] = errorHandlers.throwUnsafely
 
   println(t"President:Richard Nixon,37".read[Human].present)
 
