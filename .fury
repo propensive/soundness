@@ -16,6 +16,7 @@ default compile
 project serpentine
   name         Serpentine
   website      https://github.com/propensive/serpentine
+  license      apache-2
   description  Precise navigation of paths
 
   module core
