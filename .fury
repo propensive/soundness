@@ -16,6 +16,7 @@ default compile
 project abacist
   name         Abacist
   website      https://github.com/propensive/abacist
+  license      apache-2
   description  Calculations with non-decimal units and mixed bases
 
   module core
