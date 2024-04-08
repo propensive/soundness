@@ -59,8 +59,8 @@ object Codl:
       [ValueType: CodlDecoder]
       (source: Any)
       (using readable:  Readable[source.type, Text],
-             aggregate: Raises[AggregateError[CodlError]],
-             codlRead:  Raises[CodlReadError])
+             aggregate: Errant[AggregateError[CodlError]],
+             codlRead:  Errant[CodlReadError])
         : ValueType/*^{readable, aggregate}*/ =
     
     summon[CodlDecoder[ValueType]].schema.parse(readable.read(source)).as[ValueType]
@@ -70,7 +70,7 @@ object Codl:
        schema:    CodlSchema = CodlSchema.Free,
        subs:      List[Data] = Nil,
        fromStart: Boolean    = false)
-      (using readable: Readable[SourceType, Text], aggregate: Raises[AggregateError[CodlError]])
+      (using readable: Readable[SourceType, Text], aggregate: Errant[AggregateError[CodlError]])
           : CodlDoc/*^{readable, aggregate}*/ =
     
     val (margin, stream) = tokenize(readable.read(source), fromStart)
@@ -291,7 +291,7 @@ object Codl:
     import State.*
 
     @tailrec
-    def cue(count: Int = 0)(using Raises[CodlError]): (Character, Int) =
+    def cue(count: Int = 0)(using Errant[CodlError]): (Character, Int) =
       val ch = reader.next()
       if ch.char == '\n' || ch.char == ' ' then cue(count + 1) else (ch, count)
     

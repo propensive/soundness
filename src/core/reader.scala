@@ -99,7 +99,7 @@ class PositionReader(private var in: LazyList[Text]):
     case _ =>
       lastCol += 1
   
-  def next()(using Raises[CodlError]): Character =
+  def next()(using Errant[CodlError]): Character =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
     read() match
       case -1 =>

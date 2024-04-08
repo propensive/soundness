@@ -55,7 +55,7 @@ object Bcodl:
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
       
-  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Raises[BcodlError]): CodlDoc =
+  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Errant[BcodlError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
     then abort(BcodlError(t"header 0xb1c0d1", 0))
     
