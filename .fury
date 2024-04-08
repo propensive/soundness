@@ -21,6 +21,7 @@ default compile
 project jacinta
   name         Jacinta
   website      https://github.com/propensive/jacinta
+  license      apache-2
   description  A fast JSON parser for Scala.
 
   module core
