@@ -56,7 +56,7 @@ object Executor:
   given string: Executor[String] = proc =>
     Text.construct(stream.interpret(proc).map(_.s).each(append(_))).s
 
-  given dataStream(using streamCut: Raises[StreamError]): Executor[LazyList[Bytes]] =
+  given dataStream(using streamCut: Errant[StreamError]): Executor[LazyList[Bytes]] =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
   
   given exitStatus: Executor[ExitStatus] = _.waitFor() match
@@ -87,7 +87,7 @@ trait ProcessRef:
 object OsProcess:
   private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)
   
-  def apply(pid: Pid)(using pidError: Raises[PidError]): OsProcess =
+  def apply(pid: Pid)(using pidError: Errant[PidError]): OsProcess =
     val handle = ProcessHandle.of(pid.value).nn
     if handle.isPresent then new OsProcess(handle.get.nn) else abort(PidError(pid))
 
@@ -122,7 +122,7 @@ object Process:
 
     (process, stream) => process.stdin(stream)
   
-  given appendableText(using streamCut: Raises[StreamError]): Appendable[Process[?, ?], Text]^{streamCut} =
+  given appendableText(using streamCut: Errant[StreamError]): Appendable[Process[?, ?], Text]^{streamCut} =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -151,7 +151,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     //Log.warn(t"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
 
-  def osProcess(using Raises[PidError]) = OsProcess(pid)
+  def osProcess(using Errant[PidError]) = OsProcess(pid)
   
   def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
     try
@@ -168,17 +168,17 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 sealed trait Executable:
   type Exec <: Label
 
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Errant[ExecError])
           : Process[Exec, ResultType]^{working}
   
   def exec[ResultType]()
-      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
+      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Errant[ExecError])
           : ResultType^{executor, working} =
     
     fork[ResultType]().await()
 
   def apply[ResultType]()(using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Raises[ExecError])
+      (using working: WorkingDirectory, log: Log[Text], executor: Executor[ResultType], exec: Errant[ExecError])
           : ResultType^{executor, working} =
     
     fork[ResultType]().await()
@@ -215,7 +215,7 @@ object Command:
   given Show[Command] = command => formattedArguments(command.arguments)
   
 case class Command(arguments: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Errant[ExecError])
           : Process[Exec, ResultType] =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
@@ -232,7 +232,7 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Raises[ExecError])
+  def fork[ResultType]()(using working: WorkingDirectory, log: Log[Text], exec: Errant[ExecError])
           : Process[Exec, ResultType] =
 
     val processBuilders = commands.map: command =>
