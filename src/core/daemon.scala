@@ -41,7 +41,6 @@ import eucalyptus.*
 import ambience.*, systemProperties.virtualMachine
 import spectacular.*
 
-import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import language.experimental.pureFunctions
@@ -98,7 +97,6 @@ def cliService[BusType <: Matchable](using executive: Executive)
   val portFile: Path = baseDir / p"port"
   val pidFile: Path = baseDir / p"pid"
   val clients: Mutex[Map[Pid, ClientConnection[BusType]]] = Mutex(Map())
-  var continue: Boolean = true
   val terminatePid: Promise[Pid] = Promise()
 
   def client(pid: Pid): ClientConnection[BusType] =
@@ -259,7 +257,6 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.virtualMachine.ansi
-    import workingDirectories.default
     import asyncOptions.{waitForOrphans, escalateExceptions}
 
     Hook.onShutdown:

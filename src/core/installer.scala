@@ -51,9 +51,7 @@ object Installer:
         : List[Directory] raises InstallError =
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
-    given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Io)
 
     val paths: List[Path] = Environment.path
 
@@ -78,7 +76,6 @@ object Installer:
         : Result raises InstallError =
 
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes NumberError) = _ => InstallError(InstallError.Reason.Environment)
     
@@ -100,7 +97,6 @@ object Installer:
       val fileSize = scriptFile.size()
       val prefixSize = fileSize - payloadSize - jarSize
       val stream = scriptFile.stream[Bytes]
-      val paths: List[Path] = Environment.path
       val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
       
       val installFile = installDirectory.let: directory =>
