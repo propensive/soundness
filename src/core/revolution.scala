@@ -29,7 +29,7 @@ import spectacular.*
 import java.util.jar as juj
 
 object ManifestDecoder:
-  given mainClass(using Raises[FqcnError]): ManifestDecoder["Main-Class"] { type Value = Fqcn } =
+  given mainClass(using Errant[FqcnError]): ManifestDecoder["Main-Class"] { type Value = Fqcn } =
     new ManifestDecoder["Main-Class"]:
       type Value = Fqcn
       def decode(text: Text): Fqcn = Fqcn(text)
