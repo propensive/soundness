@@ -16,6 +16,7 @@ default compile
 project merino
   name         Merino
   website      https://github.com/propensive/merino
+  license      apache-2
   description  A fast JSON parser for Scala.
 
   module core
