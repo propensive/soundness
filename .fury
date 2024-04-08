@@ -16,6 +16,7 @@ default compile
 project coaxial
   name         Coaxial
   website      https://github.com/propensive/coaxial
+  license      apache-2
   description  Socket handling for Scala
 
   module core
