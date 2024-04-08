@@ -75,7 +75,7 @@ case class TarRef(descent: List[PathName[InvalidTarNames]]):
 
 object TarRef:
   def apply(text: Text)
-      (using pathError:  Raises[PathError],
+      (using pathError:  Errant[PathError],
              navigable:  Navigable[TarRef, InvalidTarNames, Unset.type],
              rootParser: RootParser[TarRef, Unset.type],
              creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
