@@ -17,21 +17,19 @@
 package anthology
 
 import anticipation.*
-import galilei.*
 import contingency.*
 import fulminate.*
 import digression.*
 import ambience.*
 import parasite.*
 import eucalyptus.*
-import turbulence.*
 import vacuous.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
 import hellenism.*
 
-import dotty.tools.*, dotc as dtd, dtd.reporting.*, dtd.interfaces as dtdi, dtd.util as dtdu, dtd.core as dtdc
+import dotty.tools.dotc as dtd, dtd.reporting.*, dtd.interfaces as dtdi, dtd.util as dtdu, dtd.core as dtdc
 import dotty.tools.dotc.sbt.interfaces as dtdsi
 
 import scala.util.control as suc
@@ -141,14 +139,6 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
         Log.fine(Notice(diagnostic).debug)
         scalacProcess.put(Notice(diagnostic))
     
-    given (CompileError fixes SystemPropertyError) =
-      case SystemPropertyError(_) => CompileError()
-
-    given (CompileError fixes IoError) =
-      case IoError(_) => CompileError()
-    
-    val separator: Text = Properties.path.separator().show
-      
     val callbackApi = new dtdi.CompilerCallback {}
     
     object ProgressApi extends dtdsi.ProgressCallback:
@@ -164,7 +154,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
         
         scalacProcess.continue
       
-    object driver extends dotc.Driver:
+    object driver extends dtd.Driver:
       val currentCtx =
         val ctx = initCtx.fresh
         //val pluginParams = plugins
