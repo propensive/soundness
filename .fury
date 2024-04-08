@@ -16,6 +16,7 @@ default compile
 project spectacular
   name         Spectacular
   website      https://github.com/propensive/spectacular
+  license      apache-2
   description  Typeclasses for reading and writing text
 
   module core
