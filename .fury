@@ -16,6 +16,7 @@ default compile
 project cellulose
   name         Cellulose
   website      https://github.com/propensive/cellulose
+  license      apache-2
   description  Comprehensive tools for working with CoDL in Scala
 
   module core
