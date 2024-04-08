@@ -21,6 +21,7 @@ default compile
 project polyvinyl
   name         Polyvinyl
   website      https://github.com/propensive/polyvinyl
+  license      apache-2
   description  Typesafe record types for Scala
 
   module core
