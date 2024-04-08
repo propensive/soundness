@@ -58,23 +58,23 @@ extension (json: JsonAst)
 
   inline def isArray: Boolean = json.isInstanceOf[Array[?]]
   
-  inline def array(using Raises[JsonAccessError]): IArray[JsonAst] =
+  inline def array(using Errant[JsonAccessError]): IArray[JsonAst] =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Array)))(IArray[JsonAst]())
   
-  inline def double(using Raises[JsonAccessError]): Double = json.asMatchable match
+  inline def double(using Errant[JsonAccessError]): Double = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
     case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0.0)
   
-  inline def bigDecimal(using Raises[JsonAccessError]): BigDecimal = json.asMatchable match
+  inline def bigDecimal(using Errant[JsonAccessError]): BigDecimal = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
     case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(BigDecimal(0))
   
-  inline def long(using Raises[JsonAccessError]): Long = json.asMatchable match
+  inline def long(using Errant[JsonAccessError]): Long = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
@@ -88,19 +88,19 @@ extension (json: JsonAst)
     else if isArray then JsonPrimitive.Array
     else JsonPrimitive.Null
 
-  inline def string(using Raises[JsonAccessError]): Text =
+  inline def string(using Errant[JsonAccessError]): Text =
     if isString then json.asInstanceOf[Text]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.String)))("".tt)
   
-  inline def boolean(using Raises[JsonAccessError]): Boolean =
+  inline def boolean(using Errant[JsonAccessError]): Boolean =
     if isBoolean then json.asInstanceOf[Boolean]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Boolean)))(false)
   
-  inline def obj(using Raises[JsonAccessError]): (IArray[String], IArray[JsonAst]) =
+  inline def obj(using Errant[JsonAccessError]): (IArray[String], IArray[JsonAst]) =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Object)))(IArray[String]() -> IArray[JsonAst]())
   
-  inline def number(using Raises[JsonAccessError]): Long | Double | BigDecimal =
+  inline def number(using Errant[JsonAccessError]): Long | Double | BigDecimal =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
   
@@ -112,7 +112,7 @@ object Json extends Dynamic:
   given encoder: Encoder[Json] = json => MinimalJsonPrinter.print(json.root)
 
   def parse[SourceType](value: SourceType)
-      (using readable: Readable[SourceType, Bytes], jsonParse: Raises[JsonParseError])
+      (using readable: Readable[SourceType, Bytes], jsonParse: Errant[JsonParseError])
           : Json^{readable, jsonParse} =
 
     Json(JsonAst.parse(value))
@@ -125,13 +125,13 @@ object Json extends Dynamic:
       def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
       def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given(using jsonParse: Raises[JsonParseError]): Decoder[Json] = text =>
+  given(using jsonParse: Errant[JsonParseError]): Decoder[Json] = text =>
     Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
   
-  given(using jsonParse: Raises[JsonParseError]): GenericHttpReader[Json]^{jsonParse} = text =>
+  given(using jsonParse: Errant[JsonParseError]): GenericHttpReader[Json]^{jsonParse} = text =>
     Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given aggregable[SourceType](using Readable[SourceType, Bytes], Raises[JsonParseError])
+  given aggregable[SourceType](using Readable[SourceType, Bytes], Errant[JsonParseError])
           : Aggregable[Bytes, Json] =
 
     Json.parse(_)
@@ -165,7 +165,7 @@ object JsonEncoder extends JsonEncoder2:
     case given Encoder[ValueType]    => value => JsonAst(value.encode.s)
     case given Reflection[ValueType] => JsonEncoderDerivation.derived[ValueType]
 
-  given json(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
+  given json(using jsonAccess: Errant[JsonAccessError]): JsonEncoder[Json]^{jsonAccess} = _.root
   given nil: JsonEncoder[Nil.type] = value => JsonAst(IArray[JsonAst]())
 
   given collection[CollectionType[ElementType] <: Iterable[ElementType], ElementType: JsonEncoder]
@@ -204,7 +204,7 @@ object JsonEncoderDerivation extends Derivation[JsonEncoder]:
   
   inline def split[DerivationType: SumReflection]: JsonEncoder[DerivationType] = value =>
     variant(value): [VariantType <: DerivationType] =>
-      value => summonInline[Raises[JsonAccessError]].give:
+      value => summonInline[Errant[JsonAccessError]].give:
         context.tag(label).encode(value)
 
 trait JsonEncoder[-ValueType]:
@@ -214,7 +214,7 @@ trait JsonEncoder[-ValueType]:
   def contramap[ValueType2](lambda: ValueType2 => ValueType): JsonEncoder[ValueType2]^{this, lambda} =
     encode.compose(lambda)(_)
 
-  def tag(label: Text)(using jsonAccess: Raises[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} =
+  def tag(label: Text)(using jsonAccess: Errant[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} =
     (value: ValueType) =>
       val (keys, values) = encode(value).obj
       JsonAst((keys :+ "_type", values :+ label.s))
@@ -230,45 +230,45 @@ trait JsonDecoder2:
   
   // given decoder
   //     [ValueType]
-  //     (using jsonAccess: Raises[JsonAccessError], decoder: Decoder[ValueType])
+  //     (using jsonAccess: Errant[JsonAccessError], decoder: Decoder[ValueType])
   //     : JsonDecoder[ValueType]^{jsonAccess, decoder} =
   //   (value, omit) => decoder.decode(value.string)
 
 object JsonDecoder extends JsonDecoder2:
-  given jsonAst(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
+  given jsonAst(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[JsonAst]^{jsonAccess} =
     (value, omit) => value
   
-  given json(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Json]^{jsonAccess} =
+  given json(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Json]^{jsonAccess} =
     (value, omit) => Json(value)
   
-  given int(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Int]^{jsonAccess} =
+  given int(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Int]^{jsonAccess} =
     (value, omit) => value.long.toInt
   
-  given byte(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Byte]^{jsonAccess} =
+  given byte(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Byte]^{jsonAccess} =
     (value, omit) => value.long.toByte
   
-  given short(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Short]^{jsonAccess} =
+  given short(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Short]^{jsonAccess} =
     (value, omit) => value.long.toShort
   
-  given float(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Float]^{jsonAccess} =
+  given float(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Float]^{jsonAccess} =
     (value, omit) => value.double.toFloat
   
-  given double(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Double]^{jsonAccess} =
+  given double(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Double]^{jsonAccess} =
     (value, omit) => value.double
   
-  given long(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Long]^{jsonAccess} =
+  given long(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Long]^{jsonAccess} =
     (value, omit) => value.long
 
-  given text(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Text]^{jsonAccess} =
+  given text(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Text]^{jsonAccess} =
     (value, omit) => value.string
 
-  given string(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[String]^{jsonAccess} =
+  given string(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[String]^{jsonAccess} =
     (value, omit) => value.string.s
   
-  given boolean(using jsonAccess: Raises[JsonAccessError]): JsonDecoder[Boolean]^{jsonAccess} =
+  given boolean(using jsonAccess: Errant[JsonAccessError]): JsonDecoder[Boolean]^{jsonAccess} =
     (value, omit) => value.boolean
   
-  given option[ValueType](using decoder: JsonDecoder[ValueType]^)(using Raises[JsonAccessError])
+  given option[ValueType](using decoder: JsonDecoder[ValueType]^)(using Errant[JsonAccessError])
           : JsonDecoder[Option[ValueType]]^{decoder} =
 
     new JsonDecoder[Option[ValueType]]:
@@ -277,7 +277,7 @@ object JsonDecoder extends JsonDecoder2:
 
   given array[CollectionType[ElementType] <: Iterable[ElementType], ElementType]
       (using decoder:    JsonDecoder[ElementType],
-             jsonAccess: Raises[JsonAccessError],
+             jsonAccess: Errant[JsonAccessError],
              factory:    Factory[ElementType, CollectionType[ElementType]])
       : JsonDecoder[CollectionType[ElementType]]^{jsonAccess} =
 
@@ -287,7 +287,7 @@ object JsonDecoder extends JsonDecoder2:
         value.array.each(builder += decoder.decode(_, false))
         builder.result()
 
-  given map[ElementType](using decoder: JsonDecoder[ElementType])(using jsonAccess: Raises[JsonAccessError])
+  given map[ElementType](using decoder: JsonDecoder[ElementType])(using jsonAccess: Errant[JsonAccessError])
           : JsonDecoder[Map[String, ElementType]]^{jsonAccess} =
 
     (value, omit) =>
@@ -298,14 +298,14 @@ object JsonDecoder extends JsonDecoder2:
 
   inline given derived[ValueType]: JsonDecoder[ValueType] = summonFrom:
     case decoder: Decoder[ValueType] =>
-      (value, omit) => decoder.decode(value.string(using summonInline[Raises[JsonAccessError]]))
+      (value, omit) => decoder.decode(value.string(using summonInline[Errant[JsonAccessError]]))
     
     case given Reflection[ValueType] =>
       JsonDecoderDerivation.derived[ValueType]
 
 object JsonDecoderDerivation extends Derivation[JsonDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Raises[JsonAccessError]].give:
+    summonInline[Errant[JsonAccessError]].give:
       val keyValues = json.obj
       val values = keyValues(0).zip(keyValues(1)).to(Map)
 
@@ -316,8 +316,8 @@ object JsonDecoderDerivation extends Derivation[JsonDecoder]:
           context.decode(value, omit)
   
   inline def split[DerivationType: SumReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Raises[JsonAccessError]].give:
-      summonInline[Raises[VariantError]].give:
+    summonInline[Errant[JsonAccessError]].give:
+      summonInline[Errant[VariantError]].give:
         val values = json.obj
         
         values(0).indexOf("_type") match
@@ -338,15 +338,15 @@ trait JsonDecoder[ValueType]:
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
-  def apply(index: Int)(using Raises[JsonAccessError]): Json = Json(root.array(index))
+  def apply(index: Int)(using Errant[JsonAccessError]): Json = Json(root.array(index))
   
-  def selectDynamic(field: String)(using erased DynamicJsonEnabler)(using Raises[JsonAccessError]): Json =
+  def selectDynamic(field: String)(using erased DynamicJsonEnabler)(using Errant[JsonAccessError]): Json =
     apply(field.tt)
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler, Raises[JsonAccessError]): Json =
+  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler, Errant[JsonAccessError]): Json =
     apply(field.tt)(index)
   
-  def apply(field: Text)(using Raises[JsonAccessError]): Json =
+  def apply(field: Text)(using Errant[JsonAccessError]): Json =
     root.obj(0).indexWhere(_ == field.s) match
       case -1    => raise(JsonAccessError(Reason.Label(field)))(this)
       case index => Json(root.obj(1)(index))
@@ -434,7 +434,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType](using decoder: JsonDecoder[ValueType], jsonAccess: Raises[JsonAccessError]): ValueType =
+  def as[ValueType](using decoder: JsonDecoder[ValueType], jsonAccess: Errant[JsonAccessError]): ValueType =
     decoder.decode(root, false)
 
 trait JsonPrinter:

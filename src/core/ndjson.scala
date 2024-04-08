@@ -27,7 +27,7 @@ object Ndjson:
       [SourceType]
       (value: SourceType)
       (using readable:     Readable[SourceType, Line],
-             jsonParse:    Raises[JsonParseError],
+             jsonParse:    Errant[JsonParseError],
              textReadable: Readable[Text, Bytes])
           : Ndjson =
 
