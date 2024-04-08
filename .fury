@@ -16,6 +16,7 @@ default compile
 project gesticulate
   name         Gesticulate
   website      https://github.com/propensive/gesticulate
+  license      apache-2
   description  Safe representations of MIME types
 
   module core
