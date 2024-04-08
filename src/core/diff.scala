@@ -72,7 +72,7 @@ case class DiffParseError(lineNo: Int, line: Text)
 extends Error(msg"could not read the diff at line $lineNo: $line")
 
 object Diff:
-  def parse(lines: LazyList[Text])(using Raises[DiffParseError]): Diff[Text] =
+  def parse(lines: LazyList[Text])(using Errant[DiffParseError]): Diff[Text] =
     def recur(todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
             : Diff[Text] =
       if pos < target

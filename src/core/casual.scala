@@ -39,7 +39,7 @@ object CasualDiffError:
 case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
 
 object CasualDiff:
-  def parse(stream: LazyList[Text])(using Raises[CasualDiffError]): CasualDiff =
+  def parse(stream: LazyList[Text])(using Errant[CasualDiffError]): CasualDiff =
     def recur
         (stream:      LazyList[Text],
          context:     List[Text],
