@@ -50,12 +50,12 @@ object CaseField:
       (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
           : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
     
-    inline def initAnnotation = annotation
+    inline def annotation0 = annotation
     
     new CaseField[TargetType, AnnotationType](name):
       type FieldType = InitFieldType
       def apply(value: TargetType) = access(value)
-      def annotation: AnnotationType = initAnnotation
+      def annotation: AnnotationType = annotation0
 
   transparent inline given[TargetType <: Product, AnnotationType <: StaticAnnotation]
           : CaseField[TargetType, AnnotationType] =
