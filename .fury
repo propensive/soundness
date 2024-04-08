@@ -16,6 +16,7 @@ default compile
 project exoskeleton
   name         Exoskeleton
   website      https://github.com/propensive/exoskeleton
+  license      apache-2
   description  Interfaces for interacting with the shell
 
   module args
