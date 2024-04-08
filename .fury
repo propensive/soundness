@@ -16,6 +16,7 @@ default compile
 project escapade
   name         Escapade
   website      https://github.com/propensive/escapade
+  license      apache-2
   description  The adventure of ANSI escape codes
 
   module core
