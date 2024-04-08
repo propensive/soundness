@@ -16,6 +16,7 @@ default compile
 project gastronomy
   name         Gastronomy
   website      https://github.com/propensive/gastronomy
+  license      apache-2
   description  Simple generically-derived cryptographic digestion
 
   module core
