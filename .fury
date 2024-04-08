@@ -16,6 +16,7 @@ default compile
 project dissonance
   name         Dissonance
   website      https://github.com/propensive/dissonance
+  license      apache-2
   description  Myers' diff algorithm in Scala
 
   module core
