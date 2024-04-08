@@ -72,9 +72,7 @@ object TabCompletions:
 
     given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
     given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
-    given (InstallError fixes OverwriteError) = _ => InstallError(InstallError.Reason.Io)
-    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
+    given (InstallError fixes IoError)   = _ => InstallError(InstallError.Reason.Io)
     
     val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
     val command: Text = service.scriptName
