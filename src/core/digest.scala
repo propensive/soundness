@@ -81,15 +81,15 @@ case class Hmac[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable
 trait HashFunction[HashType <: HashScheme[?]]:
   def name: Text
   def hmacName: Text
-  def init: DigestAccumulator
-  def initHmac: Mac
+  def init(): DigestAccumulator
+  def hmac0: Mac
 
 case class MdHashFunction[HashType <: HashScheme[?]](name: Text, hmacName: Text) extends HashFunction[HashType]:
-  def init: DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
-  def initHmac: Mac = Mac.getInstance(hmacName.s).nn
+  def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+  def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 case object Crc32HashFunction extends HashFunction[Crc32]:
-  def init: DigestAccumulator = new DigestAccumulator:
+  def init(): DigestAccumulator = new DigestAccumulator:
     private val state: juz.CRC32 = juz.CRC32()
     def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
     
@@ -99,7 +99,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
 
   def name: Text = t"CRC32"
   def hmacName: Text = t"HMAC-CRC32"
-  def initHmac: Mac = throw Panic(msg"this has not been implemented")
+  def hmac0: Mac = throw Panic(msg"this has not been implemented")
     
 
 object Digest:
@@ -160,7 +160,7 @@ trait Digestible[-ValueType]:
 
 case class Digester(run: DigestAccumulator => Unit):
   def apply[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
-    summon[HashFunction[HashType]].init.pipe: accumulator =>
+    summon[HashFunction[HashType]].init().pipe: accumulator =>
       run(accumulator)
       Digest(accumulator.digest())
   
@@ -283,7 +283,7 @@ extension [ValueType](value: ValueType)
     digester.apply
 
   def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[ValueType]): Hmac[HashType] =
-    val mac = summon[HashFunction[HashType]].initHmac
+    val mac = summon[HashFunction[HashType]].hmac0
     mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[HashType]].name.s))
     
     Hmac:
