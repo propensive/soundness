@@ -16,6 +16,7 @@ default compile
 project telekinesis
   name         Telekinesis
   website      https://github.com/propensive/telekinesis
+  license      apache-2
   description  A lightweight HTTP client and server for the Loom generation
 
   module client
