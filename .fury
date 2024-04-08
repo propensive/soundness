@@ -21,6 +21,7 @@ default compile
 project wisteria
   name         Wisteria
   website      https://github.com/propensive/wisteria
+  license      apache-2
   description  Simple, fast and transparant generic derivation for typeclasses
 
   module core
