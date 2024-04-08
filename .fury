@@ -16,6 +16,7 @@ default compile
 project fulminate
   name         Fulminate
   website      https://github.com/propensive/fulminate
+  license      apache-2
   description  Rich and composable error messages
 
   module core
