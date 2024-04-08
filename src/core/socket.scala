@@ -72,7 +72,7 @@ object Control:
 import Control.*
 
 object Connectable:
-  given domainSocket(using Raises[StreamError]): Connectable[DomainSocket] with
+  given domainSocket(using Errant[StreamError]): Connectable[DomainSocket] with
     type Output = Bytes
     case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
 
@@ -96,7 +96,7 @@ object Connectable:
     
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpEndpoint(using Online, Raises[StreamError]): Connectable[Endpoint[TcpPort]] with
+  given tcpEndpoint(using Online, Errant[StreamError]): Connectable[Endpoint[TcpPort]] with
     type Output = Bytes
     type Connection = jn.Socket
       
@@ -112,7 +112,7 @@ object Connectable:
     
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
   
-  given tcpPort(using Raises[StreamError]): Connectable[TcpPort] with
+  given tcpPort(using Errant[StreamError]): Connectable[TcpPort] with
     type Output = Bytes
     type Connection = jn.Socket
     
@@ -182,7 +182,7 @@ enum UdpResponse:
   case Reply(data: Bytes)
 
 object Bindable:
-  given domainSocket(using Raises[StreamError]): Bindable[DomainSocket] with
+  given domainSocket(using Errant[StreamError]): Bindable[DomainSocket] with
     type Binding = jnc.ServerSocketChannel
     type Output = Bytes
     type Input = Connection
@@ -211,7 +211,7 @@ object Bindable:
       connection.in.close()
       connection.out.close()
 
-  given tcpPort(using Raises[StreamError]): Bindable[TcpPort] with
+  given tcpPort(using Errant[StreamError]): Bindable[TcpPort] with
     type Binding = jn.ServerSocket
     type Output = Bytes
     type Input = jn.Socket
