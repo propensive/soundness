@@ -16,6 +16,7 @@ default compile
 project octogenarian
   name         Octogenarian
   website      https://github.com/propensive/octogenarian
+  license      apache-2
   description  A lightweight HTTP client and server for the Loom generation
 
   module core
