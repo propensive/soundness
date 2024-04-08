@@ -32,8 +32,8 @@ case class Example(name: Text, count: Long)
 
 @main
 def run(): Unit =
-  given Raises[JsonAccessError] = errorHandlers.throwUnsafely
-  given Raises[ScalacError] = errorHandlers.throwUnsafely
+  given Errant[JsonAccessError] = errorHandlers.throwUnsafely
+  given Errant[ScalacError] = errorHandlers.throwUnsafely
 
   def offset(input: Long): Text = remote.dispatch:
     '{
