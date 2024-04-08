@@ -16,6 +16,7 @@ default compile
 project cardinality
   name         Cardinality
   website      https://github.com/propensive/cardinality
+  license      apache-2
   description  Constraints for constraining sets of real numbers
 
   module core
