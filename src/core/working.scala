@@ -42,11 +42,11 @@ trait HomeDirectory:
 
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
-  //given none(using Raises[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
+  //given none(using Errant[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
 
 package homeDirectories:
   given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
-  //given none(using Raises[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
+  //given none(using Errant[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
 
 def workingDirectory[PathType](using directory: WorkingDirectory, specificPath: SpecificPath[PathType])
         : PathType^{specificPath} =
