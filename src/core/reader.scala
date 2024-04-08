@@ -41,7 +41,6 @@ object Character:
   given Decoder[Character] with
     def decode(text: Text): Character = text match
       case r"[$char(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" =>
-        import unsafeExceptions.canThrowAny
         Character(char.at(0).vouch(using Unsafe).toInt, l, c)
       
       case _ =>
