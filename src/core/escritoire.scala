@@ -123,10 +123,10 @@ case class Column[RowType, TextType: Textual]
 
 object Table:
   @targetName("make")
-  def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual](initColumns: Column[RowType, TextType]*)
+  def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual](columns0: Column[RowType, TextType]*)
           : Table[RowType, TextType] =
 
-    new Table(initColumns*)
+    new Table(columns0*)
 
 object Tabulation:
   given printable[TextType: Textual](using TextMetrics, TableStyle, InsufficientSpaceHandler)
@@ -289,11 +289,11 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
 
     topLine #::: body.tail #::: bottomLine
 
-case class Table[RowType, TextType: ClassTag](initColumns: Column[RowType, TextType]*)
+case class Table[RowType, TextType: ClassTag](columns0: Column[RowType, TextType]*)
     (using textual: Textual[TextType]):
   table =>
   
-  val columns: IArray[Column[RowType, TextType]] = IArray.from(initColumns)
+  val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
   val titles: Seq[IArray[IArray[TextType]]] = Seq(IArray.from(columns.map(_.title.cut(t"\n"))))
 
   def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } = new Tabulation[TextType]:
