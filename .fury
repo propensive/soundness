@@ -16,6 +16,7 @@ default compile
 project flexmark
   name         Flexmark
   website      https://github.com/vsch/flexmark-java
+  license      apache-2
   description  CommonMark/Markdown Java parser with source level AST
 
   library core
