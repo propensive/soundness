@@ -21,6 +21,7 @@ default compile
 project hypotenuse
   name         Hypotenuse
   website      https://github.com/propensive/hypotenuse
+  license      apache-2
   description  A rigorous and consistent foundation for numerical and arithmetic programming
 
   module core
