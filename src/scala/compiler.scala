@@ -41,8 +41,8 @@ import language.adhocExtensions
 case class ScalacOption[-VersionType <: Scalac.All](flags: Text*)
 
 enum Unused[VersionType]:
-  case All extends Unused[3.1 | 3.2 | 3.3]
-  case None extends Unused[3.1 | 3.2 | 3.3]
+  case All extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5]
+  case None extends Unused[3.1 | 3.2 | 3.3 | 3.4 | 3.5]
   case Subset[VersionType <: 3.3](features: List[UnusedFeature[VersionType]]) extends Unused[VersionType]
 
 enum UnusedFeature[VersionType](val name: Text):
