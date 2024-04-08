@@ -16,6 +16,7 @@ default compile
 project zeppelin
   name         Zeppelin
   website      https://github.com/propensive/zeppelin
+  license      apache-2
   description  Precise navigation of paths
 
   module core
