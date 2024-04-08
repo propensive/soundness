@@ -77,7 +77,7 @@ object Semblance:
     case Different(left, right, difference) =>
       val whitespace = if right.has('\n') then e"\n" else e" "
       val whitespace2 = if left.has('\n') then e"\n" else e" "
-      e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace${colors.YellowGreen}($left)"
+      e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace2${colors.YellowGreen}($left)"
     
     case Identical(value) =>
       e"The value ${colors.Gray}($value) was expected"
