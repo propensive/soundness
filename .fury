@@ -16,6 +16,7 @@ default compile
 project chiaroscuro
   name         Chiaroscuro
   website      https://github.com/propensive/chiaroscuro
+  license      apache-2
   description  Compare and contrast similar objects and highlight their differences
 
   module core
