@@ -16,6 +16,7 @@ default compile
 project denominative
   name         Denominative
   website      https://github.com/propensive/denominative
+  license      apache-2
   description  An experiment in numeric semantics to eradicate off-by-one errors.
 
   module core
