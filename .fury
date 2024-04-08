@@ -18,6 +18,7 @@ default compile
 project bifurcate
   name         Bifurcate
   website      https://github.com/propensive/bifurcate
+  license      apache-2
   description  Deserialize binary data in Scala
 
   module core
