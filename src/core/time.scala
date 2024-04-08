@@ -77,7 +77,7 @@ object Dates:
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
-    given decoder(using Raises[DateError]): Decoder[Date] = parse(_)
+    given decoder(using Errant[DateError]): Decoder[Date] = parse(_)
     given encoder: Encoder[Date] = _.show
     
     inline given inequality: Inequality[Date, Date] with
@@ -90,7 +90,7 @@ object Dates:
       type Result = Date
       def add(date: Date, period: Period): Date = calendar.add(date, period)
     
-    def parse(value: Text)(using Raises[DateError]): Date = value.cut(t"-").to(List) match
+    def parse(value: Text)(using Errant[DateError]): Date = value.cut(t"-").to(List) match
       // FIXME: This compiles successfully, but never seems to match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
       case y :: m :: d :: Nil =>
@@ -133,7 +133,7 @@ trait Calendar:
   def getMonth(date: Date): M
   def getDay(date: Date): D
   def zerothDayOfYear(year: Y): Date
-  def julianDay(year: Y, month: M, day: D)(using Raises[DateError]): Date
+  def julianDay(year: Y, month: M, day: D)(using Errant[DateError]): Date
   def add(date: Date, period: Timespan): Date
 
 @capability
@@ -177,7 +177,7 @@ abstract class RomanCalendar() extends Calendar:
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
   
-  def julianDay(year: Int, month: MonthName, day: Int)(using Raises[DateError]): Date =
+  def julianDay(year: Int, month: MonthName, day: Int)(using Errant[DateError]): Date =
     if day < 1 || day > daysInMonth(month, year)
     then raise(DateError(t"$year-${month.numerical}-$day")):
       Date(using calendars.julian)(2000, MonthName(1), 1)
@@ -558,9 +558,9 @@ case class LocalTime(date: Date, time: Time, timezone: Timezone):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text)(using Raises[TimezoneError]): Timezone = parse(name)
+  def apply(name: Text)(using Errant[TimezoneError]): Timezone = parse(name)
 
-  def parse(name: Text)(using Raises[TimezoneError]): Timezone =
+  def parse(name: Text)(using Errant[TimezoneError]): Timezone =
     if ids.contains(name) then new Timezone(name) else raise(TimezoneError(name))(new Timezone(ids.head))
    
   object Tz extends Verifier[Timezone]:
