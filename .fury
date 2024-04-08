@@ -20,6 +20,7 @@ default compile
 project xylophone
   name         Xylophone
   website      https://github.com/propensive/xylophone
+  license      apache-2
   description  Typesafe XML for Scala
 
   module core
