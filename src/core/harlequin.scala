@@ -73,9 +73,9 @@ object ScalaSource:
     else Accent.Parens
   
   def highlight(text: Text): ScalaSource =
-    val initCtx = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
+    val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
     val source = SourceFile.virtual("<highlighting>", text.s)
-    val ctx = initCtx.setCompilationUnit(CompilationUnit(source, mustExist = false)(using initCtx))
+    val ctx = ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
     val trees = Trees()
     val parser = Parsers.Parser(source)(using ctx)
     
