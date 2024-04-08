@@ -16,6 +16,7 @@ default compile
 project surveillance
   name         Surveillance
   website      https://github.com/propensive/surveillance
+  license      apache-2
   description  Representation-agnostic filewatching with streams in Scala
 
   module core
