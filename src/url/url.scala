@@ -106,10 +106,10 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
 object Url:
   given GenericUrl[HttpUrl] = _.show
-  given (using Raises[UrlError], Raises[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
+  given (using Errant[UrlError], Errant[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
   given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show.text(_)
   
-  given [SchemeType <: Label](using Raises[UrlError], Raises[HostnameError]): Decoder[Url[SchemeType]] =
+  given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError]): Decoder[Url[SchemeType]] =
     parse(_)
   
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
@@ -172,7 +172,7 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  def parse[SchemeType <: Label](value: Text)(using Raises[UrlError], Raises[HostnameError]): Url[SchemeType] =
+  def parse[SchemeType <: Label](value: Text)(using Errant[UrlError], Errant[HostnameError]): Url[SchemeType] =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
@@ -204,7 +204,7 @@ object Authority:
   given Show[Authority] = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  def parse(value: Text)(using Raises[UrlError]): Authority raises HostnameError =
+  def parse(value: Text)(using Errant[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
     
     safely(value.where(_ == '@')) match

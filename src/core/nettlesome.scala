@@ -123,7 +123,7 @@ object Nettlesome:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encoder: Encoder[Ipv4] = _.show
-      given decoder(using Raises[IpAddressError]): Decoder[Ipv4] = parse(_)
+      given decoder(using Errant[IpAddressError]): Decoder[Ipv4] = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -132,7 +132,7 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
       
-      def parse(text: Text)(using Raises[IpAddressError]): Ipv4 =
+      def parse(text: Text)(using Errant[IpAddressError]): Ipv4 =
         given (IpAddressError fixes NumberError) = error => IpAddressError(Ipv4ByteNotNumeric(error.text))
         
         val bytes = text.cut(t".")
@@ -149,7 +149,7 @@ object Nettlesome:
       erased given underlying: Underlying[MacAddress, Long] = ###
       given show: Show[MacAddress] = _.text
       given encoder: Encoder[MacAddress] = _.text
-      given decoder(using Raises[MacAddressError]): Decoder[MacAddress] = parse(_)
+      given decoder(using Errant[MacAddressError]): Decoder[MacAddress] = parse(_)
 
       def apply(value: Long): MacAddress = value
       
@@ -186,7 +186,7 @@ object Nettlesome:
       given show: Show[TcpPort] = port => TextConversion.int.text(port.number)
       given encoder: Encoder[TcpPort] = port => TextConversion.int.text(port.number)
       
-      given decoder(using Raises[NumberError], Raises[PortError]): Decoder[TcpPort] =
+      given decoder(using Errant[NumberError], Errant[PortError]): Decoder[TcpPort] =
         text => apply(Decoder.int.decode(text))
       
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
@@ -199,7 +199,7 @@ object Nettlesome:
       given show: Show[UdpPort] = port => TextConversion.int.text(port.number)
       given encoder: Encoder[UdpPort] = port => TextConversion.int.text(port.number)
       
-      given decoder(using Raises[NumberError], Raises[PortError]): Decoder[UdpPort] =
+      given decoder(using Errant[NumberError], Errant[PortError]): Decoder[UdpPort] =
         text => apply(Decoder.int.decode(text))
       
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]

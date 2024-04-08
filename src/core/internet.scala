@@ -26,7 +26,7 @@ import language.experimental.captureChecking
 case class OfflineError() extends Error(msg"an Internet connection is not available")
 
 class Internet(val online: Boolean):
-  def require[ResultType](block: Online ?=> ResultType)(using Raises[OfflineError]): ResultType =
+  def require[ResultType](block: Online ?=> ResultType)(using Errant[OfflineError]): ResultType =
     if online then block(using Online) else abort(OfflineError())
 
   def appropriate[ResultType](block: Online ?=> ResultType): Optional[ResultType] =
