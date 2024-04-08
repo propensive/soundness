@@ -39,7 +39,7 @@ object Properties extends Dynamic:
   def apply[PropertyType](property: Text)
       (using properties:     SystemProperties,
              reader:         SystemProperty[String, PropertyType],
-             systemProperty: Raises[SystemPropertyError])
+             systemProperty: Errant[SystemPropertyError])
           : PropertyType^{properties, reader, systemProperty} =
 
     properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
@@ -57,13 +57,13 @@ object SystemProperty:
   given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] = SpecificPath(_)
   
   given javaLibraryPath[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Errant[SystemPropertyError])
           : SystemProperty["java.library.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given javaClassPath[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Errant[SystemPropertyError])
           : SystemProperty["java.class.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
@@ -72,7 +72,7 @@ object SystemProperty:
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
   
   given javaExtDirs[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Raises[SystemPropertyError])
+      (using systemProperties: SystemProperties, systemProperty: Errant[SystemPropertyError])
           : SystemProperty["java.ext.dirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
@@ -101,7 +101,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
   def applyDynamic[PropertyType](key: String)()
       (using properties:     SystemProperties,
              reader:         SystemProperty[NameType+"."+key.type, PropertyType],
-             systemProperty: Raises[SystemPropertyError])
+             systemProperty: Errant[SystemPropertyError])
           : PropertyType^{properties, reader, systemProperty} =
 
     properties((property+"."+key).tt).let(reader.read(_)).or:
@@ -110,7 +110,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
   inline def apply[PropertyType]()
       (using properties: SystemProperties,
              reader: SystemProperty[NameType, PropertyType],
-             systemProperty: Raises[SystemPropertyError])
+             systemProperty: Errant[SystemPropertyError])
           : PropertyType^{properties, reader, systemProperty} =
 
     properties(valueOf[NameType].tt).let(reader.read(_)).or:

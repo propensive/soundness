@@ -38,7 +38,7 @@ object Environment extends Dynamic:
   def apply[VariableType](variable: Text)
       (using environment:      Environment,
              reader:           EnvironmentVariable[Label, VariableType],
-             environmentError: Raises[EnvironmentError])
+             environmentError: Errant[EnvironmentError])
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
@@ -46,7 +46,7 @@ object Environment extends Dynamic:
   inline def selectDynamic[VariableType](key: String)
       (using environment:      Environment,
              reader:           EnvironmentVariable[key.type, VariableType],
-             environmentError: Raises[EnvironmentError])
+             environmentError: Errant[EnvironmentError])
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
@@ -109,7 +109,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given editor[PathType: SpecificPath]: EnvironmentVariable["editor", PathType] = SpecificPath(_)
   given pager[PathType: SpecificPath]: EnvironmentVariable["pager", PathType] = SpecificPath(_)
   
-  given sshAgentPid(using Raises[NumberError]): EnvironmentVariable["sshAgentPid", Pid] =
+  given sshAgentPid(using Errant[NumberError]): EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decodeAs[Int])
 
   given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)

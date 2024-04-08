@@ -23,9 +23,9 @@ import contingency.*
 //import language.experimental.captureChecking
 
 package workingDirectories:
-  given virtualMachine(using Raises[SystemPropertyError], SystemProperties): WorkingDirectory = () =>
+  given virtualMachine(using Errant[SystemPropertyError], SystemProperties): WorkingDirectory = () =>
     Properties.user.dir[Text]()
 
 package homeDirectories:
-  given virtualMachine(using Raises[SystemPropertyError], SystemProperties): HomeDirectory = () =>
+  given virtualMachine(using Errant[SystemPropertyError], SystemProperties): HomeDirectory = () =>
     Properties.user.home[Text]()
