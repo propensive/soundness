@@ -16,6 +16,7 @@ default compile
 project hellenism
   name         Hellenism
   website      https://github.com/propensive/hellenism
+  license      apache-2
   description  Classpath management facilities for Scala
 
   module core
