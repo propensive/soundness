@@ -21,6 +21,7 @@ default compile
 project symbolism
   name         Symbolism
   website      https://github.com/propensive/symbolism
+  license      apache-2
   description  A general mechanism to implement overloaded symbolic operators
 
   module core
