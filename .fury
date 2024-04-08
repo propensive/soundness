@@ -16,6 +16,7 @@ default compile
 project ethereal
   name         Ethereal
   website      https://github.com/propensive/ethereal
+  license      apache-2
   description  Precise navigation of paths
 
   module core
