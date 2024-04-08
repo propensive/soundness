@@ -33,34 +33,34 @@ infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, E
 trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
   def fix(error: ErrorType1): ErrorType2
 
-object Raises:
+object Errant:
   given fixStrategy[ErrorType1 <: Error, ErrorType2 <: Error]
-      (using fix: Fix[ErrorType1, ErrorType2], strategy: Raises[ErrorType2])
-          : Raises[ErrorType1] =
+      (using fix: Fix[ErrorType1, ErrorType2], strategy: Errant[ErrorType2])
+          : Errant[ErrorType1] =
     strategy.contramap(fix.fix(_))
 
 @capability
-trait Raises[-ErrorType <: Error] extends Pure:
+trait Errant[-ErrorType <: Error] extends Pure:
 
   private inline def raises: this.type = this
 
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
-  def contramap[ErrorType2 <: Error](lambda: ErrorType2 -> ErrorType): Raises[ErrorType2] =
-    new Raises[ErrorType2]:
+  def contramap[ErrorType2 <: Error](lambda: ErrorType2 -> ErrorType): Errant[ErrorType2] =
+    new Errant[ErrorType2]:
       def record(error: ErrorType2): Unit = raises.record(lambda(error))
       def abort(error: ErrorType2): Nothing = raises.abort(lambda(error))
 
 @capability
 class ThrowStrategy
     [ErrorType <: Error, SuccessType]()(using @annotation.constructorOnly error: CanThrow[ErrorType])
-extends Raises[ErrorType]:
+extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = throw error
   def abort(error: ErrorType): Nothing = throw error
 
 @capability
-class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm) extends Raises[ErrorType]:
+class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm) extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = fail(error.message)
   def abort(error: ErrorType): Nothing = fail(error.message)
 
@@ -68,7 +68,7 @@ class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm) exten
 class AggregateStrategy
     [ErrorType <: Error, SuccessType]
     (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
-extends Raises[ErrorType]:
+extends Errant[ErrorType]:
 
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
   
@@ -82,15 +82,15 @@ extends Raises[ErrorType]:
 
 @capability
 class EitherStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Either[ErrorType, SuccessType]])
-    (using @annotation.constructorOnly unexpectedSuccess: Raises[UnexpectedSuccessError[SuccessType]])
-extends Raises[ErrorType]:
+    (using @annotation.constructorOnly unexpectedSuccess: Errant[UnexpectedSuccessError[SuccessType]])
+extends Errant[ErrorType]:
 
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
 
 @capability
 class OptionalStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Optional[SuccessType]])
-extends Raises[ErrorType]:
+extends Errant[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
   
@@ -99,7 +99,7 @@ extends Raises[ErrorType]:
 
 @capability
 class AttemptStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Attempt[SuccessType, ErrorType]])
-extends Raises[ErrorType]:
+extends Errant[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
   
@@ -110,18 +110,18 @@ trait Recovery[-ErrorType <: Error, +SuccessType]:
   def recover(error: ErrorType): SuccessType
 
 def raise[SuccessType, ErrorType <: Error](error: ErrorType)
-    (using handler: Raises[ErrorType], recovery: Recovery[ErrorType, SuccessType])
+    (using handler: Errant[ErrorType], recovery: Recovery[ErrorType, SuccessType])
         : SuccessType =
   handler.record(error)
   recovery.recover(error)
 
 def raise[SuccessType, ErrorType <: Error](error: ErrorType)(ersatz: => SuccessType)
-    (using handler: Raises[ErrorType])
+    (using handler: Errant[ErrorType])
         : SuccessType =
   handler.record(error)
   ersatz
 
-def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Raises[ErrorType]): Nothing =
+def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Errant[ErrorType]): Nothing =
   handler.abort(error)
 
 def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
@@ -146,7 +146,7 @@ def throwErrors[ErrorType <: Error](using CanThrow[ErrorType])[SuccessType]
 
   block(using ThrowStrategy())
 
-def validate[ErrorType <: Error](using raise: Raises[AggregateError[ErrorType]])[SuccessType]
+def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
     (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
@@ -161,7 +161,7 @@ def validate[ErrorType <: Error](using raise: Raises[AggregateError[ErrorType]])
 
 def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    (using raise: Raises[UnexpectedSuccessError[SuccessType]])
+    (using raise: Errant[UnexpectedSuccessError[SuccessType]])
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherStrategy(label)))
@@ -200,7 +200,7 @@ package errorHandlers:
   given throwSafely[ErrorType <: Error: CanThrow, SuccessType]: ThrowStrategy[ErrorType, SuccessType] =
     ThrowStrategy()
 
-infix type raises[SuccessType, ErrorType <: Error] = Raises[ErrorType] ?=> SuccessType
+infix type raises[SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
 
 enum Attempt[+SuccessType, +ErrorType <: Error]:
   case Success(value: SuccessType)

@@ -20,13 +20,13 @@ import fulminate.*
 
 //import language.experimental.captureChecking
 
-def foo()(using fooError: Raises[FooError1]): String =
+def foo()(using fooError: Errant[FooError1]): String =
   if math.random < 0.3 then abort(FooError1()) else "foo"
 
-def bar()(using barError: Raises[BarError1]): String =
+def bar()(using barError: Errant[BarError1]): String =
   if math.random < 0.3 then abort(BarError1(12, "two")) else "bar"
 
-def quux()(using quuxError: Raises[QuuxError1]): String =
+def quux()(using quuxError: Errant[QuuxError1]): String =
   if math.random < 0.3 then abort(QuuxError1(BarError1(4, ""))) else "quux"
 
 @main
