@@ -16,6 +16,7 @@ default compile
 project galilei
   name         Galilei
   website      https://github.com/propensive/galilei
+  license      apache-2
   description  Making I/O in Scala elegant and typesafe
 
   module core
