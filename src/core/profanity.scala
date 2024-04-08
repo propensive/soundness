@@ -222,12 +222,12 @@ package terminalOptions:
 
 object ProcessContext:
   def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext =
-    inline def initStdio: Stdio = stdio
-    inline def initSignals: Funnel[Signal] = signals
+    inline def stdio0: Stdio = stdio
+    inline def signals0: Funnel[Signal] = signals
     
     new ProcessContext:
-      val stdio: Stdio = initStdio
-      def signals: Funnel[Signal] = initSignals
+      val stdio: Stdio = stdio0
+      def signals: Funnel[Signal] = signals0
 
 trait ProcessContext:
   val stdio: Stdio
