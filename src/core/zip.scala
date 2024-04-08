@@ -52,15 +52,15 @@ object ZipPath:
   given creator: PathCreator[ZipPath, InvalidZipNames, ZipFile] = (root, descent) =>
     ZipPath(root, ZipRef(descent))
 
-  given readable(using Raises[StreamError]): Readable[ZipPath, Bytes] =
+  given readable(using Errant[StreamError]): Readable[ZipPath, Bytes] =
     Readable.lazyList[Bytes].contramap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
-  def entry()(using streamCut: Raises[StreamError]): ZipEntry = zipFile.entry(ref)
+  def entry()(using streamCut: Errant[StreamError]): ZipEntry = zipFile.entry(ref)
 
 object ZipRef:
   def apply(text: Text)
-      (using pathError:  Raises[PathError],
+      (using pathError:  Errant[PathError],
              navigable:  Navigable[ZipRef, InvalidZipNames, Unset.type],
              rootParser: RootParser[ZipRef, Unset.type],
              creator:    PathCreator[ZipRef, InvalidZipNames, Unset.type])
@@ -104,13 +104,13 @@ case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
   def apply[FileType](file: FileType)
-      (using genericFile: /*{*}*/ GenericFile[FileType], stream: Raises[StreamError])
+      (using genericFile: /*{*}*/ GenericFile[FileType], stream: Errant[StreamError])
           : ZipFile =
 
     val pathname: Text = file.fileText
     new ZipFile(pathname)
 
-  def create[PathType](path: PathType)(using genericPath: GenericPath[PathType], streamCut: Raises[StreamError])
+  def create[PathType](path: PathType)(using genericPath: GenericPath[PathType], streamCut: Errant[StreamError])
           : ZipFile =
 
     val pathname: Text = path.pathText
@@ -142,7 +142,7 @@ case class ZipFile(private val filename: Text):
 
       lambda(filesystem).also(filesystem.close())
     
-  def entry(ref: ZipRef)(using streamCut: Raises[StreamError]): ZipEntry =
+  def entry(ref: ZipRef)(using streamCut: Errant[StreamError]): ZipEntry =
     semaphore.access(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
