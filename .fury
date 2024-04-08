@@ -25,6 +25,7 @@ project javax-servlet
 project scintillate
   name         Scintillate
   website      https://github.com/propensive/scintillate
+  license      apache-2
   description  Typesafe parsing and rendering of markdown
 
   module server
