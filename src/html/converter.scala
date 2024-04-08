@@ -25,7 +25,7 @@ import anticipation.*
 import gossamer.*
 
 open class HtmlConverter():
-  def outline(node: Markdown[Markdown.Ast.Node])(using Raises[MarkdownError]): Seq[Html[Flow]] =
+  def outline(node: Markdown[Markdown.Ast.Node])(using Errant[MarkdownError]): Seq[Html[Flow]] =
     convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
   
   def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt

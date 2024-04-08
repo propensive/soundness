@@ -68,7 +68,7 @@ type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
-  given (using Raises[MarkdownError]): Decoder[InlineMd] = parseInline(_)
+  given (using Errant[MarkdownError]): Decoder[InlineMd] = parseInline(_)
   given Encoder[InlineMd] = _.serialize
   given Show[InlineMd] = _.serialize
 
@@ -151,13 +151,13 @@ object Markdown:
   
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse(text: Text)(using Raises[MarkdownError]): Md =
+  def parse(text: Text)(using Errant[MarkdownError]): Md =
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
     
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
-  def parseInline(text: Text)(using Raises[MarkdownError]): InlineMd = parse(text) match
+  def parseInline(text: Text)(using Errant[MarkdownError]): InlineMd = parse(text) match
     case Markdown(Paragraph(xs*)) =>
       Markdown[Markdown.Ast.Inline](xs*)
 
@@ -223,7 +223,7 @@ object Markdown:
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
 
-  def flow(root: cvfua.Document, node: FlowInput)(using Raises[MarkdownError]): Markdown.Ast.Block = node match
+  def flow(root: cvfua.Document, node: FlowInput)(using Errant[MarkdownError]): Markdown.Ast.Block = node match
     case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
     
     case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
