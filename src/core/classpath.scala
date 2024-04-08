@@ -74,7 +74,7 @@ class Classloader(val java: ClassLoader):
   
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
   
-  private[hellenism] def inputStream(path: Text)(using notFound: Raises[ClasspathError]): ji.InputStream =
+  private[hellenism] def inputStream(path: Text)(using notFound: Errant[ClasspathError]): ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
 object Classpath:
@@ -129,7 +129,7 @@ extends Classpath:
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
 
-  inline given decoder(using Raises[PathError]): Decoder[ClasspathRef] = new Decoder[ClasspathRef]:
+  inline given decoder(using Errant[PathError]): Decoder[ClasspathRef] = new Decoder[ClasspathRef]:
     def decode(text: Text): ClasspathRef = Navigable.decode[ClasspathRef](text)
 
   given navigable: Navigable[ClasspathRef, Forbidden, Classpath.type] with
@@ -147,7 +147,7 @@ case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
 
 object Resource:
-  given readableBytes(using Raises[ClasspathError]): Readable[Resource, Bytes] =
+  given readableBytes(using Errant[ClasspathError]): Readable[Resource, Bytes] =
     Readable.reliableInputStream.contramap: resource =>
       resource.classloader.inputStream(resource.ref.text)
 
