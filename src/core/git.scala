@@ -230,7 +230,10 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
     recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
 
   def reflog(): Unit = ()
-  def status(): Unit = ()
+  
+  def status()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): CommitHash =
+    CommitHash.unsafe(sh"$git $repoOptions rev-parse HEAD".exec[Text]())
+
   def diff(): Unit = ()
 
 enum Progress:
