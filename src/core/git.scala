@@ -413,6 +413,8 @@ object Octogenarian:
   opaque type CommitHash <: Refspec = Text
 
   object Refspec:
+    def head(n: Int): Refspec = t"HEAD~$n"
+
     def parse(text: Text)(using Errant[GitRefError]): Text =
       text.cut(t"/").each: part =>
         if part.starts(t".") || part.ends(t".") then raise(GitRefError(text))(text)
