@@ -70,7 +70,7 @@ object Dates:
     def of(day: Int): Date = day
     
     def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D)
-          : Date raises DateError =
+            : Date raises DateError =
       cal.julianDay(year, month, day)
 
     given show: Show[Date] = d =>
@@ -78,7 +78,10 @@ object Dates:
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
     given decoder(using Errant[DateError]): Decoder[Date] = parse(_)
-    given encoder: Encoder[Date] = _.show
+    
+    given encoder(using cal: RomanCalendar): Encoder[Date] = date =>
+      import hieroglyph.textMetrics.uniform
+      t"${date.year.show}-${date.month.numerical.show.pad(2, Rtl, '0')}-${date.day.show.pad(2, Rtl, '0')}"
     
     inline given inequality: Inequality[Date, Date] with
       inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
@@ -406,7 +409,7 @@ object Timestamp:
     type Result = Timestamp
     def add(left: Timestamp, right: Timespan): Timestamp = ???
 
-case class Timestamp(date: Date, time: Time)(using cal: Calendar):
+case class Timestamp(date: Date, time: Time):
   infix def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
 
 object MonthName:
