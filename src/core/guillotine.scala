@@ -48,7 +48,11 @@ erased trait CommandOutput[+ExecType <: Label, +ResultType]
 object Executor:
   given stream: Executor[LazyList[Text]] = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
-    reader.lines().nn.toScala(LazyList).map(_.show)
+    reader.lines().nn.toScala(LazyList).map(_.tt)
+  
+  given list: Executor[List[Text]] = proc =>
+    val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
+    reader.lines().nn.toScala(List).map(_.tt)
   
   given text: Executor[Text] = proc =>
     Text.construct(stream.interpret(proc).map(_.s).each(append(_)))
