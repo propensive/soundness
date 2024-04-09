@@ -28,7 +28,7 @@ import nettlesome.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
-import serpentine.*, hierarchies.unix
+import serpentine.{append as _, *}, hierarchies.unix
 import spectacular.*
 import turbulence.*
 
@@ -231,10 +231,57 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
   def reflog(): Unit = ()
   
-  def status()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): CommitHash =
-    CommitHash.unsafe(sh"$git $repoOptions rev-parse HEAD".exec[Text]())
+  def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): CommitHash =
+    CommitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
+
+  def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): List[GitPathStatus] =
+    val ignoredParam = if ignored then sh"--ignored" else sh""
+    
+    def unescape(text: Text): Text = if text.at(0) != '"' then text else Text.construct:
+      def recur(index: Int, escape: Boolean): Unit =
+        if index < text.length then
+          text.s.charAt(index) match
+            case '\\' =>
+              if escape then append('\\')
+              recur(index + 1, !escape)
+
+            case '"' =>
+              if escape then
+                append('"')
+                recur(index + 1, false)
+
+            case char =>
+              append(char)
+              recur(index + 1, false)
+
+      recur(1, false)
+
+    def key(character: Text): Optional[GitStatus] = character match
+      case t" " => Unset
+      case t"M" => GitStatus.Updated
+      case t"A" => GitStatus.Added
+      case t"D" => GitStatus.Deleted
+      case t"R" => GitStatus.Renamed
+      case t"C" => GitStatus.Copied
+      case t"U" => GitStatus.Unmerged
+      case t"?" => GitStatus.Untracked
+      case t"!" => GitStatus.Ignored
+      case _    => Unset
+
+    sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().flatMap:
+      case r"$key1([ ACDMRU?!])$key2([ ADMU?!]) $path(.*)$path2( -> (.*))?" =>
+        val optionalPath = path2.optional.let(_.drop(4)).let(unescape)
+        List(GitPathStatus(key(key1), key(key2), unescape(path), optionalPath))
+
+      case _ =>
+        Nil
 
   def diff(): Unit = ()
+
+enum GitStatus:
+  case Updated, Added, Deleted, Renamed, Copied, Unmerged, Untracked, Ignored
+
+case class GitPathStatus(status1: Optional[GitStatus], status2: Optional[GitStatus], path1: Text, path2: Optional[Text])
 
 enum Progress:
   case Receiving(complete: Double)
