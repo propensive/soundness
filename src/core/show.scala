@@ -139,11 +139,6 @@ object Debug:
       subscript+value.debug.s.tt
     .mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
  
-  private def renderBraille(str: String): String =
-    ("0"*(str.length%2)+str).grouped(2).flatMap: pair =>
-      (16*pair(0) + pair(1) - 39*(16*(pair(0)/48) + (pair(1)/48)) + 10087).toChar.toString
-    .mkString
-  
   private def arrayPrefix(str: String): String =
     val brackets = str.count(_ == '[')
     
