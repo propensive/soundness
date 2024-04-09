@@ -81,7 +81,7 @@ object Dates:
     
     given encoder(using cal: RomanCalendar): Encoder[Date] = date =>
       import hieroglyph.textMetrics.uniform
-      t"${date.year.show}-${date.month.numerical.show.pad(2, Rtl, '0')}-${date.day.show.pad(2, Rtl, '0')}"
+      t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
     
     inline given inequality: Inequality[Date, Date] with
       inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
