@@ -28,7 +28,7 @@ import nettlesome.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
-import serpentine.{append as _, *}, hierarchies.unix
+import serpentine.{append as _, *}, hierarchies.unixOrWindows
 import spectacular.*
 import turbulence.*
 
@@ -41,7 +41,8 @@ import GitError.Detail.*
 object GitError:
   enum Detail:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
-        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed
+        CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed,
+        AddFailed
   
   given Communicable[Detail] =
     case CannotExecuteGit   => msg"the `git` command could not be executed"
@@ -51,6 +52,7 @@ object GitError:
     case BranchDoesNotExist => msg"the branch does not exist"
     case CommitDoesNotExist => msg"the commit does not exist"
     case CommitFailed       => msg"the commit could not be created"
+    case AddFailed          => msg"the path could not be added"
     case PullFailed         => msg"the pull operation did not complete"
     case BranchFailed       => msg"the new branch could not be created"
     case TagFailed          => msg"the new tag could not be created"
@@ -99,6 +101,11 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
     sh"$git $repoOptions push --tags".exec[ExitStatus]()
 
+  def push()(using Log[Text], Internet, Errant[GitError], GitCommand, WorkingDirectory, Errant[ExecError])
+          : Unit =
+
+    sh"$git $repoOptions push".exec[ExitStatus]()
+  
   def switch(branch: Branch)(using GitCommand, Log[Text], WorkingDirectory, Errant[GitError], Errant[ExecError])
           : Unit =
 
@@ -154,7 +161,17 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(BranchFailed))
   
-  def add(): Unit = ()
+  def add[PathType: GenericPath](path: PathType)
+      (using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError], Errant[GitError])
+          : Unit =
+
+    val relativePath: Link = safely(path.pathText.decodeAs[Path].relativeTo(gitDir.path)).or:
+      abort(GitError(InvalidRepoPath))
+
+    sh"$git $repoOptions add $relativePath".exec[ExitStatus]() match
+      case ExitStatus.Ok => ()
+      case failure       => abort(GitError(AddFailed))
+
   def reset(): Unit = ()
   def mv(): Unit = ()
   
