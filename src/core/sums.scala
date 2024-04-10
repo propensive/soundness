@@ -27,7 +27,8 @@ import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
-      (using variantIndex: Int & VariantIndex[VariantType], reflection: SumReflection[DerivationType])
+      (using variantIndex: Int & VariantIndex[VariantType],
+             reflection:   SumReflection[DerivationType])
           : Optional[VariantType] =
     
     type Labels = reflection.MirroredElemLabels
@@ -38,7 +39,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [VariantType2 <: DerivationType] => field =>
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
-  protected inline def variantLabels[DerivationType](using reflection: SumReflection[DerivationType])
+  protected inline def variantLabels[DerivationType]
+      (using reflection: SumReflection[DerivationType])
           : List[Text] =
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
