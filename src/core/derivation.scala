@@ -64,16 +64,17 @@ extends CodlDecoder[ValueType]:
 
 object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
+    val mapping: Map[Text, Text] = summonFrom:
+      case relabelling: CodlRelabelling[DerivationType] => relabelling.relabelling()
+      case _                                            => Map()
+
     new CodlEncoder[DerivationType]:
       def schema: CodlSchema =
         val elements = contexts:
           [FieldType] => context =>
             
             // FIXME: Move this outside of `contexts`
-            val label2 = summonFrom:
-              case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
-              case _                                            => label
-
+            val label2 = mapping.at(label).or(label)
             CodlSchema.Entry(label2, context.schema)
 
         Struct(elements.to(List), Arity.One)
