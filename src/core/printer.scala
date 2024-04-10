@@ -75,7 +75,7 @@ object Printer:
                 children.each: child =>
                   (child: @unchecked) match
                     case CodlNode(Data(key, _, layout, _), _) =>
-                      out.write(' ')
+                      out.write("  ")
                       out.write(key.s)
                 out.write('\n')
 
