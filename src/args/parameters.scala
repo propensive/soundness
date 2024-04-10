@@ -141,7 +141,10 @@ case class Flag[OperandType]
      description: Optional[Text] = Unset,
      secret: Boolean             = false)
     (using FlagInterpreter[OperandType]):
-  
+ 
+  def suggest(suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
+    cli.register(this, suggestions)
+
   def matches(key: Argument): Boolean =
     val flag = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then key().at(1) else Unset
     flag == name || aliases.contains(flag)
