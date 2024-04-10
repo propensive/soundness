@@ -36,13 +36,15 @@ import scala.compiletime.*
 
 //import language.experimental.captureChecking
 
+given Realm = realm"octogenarian"
+
 import GitError.Detail.*
 
 object GitError:
   enum Detail:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
         CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed,
-        AddFailed
+        AddFailed, NoWorkTree
   
   given Communicable[Detail] =
     case CannotExecuteGit   => msg"the `git` command could not be executed"
@@ -56,6 +58,7 @@ object GitError:
     case PullFailed         => msg"the pull operation did not complete"
     case BranchFailed       => msg"the new branch could not be created"
     case TagFailed          => msg"the new tag could not be created"
+    case NoWorkTree         => msg"this bare repository does not have a work tree"
     case CannotSwitchBranch => msg"the branch could not be changed"
 
 
@@ -165,16 +168,27 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       (using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError], Errant[GitError])
           : Unit =
 
-    val relativePath: Link = safely(path.pathText.decodeAs[Path].relativeTo(gitDir.path)).or:
-      abort(GitError(InvalidRepoPath))
+    val relativePath: Link =
+      workTree.let: workTree =>
+        safely(path.pathText.decodeAs[Path].relativeTo(workTree.path)).or:
+          abort(GitError(AddFailed))
+      .or(abort(GitError(NoWorkTree)))
 
-    sh"$git $repoOptions add $relativePath".exec[ExitStatus]() match
+    val command = sh"$git $repoOptions add $relativePath"
+    Log.info(t"$command")
+    command.exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(AddFailed))
 
   def reset(): Unit = ()
   def mv(): Unit = ()
-  
+ 
+  object config:
+    def get[ValueType: Decoder](variable: Text)
+        (using GitCommand, WorkingDirectory, Log[Text], Errant[GitError], Errant[ExecError])
+            : ValueType =
+      sh"$git $repoOptions config --get $variable".exec[Text]().decodeAs[ValueType]
+
   def tags()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): List[Tag] =
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
 
