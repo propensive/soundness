@@ -120,6 +120,7 @@ extension [ElemType](seq: Seq[ElemType])
   inline def prim: Optional[ElemType] = if seq.isEmpty then Unset else seq.head
   inline def sec: Optional[ElemType] = if seq.length < 2 then Unset else seq(1)
   inline def ter: Optional[ElemType] = if seq.length < 3 then Unset else seq(2)
+  inline def unique: Optional[ElemType] = if seq.length == 1 then seq.head else Unset
 
   def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
     @tailrec
