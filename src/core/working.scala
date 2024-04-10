@@ -26,6 +26,7 @@ case class HomeDirectoryError() extends Error(msg"there is no home directory")
 
 object WorkingDirectory:
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
+  def apply[PathType: GenericPath](path: PathType): WorkingDirectory = () => path.pathText
 
 @capability
 trait WorkingDirectory:
