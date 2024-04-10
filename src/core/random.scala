@@ -54,12 +54,10 @@ object Arbitrary extends Derivation[Arbitrary]:
   given double(using distribution: Distribution): Arbitrary[Double] = distribution.transform(_)
 
   inline def join[DerivationType <: Product: ProductReflection]: Arbitrary[DerivationType] = random =>
-    given seed: Seed = random[Seed]()
     stochastic(using summonInline[RandomNumberGenerator]):
       construct { [FieldType] => arbitrary => arbitrary.from(summon[Random]) }
 
   inline def split[DerivationType: SumReflection]: Arbitrary[DerivationType] = random =>
-    given seed: Seed = random[Seed]()
     stochastic(using summonInline[RandomNumberGenerator]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
         [VariantType <: DerivationType] => arbitrary => arbitrary.from(summon[Random])
