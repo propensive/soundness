@@ -23,3 +23,12 @@ project fulminate
     compiler  scala
     sources   src/core
     include   anticipation/print
+  
+  stream latest
+    lifetime 7
+    guarantee functionality
+
+  stream stable
+    lifetime 180
+    guarantee source
+
