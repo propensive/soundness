@@ -19,7 +19,7 @@ package anthology
 import anticipation.*
 import vacuous.*
 import digression.*
-import parasite.*, asyncOptions.cancelOrphans
+import parasite.*
 import turbulence.*
 import fulminate.*
 import eucalyptus.*
