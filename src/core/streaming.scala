@@ -162,7 +162,7 @@ object Readable:
   given bufferedReader(using streamCut: Errant[StreamError]): Readable[ji.BufferedReader, Line] =
     reader =>
       def recur(count: ByteSize): LazyList[Line] =
-        try reader.readLine match
+        try reader.readLine() match
           case null         => LazyList()
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException =>

@@ -52,6 +52,7 @@ case class Multiplexer[KeyType, ElementType]()(using Monitor, Mitigator):
   
   def stream: LazyList[ElementType] =
     LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
+     .asInstanceOf[LazyList[ElementType]]
 
 extension [ElementType](stream: LazyList[ElementType])
 

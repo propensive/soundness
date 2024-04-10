@@ -32,6 +32,7 @@ class Funnel[ItemType]():
   
   def stream: LazyList[ItemType] =
     LazyList.continually(queue.take().nn).takeWhile(_ != Funnel.Termination)
+     .asInstanceOf[LazyList[ItemType]]
 
 class Gun() extends Funnel[Unit]():
   def fire(): Unit = put(())
