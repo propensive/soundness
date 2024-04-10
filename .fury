@@ -35,6 +35,14 @@ project capricious
     sources   src/test
     include   capricious/core
 
+  stream latest
+    lifetime 7
+    guarantee functionality
+
+  stream stable
+    lifetime 180
+    guarantee source
+
 ##
 code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
 vpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHsCUQUxJ467qpYHmNWwOb+lqVdcqL6gimJ\
