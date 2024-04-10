@@ -82,7 +82,6 @@ extends Errant[ErrorType]:
 
 @capability
 class EitherStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Either[ErrorType, SuccessType]])
-    (using @annotation.constructorOnly unexpectedSuccess: Errant[UnexpectedSuccessError[SuccessType]])
 extends Errant[ErrorType]:
 
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
