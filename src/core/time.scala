@@ -122,6 +122,18 @@ object Dates:
 
     @targetName("plus")
     infix def + (period: Period)(using Calendar): Date = Date.plus.add(date, period)
+
+    @targetName("gt")
+    infix def > (right: Date): Boolean = date > right
+    
+    @targetName("lt")
+    infix def < (right: Date): Boolean = date < right
+    
+    @targetName("lte")
+    infix def <= (right: Date): Boolean = date <= right
+    
+    @targetName("gte")
+    infix def >= (right: Date): Boolean = date >= right
     
 export Dates.Date
 
