@@ -32,7 +32,6 @@ import dotty.tools.*, dotc.util as dtdu
 object reflection:
   def expand[T](expr: Expr[T])(using Quotes): Display =
     import quotes.reflect.*
-    import treeStyles.default
 
     def init = expr.asTerm.pos.startColumn
     
