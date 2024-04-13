@@ -23,7 +23,7 @@ import gossamer.*
 import spectacular.*
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
-import escritoire.*, tableStyles.horizontalGaps
+import escritoire.*, tableStyles.minimal
 import dendrology.*
 
 import scala.quoted.*
