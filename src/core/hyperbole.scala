@@ -83,7 +83,7 @@ object reflection:
     val tree: TastyTree = TastyTree.expand(expr.asTerm)
     
     val seq: Seq[Expansion] = TreeDiagram.by[TastyTree](_.children)(tree).map: node =>
-      Expansion(tiles.drop(1).map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
+      Expansion(tiles.drop(1).map(treeStyles.default.text(_)).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
 
     Table[Expansion](
       Column(e"TASTy")(_.text.display),
