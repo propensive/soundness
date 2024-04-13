@@ -23,14 +23,14 @@ import gossamer.*
 import spectacular.*
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
-import escritoire.*, tableStyles.minimal
+import escritoire.*, tableStyles.minimal, insufficientSpaceHandling.ignore
 import dendrology.*
 
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
 object reflection:
-  def expand[T](expr: Expr[T])(using Quotes): Text =
+  def expand[T](expr: Expr[T])(using Quotes): Display =
     import quotes.reflect.*
     import treeStyles.default
 
@@ -81,21 +81,17 @@ object reflection:
         case _ =>
           TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
 
-    val tree = TastyTree.expand(expr.asTerm)
+    val tree: TastyTree = TastyTree.expand(expr.asTerm)
     
-    def exp(prefix: List[TreeTile], node: TastyTree) =
-      Expansion(prefix.drop(1).map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
-    
-    val seq: Seq[Expansion] = drawTree[TastyTree, Expansion](_.children, exp)(List(tree))
-
+    val seq: Seq[Expansion] = TreeDiagram.by[TastyTree](_.children)(tree).map: node =>
+      Expansion(tiles.drop(1).map(_.show).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
 
     Table[Expansion](
       Column(e"TASTy")(_.text.display),
       Column(e"Param")(_.param.or(t"")),
       Column(e"Source")(_.source),
       Column(e"Code")(_.expr)
-    ).tabulate(seq)(400, DelimitRows.None).join(e"\n").render
+    ).tabulate(seq).layout(400).render.join(e"\n")
 
 
-case class Expe(text: Text, param: Optional[Text], expr: Text, source: Text)
-
+case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
