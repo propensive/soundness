@@ -78,8 +78,11 @@ object TreeDiagram:
 
 case class TreeDiagram[NodeType](lines: LazyList[(List[TreeTile], NodeType)]):
   def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): LazyList[LineType] =
-    lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
-  
+    map[LineType] { node => style.serialize(tiles, line(node)) }
+ 
+  def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): LazyList[RowType] =
+    lines.map(line(using _)(_))
+
   def nodes: LazyList[NodeType] = lines.map(_(1))
   def tiles: LazyList[List[TreeTile]] = lines.map(_(0))
 
