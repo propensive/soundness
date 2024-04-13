@@ -59,6 +59,7 @@ object reflection:
         case PackageClause(ref, chs)    => TastyTree(t"PackageClause", tree, expand(ref) :: chs.map(expand))
         case Bind(name, term)           => TastyTree(t"Bind", tree, List(expand(term)), name.show)
         case Typed(focus, tt)           => TastyTree(t"Typed", tree, List(expand(focus), expand(tt)))
+        case TypedOrTest(focus, tt)     => TastyTree(t"TypedOrTest", tree, List(expand(focus), expand(tt)))
         case Inlined(_, _, child)       => TastyTree(t"Inlined", tree, List(expand(child)))
         case Apply(focus, children)     => TastyTree(t"Apply", tree, expand(focus) :: children.map(expand))
         case TypeApply(focus, children) => TastyTree(t"TypeApply", tree, expand(focus) :: children.map(expand))
@@ -72,6 +73,8 @@ object reflection:
         case Match(focus, cases)        => TastyTree(t"Match", tree, expand(focus) :: cases.map(expand))
         case Applied(name, tts)         => TastyTree(t"Applied", tree, expand(name) :: tts.map(expand))
         case Repeated(xs, _)            => TastyTree(t"Repeated", tree, Nil)
+        case Unapply(fn, _, tts)        => TastyTree(t"UnApply", tree, expand(fn) :: tts.map(expand))
+        case tree: TypeTree             => TastyTree(t"TypeTree", tree, Nil)
         case DefDef(name, ps, typs, ch) => TastyTree(t"DefDef", tree, ch.to(List).map(expand))
         
         case CaseDef(focus, t1, t2) =>
@@ -90,7 +93,7 @@ object reflection:
       Column(e"Param")(_.param.or(t"")),
       Column(e"Source")(_.source),
       Column(e"Code")(_.expr)
-    ).tabulate(seq).layout(400).render.join(e"\n")
+    ).tabulate(seq).layout(200).render.join(e"\n")
 
 
 case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
