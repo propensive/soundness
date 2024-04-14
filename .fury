@@ -25,6 +25,13 @@ project cellulose
     include   chiaroscuro/core
     include   polyvinyl/core
 
+  module tests
+    compiler  scala
+    sources   src/test
+    include   probably/cli
+    include   cellulose/core
+    include   eucalyptus/core
+
   stream latest
     lifetime 7
     guarantee functionality
