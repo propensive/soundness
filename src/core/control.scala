@@ -41,26 +41,27 @@ object Errant:
 
 @capability
 trait Errant[-ErrorType <: Error] extends Pure:
-
-  private inline def raises: this.type = this
+  private inline def errant: this.type = this
 
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
   def contramap[ErrorType2 <: Error](lambda: ErrorType2 -> ErrorType): Errant[ErrorType2] =
     new Errant[ErrorType2]:
-      def record(error: ErrorType2): Unit = raises.record(lambda(error))
-      def abort(error: ErrorType2): Nothing = raises.abort(lambda(error))
+      def record(error: ErrorType2): Unit = errant.record(lambda(error))
+      def abort(error: ErrorType2): Nothing = errant.abort(lambda(error))
 
 @capability
-class ThrowStrategy
-    [ErrorType <: Error, SuccessType]()(using @annotation.constructorOnly error: CanThrow[ErrorType])
+class ThrowStrategy[ErrorType <: Error, SuccessType]()
+    (using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Errant[ErrorType]:
+
   def record(error: ErrorType): Unit = throw error
   def abort(error: ErrorType): Nothing = throw error
 
 @capability
-class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm) extends Errant[ErrorType]:
+class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
+extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = fail(error.message)
   def abort(error: ErrorType): Nothing = fail(error.message)
 
@@ -71,7 +72,6 @@ class AggregateStrategy
 extends Errant[ErrorType]:
 
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
-  
   def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)
   
   def abort(error: ErrorType): Nothing =
@@ -83,7 +83,6 @@ extends Errant[ErrorType]:
 @capability
 class EitherStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Either[ErrorType, SuccessType]])
 extends Errant[ErrorType]:
-
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
 
@@ -185,8 +184,11 @@ def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
 
 case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
 extends Error(Communicable.listMessage.message(errors.map(_.message))):
+
   @targetName("add")
-  def + [ErrorType2 <: Error](error: AggregateError[ErrorType2]): AggregateError[ErrorType | ErrorType2] =
+  def + [ErrorType2 <: Error](error: AggregateError[ErrorType2])
+          : AggregateError[ErrorType | ErrorType2] =
+
     AggregateError(errors ++ error.errors)
 
 case class UnexpectedSuccessError[ResultType](result: ResultType)
@@ -196,7 +198,8 @@ package errorHandlers:
   given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
     ThrowStrategy()(using unsafeExceptions.canThrowAny)
 
-  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]: ThrowStrategy[ErrorType, SuccessType] =
+  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
+          : ThrowStrategy[ErrorType, SuccessType] =
     ThrowStrategy()
 
 infix type raises[SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
@@ -211,9 +214,10 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
 
   def success: Boolean = !failure
 
-  def map[SuccessType2](lambda: SuccessType => SuccessType2): Attempt[SuccessType2, ErrorType] = this match
-    case Success(success) => Success(lambda(success))
-    case Failure(failure) => Failure(failure)
+  def map[SuccessType2](lambda: SuccessType => SuccessType2): Attempt[SuccessType2, ErrorType] =
+    this match
+      case Success(success) => Success(lambda(success))
+      case Failure(failure) => Failure(failure)
   
   def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
     case Success(value) => Success(value)
@@ -230,6 +234,24 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
     case Success(value) => value
     case Failure(error) => abort(error)
 
-  def recover[SuccessType2 >: SuccessType](block: PartialFunction[ErrorType, SuccessType2]): SuccessType2 = this match
-    case Success(value) => value
-    case Failure(error) => block(error)
+  def recover[SuccessType2 >: SuccessType](block: PartialFunction[ErrorType, SuccessType2])
+          : SuccessType2 =
+
+    this match
+      case Success(value) => value
+      case Failure(error) => block(error)
+
+case class Tended[ErrorType <: Error, ResultType](lambda: Errant[ErrorType] => ResultType)
+
+extension [ErrorType <: Error, ResultType](inline context: Tended[ErrorType, ResultType])
+  transparent inline def remedy(inline lambda: PartialFunction[ErrorType, ResultType]): Any =
+    ${Contingency.remedy('context, 'lambda)}
+  
+  inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2]): Any =
+    ${Contingency.mitigate('context, 'lambda)}
+
+inline def tend[ResultType, ErrorType <: Error](inline block: Errant[ErrorType] ?=> ResultType)
+        : Tended[ErrorType, ResultType] =
+
+  Tended[ErrorType, ResultType](block(using _))
+
