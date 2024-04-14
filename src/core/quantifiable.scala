@@ -29,7 +29,8 @@ trait Quantifiable[QuantityType, UnitsType <: Units[?, ?]]:
 
 extension (value: Double)
   @targetName("times")
-  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] = quantity*value
+  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] =
+    quantity*value
   
   @targetName("divide")
   transparent inline infix def / [UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
@@ -50,7 +51,9 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
   
   @targetName("times2")
-  transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
+          : Any =
+
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
   
   @targetName("times3")
@@ -58,14 +61,21 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
     quantity*Quantity(double)
   
   @targetName("divide2")
-  transparent inline infix def / [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2]): Any =
+  transparent inline infix def / [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
+          : Any =
+
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
   
   @targetName("divide3")
-  transparent inline infix def / [UnitsType2 <: Measure](inline double: Double): Any = quantity/Quantity(double)
+  transparent inline infix def / [UnitsType2 <: Measure](inline double: Double): Any =
+    quantity/Quantity(double)
 
-  inline def sqrt(using root: RootOperator[2, Quantity[UnitsType]]): root.Result = root.root(quantity)
-  inline def cbrt(using root: RootOperator[3, Quantity[UnitsType]]): root.Result = root.root(quantity)
+  inline def sqrt(using root: RootOperator[2, Quantity[UnitsType]]): root.Result =
+    root.root(quantity)
+
+  inline def cbrt(using root: RootOperator[3, Quantity[UnitsType]]): root.Result =
+    root.root(quantity)
+
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[UnitsType]}

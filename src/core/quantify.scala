@@ -260,7 +260,9 @@ object Quantitative extends Quantitative2:
     erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
-    given genericDuration: GenericDuration[Quantity[Seconds[1]]] = quantity => (quantity*1000.0).toLong
+    given genericDuration: GenericDuration[Quantity[Seconds[1]]] =
+      quantity => (quantity*1000.0).toLong
+    
     given specificDuration: SpecificDuration[Quantity[Seconds[1]]] = long => Quantity(long/1000.0)
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
@@ -291,7 +293,8 @@ object Quantitative extends Quantitative2:
       type Result = Quantity[LeftType]
       inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
-    transparent inline given squareRoot[ValueType <: Measure]: RootOperator[2, Quantity[ValueType]] =
+    transparent inline given squareRoot[ValueType <: Measure]
+            : RootOperator[2, Quantity[ValueType]] =
       ${Quantitative.sqrtTypeclass[ValueType]}
     
     transparent inline given cubeRoot[ValueType <: Measure]: RootOperator[3, Quantity[ValueType]] =
@@ -299,7 +302,9 @@ object Quantitative extends Quantitative2:
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
     given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
-    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] = int => Quantity(int.toDouble)
+    
+    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] =
+      int => Quantity(int.toDouble)
 
     given inequality[UnitsType <: Measure, UnitsType2 <: Measure]
             : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with

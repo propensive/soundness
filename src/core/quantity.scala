@@ -127,7 +127,7 @@ trait Quantitative2:
   class UnitRef(val unitType: Type[?], val name: String):
     def unitName(using Quotes): Expr[Text] = (power(1).asType: @unchecked) match
       case '[unitType] => Expr.summon[UnitName[unitType]] match
-        case None       => '{Text(${Expr(name)})}
+        case None       => '{${Expr(name)}.tt}
         case Some(name) => '{$name.text}
 
     def ref(using Quotes): quotes.reflect.TypeRepr =
@@ -178,10 +178,8 @@ trait Quantitative2:
                 .getOrElse("the same quantity")
   
               fail:
-                msg"""
-                  the operands both represent ${dimensionName}, but there is no principal unit
-                  specified for this dimension
-                """
+                msg"""the operands both represent ${dimensionName}, but there is no principal unit
+                      specified for this dimension"""
 
             case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
               case '[PrincipalUnit[dimensionType, units]] =>
@@ -225,12 +223,12 @@ trait Quantitative2:
                   "the same physical quantity"
               
               fail:
-                msg"""
-                  both operands represent $dimensionName, but the coversion ratio between them is not known
+                msg"""both operands represent $dimensionName, but the coversion ratio between them
+                      is not known
     
-                  To provide the conversion ratio, please provide a contextual instance in scope, with the type,
-                  `Ratio[${from.name}[1] & ${to.name}[-1]]`, or `Ratio[${to.name}[1] & ${from.name}[-1]]`.
-                """
+                      To provide the conversion ratio, please provide a contextual instance in
+                      scope, with the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or
+                      `Ratio[${to.name}[1] & ${from.name}[-1]]`."""
 
           case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
             case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
@@ -304,10 +302,8 @@ trait Quantitative2:
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
         fail:
-          msg"""
-            the left operand represents $leftName, but the right operand represents $rightName; these are
-            incompatible physical quantities
-          """
+          msg"""the left operand represents $leftName, but the right operand represents $rightName;
+                these are incompatible physical quantities"""
       
       case _ =>
         fail(msg"the operands represent different physical quantities")
@@ -323,12 +319,12 @@ trait Quantitative2:
 
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-        '{  Multiplication[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]}  }
+       '{ Multiplication[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+            ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]} }
       
       case None =>
-        '{  Multiplication[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, false).asExprOf[Double]}  }
+       '{ Multiplication[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+            ${Quantitative.multiply('left, 'right, false).asExprOf[Double]} }
 
 
   def divTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
@@ -342,35 +338,48 @@ trait Quantitative2:
 
     ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-        '{  Division[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]}  }
+       '{ Division[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+            ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]} }
       
       case None =>
-        '{  Division[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
-              ${Quantitative.multiply('left, 'right, true).asExprOf[Double]}  }
+       '{ Division[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+            ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
   
-  def sqrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[RootOperator[2, Quantity[ValueType]]] =
+  def sqrtTypeclass[ValueType <: Measure: Type](using Quotes)
+          : Expr[RootOperator[2, Quantity[ValueType]]] =
+
     val units = UnitsMap[ValueType]
 
     if !units.map.values.all(_.power%2 == 0)
     then fail(msg"only quantities with units in even powers can have square roots calculated")
     else
-      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap)
-          .repr.get.asType: @unchecked) match
+      val unitsType =
+        UnitsMap:
+          units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap
+        .repr.get.asType
+      
+      (unitsType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           val sqrt = '{ (value: Quantity[ValueType]) => Quantity(math.sqrt(value.value)) }
           val cast = sqrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
           
           '{Extraction[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
       
-  def cbrtTypeclass[ValueType <: Measure: Type](using Quotes): Expr[RootOperator[3, Quantity[ValueType]]] =
+  def cbrtTypeclass[ValueType <: Measure: Type](using Quotes)
+          : Expr[RootOperator[3, Quantity[ValueType]]] =
+
     val units = UnitsMap[ValueType]
 
     if !units.map.values.all(_.power%3 == 0)
-    then fail(msg"only quantities with units whose powers are multiples of 3 can have cube roots calculated")
+    then fail:
+      msg"only quantities with units whose powers are multiples of 3 can have cube roots calculated"
     else
-      (UnitsMap(units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap)
-          .repr.get.asType: @unchecked) match
+      val unitsType =
+        UnitsMap:
+          units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap
+        .repr.get.asType
+
+      (unitsType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
           val cbrt = '{ (value: Quantity[ValueType]) => Quantity(math.cbrt(value.value)) }
           val cast = cbrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
@@ -396,7 +405,8 @@ trait Quantitative2:
 
     if left2 != right2 then incompatibleTypes(left, right)
 
-    if !invert.valueOrAbort then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
+    if !invert.valueOrAbort
+    then if closed then '{$leftValue <= $rightValue} else '{$leftValue < $rightValue}
     else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
   def add[LeftType <: Measure: Type, RightType <: Measure: Type]
@@ -428,9 +438,9 @@ trait Quantitative2:
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
-      case Some('[type resultType <: Measure; resultType]) =>
-        '{  Subtraction[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-              ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[resultType]]}  }
+      case Some('[type measureType <: Measure; measureType]) =>
+       '{ Subtraction[Quantity[LeftType], Quantity[RightType], Quantity[measureType]]: (left, right) =>
+            ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} }
               
   def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
           : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
@@ -439,8 +449,8 @@ trait Quantitative2:
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-        '{  Addition[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-              ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]}  }
+       '{ Addition[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+            ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} }
 
   def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
       (expr: Expr[Quantity[UnitsType]])
@@ -457,5 +467,5 @@ trait Quantitative2:
   
   def describe[UnitsType <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[UnitsType].dimensionality.quantityName match
-      case Some(name) => '{Text(${Expr(name)})}
+      case Some(name) => '{${Expr(name)}.tt}
       case None       => fail(msg"there is no descriptive name for this physical quantity")
