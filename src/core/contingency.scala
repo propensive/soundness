@@ -45,17 +45,27 @@ object Contingency:
       case other =>
         fail(msg"bad pattern")
 
+    def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
+      case OrType(left, right) => unpack(left) ++ unpack(right)
+      case other               => Set(other)
+    
+    val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
+    
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
       case Typed(_, matchType)   => List(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
       case Wildcard()            => fail(msg"wildcard")
       
+      case Unapply(select, _, _) =>
+        if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
+        else fail(msg"Unapply ${select.symbol.declaredType.toString}")
+      
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
       
       case other =>
-        fail(msg"too general: ${other.toString}")
+        fail(msg"this pattern could not be recognized as a distinct `Error` type")
 
     val caseDefs: List[CaseDef] = handler.asTerm match
       case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
@@ -66,23 +76,19 @@ object Contingency:
       case _ =>
         fail(msg"unexpected lambda")
 
-    val handledTypes: List[TypeRepr] = caseDefs.flatMap:
-      case CaseDef(pattern, _, _) => patternType(pattern)
+    val handledTypes: List[Symbol] =
+      caseDefs.flatMap:
+        case CaseDef(pattern, _, _) => patternType(pattern)
+      .map(_.typeSymbol)
       
     val resolutionErrorTypes: List[TypeRepr] = caseDefs.flatMap:
       case CaseDef(_, _, rhs) => List(rhs.tpe)
 
-    def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
-      case OrType(left, right) => unpack(left) ++ unpack(right)
-      case other               => Set(other)
-    
     def pack(reprs: List[TypeRepr]): TypeRepr = reprs.foldLeft(TypeRepr.of[Error])(OrType(_, _))
     
-    val requiredHandlers = unpack(TypeRepr.of[ErrorType])
-    val unhandledErrorTypes: List[TypeRepr] = (requiredHandlers -- handledTypes).to(List)
+    val unhandledErrorTypes: List[Symbol] = (requiredHandlers -- handledTypes).to(List)
 
-    val errantTypes: List[TypeRepr] = unhandledErrorTypes.map(_.asType).map:
-      case '[type errorType <: Error; errorType] => TypeRepr.of[Errant[errorType]]
+    report.info(s"Unhandled error types: ${unhandledErrorTypes.toString}")
 
     def typeLambda[InsideType[_]: Type](errorTypes: List[TypeRepr])
         (makeExpr: Expr[PartialFunction[ErrorType, Nothing] => ResultType] => Expr[InsideType[ResultType]])
@@ -107,7 +113,7 @@ object Contingency:
                   ${makeExpr('makeResult2)}
                 }
     
-    val result = typeLambda[[ParamType] =>> ParamType](unhandledErrorTypes): fn =>
+    val result = typeLambda[[ParamType] =>> ParamType](unhandledErrorTypes.map(_.typeRef)): fn =>
       '{$fn(PartialFunction.empty[ErrorType, Nothing])}
     
     result.asExpr
