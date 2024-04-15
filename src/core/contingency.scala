@@ -26,23 +26,39 @@ import scala.compiletime.*
 given realm: Realm = realm"contingency"
 
 object Contingency:
-  def mitigate[ErrorType <: Error: Type, ResultType: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ? <: Error]])
-      (using Quotes)
-           : Expr[Any] = '{???}
-  
-  def remedy[ErrorType <: Error: Type, ResultType: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ResultType]])
-      (using Quotes)
-           : Expr[Any] =
-
+  private def action[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+      (context: Expr[Tended[ErrorType, ResultType]])
+          : Expr[Errant[ErrorType] ?=> ResultType] =
     import quotes.reflect.*
 
-    val action: Expr[Errant[ErrorType] ?=> ResultType] = context.asTerm match
+    context.asTerm match
       case Inlined(None, Nil, Apply(_, List(action))) =>
         action.asExprOf[Errant[ErrorType] ?=> ResultType]
+      
+      case _ =>
+        throw Panic(msg"the tended action was not in the expected form")
+
+  private def caseDefs[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+      (handler: Expr[PartialFunction[ErrorType, ResultType]])
+          : List[quotes.reflect.CaseDef] =
+    import quotes.reflect.*
+    
+    handler.asTerm match
+      case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
+        cases.flatMap:
+          case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
+          case _                                   => Nil
+      
+      case _ =>
+        fail(msg"unexpected lambda")
+
+
+  
+  private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+      (handler: Expr[PartialFunction[ErrorType, ResultType]])
+          : List[quotes.reflect.Symbol] =
+
+    import quotes.reflect.*
 
     def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
       case Wildcard()          => true
@@ -83,59 +99,65 @@ object Contingency:
       case other =>
         fail(msg"this pattern could not be recognized as a distinct `Error` type")
 
-    val caseDefs: List[CaseDef] = handler.asTerm match
-      case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
-        cases.flatMap:
-          case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
-          case _                                   => Nil
-      
-      case _ =>
-        fail(msg"unexpected lambda")
-
     val handledTypes: List[Symbol] =
-      caseDefs.flatMap:
+      caseDefs(handler).flatMap:
         case CaseDef(pattern, _, _) => patternType(pattern)
       .map(_.typeSymbol)
       
-    val resolutionErrorTypes: List[TypeRepr] = caseDefs.flatMap:
-      case CaseDef(_, _, rhs) => List(rhs.tpe)
+    (requiredHandlers -- handledTypes).to(List)
 
-    def pack(reprs: List[TypeRepr]): TypeRepr = reprs.foldLeft(TypeRepr.of[Error])(OrType(_, _))
+
+  def mitigate[ErrorType <: Error: Type, ResultType: Type, ErrorType2 <: Error: Type]
+      (context: Expr[Tended[ErrorType, ResultType]],
+       handler: Expr[PartialFunction[ErrorType, ErrorType2]])
+      (using Quotes)
+           : Expr[Any] =
     
-    val unhandledErrorTypes: List[Symbol] = (requiredHandlers -- handledTypes).to(List)
+    '{???}
 
-    report.info(s"Unhandled error types: ${unhandledErrorTypes.toString}")
+    
+  def remedy[ErrorType <: Error: Type, ResultType: Type]
+      (context: Expr[Tended[ErrorType, ResultType]],
+       handler: Expr[PartialFunction[ErrorType, ResultType]])
+      (using Quotes)
+           : Expr[Any] =
+    
+    import quotes.reflect.*
 
-    def typeLambda[InsideType[_]: Type](errorTypes: List[TypeRepr])
-        (makeExpr: Expr[PartialFunction[ErrorType, Nothing] => ResultType] => Expr[InsideType[ResultType]])
+    def wrap[InsideType[_]: Type](errorTypes: List[TypeRepr])
+        (makeExpr: Expr[PartialFunction[ErrorType, Nothing] => ResultType] =>
+                     Expr[InsideType[ResultType]])
             : Term =
 
       errorTypes match
         case Nil =>
           makeExpr
-           ('{
-              (pf: PartialFunction[ErrorType, Nothing]) =>
+           ('{(partialFunction0: PartialFunction[ErrorType, Nothing]) =>
                 boundary: label ?=>
-                  $action(using new RemedyErrant[ResultType, ErrorType]($handler.andThen(boundary.break(_)).orElse(pf), label))
+                  val partialFunction = $handler.andThen(boundary.break(_)).orElse(partialFunction0)
+                  val errant = new RemedyErrant[ResultType, ErrorType](partialFunction)
+                  ${action(context)}(using errant)
             }).asTerm
         
-        case errorType :: more => errorType.asType match
+        case errorType :: more => (errorType.asType: @unchecked) match
           case '[type errorType <: ErrorType; errorType] =>
-            typeLambda[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
+            wrap[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
               (makeResult: Expr[PartialFunction[ErrorType, Nothing] => ResultType]) =>
                 '{ (errant: Errant[errorType]) ?=>
                   val makeResult2: PartialFunction[ErrorType, Nothing] => ResultType =
-                    pf => $makeResult(pf.orElse { case error: `errorType` => errant.abort(error) })
+                    partialFunction =>
+                      $makeResult:
+                        partialFunction.orElse { case error: `errorType` => errant.abort(error) }
                   ${makeExpr('makeResult2)}
                 }
     
-    val result = typeLambda[[ParamType] =>> ParamType](unhandledErrorTypes.map(_.typeRef)): fn =>
-      '{$fn(PartialFunction.empty[ErrorType, Nothing])}
-    
-    result.asExpr
+    wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
+      '{$function(PartialFunction.empty[ErrorType, Nothing])}
+    .asExpr
 
-class RemedyErrant[ResultType, ErrorType <: Error](pf: PartialFunction[ErrorType, Nothing], label: boundary.Label[ResultType])
+class RemedyErrant[ResultType, ErrorType <: Error]
+    (partialFunction: PartialFunction[ErrorType, Nothing])
 extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = abort(error)
-  def abort(error: ErrorType): Nothing = pf(error)
+  def abort(error: ErrorType): Nothing = partialFunction(error)
    

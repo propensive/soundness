@@ -78,16 +78,19 @@ extends Errant[ErrorType]:
     boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
   
   def finish(): Unit =
-    if !collected.get().nn.isEmpty then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
+    if !collected.get().nn.isEmpty
+    then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
 
 @capability
-class EitherStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Either[ErrorType, SuccessType]])
+class EitherStrategy[ErrorType <: Error, SuccessType]
+    (label: boundary.Label[Either[ErrorType, SuccessType]])
 extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
 
 @capability
-class OptionalStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Optional[SuccessType]])
+class OptionalStrategy[ErrorType <: Error, SuccessType]
+    (label: boundary.Label[Optional[SuccessType]])
 extends Errant[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
@@ -96,7 +99,8 @@ extends Errant[ErrorType]:
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
 @capability
-class AttemptStrategy[ErrorType <: Error, SuccessType](label: boundary.Label[Attempt[SuccessType, ErrorType]])
+class AttemptStrategy[ErrorType <: Error, SuccessType]
+    (label: boundary.Label[Attempt[SuccessType, ErrorType]])
 extends Errant[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
@@ -119,7 +123,8 @@ def raise[SuccessType, ErrorType <: Error](error: ErrorType)(ersatz: => SuccessT
   handler.record(error)
   ersatz
 
-def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Errant[ErrorType]): Nothing =
+def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Errant[ErrorType])
+        : Nothing =
   handler.abort(error)
 
 def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
@@ -131,7 +136,8 @@ def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
   catch case error: Exception => Unset
 
 def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
-    (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
+              SuccessType)
         : SuccessType =
 
   boundary: label ?=>
@@ -247,7 +253,9 @@ extension [ErrorType <: Error, ResultType](inline context: Tended[ErrorType, Res
   transparent inline def remedy(inline lambda: PartialFunction[ErrorType, ResultType]): Any =
     ${Contingency.remedy('context, 'lambda)}
   
-  inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2]): Any =
+  inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2])
+          : Any =
+
     ${Contingency.mitigate('context, 'lambda)}
 
 inline def tend[ResultType, ErrorType <: Error](inline block: Errant[ErrorType] ?=> ResultType)
