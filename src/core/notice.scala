@@ -72,7 +72,7 @@ class CompileProcess():
   def put(result: CompileResult): Unit = completion.offer(result)
   def put(task: Task[Unit]): Unit = compilation = task
 
-  def complete()(using Monitor, Mitigator, Log[Text]): CompileResult raises ConcurrencyError =
+  def complete()(using Monitor, Interceptor, Log[Text]): CompileResult raises ConcurrencyError =
     try completion.await() finally
       safely(compilation.let(_.await()))
       safely(noticesFunnel.stop())
