@@ -29,7 +29,7 @@ import language.experimental.pureFunctions
 object Multiplexer:
   private object Termination
 
-case class Multiplexer[KeyType, ElementType]()(using Monitor, Mitigator):
+case class Multiplexer[KeyType, ElementType]()(using Monitor, Interceptor):
   private val tasks: TrieMap[KeyType, Task[Unit]] = TrieMap()
   
   private val queue: juc.LinkedBlockingQueue[ElementType | Multiplexer.Termination.type] =
@@ -67,7 +67,7 @@ extension [ElementType](stream: LazyList[ElementType])
       case _             => LazyList()
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-      (using Monitor, Mitigator, Errant[ConcurrencyError])
+      (using Monitor, Interceptor, Errant[ConcurrencyError])
           : LazyList[ElementType] =
     
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match
@@ -81,10 +81,10 @@ extension [ElementType](stream: LazyList[ElementType])
 
     async(recur(stream, System.currentTimeMillis)).await()
 
-  def multiplexWith(that: LazyList[ElementType])(using Monitor, Mitigator): LazyList[ElementType] =
+  def multiplexWith(that: LazyList[ElementType])(using Monitor, Interceptor): LazyList[ElementType] =
     unsafely(LazyList.multiplex(stream, that))
 
-  def regulate(tap: Tap)(using Monitor, Mitigator): LazyList[ElementType] =
+  def regulate(tap: Tap)(using Monitor, Interceptor): LazyList[ElementType] =
     def defer
         (active: Boolean,
          stream: LazyList[Some[ElementType] | Tap.Regulation],
@@ -116,7 +116,7 @@ extension [ElementType](stream: LazyList[ElementType])
     LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
-      (using Monitor, Mitigator)
+      (using Monitor, Interceptor)
           : LazyList[List[ElementType]] =
 
     val Limit = maxSize.or(Int.MaxValue)
@@ -140,7 +140,7 @@ extension [ElementType](stream: LazyList[ElementType])
     
     LazyList.defer(recur(stream, Nil, 0))
 
-  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor, Mitigator)
+  def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor, Interceptor)
           : LazyList[ElementType2] =
 
     val out: Funnel[ElementType2] = Funnel()
