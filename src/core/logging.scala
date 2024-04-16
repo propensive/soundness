@@ -57,14 +57,14 @@ object Logger:
       (target:     TargetType,
        appendable: Appendable[TargetType, TextType],
        format:     LogFormat[TargetType, TextType])
-      (using Monitor, Mitigator)
+      (using Monitor, Interceptor)
           : Logger[TextType]/*^{monitor}*/ =
 
     LogProcess(target)(using format)(using appendable)
 
 object LogWriter:
   given active[TargetType, TextType](using format: LogFormat[TargetType, TextType])
-      (using appendable: Appendable[TargetType, TextType], monitor: Monitor, mitigator: Mitigator)
+      (using appendable: Appendable[TargetType, TextType], monitor: Monitor, interceptor: Interceptor)
           : LogWriter[TargetType, TextType]/*^{monitor}*/ =
 
     LogProcess[TargetType, TextType](_)(using format)(using appendable, monitor)
@@ -76,7 +76,7 @@ trait Logger[TextType]:
   def put(entry: Entry[TextType]): Unit
 
 class LogProcess[TargetType, TextType](target: TargetType)(using format: LogFormat[TargetType, TextType])
-    (using appendable: Appendable[TargetType, TextType], monitor: Monitor, mitigator: Mitigator)
+    (using appendable: Appendable[TargetType, TextType], monitor: Monitor, interceptor: Interceptor)
 extends Logger[TextType]:
 
   private val funnel: Funnel[Entry[TextType]] = Funnel()
@@ -97,10 +97,10 @@ package logging:
 
   given pinned: Log[Text] = Log.pinned
 
-  given stdout(using Stdio, Monitor, Mitigator): Log[Text] = Log.route[Text]:
+  given stdout(using Stdio, Monitor, Interceptor): Log[Text] = Log.route[Text]:
     case _ => Out
 
-  given stderr(using Stdio, Monitor, Mitigator): Log[Text] = Log.route[Text]:
+  given stderr(using Stdio, Monitor, Interceptor): Log[Text] = Log.route[Text]:
     case _ => Err
 
   given silent[MessageType]: Log[MessageType] = new Log[MessageType]:
