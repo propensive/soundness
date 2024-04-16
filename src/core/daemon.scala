@@ -115,7 +115,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
   def makeClient(socket: jn.Socket)
-      (using Monitor, Log[Text], Stdio, Mitigator, Probate)
+      (using Monitor, Log[Text], Stdio, Interceptor, Probate)
         : Unit raises StreamError raises UndecodableCharError raises NumberError =
     
     async:
