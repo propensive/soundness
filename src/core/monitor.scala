@@ -45,7 +45,7 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def mitigate(monitor: Monitor, error: Throwable): Unit
+  def intercept(monitor: Monitor, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
   
 sealed abstract class Supervisor() extends Monitor:
@@ -61,14 +61,14 @@ sealed abstract class Supervisor() extends Monitor:
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
-  def mitigate(monitor: Monitor, error: Throwable): Unit = ()
+  def intercept(monitor: Monitor, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start(() => block).nn
   
 object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
-  def mitigate(monitor: Monitor, error: Throwable): Unit = ()
+  def intercept(monitor: Monitor, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
@@ -81,7 +81,7 @@ def supervise[ResultType](block: Monitor ?=> ResultType)(using model: ThreadMode
 
 @capability
 abstract class Subordinate
-    (frame: Codepoint, parent: Monitor, mitigator: Mitigator, probate: Probate)
+    (frame: Codepoint, parent: Monitor, interceptor: Interceptor, probate: Probate)
 extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
   def evaluate(subordinate: Subordinate): Result
@@ -109,19 +109,19 @@ extends Monitor:
     case Failed(_)       => throw Panic(msg"should not be relenting after failure")
     case Cancelled       => throw Panic(msg"should not be relenting after cancellation")
 
-  def mitigate(monitor: Monitor, error: Throwable): Unit =
-    mitigator.mitigate(monitor, error) match
-      case Mitigation.Escalate => parent.mitigate(monitor, error)
+  def intercept(monitor: Monitor, error: Throwable): Unit =
+    interceptor.intercept(monitor, error) match
+      case Mitigation.Escalate => parent.intercept(monitor, error)
       case Mitigation.Cancel   => cancel()
       case Mitigation.Suppress => ()
 
-  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate, Mitigator)
+  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate, Interceptor)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()))
   
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
-      (using Monitor, Probate, Mitigator)
+      (using Monitor, Probate, Interceptor)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()).await())
@@ -208,7 +208,7 @@ extends Monitor:
             case _         => ()
 
         case error: Throwable =>
-          mitigate(this, error)
+          intercept(this, error)
           state() = Failed(error)
           subordinates.each { child => if child.daemon then child.cancel() }
       

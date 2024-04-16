@@ -29,7 +29,7 @@ import errorHandlers.throwUnsafely
 import threadModels.platform
 import asyncOptions.cancelOrphans
 
-given Mitigator = (path, error) =>
+given Interceptor = (path, error) =>
   println(s"An async exception occurred in ${path.stack}:")
   error.printStackTrace()
   Mitigation.Escalate

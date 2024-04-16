@@ -22,8 +22,6 @@ import contingency.*
 import digression.*
 import vacuous.*
 
-import java.util.concurrent as juc
-
 import language.experimental.pureFunctions
 
 enum Completion[+ValueType]:
@@ -63,24 +61,24 @@ package asyncOptions:
   given failIfOrphansExist(using Errant[ConcurrencyError]): Probate = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
 
-  given escalateExceptions: Mitigator = (path, error) => Mitigation.Escalate
-  given ignoreExceptions: Mitigator = (path, error) => Mitigation.Suppress
+  given escalateExceptions: Interceptor = (path, error) => Mitigation.Escalate
+  given ignoreExceptions: Interceptor = (path, error) => Mitigation.Suppress
     
 
-def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Probate, Mitigator)
+def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Probate, Interceptor)
         : Daemon =
 
   Daemon(evaluate(using _))
 
 def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)
-    (using Monitor, Probate, Mitigator)
+    (using Monitor, Probate, Interceptor)
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = Unset)
 
 def task[ResultType](using Codepoint)(name: into Text)
     (evaluate: Subordinate ?=> ResultType)
-    (using Monitor, Probate, Mitigator)
+    (using Monitor, Probate, Interceptor)
         : Task[ResultType] =
   
   Task(evaluate(using _), daemon = false, name = name)
@@ -88,18 +86,18 @@ def task[ResultType](using Codepoint)(name: into Text)
 enum Mitigation:
   case Suppress, Escalate, Cancel
 
-trait Mitigator:
-  def mitigate(monitor: Monitor, error: Throwable): Mitigation
+trait Interceptor:
+  def intercept(monitor: Monitor, error: Throwable): Mitigation
 
 object Task:
   def apply[ResultType]
       (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
-      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator)
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, interceptor: Interceptor)
           : Task[ResultType] =
     inline def evaluate0: Subordinate => ResultType = evaluate
     inline def name0: Optional[Text] = name
     
-    new Subordinate(codepoint, monitor, mitigator, probate) with Task[ResultType]:
+    new Subordinate(codepoint, monitor, interceptor, probate) with Task[ResultType]:
       type Result = ResultType
       def name: Optional[Text] = name0
       def daemon: Boolean = false
@@ -117,19 +115,19 @@ trait Task[+ResultType]:
           : ResultType raises ConcurrencyError
   
   def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])
-      (using Monitor, Probate, Mitigator)
+      (using Monitor, Probate, Interceptor)
           : Task[ResultType2] raises ConcurrencyError
   
-  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate, Mitigator)
+  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate, Interceptor)
           : Task[ResultType2] raises ConcurrencyError
 
 object Daemon:
   def apply(evaluate: Subordinate => Unit)
-      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, mitigator: Mitigator)
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, interceptor: Interceptor)
           : Daemon =
     inline def evaluate0: Subordinate => Unit = evaluate
     
-    new Subordinate(codepoint, monitor, mitigator, probate) with Daemon:
+    new Subordinate(codepoint, monitor, interceptor, probate) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true
@@ -151,11 +149,11 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
-  def sequence(using Monitor, Probate, Mitigator): Task[Seq[ResultType]] raises ConcurrencyError =
+  def sequence(using Monitor, Probate, Interceptor): Task[Seq[ResultType]] raises ConcurrencyError =
     async(tasks.map(_.await()))
 
 extension [ResultType](tasks: Iterable[Task[ResultType]])
-  def race()(using Monitor, Probate, Mitigator): ResultType raises ConcurrencyError =
+  def race()(using Monitor, Probate, Interceptor): ResultType raises ConcurrencyError =
     val promise: Promise[ResultType] = Promise()
     tasks.each(_.map(promise.offer(_)))
     
