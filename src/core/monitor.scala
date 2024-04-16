@@ -36,8 +36,12 @@ sealed trait Monitor:
   type Result
   val promise: Promise[Result]
   protected[parasite] var subordinates: Set[Subordinate] = Set()
+  
+  protected[parasite] val interception: Mutex[Trace => PartialFunction[Throwable, Transgression]] =
+    Mutex({ trace => { case _ => Transgression.Escalate } })
 
   def name: Optional[Text]
+  def trace: Optional[Trace]
   def stack: Text
   def daemon: Boolean
   def attend(): Unit = promise.attend()
@@ -45,11 +49,16 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def intercept(monitor: Monitor, error: Throwable): Unit
+  def intercept(trace: Trace, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
   
+  def interceptor(lambda: Trace => PartialFunction[Throwable, Transgression]): Unit =
+    interception.replace: interception =>
+      trace => lambda(trace).orElse(interception(trace))
+
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
+  def trace: Optional[Trace] = Unset
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
   def name: Text
@@ -61,29 +70,32 @@ sealed abstract class Supervisor() extends Monitor:
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
-  def intercept(monitor: Monitor, error: Throwable): Unit = ()
+  def intercept(trace: Trace, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start(() => block).nn
   
 object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
-  def intercept(monitor: Monitor, error: Throwable): Unit = ()
+  def intercept(trace: Trace, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
 
-def supervise[ResultType](block: Monitor ?=> ResultType)(using model: ThreadModel)
+def supervise[ResultType](block: Monitor ?=> ResultType)
+    (using model: ThreadModel, codepoint: Codepoint)
         : ResultType raises ConcurrencyError =
 
   block(using model.supervisor())
 
+case class Trace(codepoint: Codepoint, parent: Optional[Trace])
+
 @capability
-abstract class Subordinate
-    (frame: Codepoint, parent: Monitor, interceptor: Interceptor, probate: Probate)
-extends Monitor:
+abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
+  
+  def trace: Trace = Trace(frame, parent.trace)
   def evaluate(subordinate: Subordinate): Result
   val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
@@ -100,6 +112,12 @@ extends Monitor:
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
       case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
 
+  def intercept(trace: Trace, error: Throwable): Unit =
+    interception()(trace)(error) match
+      case Transgression.Escalate => parent.intercept(trace, error)
+      case Transgression.Cancel   => cancel()
+      case Transgression.Absorb   => ()
+
   def relent(): Unit = state() match
     case Initializing    => ()
     case Active(_)       => ()
@@ -109,19 +127,13 @@ extends Monitor:
     case Failed(_)       => throw Panic(msg"should not be relenting after failure")
     case Cancelled       => throw Panic(msg"should not be relenting after cancellation")
 
-  def intercept(monitor: Monitor, error: Throwable): Unit =
-    interceptor.intercept(monitor, error) match
-      case Mitigation.Escalate => parent.intercept(monitor, error)
-      case Mitigation.Cancel   => cancel()
-      case Mitigation.Suppress => ()
-
-  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate, Interceptor)
+  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()))
   
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
-      (using Monitor, Probate, Interceptor)
+      (using Monitor, Probate)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()).await())
@@ -208,7 +220,7 @@ extends Monitor:
             case _         => ()
 
         case error: Throwable =>
-          intercept(this, error)
+          intercept(trace, error)
           state() = Failed(error)
           subordinates.each { child => if child.daemon then child.cancel() }
       

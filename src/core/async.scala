@@ -61,43 +61,34 @@ package asyncOptions:
   given failIfOrphansExist(using Errant[ConcurrencyError]): Probate = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
 
-  given escalateExceptions: Interceptor = (path, error) => Mitigation.Escalate
-  given ignoreExceptions: Interceptor = (path, error) => Mitigation.Suppress
-    
-
-def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Probate, Interceptor)
+def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Probate)
         : Daemon =
 
   Daemon(evaluate(using _))
 
-def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)
-    (using Monitor, Probate, Interceptor)
+def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)(using Monitor, Probate)
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = Unset)
 
-def task[ResultType](using Codepoint)(name: into Text)
-    (evaluate: Subordinate ?=> ResultType)
-    (using Monitor, Probate, Interceptor)
+def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=> ResultType)
+    (using Monitor, Probate)
         : Task[ResultType] =
   
   Task(evaluate(using _), daemon = false, name = name)
 
-enum Mitigation:
-  case Suppress, Escalate, Cancel
-
-trait Interceptor:
-  def intercept(monitor: Monitor, error: Throwable): Mitigation
+enum Transgression:
+  case Absorb, Escalate, Cancel
 
 object Task:
   def apply[ResultType]
       (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
-      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, interceptor: Interceptor)
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate)
           : Task[ResultType] =
     inline def evaluate0: Subordinate => ResultType = evaluate
     inline def name0: Optional[Text] = name
     
-    new Subordinate(codepoint, monitor, interceptor, probate) with Task[ResultType]:
+    new Subordinate(codepoint, monitor, probate) with Task[ResultType]:
       type Result = ResultType
       def name: Optional[Text] = name0
       def daemon: Boolean = false
@@ -114,20 +105,19 @@ trait Task[+ResultType]:
   def await[DurationType: GenericDuration](duration: DurationType)
           : ResultType raises ConcurrencyError
   
-  def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])
-      (using Monitor, Probate, Interceptor)
+  def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Probate)
           : Task[ResultType2] raises ConcurrencyError
   
-  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate, Interceptor)
+  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Probate)
           : Task[ResultType2] raises ConcurrencyError
 
 object Daemon:
   def apply(evaluate: Subordinate => Unit)
-      (using monitor: Monitor, codepoint: Codepoint, probate: Probate, interceptor: Interceptor)
+      (using monitor: Monitor, codepoint: Codepoint, probate: Probate)
           : Daemon =
     inline def evaluate0: Subordinate => Unit = evaluate
     
-    new Subordinate(codepoint, monitor, interceptor, probate) with Daemon:
+    new Subordinate(codepoint, monitor, probate) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true
@@ -138,7 +128,13 @@ trait Daemon:
   def resume(force: Boolean = false): Unit
   def attend(): Unit
   def cancel(): Unit
-  
+
+def intercept(lambda: (trace: Trace) ?=> PartialFunction[Throwable, Transgression])
+    (using monitor: Monitor)
+        : Unit =
+
+  monitor.interceptor { trace => lambda(using trace) }
+
 def relent[ResultType]()(using monitor: Subordinate): Unit = monitor.relent()
 def cancel[ResultType]()(using monitor: Monitor): Unit = monitor.cancel()
 
@@ -149,11 +145,11 @@ def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor:
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
-  def sequence(using Monitor, Probate, Interceptor): Task[Seq[ResultType]] raises ConcurrencyError =
+  def sequence(using Monitor, Probate): Task[Seq[ResultType]] raises ConcurrencyError =
     async(tasks.map(_.await()))
 
 extension [ResultType](tasks: Iterable[Task[ResultType]])
-  def race()(using Monitor, Probate, Interceptor): ResultType raises ConcurrencyError =
+  def race()(using Monitor, Probate): ResultType raises ConcurrencyError =
     val promise: Promise[ResultType] = Promise()
     tasks.each(_.map(promise.offer(_)))
     
