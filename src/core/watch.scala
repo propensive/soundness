@@ -50,7 +50,7 @@ extension [PathType: GenericPath](paths: Iterable[PathType])
 
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
-    import asyncOptions.{ignoreExceptions, waitForOrphans}
+    import asyncOptions.waitForOrphans
     def stop(): Unit = pollLoop.stop()
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
