@@ -224,12 +224,12 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
         count
 
 extension (obj: LazyList.type)
-  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor, Interceptor)
+  def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor)
           : LazyList[ElemType] =
 
     multiplexer(streams*).stream
   
-  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor, Interceptor)
+  def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor)
           : Multiplexer[Any, ElemType] =
 
     val multiplexer = Multiplexer[Any, ElemType]()
