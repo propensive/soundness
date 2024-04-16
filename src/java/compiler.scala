@@ -46,7 +46,7 @@ case class Javac(options: List[JavacOption]):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor, Interceptor, Probate)
+      (using SystemProperties, Log[Text], Monitor, Probate)
           : CompileProcess raises CompileError =
     Log.info(t"Starting Java compilation")
     val process: CompileProcess = CompileProcess()
