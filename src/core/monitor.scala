@@ -67,17 +67,16 @@ sealed abstract class Supervisor() extends Monitor:
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = subordinates.each(_.cancel())
+  def intercept(trace: Trace, error: Throwable): Unit = interception()(trace)(error)
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
-  def intercept(trace: Trace, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start(() => block).nn
   
 object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
-  def intercept(trace: Trace, error: Throwable): Unit = ()
   
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
