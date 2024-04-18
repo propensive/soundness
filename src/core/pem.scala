@@ -32,7 +32,6 @@ case class Pem(kind: Text, data: Bytes):
 
 object Pem:
   def parse(string: Text): Pem raises PemError =
-    given (PemError fixes DecodeError) = error => PemError(error.detail)
     val lines = string.trim.nn.cut(t"\n")
     
     val label = lines.head match
@@ -47,5 +46,5 @@ object Pem:
         abort(PemError(t"the message's END line could not be found"))
       case idx =>
         val joined: Text = lines.tail.take(idx).join
-        try Pem(label, joined.decode[Base64])
-        catch Exception => abort(PemError(t"could not parse Base64 PEM message"))
+        tend(Pem(label, joined.decode[Base64])).remedy:
+          case DecodeError(_) => abort(PemError(t"could not parse Base64 PEM message"))
