@@ -49,66 +49,68 @@ object Installer:
   def candidateTargets()(using service: DaemonService[?])
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
         : List[Directory] raises InstallError =
-    given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes EnvironmentError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
-
-    val paths: List[Path] = Environment.path
-
-    val preferences: List[Path] = List(
-      Xdg.bin[Path],
-      % / p"usr" / p"local" / p"bin",
-      % / p"usr" / p"bin",
-      % / p"usr" / p"local" / p"sbin",
-      % / p"opt" / p"bin",
-      % / p"bin",
-      % / p"bin"
-    )
-
-    paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
-      preferences.indexOf(directory.path) match
-        case -1    => Int.MaxValue
-        case index => index
+    tend:
+      val paths: List[Path] = Environment.path
+  
+      val preferences: List[Path] = List(
+        Xdg.bin[Path],
+        % / p"usr" / p"local" / p"bin",
+        % / p"usr" / p"bin",
+        % / p"usr" / p"local" / p"sbin",
+        % / p"opt" / p"bin",
+        % / p"bin",
+        % / p"bin"
+      )
+  
+      paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
+        preferences.indexOf(directory.path) match
+          case -1    => Int.MaxValue
+          case index => index
+    
+    .remedy:
+      case PathError(_, _)     => abort(InstallError(InstallError.Reason.Environment))
+      case EnvironmentError(_) => abort(InstallError(InstallError.Reason.Environment))
+      case IoError(_)          => abort(InstallError(InstallError.Reason.Io))
 
   def install(force: Boolean = false, target: Optional[Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
       (using Effectful)
         : Result raises InstallError =
-
-    given (InstallError fixes PathError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes SystemPropertyError) = _ => InstallError(InstallError.Reason.Environment)
-    given (InstallError fixes NumberError) = _ => InstallError(InstallError.Reason.Environment)
-    
-    given (InstallError fixes IoError) = _ => InstallError(InstallError.Reason.Io)
-    given (InstallError fixes ExecError) = _ => InstallError(InstallError.Reason.Io)
-    given (InstallError fixes StreamError) = _ => InstallError(InstallError.Reason.Io)
-
     import workingDirectories.default
     import systemProperties.virtualMachine
-    val command: Text = service.scriptName
-    val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
-
-    if safely(scriptPath.decodeAs[Path]) == service.script && !force
-    then Result.AlreadyOnPath(command, service.script.show)
-    else
-      val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
-      val jarSize: ByteSize = ByteSize(Properties.ethereal.jarSize[Int]())
-      val scriptFile: File = service.script.as[File]
-      val fileSize = scriptFile.size()
-      val prefixSize = fileSize - payloadSize - jarSize
-      val stream = scriptFile.stream[Bytes]
-      val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
-      
-      val installFile = installDirectory.let: directory =>
-        (directory / PathName(command)).make[File]()
-
-      installFile.let: file =>
-        Log.info(t"Writing executable to ${file.debug}")
-        if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
-        else stream.writeTo(file)
-        file.executable() = true
-        Result.Installed(command, file.path.show)
-      .or:
-        Result.PathNotWritable
+    
+    tend:
+      val command: Text = service.scriptName
+      val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
+  
+      if safely(scriptPath.decodeAs[Path]) == service.script && !force
+      then Result.AlreadyOnPath(command, service.script.show)
+      else
+        val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
+        val jarSize: ByteSize = ByteSize(Properties.ethereal.jarSize[Int]())
+        val scriptFile: File = service.script.as[File]
+        val fileSize = scriptFile.size()
+        val prefixSize = fileSize - payloadSize - jarSize
+        val stream = scriptFile.stream[Bytes]
+        val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
+        
+        val installFile = installDirectory.let: directory =>
+          (directory / PathName(command)).make[File]()
+  
+        installFile.let: file =>
+          Log.info(t"Writing executable to ${file.debug}")
+          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
+          else stream.writeTo(file)
+          file.executable() = true
+          Result.Installed(command, file.path.show)
+        .or:
+          Result.PathNotWritable
+    .remedy:
+      case PathError(_, _)        => abort(InstallError(InstallError.Reason.Environment))
+      case SystemPropertyError(_) => abort(InstallError(InstallError.Reason.Environment))
+      case NumberError(_, _)      => abort(InstallError(InstallError.Reason.Environment))
+      case IoError(_)             => abort(InstallError(InstallError.Reason.Io))
+      case ExecError(_, _, _)     => abort(InstallError(InstallError.Reason.Io))
+      case StreamError(_)         => abort(InstallError(InstallError.Reason.Io))
 
 
