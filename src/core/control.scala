@@ -33,11 +33,11 @@ infix type fixes[+ErrorType1 <: Error, -ErrorType2 <: Error] = Fix[ErrorType2, E
 trait Fix[-ErrorType1 <: Error, +ErrorType2 <: Error]:
   def fix(error: ErrorType1): ErrorType2
 
-object Errant:
+/*object Errant:
   given fixStrategy[ErrorType1 <: Error, ErrorType2 <: Error]
       (using fix: Fix[ErrorType1, ErrorType2], strategy: Errant[ErrorType2])
           : Errant[ErrorType1] =
-    strategy.contramap(fix.fix(_))
+    strategy.contramap(fix.fix(_))*/
 
 @capability
 trait Errant[-ErrorType <: Error] extends Pure:

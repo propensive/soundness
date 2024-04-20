@@ -139,7 +139,7 @@ object Contingency:
                   ${action(context)}(using errant)
             }).asTerm
         
-        case errorType :: more => (errorType.asType: @unchecked) match
+        case errorType :: more => errorType.asType match
           case '[type errorType <: ErrorType; errorType] =>
             wrap[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
               (makeResult: Expr[PartialFunction[ErrorType, Nothing] => ResultType]) =>
@@ -150,6 +150,9 @@ object Contingency:
                         partialFunction.orElse { case error: `errorType` => errant.abort(error) }
                   ${makeExpr('makeResult2)}
                 }
+            
+          case _ =>
+            fail(msg"Match error ${errorType.show} type was not a subtype of ErrorType")
     
     wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
       '{$function(PartialFunction.empty[ErrorType, Nothing])}
