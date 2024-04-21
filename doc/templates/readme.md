@@ -26,7 +26,7 @@ ${DEPENDENTS}
 
 ## Status
 
-${TITLE} is classified as __${STATUS}__. For reference, Scala One projects are
+${TITLE} is classified as __${STATUS}__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity

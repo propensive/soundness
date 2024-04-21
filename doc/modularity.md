@@ -1,17 +1,17 @@
 ## Modularity
 
-Every Scala One project strives for modularity, described by
+Every Soundness project strives for modularity, described by
 [Wikipedia](https://en.wikipedia.org/wiki/Modularity) as,
 > the degree to which a system's components may be separated and recombined,
 > often with the benefit of flexibility and variety in use
 
-Scala One is an ecosystem of software which provides a broad variety of diverse
+Soundness is an ecosystem of software which provides a broad variety of diverse
 functionality. Users of one small library should not be required to depend on
 code (either source or binary) that's not used in the project. But at the same
 time, modularization should not compromise how seamlessly different parts can
 be recombined.
 
-Scala One's approach to modularity successfully satisfies both criteria.
+Soundness's approach to modularity successfully satisfies both criteria.
 
 ## Motivation
 
@@ -65,7 +65,7 @@ mitigate the problem:
    maintain
 3. by reducing the risk that your library introduces a conflict
 
-Every Scala One project is built using
+Every Soundness project is built using
 [Fury](https://github.com/propensive/fury), an experimental source-based build
 tool which aims to ease the process of managing dependencies, as well as
 simplifying the publication and distribution process by [disincentivizing
@@ -80,7 +80,7 @@ desirable and possible: imagine an HTTP server that serves XML content. An
 HTTP server would not be justified in including a XML library, nor would a
 XML library be justified in including an HTTP library. But we don't want to
 have to include a third library which provides a small amount of integration
-between them. Scala One's solution is to use typeclasses provided by
+between them. Soundness's solution is to use typeclasses provided by
 [Anticipation](https://github.com/propensive/anticipation/), which is a tiny
 and common dependency of both
 [Scintillate](https://github.com/propensive/scintillate/) and
@@ -88,11 +88,11 @@ and common dependency of both
 Scintillate and Xylophone are independent of each other, apart from the tiny
 amount of code which preemptively agrees the integration between them.
 
-This pattern is repeated throughout Scala One, and from the point of view of a
+This pattern is repeated throughout Soundness, and from the point of view of a
 dependent project, the integration is seamless: no additional dependencies are
 required in the build, and no additional imports are required in the code.
 
-A further happy consequence is that Scala One projects have a free choice in
+A further happy consequence is that Soundness projects have a free choice in
 which others they integrate with: any XML library can integrate with
 Scintillate, and Xylophone can integrate with any HTTP server, as long as the
 appropriate Anticipation typeclass instances are available. These can be
@@ -105,7 +105,7 @@ minimalism is crucial to reducing the likelihood of a conflict.
 
 ## Minimalism
 
-No Scala One project contains more than a thousand lines of non-test code, and
+No Soundness project contains more than a thousand lines of non-test code, and
 most contain much less. Each module has a single area of functionality which it
 aims to provide as well as it can. With so little code in each project, its
 scope remains clear at all times.
@@ -145,7 +145,7 @@ frequently, whether those changes be compatibility-breaking API changes or
 incidental tweaks. Each release is likely to have a longer lifetime, which
 reduces the maintenance burden on dependents.
 
-This puts a maintenance overhead on the Scala One maintainers to each new
+This puts a maintenance overhead on the Soundness maintainers to each new
 project, but already having many projects, the marginal overhead of each
 additional project is now minimal.
 

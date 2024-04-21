@@ -1,4 +1,4 @@
-When compiling code that depends on _Scala One_, several compiler flags are recommended.
+When compiling code that depends on _Soundness_, several compiler flags are recommended.
 
 The following provide important semantic benefits in code quality:
  - `-language:experimental.saferExceptions`—to ensure that exceptions are checked, or at least

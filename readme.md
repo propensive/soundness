@@ -1,15 +1,15 @@
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
 <img src="/doc/images/github.png" valign="middle">
 
-# Scala One
+# Soundness
 
 **Take Scala to Another Level!**
 
-_Scala One_ is a loose collection of open-source libraries designed to take full advantage of new
+_Soundness_ is a loose collection of open-source libraries designed to take full advantage of new
 features of Scala 3 to write web and command-line applications, with a focus on lifting more
 operations to the type-level with safe and expressive syntax.
 
-_Scala One_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
+_Soundness_ includes libraries for working with [HTML](https://github.com/propensive/honeycomb/),
 [CSS](https://github.com/propensive/cataclysm/), [JSON](https://github.com/propensive/jacinta/),
 [XML](https://github.com/propensive/xylophone/), [CSV](https://github.com/propensive/caesura/),
 [typesafe strings](https://github.com/propensive/gossamer/),
@@ -45,13 +45,13 @@ builds upon minimal set of [common tools](https://github.com/propensive/rudiment
 
 ## Principles
 
-_Scala One_ embraces two core principles:
+_Soundness_ embraces two core principles:
 1. Impossible states should be unrepresentable
 2. Transitions between states should be total
 
 Together, these two principles eliminate an entire class of bugs.
 
-More specifically, each library under the _Scala One_ umbrella adheres to the following principles:
+More specifically, each library under the _Soundness_ umbrella adheres to the following principles:
 - typesafe—taking full advantage of the Scala 3 typesystem
 - checked exceptions—but only if you choose to use them
 - safe literals—interpolated strings, checked at compiletime with
@@ -82,7 +82,7 @@ method, and a `Text` converted to a `String` by calling its method `s`.
 
 ### Checked Exceptions
 
-The latest release of Scala 3 introduces opt-in exception checking, and every _Scala One_ method declares
+The latest release of Scala 3 introduces opt-in exception checking, and every _Soundness_ method declares
 the exceptions it may throw in its signature. This makes it easy to write prototype code with
 a "let it fail" attitude and exception-checking off, and to migrate to production-quality code just
 by turning exception-checking on, and having the compiler require handlers for each exception—but
@@ -96,7 +96,7 @@ exceptional.
 
 The introduction of `null` into ALGOL was described by Tony Hoare as his "billion-dollar mistake",
 though it has persisted in numerous programming languages since. Scala 3 introduces new checks to
-help avoid `null` references, and _Scala One_ projects take full advantage of these.
+help avoid `null` references, and _Soundness_ projects take full advantage of these.
 
 ### Safe Literals
 
@@ -109,9 +109,9 @@ compiletime, there is no risk of runtime exceptions arising from these values.
 ### Typeclasses
 
 The typeclass pattern, provided through contextual values (`given`s) is used extensively by
-_Scala One_ libraries to provide ad-hoc polymorphism (in preference to subtype polymorphism). This not
-only allows user-defined types to participate naturally in all kinds of _Scala One_ APIs, but also
-facilitates interaction between _Scala One_ libraries and third-party libraries.
+_Soundness_ libraries to provide ad-hoc polymorphism (in preference to subtype polymorphism). This not
+only allows user-defined types to participate naturally in all kinds of _Soundness_ APIs, but also
+facilitates interaction between _Soundness_ libraries and third-party libraries.
 
 ### Decoupled
 
@@ -125,7 +125,7 @@ libraries.
 
 ### Small APIs
 
-Every API introduced by a _Scala One_ library should fit on one side of a business card. It should never
+Every API introduced by a _Soundness_ library should fit on one side of a business card. It should never
 be difficult to learn, and composition of APIs should be preferred over specialized solutions. Names
 should be meaningful and appropriately unique: that is to say, sharing a name with an existing
 concept or entity if they represent that entity, but introducing new nomenclature if they represent
@@ -144,11 +144,11 @@ library should also be small.
 
 ### Capture Checking
 
-_Scala One_ projects already use Scala 3's enhanced exception checking, and in the future, streaming APIs
+_Soundness_ projects already use Scala 3's enhanced exception checking, and in the future, streaming APIs
 built on `LazyList`s will be enhanced to use the experimental capture-checking functionality that is
 expected to be introduced in Scala 3 soon to provide better safety.
 
-## _Scala One_ Modules
+## _Soundness_ Modules
 
 [![Acyclicity](https://github.com/propensive/acyclicity/raw/main/doc/images/128x128.png)](https://github.com/propensive/acyclicity/)&nbsp;
 [![Adversaria](https://github.com/propensive/adversaria/raw/main/doc/images/128x128.png)](https://github.com/propensive/adversaria/)&nbsp;

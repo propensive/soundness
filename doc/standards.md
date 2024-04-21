@@ -22,7 +22,7 @@ This must be checked manually.
 
 ### Naming conventions
 
-All non-private term and type entities should be given meaningful and consistent names, according to Scala One's naming conventions.
+All non-private term and type entities should be given meaningful and consistent names, according to Soundness's naming conventions.
 
 This must be checked manually.
 

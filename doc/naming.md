@@ -1,4 +1,4 @@
-## Names in Scala One projects
+## Names in Soundness projects
 
 ### Precision and Concision
 
@@ -111,7 +111,7 @@ instance of `Streamable[Json]` in the `Json` companion object should be called
 `streamable`, whereas an instance of `Streamable[Json]` in the `Streamable`
 companion should be called `json`.
 
-Here are some other examples which apply, by precedent, in Scala One projects:
+Here are some other examples which apply, by precedent, in Soundness projects:
 - singleton objects for macro definitions should be named after the package,
   followed by `Macros`, for example `probably.ProbablyMacros`,
   `adversaria.AdversariaMacros`, `honeycomb.HoneycombMacros`
@@ -136,14 +136,14 @@ issue.
 
 ### Universal Uniqueness
 
-Across all Scala One libraries, no two top-level types or objects should have
+Across all Soundness libraries, no two top-level types or objects should have
 the same name. This ensures that a programmer can confidently import everything
-from any number of Scala One projects without fear of introducing a naming
+from any number of Soundness projects without fear of introducing a naming
 ambiguity, and can refer to any type or object without reference to its
 enclosing package. (The rule does not apply to nested entities, though.)
 
-This means that new names should be checked for homographms across all Scala
-One projects, unless their uniqueness is obvious.
+This means that new names should be checked for homographms across all
+Soundness projects, unless their uniqueness is obvious.
 
 Sometimes, in the event of a conflict, a distinct synonym or near-synonym can
 suggest a good alternative, but it should not be used in preference to a name

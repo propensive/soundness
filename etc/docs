@@ -11,7 +11,7 @@ function dependencies() {
   if [[ "$TEXT" = "" ]]; then
     echo "_${TITLE}_ has no dependencies."
   else
-    echo "The following _Scala One_ libraries are dependencies of _${TITLE}_:"
+    echo "The following _Soundness_ libraries are dependencies of _${TITLE}_:"
     echo ""
     echo $TEXT
   fi
@@ -25,9 +25,9 @@ function dependents() {
     TEXT="$TEXT [![$N](https://github.com/propensive/$D/raw/main/doc/images/128x128.png)](https://github.com/propensive/$D/) &nbsp;"
   done
   if [[ "$TEXT" = "" ]]; then
-    echo "No other _Scala One_ libraries are dependents of _${TITLE}_."
+    echo "No other _Soundness_ libraries are dependents of _${TITLE}_."
   else
-    echo "The following _Scala One_ libraries are dependents of _${TITLE}_:"
+    echo "The following _Soundness_ libraries are dependents of _${TITLE}_:"
     echo ""
     echo $TEXT
   fi
