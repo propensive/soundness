@@ -1,5 +1,4 @@
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/v7CjtbnwDq)
-<img src="/doc/images/github.png" valign="middle">
 
 # Soundness
 
