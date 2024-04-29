@@ -3,8 +3,6 @@
 
 # Soundness
 
-**Take Scala to Another Level!**
-
 _Soundness_ is a loose collection of open-source libraries designed to take full advantage of new
 features of Scala 3 to write web and command-line applications, with a focus on lifting more
 operations to the type-level with safe and expressive syntax.
