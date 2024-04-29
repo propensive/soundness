@@ -9,7 +9,7 @@ __Simple typeclass instances for integration with the Java Standard Library__
 _Diuretic_ provides typeclass instances for
 [Anticipation](https://github.com/propensive/anticipation/) typeclasses for the
 Java Standard Library. Many of these types have better alternatives in the
-[Scala One](https://github.com/propensive/one/) ecosystem, but there are times
+[Soundness](https://github.com/propensive/soundness/) ecosystem, but there are times
 when it is necessary to work with types from the Java Standard Library.
 
 ## Features
