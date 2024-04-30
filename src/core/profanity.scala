@@ -36,7 +36,8 @@ trait Keyboard:
 object Keyboard:
   import Keypress.*
 
-  def modified(code: Char, keypress: EditKey | FunctionKey): EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
+  def modified(code: Char, keypress: EditKey | FunctionKey)
+          : EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
     val n = code - '1'
     val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
     val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
@@ -94,11 +95,17 @@ class StandardKeyboard()(using Monitor, Probate) extends Keyboard:
 
               other.drop(sequence.length) match
                 case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
-                  case List(As[Int](rows), As[Int](cols)) => TerminalInfo.WindowSize(rows, cols) #:: process(tail)
-                  case _                                  => TerminalInfo.WindowSize(20, 30) #:: process(tail)
+                  case List(As[Int](rows), As[Int](cols)) =>
+                    TerminalInfo.WindowSize(rows, cols) #:: process(tail)
+                  
+                  case _ =>
+                    TerminalInfo.WindowSize(20, 30) #:: process(tail)
 
-                case 'O' #:: tail => TerminalInfo.LoseFocus #:: process(tail)
-                case 'I' #:: tail => TerminalInfo.GainFocus #:: process(tail)
+                case 'O' #:: tail =>
+                  TerminalInfo.LoseFocus #:: process(tail)
+                
+                case 'I' #:: tail =>
+                  TerminalInfo.GainFocus #:: process(tail)
 
                 case char #:: tail =>
                   Keypress.EscapeSeq(char, sequence*) #:: process(tail)
@@ -127,7 +134,8 @@ class StandardKeyboard()(using Monitor, Probate) extends Keyboard:
     case other #:: rest                 => Keypress.CharKey(other) #:: process(rest)
     case _                              => LazyList()
 
-case class TerminalError(ttyMsg: Text) extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")
+case class TerminalError(ttyMsg: Text)
+extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")
 
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"
@@ -158,8 +166,10 @@ object Interactivity:
 trait Interactivity[EventType]:
   def eventStream(): LazyList[EventType]
 
-case class Terminal(signals: Funnel[Signal])(using context: ProcessContext, monitor: Monitor, probate: Probate)
+case class Terminal(signals: Funnel[Signal])
+    (using context: ProcessContext, monitor: Monitor, probate: Probate)
 extends Interactivity[TerminalEvent]:
+
   export context.stdio.{in, out, err}
 
   val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
@@ -221,7 +231,7 @@ package terminalOptions:
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
 object ProcessContext:
-  def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext =
+  def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext^{stdio} =
     inline def stdio0: Stdio = stdio
     inline def signals0: Funnel[Signal] = signals
     
