@@ -23,7 +23,6 @@ import fulminate.*
 import scala.util.FromDigits
 import scala.annotation.*
 import scala.compiletime.*
-import scala.quoted.*
 
 import language.experimental.genericNumberLiterals
 
