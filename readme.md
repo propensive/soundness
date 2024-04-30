@@ -119,7 +119,7 @@ Profanity does not currently support Windows.
 
 ## Status
 
-Profanity is classified as __fledgling__. For reference, Scala One projects are
+Profanity is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -133,7 +133,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Profanity is designed to be _small_. Its entire source code currently consists
-of 357 lines of code.
+of 364 lines of code.
 
 ## Building
 
@@ -202,7 +202,7 @@ O&Uuml;](https://propensive.com/).
 
 A __profanity__ is an expletive or curse-word, and _Profanity_ imitates many of the features of the popular terminal library, Curses.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
