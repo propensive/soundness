@@ -153,14 +153,14 @@ def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])
 
 def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    (using raise: Errant[UnexpectedSuccessError[SuccessType]])
+    (using raise: Errant[ExpectationError[SuccessType]])
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherStrategy(label)))
   
   value match
     case Left(error)  => error
-    case Right(value) => abort(UnexpectedSuccessError(value))
+    case Right(value) => abort(ExpectationError(value))
 
 def attempt[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
@@ -185,7 +185,7 @@ extends Error(Communicable.listMessage.message(errors.map(_.message))):
 
     AggregateError(errors ++ error.errors)
 
-case class UnexpectedSuccessError[ResultType](result: ResultType)
+case class ExpectationError[ResultType](result: ResultType)
 extends Error(msg"the expression was expected to fail, but succeeded")
 
 package errorHandlers:
