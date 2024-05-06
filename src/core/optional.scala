@@ -30,7 +30,7 @@ object Unset:
 
 type Optional[ValueType] = Unset.type | ValueType
 
-case class UnsetValueError() extends Error(Message("the value was not set".tt))
+case class UnsetError() extends Error(Message("the value was not set".tt))
 
 extension [ValueType](inline optional: Optional[ValueType])
   inline def or(inline value: => ValueType): ValueType = ${Vacuous.optimizeOr('optional, 'value)}
@@ -47,7 +47,7 @@ extension [ValueType](optional: Optional[ValueType])
   def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
-  def assume(using absentValue: CanThrow[UnsetValueError]): ValueType = optional.or(throw UnsetValueError())
+  def assume(using absentValue: CanThrow[UnsetError]): ValueType = optional.or(throw UnsetError())
 
   inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2)
           : ValueType2 =
