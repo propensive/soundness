@@ -46,8 +46,12 @@ object SubOperator:
   given float: Subtraction[Float, Float, Float] = Subtraction(_ - _)
   given long: Subtraction[Long, Long, Long] = Subtraction(_ - _)
   given int: Subtraction[Int, Int, Int] = Subtraction(_ - _)
-  given short: Subtraction[Short, Short, Short] = Subtraction({ (left, right) => (left - right).toShort })
-  given byte: Subtraction[Byte, Byte, Byte] = Subtraction({ (left, right) => (left - right).toByte })
+  
+  given short: Subtraction[Short, Short, Short] =
+    Subtraction({ (left, right) => (left - right).toShort })
+  
+  given byte: Subtraction[Byte, Byte, Byte] =
+    Subtraction({ (left, right) => (left - right).toByte })
 
 trait SubOperator[-LeftType, -RightType]:
   type Result
@@ -57,8 +61,10 @@ trait SubOperator[-LeftType, -RightType]:
     @targetName("sub")
     inline infix def - (right: RightType): Result = sub(left, right)
 
-final class Subtraction[-LeftType, -RightType, ResultType](lambda: (LeftType, RightType) => ResultType)
+final class Subtraction[-LeftType, -RightType, ResultType]
+    (lambda: (LeftType, RightType) => ResultType)
 extends SubOperator[LeftType, RightType]:
+
   type Result = ResultType
   inline def sub(left: LeftType, right: RightType): Result = lambda(left, right)
 
@@ -67,8 +73,12 @@ object MulOperator:
   given float: Multiplication[Float, Float, Float] = Multiplication(_*_)
   given long: Multiplication[Long, Long, Long] = Multiplication(_*_)
   given int: Multiplication[Int, Int, Int] = Multiplication(_*_)
-  given short: Multiplication[Short, Short, Short] = Multiplication({ (left, right) => (left*right).toShort })
-  given byte: Multiplication[Byte, Byte, Byte] = Multiplication({ (left, right) => (left*right).toByte })
+  
+  given short: Multiplication[Short, Short, Short] =
+    Multiplication({ (left, right) => (left*right).toShort })
+  
+  given byte: Multiplication[Byte, Byte, Byte] =
+    Multiplication({ (left, right) => (left*right).toByte })
 
 trait MulOperator[-LeftType, -RightType]:
   type Result
@@ -78,8 +88,10 @@ trait MulOperator[-LeftType, -RightType]:
     @targetName("mul")
     inline infix def * (right: RightType): Result = mul(left, right)
 
-final class Multiplication[-LeftType, -RightType, ResultType](lambda: (LeftType, RightType) => ResultType)
+final class Multiplication[-LeftType, -RightType, ResultType]
+    (lambda: (LeftType, RightType) => ResultType)
 extends MulOperator[LeftType, RightType]:
+
   type Result = ResultType
   inline def mul(left: LeftType, right: RightType): Result = lambda(left, right)
 
@@ -120,7 +132,9 @@ trait NegOperator[-LeftType]:
     @targetName("neg")
     inline def `unary_-`: Result = neg(left)
 
-class Negation[-ValueType, ResultType](lambda: ValueType => ResultType) extends NegOperator[ValueType]:
+class Negation[-ValueType, ResultType](lambda: ValueType => ResultType)
+extends NegOperator[ValueType]:
+
   type Result = ResultType
   def neg(value: ValueType): ResultType = lambda(value)
 
@@ -134,8 +148,10 @@ trait RootOperator[RootType <: Int & Singleton, -ValueType]:
   type Result
   def root(value: ValueType): Result
 
-class Extraction[RootType <: Int & Singleton, -ValueType, ResultType](lambda: ValueType => ResultType)
+class Extraction[RootType <: Int & Singleton, -ValueType, ResultType]
+    (lambda: ValueType => ResultType)
 extends RootOperator[RootType, ValueType]:
+
   type Result = ResultType
   def root(value: ValueType): Result = lambda(value)
   
