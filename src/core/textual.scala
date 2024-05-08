@@ -26,7 +26,7 @@ erased trait DefaultTextType:
   type TextType
 
 package defaultTextTypes:
-  erased given text: DefaultTextType { type TextType = Text } = ###
+  erased given (DefaultTextType { type TextType = Text }) = ###
 
 trait Textual[TextType]:
   type ShowType[-ValueType]
