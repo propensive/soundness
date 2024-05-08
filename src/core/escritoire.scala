@@ -38,7 +38,7 @@ trait InsufficientSpaceHandler:
 package insufficientSpaceHandling:
   given fail(using Errant[TableError]): InsufficientSpaceHandler =
     (minimum, available) => raise(TableError(minimum, available))(())
-  
+
   given ignore: InsufficientSpaceHandler = (minimum, available) => ()
 
 enum Breaks:
@@ -48,19 +48,19 @@ object TextAlignment:
   object Right extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
       Textual(t" "*(width - text.length))+text
-  
+
   object Left extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
       text+Textual(t" "*(width - text.length))
-  
+
   object Center extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
       val space = width - text.length
       val before = Textual(t" "*(space/2))
       val after = Textual(t" "*(space - space/2))
-      
+
       before+text+after
-  
+
   object Justify extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
       if last then text+Textual(t" "*(width - text.length))
@@ -68,14 +68,14 @@ object TextAlignment:
         val words = text.cut(t" ")
         val wordCount = words.length
         val spare = width - words.sumBy(_.length)
-        
+
         def recur(spare: Int, count: Int, done: TextType): TextType =
           if count == 0 then done+Textual(t" "*spare) else
             val space = spare/count
             recur(spare - space, count - 1, done+Textual(t" "*space)+words(wordCount - count))
-        
+
         recur(spare, wordCount - 1, words.head)
-    
+
 
 trait TextAlignment:
   def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType
@@ -105,7 +105,7 @@ object Column:
           : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = textual.show(get(row))
-    
+
     Column
       (title, contents, textAlign.or(columnAlignment.text), verticalAlign.or(columnAlignment.vertical), sizing)
 
@@ -115,7 +115,7 @@ case class Column[RowType, TextType: Textual]
      textAlign:     TextAlignment,
      verticalAlign: VerticalAlignment,
      sizing:        Columnar):
-  
+
   def contramap[RowType2](lambda: RowType2 => RowType): Column[RowType2, TextType] =
     Column[RowType2, TextType](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)
 
@@ -129,16 +129,14 @@ object Table:
     new Table(columns0*)
 
 object Tabulation:
-  given printable[TextType: Textual](using TextMetrics, TableStyle, InsufficientSpaceHandler)
-      (using printable: Printable[TextType])
-          : Printable[Tabulation[TextType]] =
+  given [TextType: {Textual, Printable as printable}](using TextMetrics, TableStyle, InsufficientSpaceHandler) => Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.layout(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
 
 
 abstract class Tabulation[TextType: ClassTag]():
   type Row
-  
+
   def columns: IArray[Column[Row, TextType]]
   def titles: Seq[IArray[IArray[TextType]]]
   def rows: Seq[IArray[IArray[TextType]]]
@@ -147,7 +145,7 @@ abstract class Tabulation[TextType: ClassTag]():
   def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
       (using insufficientSpace: InsufficientSpaceHandler)
           : TableLayout[TextType] =
-    
+
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val include: sci.BitSet = indices.to(sci.BitSet)
 
@@ -164,33 +162,33 @@ abstract class Tabulation[TextType: ClassTag]():
               if !include(index) then 0 else rows.map: cells =>
                 columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
               .max
-    
+
             val titleMax =
               if !include(index) then 0 else titles.map: cells =>
                 columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
               .max
-          
+
             dataMax.max(titleMax).puncture(0)
-        
+
         val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.compact
         val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
-      
+
         Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)
-      
+
       def recur(min: Layout, max: Layout, gas: Int = 8): (Layout, Layout) =
         if gas == 0 || max.totalWidth - min.totalWidth <= 1 then (min, max)
         else
           val point = shrink((min.slack + max.slack)/2)
-          
+
           if point.totalWidth == width then (point, point)
           else if point.totalWidth > width then recur(min, point, gas - 1)
           else recur(point, max, gas - 1)
-      
+
       recur(shrink(0), shrink(1), 8)
 
     val rowLayout = bisect(_ => true)(0)
     val rowLayout2 = bisect(rowLayout.include(_))(0)
-    
+
     // We may be able to increase the slack in some of the remaining columns
     if rowLayout2.totalWidth > width then insufficientSpace(rowLayout2.totalWidth, width)
 
@@ -199,11 +197,11 @@ abstract class Tabulation[TextType: ClassTag]():
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
           val lines = column.sizing.fit(cells(index), width, column.textAlign)
           TableCell(width, 1, lines, lines.length, column.textAlign)
-        
+
         val height = tableCells.maxBy(_.minHeight).minHeight
 
         TableRow(tableCells, false, height)
-    
+
     val widths = rowLayout2.columnWidths.map(_(2))
 
     TableLayout(List(TableSection(widths, lines(titles)), TableSection(widths, lines(rows))), style)
@@ -218,8 +216,7 @@ case class TableRow[TextType](cells: IArray[TableCell[TextType]], title: Boolean
 case class TableSection[TextType](widths: IArray[Int], rows: LazyList[TableRow[TextType]])
 
 object TableLayout:
-  given printable[TextType: Textual](using TextMetrics)(using printable: Printable[TextType])
-          : Printable[TableLayout[TextType]] =
+  given [TextType: {Textual, Printable as printable}](using TextMetrics) => TableLayout[TextType] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
@@ -230,7 +227,7 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
     val leftEdge = Textual(t"${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}$pad")
     val rightEdge = Textual(t"$pad${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}")
     val midEdge = Textual(t"$pad${BoxDrawing(top = style.innerLines, bottom = style.innerLines)}$pad")
-    
+
     def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
       rows match
         case row #:: tail =>
@@ -242,12 +239,12 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
                 cell.textAlign.pad(cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
               else Textual((t" "*widths(index)))
             .join(leftEdge, midEdge, rightEdge)
-          
+
           lines.to(LazyList) #::: recur(widths, tail)
-        
+
         case _ =>
           LazyList()
-    
+
     def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): TextType =
       val width = above.or(below).vouch(using Unsafe).pipe: widths =>
         widths.sum + style.cost(widths.length)
@@ -292,7 +289,7 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
 case class Table[RowType, TextType: ClassTag](columns0: Column[RowType, TextType]*)
     (using textual: Textual[TextType]):
   table =>
-  
+
   val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
   val titles: Seq[IArray[IArray[TextType]]] = Seq(IArray.from(columns.map(_.title.cut(t"\n"))))
 
