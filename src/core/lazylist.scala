@@ -44,7 +44,7 @@ extension (bytes: Bytes)
     val out = ji.ByteArrayOutputStream()
 
     val buffer: Array[Byte] = new Array(1024)
-    
+
     def recur(): Unit = in2.read(buffer).tap: length =>
       if length > 0 then
         out.write(buffer, 0, length)
@@ -58,16 +58,17 @@ erased trait CompressionAlgorithm
 erased trait Gzip extends CompressionAlgorithm
 erased trait Zlib extends CompressionAlgorithm
 
-trait Compression[CompressionType <: CompressionAlgorithm]:
+trait Compression:
+  type Self <: CompressionAlgorithm
   def compress(lazyList: LazyList[Bytes]): LazyList[Bytes]
   def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes]
 
 object Compression:
-  given gzip: Compression[Gzip] = new Compression[Gzip]:
+  given Gzip is Compression:
     def compress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
-      
+
       def recur(stream: LazyList[Bytes]): LazyList[Bytes] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
@@ -79,47 +80,44 @@ object Compression:
         case _ =>
           out2.close()
           if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
-      
+
       recur(lazyList)
 
     def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
       juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes]
-  
+
 extension (lazyList: LazyList[Bytes])
   def drop(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
       case head #:: tail =>
-        if head.byteSize < skip then recur(tail, skip - head.byteSize) else head.drop(skip.long.toInt) #:: tail
-      
+        if head.byteSize < skip
+        then recur(tail, skip - head.byteSize) else head.drop(skip.long.toInt) #:: tail
+
       case _ =>
         LazyList()
-      
+
     recur(lazyList, byteSize)
 
-  def compress[CompressionType <: CompressionAlgorithm](using compression: Compression[CompressionType])
-          : LazyList[Bytes] =
+  def compress[CompressionType <: CompressionAlgorithm: Compression]: LazyList[Bytes] =
+    summon[Compression].compress(lazyList)
 
-    compression.compress(lazyList)
-  
-  def decompress[CompressionType <: CompressionAlgorithm](using compression: Compression[CompressionType])
-          : LazyList[Bytes] =
-
-    compression.decompress(lazyList)
+  def decompress[CompressionType <: CompressionAlgorithm: Compression]: LazyList[Bytes] =
+    summon[Compression].decompress(lazyList)
 
   def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] =
     stochastic:
       given Distribution = Gamma.approximate(mean, variance)
-      
+
       def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
-      
+
       def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
               : LazyList[Bytes] =
-  
+
         stream match
           case source #:: more =>
             val ready = source.length - sourcePos
             val free = dest.length - destPos
-  
+
             if ready < free then
               System.arraycopy(source, sourcePos, dest, destPos, ready)
               recur(more, 0, dest, destPos + ready)
@@ -129,16 +127,16 @@ extension (lazyList: LazyList[Bytes])
             else // free == ready
               System.arraycopy(source, sourcePos, dest, destPos, free)
               dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
-          
+
           case _ =>
             if destPos == 0 then LazyList()
             else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
-  
+
       recur(lazyList, 0, newArray(), 0)
 
   def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Bytes] =
     def newArray(): Array[Byte] = new Array[Byte](size)
-    
+
     def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
             : LazyList[Bytes] =
 
@@ -156,7 +154,7 @@ extension (lazyList: LazyList[Bytes])
           else // free == ready
             System.arraycopy(source, sourcePos, dest, destPos, free)
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
-        
+
         case _ =>
           if destPos == 0 then LazyList()
           else LazyList:
@@ -169,25 +167,25 @@ extension (lazyList: LazyList[Bytes])
       case head #:: tail =>
         if head.byteSize < count then head #:: recur(tail, count - head.byteSize)
         else LazyList(head.take(count.long.toInt))
-      
+
       case _ =>
         LazyList()
-      
+
     recur(lazyList, byteSize)
 
 class LazyListOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Funnel[Bytes] = Funnel()
-  
+
   def stream: LazyList[Bytes] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)
-  
+
   override def close(): Unit = flush().also(chunks.stop())
   override def write(bytes: Array[Byte]): Unit = chunks.put(bytes.immutable(using Unsafe))
-  
+
   override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
     chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
-  
+
   override def flush(): Unit = if !buffer.isEmpty then
     chunks.put(buffer.toArray.immutable(using Unsafe))
     buffer.clear()
@@ -199,7 +197,7 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
   private var stream: LazyList[Bytes] = input
   private var offset: Int = 0
   private var focus: Bytes = IArray.empty[Byte]
-  
+
   override def available(): Int =
     val diff = focus.length - offset
     if diff > 0 then diff
@@ -211,13 +209,13 @@ class LazyListInputStream(input: LazyList[Bytes]) extends ji.InputStream:
       available()
 
   override def close(): Unit = ()
-  
+
   def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
 
   override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
     if length == 0 then 0 else
       val count = length.min(available())
-      
+
       if count == 0 then -1 else
         if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
         offset += count
@@ -228,7 +226,7 @@ extension (obj: LazyList.type)
           : LazyList[ElemType] =
 
     multiplexer(streams*).stream
-  
+
   def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor)
           : Multiplexer[Any, ElemType] =
 
@@ -241,11 +239,11 @@ extension (obj: LazyList.type)
 
   def pulsar[DurationType: GenericDuration](duration: DurationType)(using Monitor): LazyList[Unit] =
     val startTime: Long = System.currentTimeMillis
-    
+
     def recur(iteration: Int): LazyList[Unit] =
       try
         sleepUntil(startTime + duration.milliseconds*iteration)
         () #:: pulsar(duration)
       catch case err: ConcurrencyError => LazyList()
-    
+
     recur(0)
