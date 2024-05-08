@@ -23,7 +23,7 @@ import scala.annotation.*
 import language.experimental.captureChecking
 
 object NumericallyComparable:
-  inline given numeric: Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] with
+  inline given Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
     inline def compare
         (inline left:        Boolean,
          inline right:       Int | Double | Char | Byte | Short | Float | Long,
@@ -33,7 +33,7 @@ object NumericallyComparable:
 
       ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}
 
-  given inequality: Inequality[ByteSize, ByteSize] with
+  given Inequality[ByteSize, ByteSize] as inequality:
     inline def compare
         (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
             : Boolean =
@@ -68,13 +68,13 @@ extends
 
   inline def lessThan(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, true, false)
-  
+
   inline def lessThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, false, false)
-  
+
   inline def greaterThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, false, true)
-  
+
   inline def greaterThan(inline left: LeftType, inline right: RightType): Boolean =
     compare(left, right, true, true)
 
@@ -85,25 +85,24 @@ extension [LeftType](inline left: LeftType)
           : ResultType =
 
     compareLess.lessThan(left, right)
-  
+
   @targetName("lte")
   inline infix def <= [RightType, ResultType](inline right: RightType)
       (using inline compareLessEqual: CompareLessEqual[LeftType, RightType, ResultType])
           : ResultType =
 
     compareLessEqual.lessThanOrEqual(left, right)
-  
+
   @targetName("gt")
   inline infix def > [RightType, ResultType](inline right: RightType)
       (using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
           : ResultType =
 
     compareGreater.greaterThan(left, right)
-  
+
   @targetName("gte")
   inline infix def >= [RightType, ResultType](inline right: RightType)
       (using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
           : ResultType =
 
     compareGreaterEqual.greaterThanOrEqual(left, right)
-  
