@@ -21,11 +21,11 @@ import anticipation.*
 import language.experimental.captureChecking
 
 object Communicable:
-  given Text is Communicable = Message(_)
+  given [TextType <: Text] => TextType is Communicable = Message(_)
   given [StringType <: String] => StringType is Communicable = string => Message(string.tt)
   given [CharType <: Char] => CharType is Communicable = char => Message(char.toString.tt)
-  given Int is Communicable = int => Message(int.toString.tt)
-  given Long is Communicable = long => Message(long.toString.tt)
+  given [IntType <: Int] => IntType is Communicable = int => Message(int.toString.tt)
+  given [LongType <: Long] => LongType is Communicable = long => Message(long.toString.tt)
   given Message is Communicable = identity(_)
 
   given List[Message] is Communicable as listMessage =
