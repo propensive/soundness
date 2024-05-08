@@ -155,7 +155,7 @@ trait BadEncodingHandler:
   def complete(): Unit
 
 package badEncodingHandlers:
-  given strict(using badEncoding: Errant[UndecodableCharError]): BadEncodingHandler^{badEncoding} =
+  given strict(using badEncoding: Errant[UndecodableCharError]): (BadEncodingHandler^{badEncoding}) =
     new BadEncodingHandler:
       def handle(pos: Int, encoding: Encoding): Char = raise(UndecodableCharError(pos, encoding))('?')
       def complete(): Unit = ()
@@ -168,7 +168,7 @@ package badEncodingHandlers:
     def handle(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
   
-  given collect(using aggregate: Errant[AggregateError[UndecodableCharError]]): BadEncodingHandler^{aggregate} =
+  given collect(using aggregate: Errant[AggregateError[UndecodableCharError]]): (BadEncodingHandler^{aggregate}) =
     new BadEncodingHandler:
       private val mistakes: scm.ArrayBuffer[UndecodableCharError] = scm.ArrayBuffer()
       def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
