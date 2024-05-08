@@ -21,18 +21,19 @@ import anticipation.*
 import language.experimental.captureChecking
 
 object Communicable:
-  given text: Communicable[Text] = Message(_)
-  given string: Communicable[String] = string => Message(string.tt)
-  given char: Communicable[Char] = char => Message(char.toString.tt) // Escape this
-  given int: Communicable[Int] = int => Message(int.toString.tt)
-  given long: Communicable[Long] = long => Message(long.toString.tt)
-  given message: Communicable[Message] = identity(_)
+  given Text is Communicable = Message(_)
+  given [StringType <: String] => StringType is Communicable = string => Message(string.tt)
+  given [CharType <: Char] => CharType is Communicable = char => Message(char.toString.tt)
+  given Int is Communicable = int => Message(int.toString.tt)
+  given Long is Communicable = long => Message(long.toString.tt)
+  given Message is Communicable = identity(_)
 
-  given listMessage: Communicable[List[Message]] = messages =>
-    Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+  given List[Message] is Communicable as listMessage =
+    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
-trait Communicable[-ValueType]:
-  def message(value: ValueType): Message
+trait Communicable:
+  type Self
+  def message(value: Self): Message
 
-extension [ValueType](value: ValueType)(using communicable: Communicable[ValueType])
+extension [ValueType: Communicable as communicable](value: ValueType)
   def communicate: Message = communicable.message(value)
