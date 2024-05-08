@@ -35,7 +35,7 @@ object Writable:
         outputStream.flush()
 
       outputStream.close()
-  
+
   given outputStreamText(using streamCut: Errant[StreamError], encoder: CharEncoder)
           : Writable[ji.OutputStream, Text] =
 
@@ -43,14 +43,14 @@ object Writable:
       stream.each: text =>
         outputStream.write(encoder.encode(text).mutable(using Unsafe))
         outputStream.flush()
-      
+
       outputStream.close()
 
   given decodingAdapter[TargetType](using writable: Writable[TargetType, Text], decoder: CharDecoder)
           : Writable[TargetType, Bytes] =
 
     (target, stream) => writable.write(target, decoder.decode(stream))
-  
+
   given encodingAdapter[TargetType](using writable: Writable[TargetType, Bytes], encoder: CharEncoder)
           : Writable[TargetType, Text] =
 
@@ -66,20 +66,20 @@ trait Writable[-TargetType, -ChunkType]:
 trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
   def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
     case head #:: tail => writeChunk(target, head); write(target, tail)
-    case _             => 
+    case _             =>
 
   def writeChunk(target: TargetType, chunk: ChunkType): Unit
 
 object Appendable:
   given stdoutBytes(using stdio: Stdio): SimpleAppendable[Out.type, Bytes] =
     (stderr, bytes) => stdio.write(bytes)
-  
+
   given stdoutText(using stdio: Stdio): SimpleAppendable[Out.type, Text] =
     (stdout, text) => stdio.print(text)
 
   given stderrBytes(using stdio: Stdio): SimpleAppendable[Err.type, Bytes] =
     (stderr, bytes) => stdio.writeErr(bytes)
-  
+
   given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
     (stderr, text) => stdio.printErr(text)
 
@@ -90,12 +90,12 @@ object Appendable:
         outputStream.flush()
 
       outputStream.close()
-  
+
   given decodingAdapter[TargetType](using appendable: Appendable[TargetType, Text], decoder: CharDecoder)
           : Appendable[TargetType, Bytes] =
 
     (target, stream) => appendable.append(target, decoder.decode(stream))
-  
+
   given encodingAdapter[TargetType](using appendable: Appendable[TargetType, Bytes], encoder: CharEncoder)
           : Appendable[TargetType, Text] =
 
@@ -104,7 +104,7 @@ object Appendable:
 trait Appendable[-TargetType, -ChunkType]:
   def append(target: TargetType, stream: LazyList[ChunkType]): Unit
   def asWritable: Writable[TargetType, ChunkType] = append(_, _)
-  
+
   def contramap[TargetType2](lambda: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
     (target, stream) => append(lambda(target), stream)
 
@@ -119,12 +119,12 @@ trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, C
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
   given text: Readable[Text, Text] = LazyList(_)
-  
+
   given encodingAdapter[SourceType](using readable: Readable[SourceType, Text], encoder: CharEncoder)
           : Readable[SourceType, Bytes] =
 
     source => encoder.encode(readable.read(source))
-  
+
   given decodingAdapter[SourceType](using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
           : Readable[SourceType, Text] =
 
@@ -137,7 +137,7 @@ object Readable:
       stdio.reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
-    
+
     LazyList.defer(recur(0L.b))
 
   given inByteReader(using stdio: Stdio): Readable[In.type, Byte] = in =>
@@ -145,7 +145,7 @@ object Readable:
       stdio.in.read() match
         case -1  => LazyList()
         case int => int.toByte #:: recur(count + 1.b)
-    
+
     LazyList.defer(recur(0L.b))
 
   given reader(using streamCut: Errant[StreamError]): Readable[ji.Reader, Char] = reader =>
@@ -156,7 +156,7 @@ object Readable:
       catch case err: ji.IOException =>
         reader.close()
         raise(StreamError(count))(LazyList())
-    
+
     LazyList.defer(recur(0L.b))
 
   given bufferedReader(using streamCut: Errant[StreamError]): Readable[ji.BufferedReader, Line] =
@@ -168,7 +168,7 @@ object Readable:
         catch case err: ji.IOException =>
           reader.close()
           raise(StreamError(count))(LazyList())
-      
+
       LazyList.defer(recur(0L.b))
 
   given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
@@ -179,7 +179,7 @@ object Readable:
       try channel.read(buf) match
         case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
         case 0  => recur()
-        
+
         case count =>
           buf.flip()
           val size: Int = count.min(1024)
@@ -188,9 +188,9 @@ object Readable:
           buf.clear()
 
           array.immutable(using Unsafe) #:: recur()
-          
+
       catch case e: Exception => LazyList()
-      
+
     LazyList.defer(recur())
 
   given inputStream(using streamCut: Errant[StreamError]): Readable[ji.InputStream, Bytes] = in =>
@@ -201,7 +201,7 @@ object Readable:
       try channel.read(buf) match
         case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
         case 0  => recur(total)
-        
+
         case count =>
           buf.flip()
           val size: Int = count.min(1024)
@@ -210,15 +210,15 @@ object Readable:
           buf.clear()
 
           array.immutable(using Unsafe) #:: recur(total + count)
-          
+
       catch case e: Exception => LazyList(raise(StreamError(total.b))(Bytes()))
-      
+
     LazyList.defer(recur(0))
 
 @capability
 trait Readable[-SourceType, +ChunkType]:
   def read(value: SourceType): LazyList[ChunkType]
-  
+
   def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ChunkType] =
     source => read(lambda(source))
 
@@ -227,15 +227,15 @@ object Aggregable:
     def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes = source match
       case head #:: tail => buf.write(head.mutable(using Unsafe)); recur(buf, tail)
       case _             => buf.toByteArray().nn.immutable(using Unsafe)
-    
+
     recur(ji.ByteArrayOutputStream(), source)
-  
+
   given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] =
     bytesBytes.map(decoder.decode)
 
   given lazyList[ChunkType, ChunkType2](using aggregable: Aggregable[ChunkType, ChunkType2])
           : Aggregable[ChunkType, LazyList[ChunkType2]] =
-    
+
     chunk => LazyList(aggregable.aggregate(chunk))
 
   given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
@@ -245,7 +245,7 @@ object Aggregable:
 
       new Aggregable:
         def aggregate(value: LazyList[ChunkType]): ResultType2 = lambda(aggregable.aggregate(value))
-      
+
 @capability
 trait Aggregable[-ChunkType, +ResultType]:
   def aggregate(source: LazyList[ChunkType]): ResultType
@@ -253,19 +253,19 @@ trait Aggregable[-ChunkType, +ResultType]:
 extension [ValueType](value: ValueType)
   def stream[ChunkType](using readable: Readable[ValueType, ChunkType]): LazyList[ChunkType] =
     readable.read(value)
-  
+
   def readAs[ResultType]
       (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
           : ResultType =
 
     aggregable.aggregate(readable.read(value))
-  
+
   def writeTo[TargetType](target: TargetType)[ChunkType]
       (using readable: Readable[ValueType, ChunkType], writable: Writable[TargetType, ChunkType])
           : Unit =
 
     writable.write(target, readable.read(value))
-  
+
   def appendTo[TargetType](target: TargetType)[ChunkType]
       (using readable:   Readable[ValueType, ChunkType],
              appendable: Appendable[TargetType, ChunkType])

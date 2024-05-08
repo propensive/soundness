@@ -2,7 +2,6 @@
 # More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/parasite
-repo propensive/diuretic
 repo propensive/capricious
 repo propensive/hieroglyph
 repo propensive/probably
@@ -13,7 +12,7 @@ project turbulence
   module core
     compiler  scala
     sources   src/core
-    include   hieroglyph/core parasite/core diuretic/core contingency/core capricious/core
+    include   hieroglyph/core parasite/core contingency/core capricious/core
 
   module test
     compiler  scala

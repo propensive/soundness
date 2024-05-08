@@ -24,10 +24,10 @@ import java.io as ji
 
 package stdioSources:
   package virtualMachine:
-    given textOnly: Stdio =
+    given Stdio as textOnly =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
-    
-    given ansi: Stdio =
+
+    given Stdio as ansi =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
 
 import language.experimental.captureChecking
@@ -39,39 +39,30 @@ trait Io:
 
 object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
-  
-  def print[TextType](text: Termcap ?=> TextType)
-      (using stdio: Stdio, printable: Printable[TextType])
-          : Unit =
 
+  def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
+          : Unit =
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
-  
-  def println[TextType](lines: Termcap ?=> TextType*)
-      (using stdio: Stdio, printable: Printable[TextType])
-          : Unit =
 
+  def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =
     lines.map(_(using stdio.termcap)).pipe: lines =>
       stdio.err.synchronized:
         lines.foreach: line =>
           print(line)
           println()
-  
+
   def println()(using Stdio): Unit = print("\n".tt)
 
 object Out:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
-  def print[TextType](text: Termcap ?=> TextType)
-      (using stdio: Stdio,  printable: Printable[TextType])
-          : Unit =
 
+  def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
+          : Unit =
     stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
-  
-  def println()(using Stdio): Unit = print("\n".tt)
-  
-  def println[TextType]
-      (lines: Termcap ?=> TextType*)(using stdio: Stdio, printable: Printable[TextType])
-          : Unit =
 
+  def println()(using Stdio): Unit = print("\n".tt)
+
+  def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =
     lines.map(_(using stdio.termcap)).pipe: lines =>
       stdio.out.synchronized:
         lines.foreach: line =>
@@ -94,7 +85,7 @@ object Stdio:
     val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
     val safeIn: ji.InputStream = Optional(in).or(MuteInputStream)
     val termcap2: Termcap = termcap
-  
+
     new Stdio:
       val termcap: Termcap = termcap2
       val out: ji.PrintStream = safeOut
@@ -124,10 +115,10 @@ trait Stdio extends Io:
   val in: ji.InputStream
 
   protected[turbulence] lazy val reader: ji.Reader = ji.InputStreamReader(in)
-  
+
   def write(bytes: Bytes): Unit = out.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def print(text: Text): Unit = out.print(text.s)
-  
+
   def writeErr(bytes: Bytes): Unit = err.write(bytes.mutable(using Unsafe), 0, bytes.length)
   def printErr(text: Text): Unit = err.print(text.s)
 
