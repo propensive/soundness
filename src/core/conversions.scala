@@ -29,23 +29,23 @@ private[iridescence] inline def unitary(d: Double): Double =
   d - d.toInt + (if d < 0 then 1 else 0)
 
 object Xyz:
-  given RgbColor[Xyz] = _.srgb.rgb24.asInt
+  given Xyz is RgbColor = _.srgb.rgb24.asInt
 
 case class Xyz(x: Double, y: Double, z: Double):
   def luminescence: Double = y
-  
+
   def srgb: Srgb =
     def limit(v: Double): Double =
       if v > 0.0031308 then 1.055*(v**(1/2.4)) - 0.055 else 12.92*v
-    
+
     val red = limit(x*0.032406994 - y*0.0153738318 - z*0.0049861076)
     val green = limit(-x*0.0096924364 + y*0.01878675 + z*0.0004155506)
     val blue = limit(x*0.0005563008 - y*0.0020397696 + z*0.0105697151)
 
     Srgb(red, green, blue)
-  
+
   def rgb24: Rgb24 = srgb.rgb24
-  
+
   def cielab(using profile: ColorProfile): Cielab =
     def limit(v: Double): Double = if v > 0.008856 then v**(1.0/3) else 7.787*v + 0.13793
 
@@ -57,7 +57,7 @@ case class Xyz(x: Double, y: Double, z: Double):
 
 object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   def initial: Option[Rgb24] = None
-  
+
   def parse(state: Option[Rgb24], next: Text): Option[Rgb24] =
     if next.s.length == 7 && next.s.startsWith("#") then parse(state, Text(next.s.substring(1).nn))
     else if next.s.length == 6 && next.s.all: char =>
@@ -68,34 +68,34 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
       val blue = Integer.parseInt(next.s.substring(4, 6).nn, 16)
 
       Some(Rgb24(red, green, blue))
-    
+
     else throw InterpolationError(msg"""the color must be in the form ${Text("rgb\"#rrggbb\"")} or
         rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
-  
+
   def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
     throw InterpolationError(msg"substitutions into an ${Text("rgb\"\"")} interpolator are not supported")
-  
+
   def skip(state: Option[Rgb24]): Option[Rgb24] = state
   def complete(color: Option[Rgb24]): Rgb24 = color.get
 
 object Rgb24Opaque:
   opaque type Rgb24 = Int
-  
+
   object Rgb24:
     given underlying: Underlying[Rgb24, Int] = ###
-    given RgbColor[Rgb24] = _.asInt
-    
+    given Rgb24 is RgbColor = _.asInt
+
     def apply(red: Int, green: Int, blue: Int): Rgb24 = ((red&255) << 16) + ((green&255) << 8) + (blue&255)
     def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff
-  
+
   extension (color: Rgb24)
     def red: Int = (color >> 16) & 255
     def green: Int = (color >> 8) & 255
     def blue: Int = color&255
-  
+
     def srgb: Srgb = Srgb(red/255.0, green/255.0, blue/255.0)
     def asInt: Int = color
-  
+
     def hex: Text =
       List(red, green, blue).foldLeft("#"): (acc, c) =>
         acc+(c.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
@@ -103,28 +103,28 @@ object Rgb24Opaque:
 
 object Rgb32Opaque:
   opaque type Rgb32 = Int
-  
+
   object Rgb32:
     given underlying: Underlying[Rgb32, Int] = ###
-    given RgbColor[Rgb32] = _.srgb.rgb24.asInt
+    given Rgb32 is RgbColor = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb32 = ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
-  
+
   extension (color: Rgb32)
     def red: Int = (color >> 22)&1023
     def green: Int = (color >> 10)&4095
     def blue: Int = color&1023
     def srgb: Srgb = Srgb(red/1023.0, green/4095.0, blue/1023.0)
-  
+
 object Rgb12Opaque:
   opaque type Rgb12 = Int
-  
+
   object Rgb12:
     given underlying: Underlying[Rgb12, Int] = ###
-    given RgbColor[Rgb12] = _.srgb.rgb24.asInt
+    given Rgb12 is RgbColor = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb12 = ((red&15) << 8) + ((green&15) << 4) + (blue&15)
-  
+
   extension (color: Rgb12)
     def red: Int = (color >> 8)&15
     def green: Int = (color >> 4)&15
@@ -137,11 +137,11 @@ export Rgb24Opaque.Rgb24
 export Rgb32Opaque.Rgb32
 
 object Srgb:
-  given RgbColor[Srgb] = _.rgb24.asInt
+  given Srgb is RgbColor = _.rgb24.asInt
 
 case class Srgb(red: Double, green: Double, blue: Double):
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
-  
+
   def rgb24: Rgb24 = Rgb24((red*255).toInt, (green*255).toInt, (blue*255).toInt)
   def srgb: Srgb = this
   def highContrast(using ColorProfile): Srgb = if xyz.y >= 0.5 then Srgb(0, 0, 0) else Srgb(1, 1, 1)
@@ -156,7 +156,7 @@ case class Srgb(red: Double, green: Double, blue: Double):
     val z = r*0.0193 + g*0.1192 + b*0.9505
 
     Xyz(x, y, z)
-  
+
   def cielab(using ColorProfile): Cielab = xyz.cielab
   def cmy: Cmy = Cmy(1 - red, 1 - green, 1 - blue)
   def cmyk: Cmyk = cmy.cmyk
@@ -192,7 +192,7 @@ case class Srgb(red: Double, green: Double, blue: Double):
       val dr = ((value - red)/6) + (delta/2)/delta
       val dg = ((value - green)/6) + (delta/2)/delta
       val db = ((value - blue)/6) + (delta/2)/delta
-      
+
       val hue =
         if value == red then db - dg
         else if value == green then 1.0/3 + dr - db
@@ -201,14 +201,14 @@ case class Srgb(red: Double, green: Double, blue: Double):
       Hsv(unitary(hue), saturation, value)
 
 object Cielab:
-  given (using ColorProfile): RgbColor[Cielab] = _.srgb.rgb24.asInt
+  given (using ColorProfile) => Cielab is RgbColor = _.srgb.rgb24.asInt
 
 case class Cielab(l: Double, a: Double, b: Double):
   def srgb(using ColorProfile): Srgb = xyz.srgb
 
   def xyz(using profile: ColorProfile): Xyz =
     def limit(v: Double): Double = if v*v*v > 0.008856 then v*v*v else (v - 16.0/116)/7.787
-  
+
     val y = limit((l + 16)/116)*profile.y2
     val x = limit(a/500 + (l + 16)/116)*profile.x2
     val z = limit((l + 16)/116 - b/200)*profile.z2
@@ -221,26 +221,26 @@ case class Cielab(l: Double, a: Double, b: Double):
   def delta(that: Cielab): Double = (hyp(F64(that.a), F64(that.b)) - hyp(F64(a), F64(b))).double
 
 object Cmy:
-  given RgbColor[Cmy] = _.srgb.rgb24.asInt
+  given Cmy is RgbColor = _.srgb.rgb24.asInt
 
 case class Cmy(cyan: Double, magenta: Double, yellow: Double):
   def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
-  
+
   def cmyk: Cmyk =
     val key = List(1, cyan, magenta, yellow).min
-    
+
     if key == 1 then Cmyk(0, 0, 0, 1)
     else Cmyk((cyan - key)/(1 - key), (magenta - key)/(1 - key), (yellow - key)/(1 - key), key)
 
 object Cmyk:
-  given RgbColor[Cmyk] = _.srgb.rgb24.asInt
+  given Cmyk is RgbColor = _.srgb.rgb24.asInt
 
 case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double):
   def srgb: Srgb = cmy.srgb
   def cmy: Cmy = Cmy(cyan*(1 - key) + key, magenta*(1 - key) + key, yellow*(1 - key) + key)
 
 object Hsv:
-  given RgbColor[Hsv] = _.srgb.rgb24.asInt
+  given Hsv is RgbColor = _.srgb.rgb24.asInt
 
 case class Hsv(hue: Double, saturation: Double, value: Double):
   def saturate: Hsv = Hsv(hue, 1, value)
@@ -249,7 +249,7 @@ case class Hsv(hue: Double, saturation: Double, value: Double):
   def pure: Hsv = Hsv(hue, 1, 0)
   def tone(black: Double = 0, white: Double = 0) = shade(black).tint(white)
   def shade(black: Double = 0): Hsv = Hsv(hue, saturation, value*(1 - black) + (1 - value)*black)
-  
+
   def srgb: Srgb =
     if saturation == 0 then Srgb(value, value, value)
     else
@@ -263,26 +263,26 @@ case class Hsv(hue: Double, saturation: Double, value: Double):
       val blue = if i/2 == 0 then a1 else if i == 2 then a3 else if i == 5 then a2 else value
 
       Srgb(red, green, blue)
- 
+
   def tint(white: Double = 0): Hsv =
     Hsv(hue, saturation*(1 - white) + (1 - saturation)*white, value)
-  
+
 object Hsl:
-  given RgbColor[Hsl] = _.srgb.rgb24.asInt
+  given Hsl is RgbColor = _.srgb.rgb24.asInt
 
 case class Hsl(hue: Double, saturation: Double, lightness: Double):
   def saturate: Hsv = Hsv(hue, 1, lightness)
   def desaturate: Hsv = Hsv(hue, 0, lightness)
   def rotate(degrees: Double): Hsv = Hsv(unitary(hue + degrees/360), saturation, lightness)
   def pure: Hsv = Hsv(hue, 1, 0)
-  
+
   def srgb: Srgb =
     if saturation == 0 then Srgb(lightness, lightness, lightness)
     else
       val v2 =
         if lightness < 0.5 then lightness*(1 + saturation)
         else (lightness + saturation - saturation*lightness)
-      
+
       val v1 = 2*lightness - v2
 
       def convert(h: Double): Double =
@@ -293,6 +293,6 @@ case class Hsl(hue: Double, saturation: Double, lightness: Double):
         else v1
 
       Srgb(convert(hue + (1.0/3.0)), convert(hue), convert(hue - (1.0/3.0)))
-  
+
   def css: Text =
     Text(s"hsl(${(hue*360).toInt}, ${(saturation*100).toInt}%, ${(lightness*100).toInt}%)")
