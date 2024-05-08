@@ -16,14 +16,13 @@
 
 package parasite
 
-import rudiments.*
 import fulminate.*
 
 import language.experimental.captureChecking
 
 object ConcurrencyError:
   object Reason:
-    given communicable: Communicable[Reason] =
+    given Reason is Communicable =
       case Cancelled       => msg"the operation was cancelled"
       case Incomplete      => msg"the task was not completed"
       case AlreadyComplete => msg"the promise was already completed"

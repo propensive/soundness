@@ -18,7 +18,6 @@ package parasite
 
 import anticipation.*
 import contingency.*
-import rudiments.*
 import vacuous.*
 
 import language.experimental.pureFunctions
@@ -33,7 +32,7 @@ case class Promise[ValueType]():
   private var state: Promise.State = Promise.State.Incomplete
   private var value: Optional[ValueType] = Unset
   private[parasite] def get(): ValueType = value.asInstanceOf[ValueType]
-  
+
   def cancelled: Boolean = state == Promise.State.Cancelled
   def apply(): Optional[ValueType] = if ready then value else Unset
   def ready: Boolean = state != Promise.State.Incomplete
@@ -47,7 +46,7 @@ case class Promise[ValueType]():
   def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError = synchronized:
     if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
     else set(supplied)
-  
+
   def offer(supplied: -> ValueType): Unit = synchronized { if !ready then set(supplied) }
 
   def await(): ValueType raises ConcurrencyError = synchronized:
@@ -63,7 +62,7 @@ case class Promise[ValueType]():
 
   def await[DurationType: GenericDuration](duration: DurationType)
           : ValueType raises ConcurrencyError =
-    
+
     synchronized:
       if ready then get() else
         wait(duration.milliseconds)
