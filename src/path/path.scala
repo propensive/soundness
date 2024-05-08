@@ -23,56 +23,60 @@ import java.nio.file as jnf
 import language.experimental.captureChecking
 
 @capability
-trait SpecificDirectory[+DirectoryType]:
-  def directory(directory: Text): DirectoryType
+trait SpecificDirectory:
+  type Self
+  def directory(directory: Text): Self
 
 @capability
-trait SpecificPath[+PathType]:
-  def path(path: Text): PathType
+trait SpecificPath:
+  type Self
+  def path(path: Text): Self
 
 @capability
-trait SpecificFile[+FileType]:
-  def file(path: Text): FileType
+trait SpecificFile:
+  type Self
+  def file(path: Text): Self
 
 @capability
-trait GenericPath[-PathType]:
-  def pathText(path: PathType): Text
+trait GenericPath:
+  type Self
+  def pathText(path: Self): Text
 
 @capability
-trait GenericDirectory[-DirectoryType]:
-  def directoryText(path: DirectoryType): Text
+trait GenericDirectory:
+  type Self
+  def directoryText(path: Self): Text
 
 @capability
-trait GenericFile[-FileType]:
-  def fileText(path: FileType): Text
+trait GenericFile:
+  type Self
+  def fileText(path: Self): Text
 
 @capability
-trait GenericWatchService[+T]:
+trait GenericWatchService:
   def apply(): jnf.WatchService
 
 extension [PathType](path: PathType)
   inline def fullPath: Text = compiletime.summonFrom:
-    case generic: GenericPath[PathType]      => generic.pathText(path)
-    case generic: GenericFile[PathType]      => generic.fileText(path)
-    case generic: GenericDirectory[PathType] => generic.directoryText(path)
+    case generic: (PathType is GenericPath)      => generic.pathText(path)
+    case generic: (PathType is GenericFile)      => generic.fileText(path)
+    case generic: (PathType is GenericDirectory) => generic.directoryText(path)
 
-extension [PathType](path: PathType)(using generic: GenericPath[PathType])
-  def pathText: Text = generic.pathText(path)
+extension [PathType: GenericPath](path: PathType)
+  def pathText: Text = PathType.pathText(path)
 
-extension [FileType](file: FileType)(using generic: GenericFile[FileType])
-  def fileText: Text = generic.fileText(file)
+extension [FileType: GenericFile](file: FileType)
+  def fileText: Text = FileType.fileText(file)
 
-extension [DirectoryType](directory: DirectoryType)(using generic: GenericDirectory[DirectoryType])
-  def directoryText: Text = generic.directoryText(directory)
+extension [DirectoryType: GenericDirectory](directory: DirectoryType)
+  def directoryText: Text = DirectoryType.directoryText(directory)
 
 object SpecificPath:
-  def apply[PathType](name: Text)(using specific: SpecificPath[PathType]): PathType =
-    specific.path(name)
+  def apply[PathType: SpecificPath](name: Text): PathType = PathType.path(name)
 
 object SpecificFile:
-  def apply[FileType](name: Text)(using specific: SpecificFile[FileType]): FileType =
-    specific.file(name)
+  def apply[FileType: SpecificFile](name: Text): FileType = FileType.file(name)
 
 object SpecificDirectory:
-  def apply[DirectoryType](name: Text)(using specific: SpecificDirectory[DirectoryType]): DirectoryType =
-    specific.directory(name)
+  def apply[DirectoryType: SpecificDirectory](name: Text): DirectoryType =
+    DirectoryType.directory(name)

@@ -18,5 +18,6 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait GenericCssSelection[-ValueType]:
-  def selection(value: ValueType): Text
+trait GenericCssSelection:
+  type Self
+  def selection(value: Self): Text

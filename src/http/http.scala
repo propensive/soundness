@@ -19,14 +19,18 @@ package anticipation
 import language.experimental.captureChecking
 
 trait GenericHttpResponseStream[ValueType]:
+  type Self
   def mediaType: Text
-  def content(value: ValueType): LazyList[IArray[Byte]]
+  def content(value: Self): LazyList[IArray[Byte]]
 
-trait GenericHttpReader[ValueType]:
-  def read(value: Text): ValueType
+trait GenericHttpReader:
+  type Self
+  def read(value: Text): Self
 
-trait GenericHttpRequestParam[-LabelType <: String & Singleton, -ValueType]:
-  def apply(value: ValueType): Text
+trait GenericHttpRequestParam[-ParamType]:
+  type Self <: String & Singleton
+  def apply(value: ParamType): Text
 
-trait GenericHttpResponseParam[-LabelType <: String & Singleton, +ValueType]:
-  def unapply(value: Text): Option[ValueType]
+trait GenericHttpResponseParam[+ParamType]:
+  type Self <: String & Singleton
+  def unapply(value: Text): Option[ParamType]

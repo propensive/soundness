@@ -25,8 +25,9 @@ import scala.reflect.*
 
 import language.experimental.captureChecking
 
-trait Textualizer[ValueType]:
-  extension (value: ValueType) def textual: Text
+trait Textualizer:
+  type Self
+  extension (value: Self) def textual: Text
 
 object Anticipation:
   opaque type Text <: Matchable = String
@@ -38,18 +39,18 @@ object Anticipation:
     given addOperator: AddOperator[Text, Text] with
       type Result = Text
       inline def add(left: Text, right: Text): Text = (left.s+right.s).tt
-    
+
     given mulOperator: MulOperator[Text, Int] with
       type Result = Text
-      
+
       private def recur(text: Text, n: Int, acc: Text): Text =
         if n == 0 then acc else recur(text, n - 1, acc+text)
-      
+
       inline def mul(left: Text, right: Int): Text = recur(left, right.max(0), "")
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
     given fromString: CommandLineParser.FromString[Text] = identity(_)
-    
+
     given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] with
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 

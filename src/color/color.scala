@@ -18,10 +18,10 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait RgbColor[ColorType]:
-  extension (color: ColorType) def asRgb24Int: Int
-  
-  def red(color: ColorType): Int = asRgb24Int(color)&255
-  def green(color: ColorType): Int = (asRgb24Int(color) >> 8)&255
-  def blue(color: ColorType): Int = (asRgb24Int(color) >> 16)&255
+trait RgbColor:
+  type Self
+  extension (color: Self) def asRgb24Int: Int
 
+  def red(color: Self): Int = asRgb24Int(color)&255
+  def green(color: Self): Int = (asRgb24Int(color) >> 8)&255
+  def blue(color: Self): Int = (asRgb24Int(color) >> 16)&255

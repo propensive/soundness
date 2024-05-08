@@ -18,40 +18,42 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait SpecificInstant[InstantType]:
-  def instant(millisecondsSinceEpoch: Long): InstantType
+trait SpecificInstant:
+  type Self
+  def instant(millisecondsSinceEpoch: Long): Self
 
-trait GenericInstant[InstantType]:
-  def millisecondsSinceEpoch(instant: InstantType): Long
+trait GenericInstant:
+  type Self
+  def millisecondsSinceEpoch(instant: Self): Long
 
-trait SpecificDuration[DurationType]:
-  def duration(milliseconds: Long): DurationType
+trait SpecificDuration:
+  type Self
+  def duration(milliseconds: Long): Self
 
-trait GenericDuration[DurationType]:
-  def milliseconds(duration: DurationType): Long
+trait GenericDuration:
+  type Self
+  def milliseconds(duration: Self): Long
 
-package timeInterfaces {}
-
-extension [InstantType](instant: InstantType)(using generic: GenericInstant[InstantType])
-  def millisecondsSinceEpoch: Long = generic.millisecondsSinceEpoch(instant)
+extension [InstantType: GenericInstant](instant: InstantType)
+  def millisecondsSinceEpoch: Long = InstantType.millisecondsSinceEpoch(instant)
 
 object SpecificInstant:
-  def apply[InstantType](using specific: SpecificInstant[InstantType])(millisecondsSinceEpoch: Long): InstantType =
-    specific.instant(millisecondsSinceEpoch)
-  
-  given long: SpecificInstant[Long] = identity(_)
+  def apply[InstantType: SpecificInstant](millisecondsSinceEpoch: Long): InstantType =
+    InstantType.instant(millisecondsSinceEpoch)
 
-extension [DurationType](duration: DurationType)(using generic: GenericDuration[DurationType])
-  def milliseconds: Long = generic.milliseconds(duration)
+  given Long is SpecificInstant = identity(_)
+
+extension [DurationType: GenericDuration](duration: DurationType)
+  def milliseconds: Long = DurationType.milliseconds(duration)
 
 object SpecificDuration:
-  def apply[DurationType](using specific: SpecificDuration[DurationType])(milliseconds: Long): DurationType =
-    specific.duration(milliseconds)
+  def apply[DurationType: SpecificDuration](milliseconds: Long): DurationType =
+    DurationType.duration(milliseconds)
 
-  given long: SpecificDuration[Long] = identity(_)
+  given Long is SpecificDuration = identity(_)
 
 object GenericInstant:
-  given long: GenericInstant[Long] = identity(_)
+  given Long is GenericInstant = identity(_)
 
 object GenericDuration:
-  given long: GenericDuration[Long] = identity(_)
+  given Long is GenericDuration = identity(_)
