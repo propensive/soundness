@@ -134,7 +134,7 @@ is applied to. This can be useful in a subsequent `map` operation.
 
 ## Status
 
-Rudiments is classified as __maturescent__. For reference, Scala One projects are
+Rudiments is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -217,7 +217,7 @@ O&Uuml;](https://propensive.com/).
 
 The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an unfinished beginning", which is apt for a library whose purpose is to provide such common functionality that it might lie at the start of many other libraries.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
