@@ -16,11 +16,11 @@
 
 package hypotenuse
 
-import rudiments.*
+import language.experimental.captureChecking
 
 import scala.annotation.*
 
-import language.experimental.captureChecking
+import rudiments.*
 
 object NumericallyComparable:
   inline given Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:

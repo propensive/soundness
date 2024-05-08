@@ -16,18 +16,18 @@
 
 package hypotenuse
 
-import anticipation.*
-import contingency.*
-import fulminate.*
+import language.experimental.genericNumberLiterals
+
+import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
+    Float as JFloat}
 
 import scala.util.FromDigits
 import scala.annotation.*
 import scala.compiletime.*
 
-import language.experimental.genericNumberLiterals
-
-import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
-    Float as JFloat}
+import anticipation.*
+import contingency.*
+import fulminate.*
 
 case class OverflowError() extends Error(msg"an overflow error occurred")
 case class DivisionError() extends Error(msg"the result is unrepresentable")
@@ -183,7 +183,7 @@ object Hypotenuse:
   object F64:
     erased given Underlying[F64, Double] = erasedValue
 
-    inline given canEqual: CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] =
+    inline given CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     inline def apply(sign: Boolean, exponent: B16, mantissa: B64): F64 =

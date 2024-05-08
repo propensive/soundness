@@ -16,13 +16,13 @@
 
 package hypotenuse
 
-import fulminate.*
-
-import scala.quoted.*
+import language.experimental.genericNumberLiterals
 
 import java.lang.{Integer as JInt, Long as JLong}
 
-import language.experimental.genericNumberLiterals
+import scala.quoted.*
+
+import fulminate.*
 
 object Hypotenuse2:
   given Realm = realm"hypotenuse"
@@ -34,7 +34,7 @@ object Hypotenuse2:
   def parseI64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
     case None         => '{JLong.parseLong($digits)}
     case Some(digits) => Expr(JLong.parseLong(digits))
-  
+
   def parseU32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
     case None         => '{JInt.parseUnsignedInt($digits)}
     case Some(digits) => Expr(JInt.parseUnsignedInt(digits))
@@ -42,47 +42,47 @@ object Hypotenuse2:
   def parseI32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
     case None         => '{JInt.parseInt($digits)}
     case Some(digits) => Expr(JInt.parseInt(digits))
-  
+
   def parseU16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
     case None => '{JInt.parseInt($digits).toShort}
-    
+
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < 0 then fail(msg"a U16 may not be less than ${0}")
       if int > 0xffff then fail(msg"a U16 may not be greater than ${0xffff}")
-      
+
       Expr(int.toShort)
 
   def parseI16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
     case None => '{JInt.parseInt($digits).toShort}
-    
+
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < Short.MinValue then fail(msg"an I16 may not be less than ${Short.MinValue.toInt}")
       if int > Short.MaxValue then fail(msg"an I16 may not be greater than ${Short.MaxValue.toInt}")
-      
+
       Expr(int.toShort)
-  
+
   def parseU8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
     case None => '{JInt.parseInt($digits).toByte}
-    
+
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < 0 then fail(msg"a U8 may not be less than ${0}")
       if int > 0xffff then fail(msg"a U8 may not be greater than ${0xffff}")
-      
+
       Expr(int.toByte)
 
   def parseI8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
     case None => '{JInt.parseInt($digits).toByte}
-    
+
     case Some(digits) =>
       val int = JInt.parseInt(digits)
       if int < Byte.MinValue then fail(msg"an I8 may not be less than ${Byte.MinValue.toInt}")
       if int > Byte.MaxValue then fail(msg"an I8 may not be greater than ${Byte.MaxValue.toInt}")
-      
+
       Expr(int.toByte)
-  
+
   def inequality
       (expr: Expr[Boolean],
        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
@@ -90,9 +90,9 @@ object Hypotenuse2:
        greaterThan: Expr[Boolean])
       (using Quotes)
           : Expr[Boolean] =
-    
+
     val errorMessage = msg"this cannot be written as a range expression"
-    
+
     val value =
       if greaterThan.valueOrAbort then expr match
         case '{($bound: Int) > ($value: Int)}        => value
@@ -127,7 +127,7 @@ object Hypotenuse2:
         case '{($bound: Float) < ($value: Float)}    => value
         case '{($bound: Float) <= ($value: Float)}   => value
         case _                                       => fail(errorMessage)
-    
+
     val (lessStrict, less) =
       (if greaterThan.valueOrAbort then (bound, value) else (value, bound)) match
         case ('{$left: Int}, '{$right: Int})       => ('{$left < $right}, '{$left <= $right})
