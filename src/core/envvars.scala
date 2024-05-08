@@ -42,7 +42,7 @@ object Environment extends Dynamic:
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
-    
+
   inline def selectDynamic[VariableType](key: String)
       (using environment:      Environment,
              reader:           EnvironmentVariable[key.type, VariableType],
@@ -51,7 +51,7 @@ object Environment extends Dynamic:
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
-  
+
 @capability
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
@@ -61,55 +61,59 @@ trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
 trait EnvironmentVariable2:
   given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
     identity(_)
-  
+
   given decoder[UnknownType <: Label, VariableType](using decoder: Decoder[VariableType])
           : EnvironmentVariable[UnknownType, VariableType] =
 
     decoder.decode(_)
 
 object EnvironmentVariable extends EnvironmentVariable2:
-  given path[PathType: SpecificPath](using systemProperties: SystemProperties)
-          : EnvironmentVariable["path", List[PathType]]^{systemProperties} =
-
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
-  
-  given xdgDataDirs[PathType: SpecificPath](using systemProperties: SystemProperties)
-          : EnvironmentVariable["xdgDataDirs", List[PathType]]^{systemProperties} =
-
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
-  
-  given xdgConfigDirs[PathType: SpecificPath](using systemProperties: SystemProperties)
-          : EnvironmentVariable["xdgConfigDirs", List[PathType]]^{systemProperties} =
+  given [PathType: SpecificPath](using systemProperties: SystemProperties)
+      => (EnvironmentVariable["path", List[PathType]]^{systemProperties}) as path =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
-  given xdgDataHome[PathType](using specificPath: SpecificPath[PathType])
-          : EnvironmentVariable["xdgDataHome", PathType]^{specificPath} =
+  given [PathType: SpecificPath](using systemProperties: SystemProperties)
+      => (EnvironmentVariable["xdgDataDirs", List[PathType]]^{systemProperties}) as xdgDataDirs =
+
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+
+  given [PathType: SpecificPath](using systemProperties: SystemProperties)
+      => (EnvironmentVariable["xdgConfigDirs", List[PathType]]^{systemProperties}) as xdgConfigDirs =
+
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+
+  given [PathType: SpecificPath as specific]
+      => (EnvironmentVariable["xdgDataHome", PathType]^{specific}) as xdgDataHome =
 
     SpecificPath(_)
-  
-  given xdgConfigHome[PathType](using specificPath: SpecificPath[PathType])
-          : EnvironmentVariable["xdgConfigHome", PathType]^{specificPath} =
+
+  given [PathType: SpecificPath as specific]
+      => (EnvironmentVariable["xdgConfigHome", PathType]^{specific}) as xdgConfigHome =
+    SpecificPath(_)
+
+  given [PathType: SpecificPath]
+      => (EnvironmentVariable["xdgStateHome", PathType]) as xdgStateHome =
+    SpecificPath(_)
+
+  given [PathType: SpecificPath as specific]
+          => (EnvironmentVariable["xdgCacheHome", PathType]^{specific}) as xdgCacheHome =
 
     SpecificPath(_)
-  
-  given xdgStateHome[PathType: SpecificPath]: EnvironmentVariable["xdgStateHome", PathType] = SpecificPath(_)
-  
-  given xdgCacheHome[PathType](using specificPath: SpecificPath[PathType])
-          : EnvironmentVariable["xdgCacheHome", PathType]^{specificPath} =
 
+  given [PathType: SpecificPath]
+      => EnvironmentVariable["xdgRuntimeDir", PathType] as xdgRuntimeDir =
     SpecificPath(_)
-  
-  given xdgRuntimeDir[PathType: SpecificPath]: EnvironmentVariable["xdgRuntimeDir", PathType] = SpecificPath(_)
-  given home[PathType: SpecificPath]: EnvironmentVariable["home", PathType] = SpecificPath(_)
-  given mail[PathType: SpecificPath]: EnvironmentVariable["mail", PathType] = SpecificPath(_)
-  given shell[PathType: SpecificPath]: EnvironmentVariable["shell", PathType] = SpecificPath(_)
-  given oldpwd[PathType: SpecificPath]: EnvironmentVariable["oldpwd", PathType] = SpecificPath(_)
-  given windowid[PathType: SpecificPath]: EnvironmentVariable["windowid", PathType] = SpecificPath(_)
-  given editor[PathType: SpecificPath]: EnvironmentVariable["editor", PathType] = SpecificPath(_)
-  given pager[PathType: SpecificPath]: EnvironmentVariable["pager", PathType] = SpecificPath(_)
-  
-  given sshAgentPid(using Errant[NumberError]): EnvironmentVariable["sshAgentPid", Pid] =
+
+  given [PathType: SpecificPath] => EnvironmentVariable["home", PathType] as home = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["mail", PathType] as mail = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["shell", PathType] as shell = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["oldpwd", PathType] as oldpwd = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["windowid", PathType] as windowid = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] as editor = SpecificPath(_)
+  given [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] as pager = SpecificPath(_)
+
+  given (using Errant[NumberError]) => EnvironmentVariable["sshAgentPid", Pid] as sshAgentPid =
     text => Pid(text.decodeAs[Int])
 
   given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
