@@ -42,11 +42,11 @@ extension (span: CharSpan)
   def start: Int = (span >> 32).toInt
   def end: Int = Int.MaxValue - span.toInt
   def isEmpty: Boolean = start == end
-  
-  def trimLeft(n: Int): CharSpan = 
+
+  def trimLeft(n: Int): CharSpan =
     if n >= end then CharSpan.Nowhere else if n <= start then CharSpan(start - n, end - n)
     else CharSpan(0, end - n)
-  
+
   def takeLeft(n: Int): CharSpan =
     if n <= start then CharSpan.Nowhere else if n >= end then span else CharSpan(start, n)
 
@@ -67,14 +67,14 @@ case class TextStyle
 
   import escapes.*
   import TextStyle.esc
-  
+
   private def italicEsc: Text = if italic then styles.Italic.on else styles.Italic.off
   private def boldEsc: Text = if bold then styles.Bold.on else styles.Bold.off
   private def reverseEsc: Text = if reverse then styles.Reverse.on else styles.Reverse.off
   private def underlineEsc: Text = if underline then styles.Underline.on else styles.Underline.off
   private def concealEsc: Text = if conceal then styles.Conceal.on else styles.Conceal.off
   private def strikeEsc: Text = if strike then styles.Strike.on else styles.Strike.off
-  
+
   def addChanges(buf: StringBuilder, next: TextStyle, colorDepth: ColorDepth): Unit =
     if fg != next.fg then buf.add(next.fg.let(Fg(_).ansi(colorDepth)).or(t"$esc[39m"))
     if bg != next.bg then buf.add(next.bg.let(Bg(_).ansi(colorDepth)).or(t"$esc[49m"))
@@ -95,7 +95,7 @@ trait Ansi2:
         compiletime.summonFrom:
           case display: Displayable[ValueType] => display(value)
           case given Show[ValueType]           => Display(value.show)
-  
+
 
 object Ansi extends Ansi2:
   type Transform = TextStyle => TextStyle
@@ -103,10 +103,10 @@ object Ansi extends Ansi2:
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
   given Stylize[Escape] = identity(_)
-  
-  given [ColorType](using RgbColor[ColorType]): Stylize[ColorType] =
+
+  given [ColorType: RgbColor as color] => Stylize[ColorType] =
     color => Stylize(_.copy(fg = color.asRgb24Int))
-  
+
   given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
   given Stylize[Fg] = fgColor => Stylize(_.copy(fg = fgColor.color))
 
@@ -116,14 +116,14 @@ object Ansi extends Ansi2:
   given Stylize[Strike.type] = _ => Stylize(_.copy(strike = true))
   given Stylize[Conceal.type] = _ => Stylize(_.copy(conceal = true))
   given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
-  
+
   enum Input:
     case TextInput(text: Display)
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
 
   case class Frame(bracket: Char, start: Int, transform: Transform)
-  
+
   case class State
       (text:       Text                         = t"",
        last:       Option[Transform]            = None,
@@ -133,7 +133,7 @@ object Ansi extends Ansi2:
 
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
-    
+
     def add(pos: Int, esc: Escape): State =
       val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(pos, insertions2))
@@ -150,7 +150,7 @@ object Ansi extends Ansi2:
           case '[' | '(' | '<' | '«' | '{' =>
             val frame = Frame(complement(text.at(0).vouch(using Unsafe)), state.text.length, transform)
             closures(state.copy(stack = frame :: state.stack, last = None), text.drop(1))
-  
+
           case _ =>
             val state2 = state.add(CharSpan(state.text.length, state.text.length), transform)
             closures(state2.copy(last = None), text)
@@ -160,7 +160,7 @@ object Ansi extends Ansi2:
         safely(text.where(_ == frame.bracket)) match
           case Unset =>
             state.copy(text = state.text+text)
-            
+
           case idx: Int =>
             val text2 = state.text+text.take(idx)
             val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
@@ -180,15 +180,15 @@ object Ansi extends Ansi2:
 
         state.copy(text = state.text+text.plain, last = None, spans = state.spans ++ textSpans,
             insertions = state.insertions ++ textInsertions)
-      
+
       case Input.Markup(transform) =>
         state.copy(last = Some(transform))
-    
+
       case esc@Input.Escape(on, off) =>
         state.copy(last = None).add(state.text.length, esc)
-    
+
     def skip(state: State): State = insert(state, Input.TextInput(Display.empty))
-    
+
     def complete(state: State): Display =
       if !state.stack.isEmpty
       then throw InterpolationError(msg"the closing brace does not match an opening brace")
@@ -202,13 +202,13 @@ object Display:
 
   given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Display] = (out, output) =>
     stdio.print(output.render(stdio.termcap))
-  
+
   given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Display] = (err, output) =>
     stdio.printErr(output.render(stdio.termcap))
 
   given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Display] =
     (target, output) => appendable.append(target, output.map(_.render(termcapDefinitions.basic)))
-  
+
   given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
     (target, output) => writable.write(target, output.map(_.render(termcapDefinitions.basic)))
 
@@ -218,7 +218,7 @@ object Display:
     def string(text: Display): String = text.plain.s
     def length(text: Display): Int = text.plain.s.length
     def make(string: String): Display = Display(Text(string))
-    
+
     def map(text: Display, lambda: Char => Char): Display =
       Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
@@ -231,12 +231,12 @@ object Display:
 
   val empty: Display = Display(t"")
   given joinable: Joinable[Display] = _.fold(empty)(_ + _)
-  given printable: Printable[Display] = _.render(_)
+  given Display is Printable as printable = _.render(_)
 
   given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
-    
+
     @tailrec
     def recur(source: Display, limit: Int, acc: List[Display]): List[Display] =
       if limit <= 0 then acc
@@ -259,7 +259,7 @@ object Display:
 case class Display
     (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
         insertions: TreeMap[Int, Text] = TreeMap()):
-  
+
   def explicit: Text = render(termcapDefinitions.xtermTrueColor).flatMap: char =>
     if char.toInt == 27 then t"\\e" else char.show
 
@@ -270,13 +270,13 @@ case class Display
   infix def append(text: Display): Display =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
-    
+
     Display(plain+text.plain, spans ++ newSpans)
 
   def dropChars(n: Int, dir: Bidi = Ltr): Display = dir match
     case Rtl =>
       takeChars(plain.length - n)
-    
+
     case Ltr =>
       val newSpans: TreeMap[CharSpan, Ansi.Transform] =
         spans.map:
@@ -284,7 +284,7 @@ case class Display
             val charSpan: CharSpan = span.trimLeft(n)
             charSpan -> transform
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
-      
+
       Display(plain.drop(n), newSpans)
 
   def takeChars(n: Int, dir: Bidi = Ltr): Display = dir match
@@ -298,7 +298,7 @@ case class Display
             val charSpan: CharSpan = span.takeLeft(n)
             charSpan -> tf
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
-      
+
       Display(plain.take(n), newSpans)
 
   def render(termcap: Termcap): Text =
@@ -319,7 +319,7 @@ case class Display
         style.addChanges(buf, newStyle, termcap.color)
         val newStack = if spans.head(0).isEmpty then stack else (spans.head(0) -> style) :: stack
         recur(spans.tail, spans.head(0).start, newStyle, newStack, newInsertions)
-      
+
       @tailrec
       def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
         if insertions.isEmpty then
@@ -369,7 +369,7 @@ case class Bg(color: Int):
     val red = (color >> 16)&255
     val green = (color >> 8)&255
     val blue = color&255
-    
+
     colorDepth match
       case ColorDepth.TrueColor =>
         t"\e[48;2;$red;$green;${blue}m"
@@ -386,7 +386,7 @@ case class Fg(color: Int):
     val red = (color >> 16)&255
     val green = (color >> 8)&255
     val blue = color&255
-    
+
     colorDepth match
       case ColorDepth.TrueColor =>
         t"\e[38;2;$red;$green;${blue}m"
