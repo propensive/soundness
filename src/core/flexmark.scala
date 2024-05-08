@@ -25,8 +25,7 @@ import contingency.*
 import spectacular.*
 
 import com.vladsch.flexmark as cvf
-import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables,
-    cvf.util.ast as cvfua
+import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua
 import annotation.tailrec
 
 import scala.quoted.*
@@ -68,9 +67,9 @@ type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
-  given (using Errant[MarkdownError]): Decoder[InlineMd] = parseInline(_)
-  given Encoder[InlineMd] = _.serialize
-  given Show[InlineMd] = _.serialize
+  given decoder(using Errant[MarkdownError]): Decoder[InlineMd] = parseInline(_)
+  given encoder: Encoder[InlineMd] = _.serialize
+  given show: Show[InlineMd] = _.serialize
 
   object Ast:
     type Node = Block | Inline
@@ -165,7 +164,8 @@ object Markdown:
       raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))(Markdown[Markdown.Ast.Inline]())
   
   @tailrec
-  private def coalesce[MdType >: Copy <: Markdown.Ast.Inline](xs: List[MdType], done: List[MdType] = Nil)
+  private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
+      (xs: List[MdType], done: List[MdType] = Nil)
           : List[MdType] =
 
     xs match
