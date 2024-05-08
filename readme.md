@@ -102,7 +102,7 @@ to Markdown is permitted by the existence of a contextual typeclass instance.
 
 ## Status
 
-Punctuation is classified as __fledgling__. For reference, Scala One projects are
+Punctuation is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -185,7 +185,7 @@ O&Uuml;](https://propensive.com/).
 
 To _punctuate_ is "to mark with points" (or more specifically, symbolic characters) and also, "to stress or single out as important", which describes Markdown in both the literal sense that punctuation characters are added to text, and in the figurative sense that this punctuates a document with stress and other styled emphasis.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
