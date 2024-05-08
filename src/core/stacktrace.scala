@@ -32,8 +32,8 @@ object FqcnError:
     case InvalidStart(char: Char)
     case EmptyName
     case JavaKeyword(keyword: Text)
-  
-  given communicable: Communicable[Reason] =
+
+  given Reason is Communicable =
     case Reason.InvalidChar(char)    => msg"a package name may not contain the character $char"
     case Reason.InvalidStart(char)   => msg"a package name may not start with the character $char"
     case Reason.EmptyName            => msg"a package name cannot be empty"
@@ -48,17 +48,17 @@ object Fqcn:
 
   def apply(name: Text): Fqcn raises FqcnError =
     val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))
-    
+
     parts.foreach: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))(())
       if Digression.javaKeywords.has(part) then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)))(())
-      
+
       part.foreach: char =>
         if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)))(())
 
       if part.head >= '0' && part.head <= '9'
       then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)))(())
-    
+
     new Fqcn(parts.map(_.tt))
 
 class Fqcn(val parts: IArray[Text]):
@@ -69,7 +69,7 @@ class Fqcn(val parts: IArray[Text]):
 object StackTrace:
   case class Method(className: Text, method: Text)
   case class Frame(method: Method, file: Text, line: Optional[Int], native: Boolean)
-  
+
   val legend: Map[Text, Text] =
     Map
      ("λₙ".tt -> "anonymous function".tt,
@@ -84,7 +84,7 @@ object StackTrace:
 
   def rewrite(name: String, method: Boolean = false): Text =
     val buffer: StringBuilder = StringBuilder()
-    
+
     inline def char(idx: Int): Optional[Char] =
       if idx < 0 || idx >= name.length then Unset else name.charAt(idx)
 
@@ -98,7 +98,7 @@ object StackTrace:
         else
           buffer.append('#')
           recur(idx + 1, digits)
-      
+
       inline def skip(): Text = token(idx, "$", if method then "()." else "#")
 
       if idx >= name.length then Text(buffer.toString+(if method then "()" else ""))
@@ -197,7 +197,7 @@ object StackTrace:
         case ch  =>
           buffer.append(ch.toString)
           recur(idx + 1)
-    
+
     val rewritten = recur(0)
 
     def primitive(char: Char) = char match
@@ -217,17 +217,17 @@ object StackTrace:
       types.indexOf("#mc") match
         case -1 | 0 =>
           rewritten
-        
+
         case i =>
           Text:
             val types2 = types.drop(i + 3).to(List).map(primitive)
             if types2.length <= 2 then types2.mkString("(", " => ", ")")
             else types2.init.mkString("((", ", ", s") => ${types2.last})")
-    
+
     else if rewritten.s.startsWith("scala.runtime.function.JProcedure") then Text:
       val n = try rewritten.s.drop(33).toInt catch case error: Exception => 0
       "("+(if n < 2 then s"Any" else List.fill(n)("Any").mkString("(", ", ", ")"))+" => Unit)"
-    
+
     else rewritten
 
   def apply(exception: Throwable): StackTrace =
@@ -241,20 +241,20 @@ object StackTrace:
         if frame.getLineNumber < 0 then Unset else frame.getLineNumber,
         frame.isNativeMethod
       )
-    
+
     val cause = Option(exception.getCause)
     val fullClassName: Text = rewrite(exception.getClass.nn.getName.nn)
     val fullClass: List[Text] = List(fullClassName.s.split("\\.").nn.map(_.nn).map(Text(_))*)
     val className: Text = fullClass.last
-    
+
     val component: Text =
       val length = fullClassName.s.length - className.s.length - 1
       Text(fullClassName.s.substring(0, 0.max(length)).nn)
-    
+
     val message: Message = exception match
       case error: Error => error.message
       case other        => Message(Text(Option(exception.getMessage).map(_.nn).getOrElse("")))
-    
+
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
 case class StackTrace
@@ -264,9 +264,9 @@ case class StackTrace
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
     val frames2 = frames.takeWhile { f => f.method.className != cutClassName || f.method.method != cutMethod }
     StackTrace(component, className, message, frames2, cause)
-  
+
   def drop(n: Int): StackTrace =
     StackTrace(component, className, message, frames.drop(n), cause)
-  
+
   def dropRight(n: Int): StackTrace =
     StackTrace(component, className, message, frames.dropRight(n), cause)
