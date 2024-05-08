@@ -75,12 +75,15 @@ trait LogWriter[TargetType, TextType]:
 trait Logger[TextType]:
   def put(entry: Entry[TextType]): Unit
 
-class LogProcess[TargetType, TextType](target: TargetType)(using format: LogFormat[TargetType, TextType])
+class LogProcess[TargetType, TextType](target: TargetType)
+    (using format: LogFormat[TargetType, TextType])
     (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
 extends Logger[TextType]:
 
   private val funnel: Funnel[Entry[TextType]] = Funnel()
-  private val task: Daemon = daemon(appendable.append(target, unsafely(funnel.stream.map(format(_)))))
+  
+  private val task: Daemon =
+    daemon(appendable.append(target, unsafely(funnel.stream.map(format(_)))))
   
   def put(entry: Entry[TextType]): Unit = funnel.put(entry)
 
