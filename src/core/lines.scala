@@ -23,21 +23,22 @@ import language.experimental.captureChecking
 package lineSeparation:
   import LineSeparation.Action.*
   import LineSeparation.NewlineSeq
-  given carriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl)
-  given strictCarriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl)
-  given linefeed: LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl)
-  given strictLinefeeds: LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl)
-  given carriageReturnLinefeed: LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl)
-  given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl)
-  
-  given virtualMachine: LineSeparation = System.lineSeparator.nn match
+
+  given LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl) as carriageReturn
+  given LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl) as strictCarriageReturn
+  given LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl) as linefeed
+  given LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl) as strictLinefeeds
+  given LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl) as carriageReturnLinefeed
+  given LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl) as adaptiveLinefeed
+
+  given LineSeparation as virtualMachine = System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeed
     case "\r"      => carriageReturn
     case "\n"      => linefeed
     case _: String => adaptiveLinefeed
-  
+
 object LineSeparation:
-  given default(using Quickstart): LineSeparation = lineSeparation.adaptiveLinefeed
+  given (using Quickstart) => LineSeparation as default = lineSeparation.adaptiveLinefeed
 
   inline def readByte(inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
       (lineSeparators: LineSeparation)
@@ -46,22 +47,22 @@ object LineSeparation:
     val action: Action = read match
       case 10 =>
         next
-        
+
         read match
           case 13 => next; lineSeparators.lfcr
           case ch => lineSeparators.lf
-      
+
       case 13 =>
         next
-        
+
         read match
           case 10 => next; lineSeparators.crlf
           case ch => lineSeparators.cr
-      
+
       case ch =>
         put(ch)
         Action.Skip
-    
+
     action match
       case Action.Nl   => mkNewline
       case Action.NlCr => mkNewline; put(13)
