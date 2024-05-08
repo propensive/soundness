@@ -68,7 +68,7 @@ value imported from the `textMetrics` package.
 
 ## Status
 
-Hieroglyph is classified as __fledgling__. For reference, Scala One projects are
+Hieroglyph is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -152,7 +152,7 @@ O&Uuml;](https://propensive.com/).
 Hieroglyphics are elaborate characters, whose meaning requires interpretation, while _Hieroglyph_ is a library
 which provides encodings to translate between characters and their binary representations.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
