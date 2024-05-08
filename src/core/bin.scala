@@ -34,9 +34,9 @@ object Rudiments:
 
   object ByteSize:
     def apply(long: Long): ByteSize = long
-    given GenericHttpRequestParam["content-length", ByteSize] = _.long.toString.tt
-    given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
-    given communicable: Communicable[ByteSize] = byteSize => Message(byteSize.text)
+    given ("content-length" is GenericHttpRequestParam[ByteSize]) = _.long.toString.tt
+    given Ordering[ByteSize] as ordering = Ordering.Long.on(_.long)
+    given [ByteSizeType <: ByteSize] => ByteSizeType is Communicable = byteSize => Message(byteSize.text)
 
     given add: AddOperator[ByteSize, ByteSize] with
       type Result = ByteSize
@@ -45,15 +45,15 @@ object Rudiments:
     given sub: SubOperator[ByteSize, ByteSize] with
       type Result = ByteSize
       inline def sub(left: ByteSize, right: ByteSize): ByteSize = left - right
-    
+
     given mul: MulOperator[ByteSize, Int] with
       type Result = ByteSize
       inline def mul(left: ByteSize, right: Int): ByteSize = left*right
-    
+
     given div: DivOperator[ByteSize, Int] with
       type Result = ByteSize
       inline def div(left: ByteSize, right: Int): ByteSize = left/right
-    
+
     extension (left: ByteSize)
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
@@ -64,12 +64,12 @@ object Rudiments:
 
     bits.indexWhere { ch => ch != '0' && ch != '1' && ch != ' ' }.match
       case -1  => ()
-      
+
       case idx =>
         val startPos = expr.asTerm.pos
         val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
         fail(msg"a binary value can only contain characters '0' or '1'", pos)
-    
+
     val bits2 = bits.filter(_ != ' ')
 
     val long: Long = bits2.foldLeft(0L): (acc, next) =>
@@ -84,7 +84,7 @@ object Rudiments:
 
   def hex(expr: Expr[StringContext])(using Quotes): Expr[IArray[Byte]] =
     import quotes.reflect.*
-    
+
     val startPos = expr.asTerm.pos
     val nibbles = expr.valueOrAbort.parts.head
     val nibbles2 = nibbles.map(_.toLower)
@@ -93,7 +93,7 @@ object Rudiments:
       !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
     .match
       case -1  => ()
-      
+
       case idx =>
         val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
         fail(msg"${nibbles(idx)} is not a valid hexadecimal character", pos)
