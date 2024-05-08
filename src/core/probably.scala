@@ -36,15 +36,15 @@ extension [ValueType](inline value: ValueType)(using inline test: TestContext)
 package testContexts:
   given threadLocal: TestContext = new TestContext():
     private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
-    
-    override def capture[ValueType](name: Text, value: ValueType)(using Debug[ValueType]): ValueType =
+
+    override def capture[ValueType: Debug](name: Text, value: ValueType): ValueType =
       delegate.map(_.capture[ValueType](name, value)).getOrElse(value)
 
 @annotation.capability
 class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
-  
-  def capture[ValueType](name: Text, value: ValueType)(using Debug[ValueType]): ValueType =
+
+  def capture[ValueType: Debug](name: Text, value: ValueType): ValueType =
     captured.append(name -> value.debug)
     value
 
@@ -56,17 +56,17 @@ case class TestId(name: Text, suite: Optional[TestSuite], codepoint: Codepoint):
   import textMetrics.uniform
   lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
-  
+
   def apply[ResultType](ctx: TestContext ?=> ResultType): Test[ResultType] =
     Test[ResultType](this, ctx(using _))
-  
+
   def depth: Int = suite.let(_.id.depth).or(0) + 1
 
 class TestSuite(val name: Text, val parent: Optional[TestSuite] = Unset)(using codepoint: Codepoint):
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
     case that: TestSuite => name == that.name && parent == that.parent
     case _               => false
-  
+
   override def hashCode: Int = name.hashCode + parent.hashCode
 
   val id: TestId = TestId(name, parent, codepoint)
@@ -103,24 +103,24 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
     val ctx = TestContext()
     Runner.testContextThreadLocal.set(Some(ctx))
     val ns0 = System.nanoTime
-    
+
     try
       val ns0: Long = System.nanoTime
       val result: T = test.action(ctx)
       val ns: Long = System.nanoTime - ns0
       TestRun.Returns(result, ns, ctx.captured.to(Map)).also:
         synchronized { active -= test.id }
-    
+
     catch case err: Exception =>
       val ns: Long = System.nanoTime - ns0
-      
+
       def lazyException(): Nothing =
         given CanThrow[Exception] = unsafeExceptions.canThrowAny
         throw err
 
       TestRun.Throws(lazyException, ns, ctx.captured.to(Map)).also:
         synchronized { active -= test.id }
-    
+
     finally
       Runner.testContextThreadLocal.set(None)
 
@@ -128,7 +128,7 @@ class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
     if !skip(suite.id) then
       reporter.declareSuite(report, suite)
       block(using suite)
-  
+
   def terminate(error: Throwable): Unit = synchronized:
     reporter.fail(report, error, active)
 
@@ -151,7 +151,7 @@ extension [TestType](test: Test[TestType])
           inc2: Inclusion[ReportType, DebugInfo])
       : Unit =
     ${Probably.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
-  
+
   inline def assert[ReportType]
       (inline predicate: TestType => Boolean)
       (using runner:     Runner[ReportType],
@@ -159,7 +159,7 @@ extension [TestType](test: Test[TestType])
              inclusion2: Inclusion[ReportType, DebugInfo])
           : Unit =
     ${Probably.assert[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
-  
+
   inline def check[ReportType]
       (inline predicate: TestType => Boolean)
       (using runner:     Runner[ReportType],
@@ -174,7 +174,7 @@ extension [TestType](test: Test[TestType])
              inclusion2: Inclusion[ReportType, DebugInfo])
           : Unit =
     ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
-  
+
   inline def check[ReportType]()
       (using runner:     Runner[ReportType],
              inclusion:  Inclusion[ReportType, Outcome],
@@ -182,7 +182,7 @@ extension [TestType](test: Test[TestType])
           : TestType =
 
     ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
-  
+
   inline def matches[ReportType](inline pf: PartialFunction[TestType, Any])
       (using runner: Runner[ReportType],
              inc:    Inclusion[ReportType, Outcome],

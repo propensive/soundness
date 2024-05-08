@@ -37,7 +37,7 @@ object Probably:
           : Expr[ResultType] =
 
     import quotes.reflect.*
-    
+
     val exp: Option[Expr[Any]] = predicate.asTerm match
       case Inlined(_, _, Block(List(DefDef(a1, _, _, Some(expression))), Closure(Ident(a2), _)))
           if a1 == a2 =>
@@ -45,29 +45,29 @@ object Probably:
           case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
           case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
           case other                                     => None
-      
+
       case _ =>
         None
-    
+
     exp match
-      case Some('{ $expr: t }) =>
-        val debug: Expr[Debug[t | TestType]] =
-          Expr.summon[Debug[t | TestType]].getOrElse('{ _.toString.tt })
-        
-        val contrast = '{Contrast.general[t | TestType]}
-        //val contrast = Expr.summon[Contrast[t | TestType]].getOrElse('{Contrast.general[t | TestType]})
-        '{
-          assertion[t | TestType, TestType, ReportType, ResultType]
-              ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $debug)
-        }
-      
+      // case Some('{type testType >: TestType; $expr: testType}) =>
+      //   val debug: Expr[Debug[testType]] =
+      //     Expr.summon[Debug[testType]].getOrElse('{ _.toString.tt })
+
+      //   val contrast: Expr[Contrast[testType]] = '{Contrast.general[testType]}
+      //   //val contrast = Expr.summon[Contrast[testType]].getOrElse('{Contrast.general[testType]})
+      //   '{
+      //     assertion[testType, TestType, ReportType, ResultType]
+      //         ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $debug)
+      //   }
+
       case _ =>
         '{
           assertion[TestType, TestType, ReportType, ResultType]
               ($runner, $test, $predicate, $action, Contrast.nothing[TestType], None, $inc, $inc2,
                   _.toString.tt)
         }
-  
+
   def check[TestType: Type, ReportType: Type]
       (test:      Expr[Test[TestType]],
        predicate: Expr[TestType => Boolean],
@@ -78,7 +78,7 @@ object Probably:
           : Expr[TestType] =
 
     general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => t.get })
-    
+
   def assert[TestType: Type, ReportType: Type]
       (test:      Expr[Test[TestType]],
        predicate: Expr[TestType => Boolean],
@@ -88,7 +88,7 @@ object Probably:
       (using Quotes)
           : Expr[Unit] =
     general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
-  
+
   def aspire[TestType: Type, ReportType: Type]
       (test: Expr[Test[TestType]],
        runner: Expr[Runner[ReportType]],
@@ -100,7 +100,7 @@ object Probably:
     general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
 
   def succeed: Any => Boolean = (value: Any) => true
-  
+
   def assertion[TestType, TestType2 <: TestType, ReportType, ResultType]
       (runner: Runner[ReportType],
        test: Test[TestType2],
@@ -119,7 +119,7 @@ object Probably:
           val exception: Exception = try err() catch case exc: Exception => exc
           if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
           Outcome.Throws(exception, duration)
-    
+
         case TestRun.Returns(value, duration, map) =>
           try if predicate(value) then Outcome.Pass(duration) else
             exp match
@@ -128,9 +128,9 @@ object Probably:
                     display.text(value), contrast(exp, value)))
               case None =>
                 //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Contrast[Any]].compare(value, 1)))
-            
+
             if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
-            
+
             Outcome.Fail(duration)
           catch case err: Exception => Outcome.CheckThrows(err, duration)
 
@@ -143,8 +143,8 @@ object Probably:
     val exprName: Text = expr.asTerm.pos match
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
-    
+
     val debug: Expr[Debug[TestType]] =
       Expr.summon[Debug[TestType]].getOrElse('{ _.toString.tt })
-    
+
     '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }
