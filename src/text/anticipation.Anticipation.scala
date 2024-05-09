@@ -25,10 +25,6 @@ import scala.reflect.*
 
 import language.experimental.captureChecking
 
-trait Textualizer:
-  type Self
-  extension (value: Self) def textual: Text
-
 object Anticipation:
   opaque type Text <: Matchable = String
 
@@ -36,11 +32,11 @@ object Anticipation:
     def apply(string: String): Text = string
     extension (text: Text) inline def s: String = text
 
-    given addOperator: AddOperator[Text, Text] with
+    given AddOperator[Text, Text] as addOperator:
       type Result = Text
       inline def add(left: Text, right: Text): Text = (left.s+right.s).tt
 
-    given mulOperator: MulOperator[Text, Int] with
+    given MulOperator[Text, Int] as mulOperator:
       type Result = Text
 
       private def recur(text: Text, n: Int, acc: Text): Text =
@@ -48,30 +44,23 @@ object Anticipation:
 
       inline def mul(left: Text, right: Int): Text = recur(left, right.max(0), "")
 
-    given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
-    given fromString: CommandLineParser.FromString[Text] = identity(_)
+    given Ordering[Text] as ordering = Ordering.String.on[Text](identity)
+    given CommandLineParser.FromString[Text] as fromString = identity(_)
 
-    given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] with
+    given (using fromExpr: FromExpr[String]) => FromExpr[Text] as fromExpr:
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 
-    given toExpr: ToExpr[Text] with
+    given ToExpr[Text] as toExpr:
       def apply(text: Text)(using Quotes) =
         import quotes.reflect.*
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
-    given stringText: Conversion[String, Text] = identity(_)
+    given Conversion[String, Text] as stringText = identity(_)
 
-    erased given canEqual: CanEqual[Text, Text] = erasedValue
+    erased given CanEqual[Text, Text] as canEqual = erasedValue
 
-    given typeable: Typeable[Text] with
+    given Typeable[Text] as typeable:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
         case str: String => Some(str)
         case _           => None
-
-export Anticipation.Text
-
-extension (texts: Iterable[Text])
-  transparent inline def ss: Iterable[String] = texts.map(_.s)
-
-extension (string: String) def tt: Text = Text(string)
