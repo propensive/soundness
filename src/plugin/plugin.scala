@@ -27,7 +27,7 @@ import language.adhocExtensions
 class LarcenyPlugin() extends StandardPlugin:
   val name: String = "larceny"
   override val description: String = "capture errors"
-  def init(options: List[String]): List[PluginPhase] = List(LarcenyTransformer())
+  override def init(options: List[String]): List[PluginPhase] = List(LarcenyTransformer())
 
 class LarcenyTransformer() extends PluginPhase:
   import tpd.*
