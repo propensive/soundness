@@ -15,5 +15,5 @@ project vacuous
     sources   src/test
     include   vacuous/core probably/cli larceny/plugin
     main      vacuous.Tests
-    #coverage  vacuous/core
+    # coverage  vacuous/core
 
