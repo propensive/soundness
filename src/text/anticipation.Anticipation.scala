@@ -32,11 +32,11 @@ object Anticipation:
     def apply(string: String): Text = string
     extension (text: Text) inline def s: String = text
 
-    given AddOperator[Text, Text] as addOperator:
+    given AddOperator[Text, Text] /*as addOperator:*/ with
       type Result = Text
       inline def add(left: Text, right: Text): Text = (left.s+right.s).tt
 
-    given MulOperator[Text, Int] as mulOperator:
+    given MulOperator[Text, Int] /*as mulOperator:*/ with
       type Result = Text
 
       private def recur(text: Text, n: Int, acc: Text): Text =
@@ -44,23 +44,23 @@ object Anticipation:
 
       inline def mul(left: Text, right: Int): Text = recur(left, right.max(0), "")
 
-    given Ordering[Text] as ordering = Ordering.String.on[Text](identity)
-    given CommandLineParser.FromString[Text] as fromString = identity(_)
+    given Ordering[Text] /*as ordering*/ = Ordering.String.on[Text](identity)
+    given CommandLineParser.FromString[Text] /*as fromString*/ = identity(_)
 
-    given (using fromExpr: FromExpr[String]) => FromExpr[Text] as fromExpr:
+    given fromExpr(using fromExpr: FromExpr[String]): FromExpr[Text] /*as fromExpr*/ with
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 
-    given ToExpr[Text] as toExpr:
+    given ToExpr[Text] /*as toExpr*/ with
       def apply(text: Text)(using Quotes) =
         import quotes.reflect.*
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
-    given Conversion[String, Text] as stringText = identity(_)
+    given Conversion[String, Text] /*as stringText*/ = identity(_)
 
-    erased given CanEqual[Text, Text] as canEqual = erasedValue
+    erased given CanEqual[Text, Text] /*as canEqual*/ = erasedValue
 
-    given Typeable[Text] as typeable:
+    given Typeable[Text] /*as typeable:*/ with
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
         case str: String => Some(str)
         case _           => None

@@ -21,9 +21,9 @@ import scala.annotation.*
 // import language.experimental.captureChecking
 
 object Printable:
-  given Text is Printable = (text, termcap) => text
-  given String is Printable = (string, termcap) => string.tt
-  given Char is Printable = (char, termcap) => char.toString.tt
+  given /*Text is*/ text: (Printable { type Self = Text }) = (text, termcap) => text
+  given /*String is*/ string: (Printable { type Self = String }) = (string, termcap) => string.tt
+  given /*Char is*/ char: (Printable { type Self = Char }) = (char, termcap) => char.toString.tt
 
 object ColorDepth:
   def apply(colors: Int): ColorDepth = colors match
@@ -38,15 +38,15 @@ enum ColorDepth:
   case NoColor, Indexed8, Indexed16, Cube4, Cube6, TrueColor
 
 package termcapDefinitions:
-  given Termcap as basic:
+  given basic: Termcap /*as basic:*/ with
     def ansi: Boolean = false
     def color: ColorDepth = ColorDepth.NoColor
 
-  given Termcap as xterm256:
+  given xterm256: Termcap /*as xterm256:*/ with
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.Cube6
 
-  given Termcap as xtermTrueColor:
+  given xtermTrueColor: Termcap /*as xtermTrueColor:*/ with
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.TrueColor
 
