@@ -17,5 +17,5 @@ project fulminate
     sources   src/test
     include   fulminate/core probably/cli larceny/plugin
     main      fulminate.Tests
-    coverage  fulminate/core
+    # coverage  fulminate/core
 

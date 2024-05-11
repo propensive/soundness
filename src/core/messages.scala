@@ -24,14 +24,14 @@ import language.experimental.captureChecking
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
-  given Message is Printable = (message, termcap) => message.text
+  given (Printable { type Self = Message }) = (message, termcap) => message.text
 
   transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
     inline erasedValue[TupleType] match
       case _: (messageType *: tailType) => (subs: @unchecked) match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
-          val show = summonInline[messageType is Communicable]
+          val show = summonInline[Communicable { type Self = messageType }]
           make[tailType](tail.asInstanceOf[tailType], show.message(message2) :: done)
 
       case _ =>
@@ -90,4 +90,4 @@ extension (inline context: StringContext)
 
         Message
           (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-           List(summonInline[other.type is Communicable].message(other)))
+           List(summonInline[Communicable { type Self = other.type }].message(other)))
