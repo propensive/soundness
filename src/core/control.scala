@@ -25,7 +25,7 @@ import scala.compiletime.*
 
 import java.util.concurrent.atomic as juca
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 @capability
 trait Errant[-ErrorType <: Error]:
@@ -61,10 +61,10 @@ extends Errant[ErrorType]:
 
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
   def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)
-  
+
   def abort(error: ErrorType): Nothing =
     boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
-  
+
   def finish(): Unit =
     if !collected.get().nn.isEmpty
     then boundary.break(Left(AggregateError(collected.get().nn)))(using label)
@@ -82,7 +82,7 @@ class OptionalStrategy[ErrorType <: Error, SuccessType]
 extends Errant[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
-  
+
   def record(error: ErrorType): Unit = boundary.break(Unset)(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
 
@@ -92,7 +92,7 @@ class AttemptStrategy[ErrorType <: Error, SuccessType]
 extends Errant[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
-  
+
   def record(error: ErrorType): Unit = boundary.break(Attempt.Failure(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Attempt.Failure(error))(using label)
 
@@ -146,7 +146,7 @@ def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])
     boundary: label ?=>
       val raiser = AggregateStrategy(label)
       Right(block(using raiser)).also(raiser.finish())
-  
+
   value match
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
     case Right(value) => value
@@ -157,7 +157,7 @@ def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherStrategy(label)))
-  
+
   value match
     case Left(error)  => error
     case Right(value) => abort(ExpectationError(value))
@@ -212,16 +212,16 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
     this match
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
-  
+
   def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
     case Success(value) => Success(value)
     case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
-  
+
   def acknowledge(block: PartialFunction[ErrorType, Unit]): Attempt[SuccessType, ErrorType] =
     this match
       case Failure(value) => if block.isDefinedAt(value) then block(value)
       case _              => ()
-    
+
     this
 
   transparent inline def apply(): SuccessType raises ErrorType = this match
@@ -240,7 +240,7 @@ case class Tended[ErrorType <: Error, ResultType](lambda: Errant[ErrorType] => R
 extension [ErrorType <: Error, ResultType](inline context: Tended[ErrorType, ResultType])
   transparent inline def remedy(inline lambda: PartialFunction[ErrorType, ResultType]): Any =
     ${Contingency.remedy('context, 'lambda)}
-  
+
   inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2])
           : Any =
 
@@ -250,4 +250,3 @@ inline def tend[ResultType, ErrorType <: Error](inline block: Errant[ErrorType] 
         : Tended[ErrorType, ResultType] =
 
   Tended[ErrorType, ResultType](block(using _))
-
