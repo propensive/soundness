@@ -26,12 +26,12 @@ case class HomeDirectoryError() extends Error(msg"there is no home directory")
 
 object WorkingDirectory:
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
-  def apply[PathType: GenericPath](path: PathType): WorkingDirectory = () => path.pathText
+  def apply[PathType](path: PathType)(using GenericPath { type Self = PathType }): WorkingDirectory = () => path.pathText
 
 @capability
 trait WorkingDirectory:
   def directory(): Text
-  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
+  def path[PathType](using SpecificPath { type Self = PathType }): PathType = SpecificPath(directory())
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = () => System.getProperty("user.home").nn.tt
@@ -39,7 +39,7 @@ object HomeDirectory:
 @capability
 trait HomeDirectory:
   def directory(): Text
-  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
+  def path[PathType](using SpecificPath { type Self = PathType }): PathType = SpecificPath(directory())
 
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
@@ -49,12 +49,12 @@ package homeDirectories:
   given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
   //given none(using Errant[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
 
-def workingDirectory[PathType: SpecificPath as specific](using directory: WorkingDirectory)
+def workingDirectory[PathType](using directory: WorkingDirectory, specific: SpecificPath { type Self = PathType })
         : PathType^{specific} =
 
   directory.path[PathType]
 
-def homeDirectory[PathType: SpecificPath as specific](using directory: HomeDirectory)
+def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPath { type Self = PathType })
         : PathType^{specific} =
 
   directory.path[PathType]
