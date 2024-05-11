@@ -26,8 +26,8 @@ trait SpecificUrl:
   type Self
   def url(text: Text): Self
 
-extension [UrlType: GenericUrl](url: UrlType)
-  def text: Text = UrlType.text(url)
+extension [UrlType](url: UrlType)(using generic: GenericUrl { type Self = UrlType })
+  def text: Text = generic.text(url)
 
 object SpecificUrl:
-  def apply[UrlType: SpecificUrl](text: Text): UrlType = UrlType.url(text)
+  def apply[UrlType](text: Text)(using specific: SpecificUrl { type Self = UrlType }): UrlType = specific.url(text)
