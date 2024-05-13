@@ -25,39 +25,11 @@ their implementation to typeclasses inferred from their parameter types.
 
 ## Availability
 
-Symbolism has 
-ot yet bee
- published. The medium-term pla
- is to build it with
-[Fury](https://github.com/prope
-sive/fury) a
-d to publish it as a source build
-o
- [Ve
-t](https://github.com/prope
-sive/ve
-t). This will e
-able ordi
-ary users
-to write a
-d build software which depe
-ds o
- Symbolism.
+Symbolism has not yet been published. The medium-term plan is to build it with
+[Fury](https://github.com/propensive/fury) and to publish it as a source build
+on [Vent](https://github.com/propensive/vent). This will enable ordinary users
+to write and build software which depends on Symbolism.
 
-Subseque
-tly, Symbolism will also be made available as a bi
-ary i
- the Mave
-
-Ce
-tral repository. This will e
-able users of other build tools to use it.
-
-For the overeager, curious a
-d impatie
-t, see [buildi
-g](#buildi
-g).
 
 ## Getting Started
 
