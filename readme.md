@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/symbolism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/symbolism/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Symbolism
@@ -23,17 +23,41 @@ their implementation to typeclasses inferred from their parameter types.
 - provides a single inequality typeclass for the comparison operators, `<`, `<=`, `>` and `>=`
 
 
-## Availability Plan
+## Availability
 
-Symbolism has not yet been published. The medium-term plan is to build Symbolism
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Symbolism.
+Symbolism has 
+ot yet bee
+ published. The medium-term pla
+ is to build it with
+[Fury](https://github.com/prope
+sive/fury) a
+d to publish it as a source build
+o
+ [Ve
+t](https://github.com/prope
+sive/ve
+t). This will e
+able ordi
+ary users
+to write a
+d build software which depe
+ds o
+ Symbolism.
 
-Subsequently, Symbolism will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
+Subseque
+tly, Symbolism will also be made available as a bi
+ary i
+ the Mave
 
-For the overeager, curious and impatient, see [building](#building).
+Ce
+tral repository. This will e
+able users of other build tools to use it.
+
+For the overeager, curious a
+d impatie
+t, see [buildi
+g](#buildi
+g).
 
 ## Getting Started
 
