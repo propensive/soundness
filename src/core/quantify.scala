@@ -260,10 +260,13 @@ object Quantitative extends Quantitative2:
     erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
-    given genericDuration: GenericDuration[Quantity[Seconds[1]]] =
-      quantity => (quantity*1000.0).toLong
+    given genericDuration: GenericDuration with
+      type Self = Quantity[Seconds[1]]
+      def milliseconds(quantity: Quantity[Seconds[1]]): Long = (quantity*1000.0).toLong
     
-    given specificDuration: SpecificDuration[Quantity[Seconds[1]]] = long => Quantity(long/1000.0)
+    given specificDuration: SpecificDuration with
+      type Self = Quantity[Seconds[1]]
+      def duration(long: Long): Quantity[Seconds[1]] = Quantity(long/1000.0)
 
     transparent inline given add[LeftType <: Measure, RightType <: Measure]
             : AddOperator[Quantity[LeftType], Quantity[RightType]] =
