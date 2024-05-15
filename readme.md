@@ -460,7 +460,7 @@ Note that this only applies if the quantity's units exactly match the type param
 
 ## Status
 
-Quantitative is classified as __maturescent__. For reference, Scala One projects are
+Quantitative is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -474,7 +474,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 1141 lines of code.
+of 1144 lines of code.
 
 ## Building
 
@@ -545,7 +545,7 @@ Something which is _quantitative_ relates to measurements by quantity rather tha
 best known in the concept of "quantitative easing". _Easing the measurement of quantities_ is
 exactly Quantitative's remit.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
