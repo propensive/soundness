@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/wisteria/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/wisteria/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Wisteria
@@ -22,17 +22,9 @@ out-of-the-box, and incurs no significant time-penalty during compilation.
  - generates performant runtime code, without unnecessary runtime allocations
 
 
-## Availability Plan
+## Availability
 
-Wisteria has not yet been published. The medium-term plan is to build Wisteria
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Wisteria.
 
-Subsequently, Wisteria will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -749,7 +741,7 @@ This is usually because the derivation type in the signature of `join` is missin
 
 ## Status
 
-Wisteria is classified as __maturescent__. For reference, Scala One projects are
+Wisteria is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -763,7 +755,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Wisteria is designed to be _small_. Its entire source code currently consists
-of 458 lines of code.
+of 463 lines of code.
 
 ## Building
 
@@ -832,7 +824,7 @@ O&Uuml;](https://propensive.com/).
 
 Wisteria is a flowering plant, much like magnolia is, and Wisteria is a derivative of Magnolia.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
