@@ -16,8 +16,21 @@
 
 package wisteria
 
-import scala.deriving.*
+import rudiments.*
 
-type Reflection[DerivationType] = Mirror.Of[DerivationType]
-type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
-type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+import scala.deriving.*
+import scala.compiletime.*
+
+trait Derivation[TypeclassType[_]]
+extends ProductDerivationMethods[TypeclassType], SumDerivationMethods[TypeclassType]:
+
+  inline given derived[DerivationType](using Reflection[DerivationType])
+          : TypeclassType[DerivationType] =
+    inline summon[Reflection[DerivationType]] match
+      case reflection: ProductReflection[derivationType] =>
+        join[derivationType](using reflection).asMatchable match
+          case typeclass: TypeclassType[DerivationType] => typeclass
+
+      case reflection: SumReflection[derivationType] =>
+        split[derivationType](using reflection).asMatchable match
+          case typeclass: TypeclassType[DerivationType] => typeclass

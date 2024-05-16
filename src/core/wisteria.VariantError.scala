@@ -16,8 +16,22 @@
 
 package wisteria
 
-import scala.deriving.*
+import fulminate.*
+import rudiments.*
+import anticipation.*
 
-type Reflection[DerivationType] = Mirror.Of[DerivationType]
-type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
-type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+import scala.deriving.*
+import scala.compiletime.*
+
+object VariantError:
+  inline def apply[DerivationType]()(using reflection: SumReflection[DerivationType])
+          : VariantError =
+
+    val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+    val sum = constValue[reflection.MirroredLabel].tt
+
+    VariantError(sum, variants)
+
+case class VariantError(sum: Text, validVariants: List[Text])
+extends Error(msg"""the specified variant is not one of the valid variants
+                    (${validVariants.mkString(", ").tt}) of sum type $sum""")

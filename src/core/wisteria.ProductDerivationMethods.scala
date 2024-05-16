@@ -34,10 +34,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                index:     Int & FieldIndex[FieldType]) ?=>
                                   FieldType)
           : DerivationType =
-    
+
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
-    
+
     reflection.fromProduct:
       fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
@@ -55,18 +55,18 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                index:       Int & FieldIndex[FieldType]) ?=>
                                   ResultType)
           : IArray[ResultType] =
-    
+
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
-    
+
     summonInline[ClassTag[ResultType]].give:
       IArray.create[ResultType](valueOf[Tuple.Size[Fields]]): array =>
         fold[DerivationType, Fields, Labels, Unit]((), 0): accumulator =>
           [FieldType] => context ?=> array(index) = lambda[FieldType](context)
-  
+
   inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
     valueOf[reflection.MirroredLabel].tt
-  
+
   inline def tuple[DerivationType](using reflection: Reflection[DerivationType]): Boolean =
     compiletime.summonFrom:
       case given (reflection.MirroredMonoType <:< Tuple) => true
@@ -83,11 +83,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
              reflection:  ProductReflection[DerivationType],
              requirement: ContextRequirement)
           : FieldType =
-    
+
     type Labels = reflection.MirroredElemLabels
     type Fields = reflection.MirroredElemTypes
     val tuple: Fields = Tuple.fromProductTyped(product)
-    
+
     fold[DerivationType, Fields, Labels, Optional[FieldType]](tuple, Unset, 0):
       accumulator => [FieldType2] => field =>
         if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
@@ -105,18 +105,18 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                index:   Int & FieldIndex[FieldType]) ?=>
                                   ResultType)
           : IArray[ResultType] =
-    
+
     summonInline[ClassTag[ResultType]].give:
       type Labels = reflection.MirroredElemLabels
       type Fields = reflection.MirroredElemTypes
       val tuple: Fields = Tuple.fromProductTyped(product)
-      
+
       IArray.create[ResultType](tuple.size): array =>
         fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): unit =>
           [FieldType] => field =>
             given typeclass: requirement.Optionality[TypeclassType[FieldType]] =
               requirement.wrap(context)
-            
+
             array(index) = lambda[FieldType](field)
 
   // The two implementations of `fold` are very similar. We would prefer to have a single
@@ -139,22 +139,22 @@ trait ProductDerivationMethods[TypeclassType[_]]:
 
     inline tuple match
       case EmptyTuple => accumulator
-      
+
       case tuple: (fieldType *: moreFieldsType) => tuple match
         case field *: moreFields => inline erasedValue[LabelsType] match
           case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
             case label: String =>
               val typeclass = requirement.summon[TypeclassType[fieldType]]
-              
+
               val fieldIndex: Int & FieldIndex[fieldType] =
                 index.asInstanceOf[Int & FieldIndex[fieldType]]
-              
+
               val default = Default(Wisteria.default[DerivationType, fieldType](index))
-              
+
               val accumulator2 =
                 lambda(accumulator)[fieldType](field)
                  (using typeclass, default, label.tt, fieldIndex)
-              
+
               fold
                 [DerivationType, moreFieldsType, moreLabelsType, ResultType]
                 (moreFields, accumulator2, index + 1)
@@ -176,53 +176,26 @@ trait ProductDerivationMethods[TypeclassType[_]]:
 
     inline erasedValue[FieldsType] match
       case _: EmptyTuple => accumulator
-      
+
       case _: (fieldType *: moreFieldsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
           case label: String =>
             val typeclass = requirement.summon[TypeclassType[fieldType]]
-            
+
             val fieldIndex: Int & FieldIndex[fieldType] =
               index.asInstanceOf[Int & FieldIndex[fieldType]]
-            
+
             val default = Default(Wisteria.default[DerivationType, fieldType](index))
-            
+
             val dereference: DerivationType => fieldType =
               _.productElement(fieldIndex).asInstanceOf[fieldType]
-            
+
             val accumulator2 =
               lambda(accumulator)[fieldType](typeclass)
                (using default, label.tt, dereference, fieldIndex)
-            
+
             fold[DerivationType, moreFieldsType, moreLabelsType, ResultType]
              (accumulator2, index + 1)
              (lambda)
-  
+
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
-
-erased trait FieldIndex[FieldType]
-
-package derivationContext:
-  given required: ContextRequirement.required.type = ContextRequirement.required
-  given relaxed: ContextRequirement.relaxed.type = ContextRequirement.relaxed
-
-object ContextRequirement:
-  given required: ContextRequirement with
-    type Optionality[Type] = Type
-    type Required = true
-    def wrap[ValueType](optional: Optional[ValueType]): ValueType = optional.vouch(using Unsafe)
-  
-  object relaxed extends ContextRequirement:
-    type Optionality[Type] = Optional[Type]
-    type Required = false
-    def wrap[ValueType](optional: Optional[ValueType]): Optional[ValueType] = optional
-  
-trait ContextRequirement:
-  type Optionality[Type] <: Optional[Type]
-  type Required <: Boolean
-  def wrap[ValueType](optional: Optional[ValueType]): Optionality[ValueType]
-  
-  inline def summon[ContextualType]: Optionality[ContextualType] =
-    inline if erasedValue[Required] then wrap(summonInline[ContextualType]) else summonFrom:
-      case contextual: ContextualType => wrap(contextual)
-      case _                          => wrap(Unset)

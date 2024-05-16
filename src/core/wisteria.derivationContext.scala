@@ -16,8 +16,6 @@
 
 package wisteria
 
-import scala.deriving.*
-
-type Reflection[DerivationType] = Mirror.Of[DerivationType]
-type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
-type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+package derivationContext:
+  given required: ContextRequirement.required.type = ContextRequirement.required
+  given relaxed: ContextRequirement.relaxed.type = ContextRequirement.relaxed

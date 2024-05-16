@@ -30,11 +30,11 @@ trait SumDerivationMethods[TypeclassType[_]]:
       (using variantIndex: Int & VariantIndex[VariantType],
              reflection:   SumReflection[DerivationType])
           : Optional[VariantType] =
-    
+
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-    
+
     fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
       [VariantType2 <: DerivationType] => field =>
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
@@ -58,10 +58,10 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
     type Labels = reflection.MirroredElemLabels
     type Variants = reflection.MirroredElemTypes
-    
+
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     val variantLabel = label
-    
+
     fold[DerivationType, Variants, Labels](size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
     .vouch(using Unsafe)
@@ -81,11 +81,11 @@ trait SumDerivationMethods[TypeclassType[_]]:
     type Variants = reflection.MirroredElemTypes
 
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-    
+
     fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
     .vouch(using Unsafe)
-  
+
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
       (inline size: Int, index: Int, fallible: Boolean)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
@@ -107,7 +107,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
             (valueOf[labelType].asMatchable: @unchecked) match
               case label: String =>
                 val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
-                
+
                 if predicate(using label.tt, index2)
                 then
                   val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
@@ -119,12 +119,12 @@ trait SumDerivationMethods[TypeclassType[_]]:
                     (size, index + 1, fallible)
                     (predicate)
                     (lambda)
-        
+
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType]())(Unset)(using summonInline[Errant[VariantError]])
         else throw Panic(msg"Should be unreachable")
-    
+
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
       (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
@@ -146,7 +146,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
             (valueOf[labelType].asMatchable: @unchecked) match
               case label: String =>
                 val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
-                
+
                 if predicate(using label.tt, index2)
                 then
                   val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
@@ -159,16 +159,10 @@ trait SumDerivationMethods[TypeclassType[_]]:
                     (sum, size, index + 1, fallible)
                     (predicate)
                     (lambda)
-        
+
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType]())(Unset)(using summonInline[Errant[VariantError]])
         else throw Panic(msg"Should be unreachable")
-  
+
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]
-
-object VariantIndex:
-  inline def apply[VariantType](int: Int): Int & VariantIndex[VariantType] =
-    int.asInstanceOf[Int & VariantIndex[VariantType]]
-
-erased trait VariantIndex[VariantType]
