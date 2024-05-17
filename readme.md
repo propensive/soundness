@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/wisteria/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/wisteria/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Wisteria
@@ -313,7 +313,7 @@ object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
-        val array: IArray[Nothing] = fields(value):
+        val array: IArray[Text] = fields(value):
           [FieldType] => field =>
             field.show
 
