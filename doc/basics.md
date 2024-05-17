@@ -276,7 +276,7 @@ object Show extends ProductDerivation[Show]:
   inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
-        val array: IArray[Nothing] = fields(value):
+        val array: IArray[Text] = fields(value):
           [FieldType] => field =>
             field.show
 
