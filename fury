@@ -17,5 +17,5 @@ project wisteria
   module test
     compiler  scala
     sources   src/test
-    include   wisteria/core gossamer/core
+    include   wisteria/core
     main      wisteria.main

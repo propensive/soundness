@@ -18,7 +18,6 @@ package wisteria
 
 import anticipation.*
 import rudiments.*
-import gossamer.*
 import contingency.*
 import vacuous.*
 
@@ -40,19 +39,19 @@ enum Tree derives Presentation:
 object Presentation extends Derivation[Presentation]:
   given Presentation[Text] = identity(_)
   given Presentation[Double] = _.toString.tt
-  given Presentation[Boolean] = boolean => if boolean then t"yes" else t"no"
+  given Presentation[Boolean] = boolean => if boolean then "yes".tt else "no".tt
   given Presentation[Int] = _.toString.tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Presentation[DerivationType] = value =>
     inline if singleton then typeName else
-      val prefix = inline if tuple then t"" else typeName
+      val prefix = inline if tuple then "".tt else typeName
       fields(value):
-        [FieldType] => field => t"$index:$label=${field.present}"
-      .join(t"$prefix(", t", ", t")")
+        [FieldType] => field => "$index:$label=${field.present}".tt
+      .mkString((prefix.s+"("), ", ", ")").tt
 
   inline def split[DerivationType: SumReflection]: Presentation[DerivationType] = value =>
     variant(value): [VariantType <: DerivationType] =>
-      variant => typeName+t"."+variant.present
+      variant => (typeName.s+"."+variant.present).tt
 
 trait Presentation[ValueType]:
   def present(value: ValueType): Text
@@ -61,24 +60,24 @@ extension [ValueType](value: ValueType)
   def present(using presentation: Presentation[ValueType]): Text = presentation.present(value)
 
 sealed trait Human
-case class President(name: Text = "nobody", number: Int = 42) extends Human
-case class Person(name: Text = "noone", age: Int = 100, male: Boolean = true) extends Human
-case class User(person: Person, email: Text = "nobody@nowhere.com")
+case class President(name: Text = "nobody".tt, number: Int = 42) extends Human
+case class Person(name: Text = "noone".tt, age: Int = 100, male: Boolean = true) extends Human
+case class User(person: Person, email: Text = "nobody@nowhere.com".tt)
 
 object Readable extends Derivation[Readable]:
   given text: Readable[Text] = identity(_)
   given int: Readable[Int] = _.s.toInt
-  given boolean: Readable[Boolean] = _ == t"yes"
+  given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    text.cut(t",").pipe: array =>
+    IArray.from(text.s.split(",")).pipe: array =>
       construct: [FieldType] =>
         readable =>
-          if index < array.length then readable.read(array(index)) else default().or:
+          if index < array.length then readable.read(array(index).tt) else default().or:
             ???
   
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
-    text.cut(t":") match
+    text.s.split(":").to(List).map(_.tt) match
       case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
         context => context.read(text2)
 
@@ -100,7 +99,7 @@ object Eq extends Derivation[Eq]:
       eq.equal(left(index), right(index))
   
   given int: Eq[Int] = _ == _
-  given text: Eq[Text] = _.lower == _.lower
+  given text: Eq[Text] = _.s.toLowerCase == _.s.toLowerCase
   given boolean: Eq[Boolean] = _ & _
   given double: Eq[Double] = (left, right) => math.abs(left - right) < 0.1
 
@@ -120,13 +119,13 @@ object Eq extends Derivation[Eq]:
 @main
 def main(): Unit =
   val george = Person("George Washington".tt, 61, true)
-  val ronald = User(Person("Ronald Reagan".tt, 51, true), t"ronald@whitehouse.gov")
+  val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)
   println(ronald.present)
   println((ronald, george).present)
   println(Date(15, Month.Feb, 1985).present)
   val time: Temporal = Date(15, Month.Jan, 1983)
   println(time.present)
-  println(t"Jimmy Carter,99,yes".read[Person].present)
+  println("Jimmy Carter,99,yes".tt.read[Person].present)
 
 
   import Tree.*
@@ -134,21 +133,21 @@ def main(): Unit =
   
   given Errant[VariantError] = errorHandlers.throwUnsafely
 
-  println(t"President:Richard Nixon,37".read[Human].present)
+  println("President:Richard Nixon,37".tt.read[Human].present)
 
-  println(t"hello" === t"hElLo")
-  println(President(t"jimmy carter", 99) === President(t"JIMMY CARTER", 99))
-  println(President(t"jimmy carter2", 99) === President(t"JIMMY CARTER", 99))
-  println(President(t"jimmy carter", 99) === President(t"JIMMY CARTER", 100))
-  val array1 = IArray(t"jimmy", t"gerry", t"ronald")
-  val array2 = IArray(t"Jimmy", t"Gerry", t"Ronald")
+  println("hello".tt === "hElLo".tt)
+  println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 99))
+  println(President("jimmy carter2".tt, 99) === President("JIMMY CARTER".tt, 99))
+  println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 100))
+  val array1 = IArray("jimmy".tt, "gerry".tt, "ronald".tt)
+  val array2 = IArray("Jimmy".tt, "Gerry".tt, "Ronald".tt)
   println(array1 === array2)
 
-  val human1 = t"President:Richard Nixon,37".read[Human]
-  val human2 = t"President:George Washington".read[President]
+  val human1 = "President:Richard Nixon,37".tt.read[Human]
+  val human2 = "President:George Washington".tt.read[President]
   println("with default "+human2.present)
-  val human3 = t"Person:george washington,1,yes".read[Human]
+  val human3 = "Person:george washington,1,yes".tt.read[Human]
   println(human1 === human2)
   println(human2 === human3)
-  val human4 = t"Broken:george washington,1,yes".read[Human]
+  val human4 = "Broken:george washington,1,yes".tt.read[Human]
   
