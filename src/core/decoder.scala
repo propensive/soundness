@@ -35,7 +35,7 @@ object Decoder:
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int))(0)
 
-  given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
+  //given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
   given uuid(using uuid: Errant[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
   given byte(using number: Errant[NumberError]): Decoder[Byte] = text =>
