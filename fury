@@ -6,7 +6,7 @@ repo propensive/larceny
 repo propensive/spectacular
 repo propensive/kaleidoscope
 
-target gossamer/test
+target gossamer/core
 
 project gossamer
   module core
