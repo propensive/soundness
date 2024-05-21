@@ -63,7 +63,7 @@ object TreeDiagram:
   def apply[NodeType](roots: NodeType*)(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
     by[NodeType](expandable.children(_))(roots*)
 
-  given printable[NodeType](using show: Show[NodeType], style: TreeStyle[Text]): Printable[TreeDiagram[NodeType]] =
+  given printable[NodeType](using show: Show[NodeType], style: TreeStyle[Text]): (Printable { type Self = TreeDiagram[NodeType] }) =
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 

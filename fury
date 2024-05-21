@@ -4,12 +4,12 @@
 repo propensive/acyclicity
 repo propensive/probably
 
-target dendrology/test
+target dendrology/dag
 
 project dendrology
-  module core
+  module tree
     compiler  scala
-    sources   src/core
+    sources   src/tree
     include   gossamer/core
   
   module dag
@@ -20,5 +20,5 @@ project dendrology
   module test
     compiler  scala
     sources   src/test
-    include   dendrology/core probably/cli dendrology/dag
+    include   dendrology/tree probably/cli dendrology/dag
     main      dendrology.Tests
