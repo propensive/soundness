@@ -42,10 +42,10 @@ object Show:
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
-    
+
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
-    
+
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
@@ -57,9 +57,9 @@ object Show:
         val method = frame.method.method
         val methodPad = (" "*(methodWidth - method.s.length)).tt
         val line = frame.line.let(_.show).or("?".tt)
-        
+
         s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line".tt
-    
+
     stack.cause.lay(root): cause =>
       s"$root\ncaused by:\n$cause".tt
 
@@ -75,20 +75,20 @@ object Debug:
   given string: Debug[String] = string => text.text(string.tt).s.substring(1).nn.tt
   given byte: Debug[Byte] = byte => (byte.toString+".toByte").tt
   given short: Debug[Short] = short => (short.toString+".toShort").tt
-  
+
   given text: Debug[Text] = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.map(escape(_, true)).each(builder.append)
-    
+
     ("t\""+builder.toString+"\"").tt
-  
+
   given float: Debug[Float] =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
-  
-  given double: Debug[Double] = 
+
+  given double: Debug[Double] =
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
@@ -108,7 +108,7 @@ object Debug:
     case '\b'                => "\\b".tt
     case '\f'                => "\\f".tt
     case '\u001b' if eEscape => "\\e".tt
-    
+
     case char =>
       if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
@@ -117,20 +117,20 @@ object Debug:
   given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩ᵢ").tt
   given iterable[ElemType: Debug]: Debug[Iterable[ElemType]] = _.map(_.debug).mkString("⦗", ", ", "⦘").tt
   given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.debug).mkString("[", ", ", "]").tt
-  
+
   given array[ElemType: Debug]: Debug[Array[ElemType]] = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.debug.s).tt
     .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
-  
+
   given lazyList[ElemType: Debug]: Debug[LazyList[ElemType]] = lazyList =>
     def recur(lazyList: LazyList[ElemType], todo: Int): Text =
       if todo <= 0 then "..?".tt
       else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
       else if lazyList.isEmpty then "⯁ ".tt
       else (lazyList.head.debug.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
-    
+
     recur(lazyList, 3)
 
   given iarray[ElemType: Debug]: Debug[IArray[ElemType]] = iarray =>
@@ -138,10 +138,10 @@ object Debug:
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.debug.s.tt
     .mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
- 
+
   private def arrayPrefix(str: String): String =
     val brackets = str.count(_ == '[')
-    
+
     val arrayType = str(brackets) match
       case 'B' => "🅱" // Byte
       case 'C' => "🅲" // Char
@@ -153,20 +153,20 @@ object Debug:
       case 'S' => "🆂" // Short
       case 'Z' => "🆉" // Boolean
       case _   => "🯄" // Unknown
-    
+
     val dimension = if brackets < 2 then "".tt else brackets.toString.map("⁰¹²³⁴⁵⁶⁷⁸⁹"(_)).tt
-    
+
     arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
 
   given option[ValueType: Debug]: Debug[Option[ValueType]] =
     case None        => "None".tt
     case Some(value) => s"Some(${value.debug.s})".tt
-  
+
   given none: Debug[None.type] = none => "None".tt
 
   given optional[ValueType](using debug: Debug[ValueType]): Debug[Optional[ValueType]] =
     _.let { value => s"⸂${debug.text(value)}⸃".tt }.or("⸄⸅".tt)
-  
+
 object DebugDerivation extends Derivation[Debug]:
   inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
     fields(value):
@@ -181,7 +181,7 @@ object DebugDerivation extends Derivation[Debug]:
         context.let(_.give(variant.debug)).or(variant.debug)
 
 object TextConversion:
-  given textualize[ValueType](using textualizer: Textualizer[ValueType]): Show[ValueType] =
+  given textualize[ValueType](using textualizer: Textualizer { type Self = ValueType }): Show[ValueType] =
     textualizer.textual(_)
 
   given text: Show[Text] = identity(_)
@@ -199,22 +199,22 @@ object TextConversion:
   given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
     case Some(value) => show.text(value)
     case None        => "none".tt
-  
+
   given uuid: Show[Uuid] = _.text
   given byteSize: Show[ByteSize] = _.text
   given reflectEnum: Show[reflect.Enum] = _.toString.show
 
   given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
     set.map(_.show).mkString("{", ", ", "}").tt
-  
+
   given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
     list.map(_.show).mkString("[", ", ", "]").tt
-  
+
   given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
     vector => vector.map(_.show).mkString("[ ", " ", " ]").tt
-  
+
   given none: Show[None.type] = none => "none".tt
-  
+
 extension [ValueType](value: ValueType)
   def show(using show: Show[ValueType]): Text = show.text(value)
   def debug(using debug: Debug[ValueType]): Text = debug.text(value)
