@@ -4,7 +4,7 @@
 repo propensive/acyclicity
 repo propensive/probably
 
-target dendrology/dag
+target dendrology/tree
 
 project dendrology
   module tree
