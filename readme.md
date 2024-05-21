@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/quantitative/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/quantitative/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Quantitative
@@ -39,17 +39,16 @@ by the compiler, and checked for consistency in additions and subtractions.
   current and temperature) as well as other distinct dimensions, such as angles
 
 
-## Availability Plan
+## Availability
 
-Quantitative has not yet been published. The medium-term plan is to build Quantitative
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Quantitative.
+Quantitative 0.1.0 is available as a binary for Scala 3.4.0 and later, from [Maven
+Central](https://central.sonatype.com). To include it in an `sbt` build, use
+the coordinates:
+```scala
+libraryDependencies += "dev.soundness" % "quantitative-core" % "0.1.0"
+```
 
-Subsequently, Quantitative will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
 
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
