@@ -215,7 +215,8 @@ object Timing:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = ###
-    given generic: GenericInstant[Timing.TaiInstant] with
+    given generic: GenericInstant with
+      type Self = Timing.TaiInstant
       def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
 
@@ -226,7 +227,8 @@ object Timing:
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
     
-    given generic: GenericInstant[Timing.Instant] with
+    given generic: GenericInstant with
+      type Self = Timing.Instant
       def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
     
@@ -252,7 +254,8 @@ object Timing:
 
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: GenericDuration[Timing.Duration] with SpecificDuration[Timing.Duration] with
+    given generic: GenericDuration with SpecificDuration with
+      type Self = Timing.Duration
       def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
       def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
@@ -331,7 +334,8 @@ trait FixedDuration:
   this: Period =>
 
 object Period:
-  given genericDuration: GenericDuration[Period & FixedDuration] with SpecificDuration[Period & FixedDuration] with
+  given genericDuration: GenericDuration with SpecificDuration with
+    type Self = Period & FixedDuration
     def duration(milliseconds: Long): Period & FixedDuration =
       val hours: Int = (milliseconds/3600000L).toInt
       val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
@@ -542,14 +546,13 @@ object Aviation:
         if hour < 0 then fail(msg"a time cannot be negative", lit.pos)
         if hour > 12 then fail(msg"a time cannot have an hour value above 12", lit.pos)
         
-        val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
+        val hour24: Int = hour + (if pm then 12 else 0)
         val length = lit.pos.endColumn - lit.pos.startColumn
         
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
         then fail(msg"the time should have exactly two minutes digits", lit.pos)
         
-        val m: Base60 = minutes.asInstanceOf[Base60]
-        '{Time(${Expr(h)}, ${Expr(m)}, 0)}
+        '{Time(${Expr(hour24)}.asInstanceOf[Base24], ${Expr(minutes)}.asInstanceOf[Base60], 0)}
       
       case _ =>
         fail(msg"expected a literal double value")
@@ -561,7 +564,8 @@ case class TimezoneError(name: Text)
 extends Error(msg"the name $name does not refer to a known timezone")
 
 object LocalTime:
-  given generic(using RomanCalendar): GenericInstant[LocalTime] = _.instant.millisecondsSinceEpoch
+  given generic(using RomanCalendar): (GenericInstant { type Self = LocalTime }) =
+    _.instant.millisecondsSinceEpoch
 
 case class LocalTime(date: Date, time: Time, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
