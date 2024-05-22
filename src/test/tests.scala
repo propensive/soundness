@@ -46,7 +46,7 @@ object Presentation extends Derivation[Presentation]:
     inline if singleton then typeName else
       val prefix = inline if tuple then "".tt else typeName
       fields(value):
-        [FieldType] => field => "$index:$label=${field.present}".tt
+        [FieldType] => field => s"$index:$label=${field.present}".tt
       .mkString((prefix.s+"("), ", ", ")").tt
 
   inline def split[DerivationType: SumReflection]: Presentation[DerivationType] = value =>
