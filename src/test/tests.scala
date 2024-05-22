@@ -116,6 +116,24 @@ object Eq extends Derivation[Eq]:
           complement(right).lay(false): rightValue =>
             leftValue === rightValue
 
+trait Parser[ValueType] {
+  def parse(s: String): Option[ValueType]
+}
+
+object Parser extends ProductDerivation[Parser] {
+  given Parser[Int] with
+    def parse(s: String): Option[Int] = s.toIntOption
+
+  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
+    constructWithV2[DerivationType, Option](
+      [FValueType] => Some(_),
+      [FieldType] => context =>
+        context.parse(inputStr)
+    )
+}
+
+case class ParserTestClass(value: Int)
+
 @main
 def main(): Unit =
   val george = Person("George Washington".tt, 61, true)
@@ -130,7 +148,7 @@ def main(): Unit =
 
   import Tree.*
   println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
-  
+
   given Errant[VariantError] = errorHandlers.throwUnsafely
 
   println("President:Richard Nixon,37".tt.read[Human].present)
@@ -150,4 +168,8 @@ def main(): Unit =
   println(human1 === human2)
   println(human2 === human3)
   val human4 = "Broken:george washington,1,yes".tt.read[Human]
-  
+
+  println("Parser:")
+  val parserForTest = summon[Parser[ParserTestClass]]
+  println(parserForTest.parse("120").exists(_.value == 120))
+  println(parserForTest.parse("error").isEmpty)
