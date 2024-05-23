@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/dendrology/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/dendrology/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Dendrology
@@ -20,17 +20,16 @@ structure as lines, for rendering in a monospaced font, typically in a terminal.
 - custom textual renderings are available
 
 
-## Availability Plan
+## Availability
 
-Dendrology has not yet been published. The medium-term plan is to build Dendrology
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Dendrology.
+Dendrology is available as a binary for Scala 3.4.0 and later, from [Maven
+Central](https://central.sonatype.com). To include it in an `sbt` build, use
+the coordinates:
+```scala
+libraryDependencies += "dev.soundness" % "dendrology-core" % "0.2.0"
+```
 
-Subsequently, Dendrology will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
 
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
