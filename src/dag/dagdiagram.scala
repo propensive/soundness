@@ -89,7 +89,7 @@ object DagDiagram:
         val tiles = row.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
 
-  given printable[NodeType](using show: Show[NodeType], style: DagStyle[Text]): Printable[DagDiagram[NodeType]] =
+  given printable[NodeType](using show: Show[NodeType], style: DagStyle[Text]): (Printable { type Self = DagDiagram[NodeType] }) =
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
