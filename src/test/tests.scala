@@ -21,6 +21,8 @@ import rudiments.*
 import contingency.*
 import vacuous.*
 
+import scala.util.Try
+
 //object Month:
   //given Presentation[Month] = _.toString.tt
 
@@ -129,12 +131,13 @@ object Parser extends ProductDerivation[Parser] {
 
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
     IArray.from(inputStr.split(',')).pipe: inputArr =>
-      constructWith[DerivationType, Option](
-        [A, B] => _.flatMap,
+      constructWithV2[DerivationType, Option](
         [T] => Some(_),
         [FieldType] => context =>
           if index < inputArr.length then 
-            context.parse(inputArr(index)) 
+            context.parse(inputArr(index)) match
+              case None => None
+              case Some(value) => specify(value)
           else 
             None
       )
@@ -175,7 +178,9 @@ def main(): Unit =
   val human3 = "Person:george washington,1,yes".tt.read[Human]
   println(human1 === human2)
   println(human2 === human3)
-  // val human4 = "Broken:george washington,1,yes".tt.read[Human]
+  val human4 = Try("Broken:george washington,1,yes".tt.read[Human])
+  println(human4.isFailure)
+  println(human4.failed.get.getMessage())
 
   println("withContext:")
   val parserForTest = summon[Parser[ParserTestClass]]
