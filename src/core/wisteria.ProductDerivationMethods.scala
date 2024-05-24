@@ -43,11 +43,11 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
       .reverse
 
+  // WIP
   protected transparent inline def constructWith[DerivationType <: Product, F[_]]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
-      (inline get: [FValueType] => F[FValueType] => FValueType,
-       inline shouldStop: [FValueType] => F[FValueType] => Boolean,
-       inline pure: [FValueType] => FValueType => F[FValueType],
+      (inline flatMap: [A, B] => F[A] => (A => F[B]) => F[B],
+       inline pure: [T] => T => F[T],
        inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
                               (typeclass: requirement.Optionality[TypeclassType[FieldType]],
@@ -60,55 +60,13 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
 
-    var errorCell: Option[F[DerivationType]] = None
-    val resultingTuple = fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
+    val resultingTuple: F[Tuple] = fold[DerivationType, Fields, Labels, F[Tuple]](pure(EmptyTuple), 0): accumulator =>
       [FieldType] => context ?=>
-        errorCell match
-          case None =>
-            val result = lambda[FieldType](context)
-            if shouldStop(result) then {
-              errorCell = Some(result.asInstanceOf[F[DerivationType]])
-              result *: EmptyTuple
-            } else {
-              get(result) *: accumulator
-            }
-          case Some(value) => accumulator
-    
-    errorCell match
-      case None => pure(reflection.fromProduct(resultingTuple))
-      case Some(error) => error
+        flatMap[FieldType, Tuple](lambda[FieldType](context)) { (result: FieldType) =>
+          flatMap[Tuple, Tuple](accumulator)((acc: Tuple) => pure(result *: acc))
+        }
 
-  // WIP
-  protected transparent inline def constructWithV2[DerivationType <: Product, F[_]]
-      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
-      (inline pure: [FValueType] => FValueType => F[FValueType],
-       inline lambda: [FieldType] =>
-                          requirement.Optionality[TypeclassType[FieldType]] =>
-                              (typeclass: requirement.Optionality[TypeclassType[FieldType]],
-                               default:   Default[Optional[FieldType]],
-                               label:     Text,
-                               index:     Int & FieldIndex[FieldType],
-                               specify:   FieldType => FieldType) ?=>
-                                  FieldType | F[FieldType])
-          : F[DerivationType] =
-
-    type Fields = reflection.MirroredElemTypes
-    type Labels = reflection.MirroredElemLabels
-
-    val resultingTuple = foldWith[DerivationType, Fields, Labels, Tuple, F](EmptyTuple, 0): accumulator =>
-      [FieldType] => context ?=>
-        val result = lambda[FieldType](context)
-        println(result match
-          case e: F[FieldType] => false
-          case e: FieldType => true
-        )
-        result match
-          case v: F[FieldType] => v.asInstanceOf[F[Tuple]]
-          case result => result *: accumulator
-
-    resultingTuple match
-      case e: F[_] => e.asInstanceOf[F[DerivationType]]
-      case e: Tuple => pure(reflection.fromProduct(e))
+    flatMap[Tuple, DerivationType](resultingTuple)((v: Tuple) => pure(reflection.fromProduct(v.reverse)))
 
   protected transparent inline def contexts[DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
@@ -268,17 +226,16 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   private transparent inline def foldWith
     [DerivationType <: Product, FieldsType <: Tuple, LabelsType <: Tuple, ResultType, F[_]]
     (using requirement: ContextRequirement)
-    (inline accumulator: ResultType, index: Int)
-    (inline lambda: ResultType =>
+    (inline accumulator: F[ResultType], index: Int)
+    (inline lambda: F[ResultType] =>
                         [FieldType] =>
                             requirement.Optionality[TypeclassType[FieldType]] =>
                                 (default:     Default[Optional[FieldType]],
                                  label:       Text,
                                  dereference: DerivationType => FieldType,
-                                 index:       Int & FieldIndex[FieldType],
-                                 specify:     ResultType => ResultType) ?=>
-                                    ResultType | F[ResultType])
-        : F[ResultType] | ResultType =
+                                 index:       Int & FieldIndex[FieldType]) ?=>
+                                    F[ResultType])
+        : F[ResultType] =
 
   inline erasedValue[FieldsType] match
     case _: EmptyTuple => accumulator
@@ -296,23 +253,14 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           val dereference: DerivationType => fieldType =
             _.productElement(fieldIndex).asInstanceOf[fieldType]
 
-          var specified: Option[ResultType] = None
-          val specify: ResultType => ResultType = value =>
-            specified = Some(value)
-            value
-
           val accumulator2 =
             lambda(accumulator)[fieldType](typeclass)
-              (using default, label.tt, dereference, fieldIndex, specify)
+              (using default, label.tt, dereference, fieldIndex)
 
-          specified match
-            case None => 
-              accumulator2
-            case Some(result) =>
-              specified = None
-              foldWith[DerivationType, moreFieldsType, moreLabelsType, ResultType, F]
-                (result, index + 1)
-                (lambda)
+          foldWith[DerivationType, moreFieldsType, moreLabelsType, ResultType, F]
+            (accumulator2, index + 1)
+            (lambda)
+              
           
 
           

@@ -124,15 +124,23 @@ object Parser extends ProductDerivation[Parser] {
   given Parser[Int] with
     def parse(s: String): Option[Int] = s.toIntOption
 
+  given Parser[Boolean] with
+    def parse(s: String): Option[Boolean] = s.toBooleanOption
+
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
-    constructWithV2[DerivationType, Option](
-      [FValueType] => Some(_),
-      [FieldType] => context =>
-        context.parse(inputStr)
-    )
+    IArray.from(inputStr.split(',')).pipe: inputArr =>
+      constructWith[DerivationType, Option](
+        [A, B] => _.flatMap,
+        [T] => Some(_),
+        [FieldType] => context =>
+          if index < inputArr.length then 
+            context.parse(inputArr(index)) 
+          else 
+            None
+      )
 }
 
-case class ParserTestClass(value: Int)
+case class ParserTestClass(intValue: Int, booleanValue: Boolean)
 
 @main
 def main(): Unit =
@@ -167,9 +175,12 @@ def main(): Unit =
   val human3 = "Person:george washington,1,yes".tt.read[Human]
   println(human1 === human2)
   println(human2 === human3)
-  val human4 = "Broken:george washington,1,yes".tt.read[Human]
+  // val human4 = "Broken:george washington,1,yes".tt.read[Human]
 
-  println("Parser:")
+  println("withContext:")
   val parserForTest = summon[Parser[ParserTestClass]]
-  println(parserForTest.parse("120").exists(_.value == 120))
+  val successfulParse = parserForTest.parse("120,false")
+  println(successfulParse.get)
+  println(successfulParse.exists(_.intValue == 120))
+  println(successfulParse.exists(_.booleanValue == false))
   println(parserForTest.parse("error").isEmpty)
