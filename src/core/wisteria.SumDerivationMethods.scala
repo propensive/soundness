@@ -62,6 +62,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     val variantLabel = label
 
+    // Here label comes from context of fold's predicate
     fold[DerivationType, Variants, Labels](size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
     .vouch(using Unsafe)
