@@ -62,7 +62,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
     val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
     val variantLabel = label
 
-    fold[DerivationType, Variants, Labels](size, 0, true)(label == variantLabel):
+    fold[DerivationType, Variants, Labels](variantLabel, size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
     .vouch(using Unsafe)
 
@@ -87,7 +87,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
     .vouch(using Unsafe)
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline size: Int, index: Int, fallible: Boolean)
+      (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
       (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
       [ResultType]
@@ -116,13 +116,13 @@ trait SumDerivationMethods[TypeclassType[_]]:
                 else
                   fold
                     [DerivationType, variantsType, moreLabelsType]
-                    (size, index + 1, fallible)
+                    (inputLabel, size, index + 1, fallible)
                     (predicate)
                     (lambda)
 
       case _ =>
         inline if fallible
-        then raise(VariantError[DerivationType]())(Unset)(using summonInline[Errant[VariantError]])
+        then raise(VariantError[DerivationType](inputLabel))(Unset)(using summonInline[Errant[VariantError]])
         else throw Panic(msg"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
@@ -162,7 +162,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
       case _ =>
         inline if fallible
-        then raise(VariantError[DerivationType]())(Unset)(using summonInline[Errant[VariantError]])
+        then raise(VariantError[DerivationType]("".tt))(Unset)(using summonInline[Errant[VariantError]])
         else throw Panic(msg"Should be unreachable")
 
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]
