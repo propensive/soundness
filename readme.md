@@ -462,26 +462,6 @@ Calling `constuct`, specifying how each field's value will be computed, will ret
 product, `DerivationType`. Since `Random` is a SAM type, this expression of `Long => DerivationType` provides
 a suitable implementation for the new typeclass.
 
-#### Monadic Producer Product Typeclasses
-
-Often your producer will return `F[_]`, like `Option` or `Either`, in this example:
-```scala
-trait Parser[T]:
-  def parse(input: String): Either[Exception, T]
-```
-In this case there is a helper method called `constructWith`, which allows you to specify polymorphic `pure` and `bind`(aka flatMap) over your `F[_]` to help `constructWith` traverse producer typeclass results:
-```scala
-object Parser extends ProductDerivation[Parser] {
-  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
-    constructWith[DerivationType, Either](
-      [MonadicTypeIn, MonadicTypeOut] => _.flatMap,
-      [MonadicType] => Right(_),
-      [FieldType] => context =>
-        context.parse(inputStr)
-    )
-}
-```
-
 ### Deriving Sum Types
 
 Deriving sums, or coproducts, is possible by making a choice of which of their variants is represented by the
@@ -782,7 +762,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Wisteria is designed to be _small_. Its entire source code currently consists
-of 482 lines of code.
+of 537 lines of code.
 
 ## Building
 
