@@ -112,12 +112,12 @@ would become a series of `Sub`s, regardless of whether the similarity function r
 
 A `Diff` instance, say `diff`,  may be applied to a sequence, `seq`, with,
 ```scala
-diff.applyTo(seq)
+diff.patch(seq)
 ```
 to produce a new sequence. This is performed lazily, so the result is a `LazyList`.
 
 By default, a `Par` "edit" will leave the element in the original sequence unchanged.
-However, `applyTo` has an optional second parameter, `update`, which can be provided
+However, `patch` has an optional second parameter, `update`, which can be provided
 to specify how `Par` edits should be handled. Of course, if the edit is a `Par`, the
 original and diff versions of element _should_ be equal anyway, but may not be if,
 for example, the diff was constructed with a different "compare" function or the
