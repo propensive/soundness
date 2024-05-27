@@ -223,46 +223,4 @@ trait ProductDerivationMethods[TypeclassType[_]]:
              (accumulator2, index + 1)
              (lambda)
 
-  private transparent inline def foldWith
-    [DerivationType <: Product, FieldsType <: Tuple, LabelsType <: Tuple, ResultType, F[_]]
-    (using requirement: ContextRequirement)
-    (inline accumulator: F[ResultType], index: Int)
-    (inline lambda: F[ResultType] =>
-                        [FieldType] =>
-                            requirement.Optionality[TypeclassType[FieldType]] =>
-                                (default:     Default[Optional[FieldType]],
-                                 label:       Text,
-                                 dereference: DerivationType => FieldType,
-                                 index:       Int & FieldIndex[FieldType]) ?=>
-                                    F[ResultType])
-        : F[ResultType] =
-
-  inline erasedValue[FieldsType] match
-    case _: EmptyTuple => accumulator
-
-    case _: (fieldType *: moreFieldsType) => inline erasedValue[LabelsType] match
-      case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match
-        case label: String =>
-          val typeclass = requirement.summon[TypeclassType[fieldType]]
-
-          val fieldIndex: Int & FieldIndex[fieldType] =
-            index.asInstanceOf[Int & FieldIndex[fieldType]]
-
-          val default = Default(Wisteria.default[DerivationType, fieldType](index))
-
-          val dereference: DerivationType => fieldType =
-            _.productElement(fieldIndex).asInstanceOf[fieldType]
-
-          val accumulator2 =
-            lambda(accumulator)[fieldType](typeclass)
-              (using default, label.tt, dereference, fieldIndex)
-
-          foldWith[DerivationType, moreFieldsType, moreLabelsType, ResultType, F]
-            (accumulator2, index + 1)
-            (lambda)
-              
-          
-
-          
-
   inline def join[DerivationType <: Product: ProductReflection]: TypeclassType[DerivationType]
