@@ -131,19 +131,18 @@ object Parser extends ProductDerivation[Parser] {
 
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
     IArray.from(inputStr.split(',')).pipe: inputArr =>
-      constructWithV2[DerivationType, Option](
-        [T] => Some(_),
+      constructWith[DerivationType, Option](
+        [MonadicTypeIn, MonadicTypeOut] => a => a.flatMap(_),
+        [MonadicType] => Some(_),
         [FieldType] => context =>
-          if index < inputArr.length then 
-            context.parse(inputArr(index)) match
-              case None => None
-              case Some(value) => specify(value)
+          if index < inputArr.length then
+            context.parse(inputArr(index))
           else 
             None
       )
 }
 
-case class ParserTestClass(intValue: Int, booleanValue: Boolean)
+case class ParserTestCaseClass(intValue: Int, booleanValue: Boolean)
 
 @main
 def main(): Unit =
@@ -183,9 +182,8 @@ def main(): Unit =
   println(human4.failed.get.getMessage())
 
   println("withContext:")
-  val parserForTest = summon[Parser[ParserTestClass]]
+  val parserForTest = summon[Parser[ParserTestCaseClass]]
   val successfulParse = parserForTest.parse("120,false")
-  println(successfulParse.get)
   println(successfulParse.exists(_.intValue == 120))
   println(successfulParse.exists(_.booleanValue == false))
   println(parserForTest.parse("error").isEmpty)

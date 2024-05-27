@@ -43,11 +43,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
       .reverse
 
-  // WIP
   protected transparent inline def constructWith[DerivationType <: Product, F[_]]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
-      (inline flatMap: [A, B] => F[A] => (A => F[B]) => F[B],
-       inline pure: [T] => T => F[T],
+      (inline bind: [MonadicTypeIn, MonadicTypeOut] => F[MonadicTypeIn] => (MonadicTypeIn => F[MonadicTypeOut]) => F[MonadicTypeOut],
+       inline pure: [MonadicType] => MonadicType => F[MonadicType],
        inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
                               (typeclass: requirement.Optionality[TypeclassType[FieldType]],
@@ -62,53 +61,12 @@ trait ProductDerivationMethods[TypeclassType[_]]:
 
     val resultingTuple: F[Tuple] = fold[DerivationType, Fields, Labels, F[Tuple]](pure(EmptyTuple), 0): accumulator =>
       [FieldType] => context ?=>
-        flatMap[FieldType, Tuple](lambda[FieldType](context)) { (result: FieldType) =>
-          flatMap[Tuple, Tuple](accumulator)((acc: Tuple) => pure(result *: acc))
-        }
+        bind(accumulator): acc =>
+          bind(lambda[FieldType](context)): result => 
+            pure(result *: acc)
 
-    flatMap[Tuple, DerivationType](resultingTuple)((v: Tuple) => pure(reflection.fromProduct(v.reverse)))
-
-  protected transparent inline def constructWithV2[DerivationType <: Product, F[_]]
-      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
-      (inline pure: [T] => T => F[T],
-       inline lambda: [FieldType] =>
-                          requirement.Optionality[TypeclassType[FieldType]] =>
-                              (typeclass: requirement.Optionality[TypeclassType[FieldType]],
-                               default:   Default[Optional[FieldType]],
-                               label:     Text,
-                               index:     Int & FieldIndex[FieldType],
-                               specify:   FieldType => F[FieldType]) ?=>
-                                  F[FieldType])
-          : F[DerivationType] =
-
-    type Fields = reflection.MirroredElemTypes
-    type Labels = reflection.MirroredElemLabels
-
-    val foldResult = fold[DerivationType, Fields, Labels, Either[F[DerivationType], Tuple]](Right(EmptyTuple), 0): accumulator =>
-        [FieldType] => context ?=> 
-          var specified: Option[FieldType] = None
-          // TODO: can this be a given?
-          // type Specify = FieldType => F[FieldType]
-          // given specify: Specify = value =>
-          implicit val specify: FieldType => F[FieldType] = value =>
-            specified = Some(value)
-            pure(value)
-
-          accumulator match
-            case Left(value) => Left(value)
-            case Right(accumulator) => 
-              val lambdaResult = lambda[FieldType](context)
-              specified match
-                case None => 
-                  Left(lambdaResult.asInstanceOf[F[DerivationType]])
-                case Some(result) =>
-                  specified = None
-                  Right(result *: accumulator)
-
-    foldResult match {
-      case Left(err) => err
-      case Right(value) => pure(reflection.fromProduct(value.reverse))
-    }
+    bind(resultingTuple): tuple => 
+      pure(reflection.fromProduct(tuple.reverse))
 
   protected transparent inline def contexts[DerivationType <: Product]
       (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
