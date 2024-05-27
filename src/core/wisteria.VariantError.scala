@@ -33,5 +33,5 @@ object VariantError:
     VariantError(inputLabel, sum, variants)
 
 case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])
-extends Error(msg"""the specified variant($inputLabel) is not one of the valid variants
+extends Error(msg"""the specified variant ($inputLabel) is not one of the valid variants
                     (${validVariants.mkString(", ").tt}) of sum type $sum""")
