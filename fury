@@ -30,7 +30,7 @@ project probably
   module coverage
     compiler  scala
     sources   src/coverage
-    include   gossamer/core dendrology/core digression/core
+    include   gossamer/core dendrology/tree digression/core
 
   module test
     compiler  scala
