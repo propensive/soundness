@@ -3,7 +3,7 @@
 
 repo propensive/probably
 
-target dissonance/test
+target dissonance/core
 
 project dissonance
   module core
