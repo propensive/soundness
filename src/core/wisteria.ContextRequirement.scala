@@ -17,7 +17,6 @@
 package wisteria
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 import scala.compiletime.*

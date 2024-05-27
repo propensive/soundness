@@ -43,29 +43,35 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
       .reverse
 
-  protected transparent inline def constructWith[DerivationType <: Product, F[_]]
-      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
-      (inline bind: [MonadicTypeIn, MonadicTypeOut] => F[MonadicTypeIn] => (MonadicTypeIn => F[MonadicTypeOut]) => F[MonadicTypeOut],
-       inline pure: [MonadicType] => MonadicType => F[MonadicType],
+  protected transparent inline def constructWith[ConstructorType[_]]
+      (using requirement: ContextRequirement)
+      [DerivationType <: Product]
+      (using reflection: ProductReflection[DerivationType])
+      (inline bind: [InputType, OutputType] => ConstructorType[InputType] =>
+                        (InputType => ConstructorType[OutputType]) =>
+                            ConstructorType[OutputType],
+       inline pure: [MonadicType] => MonadicType => ConstructorType[MonadicType],
        inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
                               (typeclass: requirement.Optionality[TypeclassType[FieldType]],
                                default:   Default[Optional[FieldType]],
                                label:     Text,
                                index:     Int & FieldIndex[FieldType]) ?=>
-                                  F[FieldType])
-          : F[DerivationType] =
+                                  ConstructorType[FieldType])
+          : ConstructorType[DerivationType] =
 
     type Fields = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
 
-    val resultingTuple: F[Tuple] = fold[DerivationType, Fields, Labels, F[Tuple]](pure(EmptyTuple), 0): accumulator =>
-      [FieldType] => context ?=>
-        bind(accumulator): acc =>
-          bind(lambda[FieldType](context)): result => 
-            pure(result *: acc)
+    val tuple: ConstructorType[Tuple] =
+      fold[DerivationType, Fields, Labels, ConstructorType[Tuple]](pure(EmptyTuple), 0):
+        accumulator =>
+          [FieldType] => context ?=>
+            bind(accumulator): accumulator2 =>
+              bind(lambda[FieldType](context)): result => 
+                pure(result *: accumulator2)
 
-    bind(resultingTuple): tuple => 
+    bind(tuple): tuple => 
       pure(reflection.fromProduct(tuple.reverse))
 
   protected transparent inline def contexts[DerivationType <: Product]

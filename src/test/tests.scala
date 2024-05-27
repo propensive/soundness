@@ -131,7 +131,7 @@ object Parser extends ProductDerivation[Parser] {
 
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
     IArray.from(inputStr.split(',')).pipe: inputArr =>
-      constructWith[DerivationType, Option](
+      constructWith[Option](
         [MonadicTypeIn, MonadicTypeOut] => _.flatMap,
         [MonadicType] => Some(_),
         [FieldType] => context =>

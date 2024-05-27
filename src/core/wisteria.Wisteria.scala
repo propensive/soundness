@@ -16,7 +16,6 @@
 
 package wisteria
 
-import rudiments.*
 import vacuous.*
 
 import scala.quoted.*
