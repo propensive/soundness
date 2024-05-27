@@ -469,18 +469,15 @@ Often your producer will return `F[_]`, like `Option` or `Either`, in this examp
 trait Parser[T]:
   def parse(input: String): Either[Exception, T]
 ```
-In this case there are a helper method called `constructWith`, which allows you to specify polymorphic `pure` and `bind`(aka flatMap) over your `F[_]` to help `constructWith` traverse parsing results:
+In this case there is a helper method called `constructWith`, which allows you to specify polymorphic `pure` and `bind`(aka flatMap) over your `F[_]` to help `constructWith` traverse producer typeclass results:
 ```scala
 object Parser extends ProductDerivation[Parser] {
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
     constructWith[DerivationType, Either](
-      [MonadicTypeIn, MonadicTypeOut] => a => a.flatMap(_),
+      [MonadicTypeIn, MonadicTypeOut] => _.flatMap,
       [MonadicType] => Right(_),
       [FieldType] => context =>
-        if index < inputArr.length then
-          context.parse(inputStr)
-        else 
-          Left(new Exception("parsing failed"))
+        context.parse(inputStr)
     )
 }
 ```
