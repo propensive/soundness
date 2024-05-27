@@ -11,7 +11,7 @@ repo propensive/probably
 project hyperbole
   module core
     sources src/core
-    include harlequin/core escapade/core escritoire/core dendrology/core hieroglyph/core
+    include harlequin/core escapade/core escritoire/core dendrology/tree hieroglyph/core
 
   module test
     compiler  scala
