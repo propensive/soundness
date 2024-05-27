@@ -462,6 +462,31 @@ Calling `constuct`, specifying how each field's value will be computed, will ret
 product, `DerivationType`. Since `Random` is a SAM type, this expression of `Long => DerivationType` provides
 a suitable implementation for the new typeclass.
 
+#### Monadic Producer Product Typeclasses
+
+Often your producer will return a type construct, like `Option` or `Either`,
+for example:
+```scala
+trait Parser[T]:
+  def parse(input: String): Either[Exception, T]
+```
+
+In this case there is a method called `constructWith`, which can be used in
+place of `construct`, and allows you to specify polymorphic `pure` and `bind`
+(a.k.a. `flatMap`) functions over your type constructor to help traverse
+producer typeclass results.
+
+Here is an example usage:
+
+```scala
+object Parser extends ProductDerivation[Parser]:
+  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
+    constructWith[DerivationType, Either]
+     ([InputType, OutputType] => _.flatMap,           // bind
+      [MonadicType] => Right(_),                      // pure
+      [FieldType] => context => context.parse(input))
+```
+
 ### Deriving Sum Types
 
 Deriving sums, or coproducts, is possible by making a choice of which of their variants is represented by the
