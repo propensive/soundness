@@ -120,7 +120,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
   def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2^{lambda}] = Diff(edits.map(_.map(lambda))*)
 
-  def applyTo(seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
+  def patch(seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
           : LazyList[ElemType] =
     
     def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match

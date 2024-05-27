@@ -134,7 +134,7 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Par(0, 0), Del(1, t"bar"), Ins(1, t"quux"), Ins(2, t"bop")))
     
       test(t"Apply parsed diff to source to get result"):
-        Diff.parse(diffStream).applyTo(start)
+        Diff.parse(diffStream).patch(start)
       .assert(_ == end)
       
       test(t"Parse reverse diff file"):
@@ -142,7 +142,7 @@ object Tests extends Suite(t"Dissonance tests"):
       .assert(_ == Diff(Par(0, 0), Del(1, t"quux"), Del(2, t"bop"), Ins(1, t"bar")))
       
       test(t"Apply parsed diff to source to get result"):
-        Diff.parse(reverseStream).applyTo(end)
+        Diff.parse(reverseStream).patch(end)
       .assert(_ == start)
     
     suite(t"Diff serialization tests"):
@@ -249,5 +249,5 @@ object Tests extends Suite(t"Dissonance tests"):
           import unsafeExceptions.canThrowAny
           val d = diff(perm1, perm2).casual
           test(t"Check differences"):
-            d.applyTo(perm1).to(Vector)
+            d.patch(perm1).to(Vector)
           .assert(_ == perm2)

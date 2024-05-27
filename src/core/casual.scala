@@ -74,7 +74,7 @@ object CasualDiff:
     CasualDiff(recur(stream, Nil, Nil, Nil, Nil, 1))
 
 case class CasualDiff(replacements: List[Replace]):
-  def applyTo(original: Iterable[Text]): LazyList[Text] raises CasualDiffError =
+  def patch(original: Iterable[Text]): LazyList[Text] raises CasualDiffError =
     def recur(stream: LazyList[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
             : LazyList[Text] =
       todo match
