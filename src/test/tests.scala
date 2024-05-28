@@ -66,6 +66,9 @@ case class President(name: Text = "nobody".tt, number: Int = 42) extends Human
 case class Person(name: Text = "noone".tt, age: Int = 100, male: Boolean = true) extends Human
 case class User(person: Person, email: Text = "nobody@nowhere.com".tt)
 
+enum Animal:
+  case Carnivore(name: Text, age: Int = -1)
+
 object Readable extends Derivation[Readable]:
   given text: Readable[Text] = identity(_)
   given int: Readable[Int] = _.s.toInt
@@ -180,6 +183,8 @@ def main(): Unit =
   val human4 = Try("Broken:george washington,1,yes".tt.read[Human])
   println(human4.isFailure)
   println(human4.failed.get.getMessage())
+  val animal = "Carnivore:Wolf".tt.read[Animal]
+  println("with default "+animal.present)
 
   println("withContext:")
   val parserForTest = summon[Parser[ParserTestCaseClass]]
