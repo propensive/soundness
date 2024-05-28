@@ -30,11 +30,11 @@ object Wisteria:
     import quotes.reflect.*
 
     val methodName: String = "$lessinit$greater$default$"+(index.valueOrAbort + 1)
-    val maybeProductClassSymbol = TypeRepr.of[ProductType].classSymbol
+    val productSymbol = TypeRepr.of[ProductType].classSymbol
 
-    maybeProductClassSymbol.flatMap: productClassSymbol =>
-      productClassSymbol.companionClass.declaredMethod(methodName).headOption.map: method =>
-        Ref(productClassSymbol.companionModule).select(method)
+    productSymbol.flatMap: symbol =>
+      symbol.companionClass.declaredMethod(methodName).headOption.map: method =>
+        Ref(symbol.companionModule).select(method)
     .map: selection =>
       TypeRepr.of[ProductType].typeArgs match
         case Nil  => selection
