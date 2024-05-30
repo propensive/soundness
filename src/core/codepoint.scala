@@ -23,7 +23,7 @@ import contingency.*
 
 import scala.quoted.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 object Codepoint:
   inline given Codepoint = ${Digression.location}
