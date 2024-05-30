@@ -77,7 +77,7 @@ for paths (which may not relate to a file or directory) and files/directories.
 
 ## Status
 
-Diuretic is classified as __embryotic__. For reference, Scala One projects are
+Diuretic is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -91,7 +91,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Diuretic is designed to be _small_. Its entire source code currently consists
-of 65 lines of code.
+of 66 lines of code.
 
 ## Building
 
@@ -164,7 +164,7 @@ The name _Diuretic_ alludes to a side-effect of drinking coffee, or in our case,
 
 `/ˌdaɪəˈretɪk/`
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
