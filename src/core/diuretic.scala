@@ -49,7 +49,7 @@ object JavaUtilDate extends GenericInstant, SpecificInstant:
   def instant(long: Long): ju.Date = ju.Date(long)
   def millisecondsSinceEpoch(value: ju.Date): Long = value.getTime
 
-object JavaNioFile
+object JavaNioPath
 extends SpecificFile, SpecificDirectory, SpecificPath, GenericPath, GenericDirectory, GenericFile:
 
   type Self = jnf.Path
