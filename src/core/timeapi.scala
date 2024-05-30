@@ -18,13 +18,15 @@ package anticipation
 
 import aviation.*
 
-//import language.experimental.captureChecking
+import language.experimental.captureChecking
 
-// package timeInterfaces:
-//   given aviationApi: (GenericInstant[Timing.Instant] & GenericDuration[Timing.Duration] &
-//       SpecificInstant[Timing.Instant] & SpecificDuration[Timing.Duration]) =
-//     new GenericInstant[Timing.Instant] with GenericDuration[Timing.Duration]
-//         with SpecificInstant[Timing.Instant] with SpecificDuration[Timing.Duration]:
-//       export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
-//       export Timing.Duration.generic.{duration, milliseconds}
+package durationApi:
+  given aviation: (GenericDuration & SpecificDuration) = new GenericDuration with SpecificDuration:
+    type Self = Timing.Duration
+    export Timing.Duration.generic.{duration, milliseconds}
+
+package instantApi:
+  given aviation: (GenericInstant & SpecificInstant) = new GenericInstant with SpecificInstant:
+    type Self = Timing.Instant
+    export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
 
