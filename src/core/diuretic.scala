@@ -26,32 +26,33 @@ import java.util as ju
 
 import language.experimental.captureChecking
 
-object JavaTime
-extends GenericInstant[jt.Instant], GenericDuration[Long], SpecificInstant[jt.Instant], SpecificDuration[Long]:
+object JavaTimeInstant extends GenericInstant, SpecificInstant:
+  type Self = jt.Instant
   
   def millisecondsSinceEpoch(value: jt.Instant): Long = value.toEpochMilli
   def instant(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
+
+object JavaLongDuration extends GenericDuration, SpecificDuration:
+  type Self = Long
+  
   def milliseconds(long: Long): Long = long
   def duration(value: Long): Long = value
 
-object JavaLongTime
-extends GenericInstant[Long], GenericDuration[Long], SpecificInstant[Long], SpecificDuration[Long]:
-  
+object JavaLongInstant extends GenericInstant, SpecificInstant:
+  type Self = Long
+
   def millisecondsSinceEpoch(long: Long): Long = long
   def instant(value: Long): Long = value
-  def milliseconds(long: Long): Long = long
-  def duration(value: Long): Long = value
 
-object JavaUtilTime
-extends GenericInstant[ju.Date], GenericDuration[Long], SpecificInstant[ju.Date], SpecificDuration[Long]:
+object JavaUtilDate extends GenericInstant, SpecificInstant:
+  type Self = ju.Date
   def instant(long: Long): ju.Date = ju.Date(long)
   def millisecondsSinceEpoch(value: ju.Date): Long = value.getTime
-  def milliseconds(long: Long): Long = long
-  def duration(value: Long): Long = value
 
 object JavaNioFile
-extends SpecificFile[jnf.Path], SpecificDirectory[jnf.Path], SpecificPath[jnf.Path],
-    GenericPath[jnf.Path], GenericDirectory[jnf.Path], GenericFile[jnf.Path]:
+extends SpecificFile, SpecificDirectory, SpecificPath, GenericPath, GenericDirectory, GenericFile:
+
+  type Self = jnf.Path
 
   def path(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
   def file(file: Text): jnf.Path = path(file)
@@ -62,8 +63,9 @@ extends SpecificFile[jnf.Path], SpecificDirectory[jnf.Path], SpecificPath[jnf.Pa
   def directoryText(value: jnf.Path): Text = pathText(value)
 
 object JavaIoFile
-extends SpecificFile[ji.File], SpecificDirectory[ji.File], SpecificPath[ji.File],
-    GenericPath[ji.File], GenericDirectory[ji.File], GenericFile[ji.File]:
+extends SpecificFile, SpecificDirectory, SpecificPath, GenericPath, GenericDirectory, GenericFile:
+
+  type Self = ji.File
 
   def path(path: Text): ji.File = ji.File(path.s).nn
   def file(file: Text): ji.File = path(file)
@@ -73,7 +75,8 @@ extends SpecificFile[ji.File], SpecificDirectory[ji.File], SpecificPath[ji.File]
   def fileText(value: ji.File): Text = pathText(value)
   def directoryText(value: ji.File): Text = pathText(value)
 
-object JavaNetUrl extends GenericUrl[jn.URL], SpecificUrl[jn.URL]:
+object JavaNetUrl extends GenericUrl, SpecificUrl:
+  type Self = jn.URL
   def text(value: jn.URL): Text = value.toString.tt
   def url(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
 

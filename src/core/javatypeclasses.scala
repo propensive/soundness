@@ -20,10 +20,13 @@ import diuretic.*
 
 import language.experimental.captureChecking
 
-package timeInterfaces:
-  given javaTime: JavaTime.type = JavaTime
-  given long: JavaLongTime.type = JavaLongTime
-  given javaUtil: JavaUtilTime.type = JavaUtilTime
+package instantInterface:
+  given javaTime: JavaTimeInstant.type = JavaTimeInstant
+  given long: JavaLongInstant.type = JavaLongInstant
+  given javaUtilDate: JavaUtilDate.type = JavaUtilDate
+
+package durationInterface:
+  given long: JavaLongDuration.type = JavaLongDuration
 
 package filesystemInterfaces:
   given javaNio: JavaNioFile.type = JavaNioFile
