@@ -69,7 +69,7 @@ object Executor:
   
   given unit: Executor[Unit] = exitStatus.map(_ => ())
   
-  given path[PathType](using SpecificPath[PathType]): Executor[PathType] =
+  given path[PathType](using SpecificPath { type Self = PathType }): Executor[PathType] =
     proc => SpecificPath(text.interpret(proc))
 
 @capability 
@@ -122,11 +122,11 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
 
 object Process:
   given appendable[ChunkType](using writable: Writable[ji.OutputStream, ChunkType])
-          : Appendable[Process[?, ?], ChunkType]^{writable} =
+          : (Appendable[Process[?, ?], ChunkType]^{writable}) =
 
     (process, stream) => process.stdin(stream)
   
-  given appendableText(using streamCut: Errant[StreamError]): Appendable[Process[?, ?], Text]^{streamCut} =
+  given appendableText(using streamCut: Errant[StreamError]): (Appendable[Process[?, ?], Text]^{streamCut}) =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -200,7 +200,8 @@ sealed trait Executable:
   infix def | (command: Executable): Pipeline = command(this)
 
 object Command:
-  given Communicable[Command] = command => Message(formattedArguments(command.arguments))
+  given communicable[CommandType <: Command]: (Communicable { type Self = CommandType }) =
+    command => Message(formattedArguments(command.arguments))
 
   private def formattedArguments(arguments: Seq[Text]): Text =
     arguments.map: argument =>
@@ -231,7 +232,9 @@ case class Command(arguments: Text*) extends Executable:
     catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
 
 object Pipeline:
-  given Communicable[Pipeline] = pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
+  given [PipelineType <: Pipeline]: (Communicable { type Self = PipelineType }) =
+    pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
+  
   given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
   
@@ -320,12 +323,12 @@ object Sh:
     Parameters(summon[Parameterizable[ValueType]].show(value))
 
 object Parameterizable:
-  given [PathType](using genericPath: GenericPath[PathType]): Parameterizable[PathType]^{genericPath} =
+  given [PathType](using genericPath: GenericPath { type Self = PathType }): (Parameterizable[PathType]^{genericPath}) =
     _.pathText
   
   given Parameterizable[Int] = _.show
   
-  given [ValueType](using encoder: Encoder[ValueType]): Parameterizable[ValueType]^{encoder} =
+  given [ValueType](using encoder: Encoder[ValueType]): (Parameterizable[ValueType]^{encoder}) =
     new Parameterizable[ValueType]:
       def show(value: ValueType): Text = encoder.encode(value)
 
