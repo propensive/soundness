@@ -58,25 +58,25 @@ trait GenericWatchService:
 
 extension [PathType](path: PathType)
   inline def fullPath: Text = compiletime.summonFrom:
-    case generic: (GenericPath { type Self = PathType })      => generic.pathText(path)
-    case generic: (GenericFile { type Self = PathType })      => generic.fileText(path)
-    case generic: (GenericDirectory { type Self = PathType }) => generic.directoryText(path)
+    case generic: (PathType is GenericPath)      => generic.pathText(path)
+    case generic: (PathType is GenericFile)      => generic.fileText(path)
+    case generic: (PathType is GenericDirectory) => generic.directoryText(path)
 
-extension [PathType](path: PathType)(using generic: GenericPath { type Self = PathType })
-  def pathText: Text = generic.pathText(path)
+extension [PathType: GenericPath](path: PathType)
+  def pathText: Text = PathType.pathText(path)
 
-extension [FileType](file: FileType)(using generic: GenericFile { type Self = FileType })
-  def fileText: Text = generic.fileText(file)
+extension [FileType: GenericFile](file: FileType)
+  def fileText: Text = FileType.fileText(file)
 
-extension [DirectoryType](directory: DirectoryType)(using generic: GenericDirectory { type Self = DirectoryType })
-  def directoryText: Text = generic.directoryText(directory)
+extension [DirectoryType: GenericDirectory](directory: DirectoryType)
+  def directoryText: Text = DirectoryType.directoryText(directory)
 
 object SpecificPath:
-  def apply[PathType](name: Text)(using specific: SpecificPath { type Self = PathType }): PathType = specific.path(name)
+  def apply[PathType: SpecificPath](name: Text): PathType = PathType.path(name)
 
 object SpecificFile:
-  def apply[FileType](name: Text)(using specific: SpecificFile { type Self = FileType }): FileType = specific.file(name)
+  def apply[FileType: SpecificFile](name: Text): FileType = FileType.file(name)
 
 object SpecificDirectory:
-  def apply[DirectoryType](name: Text)(using specific: SpecificDirectory { type Self = DirectoryType }): DirectoryType =
-    specific.directory(name)
+  def apply[DirectoryType: SpecificDirectory](name: Text): DirectoryType =
+    DirectoryType.directory(name)

@@ -34,26 +34,26 @@ trait GenericDuration:
   type Self
   def milliseconds(duration: Self): Long
 
-extension [InstantType](instant: InstantType)(using generic: GenericInstant { type Self = InstantType })
-  def millisecondsSinceEpoch: Long = generic.millisecondsSinceEpoch(instant)
+extension [InstantType: GenericInstant](instant: InstantType)
+  def millisecondsSinceEpoch: Long = InstantType.millisecondsSinceEpoch(instant)
 
 object SpecificInstant:
-  def apply[InstantType](millisecondsSinceEpoch: Long)(using specific: SpecificInstant { type Self = InstantType }): InstantType =
-    specific.instant(millisecondsSinceEpoch)
+  def apply[InstantType: SpecificInstant](millisecondsSinceEpoch: Long): InstantType =
+    InstantType.instant(millisecondsSinceEpoch)
 
-  given (SpecificInstant { type Self = Long }) = identity(_)
+  given Long is SpecificInstant = identity(_)
 
-extension [DurationType](duration: DurationType)(using generic: GenericDuration { type Self = DurationType })
-  def milliseconds: Long = generic.milliseconds(duration)
+extension [DurationType: GenericDuration](duration: DurationType)
+  def milliseconds: Long = DurationType.milliseconds(duration)
 
 object SpecificDuration:
-  def apply[DurationType](milliseconds: Long)(using specific: SpecificDuration { type Self = DurationType }): DurationType =
-    specific.duration(milliseconds)
+  def apply[DurationType: SpecificDuration](milliseconds: Long): DurationType =
+    DurationType.duration(milliseconds)
 
-  given (SpecificDuration { type Self = Long }) = identity(_)
+  given Long is SpecificDuration = identity(_)
 
 object GenericInstant:
-  given (GenericInstant { type Self = Long }) = identity(_)
+  given Long is GenericInstant = identity(_)
 
 object GenericDuration:
-  given (GenericDuration { type Self = Long }) = identity(_)
+  given Long is GenericDuration = identity(_)
