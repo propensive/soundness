@@ -181,8 +181,7 @@ object DebugDerivation extends Derivation[Debug]:
         context.let(_.give(variant.debug)).or(variant.debug)
 
 object TextConversion:
-  given textualize[ValueType](using textualizer: Textualizer { type Self = ValueType }): Show[ValueType] =
-    textualizer.textual(_)
+  given textualize[ValueType: Textualizer]: Show[ValueType] = ValueType.textual(_)
 
   given text: Show[Text] = identity(_)
   given string: Show[String] = _.tt
