@@ -23,6 +23,7 @@ import digression.*
 import vacuous.*
 
 import language.experimental.pureFunctions
+import language.experimental.into
 
 enum Completion[+ValueType]:
   case Initializing, Cancelled
