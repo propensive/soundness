@@ -17,16 +17,14 @@
 package hypotenuse
 
 import language.experimental.genericNumberLiterals
-
-import scala.util.FromDigits
-import scala.annotation.*
-import scala.compiletime.*
-
-import language.experimental.genericNumberLiterals
 import language.experimental.into
 
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
+
+import scala.util.FromDigits
+import scala.annotation.*
+import scala.compiletime.*
 
 import anticipation.*
 import contingency.*

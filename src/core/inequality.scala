@@ -54,7 +54,6 @@ trait CompareGreater[-LeftType, -RightType, +ResultType] extends NumericallyComp
 trait CompareGreaterEqual[-LeftType, -RightType, +ResultType] extends NumericallyComparable:
   inline def greaterThanOrEqual(inline left: LeftType, inline right: RightType): ResultType
 
-
 trait Inequality[-LeftType, -RightType]
 extends
     CompareGreaterEqual[LeftType, RightType, Boolean],
