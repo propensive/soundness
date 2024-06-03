@@ -31,7 +31,7 @@ object Message:
       case _: (messageType *: tailType) => (subs: @unchecked) match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
-          val show = summonInline[Communicable { type Self = messageType }]
+          val show = summonInline[Communicable { type Self >: messageType }]
           make[tailType](tail.asInstanceOf[tailType], show.message(message2) :: done)
 
       case _ =>
@@ -90,4 +90,4 @@ extension (inline context: StringContext)
 
         Message
           (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-           List(summonInline[Communicable { type Self = other.type }].message(other)))
+           List(summonInline[Communicable { type Self >: other.type }].message(other)))
