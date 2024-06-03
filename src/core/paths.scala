@@ -19,7 +19,6 @@ package galilei
 import anticipation.*
 import contextual.*
 import contingency.*
-import eucalyptus.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -41,27 +40,27 @@ import java.nio.file as jnf
 import java.nio.file.attribute as jnfa
 import java.nio.channels as jnc
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 
 object Path:
-  given genericPath: GenericPath[Path] = _.fullname
+  given Path is GenericPath = _.fullname
 
   inline given add(using path: Errant[PathError], followable: Followable[Link, GeneralForbidden, ?, ?])
           : AddOperator[Path, Link] with
 
     type Result = Path
     inline def add(left: Path, right: Link): Path = left.append(right)
-  
+
   inline given add2(using path: Errant[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?])
           : AddOperator[Path, SafeLink] with
 
     type Result = Path
     inline def add(left: Path, right: SafeLink): Path = left.append(right)
-  
+
   given Insertion[Sh.Parameters, Path] = path => Sh.Parameters(path.fullname)
-  
+
   given writableBytes(using io: Errant[IoError], streamCut: Errant[StreamError]): Writable[Path, Bytes] =
     Writable.outputStreamBytes.contramap: path =>
       if !path.stdlib.toFile.nn.canWrite then abort(IoError(path))
@@ -72,10 +71,10 @@ object Path:
       case path: Windows.SafePath => path.drive
       case path: Windows.Path     => path.drive
       case _                      => Unset
-    
+
     def prefix(root: Optional[Windows.Drive]): Text =
       root.let(Windows.Path.navigable.prefix(_)).or(Unix.Path.navigable.prefix(Unset))
-    
+
     def descent(path: Path): List[PathName[GeneralForbidden]] =
       // FIXME: This is a bit of a hack
       import errorHandlers.throwUnsafely
@@ -84,24 +83,24 @@ object Path:
         case path: Windows.SafePath => path.safeDescent
         case path: Unix.Path        => path.descent.map(_.narrow[GeneralForbidden])
         case path: Windows.Path     => path.descent.map(_.narrow[GeneralForbidden])
-    
+
     def separator(path: Path): Text = path match
       case path: Unix.SafePath    => t"/"
       case path: Unix.Path        => t"/"
       case path: Windows.SafePath => t"\\"
       case path: Windows.Path     => t"\\"
-  
+
   given rootParser: RootParser[Path, Optional[Windows.Drive]] = text =>
     Windows.Path.rootParser.parse(text).or(Unix.Path.rootParser.parse(text))
-  
+
   given PathCreator[Path, GeneralForbidden, Optional[Windows.Drive]] with
     def path(root: Optional[Windows.Drive], descent: List[PathName[GeneralForbidden]]) = root match
       case drive@Windows.Drive(_) => Windows.SafePath(drive, descent)
       case _                      => Unix.SafePath(descent)
 
-  given Communicable[Path] = path => Message(path.render)
+  given Path is Communicable = path => Message(path.render)
 
-  inline given decoder(using Errant[PathError]): Decoder[Path] = new Decoder[Path]:
+  inline given (using Errant[PathError]) => Decoder[Path] as decoder:
     def decode(text: Text): Path = Navigable.decode(text)
 
   given show: Show[Path] = _.render
@@ -113,19 +112,19 @@ object Path:
 
 sealed trait Path:
   this: Path =>
-  
+
   def fullname: Text
   def name: Text
   def stdlib: jnf.Path = jnf.Path.of(fullname.s).nn
   def exists(): Boolean = jnf.Files.exists(stdlib)
   def touch()(using Errant[IoError]): Unit = jnf.Files.write(stdlib, Array[Byte]())
-  
+
   def wipe()(using deleteRecursively: DeleteRecursively)(using io: Errant[IoError]): Path = this.also:
     deleteRecursively.conditionally(this)(jnf.Files.deleteIfExists(stdlib))
-    
+
   def entryType()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Errant[IoError])
           : PathStatus =
-    
+
     try (jnf.Files.getAttribute(stdlib, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
       case mode: Int => (mode & 61440) match
         case  4096 => PathStatus.Fifo
@@ -136,23 +135,23 @@ sealed trait Path:
         case 40960 => PathStatus.Symlink
         case 49152 => PathStatus.Socket
         case _     => throw Panic(msg"an unexpected POSIX mode value was returned")
-    
+
     catch
       case error: UnsupportedOperationException =>
         throw Panic(msg"the file attribute unix:mode could not be accessed")
-      
+
       case error: ji.FileNotFoundException =>
         raise(IoError(this))(PathStatus.File)
-      
+
       case error: ji.IOException =>
         raise(IoError(this))(PathStatus.File)
 
   def as[EntryType <: Entry](using resolver: PathResolver[EntryType, this.type]): EntryType = resolver(this)
-  
+
   inline def at[EntryType <: Entry](using PathResolver[EntryType, this.type], DereferenceSymlinks)
           : Optional[EntryType] raises IoError =
     if is[EntryType] then as[EntryType] else Unset
-  
+
   inline def is[EntryType <: Entry](using DereferenceSymlinks, Errant[IoError]): Boolean =
     inline erasedValue[EntryType] match
       case _: Directory   => entryType() == PathStatus.Directory
@@ -162,22 +161,22 @@ sealed trait Path:
       case _: Fifo        => entryType() == PathStatus.Fifo
       case _: BlockDevice => entryType() == PathStatus.BlockDevice
       case _: CharDevice  => entryType() == PathStatus.CharDevice
-  
+
   def make[EntryType <: Entry]()(using maker: EntryMaker[EntryType, this.type]): EntryType = maker(this)
 
 object Link:
   given creator: PathCreator[Link, GeneralForbidden, Int] with
     def path(ascent: Int, descent: List[PathName[GeneralForbidden]]): SafeLink = SafeLink(ascent, descent)
-  
-  inline given decoder(using Errant[PathError]): Decoder[Link] = new Decoder[Link]:
+
+  inline given (using Errant[PathError]) => Decoder[Link] as decoder:
     def decode(text: Text): Link =
       if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
-  
+
   given show: Show[Link] =
     case link: Unix.Link    => link.render
     case link: Windows.Link => link.render
     case link: SafeLink     => link.render
-  
+
   given encoder: Encoder[Link] = show.text(_)
   given debug: Debug[Link] = show.text(_)
 
@@ -188,17 +187,17 @@ object Windows:
       "\\.\\." | "\\." | ".*[:<>/\\\\|?\"*].*"
 
   object Path:
-    inline given decoder(using Errant[PathError]): Decoder[Path] = new Decoder[Path]:
+    inline given (using Errant[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
-    
+
     given navigable: Navigable[Path, Forbidden, Drive] with
       def root(path: Path): Drive = path.drive
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
       def separator(path: Path): Text = t"\\"
-    
+
     given creator: PathCreator[Path, Forbidden, Drive] = Path(_, _)
-    
+
     given rootParser: RootParser[Path, Drive] = text => text.only:
       case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter.at(0).vouch).toUpper), text.drop(3))
 
@@ -213,16 +212,16 @@ object Windows:
 
   class SafePath(drive0: Drive, val safeDescent: List[PathName[GeneralForbidden]])
   extends Path(drive0, safeDescent.map(_.widen[Forbidden]))
-  
-  object Link: 
+
+  object Link:
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
-    
+
     given followable: Followable[Link, Forbidden, "..", "."] with
       val separators: Set[Char] = Set('\\')
       def separator(path: Link): Text = t"\\"
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
-  
+
     inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
@@ -235,21 +234,21 @@ object Windows:
 
   case class Drive(letter: Char):
     def name: Text = t"$letter:"
-    
+
     @targetName("child")
     infix def / (name: PathName[Forbidden]): Path = Path(this, List(name))
-    
+
     @targetName("child2")
     inline infix def / (name: Text)(using Errant[PathError]): Path = Path(this, List(PathName(name)))
-  
+
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
-  
+
   sealed trait Entry extends galilei.Entry
 
 object Unix:
-  
+
   type Forbidden = ".*\\/.*" | ".*[\\cA-\\cZ].*" | "\\.\\." | "\\."
-  
+
   @targetName("child")
   infix def / (name: PathName[Forbidden]): Path = Path(List(name))
 
@@ -258,13 +257,13 @@ object Unix:
 
   object Path:
     given mainRoot: MainRoot[Path] = () => Path(Nil)
-    
-    inline given decoder(using Errant[PathError]): Decoder[Path] = new Decoder[Path]:
+
+    inline given (using Errant[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
-    
+
     given rootParser: RootParser[Path, Unset.type] = text =>
       if text.starts(t"/") then (Unset, text.drop(1)) else Unset
-    
+
     given creator: PathCreator[Path, Forbidden, Unset.type] = (root, descent) => Path(descent)
 
     given navigable: Navigable[Path, Forbidden, Unset.type] with
@@ -272,11 +271,11 @@ object Unix:
       def root(path: Path): Unset.type = Unset
       def prefix(root: Unset.type): Text = t"/"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
-    
+
     given show: Show[Path] = _.render
     given encoder: Encoder[Path] = _.render
     given debug: Debug[Path] = _.render
-  
+
   case class Path(descent: List[PathName[Forbidden]]) extends galilei.Path:
     def root: Unset.type = Unset
     def name: Text = if descent.isEmpty then Path.navigable.prefix(Unset) else descent.head.show
@@ -287,20 +286,20 @@ object Unix:
 
   object Link:
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
-    
+
     given followable: Followable[Link, Forbidden, "..", "."] with
       val separators: Set[Char] = Set('/')
       def separator(path: Link): Text = t"/"
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
-    
+
     inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
-  
+
   case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
-  
+
   sealed trait Entry extends galilei.Entry
 
 object Volume:
@@ -312,22 +311,22 @@ sealed trait Entry:
   def path: Path
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
-  
+
   def touch()(using Errant[IoError]): Unit =
     try jnf.Files.setLastModifiedTime(path.stdlib, jnfa.FileTime.fromMillis(System.currentTimeMillis))
     catch case error: ji.IOException => raise(IoError(path))(())
-  
+
   def hidden()(using Errant[IoError]): Boolean =
     try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path))(false)
-  
+
   object readable:
     def apply(): Boolean = jnf.Files.isReadable(path.stdlib)
     def update(status: Boolean): Unit = path.stdlib.toFile.nn.setReadable(status)
-  
+
   object writable:
     def apply(): Boolean = jnf.Files.isWritable(path.stdlib)
     def update(status: Boolean): Unit = path.stdlib.toFile.nn.setWritable(status)
-  
+
   object executable:
     def apply(): Boolean = jnf.Files.isExecutable(path.stdlib)
     def update(status: Boolean): Unit = path.stdlib.toFile.nn.setExecutable(status)
@@ -348,20 +347,20 @@ sealed trait Entry:
       case error: ji.FileNotFoundException       => raise(IoError(path))(())
       case error: ji.IOException                 => raise(IoError(path))(())
       case error: SecurityException              => raise(IoError(path))(())
-    
+
     path
-  
+
   def symlinkTo(destination: Path)
       (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
       (using io: Errant[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
-    
+
     createNonexistentParents(destination):
       overwritePreexisting(destination):
         jnf.Files.createSymbolicLink(destination.stdlib, path.stdlib)
 
     destination
-  
+
   def copyInto(destination: Directory)
       (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
       (using io: Errant[IoError])
@@ -382,7 +381,7 @@ sealed trait Entry:
         jnf.Files.copy(path.stdlib, destination.stdlib, dereferenceSymlinks.options()*)
 
     destination
-      
+
   def moveInto
       (destination: Directory)
       (using overwritePreexisting: OverwritePreexisting,
@@ -433,9 +432,9 @@ object PathResolver:
 
     if path.exists() && path.entryType() == PathStatus.File then File(path)
     else createNonexistent(path)(jnf.Files.createFile(path.stdlib))
-    
+
     File(path)
-  
+
   given directory
       (using createNonexistent: CreateNonexistent,
              dereferenceSymlinks: DereferenceSymlinks,
@@ -444,7 +443,7 @@ object PathResolver:
     if path.exists() && path.entryType() == PathStatus.Directory then Directory(path)
     else createNonexistent(path):
       jnf.Files.createDirectory(path.stdlib)
-    
+
     Directory(path)
 
 @capability
@@ -459,9 +458,9 @@ object EntryMaker:
     createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createDirectory(path.stdlib)
-    
+
     Directory(path)
-  
+
   given socket
       (using createNonexistentParents: CreateNonexistentParents, overwritePreexisting: OverwritePreexisting)
       (using io: Errant[IoError])
@@ -472,21 +471,21 @@ object EntryMaker:
         val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
         channel.bind(address)
         Socket(path, channel)
-  
+
   given file
       (using createNonexistentParents: CreateNonexistentParents, overwritePreexisting: OverwritePreexisting)
           : EntryMaker[File, Path] =
     path => createNonexistentParents(path):
       overwritePreexisting(path):
         jnf.Files.createFile(path.stdlib)
-    
+
     File(path)
-  
+
   given fifo
       (using createNonexistentParents: CreateNonexistentParents,
              overwritePreexisting:     OverwritePreexisting,
              working:                  WorkingDirectory,
-             log:                      Log[Text],
+             logger:                   GenericLogger,
              io:                       Errant[IoError],
              exec:                     Errant[ExecError])
           : EntryMaker[Fifo, Unix.Path] =
@@ -496,19 +495,20 @@ object EntryMaker:
         sh"mkfifo $path"() match
           case ExitStatus.Ok => ()
           case _             => raise(IoError(path))(())
-    
+
     Fifo(path)
-  
+
 @capability
 trait EntryMaker[+EntryType <: Entry, -PathType <: Path]:
   def apply(value: PathType): EntryType
 
 object Directory:
   given debug: Debug[Directory] = directory => t"directory:${directory.path.render}"
-  given GenericWatchService[Directory] = () =>
-    jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
-  given generic: GenericDirectory[Directory] = _.path.fullname
+  given GenericWatchService:
+    def apply(): java.nio.file.WatchService = jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
+
+  given Directory is GenericDirectory = _.path.fullname
 
 case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
@@ -516,14 +516,14 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
 
   def descendants(using DereferenceSymlinks, Errant[IoError], PathResolver[Directory, Path]): LazyList[Path] =
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
-  
+
   def size()(using PathResolver[Directory, Path], PathResolver[File, Path]): ByteSize raises IoError =
     import filesystemOptions.doNotDereferenceSymlinks
     descendants.map(_.at[File].let(_.size()).or(0.b)).foldLeft(0.b)(_ + _)
-  
+
   @targetName("child")
   infix def / (name: PathName[GeneralForbidden]): Path = path / name
-  
+
   @targetName("child2")
   inline infix def / (name: Text)(using Errant[PathError]): Path = path / PathName(name)
 
@@ -534,7 +534,7 @@ object File:
     Readable.inputStream.contramap: file =>
       try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
-  
+
   given writableBytes(using io: Errant[IoError], streamCut: Errant[StreamError])
           : Writable[File, Bytes] =
     Writable.outputStreamBytes.contramap: file =>
@@ -547,16 +547,16 @@ object File:
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, true))
 
-  given generic: GenericFile[File] = _.path.fullname
+  given File is GenericFile = _.path.fullname
 
 case class File(path: Path) extends Unix.Entry, Windows.Entry:
   def size(): ByteSize = jnf.Files.size(path.stdlib).b
-  
+
   def hardLinkTo(destination: Path)
       (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
       (using io: Errant[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
-    
+
     createNonexistentParents(destination):
       overwritePreexisting(destination):
         jnf.Files.createLink(destination.stdlib, path.stdlib)
@@ -654,16 +654,16 @@ trait WriteSynchronously:
 package filesystemOptions:
   given dereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
     def options(): List[jnf.LinkOption] = Nil
-  
+
   given doNotDereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
     def options(): List[jnf.LinkOption] = List(jnf.LinkOption.NOFOLLOW_LINKS)
-  
+
   given moveAtomically: MoveAtomically with
     def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.ATOMIC_MOVE)
-  
+
   given doNotMoveAtomically: MoveAtomically with
     def options(): List[jnf.CopyOption] = Nil
-  
+
   given copyAttributes: CopyAttributes with
     def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
 
@@ -677,39 +677,39 @@ package filesystemOptions:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
-        
+
         if path.exists() then
           if path.is[Directory] then path.as[Directory].children.each(conditionally(_)(()))
           jnf.Files.delete(path.stdlib)
-        
+
         operation
-          
+
   given doNotDeleteRecursively(using unemptyDirectory: Errant[UnemptyDirectoryError])
           : DeleteRecursively =
     new DeleteRecursively:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation
         catch case error: jnf.DirectoryNotEmptyException => abort(UnemptyDirectoryError(path))
-      
+
   given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
     new OverwritePreexisting:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
-      
+
   given doNotOverwritePreexisting(using overwrite: Errant[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
-      
+
   given createNonexistentParents(using Errant[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.let: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
-         
+
           if !parent.exists() || !parent.is[Directory]
           then jnf.Files.createDirectories(parent.stdlib)
-      
+
         operation
 
   given doNotCreateNonexistentParents(using io: Errant[IoError]): CreateNonexistentParents =
@@ -755,7 +755,7 @@ object SafeLink:
   given show: Show[SafeLink] = _.render
   given encoder: Encoder[SafeLink] = _.render
   given debug: Debug[SafeLink] = _.render
-  
+
   given followable(using creator: PathCreator[SafeLink, GeneralForbidden, Int])
           : Followable[SafeLink, GeneralForbidden, "..", "."] =
     new Followable[SafeLink, GeneralForbidden, "..", "."]:

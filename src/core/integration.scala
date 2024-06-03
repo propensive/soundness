@@ -20,26 +20,20 @@ import serpentine.*
 import spectacular.*
 import galilei.*
 
-// import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
-package filesystemInterfaces:
-  given galileiApi[PathType <: Path]
-      (using hierarchy: Hierarchy[PathType, ?])
-      (using Decoder[PathType], PathResolver[File, PathType], PathResolver[Directory, PathType])
-          : (SpecificPath[PathType] & SpecificFile[File] & SpecificDirectory[Directory] &
-                GenericPath[PathType] & GenericFile[File] & GenericDirectory[Directory]) =
-    
-    new SpecificPath[PathType]
-            with SpecificFile[File]
-            with SpecificDirectory[Directory]
-            with GenericPath[PathType]
-            with GenericFile[File]
-            with GenericDirectory[Directory]:
+package filesystemApi:
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[File, PathType]) => SpecificFile with GenericFile as galileiFile:
+    type Self = File
+    def file(name: Text): File = name.decodeAs[PathType].as[File]
+    def fileText(file: File): Text = file.path.fullname
 
-      def path(name: Text): PathType = name.decodeAs[PathType]
-      def file(name: Text): File = path(name).as[File]
-      def directory(name: Text): Directory = path(name).as[Directory]
-      def pathText(path: PathType): Text = path.fullname
-      def fileText(file: File): Text = file.path.fullname
-      def directoryText(directory: Directory): Text = directory.path.fullname
-      
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?], decoder: Decoder[PathType]) => SpecificPath with GenericPath as galileiPath:
+    type Self = PathType
+    def path(name: Text): PathType = name.decodeAs[PathType]
+    def pathText(path: PathType): Text = path.fullname
+
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[Directory, PathType]) => SpecificDirectory with GenericDirectory as galileiDirectory:
+    type Self = Directory
+    def directory(name: Text): Directory = name.decodeAs[PathType].as[Directory]
+    def directoryText(directory: Directory): Text = directory.path.fullname
