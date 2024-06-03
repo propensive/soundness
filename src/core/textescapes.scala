@@ -16,15 +16,17 @@
 
 package fulminate
 
-import anticipation.*
+import language.experimental.into
 
 import scala.annotation.*
+
+import anticipation.*
 
 case class EscapeError(initMessage: Message) extends Error(initMessage)
 
 object TextEscapes:
   def standardEscape
-      (text: Text, cur: Int, esc: Boolean)
+      (text: into Text, cur: Int, esc: Boolean)
       : (Int, Int, Boolean) throws EscapeError =
     text.s.charAt(cur) match
       case '\\' if !esc => (-1, cur + 1, true)
@@ -46,9 +48,9 @@ object TextEscapes:
     then throw EscapeError(Message("the unicode escape is incomplete".tt))
     else Integer.parseInt(chars, 16).toChar
 
-  def escape(text: Text): Text throws EscapeError =
+  def escape(text: into Text): Text throws EscapeError =
     val buf: StringBuilder = StringBuilder()
-    
+
     @tailrec
     def recur(cur: Int = 0, esc: Boolean): Unit =
       if cur < text.s.length
@@ -57,8 +59,7 @@ object TextEscapes:
         if char >= 0 then buf.append(char.toChar)
         recur(idx, escape)
       else if esc then throw EscapeError(Message("the final character cannot be an escape".tt))
-    
+
     recur(0, false)
-    
+
     buf.toString.tt
-      

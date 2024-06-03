@@ -16,20 +16,22 @@
 
 package fulminate
 
-import anticipation.*
+import language.experimental.into
 
 import scala.quoted.*
 
-object Realm:
-  def make(name: Text): Realm = new Realm(name)
+import anticipation.*
 
-case class Realm(name: Text)
+object Realm:
+  def make(name: into Text): Realm = new Realm(name)
+
+case class Realm(name: into Text)
 
 object Fulminate:
   def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")
-    then fail(msg"the realm name should comprise only of lowercase letters")(using Realm("fulminate".tt))
+    then fail(msg"the realm name should contain only lowercase letters")(using Realm("fulminate"))
     else '{Realm.make(${Expr(name)}.tt)}
 
 extension (inline context: StringContext)

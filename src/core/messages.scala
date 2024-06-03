@@ -24,7 +24,7 @@ import language.experimental.captureChecking
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
-  given (Printable { type Self = Message }) = (message, termcap) => message.text
+  given Message is Printable = (message, termcap) => message.text
 
   transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
     inline erasedValue[TupleType] match
