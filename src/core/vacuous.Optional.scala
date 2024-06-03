@@ -30,8 +30,6 @@ object Unset:
 
 type Optional[ValueType] = Unset.type | ValueType
 
-case class UnsetError() extends Error(Message("the value was not set".tt))
-
 extension [ValueType](inline optional: Optional[ValueType])
   inline def or(inline value: => ValueType): ValueType = ${Vacuous.optimizeOr('optional, 'value)}
 
@@ -43,7 +41,7 @@ extension [ValueType](optional: Optional[ValueType])
 
   inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
     optional.let { value => if predicate(value) then Unset else value }
-  
+
   def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
@@ -63,33 +61,10 @@ extension [ValueType](optional: Optional[ValueType])
 
   inline def let[ValueType2](inline lambda: ValueType => ValueType2): Optional[ValueType2] =
     if absent then Unset else lambda(vouch(using Unsafe))
-  
+
   inline def letGiven[ValueType2](inline block: ValueType ?=> ValueType2): Optional[ValueType2] =
     if absent then Unset else block(using vouch(using Unsafe))
-
-extension [ValueType](iterable: Iterable[Optional[ValueType]])
-  transparent inline def compact: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
 object Optional:
   inline def apply[ValueType](value: ValueType | Null): Optional[ValueType] =
     if value == null then Unset else value
-
-extension [ValueType](option: Option[ValueType])
-  inline def optional: Unset.type | ValueType = option.getOrElse(Unset)
-  def presume(using default: Default[ValueType]) = option.getOrElse(default())
-
-extension [ValueType](value: ValueType)
-  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else value
-  
-  def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
-    (partial.orElse { _ => Unset })(value)
-
-extension [ValueType](java: ju.Optional[ValueType])
-  def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn
-
-erased trait Unsafe
-erased val Unsafe: Unsafe = compiletime.erasedValue
-
-trait Extractor[-ScrutineeType, +ExtractionType]:
-  def extract(value: ScrutineeType): Optional[ExtractionType]
-  def unapply(value: ScrutineeType): Option[ExtractionType] = extract(value).option

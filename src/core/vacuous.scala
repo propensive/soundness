@@ -18,36 +18,29 @@ package vacuous
 
 import fulminate.*
 
-import scala.quoted.*
+import scala.compiletime.*
 
-given Realm = realm"vacuous"
+import java.util as ju
 
-inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueType]): Optional[ValueType] =
+inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
+
+inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueType])
+        : Optional[ValueType] =
   lambda(Unset)
 
-object Vacuous:
-  def optimizeOr[ValueType: Type](optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
-          : Expr[ValueType] =
+extension [ValueType](iterable: Iterable[Optional[ValueType]])
+  transparent inline def compact: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
-    import quotes.reflect.*
+extension [ValueType](option: Option[ValueType])
+  inline def optional: Unset.type | ValueType = option.getOrElse(Unset)
 
-    def optimize(term: Term): Term = term match
-      case inlined@Inlined(call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
-        term match
-          case Typed(Apply(select, List(_)), typeTree) =>
-            Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
-          
-          case term =>
-           '{ $optional match
-                case Unset => $default
-                case term  => term.asInstanceOf[ValueType] }.asTerm
-      
-      case Inlined(call, bindings, term) =>
-        Inlined(call, bindings, optimize(term))
-      
-      case term =>
-       '{ $optional match
-            case Unset => $default
-            case term  => term.asInstanceOf[ValueType] }.asTerm
-  
-    '{${optimize(optional.asTerm).asExpr}.asInstanceOf[ValueType]}.asExprOf[ValueType]
+extension [ValueType](value: ValueType)
+  def puncture(point: ValueType): Optional[ValueType] = if value == point then Unset else value
+
+  def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
+    (partial.orElse { _ => Unset })(value)
+
+extension [ValueType](java: ju.Optional[ValueType])
+  def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn
+
+given Realm = realm"vacuous"

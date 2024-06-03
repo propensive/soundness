@@ -14,8 +14,10 @@
     and limitations under the License.
 */
 
-package soundness
+package vacuous
 
-export vacuous.{Default, default, Unset, Optional, UnsetError, or, absent, present, vouch, mask,
-    stdlib, presume, option, assume, lay, layGiven, let, letGiven, compact, optional, puncture,
-    only, Unsafe, Extractor}
+import language.experimental.pureFunctions
+
+trait Extractor[-ScrutineeType, +ExtractionType]:
+  def extract(value: ScrutineeType): Optional[ExtractionType]
+  def unapply(value: ScrutineeType): Option[ExtractionType] = extract(value).option

@@ -14,8 +14,8 @@
     and limitations under the License.
 */
 
-package soundness
+package vacuous
 
-export vacuous.{Default, default, Unset, Optional, UnsetError, or, absent, present, vouch, mask,
-    stdlib, presume, option, assume, lay, layGiven, let, letGiven, compact, optional, puncture,
-    only, Unsafe, Extractor}
+import fulminate.*
+
+case class UnsetError() extends Error(msg"the value was not set")

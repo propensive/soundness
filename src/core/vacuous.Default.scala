@@ -18,8 +18,6 @@ package vacuous
 
 import anticipation.*
 
-import scala.compiletime.*
-
 object Default:
   def apply[ValueType](value: => ValueType): Default[ValueType] = () => value
   given int: Default[Int] = () => 0
@@ -33,5 +31,3 @@ object Default:
 
 trait Default[+ValueType]:
   def apply(): ValueType
-
-inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
