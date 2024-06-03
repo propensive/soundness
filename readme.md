@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/fulminate/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/fulminate/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Fulminate
@@ -21,17 +21,18 @@ the dynamic parts of the message from the static parts.
 - provides a general-purpose `Error` type for immutable exception objects
 
 
-## Availability Plan
+## Availability
 
-Fulminate has not yet been published. The medium-term plan is to build Fulminate
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Fulminate.
+Fulminate has not yet been published. The medium-term plan is to build it with
+[Fury](https://github.com/propensive/fury) and to publish it as a source build
+on [Vent](https://github.com/propensive/vent). This will enable ordinary users
+to write and build software which depends on Fulminate.
 
 Subsequently, Fulminate will also be made available as a binary in the Maven
 Central repository. This will enable users of other build tools to use it.
 
 For the overeager, curious and impatient, see [building](#building).
+
 
 ## Getting Started
 
