@@ -23,6 +23,7 @@ import java.lang.{Integer as JInt, Long as JLong}
 import scala.quoted.*
 
 import fulminate.*
+import anticipation.*
 
 object Hypotenuse2:
   given Realm = realm"hypotenuse"

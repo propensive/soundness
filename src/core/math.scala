@@ -306,7 +306,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U64] with
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
 
-    given textualizer: (Textualizer { type Self = U64 }) = JLong.toUnsignedString(_).nn.tt
+    given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
     inline def apply(bits: B64): U64 = bits
 
     inline given inequality: Inequality[U64, U64] with
@@ -331,7 +331,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[I64] with
       inline def fromDigits(digits: String): I64 = ${Hypotenuse2.parseI64('digits)}
 
-    given textualizer: (Textualizer { type Self = I64 }) = _.toString.tt
+    given I64 is Textualizer = _.toString.tt
     inline def apply(bits: B64): I64 = bits
 
     inline given inequality: Inequality[I64, I64] with
@@ -352,7 +352,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[U32] with
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
-    given textualizer: (Textualizer { type Self = U32 }) = JInt.toUnsignedString(_).nn.tt
+    given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
     inline def apply(bits: B32): U32 = bits
 
     inline given Inequality[U32, U32] as inequality:
@@ -376,7 +376,7 @@ object Hypotenuse:
     given FromDigits[I32] as fromDigits:
       inline def fromDigits(digits: String): I32 = ${Hypotenuse2.parseI32('digits)}
 
-    given textualizer: (Textualizer { type Self = I32 }) = _.toString.tt
+    given I32 is Textualizer = _.toString.tt
     inline def apply(bits: B32): I32 = bits
 
     inline given inequality: Inequality[I32, I32] with
@@ -396,7 +396,7 @@ object Hypotenuse:
     given FromDigits[U16] as fromDigits:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
-    given textualizer: (Textualizer { type Self = U16 }) = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
+    given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(bits: B16): U16 = bits
 
     inline given inequality: Inequality[U16, U16] with
@@ -422,7 +422,7 @@ object Hypotenuse:
     given fromDigits: FromDigits[I16] with
       inline def fromDigits(digits: String): I16 = ${Hypotenuse2.parseI16('digits)}
 
-    given textualizer: (Textualizer { type Self = I16 }) = _.toString.tt
+    given I16 is Textualizer = _.toString.tt
     inline def apply(bits: B16): I16 = bits
 
     inline given inequality: Inequality[I16, I16] with
@@ -441,7 +441,7 @@ object Hypotenuse:
     given FromDigits[U8] as fromDigits:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
-    given textualizer: (Textualizer { type Self = U8 }) = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
+    given U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
     inline def apply(bits: B8): U8 = bits
 
 
@@ -468,7 +468,7 @@ object Hypotenuse:
     given FromDigits[I8] as fromDigits:
       inline def fromDigits(digits: String): I8 = ${Hypotenuse2.parseI8('digits)}
 
-    given textualizer: (Textualizer { type Self = I8 }) = _.toString.tt
+    given I8 is Textualizer = _.toString.tt
     inline def apply(bits: B8): I8 = bits
 
     inline given Inequality[I8, I8] as inquality:
