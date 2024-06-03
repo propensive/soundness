@@ -2,7 +2,7 @@
 
 repo propensive/probably
 repo propensive/galilei
-target guillotine/core
+target guillotine/test
 
 project guillotine
   module core
