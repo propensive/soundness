@@ -319,19 +319,20 @@ object Sh:
   given Insertion[Parameters, Command] = command => Parameters(command.arguments*)
 
   given [ValueType: Parameterizable]: Insertion[Parameters, ValueType] = value =>
-    Parameters(summon[Parameterizable[ValueType]].show(value))
+    Parameters(ValueType.show(value))
 
 object Parameterizable:
-  given path[PathType: GenericPath]: Parameterizable[PathType] = _.pathText
+  given [PathType: GenericPath] => PathType is Parameterizable = _.pathText
 
-  given int: Parameterizable[Int] = _.show
+  given Int is Parameterizable = _.show
 
-  given [ValueType](using encoder: Encoder[ValueType]): Parameterizable[ValueType] =
-    new Parameterizable[ValueType]:
-      def show(value: ValueType): Text = encoder.encode(value)
+  given [ValueType](using encoder: Encoder[ValueType]) => ValueType is Parameterizable:
+    type Self = ValueType
+    def show(value: ValueType): Text = encoder.encode(value)
 
-trait Parameterizable[-ValueType]:
-  def show(value: ValueType): Text
+trait Parameterizable:
+  type Self
+  def show(value: Self): Text
 
 object Guillotine:
   given Realm = realm"guillotine"
