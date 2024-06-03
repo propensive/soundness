@@ -6,7 +6,7 @@
     │ This file contains a Fury build definition.             │
     │ Fury can be downloaded from https://fury.build/         │
     │ or your can just run this file on the command line.     │
-    └─────────────────────────────────────────────────────────┘ 
+    └─────────────────────────────────────────────────────────┘
 
 ecosystem vent 5 https://github.com/propensive/vent 191d64e599f246813910978251e1d7f5cb52b95d
 
@@ -40,15 +40,20 @@ project anticipation
     compiler  scala
     include   anticipation/text
     sources   src/http
-  
+
   module transport
     compiler  scala
     sources   src/transport
-  
+
   module color
     compiler  scala
     sources   src/color
-  
+
+  module log
+    compiler  scala
+    include   anticipation/text
+    sources   src/log
+
   module opaque
     compiler  scala
     sources   src/opaque
