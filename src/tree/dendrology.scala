@@ -26,10 +26,10 @@ import language.experimental.captureChecking
 package treeStyles:
   given default[TextType: Textual]: TextualTreeStyle[TextType] =
     TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
-  
+
   given rounded[TextType: Textual]: TextualTreeStyle[TextType] =
     TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
-  
+
   given ascii[TextType: Textual]: TextualTreeStyle[TextType] =
     TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
 
@@ -41,7 +41,7 @@ case class TextualTreeStyle[LineType](space: Text, last: Text, branch: Text, ext
 extends TreeStyle[LineType]:
 
   def serialize(tiles: List[TreeTile], node: LineType): LineType = textual.make(tiles.map(text(_)).join.s)+node
-  
+
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
     case TreeTile.Last     => last
@@ -60,10 +60,10 @@ enum TreeTile:
 import TreeTile.*
 
 object TreeDiagram:
-  def apply[NodeType](roots: NodeType*)(using expandable: Expandable[NodeType]): TreeDiagram[NodeType] =
-    by[NodeType](expandable.children(_))(roots*)
+  def apply[NodeType: Expandable](roots: NodeType*): TreeDiagram[NodeType] =
+    by[NodeType](NodeType.children(_))(roots*)
 
-  given printable[NodeType](using show: Show[NodeType], style: TreeStyle[Text]): (Printable { type Self = TreeDiagram[NodeType] }) =
+  given [NodeType: Show](using style: TreeStyle[Text]) => TreeDiagram[NodeType] is Printable =
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
@@ -73,18 +73,19 @@ object TreeDiagram:
       input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
         val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
         (tiles, item) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
-  
+
     new TreeDiagram(recur(Nil, roots))
 
 case class TreeDiagram[NodeType](lines: LazyList[(List[TreeTile], NodeType)]):
   def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): LazyList[LineType] =
     map[LineType] { node => style.serialize(tiles, line(node)) }
- 
+
   def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): LazyList[RowType] =
     lines.map(line(using _)(_))
 
   def nodes: LazyList[NodeType] = lines.map(_(1))
   def tiles: LazyList[List[TreeTile]] = lines.map(_(0))
 
-trait Expandable[NodeType]:
-  def children(node: NodeType): List[NodeType]
+trait Expandable:
+  type Self
+  def children(node: Self): List[Self]

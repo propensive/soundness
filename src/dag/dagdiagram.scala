@@ -34,18 +34,16 @@ import DagTile.*
 package dagStyles:
   given default[TextType: Textual]: TextualDagStyle[TextType] =
     TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt,  "┴─".tt, "│─".tt, "┼─".tt)
-  
+
   given ascii[TextType: Textual]: TextualDagStyle[TextType] =
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
 
-case class TextualDagStyle
-    [LineType]
-    (space: Text, corner: Text, vertical: Text, firstMid: Text, horizontal: Text, midLast: Text, cross: Text,
-        overlap: Text)
-    (using textual: Textual[LineType])
+case class TextualDagStyle[LineType: Textual]
+    (space: Text, corner: Text, vertical: Text, firstMid: Text, horizontal: Text, midLast: Text,
+        cross: Text, overlap: Text)
 extends DagStyle[LineType]:
   def serialize(tiles: List[DagTile], node: LineType): LineType =
-    textual.make(tiles.map(text(_)).join.s)+node
+    LineType.make(tiles.map(text(_)).join.s)+node
 
   def text(tile: DagTile) = tile match
     case Space      => space
@@ -56,14 +54,13 @@ extends DagStyle[LineType]:
     case MidLast    => midLast
     case Cross      => cross
     case Overlap    => overlap
-  
+
   def followOnText(tile: DagTile): Text = tile match
     case Space | Horizontal | Corner | MidLast | Overlap => space
     case _                                                  => vertical
 
 trait DagStyle[LineType]:
   def serialize(tiles: List[DagTile], node: LineType): LineType
-
 
 object DagDiagram:
   def apply[NodeType: ClassTag](dag: Dag[NodeType]): DagDiagram[NodeType] =
@@ -73,13 +70,13 @@ object DagDiagram:
     val layout: Array[Array[Int]] = Array.from:
       nodes.indices.map: i =>
         Array.range(0, i).map(_ => 0)
-    
+
     dag.edges.map: (source, destination) =>
       val si = indexes(source)
       val di = indexes(destination)
 
       layout(si)(di) |= 1
-      
+
       for i <- (di + 1) until si do
         layout(i)(di) |= 2
         layout(si)(i) |= 4
@@ -89,14 +86,14 @@ object DagDiagram:
         val tiles = row.to(List).map(DagTile.fromOrdinal)
         (tiles, nodes(row.length))
 
-  given printable[NodeType](using show: Show[NodeType], style: DagStyle[Text]): (Printable { type Self = DagDiagram[NodeType] }) =
-    (diagram, termcap) =>
-      (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
+  given [NodeType]
+      (using show: Show[NodeType], style: DagStyle[Text]) => DagDiagram[NodeType] is Printable =
+    (diagram, termcap) => (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
 case class DagDiagram[NodeType](lines: List[(List[DagTile], NodeType)]):
   val size: Int = lines.length
   def render[LineType](line: NodeType => LineType)(using style: DagStyle[LineType]): List[LineType] =
     lines.map { (tiles, node) => style.serialize(tiles, line(node)) }
-  
+
   def nodes: List[NodeType] = lines.map(_(1))
   def tiles: List[List[DagTile]] = lines.map(_(0))
