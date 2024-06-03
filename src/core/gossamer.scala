@@ -31,6 +31,7 @@ import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
 
 import language.experimental.pureFunctions
+import language.experimental.into
 
 enum Bidi:
   case Ltr, Rtl
