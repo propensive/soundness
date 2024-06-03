@@ -16,9 +16,7 @@
 
 package hypotenuse
 
-import anticipation.*
-import contingency.*
-import fulminate.*
+import language.experimental.genericNumberLiterals
 
 import scala.util.FromDigits
 import scala.annotation.*
@@ -30,12 +28,16 @@ import language.experimental.into
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
 
+import anticipation.*
+import contingency.*
+import fulminate.*
+
 case class OverflowError() extends Error(msg"an overflow error occurred")
 case class DivisionError() extends Error(msg"the result is unrepresentable")
 
 package arithmeticOptions:
   object division:
-    inline given unchecked: DivisionByZero with
+    inline given DivisionByZero as unchecked:
       type Wrap[ResultType] = ResultType
       inline def divideU64(left: U64, right: U64): U64 = U64((Long(left.bits)/Long(right.bits)).bits)
       inline def divideI64(left: I64, right: I64): I64 = I64((left.long/right.long).bits)
@@ -78,7 +80,7 @@ package arithmeticOptions:
         if right.int == 0 then raise(DivisionError())(I8(0.bits)) else I8((left.byte/right.byte).toByte.bits)
 
   object overflow:
-    inline given unchecked: CheckOverflow with
+    inline given CheckOverflow as unchecked:
       type Wrap[ResultType] = ResultType
       inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addI64(left: I64, right: I64): I64 = I64((left.long + right.long).bits)
@@ -222,7 +224,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given doubleConversion: Conversion[Double, F64] with
+    inline given Conversion[Double, F64] as doubleConversion:
       inline def apply(value: Double): F64 = value
 
     inline given floatConversion: Conversion[Float, F64] with
@@ -231,28 +233,28 @@ object Hypotenuse:
     inline given intConversion: Conversion[Int, F64] with
       def apply(value: Int): F64 = value.toDouble
 
-    inline given shortConversion: Conversion[Short, F64] with
+    inline given Conversion[Short, F64] as shortConversion:
       def apply(value: Short): F64 = value.toDouble
 
-    inline given byteConversion: Conversion[Byte, F64] with
+    inline given Conversion[Byte, F64] as byteConversion:
       def apply(value: Byte): F64 = value.toDouble
 
-    inline given u32Conversion: Conversion[U32, F64] with
+    inline given Conversion[U32, F64] as u32Conversion:
       def apply(value: U32): F64 = JInt.toUnsignedLong(value).toDouble
 
     inline given i32Conversion: Conversion[I32, F64] with
       def apply(value: I32): F64 = value.toDouble
 
-    inline given u16Conversion: Conversion[U16, F64] with
+    inline given Conversion[U16, F64] as u16Conversion:
       def apply(value: U16): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given u8Conversion: Conversion[U8, F64] with
+    inline given Conversion[U8, F64] as u8Conversion:
       def apply(value: U8): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given i16Conversion: Conversion[I16, F64] with
+    inline given Conversion[I16, F64] as i16Conversion:
       def apply(value: I16): F64 = value.toDouble
 
-    inline given i8Conversion: Conversion[I8, F64] with
+    inline given Conversion[I8, F64] as i8Conversion:
       def apply(value: I8): F64 = value.toDouble
 
   object F32:
@@ -284,19 +286,19 @@ object Hypotenuse:
     inline given shortConversion: Conversion[Short, F32] with
       def apply(value: Short): F32 = value.toFloat
 
-    inline given byteConversion: Conversion[Byte, F32] with
+    inline given Conversion[Byte, F32] as byteConversion:
       def apply(value: Byte): F32 = value.toFloat
 
-    inline given u16Conversion: Conversion[U16, F32] with
+    inline given Conversion[U16, F32] as u16Conversion:
       def apply(value: U16): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given u8Conversion: Conversion[U8, F32] with
+    inline given Conversion[U8, F32] as u8Conversion:
       def apply(value: U8): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given i16Conversion: Conversion[I16, F32] with
+    inline given Conversion[I16, F32] as i16Conversion:
       def apply(value: I16): F32 = value.toFloat
 
-    inline given i8Conversion: Conversion[I8, F32] with
+    inline given Conversion[I8, F32] as i8Conversion:
       def apply(value: I8): F32 = value.toFloat
 
   object U64:
@@ -355,7 +357,7 @@ object Hypotenuse:
     given textualizer: (Textualizer { type Self = U32 }) = JInt.toUnsignedString(_).nn.tt
     inline def apply(bits: B32): U32 = bits
 
-    inline given inequality: Inequality[U32, U32] with
+    inline given Inequality[U32, U32] as inequality:
       inline def compare
           (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
@@ -373,7 +375,7 @@ object Hypotenuse:
             : CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given fromDigits: FromDigits[I32] with
+    given FromDigits[I32] as fromDigits:
       inline def fromDigits(digits: String): I32 = ${Hypotenuse2.parseI32('digits)}
 
     given textualizer: (Textualizer { type Self = I32 }) = _.toString.tt
@@ -393,7 +395,7 @@ object Hypotenuse:
     erased given underlying: Underlying[U16, Short] = erasedValue
     inline given canEqual: CanEqual[U16, U16] = erasedValue
 
-    given fromDigits: FromDigits[U16] with
+    given FromDigits[U16] as fromDigits:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
     given textualizer: (Textualizer { type Self = U16 }) = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
@@ -438,7 +440,7 @@ object Hypotenuse:
   object U8:
     erased given underlying: Underlying[U8, Byte] = erasedValue
     inline given canEqual: CanEqual[U8, U8] = erasedValue
-    given fromDigits: FromDigits[U8] with
+    given FromDigits[U8] as fromDigits:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
     given textualizer: (Textualizer { type Self = U8 }) = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
@@ -465,13 +467,13 @@ object Hypotenuse:
             : CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given fromDigits: FromDigits[I8] with
+    given FromDigits[I8] as fromDigits:
       inline def fromDigits(digits: String): I8 = ${Hypotenuse2.parseI8('digits)}
 
     given textualizer: (Textualizer { type Self = I8 }) = _.toString.tt
     inline def apply(bits: B8): I8 = bits
 
-    inline given inequality: Inequality[I8, I8] with
+    inline given Inequality[I8, I8] as inquality:
 
       inline def compare
           (inline left: I8, inline right: I8, inline strict: Boolean, inline greaterThan: Boolean)
