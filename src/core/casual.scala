@@ -28,8 +28,8 @@ object CasualDiffError:
   enum Reason:
     case BadLineStart(content: Text)
     case DoesNotMatch(content: Text)
-  
-  given (Communicable { type Self = Reason }) =
+
+  given Reason is Communicable =
     case Reason.BadLineStart(content) =>
       msg"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
 
