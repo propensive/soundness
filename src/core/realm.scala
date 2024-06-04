@@ -22,16 +22,11 @@ import scala.quoted.*
 
 import anticipation.*
 
-object Realm:
-  def make(name: into Text): Realm = new Realm(name)
-
-case class Realm(name: into Text)
-
 object Fulminate:
   def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")
-    then fail(msg"the realm name should contain only lowercase letters")(using Realm("fulminate"))
+    then abandon(msg"the realm name should contain only lowercase letters")(using Realm("fulminate"))
     else '{Realm.make(${Expr(name)}.tt)}
 
 extension (inline context: StringContext)
