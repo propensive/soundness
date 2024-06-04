@@ -28,7 +28,7 @@ import scala.quoted.*
 
 object Eucalyptus:
   given Realm = realm"eucalyptus"
-  
+
   def record[MessageType: Type, TextType: Type]
       (level:   Expr[Level],
        message: Expr[MessageType],
@@ -38,16 +38,17 @@ object Eucalyptus:
        show:    Expr[Any])
       (using Quotes)
           : Expr[Unit] =
-    
+
     '{  val time = System.currentTimeMillis
         val textualValue = $textual
-            
+
         try
           val castShow = $show.asInstanceOf[textualValue.ShowType[MessageType]]
           $log.record(Entry($realm, $level, textualValue.show($message)(using castShow), time, $log.envelopes))
         catch case e: Exception => ()  }
 
-  def route[TextType: Type](routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])
+  def route[TextType: Type]
+      (routes: Expr[PartialFunction[Entry[TextType], Any]], monitor: Expr[Monitor])
       (using Quotes)
           : Expr[Log[TextType]] =
 
@@ -55,17 +56,17 @@ object Eucalyptus:
 
     def invalidRoutes(): Nothing =
       fail(msg"the routes must be specified as one or more case clauses")
-    
+
     val count: Int = routes.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(_, caseDefs)))), _)) =>
         caseDefs.length
-      
+
       case _ =>
         invalidRoutes()
-    
-    '{  
+
+    '{
       val loggers: Array[Logger[TextType] | Null] = new Array(${Expr(count)})
- 
+
       new Log[TextType]():
         def record(entry: Entry[TextType]): Unit =
           ${
@@ -76,40 +77,40 @@ object Eucalyptus:
                     case CaseDef(pattern, guard, target) => (target.asExpr: @unchecked) match
                       case '{$target: targetType} =>
                         def typeName = TypeRepr.of[targetType].show
-                         
+
                         val logWriter: Expr[LogWriter[targetType, TextType]] =
                           Expr.summon[LogWriter[targetType, TextType]].getOrElse:
                             val writerName = TypeRepr.of[LogWriter[targetType, TextType]].show.tt
                             fail(msg"could not get an instance of $writerName")
-                         
+
                         val action =
                           '{
                             loggers(${Expr(index)}) match
                               case null => loggers(${Expr(index)}) = $logWriter.logger($target)
                               case _    => ()
-                               
+
                             loggers(${Expr(index)}).nn.put(entry)
                           }
-                         
+
                         CaseDef(pattern, guard, action.asTerm)
-                 
+
                   val matchCase = Some(Match(matchId, List(caseDef)))
                   val definition = DefDef.copy(defDef)(ident, scrutineeType, returnType, matchCase)
-                   
+
                   Block(List(definition), term).asExprOf[PartialFunction[Entry[TextType], Any]]
-                  
+
                 case _ =>
                   invalidRoutes()
-   
+
               case _ =>
                 invalidRoutes()
-   
+
             def recur(index: Int, expr: Expr[Unit]): Expr[Unit] = if index >= count then expr else
               '{
                 $expr
                 ${partialFunction(index)}.lift(entry)
               }
-   
+
             recur(0, '{()})
           }
       }

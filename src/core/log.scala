@@ -20,14 +20,28 @@ import parasite.*
 import anticipation.*
 import rudiments.*
 import gossamer.*
-import fulminate.*
 
 import java.text as jt
 
-//import scala.language.experimental.captureChecking
+import scala.language.experimental.pureFunctions
+import scala.language.experimental.into
 
 object Log:
-  
+  given [TextType: Textual] => Log[TextType] is GenericLogger:
+    type Self = Log[TextType]
+
+    def logFine(log: Log[TextType], realm: Realm, message: => into Text): Unit =
+      log.record(Entry(realm, Level.Fine, Textual(message), System.currentTimeMillis, Nil))
+
+    def logInfo(log: Log[TextType], realm: Realm, message: => into Text): Unit =
+      log.record(Entry(realm, Level.Info, Textual(message), System.currentTimeMillis, Nil))
+
+    def logWarn(log: Log[TextType], realm: Realm, message: => into Text): Unit =
+      log.record(Entry(realm, Level.Warn, Textual(message), System.currentTimeMillis, Nil))
+
+    def logFail(log: Log[TextType], realm: Realm, message: => into Text): Unit =
+      log.record(Entry(realm, Level.Fail, Textual(message), System.currentTimeMillis, Nil))
+
   val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
   given textLog[TextType](using log: Log[TextType])(using textual: Textual[TextType]): Log[Text] =
@@ -40,21 +54,21 @@ object Log:
           : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Fine}, 'message, 'log, 'realm, 'textual, 'show)}
-  
+
   inline def info[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
           : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Info}, 'message, 'log, 'realm, 'textual, 'show)}
-  
+
   inline def warn[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
           : Unit =
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Warn}, 'message, 'log, 'realm, 'textual, 'show)}
-  
+
   inline def fail[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
       (using inline show: textual.ShowType[MessageType])
@@ -68,7 +82,7 @@ object Log:
     ${Eucalyptus.route[TextType]('routes, 'monitor)}
 
   private val localLog: ThreadLocal[AnyRef] = ThreadLocal()
- 
+
   inline def pin()(using inline log: Log[Text]): Unit = localLog.set(log)
 
   def pinned: Log[Text] = localLog.get() match
@@ -87,10 +101,9 @@ object Log:
 
 @capability
 abstract class Log[TextType]():
-  log =>
+  private inline def outer: this.type = this
   val envelopes: List[Text] = Nil
   def record(entry: Entry[TextType]): Unit
 
   def contramap[TextType2](lambda: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
-    def record(entry: Entry[TextType2]): Unit = log.record(entry.map(lambda))
-
+    def record(entry: Entry[TextType2]): Unit = outer.record(entry.map(lambda))

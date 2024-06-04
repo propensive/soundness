@@ -5,7 +5,7 @@ repo propensive/turbulence
 repo propensive/probably
 repo propensive/guillotine
 
-target eucalyptus/test
+target eucalyptus/core
 
 project eucalyptus
   module core

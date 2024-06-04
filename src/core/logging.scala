@@ -24,9 +24,8 @@ import parasite.*, asyncOptions.cancelOrphans
 import turbulence.*
 import spectacular.*
 import hieroglyph.*
-import fulminate.*
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
@@ -35,7 +34,7 @@ object Level:
 enum Level:
   case Fine, Info, Warn, Fail
   def unapply(entry: Entry[?]): Boolean = entry.level == this
-  
+
 case class Entry[TextType]
     (realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text]):
 
@@ -81,10 +80,10 @@ class LogProcess[TargetType, TextType](target: TargetType)
 extends Logger[TextType]:
 
   private val funnel: Funnel[Entry[TextType]] = Funnel()
-  
+
   private val task: Daemon =
     daemon(appendable.append(target, unsafely(funnel.stream.map(format(_)))))
-  
+
   def put(entry: Entry[TextType]): Unit = funnel.put(entry)
 
 object LogFormat:
@@ -92,7 +91,7 @@ object LogFormat:
     import textMetrics.uniform
     val realm: Text = entry.realm.name.fit(8)
     t"${Log.dateFormat.format(entry.timestamp).nn.tt} ${entry.level} $realm ${entry.message}\n"
-  
+
 trait LogFormat[TargetType, TextType]:
   def apply(entry: Entry[TextType]): TextType
 
