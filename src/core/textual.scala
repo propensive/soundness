@@ -17,7 +17,6 @@
 package gossamer
 
 import rudiments.*
-import spectacular.*
 import anticipation.*
 
 import language.experimental.captureChecking
@@ -30,8 +29,8 @@ import language.experimental.captureChecking
 
 trait Textual:
   type Self
-  type ShowType[-ValueType]
-  def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Self
+  type Show[-ValueType]
+  def show[ValueType](value: ValueType)(using show: Show[ValueType]): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
@@ -58,9 +57,9 @@ object Textual:
   def apply[TextType: Textual](text: Text): TextType = TextType.make(text.s)
 
   given Text is Textual as text:
-    type ShowType[-ValueType] = Show[ValueType]
+    type Show[-ValueType] = spectacular.Show[ValueType]
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
-    def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Text = show.text(value)
+    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
@@ -72,9 +71,9 @@ object Textual:
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
 
   given String is Textual as string:
-    type ShowType[-ValueType] = Show[ValueType]
+    type Show[-ValueType] = spectacular.Show[ValueType]
     val classTag: ClassTag[String] = summon[ClassTag[String]]
-    def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): String = show.text(value).s
+    def show[ValueType](value: ValueType)(using show: Show[ValueType]): String = show.text(value).s
     def text(string: String): Text = string.tt
     def length(string: String): Int = string.length
     def make(string: String): String = string

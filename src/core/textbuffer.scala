@@ -20,7 +20,7 @@ import rudiments.*
 import anticipation.*
 
 def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
-    (using show: TextType.ShowType[ValueType])
+    (using show: TextType.Show[ValueType])
         : Unit =
   buffer.append(TextType.show(value))
 
