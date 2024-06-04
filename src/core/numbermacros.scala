@@ -17,6 +17,7 @@
 package cardinality
 
 import fulminate.*
+import anticipation.*
 
 import scala.quoted.*
 import scala.compiletime.*
@@ -38,18 +39,18 @@ object Cardinality:
                 val value = string.toDouble
             
                 if value < lowerBound
-                then fail(msg"""the value $string is less than the lower bound for this value,
+                then abandon(msg"""the value $string is less than the lower bound for this value,
                     ${lowerBound.toString}""")
             
                 if value > upperBound
-                then fail(msg"""the value $string is greater than the upper bound for this value,
+                then abandon(msg"""the value $string is greater than the upper bound for this value,
                     ${upperBound.toString}""")
   
                 '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
           
               case _ =>
-                fail(msg"the upper bound must be a Double singleton literal types")
+                abandon(msg"the upper bound must be a Double singleton literal types")
           case _ =>
-            fail(msg"the lower bound must be a Double singleton literal types")
+            abandon(msg"the lower bound must be a Double singleton literal types")
       case None =>
         '{NumericRange($digits.toDouble)}
