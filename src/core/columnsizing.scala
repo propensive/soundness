@@ -23,65 +23,62 @@ import anticipation.*
 
 trait Columnar:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
-  
+
   def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
           : IndexedSeq[TextType]
 
 package columnar:
   object Prose extends Columnar:
-    def width[TextType](lines: IArray[TextType], maxWidth: Int, slack: Double)(using textual: Textual[TextType])
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
             : Optional[Int] =
 
       def longestWord(text: TextType, position: Int, lastStart: Int, max: Int): Int =
         if position < text.length then
-          if textual.unsafeChar(text, position) == ' '
+          if TextType.unsafeChar(text, position) == ' '
           then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
           else longestWord(text, position + 1, lastStart, max)
         else max.max(position - lastStart)
 
       val longestLine = lines.map(_.length).max
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
-    
-    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-        (using textual: Textual[TextType])
+
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
             : IndexedSeq[TextType] =
-      
+
       def format(text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
               : List[TextType] =
 
         if position < text.length then
-          if textual.unsafeChar(text, position) == ' '
+          if TextType.unsafeChar(text, position) == ' '
           then format(text, position + 1, lineStart, position, lines)
           else
             if position - lineStart >= width
             then format(text, position + 1, lastSpace + 1, lastSpace, text.slice(lineStart, lastSpace) :: lines)
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines else text.slice(lineStart, position) :: lines
-      
+
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       fixedWidth
-    
-    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-        (using textual: Textual[TextType])
+
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
+        if line.length > width then line.take(width - ellipsis.length)+TextType.make(ellipsis.s) else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
-    
-    def fit[TextType](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-        (using textual: Textual[TextType])
+
+    def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+textual.make(ellipsis.s) else line
+        if line.length > width then line.take(width - ellipsis.length)+TextType.make(ellipsis.s) else line
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
@@ -91,4 +88,3 @@ package columnar:
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq)
-      

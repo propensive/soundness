@@ -94,17 +94,17 @@ object ColumnAlignment:
 case class ColumnAlignment[-ColumnType](text: TextAlignment, vertical: VerticalAlignment)
 
 object Column:
-  def apply[RowType, CellType, TextType]
+  def apply[RowType, CellType, TextType: Textual]
       (title:         TextType,
        textAlign:     Optional[TextAlignment]     = Unset,
        verticalAlign: Optional[VerticalAlignment] = Unset,
        sizing:        Columnar                    = columnar.Prose)
       (get: RowType -> CellType)
-      (using textual: Textual[TextType], columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
-      (using textual.ShowType[CellType])
+      (using columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
+      (using TextType.ShowType[CellType])
           : Column[RowType, TextType] =
 
-    def contents(row: RowType): TextType = textual.show(get(row))
+    def contents(row: RowType): TextType = TextType.show(get(row))
 
     Column
       (title, contents, textAlign.or(columnAlignment.text), verticalAlign.or(columnAlignment.vertical), sizing)
@@ -129,7 +129,7 @@ object Table:
     new Table(columns0*)
 
 object Tabulation:
-  given [TextType: {Textual, Printable as printable}](using TextMetrics, TableStyle, InsufficientSpaceHandler) => Tabulation[TextType] is Printable =
+  given [TextType: {Textual as textual, Printable as printable}](using TextMetrics, TableStyle, InsufficientSpaceHandler) => Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.layout(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
 
@@ -142,7 +142,7 @@ abstract class Tabulation[TextType: ClassTag]():
   def rows: Seq[IArray[IArray[TextType]]]
   def dataLength: Int
 
-  def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: Textual[TextType])
+  def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: TextType is Textual)
       (using insufficientSpace: InsufficientSpaceHandler)
           : TableLayout[TextType] =
 
@@ -222,7 +222,7 @@ object TableLayout:
 
 case class TableLayout[TextType](sections: List[TableSection[TextType]], style: TableStyle):
 
-  def render(using metrics: TextMetrics, textual: Textual[TextType]): LazyList[TextType] =
+  def render(using metrics: TextMetrics, textual: TextType is Textual): LazyList[TextType] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}$pad")
     val rightEdge = Textual(t"$pad${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}")
@@ -286,8 +286,7 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
 
     topLine #::: body.tail #::: bottomLine
 
-case class Table[RowType, TextType: ClassTag](columns0: Column[RowType, TextType]*)
-    (using textual: Textual[TextType]):
+case class Table[RowType, TextType: {ClassTag, Textual as textual}](columns0: Column[RowType, TextType]*):
   table =>
 
   val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
