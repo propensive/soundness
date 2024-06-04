@@ -34,7 +34,7 @@ trait Textual:
   def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
-  def string(text: Self): String
+  def text(text: Self): Text
   def make(string: String): Self
   def map(text: Self, lambda: Char => Char): Self
   def range(text: Self, start: Int, end: Int): Self
@@ -61,7 +61,7 @@ object Textual:
     type ShowType[-ValueType] = Show[ValueType]
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
     def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Text = show.text(value)
-    def string(text: Text): String = text.s
+    def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
@@ -75,7 +75,7 @@ object Textual:
     type ShowType[-ValueType] = Show[ValueType]
     val classTag: ClassTag[String] = summon[ClassTag[String]]
     def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): String = show.text(value).s
-    def string(string: String): String = string
+    def text(string: String): Text = string.tt
     def length(string: String): Int = string.length
     def make(string: String): String = string
     def map(string: String, lambda: Char => Char): String = string.map(lambda)

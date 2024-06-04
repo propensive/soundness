@@ -64,7 +64,7 @@ object Pue:
 
 object Cuttable:
   given [TextType: Textual]: Cuttable[TextType, Text] = (text, delimiter, limit) =>
-    val string = TextType.string(text)
+    val string = TextType.text(text).s
     val dLength = delimiter.s.length
 
     @tailrec
@@ -76,7 +76,7 @@ object Cuttable:
     IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
 
   given [TextType: Textual]: Cuttable[TextType, Regex] = (text, regex, limit) =>
-    val string = TextType.string(text)
+    val string = TextType.text(text).s
     val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
 
     @tailrec
@@ -113,11 +113,11 @@ extension (words: Iterable[Text])
   def kebab: Text = words.join(Text("-"))
 
 extension [TextType: Textual](text: TextType)
-  inline def length: Int = TextType.string(text).length
-  inline def populated: Optional[TextType] = if TextType.string(text).length == 0 then Unset else text
+  inline def length: Int = TextType.length(text)
+  inline def populated: Optional[TextType] = if TextType.text(text).length == 0 then Unset else text
   inline def lower: TextType = TextType.map(text, _.toLower)
   inline def upper: TextType = TextType.map(text, _.toUpper)
-  def plain: Text = Text(TextType.string(text))
+  def plain: Text = TextType.text(text)
 
   def drop(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
@@ -139,7 +139,7 @@ extension [TextType: Textual](text: TextType)
   inline def tail: TextType = text.drop(1, Ltr)
   inline def init: TextType = text.drop(1, Rtl)
   inline def empty: Boolean = text.length == 0
-  def chars: IArray[Char] = TextType.string(text).toCharArray.nn.immutable(using Unsafe)
+  def chars: IArray[Char] = TextType.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def slice(start: Int, end: Int): TextType =
     if end <= start then TextType.empty
@@ -211,7 +211,7 @@ extension [TextType: Textual](text: TextType)
 
     recur(0, 0)
 
-  def displayWidth(using metrics: TextMetrics) = metrics.width(Text(TextType.string(text)))
+  def displayWidth(using metrics: TextMetrics) = metrics.width(TextType.text(text))
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     if text.displayWidth >= length then text else
