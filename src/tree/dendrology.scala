@@ -36,11 +36,10 @@ package treeStyles:
 trait TreeStyle[LineType]:
   def serialize(tiles: List[TreeTile], node: LineType): LineType
 
-case class TextualTreeStyle[LineType](space: Text, last: Text, branch: Text, extender: Text)
-    (using textual: Textual[LineType])
+case class TextualTreeStyle[LineType: Textual](space: Text, last: Text, branch: Text, extender: Text)
 extends TreeStyle[LineType]:
 
-  def serialize(tiles: List[TreeTile], node: LineType): LineType = textual.make(tiles.map(text(_)).join.s)+node
+  def serialize(tiles: List[TreeTile], node: LineType): LineType = LineType.make(tiles.map(text(_)).join.s)+node
 
   def text(tile: TreeTile): Text = tile match
     case TreeTile.Space    => space
