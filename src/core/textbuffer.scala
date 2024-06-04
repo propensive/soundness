@@ -19,11 +19,10 @@ package gossamer
 import rudiments.*
 import anticipation.*
 
-def append[TextType, ValueType](using buffer: Buffer[TextType])(using textual: Textual[TextType])
-    (value: ValueType)
-    (using show: textual.ShowType[ValueType])
+def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+    (using show: TextType.ShowType[ValueType])
         : Unit =
-  buffer.append(textual.show(value))
+  buffer.append(TextType.show(value))
 
 extension (textObject: Text.type)
   def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
@@ -34,14 +33,14 @@ extension (textObject: Text.type)
   def fill(length: Int)(lambda: Int => Char): Text =
     val array = new Array[Char](length)
     (0 until length).each { index => array(index) = lambda(index) }
-    
+
     String(array).tt
 
 abstract class Buffer[TextType]():
   protected def put(text: TextType): Unit
   protected def wipe(): Unit
   protected def result(): TextType
-  
+
   def append(text: TextType): this.type = this.also(put(text))
   def apply(): TextType = result()
   def clear(): this.type = this.also(wipe())

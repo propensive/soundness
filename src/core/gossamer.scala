@@ -44,7 +44,7 @@ extension (value: Bytes)
   def ascii: Text = Text(String(value.to(Array), "ASCII"))
   def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
   def text(using decoder: CharDecoder): Text = decoder.decode(value)
-  
+
   // Printable Unicode Encoding
   def pue: Text =
     value.map: b =>
@@ -63,33 +63,33 @@ object Pue:
         i += 1
 
 object Cuttable:
-  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Text] = (text, delimiter, limit) =>
-    val string = textual.string(text)
+  given [TextType: Textual]: Cuttable[TextType, Text] = (text, delimiter, limit) =>
+    val string = TextType.string(text)
     val dLength = delimiter.s.length
-    
+
     @tailrec
     def recur(start: Int, results: List[TextType]): List[TextType] =
       string.indexOf(delimiter.s, start) match
-        case -1    => textual.slice(text, start, text.length) :: results
-        case index => recur(index + dLength, textual.slice(text, start, index) :: results)
-  
-    IArray.from(recur(0, Nil).reverse)(using textual.classTag)
+        case -1    => TextType.range(text, start, text.length) :: results
+        case index => recur(index + dLength, TextType.range(text, start, index) :: results)
 
-  given [TextType](using textual: Textual[TextType]): Cuttable[TextType, Regex] = (text, regex, limit) =>
-    val string = textual.string(text)
+    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
+
+  given [TextType: Textual]: Cuttable[TextType, Regex] = (text, regex, limit) =>
+    val string = TextType.string(text)
     val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
-    
+
     @tailrec
     def recur(start: Int, results: List[TextType]): List[TextType] =
       if matcher.find(start)
-      then recur(matcher.end, textual.slice(text, matcher.start, matcher.end) :: results)
+      then recur(matcher.end, TextType.range(text, matcher.start, matcher.end) :: results)
       else results
-      
-    IArray.from(recur(0, Nil).reverse)(using textual.classTag)
+
+    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
 
   given Cuttable[Text, Text] = (text, delimiter, limit) =>
     text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).immutable(using Unsafe)
-  
+
   given Cuttable[Text, Regex] = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).immutable(using Unsafe)
 
@@ -112,160 +112,160 @@ extension (words: Iterable[Text])
   def snake: Text = words.join(Text("_"))
   def kebab: Text = words.join(Text("-"))
 
-extension [TextType](text: TextType)(using textual: Textual[TextType])
-  inline def length: Int = textual.string(text).length
-  inline def populated: Optional[TextType] = if textual.string(text).length == 0 then Unset else text
-  inline def lower: TextType = textual.map(text, _.toLower)
-  inline def upper: TextType = textual.map(text, _.toUpper)
-  def plain: Text = Text(textual.string(text))
-  
+extension [TextType: Textual](text: TextType)
+  inline def length: Int = TextType.string(text).length
+  inline def populated: Optional[TextType] = if TextType.string(text).length == 0 then Unset else text
+  inline def lower: TextType = TextType.map(text, _.toLower)
+  inline def upper: TextType = TextType.map(text, _.toUpper)
+  def plain: Text = Text(TextType.string(text))
+
   def drop(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
     bidi match
-      case Ltr => textual.slice(text, n min length max 0, length)
-      case Rtl => textual.slice(text, 0, 0 max (length - n) min length)
-  
+      case Ltr => TextType.range(text, n min length max 0, length)
+      case Rtl => TextType.range(text, 0, 0 max (length - n) min length)
+
   def take(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
     bidi match
-      case Ltr => textual.slice(text, 0, n min length max 0)
-      case Rtl => textual.slice(text, 0 max (length - n) min length, length)
-  
-  def capitalize: TextType = textual.concat(text.take(1).upper, text.drop(1))
-  def uncapitalize: TextType = textual.concat(text.take(1).lower, text.drop(1))
+      case Ltr => TextType.range(text, 0, n min length max 0)
+      case Rtl => TextType.range(text, 0 max (length - n) min length, length)
 
-  inline def head: Char = textual.unsafeChar(text, 0)
-  inline def last: Char = textual.unsafeChar(text, text.length - 1)
+  def capitalize: TextType = TextType.concat(text.take(1).upper, text.drop(1))
+  def uncapitalize: TextType = TextType.concat(text.take(1).lower, text.drop(1))
+
+  inline def head: Char = TextType.unsafeChar(text, 0)
+  inline def last: Char = TextType.unsafeChar(text, text.length - 1)
   inline def tail: TextType = text.drop(1, Ltr)
   inline def init: TextType = text.drop(1, Rtl)
   inline def empty: Boolean = text.length == 0
-  def chars: IArray[Char] = textual.string(text).toCharArray.nn.immutable(using Unsafe)
-  
+  def chars: IArray[Char] = TextType.string(text).toCharArray.nn.immutable(using Unsafe)
+
   def slice(start: Int, end: Int): TextType =
-    if end <= start then textual.empty
-    else textual.slice(text, start max 0 min text.length, end min text.length max 0)
-  
+    if end <= start then TextType.empty
+    else TextType.range(text, start max 0 min text.length, end min text.length max 0)
+
   def snip(n: Int): (TextType, TextType) =
     (text.slice(0, n min text.length), text.slice(n min text.length, text.length))
-  
+
   def char(index: Int): Optional[Char] =
-    if index >= 0 && index < text.length then textual.unsafeChar(text, index) else Unset
+    if index >= 0 && index < text.length then TextType.unsafeChar(text, index) else Unset
 
   inline def reverse: TextType =
     val length = text.length
-    
+
     def recur(index: Int, result: TextType): TextType =
-      if index < length then recur(index + 1, textual.concat(text.slice(index, index + 1), result))
+      if index < length then recur(index + 1, TextType.concat(text.slice(index, index + 1), result))
       else result
-    
-    recur(0, textual.empty)
-  
-  def contains(substring: into Text): Boolean = textual.indexOf(text, substring) != -1
-  def has(char: Char): Boolean = textual.indexOf(text, char.show) != -1
+
+    recur(0, TextType.empty)
+
+  def contains(substring: into Text): Boolean = TextType.indexOf(text, substring) != -1
+  def has(char: Char): Boolean = TextType.indexOf(text, char.show) != -1
 
   inline def at(index: Int): Optional[Char] = optimizable[Char]: default =>
-    if index < 0 || index >= length then default else textual.unsafeChar(text, index)
-  
+    if index < 0 || index >= length then default else TextType.unsafeChar(text, index)
+
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(text.length)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(0)
     text.slice(start, end + 1)
-  
+
   def where(pred: Char -> Boolean, start: Optional[Int] = Unset, bidi: Bidi = Ltr): Optional[Int] =
     val length = text.length
-    
+
     val step: Int = bidi match
       case Ltr => 1
       case Rtl => -1
-    
+
     val first: Int = bidi match
       case Ltr => start.or(0)
       case Rtl => start.or((length - 1).max(0))
 
     def recur(i: Int): Optional[Int] =
-      if i >= length || i < 0 then Unset else if pred(textual.unsafeChar(text, i)) then i
+      if i >= length || i < 0 then Unset else if pred(TextType.unsafeChar(text, i)) then i
       else recur(i + step)
-    
+
     recur(first)
 
   def upto(pred: Char -> Boolean): TextType =
     val end: Int = text.where(pred).or(text.length)
     text.slice(0, end)
-  
+
   def dropWhile(pred: Char -> Boolean): TextType = text.where(!pred(_)) match
-    case Unset  => textual.empty
+    case Unset  => TextType.empty
     case i: Int => text.slice(i, text.length)
 
   def snipWhere(pred: Char -> Boolean, index: Int = 0): Optional[(TextType, TextType)] =
     text.where(pred, index).let(text.snip(_))
 
   def whilst(pred: Char -> Boolean): TextType = text.upto(!pred(_))
-  def mapChars(lambda: Char -> Char): TextType = textual.map(text, lambda)
+  def mapChars(lambda: Char -> Char): TextType = TextType.map(text, lambda)
 
   inline def count(pred: Char -> Boolean): Int =
     val length: Int = text.length
-    
+
     def recur(index: Int, sum: Int): Int = if index >= length then sum else
-      val increment = if pred(textual.unsafeChar(text, index)) then 1 else 0
+      val increment = if pred(TextType.unsafeChar(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
-    
+
     recur(0, 0)
-  
-  def displayWidth(using metrics: TextMetrics) = metrics.width(Text(textual.string(text)))
-  
+
+  def displayWidth(using metrics: TextMetrics) = metrics.width(Text(TextType.string(text)))
+
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     if text.displayWidth >= length then text else
-      val padding = textual.make(char.toString)*(length - text.displayWidth)
-    
+      val padding = TextType.make(char.toString)*(length - text.displayWidth)
+
       bidi match
-        case Ltr => textual.concat(text, padding)
-        case Rtl => textual.concat(padding, text)
-  
+        case Ltr => TextType.concat(text, padding)
+        case Rtl => TextType.concat(padding, text)
+
   def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
     text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
-  
+
   def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType = bidi match
     case Ltr => text.pad(length, bidi, char).take(length, Ltr)
     case Rtl => text.pad(length, bidi, char).take(length, Rtl)
-  
+
   def uncamel: IArray[TextType] =
     def recur(text: TextType): List[TextType] = text.where(_.isUpper, 1).lay(List(text.lower)): index =>
       text.take(index).lower :: recur(text.drop(index))
 
-    IArray.from(recur(text))(using textual.classTag)
-  
+    IArray.from(recur(text))(using TextType.classTag)
+
   def unkebab: IArray[TextType] = text.cut(Text("-"))
   def unsnake: IArray[TextType] = text.cut(Text("_"))
-  
+
   inline def starts(prefix: into Text): Boolean =
     val length: Int = prefix.s.length
-    
+
     def recur(index: Int): Boolean =
-      index == length || textual.unsafeChar(text, index) == prefix.s.charAt(index) && recur(index + 1)
+      index == length || TextType.unsafeChar(text, index) == prefix.s.charAt(index) && recur(index + 1)
 
     length <= text.length && recur(0)
-  
+
   inline def ends(suffix: into Text): Boolean =
     val length: Int = suffix.s.length
     val offset: Int = text.length - length
-    
+
     def recur(index: Int): Boolean =
-      index == length || textual.unsafeChar(text, offset + index) == suffix.s.charAt(index) &&
+      index == length || TextType.unsafeChar(text, offset + index) == suffix.s.charAt(index) &&
           recur(index + 1)
 
     length <= text.length && recur(0)
-  
+
   inline def tr(from: Char, to: Char): TextType =
-    textual.map(text, char => if char == from then to else char)
+    TextType.map(text, char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscript: TextType = textual.map(text, hieroglyph.subscript(_).or(' '))
-  inline def superscript: TextType = textual.map(text, hieroglyph.superscript(_).or(' '))
-  
+  inline def subscript: TextType = TextType.map(text, hieroglyph.subscript(_).or(' '))
+  inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
+
 extension (text: into Text)
   inline def rsub(from: into Text, to: into Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
   inline def sub(from: into Text, to: into Text): Text = text.s.replaceAll(Pattern.quote(from.s), to.s).nn.tt
-  
+
   def flatMap(lambda: Char => Text): Text =
     String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))).tt
 
@@ -274,7 +274,7 @@ extension (text: into Text)
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
-  
+
   def lev(other: into Text): Int =
     val m = text.s.length
     val n = other.length
@@ -282,7 +282,7 @@ extension (text: into Text)
     val dist = new Array[Int](n + 1)
 
     for j <- 1 to n do old(j) = old(j - 1) + 1
-    
+
     for i <- 1 to m do
       dist(0) = old(0) + 1
 
@@ -291,7 +291,7 @@ extension (text: into Text)
           .min(old(j) + 1).min(dist(j - 1) + 1)
 
       for j <- 0 to n do old(j) = dist(j)
-    
+
     dist(n)
 
 case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text = Text("")):
@@ -299,9 +299,9 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
 object Joinable:
-  given [TextType](using textual: Textual[TextType]): Joinable[TextType] = elements =>
-    var acc: TextType = textual.empty
-    for element <- elements do acc = textual.concat(acc, element)
+  given [TextType: Textual]: Joinable[TextType] = elements =>
+    var acc: TextType = TextType.empty
+    for element <- elements do acc = TextType.concat(acc, element)
     acc
 
 trait Joinable[TextType]:
@@ -311,18 +311,18 @@ extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(usi
 
 extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextType])
   def join: TextType = joinable.join(values)
-  
+
   def join(separator: TextType): TextType =
     joinable.join(values.flatMap(Iterable(separator, _)).drop(1))
-  
+
   def join(left: TextType, separator: TextType, right: TextType): TextType =
     Iterable(left, join(separator), right).join
-  
+
   def join(separator: TextType, penultimate: TextType): TextType = values.size match
     case 0 => Iterable().join
     case 1 => values.head
     case _ => Iterable(values.init.join(separator), penultimate, values.last).join
-  
+
   def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
 
@@ -337,7 +337,7 @@ object Interpolation:
 
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")
-    
+
     def parse(state: Text, next: Text): Text =
       try anticipation.Text(state.s+TextEscapes.escape(next).s)
       catch case error: EscapeError => error match
@@ -346,15 +346,15 @@ object Interpolation:
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
     def complete(state: Text): Text = state
-  
+
   object Text extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")
-    
+
     def parse(state: Text, next: Text): Text =
       try anticipation.Text(state.s+TextEscapes.escape(next).s)
       catch case error: EscapeError => error match
         case EscapeError(message) => throw InterpolationError(message)
-    
+
     def skip(state: Text): Text = state
     def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
 

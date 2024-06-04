@@ -22,62 +22,65 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-erased trait DefaultTextType:
-  type TextType
+// erased trait DefaultTextType:
+//   type TextType
 
-package defaultTextTypes:
-  erased given (DefaultTextType { type TextType = Text }) = ###
+// package defaultTextTypes:
+//   erased given (DefaultTextType { type TextType = Text }) = ###
 
-trait Textual[TextType]:
+trait Textual:
+  type Self
   type ShowType[-ValueType]
-  def classTag: ClassTag[TextType]
-  def length(text: TextType): Int
-  def string(text: TextType): String
-  def make(string: String): TextType
-  def map(text: TextType, lambda: Char => Char): TextType
-  def slice(text: TextType, start: Int, end: Int): TextType
-  def empty: TextType
-  def concat(left: TextType, right: TextType): TextType
-  def unsafeChar(text: TextType, index: Int): Char
-  def indexOf(text: TextType, sub: Text): Int
-  def show[ValueType](value: ValueType)(using ShowType[ValueType]): TextType
+  def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Self
+  def classTag: ClassTag[Self]
+  def length(text: Self): Int
+  def string(text: Self): String
+  def make(string: String): Self
+  def map(text: Self, lambda: Char => Char): Self
+  def range(text: Self, start: Int, end: Int): Self
+  def empty: Self
+  def concat(left: Self, right: Self): Self
+  def unsafeChar(text: Self, index: Int): Char
+  def indexOf(text: Self, sub: Text): Int
 
-  extension (left: TextType)
+  extension (left: Self)
     @targetName("mul")
-    infix def * (right: Int): TextType = 
-      def recur(text: TextType, n: Int, acc: TextType): TextType =
+    infix def * (right: Int): Self =
+      def recur(text: Self, n: Int, acc: Self): Self =
         if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
 
       recur(left, right.max(0), empty)
 
     @targetName("add")
-    infix def + (right: TextType): TextType = concat(left, right)
+    infix def + (right: Self): Self = concat(left, right)
 
 object Textual:
-  def apply[TextType](using textual: Textual[TextType])(text: Text): TextType = textual.make(text.s)
+  def apply[TextType: Textual](text: Text): TextType = TextType.make(text.s)
 
-  given text: Textual[Text] with
+  given Text is Textual as text:
     type ShowType[-ValueType] = Show[ValueType]
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
+    def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): Text = show.text(value)
     def string(text: Text): String = text.s
     def length(text: Text): Int = text.s.length
     def make(string: String): Text = Text(string)
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
-    def slice(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
+    def range(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
-    
-    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
-    
-  // given string: Textual[String] with
-  //   def string(string: String): String = string
-  //   def length(string: String): Int = string.length
-  //   def make(string: String): String = string
-  //   def map(string: String, lambda: Char -> Char): String = string.map(lambda)
-  //   def slice(string: String, start: Int, end: Int): String = string.substring(start, end).nn
-  //   def empty: String = ""
-  //   def concat(left: String, right: String): String = left+right
-  //   def unsafeChar(string: String, index: Int): Char = string.charAt(index)
-  //   def indexOf(string: String, sub: Text): Int = string.indexOf(sub.s)
+
+  given String is Textual as string:
+    type ShowType[-ValueType] = Show[ValueType]
+    val classTag: ClassTag[String] = summon[ClassTag[String]]
+    def show[ValueType](value: ValueType)(using show: ShowType[ValueType]): String = show.text(value).s
+    def string(string: String): String = string
+    def length(string: String): Int = string.length
+    def make(string: String): String = string
+    def map(string: String, lambda: Char => Char): String = string.map(lambda)
+    def range(string: String, start: Int, end: Int): String = string.substring(start, end).nn
+    def empty: String = ""
+    def concat(left: String, right: String): String = left+right
+    def unsafeChar(string: String, index: Int): Char = string.charAt(index)
+    def indexOf(string: String, sub: Text): Int = string.indexOf(sub.s)
