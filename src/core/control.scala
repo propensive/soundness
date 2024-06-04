@@ -16,16 +16,17 @@
 
 package contingency
 
-import fulminate.*
-import vacuous.*
-import rudiments.*
+import language.experimental.pureFunctions
+
+import java.util.concurrent.atomic as juca
 
 import scala.quoted.*
 import scala.compiletime.*
 
-import java.util.concurrent.atomic as juca
-
-import language.experimental.pureFunctions
+import fulminate.*
+import vacuous.*
+import rudiments.*
+import anticipation.*
 
 @capability
 trait Errant[-ErrorType <: Error]:
@@ -50,8 +51,8 @@ extends Errant[ErrorType]:
 @capability
 class FailStrategy[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Errant[ErrorType]:
-  def record(error: ErrorType): Unit = fail(error.message)
-  def abort(error: ErrorType): Nothing = fail(error.message)
+  def record(error: ErrorType): Unit = abandon(error.message)
+  def abort(error: ErrorType): Nothing = abandon(error.message)
 
 @capability
 class AggregateStrategy

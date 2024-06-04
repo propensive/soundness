@@ -34,7 +34,7 @@ object Contingency:
     context.asTerm match
       case Inlined(None, Nil, Apply(_, List(action))) =>
         action.asExprOf[Errant[ErrorType] ?=> ResultType]
-      
+
       case _ =>
         throw Panic(msg"the tended action was not in the expected form")
 
@@ -42,18 +42,18 @@ object Contingency:
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : List[quotes.reflect.CaseDef] =
     import quotes.reflect.*
-    
+
     handler.asTerm match
       case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
         cases.flatMap:
           case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
           case _                                   => Nil
-      
+
       case _ =>
-        fail(msg"unexpected lambda")
+        abandon(msg"unexpected lambda")
 
 
-  
+
   private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : List[quotes.reflect.Symbol] =
@@ -67,43 +67,43 @@ object Contingency:
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || fail(msg"bad pattern")
+        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || fail(msg"bad pattern")
+        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
 
       case other =>
-        fail(msg"bad pattern")
+        abandon(msg"bad pattern")
 
     def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
       case other               => Set(other)
-    
+
     val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
-    
+
     def patternType(pattern: Tree): List[TypeRepr] = pattern match
       case Typed(_, matchType)   => List(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => fail(msg"wildcard")
-      
+      case Wildcard()            => abandon(msg"wildcard")
+
       case Unapply(select, _, _) =>
         if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
-        else fail(msg"Unapply ${select.symbol.declaredType.toString}")
-      
+        else abandon(msg"Unapply ${select.symbol.declaredType.toString}")
+
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
-      
+
       case other =>
-        fail(msg"this pattern could not be recognized as a distinct `Error` type")
+        abandon(msg"this pattern could not be recognized as a distinct `Error` type")
 
     val handledTypes: List[Symbol] =
       caseDefs(handler).flatMap:
         case CaseDef(pattern, _, _) => patternType(pattern)
       .map(_.typeSymbol)
-      
+
     (requiredHandlers -- handledTypes).to(List)
 
 
@@ -112,16 +112,16 @@ object Contingency:
        handler: Expr[PartialFunction[ErrorType, ErrorType2]])
       (using Quotes)
            : Expr[Any] =
-    
+
     '{???}
 
-    
+
   def remedy[ErrorType <: Error: Type, ResultType: Type]
       (context: Expr[Tended[ErrorType, ResultType]],
        handler: Expr[PartialFunction[ErrorType, ResultType]])
       (using Quotes)
            : Expr[Any] =
-    
+
     import quotes.reflect.*
 
     def wrap[InsideType[_]: Type](errorTypes: List[TypeRepr])
@@ -138,7 +138,7 @@ object Contingency:
                   val errant = new RemedyErrant[ResultType, ErrorType](partialFunction)
                   ${action(context)}(using errant)
             }).asTerm
-        
+
         case errorType :: more => errorType.asType match
           case '[type errorType <: ErrorType; errorType] =>
             wrap[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
@@ -150,10 +150,10 @@ object Contingency:
                         partialFunction.orElse { case error: `errorType` => errant.abort(error) }
                   ${makeExpr('makeResult2)}
                 }
-            
+
           case _ =>
-            fail(msg"Match error ${errorType.show} type was not a subtype of ErrorType")
-    
+            abandon(msg"Match error ${errorType.show} type was not a subtype of ErrorType")
+
     wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
       '{$function(PartialFunction.empty[ErrorType, Nothing])}
     .asExpr
@@ -163,4 +163,3 @@ class RemedyErrant[ResultType, ErrorType <: Error]
 extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = abort(error)
   def abort(error: ErrorType): Nothing = partialFunction(error)
-   
