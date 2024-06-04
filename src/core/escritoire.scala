@@ -101,7 +101,7 @@ object Column:
        sizing:        Columnar                    = columnar.Prose)
       (get: RowType -> CellType)
       (using columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
-      (using TextType.ShowType[CellType])
+      (using TextType.Show[CellType])
           : Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = TextType.show(get(row))
@@ -224,9 +224,9 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
 
   def render(using metrics: TextMetrics, textual: TextType is Textual): LazyList[TextType] =
     val pad = t" "*style.padding
-    val leftEdge = Textual(t"${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}$pad")
-    val rightEdge = Textual(t"$pad${BoxDrawing(top = style.sideLines, bottom = style.sideLines)}")
-    val midEdge = Textual(t"$pad${BoxDrawing(top = style.innerLines, bottom = style.innerLines)}$pad")
+    val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
+    val rightEdge = Textual(t"$pad${style.charset(top = style.sideLines, bottom = style.sideLines)}")
+    val midEdge = Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
     def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
       rows match
@@ -261,19 +261,19 @@ case class TableLayout[TextType](sections: List[TableSection[TextType]], style: 
             if bitSet.contains(index) then line else BoxLine.Blank
 
           if index == 0 then
-            BoxDrawing
+            style.charset
               (top    = vertical(ascenders, style.sideLines),
                right  = horizontal.or(BoxLine.Blank),
                bottom = vertical(descenders, style.sideLines),
                left   = BoxLine.Blank)
           else if index == (width - 1) then
-            BoxDrawing
+            style.charset
               (top    = vertical(ascenders, style.sideLines),
                right  = BoxLine.Blank,
                bottom = vertical(descenders, style.sideLines),
                left   = horizontal.or(BoxLine.Blank))
           else
-            BoxDrawing
+            style.charset
               (top    = vertical(ascenders, style.innerLines),
                right  = horizontal.or(BoxLine.Blank),
                bottom = vertical(descenders, style.innerLines),

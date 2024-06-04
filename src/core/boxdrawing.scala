@@ -30,6 +30,15 @@ enum LineCharset:
     case Rounded => BoxDrawing.roundedChars
     case Ascii   => BoxDrawing.asciiChars
 
+  def apply
+      (top: BoxLine = BoxLine.Blank,
+       right: BoxLine = BoxLine.Blank,
+       bottom: BoxLine = BoxLine.Blank,
+       left: BoxLine = BoxLine.Blank)
+          : Char =
+    this()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
+
+
 object BoxDrawing:
   val asciiChars: IArray[Char] =
     List
@@ -42,7 +51,7 @@ object BoxDrawing:
       (t" ╴╸ ╷┐┑╕╻┒┓  ╖ ╗╶─╾ ┌┬┭ ┎┰┱ ╓╥╓ ╺╼━ ┍┮┯╕┏┲┳  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦╵┘┙╛│┤┥╡╽┧┪╛    └┴┵ ├┼┽ ┟╁╅     ┕┶┷╛",
        t"┝┾┿╡┢╆╈╛    ╘ ╘╧╞ ╞╪╘ ╘╧    ╹┚┛ ╿┦┩╕┃┨┫  ╖ ╗┖┸┹ ┞╀╃ ┠╂╊ ╓╥╓ ┗┺┻ ┡╄╇╕┣ ╋  ╖ ╗   ═╒ ╒╤   ═╔ ╔╦ ╜ ╝    ",
        t" ╜ ╝║╢║╣╙╨╙     ╙╨╙ ╟╫╟  ╜ ╝     ╜ ╝║╢║╣╚ ╚╩    ╚ ╚╩╠ ╠╬").join.chars
-  
+
   val roundedChars: IArray[Char] = defaultChars.map:
     case '┌'  => '╭'
     case '┘'  => '╯'
@@ -50,14 +59,5 @@ object BoxDrawing:
     case '└'  => '╰'
     case char => char
 
-  def apply
-      (top: BoxLine = BoxLine.Blank,
-       right: BoxLine = BoxLine.Blank,
-       bottom: BoxLine = BoxLine.Blank,
-       left: BoxLine = BoxLine.Blank,
-       charset: LineCharset = LineCharset.Default)
-          : Char =
-    charset()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)
-  
   def simple(vertical: BoxLine, horizontal: BoxLine, charset: LineCharset): Char =
-    apply(vertical, horizontal, vertical, horizontal, charset)
+    charset(vertical, horizontal, vertical, horizontal)

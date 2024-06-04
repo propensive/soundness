@@ -48,6 +48,6 @@ def run(): Unit =
 
   val tabulation = table.tabulate(data)
 
-  import tableStyles.default
+  import tableStyles.thinRounded
 
   Out.println(data.table)
