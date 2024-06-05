@@ -7,7 +7,7 @@ target guillotine/test
 project guillotine
   module core
     sources  src/core
-    include  contextual/core anticipation/log contingency/core turbulence/core
+    include  contextual/core anticipation/log contingency/core turbulence/core gossamer/core
 
   module test
     sources  src/test
