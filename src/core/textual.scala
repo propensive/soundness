@@ -27,14 +27,17 @@ import language.experimental.captureChecking
 // package defaultTextTypes:
 //   erased given (DefaultTextType { type TextType = Text }) = ###
 
-trait Textual:
+trait Presentational:
+  type Self
+  def apply(text: Text): Self
+
+trait Textual extends Presentational:
   type Self
   type Show[-ValueType]
   def show[ValueType](value: ValueType)(using show: Show[ValueType]): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
-  def apply(text: Text): Self
   def map(text: Self, lambda: Char => Char): Self
   def range(text: Self, start: Int, end: Int): Self
   def empty: Self
