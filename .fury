@@ -23,7 +23,6 @@ project hieroglyph
     compiler  scala
     sources   src/core
     include   kaleidoscope/core
-    include   spectacular/core
 
   stream latest
     lifetime 7
