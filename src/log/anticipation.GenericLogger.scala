@@ -16,8 +16,36 @@
 
 package anticipation
 
+import language.experimental.into
+
+object Realm:
+  def make(name: into Text): Realm = new Realm(name)
+
+case class Realm(name: into Text)
+
 trait GenericLogger:
-  def fine(message: => into Text): Unit
-  def info(message: => into Text): Unit
-  def warn(message: => into Text): Unit
-  def fail(message: => into Text): Unit
+  type Self
+  def logFine(log: Self, realm: Realm, message: => Text): Unit
+  def logInfo(log: Self, realm: Realm, message: => Text): Unit
+  def logWarn(log: Self, realm: Realm, message: => Text): Unit
+  def logFail(log: Self, realm: Realm, message: => Text): Unit
+
+trait SimpleLogger:
+  def logFine(realm: Realm, message: => Text): Unit
+  def logInfo(realm: Realm, message: => Text): Unit
+  def logWarn(realm: Realm, message: => Text): Unit
+  def logFail(realm: Realm, message: => Text): Unit
+
+object GenericLogger:
+  given SimpleLogger is GenericLogger:
+    def logFine(log: SimpleLogger, realm: Realm, message: => Text): Unit =
+      log.logFine(realm, message)
+
+    def logInfo(log: SimpleLogger, realm: Realm, message: => Text): Unit =
+      log.logInfo(realm, message)
+
+    def logWarn(log: SimpleLogger, realm: Realm, message: => Text): Unit =
+      log.logWarn(realm, message)
+
+    def logFail(log: SimpleLogger, realm: Realm, message: => Text): Unit =
+      log.logFail(realm, message)
