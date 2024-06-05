@@ -47,8 +47,6 @@ object Envelope:
 trait Envelope[-EnvelopeType]:
   def envelope(value: EnvelopeType): Text
 
-  given silent[MessageType]: Log[MessageType] = entry => ()
-
 object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
 
@@ -96,14 +94,16 @@ trait LogFormat[TargetType, TextType]:
   def apply(entry: Entry[TextType]): TextType
 
 package logging:
+  given pinned: SimpleLogger = Log.pinned
 
-  given pinned: Log[Text] = Log.pinned
-
-  given stdout(using Stdio, Monitor): Log[Text] = Log.route[Text]:
+  given stdout(using Stdio, Monitor, Text is Presentational): Log[Text] = Log.route[Text]:
     case _ => Out
 
-  given stderr(using Stdio, Monitor): Log[Text] = Log.route[Text]:
+  given stderr(using Stdio, Monitor, Text is Presentational): Log[Text] = Log.route[Text]:
     case _ => Err
 
-  given silent[MessageType]: Log[MessageType] = new Log[MessageType]:
-    def record(entry: Entry[MessageType]): Unit = ()
+  given SimpleLogger as silent:
+    def logFine(realm: Realm, message: => Text): Unit = ()
+    def logInfo(realm: Realm, message: => Text): Unit = ()
+    def logWarn(realm: Realm, message: => Text): Unit = ()
+    def logFail(realm: Realm, message: => Text): Unit = ()

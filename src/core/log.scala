@@ -27,69 +27,54 @@ import scala.language.experimental.pureFunctions
 import scala.language.experimental.into
 
 object Log:
-  given [TextType: Textual] => Log[TextType] is GenericLogger:
-    type Self = Log[TextType]
-
-    def logFine(log: Log[TextType], realm: Realm, message: => into Text): Unit =
-      log.record(Entry(realm, Level.Fine, Textual(message), System.currentTimeMillis, Nil))
-
-    def logInfo(log: Log[TextType], realm: Realm, message: => into Text): Unit =
-      log.record(Entry(realm, Level.Info, Textual(message), System.currentTimeMillis, Nil))
-
-    def logWarn(log: Log[TextType], realm: Realm, message: => into Text): Unit =
-      log.record(Entry(realm, Level.Warn, Textual(message), System.currentTimeMillis, Nil))
-
-    def logFail(log: Log[TextType], realm: Realm, message: => into Text): Unit =
-      log.record(Entry(realm, Level.Fail, Textual(message), System.currentTimeMillis, Nil))
-
   val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-  given textLog[TextType](using log: Log[TextType])(using textual: Textual[TextType]): Log[Text] =
-    log.contramap: text =>
-      textual.make(text.s)
+  given textLog[TextType: Presentational](using log: Log[TextType]): Log[Text] = log.contramap(TextType(_))
 
   inline def fine[MessageType](inline message: MessageType)[TextType]
-      (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
-      (using inline show: textual.ShowType[MessageType])
+      (using inline log: Log[TextType], inline realm: Realm, presentational: TextType is Presentational)
+      (using inline show: presentational.Show[MessageType])
           : Unit =
 
-    ${Eucalyptus.record[MessageType, TextType]('{Level.Fine}, 'message, 'log, 'realm, 'textual, 'show)}
+    ${Eucalyptus.record[MessageType, TextType]('{Level.Fine}, 'message, 'log, 'realm, 'presentational, 'show)}
 
   inline def info[MessageType](inline message: MessageType)[TextType]
-      (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
-      (using inline show: textual.ShowType[MessageType])
+      (using inline log: Log[TextType], inline realm: Realm, presentational: TextType is Presentational)
+      (using inline show: presentational.Show[MessageType])
           : Unit =
 
-    ${Eucalyptus.record[MessageType, TextType]('{Level.Info}, 'message, 'log, 'realm, 'textual, 'show)}
+    ${Eucalyptus.record[MessageType, TextType]('{Level.Info}, 'message, 'log, 'realm, 'presentational, 'show)}
 
   inline def warn[MessageType](inline message: MessageType)[TextType]
-      (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
-      (using inline show: textual.ShowType[MessageType])
+      (using inline log: Log[TextType], inline realm: Realm, presentational: TextType is Presentational)
+      (using inline show: presentational.Show[MessageType])
           : Unit =
 
-    ${Eucalyptus.record[MessageType, TextType]('{Level.Warn}, 'message, 'log, 'realm, 'textual, 'show)}
+    ${Eucalyptus.record[MessageType, TextType]('{Level.Warn}, 'message, 'log, 'realm, 'presentational, 'show)}
 
   inline def fail[MessageType](inline message: MessageType)[TextType]
-      (using inline log: Log[TextType], inline realm: Realm, textual: Textual[TextType])
-      (using inline show: textual.ShowType[MessageType])
+      (using inline log: Log[TextType], inline realm: Realm, presentational: TextType is Presentational)
+      (using inline show: presentational.Show[MessageType])
           : Unit =
 
-    ${Eucalyptus.record[MessageType, TextType]('{Level.Fail}, 'message, 'log, 'realm, 'textual, 'show)}
+    ${Eucalyptus.record[MessageType, TextType]('{Level.Fail}, 'message, 'log, 'realm, 'presentational, 'show)}
 
-  inline def route[TextType](inline routes: PartialFunction[Entry[?], Any])(using monitor: Monitor)
+  inline def route[TextType](inline routes: PartialFunction[Entry[?], Any])
+      (using monitor: Monitor)
+      (using inline presentational: TextType is Presentational)
           : Log[TextType] =
 
-    ${Eucalyptus.route[TextType]('routes, 'monitor)}
+    ${Eucalyptus.route[TextType]('routes, 'monitor, 'presentational)}
 
   private val localLog: ThreadLocal[AnyRef] = ThreadLocal()
 
-  inline def pin()(using inline log: Log[Text]): Unit = localLog.set(log)
+  inline def pin()(using inline log: SimpleLogger): Unit = localLog.set(log)
 
-  def pinned: Log[Text] = localLog.get() match
-    case log: Log[Text] @unchecked => log
-    case _                         => logging.silent
+  def pinned: SimpleLogger = localLog.get() match
+    case log: SimpleLogger => log
+    case _                 => logging.silent
 
-  def envelop[EnvelopeType: Envelope](value: EnvelopeType)[ResultType, TextType]
+  def envelop[EnvelopeType: Envelope](value: EnvelopeType)[ResultType, TextType: Presentational]
       (block: Log[TextType] ?=> ResultType)
       (using log: Log[TextType])
           : ResultType =
@@ -97,13 +82,37 @@ object Log:
     val log2: Log[TextType] = new Log[TextType]:
       override val envelopes: List[Text] = summon[Envelope[EnvelopeType]].envelope(value) :: log.envelopes
       def record(entry: Entry[TextType]): Unit = log.record(entry)
+      def logFine(realm: Realm, message: => Text): Unit = log.logFine(realm, message)
+      def logInfo(realm: Realm, message: => Text): Unit = log.logInfo(realm, message)
+      def logWarn(realm: Realm, message: => Text): Unit = log.logWarn(realm, message)
+      def logFail(realm: Realm, message: => Text): Unit = log.logFail(realm, message)
+
     block(using log2)
 
 @capability
-abstract class Log[TextType]():
+abstract class Log[MessageType]() extends SimpleLogger:
   private inline def outer: this.type = this
-  val envelopes: List[Text] = Nil
-  def record(entry: Entry[TextType]): Unit
 
-  def contramap[TextType2](lambda: TextType2 => TextType): Log[TextType2] = new Log[TextType2]:
-    def record(entry: Entry[TextType2]): Unit = outer.record(entry.map(lambda))
+  val envelopes: List[Text] = Nil
+  def record(entry: Entry[MessageType]): Unit
+
+  def contramap[MessageType2](lambda: MessageType2 => MessageType): Log[MessageType2] =
+    new Log[MessageType2]:
+      def logFine(realm: Realm, message: => Text): Unit = outer.logFine(realm, message)
+      def logInfo(realm: Realm, message: => Text): Unit = outer.logInfo(realm, message)
+      def logWarn(realm: Realm, message: => Text): Unit = outer.logWarn(realm, message)
+      def logFail(realm: Realm, message: => Text): Unit = outer.logFail(realm, message)
+      def record(entry: Entry[MessageType2]): Unit = outer.record(entry.map(lambda))
+
+abstract class TextLog[MessageType](present: Text => MessageType) extends Log[MessageType]:
+  def logFine(realm: Realm, message: => Text): Unit =
+    record(Entry(realm, Level.Fine, present(message), System.currentTimeMillis, Nil))
+
+  def logInfo(realm: Realm, message: => Text): Unit =
+    record(Entry(realm, Level.Info, present(message), System.currentTimeMillis, Nil))
+
+  def logWarn(realm: Realm, message: => Text): Unit =
+    record(Entry(realm, Level.Warn, present(message), System.currentTimeMillis, Nil))
+
+  def logFail(realm: Realm, message: => Text): Unit =
+    record(Entry(realm, Level.Fail, present(message), System.currentTimeMillis, Nil))
