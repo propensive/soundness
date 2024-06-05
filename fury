@@ -10,7 +10,7 @@ repo propensive/hypotenuse
 project capricious
   module core
     compiler  scala
-    include   wisteria/core hypotenuse/core anticipation/text
+    include   wisteria/core hypotenuse/core
     sources   src/core
 
   module test
