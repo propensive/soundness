@@ -48,11 +48,11 @@ object ZipPath:
     def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
     def prefix(path: ZipFile): Text = t"/"
     def separator(path: ZipPath): Text = t"/"
-    
-  given creator: PathCreator[ZipPath, InvalidZipNames, ZipFile] = (root, descent) =>
+
+  given PathCreator[ZipPath, InvalidZipNames, ZipFile] as creator = (root, descent) =>
     ZipPath(root, ZipRef(descent))
 
-  given readable(using Errant[StreamError]): Readable[ZipPath, Bytes] =
+  given (using Errant[StreamError]) => Readable[ZipPath, Bytes] as readable =
     Readable.lazyList[Bytes].contramap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
@@ -67,10 +67,10 @@ object ZipRef:
           : ZipRef =
 
     Navigable.decode[ZipRef](text)
-  
+
   @targetName("child")
   infix def / (name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
-  
+
   given navigable: Navigable[ZipRef, InvalidZipNames, Unset.type] with
     def root(path: ZipRef): Unset.type = Unset
     def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
@@ -90,7 +90,8 @@ case class ZipRef(descent: List[PathName[InvalidZipNames]]):
     case _ :: tail => ZipRef(tail)
 
 object ZipEntry:
-  def apply[ResourceType](path: ZipRef, resource: ResourceType)(using readable: Readable[ResourceType, Bytes])
+  def apply[ResourceType](path: ZipRef, resource: ResourceType)
+      (using readable: Readable[ResourceType, Bytes])
           : ZipEntry =
 
     new ZipEntry(path, () => resource.stream[Bytes])
@@ -103,19 +104,14 @@ object ZipEntry:
 case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
-  def apply[FileType](file: FileType)
-      (using genericFile: /*{*}*/ GenericFile[FileType], stream: Errant[StreamError])
-          : ZipFile =
-
+  def apply[FileType: GenericFile](file: FileType)(using stream: Errant[StreamError]): ZipFile =
     val pathname: Text = file.fileText
     new ZipFile(pathname)
 
-  def create[PathType](path: PathType)(using genericPath: GenericPath[PathType], streamCut: Errant[StreamError])
-          : ZipFile =
-
+  def create[PathType: GenericPath](path: PathType): ZipFile raises StreamError =
     val pathname: Text = path.pathText
     val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
-    
+
     out.putNextEntry(juz.ZipEntry("/"))
     out.closeEntry()
     out.close()
@@ -126,9 +122,9 @@ object ZipFile:
 
 case class ZipFile(private val filename: Text):
   private lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(filename.s)).nn
-  
+
   private val filesystemUri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
-    
+
   @targetName("child")
   infix def / (name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
 
@@ -141,22 +137,22 @@ case class ZipFile(private val filename: Text):
         catch case exception: jnf.ProviderNotFoundException => abort(ZipError(filename))
 
       lambda(filesystem).also(filesystem.close())
-    
+
   def entry(ref: ZipRef)(using streamCut: Errant[StreamError]): ZipEntry =
     semaphore.access(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
       (using Environment)
           : Unit raises ZipError raises StreamError =
-    
+
     val writeTimestamp: jnf.attribute.FileTime =
       jnf.attribute.FileTime.fromMillis(timestamp.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)).nn
-    
+
     withFilesystem: filesystem =>
       val directories: scm.HashSet[ZipRef] = scm.HashSet()
 
       def addParents(ref: ZipRef): Unit = ref.parent.let: parent =>
-        if !directories.has(parent) then
+        if !directories.contains(parent) then
           addParents(parent)
           val directoryPath = filesystem.getPath(t"${parent.render}/".s).nn
           if jnf.Files.notExists(directoryPath) then
@@ -170,13 +166,12 @@ case class ZipFile(private val filename: Text):
         addParents(entry.ref)
         val entryPath = filesystem.getPath(entry.ref.render.s).nn
         val in = LazyListInputStream(entry.content())
-          
+
         jnf.Files.copy(in, entryPath, jnf.StandardCopyOption.REPLACE_EXISTING)
         jnf.Files.setAttribute(entryPath, "creationTime", writeTimestamp)
         jnf.Files.setAttribute(entryPath, "lastAccessTime", writeTimestamp)
         jnf.Files.setAttribute(entryPath, "lastModifiedTime", writeTimestamp)
-      
+
   def entries(): LazyList[ZipEntry] raises StreamError =
     zipFile.entries.nn.asScala.filter(!_.getName.nn.endsWith("/")).to(LazyList).map: entry =>
       ZipEntry(unsafely(ZipRef(entry.getName.nn.show)), zipFile.getInputStream(entry).nn)
-
