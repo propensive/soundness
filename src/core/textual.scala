@@ -29,12 +29,12 @@ import language.experimental.captureChecking
 
 trait Presentational:
   type Self
+  type Show[-ValueType]
+  def show[ValueType](value: ValueType)(using show: Show[ValueType]): Self
   def apply(text: Text): Self
 
 trait Textual extends Presentational:
   type Self
-  type Show[-ValueType]
-  def show[ValueType](value: ValueType)(using show: Show[ValueType]): Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
