@@ -7,7 +7,7 @@ repo propensive/probably
 project contingency
   module core
     compiler  scala
-    include   fulminate/core rudiments/core
+    include   rudiments/core
     sources   src/core
     main      contingency.run
   
