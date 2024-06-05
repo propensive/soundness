@@ -215,7 +215,7 @@ extension [TextType: Textual](text: TextType)
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     if text.displayWidth >= length then text else
-      val padding = TextType.make(char.toString)*(length - text.displayWidth)
+      val padding = TextType(char.toString.tt)*(length - text.displayWidth)
 
       bidi match
         case Ltr => TextType.concat(text, padding)

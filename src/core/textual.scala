@@ -34,7 +34,7 @@ trait Textual:
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
-  def make(string: String): Self
+  def apply(text: Text): Self
   def map(text: Self, lambda: Char => Char): Self
   def range(text: Self, start: Int, end: Int): Self
   def empty: Self
@@ -54,7 +54,7 @@ trait Textual:
     infix def + (right: Self): Self = concat(left, right)
 
 object Textual:
-  def apply[TextType: Textual](text: Text): TextType = TextType.make(text.s)
+  def apply[TextType: Textual](text: Text): TextType = TextType(text)
 
   given Text is Textual as text:
     type Show[-ValueType] = spectacular.Show[ValueType]
@@ -62,7 +62,7 @@ object Textual:
     def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
     def text(text: Text): Text = text
     def length(text: Text): Int = text.s.length
-    def make(string: String): Text = Text(string)
+    def apply(text: Text): Text = text
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
     def range(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
     def empty: Text = Text("")
@@ -70,16 +70,16 @@ object Textual:
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
 
-  given String is Textual as string:
-    type Show[-ValueType] = spectacular.Show[ValueType]
-    val classTag: ClassTag[String] = summon[ClassTag[String]]
-    def show[ValueType](value: ValueType)(using show: Show[ValueType]): String = show.text(value).s
-    def text(string: String): Text = string.tt
-    def length(string: String): Int = string.length
-    def make(string: String): String = string
-    def map(string: String, lambda: Char => Char): String = string.map(lambda)
-    def range(string: String, start: Int, end: Int): String = string.substring(start, end).nn
-    def empty: String = ""
-    def concat(left: String, right: String): String = left+right
-    def unsafeChar(string: String, index: Int): Char = string.charAt(index)
-    def indexOf(string: String, sub: Text): Int = string.indexOf(sub.s)
+  // given String is Textual as string:
+  //   type Show[-ValueType] = spectacular.Show[ValueType]
+  //   val classTag: ClassTag[String] = summon[ClassTag[String]]
+  //   def show[ValueType](value: ValueType)(using show: Show[ValueType]): String = show.text(value).s
+  //   def text(string: String): Text = string.tt
+  //   def length(string: String): Int = string.length
+  //   def apply(text: Text): String = text.s
+  //   def map(string: String, lambda: Char => Char): String = string.map(lambda)
+  //   def range(string: String, start: Int, end: Int): String = string.substring(start, end).nn
+  //   def empty: String = ""
+  //   def concat(left: String, right: String): String = left+right
+  //   def unsafeChar(string: String, index: Int): Char = string.charAt(index)
+  //   def indexOf(string: String, sub: Text): Int = string.indexOf(sub.s)
