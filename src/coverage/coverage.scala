@@ -48,11 +48,11 @@ case class Juncture
     (right.start >= start && right.end <= end && !(right.start == start && right.end == end)) ||
         treeName == t"DefDef" && right.treeName != t"DefDef" && className == right.className &&
         methodName == right.methodName
-  
+
   def shortCode: Text =
     val lines = code.flatMap(_.cut(t"\\n"))
     if lines.length > 1 then t"${lines.head}..." else lines.head
-  
+
   def method: StackTrace.Method = StackTrace.Method(
     StackTrace.rewrite(className.s),
     StackTrace.rewrite(methodName.s, method = true),
@@ -62,7 +62,7 @@ object Surface:
   def collapse(todo: List[Juncture], done: List[Surface]): List[Surface] = todo match
     case Nil =>
       done.reverse
-    
+
     case head :: tail =>
       val todo2 = tail.takeWhile(head.contains(_))
       collapse(tail.drop(todo2.length), Surface(head, collapse(todo2, Nil)) :: done)
@@ -70,13 +70,14 @@ object Surface:
 case class Surface(juncture: Juncture, children: List[Surface]):
   def covered(hits: Set[Int]): Boolean =
     hits.contains(juncture.id) && children.all(_.covered(hits))
-  
+
   def uncovered(hits: Set[Int]): Surface =
     Surface(juncture, children.filter(!_.covered(hits)).map(_.uncovered(hits)))
 
 case class CoverageResults(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
   lazy val structure: Map[Text, List[Surface]] =
-    spec.drop(spec.lastIndexWhere(_.id == 0)).to(List).groupBy(_.path).map: (path, junctures) =>
+    val index: Int = spec.lastIndexWhere(_.id == 0)
+    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
       path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
     .to(Map)
 
@@ -90,10 +91,10 @@ object Coverage:
     else
       val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.to(List).map(_.nn)).getOrElse(Nil)
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
-      
+
       val allHits: Set[Int] = measurementFiles.flatMap(measurements(_)).to(Set)
       val oldHits: Set[Int] = allHits -- hits
-      
+
       CoverageResults(dir, spec(dir), oldHits, hits)
 
   private def currentDir: Option[Text] =
@@ -108,22 +109,21 @@ object Coverage:
         case As[Int](id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
             As[Int](start) #:: As[Int](end) #:: As[Int](lineNo) #:: symbolName #:: treeName #::
             As[Boolean](branch) #:: _ #:: As[Boolean](ignored) #:: tail =>
-          
+
           val juncture = Juncture(id, path, className, methodName, start, end, lineNo + 1,
               symbolName, treeName, branch, ignored, tail.takeWhile(!_.starts(t"\f")).to(List))
-          
+
           recur(tail.dropWhile(!_.starts(t"\f")).tail, juncture :: junctures)
-        
+
         case _ =>
           junctures.reverse
-      
+
     IArray.from(recur(lines.dropWhile(_.starts(t"#"))))
-  
+
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
     if !file.exists() then Set()
     else Source.fromFile(file).getLines.to(LazyList).each: id =>
       ids(id.toInt) = true
-    
-    ids.to(Set)
 
+    ids.to(Set)
