@@ -208,7 +208,7 @@ defined inside other test suites, making it possible to organise tests into a hi
 
 ## Status
 
-Probably is classified as __maturescent__. For reference, Scala One projects are
+Probably is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -222,7 +222,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Probably is designed to be _small_. Its entire source code currently consists
-of 795 lines of code.
+of 787 lines of code.
 
 ## Building
 
@@ -291,7 +291,7 @@ O&Uuml;](https://propensive.com/).
 
 The name _Probably_ acknowledges an appropriate level of confidence in writing tests which _probe_ the functionality of a program, in contrast to using types which (in theory, at least) _prove_ it.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
