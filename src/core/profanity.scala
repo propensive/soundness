@@ -63,7 +63,7 @@ object Keyboard:
     case '6'       => Keypress.PageDown
     case _         => Keypress.Escape
 
-class StandardKeyboard()(using Monitor, Probate) extends Keyboard:
+class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
   type Keypress = profanity.Keypress | TerminalInfo
 
   def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
@@ -154,7 +154,7 @@ package keyboards:
     type Keypress = Int
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standard(using monitor: Monitor, probate: Probate): StandardKeyboard^{monitor} =
+  given standard(using monitor: Monitor, codicil: Codicil): StandardKeyboard^{monitor} =
     StandardKeyboard()
 
 enum TerminalMode:
@@ -167,7 +167,7 @@ trait Interactivity[EventType]:
   def eventStream(): LazyList[EventType]
 
 case class Terminal(signals: Funnel[Signal])
-    (using context: ProcessContext, monitor: Monitor, probate: Probate)
+    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
 extends Interactivity[TerminalEvent]:
 
   export context.stdio.{in, out, err}
@@ -272,7 +272,7 @@ inline def terminal: Terminal = compiletime.summonInline[Terminal]
 given stdio(using terminal: Terminal): Stdio = terminal.stdio
 
 def terminal[ResultType](block: Terminal ?=> ResultType)
-    (using context: ProcessContext, monitor: Monitor, probate: Probate)
+    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
         : ResultType =
 
