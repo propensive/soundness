@@ -43,7 +43,7 @@ case class TextualDagStyle[LineType: Textual]
         cross: Text, overlap: Text)
 extends DagStyle[LineType]:
   def serialize(tiles: List[DagTile], node: LineType): LineType =
-    LineType.make(tiles.map(text(_)).join.s)+node
+    LineType(tiles.map(text(_)).join)+node
 
   def text(tile: DagTile) = tile match
     case Space      => space
