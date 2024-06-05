@@ -24,8 +24,18 @@
   <dependencies>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>kaleidoscope-core</artifactId>
-      <version>0.2.0</version>
+      <artifactId>hieroglyph-core</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>parasite-core</artifactId>
+      <version>0.1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>capricious-core</artifactId>
+      <version>0.1.0</version>
     </dependency>
   </dependencies>
   <organization>
