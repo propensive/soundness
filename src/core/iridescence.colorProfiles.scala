@@ -46,5 +46,3 @@ object colorProfiles:
   given ultralume40: ColorProfile = philipsTl84
   given philipsTl83: ColorProfile = ColorProfile(108.046, 100, 39.228, 111.428, 100, 40.353)
   given ultralume30: ColorProfile = philipsTl83
-
-case class ColorProfile(x2: Double, y2: Double, z2: Double, x10: Double, y10: Double, z10: Double)

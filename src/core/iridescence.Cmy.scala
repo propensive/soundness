@@ -16,5 +16,20 @@
 
 package iridescence
 
-extension (inline context: StringContext)
-  transparent inline def rgb(inline parts: Any*): Rgb24 = ${RgbHex.expand('context, 'parts)}
+import language.experimental.captureChecking
+
+import scala.util.chaining.*
+
+import anticipation.*
+
+object Cmy:
+  given Cmy is RgbColor = _.srgb.rgb24.asInt
+
+case class Cmy(cyan: Double, magenta: Double, yellow: Double):
+  def srgb: Srgb = Srgb((1 - cyan), (1 - magenta), (1 - yellow))
+
+  def cmyk: Cmyk =
+    val key = List(1, cyan, magenta, yellow).min
+
+    if key == 1 then Cmyk(0, 0, 0, 1)
+    else Cmyk((cyan - key)/(1 - key), (magenta - key)/(1 - key), (yellow - key)/(1 - key), key)
