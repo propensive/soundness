@@ -6,7 +6,7 @@
     │ This file contains a Fury build definition.             │
     │ Fury can be downloaded from https://fury.build/         │
     │ or your can just run this file on the command line.     │
-    └─────────────────────────────────────────────────────────┘ 
+    └─────────────────────────────────────────────────────────┘
 
 ecosystem vent 3 https://github.com/propensive/vent main
 
@@ -23,7 +23,8 @@ project fulminate
     compiler  scala
     sources   src/core
     include   anticipation/print
-  
+    include   anticipation/log
+
   stream latest
     lifetime 7
     guarantee functionality
@@ -31,4 +32,3 @@ project fulminate
   stream stable
     lifetime 180
     guarantee source
-

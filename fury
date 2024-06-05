@@ -10,7 +10,7 @@ project fulminate
   module core
     compiler  scala
     sources   src/core
-    include   anticipation/css anticipation/http symbolism/core anticipation/print anticipation/http
+    include   anticipation/css anticipation/http symbolism/core anticipation/print anticipation/http anticipation/log
 
   module test
     compiler  scala
@@ -18,4 +18,3 @@ project fulminate
     include   fulminate/core probably/cli larceny/plugin
     main      fulminate.Tests
     # coverage  fulminate/core
-
