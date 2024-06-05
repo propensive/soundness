@@ -36,7 +36,7 @@ sealed trait Monitor:
   type Result
   val promise: Promise[Result]
   protected[parasite] var subordinates: Set[Subordinate] = Set()
-  
+
   protected[parasite] val interception: Mutex[Trace => PartialFunction[Throwable, Transgression]] =
     Mutex({ trace => { case _ => Transgression.Escalate } })
 
@@ -51,7 +51,7 @@ sealed trait Monitor:
   def supervisor: Supervisor
   def intercept(trace: Trace, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
-  
+
   def interceptor(lambda: Trace => PartialFunction[Throwable, Transgression]): Unit =
     interception.replace: interception =>
       trace => lambda(trace).orElse(interception(trace))
@@ -71,13 +71,13 @@ sealed abstract class Supervisor() extends Monitor:
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
-  
+
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start(() => block).nn
-  
+
 object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
-  
+
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
@@ -91,9 +91,9 @@ def supervise[ResultType](block: Monitor ?=> ResultType)
 case class Trace(codepoint: Codepoint, parent: Optional[Trace])
 
 @capability
-abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) extends Monitor:
+abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
-  
+
   def trace: Trace = Trace(frame, parent.trace)
   def evaluate(subordinate: Subordinate): Result
   val promise: Promise[Result] = Promise()
@@ -106,7 +106,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
 
   def stack: Text =
     val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
-    
+
     parent match
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
       case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
@@ -126,13 +126,13 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
     case Failed(_)       => throw Panic(msg"should not be relenting after failure")
     case Cancelled       => throw Panic(msg"should not be relenting after cancellation")
 
-  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Probate)
+  def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()))
-  
+
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
-      (using Monitor, Probate)
+      (using Monitor, Codicil)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()).await())
@@ -143,13 +143,13 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
         thread.interrupt()
         promise.cancel()
         Cancelled
-      
+
       case other =>
         other
-    
+
     if state2 == Cancelled then thread.join()
-      
-  
+
+
   def result()(using cancel: Errant[ConcurrencyError]): Result =
     state.replace:
       case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
@@ -159,11 +159,11 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
       case Delivered(duration, result) => Delivered(duration, result)
       case Failed(error)               => throw error
       case Cancelled                   => abort(ConcurrencyError(Reason.Cancelled))
-    
+
     .match
       case Delivered(_, result) => result
       case other                => throw Panic(msg"impossible state")
-    
+
 
   def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =
     promise.attend(duration)
@@ -192,7 +192,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
           case Initializing =>
             parent.subordinates += this
             Active(System.currentTimeMillis)
-          
+
           case other =>
             boundary.break()
 
@@ -200,20 +200,20 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
           state.replace:
             case Active(startTime) =>
               Completed(System.currentTimeMillis - startTime, result)
-            
+
             case other =>
               other
-      
+
       catch
         case error: InterruptedException =>
           Thread.interrupted()
-          
+
           val state2 = state.replace:
             case Initializing | Active(_) | Cancelled | Suspended(_, _) => Cancelled
             case state@Completed(_, _)                                  => state
             case state@Delivered(_, _)                                  => state
             case state@Failed(_)                                        => state
-          
+
           state2 match
             case Cancelled => subordinates.each { child => if child.daemon then child.cancel() }
             case _         => ()
@@ -222,10 +222,10 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
           intercept(trace, error)
           state() = Failed(error)
           subordinates.each { child => if child.daemon then child.cancel() }
-      
+
       finally
-        probate.cleanup(this)
-        
+        codicil.cleanup(this)
+
         state.replace: state =>
           parent.remove(this)
           state match
@@ -238,5 +238,5 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, probate: Probate) 
             case Cancelled                        => Cancelled
 
         boundary.break()
-  
+
   thread
