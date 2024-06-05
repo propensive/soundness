@@ -163,8 +163,8 @@ object Readable:
     reader =>
       def recur(count: ByteSize): LazyList[Line] =
         try reader.readLine() match
-          case null         => LazyList()
-          case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
+          case result if result eq null => LazyList()
+          case line: String             => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException =>
           reader.close()
           raise(StreamError(count))(LazyList())
