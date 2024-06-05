@@ -75,8 +75,8 @@ trait Executor[ResultType]:
 
 trait ProcessRef:
   def pid: Pid
-  def kill()(using GenericLogger): Unit
-  def abort()(using GenericLogger): Unit
+  def kill(): Unit binds GenericLogger
+  def abort(): Unit binds GenericLogger
   def alive: Boolean
   def attend(): Unit
   def startTime[InstantType: SpecificInstant]: Optional[InstantType]
@@ -95,8 +95,8 @@ object OsProcess:
 
 class OsProcess private (java: ProcessHandle) extends ProcessRef:
   def pid: Pid = Pid(java.pid)
-  def kill()(using GenericLogger): Unit = java.destroy()
-  def abort()(using GenericLogger): Unit = java.destroyForcibly()
+  def kill(): Unit binds GenericLogger = java.destroy()
+  def abort(): Unit binds GenericLogger = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
 
@@ -147,12 +147,12 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
 
-  def abort()(using logger: GenericLogger): Unit =
-    logger.info(t"The process with PID ${pid.value} was aborted")
+  def abort(): Unit binds GenericLogger =
+    bond[GenericLogger].info(t"The process with PID ${pid.value} was aborted")
     process.destroy()
 
-  def kill()(using logger: GenericLogger): Unit =
-    logger.warn(t"The process with PID ${pid.value} was killed")
+  def kill(): Unit binds GenericLogger =
+    bond[GenericLogger].warn(t"The process with PID ${pid.value} was killed")
     process.destroyForcibly()
 
   def osProcess(using Errant[PidError]) = OsProcess(pid)
@@ -172,18 +172,18 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 sealed trait Executable:
   type Exec <: Label
 
-  def fork[ResultType]()(using working: WorkingDirectory, logger: GenericLogger)
-          : Process[Exec, ResultType] raises ExecError
+  def fork[ResultType]()(using working: WorkingDirectory)
+          : Process[Exec, ResultType] binds GenericLogger raises ExecError
 
   def exec[ResultType]()
-      (using working: WorkingDirectory, logger: GenericLogger, executor: Executor[ResultType])
-          : ResultType raises ExecError =
+      (using working: WorkingDirectory, executor: Executor[ResultType])
+          : ResultType binds GenericLogger raises ExecError =
 
     fork[ResultType]().await()
 
   def apply[ResultType]()(using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using working: WorkingDirectory, logger: GenericLogger, executor: Executor[ResultType])
-          : ResultType raises ExecError =
+      (using working: WorkingDirectory, executor: Executor[ResultType])
+          : ResultType binds GenericLogger raises ExecError =
 
     fork[ResultType]().await()
 
@@ -221,8 +221,8 @@ object Command:
   given Show[Command] = command => formattedArguments(command.arguments)
 
 case class Command(arguments: Text*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, logger: GenericLogger)
-      : Process[Exec, ResultType] raises ExecError =
+  def fork[ResultType]()(using working: WorkingDirectory)
+      : Process[Exec, ResultType] binds GenericLogger raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
@@ -240,8 +240,8 @@ object Pipeline:
   given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
-  def fork[ResultType]()(using working: WorkingDirectory, logger: GenericLogger)
-      : Process[Exec, ResultType] raises ExecError =
+  def fork[ResultType]()(using working: WorkingDirectory)
+      : Process[Exec, ResultType] binds GenericLogger raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
@@ -250,7 +250,7 @@ case class Pipeline(commands: Command*) extends Executable:
 
       processBuilder.nn
 
-    logger.info(t"Starting pipelined processes ${this}")
+    bond[GenericLogger].info(t"Starting pipelined processes ${this}")
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
     new Process[Exec, ResultType](pipeline)
@@ -374,7 +374,6 @@ trait Parameterizable:
   def show(value: Self): Text
 
 object Guillotine:
-  given Realm = realm"guillotine"
 
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
     import quotes.reflect.*
@@ -385,3 +384,5 @@ object Guillotine:
     (Refinement(TypeRepr.of[Command], "Exec", bounds).asType: @unchecked) match
       case '[type commandType <: Command; commandType] =>
         '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}
+
+given Realm = realm"guillotine"

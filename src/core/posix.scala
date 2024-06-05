@@ -117,6 +117,9 @@ trait PosixCommandOutputs:
   erased given uuencode: CommandOutput["uuencode", Text] = ###
   erased given waitCommand: CommandOutput["wait", Text] = ###
   erased given wc: CommandOutput["wc", Text] = ###
-  erased given which[PathType](using erased SpecificPath { type Self = PathType }): CommandOutput["which", PathType] = ###
+
+  erased given which[PathType](using erased PathType is SpecificPath)
+      : CommandOutput["which", PathType] = ###
+
   erased given who: CommandOutput["who", Text] = ###
   erased given write: CommandOutput["write", Text] = ###
