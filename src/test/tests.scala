@@ -21,7 +21,7 @@ import rudiments.*
 import digression.*
 import anticipation.*
 import kaleidoscope.*
-import perforate.*
+import contingency.*
 import gossamer.*
 import spectacular.*
 import larceny.*

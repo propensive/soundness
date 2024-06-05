@@ -35,45 +35,48 @@ object SimplePath:
   inline given add(using path: Errant[PathError]): AddOperator[SimplePath, SimpleLink] with
     type Result = SimplePath
     def add(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
-  
+
   inline def parse(text: Text)(using path: Errant[PathError]): SimplePath/*^{path}*/ =
     text.decodeAs[SimplePath]
-  
+
   given show: Show[SimplePath] = _.render
   given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
 
   given rootParser: RootParser[SimplePath, Root.type] with
     def parse(text: Text): Optional[(Root.type, Text)] =
       if text.starts(t"/") then (Root, text.drop(1)) else Unset
-    
-  given navigable: Navigable[SimplePath, ".*\\/.*", Root.type] with
+
+  given SimplePath is Navigable[".*\\/.*", Root.type] as navigable:
     def separator(path: SimplePath): Text = t"/"
     def root(path: SimplePath): Root.type = serpentine.Root
     def prefix(root: Root.type): Text = t"/"
     def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
-  
+
+  val nav: SimplePath is Directional[".*\\/.*", Root.type] = navigable
+
   given pathCreator: PathCreator[SimplePath, ".*\\/.*", Root.type] with
     def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
-    
-case class SimplePath(descent: List[PathName[".*\\/.*"]]) extends PathEquality(using SimplePath.navigable)
+
+case class SimplePath(descent: List[PathName[".*\\/.*"]]) extends PathEquality[SimplePath](using SimplePath.navigable)
 
 object SimpleLink:
   inline given decoder(using Errant[PathError]): Decoder[SimpleLink] =
     Followable.decoder[SimpleLink]
-  
+
   given show: Show[SimpleLink] = _.render
-  
+
   inline def parse(text: Text)(using path: Errant[PathError]): SimpleLink/*^{path}*/ =
     text.decodeAs[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
 
-  given followable: Followable[SimpleLink, ".*\\/.*", "..", "."] with
+  given followable: Followable[".*\\/.*", "..", "."] with
+    type Self = SimpleLink
     def separator(link: SimpleLink): Text = t"/"
     val separators: Set[Char] = Set('/')
     def ascent(path: SimpleLink): Int = path.ascent
     def descent(path: SimpleLink): List[PathName[".*\\/.*"]] = path.descent
-    
+
 case class SimpleLink(ascent: Int, descent: List[PathName[".*\\/.*"]])
 
 package hierarchies:
