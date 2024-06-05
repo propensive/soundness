@@ -34,11 +34,11 @@ given SystemProperties =
   case t"user.home" => t"/home/work"
   case _            => t""
 
-given SpecificPath[Text] = identity(_)
+given Text is SpecificPath = identity(_)
 
 object Tests extends Suite(t"Imperial tests"):
   def run(): Unit =
-    
+
     test(t"Home directory"):
       Home()
     .assert(_ == t"/home/work")
@@ -46,11 +46,11 @@ object Tests extends Suite(t"Imperial tests"):
     test(t"Cache directory"):
       Home.Cache()
     .assert(_ == t"/home/work/.cache")
-    
+
     test(t"~/.local/bin path"):
       Home.Local.Bin()
     .assert(_ == t"/home/work/.local/bin")
-    
+
     test(t"/ path"):
       Base()
     .assert(_ == t"/")
@@ -58,51 +58,51 @@ object Tests extends Suite(t"Imperial tests"):
     test(t"/boot path"):
       Base.Boot()
     .assert(_ == t"/boot")
-    
+
     test(t"/efi path"):
       Base.Efi()
     .assert(_ == t"/efi")
-    
+
     test(t"/etc path"):
       Base.Etc()
     .assert(_ == t"/etc")
-    
+
     test(t"/home path"):
       Base.Home()
     .assert(_ == t"/home")
-    
+
     test(t"/root path"):
       Base.Root()
     .assert(_ == t"/root")
-    
+
     test(t"/srv path"):
       Base.Srv()
     .assert(_ == t"/srv")
-    
+
     test(t"/tmp path"):
       Base.Tmp()
     .assert(_ == t"/tmp")
-    
+
     test(t"/usr path"):
       Base.Usr()
     .assert(_ == t"/usr")
-    
+
     test(t"/usr/share path"):
       Base.Usr.Share()
     .assert(_ == t"/usr/share")
-    
+
     test(t"/usr/bin path"):
       Base.Usr.Bin()
     .assert(_ == t"/usr/bin")
-    
+
     test(t"/usr/share/doc path"):
       Base.Usr.Share.Doc()
     .assert(_ == t"/usr/share/doc")
-    
+
     test(t"/usr/share/factory/etc path"):
       Base.Usr.Share.Factory.Etc()
     .assert(_ == t"/usr/share/factory/etc")
-    
+
     test(t"/proc PID path"):
       Base.Proc(Pid(2000))()
     .assert(_ == t"/proc/2000")
