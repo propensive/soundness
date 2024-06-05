@@ -40,10 +40,10 @@ import scala.collection.mutable as scm
 object Baseline:
   enum Compare:
     case Min, Mean, Max
-  
+
   enum Metric:
     case BySpeed, ByTime
-  
+
   enum Calc:
     case Ratio, Difference
 
@@ -63,7 +63,7 @@ object Benchmark:
 case class Benchmark
     (total: Long, count: Int, min: Double, mean: Double, max: Double, sd: Double,
         confidence: Benchmark.Percentiles, baseline: Optional[Baseline]):
-  
+
   def zScore(percentile: Benchmark.Percentiles): Double = percentile match
     case 80 => 0.842
     case 85 => 1.036
@@ -73,7 +73,7 @@ case class Benchmark
     case 97 => 1.881
     case 98 => 2.054
     case 99 => 2.326
-    
+
   def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(count.toDouble)).toLong
   def throughput: Long = (1000000000.0/mean).toLong
 
@@ -103,7 +103,7 @@ object TestReporter:
 
 object TestReport:
   given Inclusion[TestReport, Outcome] with
-    def include(report: TestReport, testId: TestId, outcome: Outcome): TestReport = 
+    def include(report: TestReport, testId: TestId, outcome: Outcome): TestReport =
       val report2 = report.addOutcome(testId, outcome)
       outcome match
         case Outcome.Pass(_) =>
@@ -114,21 +114,21 @@ object TestReport:
           report2.addDebugInfo(testId, DebugInfo.Throws(StackTrace(error)))
         case Outcome.CheckThrows(error, _) =>
           report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
-  
+
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
 
 
 class TestReport(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
-  
+
   class TestsMap():
     private var tests: ListMap[TestId, ReportLine] = ListMap()
     def list: List[(TestId, ReportLine)] = synchronized(tests.to(List))
     def apply(testId: TestId): ReportLine = synchronized(tests(testId))
-    
+
     def update(testId: TestId, reportLine: ReportLine) = synchronized:
       tests = tests.updated(testId, reportLine)
-    
+
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = synchronized:
       if !tests.contains(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
@@ -142,7 +142,7 @@ class TestReport(using Environment):
       case Suite(suite, tests)  =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
         if suite.absent then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
-      
+
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
 
@@ -153,15 +153,15 @@ class TestReport(using Environment):
           else if buf.all(_.is[Outcome.Throws]) then Status.Throws
           else if buf.all(_.is[Outcome.CheckThrows]) then Status.CheckThrows
           else Status.Mixed
-      
+
         val min: Long = buf.map(_.duration).min
         val max: Long = buf.map(_.duration).max
         val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
-          
+
         List(Summary(status, testId, buf.length, min, max, avg))
-    
+
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
-  
+
   def resolve(suite: Optional[TestSuite]): ReportLine.Suite =
     suite.option.map: suite =>
       (resolve(suite.parent).tests(suite.id): @unchecked) match
@@ -175,19 +175,19 @@ class TestReport(using Environment):
 
   def declareSuite(suite: TestSuite): TestReport = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
-  
+
   def fail(error: Throwable, active: Set[TestId]): Unit = failure = (error, active)
 
   def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.also:
     val benchmarks = resolve(testId.suite).tests
     benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
-  
+
   def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.also:
     val tests = resolve(testId.suite).tests
-    
+
     (tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
-  
+
   def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
     this.also(details(testId) = details(testId).append(info))
 
@@ -211,7 +211,7 @@ class TestReport(using Environment):
       case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
       case Suite       => e"   "
       case Bench       => e"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
-    
+
     def describe: Display = this match
       case Pass        => e"Pass"
       case Fail        => e"Fail"
@@ -226,25 +226,26 @@ class TestReport(using Environment):
     e"${colors.Goldenrod}(ms)",
     e"${colors.Sienna}(s) "
   )
-    
+
   def showTime(n: Long, units: List[Display] = unitsSeq): Display = units match
     case Nil =>
       n.show.display
-    
+
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
         val sig = (n/1000L).show
-        val frac = (n%1000).show.pad(3, Rtl, '0')(using textMetrics.uniform)
+        import textMetrics.uniform
+        val frac = (n%1000).show.pad(3, Rtl, '0')
         e"${colors.Silver}(${sig}.$frac) ${unit}"
-    
+
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: Display =
       val depth = id.suite.let(_.id.depth).or(0) + 1
-      
+
       val title =
         if status == Status.Suite then e"${colors.Silver}($Bold(${id.name}))"
         else e"${id.name}"
-      
+
       e"${t"  "*(depth - 1)}$title"
 
     def minTime: Display = if min == 0L then e"" else showTime(min)
@@ -259,31 +260,31 @@ class TestReport(using Environment):
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
         case _                => char.displayWidth
-    
+
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
       val timeTitle = if showStats then t"Avg" else t"Time"
-      
+
       Table[Summary](
         Column(e"")(_.status.symbol),
-        
+
         Column(e"$Bold(Hash)"): s =>
           e"${colors.CadetBlue}(${s.id.id})",
-        
+
         Column(e"$Bold(Test)")(_.indentedName),
-        
+
         Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
           e"${colors.SteelBlue}(${s.iterations})",
-        
+
         Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.minTime,
-        
+
         Column(e"$Bold($timeTitle)", textAlign = TextAlignment.Right)(_.avgTime),
-        
+
         Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.maxTime
       )
-      
+
     val columns: Int = safely(Environment.columns).or(120)
 
     val summaryLines = lines.summaries
@@ -294,10 +295,10 @@ class TestReport(using Environment):
         def hitsText: Display =
           val main = e"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
           if oldHits == 0 then main else e"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
-      
+
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
-        val hitCount = branches.map(_.id).map(coverage.hits.contains).count(identity(_))
-        val oldHitCount = branches.map(_.id).map(coverage.oldHits.contains).count(identity(_))
+        val hitCount: Int = branches.to(List).map(_.id).map(coverage.hits.contains).count(identity(_))
+        val oldHitCount: Int = branches.to(List).map(_.id).map(coverage.oldHits.contains).count(identity(_))
         CoverageData(path, branches.size, hitCount, oldHitCount)
 
       val maxHits = data.map(_.branches).maxOption
@@ -311,11 +312,11 @@ class TestReport(using Environment):
       def render(junctures: List[Surface]): LazyList[(Surface, Display)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
-      
+
       import colors.*
-      
+
       val allHits = coverage.hits ++ coverage.oldHits
-      
+
       val junctures2 = coverage.structure.values.flatten
           .to(List)
           .filter(!_.covered(allHits))
@@ -333,9 +334,9 @@ class TestReport(using Environment):
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
         Column(e"Symbol")(_(0).juncture.symbolName)
       ).tabulate(render(junctures2)).layout(columns)(using tableStyles.horizontal).render.each(Out.println(_))
-      
+
       Out.println(e"")
-    
+
       Table[CoverageData](
         Column(e"Source file", textAlign = TextAlignment.Left): data =>
           data.path,
@@ -347,18 +348,18 @@ class TestReport(using Environment):
           def width(n: Double): Text = if n == 0 then t"" else t"━"*(1 + (70*n).toInt)
           val covered: Text = width(maxHits.map(data.hits.toDouble/_).getOrElse(0))
           val oldCovered: Text = width(maxHits.map(data.oldHits.toDouble/_).getOrElse(0))
-          
+
           val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
               data.oldHits)/_).getOrElse(0))
-          
+
           val bars = List(colors.ForestGreen -> covered, colors.Goldenrod -> oldCovered,
               colors.Brown -> notCovered)
-          
+
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
       ).tabulate(data).layout(columns).render.each(Out.println(_))
-      
+
       Out.println(e"")
-    
+
     if summaryLines.exists(_.count > 0) then
       val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
       val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
@@ -383,17 +384,17 @@ class TestReport(using Environment):
         case bench@ReportLine.Bench(_, _) => Iterable(bench)
         case ReportLine.Suite(_, tests)   => tests.list.map(_(1)).flatMap(benches(_))
         case _                            => Nil
-    
+
     benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
       val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
-      
+
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
-      
+
       def confInt(b: Benchmark): Display =
         if b.confidenceInterval == 0 then e"" else e"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
-      
+
       def opsPerS(b: Benchmark): Display =
         if b.throughput == 0 then e""
         else e"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
@@ -407,13 +408,13 @@ class TestReport(using Environment):
 
           Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
             showTime(s.benchmark.min.toLong),
-        
+
           Column(e"$Bold(Mean)", textAlign = TextAlignment.Right): s =>
             showTime(s.benchmark.mean.toLong),
-          
+
           Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): s =>
             e"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
-          
+
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${opsPerS(s.benchmark)}"
         ) ::: (
@@ -424,18 +425,18 @@ class TestReport(using Environment):
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
                 case Ratio      => left/right
-              
+
               def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
-              
+
               val value = baseline.compare match
                 case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
                 case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
                 case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
-              
+
               val valueWithUnits = baseline.metric match
                 case ByTime =>
                   showTime(value.toLong)
-                
+
                 case BySpeed =>
                   e"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
 
@@ -444,7 +445,7 @@ class TestReport(using Environment):
                                    else if value < 0
                                    then e"${colors.Thistle}(-)${valueWithUnits.dropChars(1)}"
                                    else e"${colors.Thistle}(+)$valueWithUnits"
-                
+
                 case Ratio      => if value == 1 then e"★" else e"${colors.Silver}($value)"
         ))*
       )
@@ -462,7 +463,7 @@ class TestReport(using Environment):
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
       val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.display, id.name.display))
-      
+
       info.each: debugInfo =>
         Out.println(t"")
         debugInfo match
@@ -471,13 +472,13 @@ class TestReport(using Environment):
             Out.println(e"${colors.Silver}(An exception was thrown while running test:)")
             Out.println(err.crop(t"probably.Runner", t"run()").display)
             showLegend()
-          
+
           case DebugInfo.CheckThrows(err) =>
             val name = e"$Italic(${colors.White}(${err.component}.${err.className}))"
             Out.println(e"${colors.Silver}(An exception was thrown while checking the test predicate:)")
             Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).display)
             showLegend()
-          
+
           case DebugInfo.Compare(expected, found, cmp) =>
             val expected2: Display = e"$Italic(${colors.White}($expected))"
             val found2: Display = e"$Italic(${colors.White}($found))"
@@ -485,29 +486,29 @@ class TestReport(using Environment):
             val instead = e"but instead it returned$nl$found2$nl"
             Out.println(e"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
             Out.println(cmp.display)
-          
+
           case DebugInfo.Captures(map) =>
             Table[(Text, Text), Display](
               Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)),
             ).tabulate(map.to(List)).layout(140).render.each(Out.println(_))
-          
+
           case DebugInfo.Message(text) =>
             Out.println(text)
-      
+
       Out.println()
 
     failure.let: (error, active) =>
       val explanation = active.to(List) match
         case Nil =>
           e"No tests were active when a fatal error occurred."
-        
+
         case _ =>
           val tests = active.to(List).map { test => e"$Bold(${test.name})" }.join(e"", e", ", e" and ", e"")
           val were = if active.size == 1 then e"was" else e"were"
           e"A fatal error occurred while $tests $were running."
-        
+
       Out.println()
-      
+
       Out.println(Ribbon(colors.Crimson.srgb, colors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).display)

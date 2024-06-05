@@ -30,8 +30,8 @@ extension [TestType](test: Test[TestType])
        baseline:   Optional[Baseline]              = Unset)
       (using runner:           Runner[ReportType],
              inc:              Inclusion[ReportType, Benchmark],
-             specificDuration: SpecificDuration[DurationType] = timeInterfaces.long,
-             genericDuration:  GenericDuration[DurationType]  = timeInterfaces.long)
+             specificDuration: DurationType is SpecificDuration = durationApi.javaLong,
+             genericDuration:  DurationType is GenericDuration  = durationApi.javaLong)
           : Unit =
 
     val action = test.action
@@ -39,23 +39,23 @@ extension [TestType](test: Test[TestType])
     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
     times.sizeHint(4096)
     val ctx = new TestContext()
-    
+
     while System.currentTimeMillis < end do
       val t0 = System.nanoTime
       val result = action(ctx)
       val t1 = System.nanoTime - t0
       times += t1
-    
+
     times.clear()
-    
+
     end = System.currentTimeMillis + duration.or(SpecificDuration(10000L)).milliseconds
-    
+
     while System.currentTimeMillis < end do
       val t0 = System.nanoTime
       val result = action(ctx)
       val t1 = System.nanoTime - t0
       times += t1
-    
+
     val count = times.size
     val total = times.sum
     val min: Long = times.min
@@ -63,8 +63,8 @@ extension [TestType](test: Test[TestType])
     val max: Long = times.max
     val variance: Double = (times.map { t => (mean - t)*(mean - t) }.sum)/count
     val stdDev: Double = math.sqrt(variance)
-    
+
     val benchmark =
       Benchmark(total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
-    
+
     inc.include(runner.report, test.id, benchmark)

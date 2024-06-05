@@ -8,6 +8,7 @@ repo propensive/gossamer
 repo propensive/ambience
 repo propensive/eucalyptus
 repo propensive/wisteria
+repo propensive/diuretic
 
 target probably/test
 
@@ -20,7 +21,7 @@ project probably
   module bench
     compiler  scala
     sources   src/bench
-    include   probably/core
+    include   probably/core diuretic/core
 
   module cli
     compiler  scala
