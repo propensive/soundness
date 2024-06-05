@@ -25,6 +25,7 @@ project rudiments
     include   vacuous/core
     include   anticipation/path
     include   anticipation/http
+    include   anticipation/log
 
   stream latest
     lifetime 7
