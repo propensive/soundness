@@ -88,22 +88,22 @@ object Similarity:
 trait Similarity[-ValueType]:
   def similar(a: ValueType, b: ValueType): Boolean
 
-trait Contrast[-ValueType]:
+trait Contrastable[-ValueType]:
   def apply(a: ValueType, b: ValueType): Semblance
 
 extension [ValueType](left: ValueType)
   inline def contrastWith(right: ValueType): Semblance = compiletime.summonFrom:
-    case contrast: Contrast[ValueType] => contrast(left, right)
-    case _                             => Contrast.general(left, right)
+    case contrastable: Contrastable[ValueType] => contrastable(left, right)
+    case _                                     => Contrastable.general(left, right)
 
-object Contrast extends Derivation[Contrast]:
-  def nothing[ValueType]: Contrast[ValueType] = (left, right) => Semblance.Identical(left.debug)
+object Contrastable extends Derivation[Contrastable]:
+  def nothing[ValueType]: Contrastable[ValueType] = (left, right) => Semblance.Identical(left.debug)
 
-  given int: Contrast[Int] = (left, right) =>
+  given int: Contrastable[Int] = (left, right) =>
     if left == right then Semblance.Identical(left.show)
     else Semblance.Different(left.show, right.show, t"${math.abs(right - left)}")
 
-  given double: Contrast[Double] = (left, right) =>
+  given double: Contrastable[Double] = (left, right) =>
     given Decimalizer = Decimalizer(3)
     if left == right then Semblance.Identical(left.show)
     else
@@ -111,10 +111,10 @@ object Contrast extends Derivation[Contrast]:
       val sizeText = if size.isFinite then t"${if size > 0 then t"+" else t""}$size%" else t""
       Semblance.Different(left.show, right.show, sizeText)
 
-  inline def general[ValueType]: Contrast[ValueType] = (left, right) =>
+  inline def general[ValueType]: Contrastable[ValueType] = (left, right) =>
     if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
 
-  inline given Contrast[Exception]:
+  inline given Contrastable[Exception]:
     def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
@@ -122,12 +122,12 @@ object Contrast extends Derivation[Contrast]:
       if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
       else Semblance.Different(leftMsg, rightMsg)
 
-  given Contrast[Char] = (left, right) =>
+  given Contrastable[Char] = (left, right) =>
     if left == right then Semblance.Identical(left.show) else Semblance.Different(left.show, right.show)
 
-  given Contrast[Text] = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
+  given Contrastable[Text] = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
-  inline def compareSeq[ValueType: Contrast: Similarity]
+  inline def compareSeq[ValueType: Contrastable: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
           : Semblance =
     if left == right then Semblance.Identical(leftDebug) else
@@ -154,19 +154,19 @@ object Contrast extends Derivation[Contrast]:
       Semblance.Breakdown(comparison, leftDebug, rightDebug)
 
 
-  inline given [ValueType: Contrast: Similarity] => Contrast[IArray[ValueType]] as iarray:
+  inline given [ValueType: Contrastable: Similarity] => Contrastable[IArray[ValueType]] as iarray:
     def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
 
-  inline given [ValueType: Contrast: Similarity] => Contrast[List[ValueType]] as list:
+  inline given [ValueType: Contrastable: Similarity] => Contrastable[List[ValueType]] as list:
     def apply(left: List[ValueType], right: List[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
 
-  inline given [ValueType: Contrast: Similarity] => Contrast[Vector[ValueType]] as vector:
+  inline given [ValueType: Contrastable: Similarity] => Contrastable[Vector[ValueType]] as vector:
     def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
 
-  inline def join[DerivationType <: Product: ProductReflection]: Contrast[DerivationType] = (left, right) =>
+  inline def join[DerivationType <: Product: ProductReflection]: Contrastable[DerivationType] = (left, right) =>
     val elements = fields(left, true): [FieldType] =>
       leftParam =>
         if leftParam == complement(right) then (label, Semblance.Identical(leftParam.debug))
@@ -174,6 +174,6 @@ object Contrast extends Derivation[Contrast]:
 
     Semblance.Breakdown(elements, left.debug, right.debug)
 
-  inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
+  inline def split[DerivationType: SumReflection]: Contrastable[DerivationType] = (left, right) =>
     variant(left): [VariantType <: DerivationType] =>
       left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.debug, right.debug))
