@@ -54,8 +54,8 @@ object Probably:
       //   val debug: Expr[Debug[testType]] =
       //     Expr.summon[Debug[testType]].getOrElse('{ _.toString.tt })
 
-      //   val contrast: Expr[Contrast[testType]] = '{Contrast.general[testType]}
-      //   //val contrast = Expr.summon[Contrast[testType]].getOrElse('{Contrast.general[testType]})
+      //   val contrast: Expr[testType is Contrastable] = '{Contrastable.general[testType]}
+      //   //val contrast = Expr.summon[testType is Contrastable].getOrElse('{Contrastable.general[testType]})
       //   '{
       //     assertion[testType, TestType, ReportType, ResultType]
       //         ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $debug)
@@ -64,7 +64,7 @@ object Probably:
       case _ =>
         '{
           assertion[TestType, TestType, ReportType, ResultType]
-              ($runner, $test, $predicate, $action, Contrast.nothing[TestType], None, $inc, $inc2,
+              ($runner, $test, $predicate, $action, Contrastable.nothing[TestType], None, $inc, $inc2,
                   _.toString.tt)
         }
 
@@ -106,7 +106,7 @@ object Probably:
        test: Test[TestType2],
        predicate: TestType2 => Boolean,
        result: TestRun[TestType2] => ResultType,
-       contrast: Contrast[TestType],
+       contrast: TestType is Contrastable,
        exp: Option[TestType],
        inc: Inclusion[ReportType, Outcome],
        inc2: Inclusion[ReportType, DebugInfo],
@@ -127,7 +127,7 @@ object Probably:
                 inc2.include(runner.report, test.id, DebugInfo.Compare(display.text(exp),
                     display.text(value), contrast(exp, value)))
               case None =>
-                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Contrast[Any]].compare(value, 1)))
+                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Any is Contrastable].compare(value, 1)))
 
             if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
 
