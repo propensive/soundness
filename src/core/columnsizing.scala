@@ -67,7 +67,7 @@ package columnar:
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+TextType.make(ellipsis.s) else line
+        if line.length > width then line.take(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
@@ -78,7 +78,7 @@ package columnar:
             : IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
-        if line.length > width then line.take(width - ellipsis.length)+TextType.make(ellipsis.s) else line
+        if line.length > width then line.take(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =

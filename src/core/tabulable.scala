@@ -40,19 +40,25 @@ trait TableRelabelling[+TargetType]:
   def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
 
 object Tabulable extends ProductDerivation[[RowType] =>> RowType is Tabulable[Text]]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Tabulable[Text] = () =>
-    val columns: IArray[Column[DerivationType, Text]] =
-      val labels: Map[Text, Text] = compiletime.summonFrom:
-        case labels: TableRelabelling[DerivationType] => labels.relabelling()
-        case _                                        => Map()
 
+  class JoinTabulable[DerivationType <: Product](columns: IArray[Column[DerivationType, Text]])
+  extends Tabulable[Text]:
+    type Self = DerivationType
+    def table(): Table[DerivationType, Text] = Table[DerivationType](columns*)
+
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Tabulable[Text] =
+    val labels: Map[Text, Text] = compiletime.summonFrom:
+      case labels: TableRelabelling[DerivationType] => labels.relabelling()
+      case _                                        => Map()
+
+    val columns: IArray[Column[DerivationType, Text]] =
       contexts:
         [FieldType] => tabulable =>
           tabulable.table().columns.map(_.contramap(dereference).retitle:
             labels.get(label).getOrElse(label.capitalize))
       .flatten
 
-    Table[DerivationType](columns*)
+    new JoinTabulable[DerivationType](columns)
 
   given Int is Tabulable[Text] = () =>
     Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
