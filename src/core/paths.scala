@@ -485,10 +485,9 @@ object EntryMaker:
       (using createNonexistentParents: CreateNonexistentParents,
              overwritePreexisting:     OverwritePreexisting,
              working:                  WorkingDirectory,
-             logger:                   GenericLogger,
              io:                       Errant[IoError],
              exec:                     Errant[ExecError])
-          : EntryMaker[Fifo, Unix.Path] =
+          : (EntryMaker[Fifo, Unix.Path] binds GenericLogger) =
 
     path => createNonexistentParents(path):
       overwritePreexisting(path):
