@@ -16,10 +16,18 @@
 
 package rudiments
 
+import language.experimental.into
+
+import anticipation.*
+
 trait Bond[TypeclassType <: Any { type Self }]:
   val typeclass: TypeclassType
   val value: typeclass.Self
+  def apply(): typeclass.Self = value
   type Value = value.type
+
+  def over[InputType, ResultType](lambda: TypeclassType ?=> typeclass.Self ?=> ResultType): ResultType =
+    lambda(using typeclass)(using value)
 
 object Bond:
   inline given [TypeclassType <: Any { type Self }]
@@ -32,3 +40,18 @@ infix type binds[ResultType, TypeclassType <: Any { type Self }] =
 
 inline def bound[TypeclassType <: Any { type Self }](using bond: Bond[TypeclassType]): bond.Value =
   bond.value
+
+inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
+
+extension (bond: Bond[GenericLogger])
+  def fine(message: => into Text)(using realm: Realm): Unit =
+    bond.typeclass.logFine(bond(), realm, message)
+
+  def info(message: => into Text)(using realm: Realm): Unit =
+    bond.typeclass.logInfo(bond(), realm, message)
+
+  def warn(message: => into Text)(using realm: Realm): Unit =
+    bond.typeclass.logWarn(bond(), realm, message)
+
+  def fail(message: => into Text)(using realm: Realm): Unit =
+    bond.typeclass.logFail(bond(), realm, message)
