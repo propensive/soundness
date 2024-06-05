@@ -46,7 +46,7 @@ TBC
 
 ## Status
 
-Anthology is classified as __embryotic__. For reference, Scala One projects are
+Anthology is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -130,7 +130,7 @@ O&Uuml;](https://propensive.com/).
 Many musicians and bands release _compilation_ albums, which are often called
 _anthologies_. _Anthology_'s purpose is _compilation_.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
