@@ -17,7 +17,6 @@
 package iridescence
 
 import probably.*
-import rudiments.*
 import gossamer.*
 
 given ColorProfile = colorProfiles.daylight
