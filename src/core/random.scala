@@ -45,26 +45,27 @@ package randomNumberGenerators:
   given seeded(using seed: Seed): RandomNumberGenerator = () => su.Random(ju.Random(seed.long))
   given secureSeeded(using seed: Seed): RandomNumberGenerator = () => su.Random(js.SecureRandom(seed.value.to(Array)))
 
-object Arbitrary extends Derivation[Arbitrary]:
-  given int: Arbitrary[Int] = _.long().toInt
-  given long: Arbitrary[Long] = _.long()
-  given char: Arbitrary[Char] = _.long().toChar
-  given seed: Arbitrary[Seed] = _.long().pipe(Seed(_))
-  given boolean: Arbitrary[Boolean] = _.long() < 0L
-  given double(using distribution: Distribution): Arbitrary[Double] = distribution.transform(_)
+object Arbitrary extends Derivation[[DerivationType] =>> DerivationType is Arbitrary]:
+  given Int is Arbitrary as int = _.long().toInt
+  given Long is Arbitrary as long = _.long()
+  given Char is Arbitrary as char = _.long().toChar
+  given Seed is Arbitrary as seed = _.long().pipe(Seed(_))
+  given Boolean is Arbitrary as boolean = _.long() < 0L
+  given (using distribution: Distribution) => Double is Arbitrary = distribution.transform(_)
 
-  inline def join[DerivationType <: Product: ProductReflection]: Arbitrary[DerivationType] = random =>
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Arbitrary = random =>
     stochastic(using summonInline[RandomNumberGenerator]):
       construct { [FieldType] => arbitrary => arbitrary.from(summon[Random]) }
 
-  inline def split[DerivationType: SumReflection]: Arbitrary[DerivationType] = random =>
+  inline def split[DerivationType: SumReflection]: DerivationType is Arbitrary = random =>
     stochastic(using summonInline[RandomNumberGenerator]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
         [VariantType <: DerivationType] => arbitrary => arbitrary.from(summon[Random])
 
-trait Arbitrary[+ValueType]:
-  def apply()(using random: Random): ValueType = from(random)
-  def from(random: Random): ValueType
+trait Arbitrary:
+  type Self
+  def apply()(using random: Random): Self = from(random)
+  def from(random: Random): Self
 
 object Random:
   lazy val global: Random = new Random(randomNumberGenerators.unseeded.make())
@@ -74,20 +75,19 @@ class Random(private val generator: su.Random):
   def long(): Long = generator.nextLong()
   def gaussian(): Double = generator.nextGaussian()
   def unitInterval(): Double = generator.nextDouble()
-  def apply[ValueType]()(using arbitrary: Arbitrary[ValueType]): ValueType = arbitrary.from(this)
+  def apply[ValueType: Arbitrary](): ValueType = ValueType.from(this)
 
   transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] = generator.shuffle(seq)
 
 def stochastic[ResultType](using generator: RandomNumberGenerator)(block: Random ?=> ResultType): ResultType =
   block(using new Random(generator.make()))
 
-def arbitrary[ValueType]()(using Random)(using arbitrary: Arbitrary[ValueType]): ValueType =
-  arbitrary()
+def arbitrary[ValueType: Arbitrary]()(using Random): ValueType = ValueType()
 
-def random[ValueType: Arbitrary]()(using arbitrary: Arbitrary[ValueType]): ValueType =
+def random[ValueType: Arbitrary](): ValueType =
   given Random = Random.global
-  arbitrary()
-  
+  ValueType()
+
 
 package randomDistributions:
   given gaussian: Distribution = Gaussian()
@@ -105,9 +105,9 @@ case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends
   def transform(random: Random): Double =
     val u0 = randomDistributions.uniformUnitInterval.transform(random)
     val u1 = randomDistributions.uniformUnitInterval.transform(random)
-    
+
     (-ln(u0).sqrt*cos(2*π*u1)*2*standardDeviation + mean).double
-    
+
 case class PolarGaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
     @annotation.tailrec
@@ -136,5 +136,5 @@ case class Gamma(shape: Int, scale: Double) extends Distribution:
       if count == 0 then sum*scale else
         val gaussian = randomDistributions.gaussian.transform(random)
         accumulate(sum + gaussian*gaussian, count - 1)
-    
+
     accumulate(0.0, shape)
