@@ -16,7 +16,6 @@
 
 package escapade
 
-import rudiments.*
 import vacuous.*
 import anticipation.*
 import gossamer.*
@@ -58,7 +57,7 @@ object escapes:
     val Magenta = Escape(t"[45m", t"[49m")
     val Cyan = Escape(t"[46m", t"[49m")
     val White = Escape(t"[47m", t"[49m")
-    
+
     val BrightBlack = Escape(t"[100m", t"[49m")
     val BrightRed = Escape(t"[101m", t"[49m")
     val BrightGreen = Escape(t"[102m", t"[49m")
@@ -106,4 +105,3 @@ object csi:
   def rcp(): Text = t"${csi}u"
   def sgr(ns: Int*): Text = t"${csi}${ns.map(_.show).join(t";")}m"
   def dectcem(on: Boolean = false): Text = t"${csi}?25${if on then t"h" else t"l"}"
-

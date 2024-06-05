@@ -16,10 +16,7 @@
 
 package gossamer
 
-import escapade.*
-import rudiments.*
-
 import language.experimental.captureChecking
 
-package defaultTextTypes:
-  given output: (DefaultTextType { type TextType = Display }) = ###
+// package defaultTextTypes:
+//   given output: (DefaultTextType { type TextType = Display }) = ###

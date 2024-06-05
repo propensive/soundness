@@ -89,7 +89,7 @@ object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
 
 trait Ansi2:
-  inline given display[ValueType]: Substitution[Ansi.Input, ValueType, "t"] =
+  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
     new Substitution[Ansi.Input, ValueType, "t"]:
       def embed(value: ValueType) = Ansi.Input.TextInput:
         compiletime.summonFrom:
@@ -196,7 +196,7 @@ object Ansi extends Ansi2:
       Display(state.text, state.spans, state.insertions)
 
 object Display:
-  given add(using NotGiven[Textual[Display]]): AddOperator[Display, Display] with
+  given (using NotGiven[Display is Textual]) => AddOperator[Display, Display] as add:
     type Result = Display
     inline def add(left: Display, right: Display): Display = left.append(right)
 
@@ -212,17 +212,17 @@ object Display:
   given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
     (target, output) => writable.write(target, output.map(_.render(termcapDefinitions.basic)))
 
-  given textual: Textual[Display] with
-    type ShowType[-ValueType] = Displayable[ValueType]
+  given Display is Textual:
+    type Show[-ValueType] = Displayable[ValueType]
     def classTag: ClassTag[Display] = summon[ClassTag[Display]]
-    def string(text: Display): String = text.plain.s
+    def text(display: Display): Text = display.plain
     def length(text: Display): Int = text.plain.s.length
     def make(string: String): Display = Display(Text(string))
 
     def map(text: Display, lambda: Char => Char): Display =
       Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-    def slice(text: Display, start: Int, end: Int): Display = text.dropChars(start).takeChars(end - start)
+    def range(text: Display, start: Int, end: Int): Display = text.dropChars(start).takeChars(end - start)
     val empty: Display = Display.empty
     def concat(left: Display, right: Display): Display = left.append(right)
     def unsafeChar(text: Display, index: Int): Char = text.plain.s.charAt(index)
