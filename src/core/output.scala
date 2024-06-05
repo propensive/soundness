@@ -89,13 +89,17 @@ object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
 
 trait Ansi2:
-  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
-    new Substitution[Ansi.Input, ValueType, "t"]:
-      def embed(value: ValueType) = Ansi.Input.TextInput:
-        compiletime.summonFrom:
-          case display: Displayable[ValueType] => display(value)
-          case given Show[ValueType]           => Display(value.show)
 
+  class DisplaySubstitution[ValueType](display: ValueType => Display)
+  extends Substitution[Ansi.Input, ValueType, "t"]:
+    def embed(value: ValueType) = Ansi.Input.TextInput(display(value))
+
+  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
+    val display: ValueType => Display = value => compiletime.summonFrom:
+      case display: Displayable[ValueType] => display(value)
+      case given Show[ValueType]           => Display(value.show)
+
+    DisplaySubstitution[ValueType](display)
 
 object Ansi extends Ansi2:
   type Transform = TextStyle => TextStyle
@@ -217,7 +221,7 @@ object Display:
     def classTag: ClassTag[Display] = summon[ClassTag[Display]]
     def text(display: Display): Text = display.plain
     def length(text: Display): Int = text.plain.s.length
-    def make(string: String): Display = Display(Text(string))
+    def apply(text: Text): Display = Display(text)
 
     def map(text: Display, lambda: Char => Char): Display =
       Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
