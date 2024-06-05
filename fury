@@ -10,7 +10,6 @@ project parasite
   module core
     compiler  scala
     include   digression/core anticipation/time feudalism/core
-    include   gossamer/core
     sources   src/core
   
   module test
