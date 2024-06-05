@@ -40,31 +40,31 @@ object Semblance:
   given (using calc: TextMetrics): Displayable[Semblance] =
     case Semblance.Breakdown(cmp, l, r) =>
       import tableStyles.default
-      
+
       def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
         case Identical(value)                   => Nil
         case Different(left, right, difference) => Nil
         case Breakdown(comparison, left, right) => comparison.to(List)
-      
+
       case class Row(treeLine: Text, left: Display, right: Display, difference: Display)
 
-      given (using textual: Textual[Text]): TreeStyle[Row] = (tiles, row) =>
+      given (using Text is Textual) => TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
 
       def mkLine(data: (Text, Semblance)) =
         def line(bullet: Text): Text = t"$bullet ${data(0)}"
-        
+
         data(1) match
           case Identical(v) =>
             Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)", e"")
-          
+
           case Different(left, right, difference) =>
             Row(line(t"▪"), e"${colors.YellowGreen}($left)", e"${colors.Crimson}($right)",
                 e"${rgb"#40bbcb"}(${difference.or(t"")})")
-          
+
           case Breakdown(cmp, left, right) =>
             Row(line(t"■"), e"$left", e"$right", e"")
-      
+
       val table = Table[Row](
         Column(e"")(_.treeLine),
         Column(e"Expected", textAlign = TextAlignment.Right)(_.left),
@@ -73,12 +73,12 @@ object Semblance:
       )
 
       table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).layout(200).render.join(e"\n")
-    
+
     case Different(left, right, difference) =>
       val whitespace = if right.has('\n') then e"\n" else e" "
       val whitespace2 = if left.has('\n') then e"\n" else e" "
       e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace2${colors.YellowGreen}($left)"
-    
+
     case Identical(value) =>
       e"The value ${colors.Gray}($value) was expected"
 
@@ -98,11 +98,11 @@ extension [ValueType](left: ValueType)
 
 object Contrast extends Derivation[Contrast]:
   def nothing[ValueType]: Contrast[ValueType] = (left, right) => Semblance.Identical(left.debug)
-  
+
   given int: Contrast[Int] = (left, right) =>
     if left == right then Semblance.Identical(left.show)
     else Semblance.Different(left.show, right.show, t"${math.abs(right - left)}")
-  
+
   given double: Contrast[Double] = (left, right) =>
     given Decimalizer = Decimalizer(3)
     if left == right then Semblance.Identical(left.show)
@@ -114,7 +114,7 @@ object Contrast extends Derivation[Contrast]:
   inline def general[ValueType]: Contrast[ValueType] = (left, right) =>
     if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
 
-  inline given Contrast[Exception] = new Contrast[Exception]:
+  inline given Contrast[Exception]:
     def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
@@ -137,47 +137,43 @@ object Contrast extends Derivation[Contrast]:
             val label =
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
-            
+
             label -> Semblance.Identical(value.debug)
-          
+
           case Ins(rightIndex, value) =>
             t" ⧸${rightIndex.show.subscript}" -> Semblance.Different(t"—", value.debug)
-          
+
           case Del(leftIndex, value) =>
             t"${leftIndex.show.superscript}⧸" -> Semblance.Different(value.debug, t"—")
-          
+
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
-            
-            label -> leftValue.contrastWith(rightValue)
-      
-      Semblance.Breakdown(comparison, leftDebug, rightDebug)
-    
 
-  inline given iarray[ValueType: Contrast: Similarity]: Contrast[IArray[ValueType]] =
-    new Contrast[IArray[ValueType]]:
-      def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
-        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
-  
-  inline given list[ValueType: Contrast: Similarity]: Contrast[List[ValueType]] =
-    new Contrast[List[ValueType]]:
-      def apply(left: List[ValueType], right: List[ValueType]): Semblance =
-        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
-  
-  inline given vector[ValueType: Contrast: Similarity]: Contrast[Vector[ValueType]] =
-    new Contrast[Vector[ValueType]]:
-      def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
-        compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
-  
+            label -> leftValue.contrastWith(rightValue)
+
+      Semblance.Breakdown(comparison, leftDebug, rightDebug)
+
+
+  inline given [ValueType: Contrast: Similarity] => Contrast[IArray[ValueType]] as iarray:
+    def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+
+  inline given [ValueType: Contrast: Similarity] => Contrast[List[ValueType]] as list:
+    def apply(left: List[ValueType], right: List[ValueType]): Semblance =
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+
+  inline given [ValueType: Contrast: Similarity] => Contrast[Vector[ValueType]] as vector:
+    def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+
   inline def join[DerivationType <: Product: ProductReflection]: Contrast[DerivationType] = (left, right) =>
     val elements = fields(left, true): [FieldType] =>
       leftParam =>
         if leftParam == complement(right) then (label, Semblance.Identical(leftParam.debug))
         else (label, context(leftParam, complement(right)))
-    
+
     Semblance.Breakdown(elements, left.debug, right.debug)
-  
+
   inline def split[DerivationType: SumReflection]: Contrast[DerivationType] = (left, right) =>
     variant(left): [VariantType <: DerivationType] =>
       left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.debug, right.debug))
-    
