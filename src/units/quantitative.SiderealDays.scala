@@ -18,7 +18,6 @@ package quantitative
 
 import language.experimental.captureChecking
 
-import anticipation.*
 import rudiments.*
 
 trait SiderealDays[Power <: Nat] extends Units[Power, Time]

@@ -16,17 +16,9 @@
 
 package quantitative
 
-import gossamer.*
-import rudiments.*
-import anticipation.*
-import hypotenuse.*
-import symbolism.*
-import spectacular.*
-
-import scala.quoted.*
-
-import language.implicitConversions
 import language.experimental.captureChecking
+
+import rudiments.*
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
 

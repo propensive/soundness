@@ -16,9 +16,6 @@
 
 package quantitative
 
-import rudiments.*
-import anticipation.*
-
 import language.experimental.captureChecking
 
 erased trait Ratio[UnitsType <: Measure, RatioType <: Double & Singleton]

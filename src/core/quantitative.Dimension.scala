@@ -16,17 +16,7 @@
 
 package quantitative
 
-import language.implicitConversions
 import language.experimental.captureChecking
-
-import scala.quoted.*
-
-import gossamer.*
-import rudiments.*
-import anticipation.*
-import hypotenuse.*
-import symbolism.*
-import spectacular.*
 
 trait Dimension
 
