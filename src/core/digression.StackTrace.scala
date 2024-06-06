@@ -16,55 +16,12 @@
 
 package digression
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import anticipation.*
-import contingency.*
-
 import language.experimental.captureChecking
 
-extension (error: Throwable) def stackTrace: StackTrace = StackTrace(error)
-
-object FqcnError:
-  enum Reason:
-    case InvalidChar(char: Char)
-    case InvalidStart(char: Char)
-    case EmptyName
-    case JavaKeyword(keyword: Text)
-
-  given Reason is Communicable =
-    case Reason.InvalidChar(char)    => msg"a package name may not contain the character $char"
-    case Reason.InvalidStart(char)   => msg"a package name may not start with the character $char"
-    case Reason.EmptyName            => msg"a package name cannot be empty"
-    case Reason.JavaKeyword(keyword) => msg"a package name cannot be the Java keyword, $keyword"
-
-case class FqcnError(name: Text, reason: FqcnError.Reason)
-extends Error(msg"the class name $name is not valid because $reason")
-
-object Fqcn:
-  def valid(char: Char): Boolean =
-    char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' || char == '_'
-
-  def apply(name: Text): Fqcn raises FqcnError =
-    val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))
-
-    parts.foreach: part =>
-      if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))(())
-      if Digression.javaKeywords.has(part) then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)))(())
-
-      part.foreach: char =>
-        if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)))(())
-
-      if part.head >= '0' && part.head <= '9'
-      then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)))(())
-
-    new Fqcn(parts.map(_.tt))
-
-class Fqcn(val parts: IArray[Text]):
-  def text: Text = parts.mkString(".").tt
-  def className: Text = parts.last
-  def packageName: Text = parts.init.mkString(".").tt
+import anticipation.*
+import fulminate.*
+import rudiments.*
+import vacuous.*
 
 object StackTrace:
   case class Method(className: Text, method: Text)

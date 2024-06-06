@@ -18,20 +18,11 @@ package digression
 
 import rudiments.*
 import anticipation.*
-import fulminate.*
 import contingency.*
 
 import scala.quoted.*
 
 import language.experimental.pureFunctions
-
-object Codepoint:
-  inline given Codepoint = ${Digression.location}
-
-case class Codepoint(source: Text, line: Int):
-  def text: Text = Text(s"${source.s.split("/").nn.last.nn}:$line")
-
-given Realm = realm"digression"
 
 object Digression:
   def location(using Quotes): Expr[Codepoint] =
@@ -51,6 +42,3 @@ object Digression:
 
   def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
     failCompilation('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
-
-extension (inline context: StringContext)
-  inline def fqcn(): Fqcn = ${Digression.fqcn('context)}
