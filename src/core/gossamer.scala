@@ -211,18 +211,18 @@ extension [TextType: Textual](text: TextType)
 
     recur(0, 0)
 
-  def displayWidth(using metrics: TextMetrics) = metrics.width(TextType.text(text))
+  def metrics(using TextMetrics) = summon[TextMetrics].width(TextType.text(text))
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
-    if text.displayWidth >= length then text else
-      val padding = TextType(char.toString.tt)*(length - text.displayWidth)
+    if text.metrics >= length then text else
+      val padding = TextType(char.toString.tt)*(length - text.metrics)
 
       bidi match
         case Ltr => TextType.concat(text, padding)
         case Rtl => TextType.concat(padding, text)
 
   def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
-    text.pad((length + text.displayWidth)/2, char = char).pad(length, Rtl, char = char)
+    text.pad((length + text.metrics)/2, char = char).pad(length, Rtl, char = char)
 
   def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType = bidi match
     case Ltr => text.pad(length, bidi, char).take(length, Ltr)
