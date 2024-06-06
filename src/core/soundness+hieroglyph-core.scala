@@ -14,13 +14,19 @@
     and limitations under the License.
 */
 
-package hieroglyph
+package soundness
 
-import anticipation.*
+export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, SafeCharDecoder, EncodingMitigation,
+    CharDecodeError, CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
 
-import language.experimental.captureChecking
+package encodingMitigation:
+  export hieroglyph.encodingMitigation.{strict, skip, substitute, collect}
 
 package textMetrics:
-  given eastAsianScripts: TextMetrics with
-    def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
-    def width(char: Char): Int = char.metrics
+  export hieroglyph.textMetrics.{eastAsianScripts, uniform}
+
+package charDecoders:
+  export hieroglyph.charDecoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+
+package charEncoders:
+  export hieroglyph.charEncoders.{utf8, utf16, utf16Le, utf16Be, ascii}

@@ -16,9 +16,9 @@
 
 package hieroglyph
 
-import vacuous.*
-
 import language.experimental.captureChecking
+
+import vacuous.*
 
 object Chars:
   val superscript: PartialFunction[Char, Char] =
@@ -37,7 +37,7 @@ object Chars:
     case '+' => '₊'
     case '-' => '₋'
     case '=' => '₌'
-  
+
   val subscript: PartialFunction[Char, Char] =
     case '0' => '₀'
     case '1' => '₁'

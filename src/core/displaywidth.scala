@@ -30,7 +30,7 @@ import language.experimental.captureChecking
 
 object Unicode:
   import Hieroglyph.*
-  
+
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] =
       code.s.only:
@@ -41,7 +41,7 @@ object Unicode:
         case "F"  => FullWidth
         case "Na" => Narrow
       .option
-  
+
   enum EaWidth:
     case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
 
@@ -67,26 +67,26 @@ object Unicode:
       stream match
         case r"${Hex(from)}([0-9A-F]{4})\.\.${Hex(to)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, to), w))
-        
+
         case r"${Hex(from)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, from), w))
-        
+
         case head #:: tail =>
           recur(tail, map)
-        
+
         case _ =>
           map
-    
+
     val in: ji.InputStream =
       Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
         throw Panic(msg"could not find hieroglyph/EastAsianWidth.txt on the classpath")
-    
+
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
-  
+
     recur(stream, TreeMap())
 
 extension (char: Char)
-  def displayWidth: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
+  def metrics: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
 
 trait TextMetrics:
   def width(text: Text): Int

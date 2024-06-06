@@ -58,7 +58,7 @@ object Encoding:
 class Encoding(name0: Text):
   def name: Text = charset.displayName.nn.tt
   type CanEncode <: Boolean
-  def decoder(using BadEncodingHandler): CharDecoder = CharDecoder(this)
+  def decoder(using EncodingMitigation): CharDecoder = CharDecoder(this)
   lazy val charset: jnc.Charset = jnc.Charset.forName(name0.s).nn
 
   override def toString: String = s"enc\"${charset.displayName}\""
@@ -69,10 +69,10 @@ extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncode
 object CharDecoder:
   given (using Quickstart) => CharDecoder as default = charDecoders.utf8
 
-  def system(using BadEncodingHandler): CharDecoder =
+  def system(using EncodingMitigation): CharDecoder =
     unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
-  def unapply(name: Text)(using BadEncodingHandler): Option[CharDecoder] =
+  def unapply(name: Text)(using EncodingMitigation): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
 object CharEncoder:
@@ -89,9 +89,9 @@ class CharEncoder(val encoding: Encoding { type CanEncode = true }):
   def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)
 
 class SafeCharDecoder(safeEncoding: Encoding)
-extends CharDecoder(safeEncoding)(using badEncodingHandlers.skip)
+extends CharDecoder(safeEncoding)(using encodingMitigation.skip)
 
-class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
+class CharDecoder(val encoding: Encoding)(using handler: EncodingMitigation):
   def decode(bytes: Bytes): Text =
     val buf: StringBuilder = StringBuilder()
     decode(LazyList(bytes)).each { text => buf.append(text.s) }
@@ -132,11 +132,11 @@ class CharDecoder(val encoding: Encoding)(using handler: BadEncodingHandler):
     recur(stream.map(_.mutable(using Unsafe)))
 
 package charDecoders:
-  given (using BadEncodingHandler) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
-  given (using BadEncodingHandler) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
-  given (using BadEncodingHandler) => CharDecoder as utf16Le = CharDecoder.unapply("UTF-16LE".tt).get
-  given (using BadEncodingHandler) => CharDecoder as utf16Be = CharDecoder.unapply("UTF-16BE".tt).get
-  given (using BadEncodingHandler) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
+  given (using EncodingMitigation) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
+  given (using EncodingMitigation) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
+  given (using EncodingMitigation) => CharDecoder as utf16Le = CharDecoder.unapply("UTF-16LE".tt).get
+  given (using EncodingMitigation) => CharDecoder as utf16Be = CharDecoder.unapply("UTF-16BE".tt).get
+  given (using EncodingMitigation) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
   //given CharDecoder as iso88591 = SafeCharDecoder(Encoding.all("ISO-8859-1".tt).get
 
 package charEncoders:
@@ -147,38 +147,38 @@ package charEncoders:
   given CharEncoder as ascii = CharEncoder.unapply("ASCII".tt).get
   //given CharEncoder as iso88591 = CharEncoder.unapply("ISO-8859-1".tt).get
 
-object BadEncodingHandler:
-  given (using Quickstart) => BadEncodingHandler as default = badEncodingHandlers.substitute
+object EncodingMitigation:
+  given (using Quickstart) => EncodingMitigation as default = encodingMitigation.substitute
 
-trait BadEncodingHandler:
+trait EncodingMitigation:
   def handle(pos: Int, encoding: Encoding): Optional[Char]
   def complete(): Unit
 
-package badEncodingHandlers:
-  given strict(using badEncoding: Errant[UndecodableCharError]): (BadEncodingHandler^{badEncoding}) =
-    new BadEncodingHandler:
-      def handle(pos: Int, encoding: Encoding): Char = raise(UndecodableCharError(pos, encoding))('?')
+package encodingMitigation:
+  given strict(using charDecode: Errant[CharDecodeError]): (EncodingMitigation^{charDecode}) =
+    new EncodingMitigation:
+      def handle(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding))('?')
       def complete(): Unit = ()
 
-  given skip: BadEncodingHandler with
+  given skip: EncodingMitigation with
     def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
     def complete(): Unit = ()
 
-  given substitute: BadEncodingHandler with
+  given substitute: EncodingMitigation with
     def handle(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
 
-  given collect(using aggregate: Errant[AggregateError[UndecodableCharError]]): (BadEncodingHandler^{aggregate}) =
-    new BadEncodingHandler:
-      private val mistakes: scm.ArrayBuffer[UndecodableCharError] = scm.ArrayBuffer()
+  given collect(using aggregate: Errant[AggregateError[CharDecodeError]]): (EncodingMitigation^{aggregate}) =
+    new EncodingMitigation:
+      private val mistakes: scm.ArrayBuffer[CharDecodeError] = scm.ArrayBuffer()
       def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
       def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)))(())
 
-case class UndecodableCharError(pos: Int, encoding: Encoding)
+case class CharDecodeError(pos: Int, encoding: Encoding)
 extends Error(msg"The byte sequence at position $pos could not be decoded with the encoding $encoding")
 
-case class UnencodableCharError(char: Char, encoding: Encoding)
-extends Error(msg"The character '$char' cannot be encoded with the encoding $encoding")
+case class CharEncodeError(char: Char, encoding: Encoding)
+extends Error(msg"The character $char cannot be encoded with the encoding $encoding")
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
