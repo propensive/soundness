@@ -20,4 +20,4 @@ project iridescence
     sources   src/test
     include   iridescence/core probably/cli probably/tolerance
     main      iridescence.Tests
-    coverage  iridescence/core
+    #coverage  iridescence/core
