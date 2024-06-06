@@ -18,15 +18,6 @@ package dendrology
 
 import language.experimental.captureChecking
 
-import anticipation.*
-import gossamer.*
-
-package treeStyles:
-  given default[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
-
-  given rounded[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
-
-  given ascii[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
+trait Expandable:
+  type Self
+  def children(node: Self): List[Self]

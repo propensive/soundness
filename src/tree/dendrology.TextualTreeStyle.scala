@@ -20,13 +20,22 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import gossamer.*
+import rudiments.*
 
-package treeStyles:
-  given default[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
+case class TextualTreeStyle[LineType: Textual](space: Text, last: Text, branch: Text, extender: Text)
+extends TreeStyle[LineType]:
 
-  given rounded[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
+  def serialize(tiles: List[TreeTile], node: LineType): LineType =
+    LineType(tiles.map(text(_)).join)+node
 
-  given ascii[TextType: Textual]: TextualTreeStyle[TextType] =
-    TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")
+  def text(tile: TreeTile): Text = tile match
+    case TreeTile.Space    => space
+    case TreeTile.Last     => last
+    case TreeTile.Branch   => branch
+    case TreeTile.Extender => extender
+
+  def followOnText(tile: TreeTile): Text = tile match
+    case TreeTile.Space    => space
+    case TreeTile.Last     => space
+    case TreeTile.Branch   => extender
+    case TreeTile.Extender => extender
