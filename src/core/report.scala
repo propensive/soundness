@@ -259,7 +259,7 @@ class TestReport(using Environment):
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
-        case _                => char.displayWidth
+        case _                => char.metrics
 
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
