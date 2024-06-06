@@ -158,7 +158,7 @@ from other clients in an event loop.
 
 ## Status
 
-Ethereal is classified as __maturescent__. For reference, Scala One projects are
+Ethereal is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -241,7 +241,7 @@ O&Uuml;](https://propensive.com/).
 
 _Ethereal_ alludes to the present, but unseen—and thus daemons.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
