@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.RgbColor
+export anticipation.Chromatic

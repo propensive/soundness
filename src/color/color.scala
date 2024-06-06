@@ -18,7 +18,7 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait RgbColor:
+trait Chromatic:
   type Self
   extension (color: Self) def asRgb24Int: Int
 
