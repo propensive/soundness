@@ -16,14 +16,14 @@
 
 package vacuous
 
-import anticipation.*
-import fulminate.*
-
-import scala.quoted.*
-
 import language.experimental.pureFunctions
 
 import _root_.java.util as ju
+
+import scala.quoted.*
+
+import anticipation.*
+import fulminate.*
 
 object Unset:
   override def toString(): String = "∅"

@@ -16,12 +16,12 @@
 
 package vacuous
 
-import anticipation.*
-import fulminate.*
+import java.util as ju
 
 import scala.compiletime.*
 
-import java.util as ju
+import anticipation.*
+import fulminate.*
 
 inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
 
