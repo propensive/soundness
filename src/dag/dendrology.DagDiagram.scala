@@ -26,41 +26,7 @@ import scala.reflect.*
 
 import language.experimental.captureChecking
 
-enum DagTile:
-  case Space, Corner, Vertical, FirstMid, Horizontal, MidLast, Cross, Overlap
-
 import DagTile.*
-
-package dagStyles:
-  given default[TextType: Textual]: TextualDagStyle[TextType] =
-    TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt,  "┴─".tt, "│─".tt, "┼─".tt)
-
-  given ascii[TextType: Textual]: TextualDagStyle[TextType] =
-    TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
-
-case class TextualDagStyle[LineType: Textual]
-    (space: Text, corner: Text, vertical: Text, firstMid: Text, horizontal: Text, midLast: Text,
-        cross: Text, overlap: Text)
-extends DagStyle[LineType]:
-  def serialize(tiles: List[DagTile], node: LineType): LineType =
-    LineType(tiles.map(text(_)).join)+node
-
-  def text(tile: DagTile) = tile match
-    case Space      => space
-    case Corner     => corner
-    case Vertical   => vertical
-    case FirstMid   => firstMid
-    case Horizontal => horizontal
-    case MidLast    => midLast
-    case Cross      => cross
-    case Overlap    => overlap
-
-  def followOnText(tile: DagTile): Text = tile match
-    case Space | Horizontal | Corner | MidLast | Overlap => space
-    case _                                                  => vertical
-
-trait DagStyle[LineType]:
-  def serialize(tiles: List[DagTile], node: LineType): LineType
 
 object DagDiagram:
   def apply[NodeType: ClassTag](dag: Dag[NodeType]): DagDiagram[NodeType] =
