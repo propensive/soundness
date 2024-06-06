@@ -14,19 +14,23 @@
     and limitations under the License.
 */
 
-package soundness
+package hieroglyph
 
-export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, EncodingMitigation, CharDecodeError,
-    CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
+import vacuous.*
+import rudiments.*
+import anticipation.*
 
-package encodingMitigation:
-  export hieroglyph.encodingMitigation.{strict, skip, substitute, collect}
+import java.nio as jn, jn.charset as jnc
 
-package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScripts, uniform}
+import language.experimental.captureChecking
 
-package charDecoders:
-  export hieroglyph.charDecoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+object CharEncoder:
+  given (using Quickstart) => CharEncoder as default = charEncoders.utf8
+  def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
-package charEncoders:
-  export hieroglyph.charEncoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+  def unapply(name: Text): Option[CharEncoder] =
+    Encoding.codecs.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
+
+class CharEncoder(val encoding: Encoding { type CanEncode = true }):
+  def encode(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
+  def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)

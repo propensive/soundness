@@ -14,19 +14,11 @@
     and limitations under the License.
 */
 
-package soundness
+package hieroglyph
 
-export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, EncodingMitigation, CharDecodeError,
-    CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
+import language.experimental.captureChecking
 
-package encodingMitigation:
-  export hieroglyph.encodingMitigation.{strict, skip, substitute, collect}
+import fulminate.*
 
-package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScripts, uniform}
-
-package charDecoders:
-  export hieroglyph.charDecoders.{utf8, utf16, utf16Le, utf16Be, ascii}
-
-package charEncoders:
-  export hieroglyph.charEncoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+case class CharDecodeError(pos: Int, encoding: Encoding)
+extends Error(msg"The byte sequence at position $pos could not be decoded with the encoding $encoding")

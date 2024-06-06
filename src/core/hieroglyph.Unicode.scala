@@ -84,15 +84,3 @@ object Unicode:
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
 
     recur(stream, TreeMap())
-
-extension (char: Char)
-  def metrics: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
-
-trait TextMetrics:
-  def width(text: Text): Int
-  def width(char: Char): Int
-
-package textMetrics:
-  given uniform: TextMetrics with
-    def width(text: Text): Int = text.s.length
-    def width(char: Char): Int = 1

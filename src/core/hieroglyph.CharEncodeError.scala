@@ -16,11 +16,9 @@
 
 package hieroglyph
 
-import anticipation.*
-
 import language.experimental.captureChecking
 
-package textMetrics:
-  given eastAsianScripts: TextMetrics with
-    def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
-    def width(char: Char): Int = char.metrics
+import fulminate.*
+
+case class CharEncodeError(char: Char, encoding: Encoding)
+extends Error(msg"The character $char cannot be encoded with the encoding $encoding")

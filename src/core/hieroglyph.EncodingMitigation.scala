@@ -14,19 +14,16 @@
     and limitations under the License.
 */
 
-package soundness
+package hieroglyph
 
-export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, EncodingMitigation, CharDecodeError,
-    CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
+import language.experimental.captureChecking
 
-package encodingMitigation:
-  export hieroglyph.encodingMitigation.{strict, skip, substitute, collect}
+import rudiments.*
+import vacuous.*
 
-package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScripts, uniform}
+object EncodingMitigation:
+  given (using Quickstart) => EncodingMitigation as default = encodingMitigation.substitute
 
-package charDecoders:
-  export hieroglyph.charDecoders.{utf8, utf16, utf16Le, utf16Be, ascii}
-
-package charEncoders:
-  export hieroglyph.charEncoders.{utf8, utf16, utf16Le, utf16Be, ascii}
+trait EncodingMitigation:
+  def handle(pos: Int, encoding: Encoding): Optional[Char]
+  def complete(): Unit

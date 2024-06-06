@@ -18,8 +18,6 @@ package hieroglyph
 
 import language.experimental.captureChecking
 
-import vacuous.*
-
 object Chars:
   val superscript: PartialFunction[Char, Char] =
     case '0' => '⁰'
@@ -49,7 +47,3 @@ object Chars:
     case '7' => '₇'
     case '8' => '₈'
     case '9' => '₉'
-
-extension (char: Char)
-  def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
-  def subscript: Optional[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
