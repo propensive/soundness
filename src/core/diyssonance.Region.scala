@@ -14,7 +14,12 @@
     and limitations under the License.
 */
 
-package soundness
+package dissonance
 
-export dissonance.{Change, Edit, Ins, Del, Par, Sub, Region, RDiff, DiffParseError, Diff, Chunk, diff,
-    serialize}
+import language.experimental.captureChecking
+
+import rudiments.*
+
+enum Region[ElemType]:
+  case Changed(deletions: List[Del[ElemType]], insertions: List[Ins[ElemType]])
+  case Unchanged(retentions: List[Par[ElemType]])
