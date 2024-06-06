@@ -16,17 +16,15 @@
 
 package anticipation
 
-import language.experimental.captureChecking
+package termcapDefinitions:
+  given Termcap as basic:
+    def ansi: Boolean = false
+    def color: ColorDepth = ColorDepth.NoColor
 
-trait GenericUrl:
-  type Self
-  def text(url: Self): Text
+  given Termcap as xterm256:
+    def ansi: Boolean = true
+    def color: ColorDepth = ColorDepth.Cube6
 
-trait SpecificUrl:
-  type Self
-  def url(text: Text): Self
-
-extension [UrlType: GenericUrl](url: UrlType) def text: Text = UrlType.text(url)
-
-object SpecificUrl:
-  def apply[UrlType: SpecificUrl](text: Text): UrlType = UrlType.url(text)
+  given Termcap as xtermTrueColor:
+    def ansi: Boolean = true
+    def color: ColorDepth = ColorDepth.TrueColor

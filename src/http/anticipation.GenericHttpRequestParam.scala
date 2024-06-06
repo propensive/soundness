@@ -18,9 +18,6 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait Transport[TransportType]:
-  type Writer[-DataType]
-  type Reader[DataType]
-  
-  def write[DataType: Writer](value: DataType): LazyList[IArray[Byte]]
-  def read[DataType: Reader](value: LazyList[IArray[Byte]]): DataType
+trait GenericHttpRequestParam[-ParamType]:
+  type Self <: String & Singleton
+  def apply(value: ParamType): Text

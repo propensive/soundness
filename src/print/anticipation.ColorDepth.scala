@@ -16,15 +16,6 @@
 
 package anticipation
 
-import scala.annotation.*
-
-// import language.experimental.captureChecking
-
-object Printable:
-  given Text is Printable = (text, termcap) => text
-  given String is Printable = (string, termcap) => string.tt
-  given Char is Printable = (char, termcap) => char.toString.tt
-
 object ColorDepth:
   def apply(colors: Int): ColorDepth = colors match
     case 8                => ColorDepth.Indexed8
@@ -36,26 +27,3 @@ object ColorDepth:
 
 enum ColorDepth:
   case NoColor, Indexed8, Indexed16, Cube4, Cube6, TrueColor
-
-package termcapDefinitions:
-  given Termcap as basic:
-    def ansi: Boolean = false
-    def color: ColorDepth = ColorDepth.NoColor
-
-  given Termcap as xterm256:
-    def ansi: Boolean = true
-    def color: ColorDepth = ColorDepth.Cube6
-
-  given Termcap as xtermTrueColor:
-    def ansi: Boolean = true
-    def color: ColorDepth = ColorDepth.TrueColor
-
-trait Termcap:
-  def ansi: Boolean
-  def color: ColorDepth
-  def width: Int = Int.MaxValue
-
-@capability
-trait Printable:
-  type Self
-  def print(text: Self, termcap: Termcap): Text

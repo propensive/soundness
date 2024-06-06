@@ -16,21 +16,15 @@
 
 package anticipation
 
+import annotation.*
+
 import language.experimental.captureChecking
 
-trait GenericHttpResponseStream[ValueType]:
+@capability
+trait SpecificDirectory:
   type Self
-  def mediaType: Text
-  def content(value: Self): LazyList[IArray[Byte]]
+  def directory(directory: Text): Self
 
-trait GenericHttpReader:
-  type Self
-  def read(value: Text): Self
-
-trait GenericHttpRequestParam[-ParamType]:
-  type Self <: String & Singleton
-  def apply(value: ParamType): Text
-
-trait GenericHttpResponseParam[+ParamType]:
-  type Self <: String & Singleton
-  def unapply(value: Text): Option[ParamType]
+object SpecificDirectory:
+  def apply[DirectoryType: SpecificDirectory](name: Text): DirectoryType =
+    DirectoryType.directory(name)
