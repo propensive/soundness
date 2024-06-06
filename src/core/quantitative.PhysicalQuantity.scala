@@ -28,18 +28,6 @@ import scala.quoted.*
 import language.implicitConversions
 import language.experimental.captureChecking
 
-trait Dimension
-
-erased trait Length extends Dimension
-erased trait Mass extends Dimension
-erased trait Time extends Dimension
-erased trait Current extends Dimension
-erased trait Luminosity extends Dimension
-erased trait Temperature extends Dimension
-erased trait AmountOfSubstance extends Dimension
-
-erased trait Angle extends Dimension
-
 erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label]()
 
 object PhysicalQuantity:
@@ -50,11 +38,11 @@ object PhysicalQuantity:
   erased given current: PhysicalQuantity[Units[1, Current], "current"] = ###
   erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = ###
   erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = ###
-  
+
   erased given angle: PhysicalQuantity[Units[1, Angle], "angle"] = ###
-  
+
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
-  
+
   type ElectricalConductivity = Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
   type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
   type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
@@ -106,10 +94,10 @@ object PhysicalQuantity:
   type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
   type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
-  
+
   type MolarEntropy =
     Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1, AmountOfSubstance]
-  
+
   type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
   type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
   type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
@@ -118,7 +106,7 @@ object PhysicalQuantity:
   type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
   type Volume = Units[3, Length]
   type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
-  
+
   erased given absement: PhysicalQuantity[Absement, "absement"] = ###
   erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###
   erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = ###
@@ -178,188 +166,7 @@ object PhysicalQuantity:
   erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] = ###
   erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] = ###
   erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] = ###
-  
+
   erased given electricDisplacementField
           : PhysicalQuantity[ElectricDisplacementField, "electric displacement field"] =
     ###
-
-sealed trait Measure
-
-trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
-
-erased trait Metres[Power <: Nat] extends Units[Power, Length]
-erased trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-erased trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-erased trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-erased trait Amperes[Power <: Nat] extends Units[Power, Current]
-erased trait Kelvins[Power <: Nat] extends Units[Power, Temperature]
-erased trait Seconds[Power <: Nat] extends Units[Power, Time]
-
-erased trait Radians[Power <: Nat] extends Units[Power, Angle]
-
-trait UnitName[-ValueType]:
-  def siPrefix: MetricPrefix = NoPrefix
-  def name(): Text
-  def text: Text = t"${siPrefix.symbol}${name()}"
-
-object UnitName:
-  given UnitName[Metres[1]] = () => t"m"
-  given UnitName[Candelas[1]] = () => t"cd"
-  given UnitName[Moles[1]] = () => t"mol"
-  given UnitName[Amperes[1]] = () => t"A"
-  given UnitName[Kelvins[1]] = () => t"K"
-  given UnitName[Seconds[1]] = () => t"s"
-  
-  given UnitName[Radians[1]] = () => t"rad"
-
-  given UnitName[Kilograms[1]] with
-    override def siPrefix: MetricPrefix = Kilo
-    def name(): Text = t"g"
-
-trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
-
-object PrincipalUnit:
-  given length: PrincipalUnit[Length, Metres]()
-  given mass: PrincipalUnit[Mass, Kilograms]()
-  given time: PrincipalUnit[Time, Seconds]()
-  given current: PrincipalUnit[Current, Amperes]()
-  given luminosity: PrincipalUnit[Luminosity, Candelas]()
-  given temperature: PrincipalUnit[Temperature, Kelvins]()
-  given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
-
-  given angle: PrincipalUnit[Angle, Radians]()
-
-trait SubstituteUnits[UnitsType <: Measure](val name: Text)
-
-object SubstituteUnits:
-  given joules: SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
-  given newtons: SubstituteUnits[Kilograms[1] & Metres[1] & Seconds[-2]](t"N")
-
-trait UnitsOffset[UnitsType <: Measure]:
-  def value(): Double
-
-object Quantitative extends Quantitative2:
-  opaque type Quantity[UnitsType <: Measure] = Double
-  opaque type MetricUnit[UnitsType <: Measure] <: Quantity[UnitsType] = Double
-
-  extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
-    def underlying: Double = quantity
-
-    inline def value: Double = compiletime.summonFrom:
-      case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
-      case _                                   => quantity
-  
-  object MetricUnit:
-    erased given underlying[UnitsType <: Measure]: Underlying[MetricUnit[UnitsType], Double] = ###
-    def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
-
-    @targetName("makeDerivedUnit")
-    def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
-
-  object Quantity:
-    erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
-    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
-
-    given genericDuration: GenericDuration with
-      type Self = Quantity[Seconds[1]]
-      def milliseconds(quantity: Quantity[Seconds[1]]): Long = (quantity*1000.0).toLong
-    
-    given specificDuration: SpecificDuration with
-      type Self = Quantity[Seconds[1]]
-      def duration(long: Long): Quantity[Seconds[1]] = Quantity(long/1000.0)
-
-    transparent inline given add[LeftType <: Measure, RightType <: Measure]
-            : AddOperator[Quantity[LeftType], Quantity[RightType]] =
-
-      ${Quantitative.addTypeclass[LeftType, RightType]}
-    
-    transparent inline given sub[LeftType <: Measure, RightType <: Measure]
-            : SubOperator[Quantity[LeftType], Quantity[RightType]] =
-      
-      ${Quantitative.subTypeclass[LeftType, RightType]}
-
-    transparent inline given mul[LeftType <: Measure, RightType <: Measure]
-            : MulOperator[Quantity[LeftType], Quantity[RightType]] =
-      
-      ${Quantitative.mulTypeclass[LeftType, RightType]}
-
-    given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
-      type Result = Quantity[LeftType]
-      inline def mul(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
-
-    transparent inline given div[LeftType <: Measure, RightType <: Measure]
-            : DivOperator[Quantity[LeftType], Quantity[RightType]] =
-      
-      ${Quantitative.divTypeclass[LeftType, RightType]}
-
-    given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
-      type Result = Quantity[LeftType]
-      inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
-
-    transparent inline given squareRoot[ValueType <: Measure]
-            : RootOperator[2, Quantity[ValueType]] =
-      ${Quantitative.sqrtTypeclass[ValueType]}
-    
-    transparent inline given cubeRoot[ValueType <: Measure]: RootOperator[3, Quantity[ValueType]] =
-      ${Quantitative.cbrtTypeclass[ValueType]}
-
-    inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
-    given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
-    
-    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] =
-      int => Quantity(int.toDouble)
-
-    given inequality[UnitsType <: Measure, UnitsType2 <: Measure]
-            : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with
-
-      inline def compare
-          (inline left:        Quantity[UnitsType],
-           inline right:       Quantity[UnitsType2],
-           inline strict:      Boolean,
-           inline greaterThan: Boolean)
-              : Boolean =
-
-        ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
-      
-
-    inline given [UnitsType <: Measure](using Decimalizer): Show[Quantity[UnitsType]] =
-      new Show[Quantity[UnitsType]]:
-        def text(value: Quantity[UnitsType]): Text = value.render
-    
-    inline given [UnitsType <: Measure](using Decimalizer): Debug[Quantity[UnitsType]] =
-      new Debug[Quantity[UnitsType]]:
-        def text(value: Quantity[UnitsType]): Text = value.render
-  
-    def renderUnits(units: Map[Text, Int]): Text =
-      units.to(List).map: (unit, power) =>
-        if power == 1 then unit
-        else 
-          val exponent: Text =
-            power.show.mapChars:
-              case '0' => '⁰'
-              case '1' => '¹'
-              case '2' => '²'
-              case '3' => '³'
-              case '4' => '⁴'
-              case '5' => '⁵'
-              case '6' => '⁶'
-              case '7' => '⁷'
-              case '8' => '⁸'
-              case '9' => '⁹'
-              case '-' => '¯'
-              case _   => ' '
-          
-          t"$unit$exponent"
-      .join(t"·")
-
-export Quantitative.{Quantity, MetricUnit}
-
-val Metre: MetricUnit[Metres[1]] = MetricUnit(1)
-val Gram: MetricUnit[Kilograms[1]] = MetricUnit(0.001)
-val Candela: MetricUnit[Candelas[1]] = MetricUnit(1)
-val Mole: MetricUnit[Moles[1]] = MetricUnit(1)
-val Ampere: MetricUnit[Amperes[1]] = MetricUnit(1)
-val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
-val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
-
-val Radian: MetricUnit[Radians[1]] = MetricUnit(1)

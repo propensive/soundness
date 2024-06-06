@@ -18,21 +18,11 @@ package quantitative
 
 import language.experimental.captureChecking
 
-val Hertz = MetricUnit(1.0/Second)
-val Newton = MetricUnit(Metre*Kilo(Gram)/(Second*Second))
-val Pascal = MetricUnit(Newton/(Metre*Metre))
-val Joule = MetricUnit(Newton*Metre)
-val Watt = MetricUnit(Joule/Second)
-val Coulomb = MetricUnit(Second*Ampere)
-val Volt = MetricUnit(Watt/Ampere)
-val Farad = MetricUnit(Coulomb/Volt)
-val Ohm = MetricUnit(Volt/Ampere)
-val Siemens = MetricUnit(Ampere/Volt)
-val Weber = MetricUnit(Volt*Second)
-val Tesla = MetricUnit(Weber/(Metre*Metre))
-val Henry = MetricUnit(Weber/Ampere)
-val Lux = MetricUnit(Candela/(Metre*Metre))
-val Becquerel = MetricUnit(1.0/Second)
-val Gray = MetricUnit(Joule/Kilo(Gram))
-val Sievert = MetricUnit(Joule/Kilo(Gram))
-val Katal = MetricUnit(Mole/Second)
+import anticipation.*
+import rudiments.*
+
+trait Picas[Power <: Nat] extends Units[Power, Length]
+
+object Picas:
+  given UnitName[Picas[1]] = () => "pc".tt
+  erased given picasPerMetre: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = ###
