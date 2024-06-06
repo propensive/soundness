@@ -59,7 +59,7 @@ object Semblance:
             Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)", e"")
 
           case Different(left, right, difference) =>
-            Row(line(t"▪"), e"${colors.YellowGreen}($left)", e"${colors.Crimson}($right)",
+            Row(line(t"▪"), e"${webColors.YellowGreen}($left)", e"${webColors.Crimson}($right)",
                 e"${rgb"#40bbcb"}(${difference.or(t"")})")
 
           case Breakdown(cmp, left, right) =>
@@ -77,10 +77,10 @@ object Semblance:
     case Different(left, right, difference) =>
       val whitespace = if right.has('\n') then e"\n" else e" "
       val whitespace2 = if left.has('\n') then e"\n" else e" "
-      e"The result$whitespace${colors.Crimson}($right)${whitespace}did not equal$whitespace2${colors.YellowGreen}($left)"
+      e"The result$whitespace${webColors.Crimson}($right)${whitespace}did not equal$whitespace2${webColors.YellowGreen}($left)"
 
     case Identical(value) =>
-      e"The value ${colors.Gray}($value) was expected"
+      e"The value ${webColors.Gray}($value) was expected"
 
 object Similarity:
   given [ValueType]: Similarity[ValueType] = (a, b) => a == b
