@@ -16,10 +16,10 @@
 
 package dendrology
 
+import language.experimental.captureChecking
+
 import anticipation.*
 import gossamer.*
-
-import language.experimental.captureChecking
 
 package dagStyles:
   given default[TextType: Textual]: TextualDagStyle[TextType] =

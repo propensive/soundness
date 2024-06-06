@@ -16,15 +16,15 @@
 
 package dendrology
 
-import rudiments.*
-import anticipation.*
-import spectacular.*
-import gossamer.*
-import acyclicity.*
+import language.experimental.captureChecking
 
 import scala.reflect.*
 
-import language.experimental.captureChecking
+import acyclicity.*
+import anticipation.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
 
 import DagTile.*
 

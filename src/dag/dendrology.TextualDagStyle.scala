@@ -16,11 +16,11 @@
 
 package dendrology
 
-import rudiments.*
+import language.experimental.captureChecking
+
 import anticipation.*
 import gossamer.*
-
-import language.experimental.captureChecking
+import rudiments.*
 
 import DagTile.*
 
