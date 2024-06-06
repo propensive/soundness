@@ -16,150 +16,113 @@
 
 package contingency
 
-import fulminate.*
-import rudiments.*
-import anticipation.*
+import language.experimental.pureFunctions
 
 import scala.quoted.*
 import scala.compiletime.*
 
+import fulminate.*
+import vacuous.*
+import rudiments.*
+import anticipation.*
+
 given realm: Realm = realm"contingency"
 
-object Contingency:
-  private def action[ErrorType <: Error: Type, ResultType: Type](using Quotes)
-      (context: Expr[Tended[ErrorType, ResultType]])
-          : Expr[Errant[ErrorType] ?=> ResultType] =
-    import quotes.reflect.*
+def raise[SuccessType, ErrorType <: Error](error: ErrorType)
+    (using handler: Errant[ErrorType], recovery: Recovery[ErrorType, SuccessType])
+        : SuccessType =
+  handler.record(error)
+  recovery.recover(error)
 
-    context.asTerm match
-      case Inlined(None, Nil, Apply(_, List(action))) =>
-        action.asExprOf[Errant[ErrorType] ?=> ResultType]
+def raise[SuccessType, ErrorType <: Error](error: ErrorType)(ersatz: => SuccessType)
+    (using handler: Errant[ErrorType])
+        : SuccessType =
+  handler.record(error)
+  ersatz
 
-      case _ =>
-        throw Panic(msg"the tended action was not in the expected form")
+def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Errant[ErrorType])
+        : Nothing =
+  handler.abort(error)
 
-  private def caseDefs[ErrorType <: Error: Type, ResultType: Type](using Quotes)
-      (handler: Expr[PartialFunction[ErrorType, ResultType]])
-          : List[quotes.reflect.CaseDef] =
-    import quotes.reflect.*
+def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
+    (block: OptionalStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+        : Optional[SuccessType] =
 
-    handler.asTerm match
-      case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
-        cases.flatMap:
-          case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
-          case _                                   => Nil
+  try boundary: label ?=>
+    block(using OptionalStrategy(label))
+  catch case error: Exception => Unset
 
-      case _ =>
-        abandon(msg"unexpected lambda")
+def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
+    (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
+              SuccessType)
+        : SuccessType =
 
+  boundary: label ?=>
+    import unsafeExceptions.canThrowAny
+    block(using Unsafe)(using ThrowStrategy())
 
+def throwErrors[ErrorType <: Error](using CanThrow[ErrorType])[SuccessType]
+    (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
+        : SuccessType =
 
-  private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
-      (handler: Expr[PartialFunction[ErrorType, ResultType]])
-          : List[quotes.reflect.Symbol] =
+  block(using ThrowStrategy())
 
-    import quotes.reflect.*
+def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
+    (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
+        : SuccessType =
 
-    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
-      case Wildcard()          => true
-      case Typed(_, matchType) => patternType <:< matchType.tpe
-      case Bind(_, pattern)    => exhaustive(pattern, patternType)
+  val value: Either[AggregateError[ErrorType], SuccessType] =
+    boundary: label ?=>
+      val raiser = AggregateStrategy(label)
+      Right(block(using raiser)).also(raiser.finish())
 
-      case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
-        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
+  value match
+    case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
+    case Right(value) => value
 
-      case Unapply(Select(target, method), _, params) =>
-        // TODO: Check that extractor is exhaustive
-        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
+def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
+    (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    (using raise: Errant[ExpectationError[SuccessType]])
+        : ErrorType =
+  val value: Either[ErrorType, SuccessType] = boundary: label ?=>
+    Right(block(using EitherStrategy(label)))
 
-      case other =>
-        abandon(msg"bad pattern")
+  value match
+    case Left(error)  => error
+    case Right(value) => abort(ExpectationError(value))
 
-    def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
-      case OrType(left, right) => unpack(left) ++ unpack(right)
-      case other               => Set(other)
+def attempt[ErrorType <: Error](using DummyImplicit)[SuccessType]
+    (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
+        : Attempt[SuccessType, ErrorType] =
 
-    val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
+  boundary: label ?=>
+    Attempt.Success(block(using AttemptStrategy[ErrorType, SuccessType](label)))
 
-    def patternType(pattern: Tree): List[TypeRepr] = pattern match
-      case Typed(_, matchType)   => List(matchType.tpe)
-      case Bind(_, pattern)      => patternType(pattern)
-      case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => abandon(msg"wildcard")
+def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
+    (block: FailStrategy[ErrorType, SuccessType] ?=> SuccessType)
+        : SuccessType =
 
-      case Unapply(select, _, _) =>
-        if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
-        else abandon(msg"Unapply ${select.symbol.declaredType.toString}")
+  given FailStrategy[ErrorType, SuccessType]()
+  block
 
-      case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
-        if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
+infix type raises[SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
 
-      case other =>
-        abandon(msg"this pattern could not be recognized as a distinct `Error` type")
+extension [ErrorType <: Error, ResultType](inline context: Tended[ErrorType, ResultType])
+  transparent inline def remedy(inline lambda: PartialFunction[ErrorType, ResultType]): Any =
+    ${Contingency.remedy('context, 'lambda)}
 
-    val handledTypes: List[Symbol] =
-      caseDefs(handler).flatMap:
-        case CaseDef(pattern, _, _) => patternType(pattern)
-      .map(_.typeSymbol)
+  inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2])
+          : Any =
+    ${Contingency.mitigate('context, 'lambda)}
 
-    (requiredHandlers -- handledTypes).to(List)
+inline def tend[ResultType, ErrorType <: Error](inline block: Errant[ErrorType] ?=> ResultType)
+        : Tended[ErrorType, ResultType] =
+  Tended[ErrorType, ResultType](block(using _))
 
+package errorHandlers:
+  given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
+    ThrowStrategy()(using unsafeExceptions.canThrowAny)
 
-  def mitigate[ErrorType <: Error: Type, ResultType: Type, ErrorType2 <: Error: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ErrorType2]])
-      (using Quotes)
-           : Expr[Any] =
-
-    '{???}
-
-
-  def remedy[ErrorType <: Error: Type, ResultType: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ResultType]])
-      (using Quotes)
-           : Expr[Any] =
-
-    import quotes.reflect.*
-
-    def wrap[InsideType[_]: Type](errorTypes: List[TypeRepr])
-        (makeExpr: Expr[PartialFunction[ErrorType, Nothing] => ResultType] =>
-                     Expr[InsideType[ResultType]])
-            : Term =
-
-      errorTypes match
-        case Nil =>
-          makeExpr
-           ('{(partialFunction0: PartialFunction[ErrorType, Nothing]) =>
-                boundary: label ?=>
-                  val partialFunction = $handler.andThen(boundary.break(_)).orElse(partialFunction0)
-                  val errant = new RemedyErrant[ResultType, ErrorType](partialFunction)
-                  ${action(context)}(using errant)
-            }).asTerm
-
-        case errorType :: more => errorType.asType match
-          case '[type errorType <: ErrorType; errorType] =>
-            wrap[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
-              (makeResult: Expr[PartialFunction[ErrorType, Nothing] => ResultType]) =>
-                '{ (errant: Errant[errorType]) ?=>
-                  val makeResult2: PartialFunction[ErrorType, Nothing] => ResultType =
-                    partialFunction =>
-                      $makeResult:
-                        partialFunction.orElse { case error: `errorType` => errant.abort(error) }
-                  ${makeExpr('makeResult2)}
-                }
-
-          case _ =>
-            abandon(msg"Match error ${errorType.show} type was not a subtype of ErrorType")
-
-    wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
-      '{$function(PartialFunction.empty[ErrorType, Nothing])}
-    .asExpr
-
-class RemedyErrant[ResultType, ErrorType <: Error]
-    (partialFunction: PartialFunction[ErrorType, Nothing])
-extends Errant[ErrorType]:
-  def record(error: ErrorType): Unit = abort(error)
-  def abort(error: ErrorType): Nothing = partialFunction(error)
+  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
+          : ThrowStrategy[ErrorType, SuccessType] =
+    ThrowStrategy()
