@@ -26,7 +26,7 @@ import rudiments.*
 
 
 object Srgb:
-  given Srgb is RgbColor = _.rgb24.asInt
+  given Srgb is Chromatic = _.rgb24.asInt
 
 case class Srgb(red: Double, green: Double, blue: Double):
   def css: Text = Text(s"rgb(${(red*255).toInt}, ${(green*255).toInt}, ${(blue*255).toInt})")
