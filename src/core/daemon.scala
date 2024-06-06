@@ -116,7 +116,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
   def makeClient(socket: jn.Socket)
       (using Monitor, Log[Text], Stdio, Codicil)
-        : Unit raises StreamError raises UndecodableCharError raises NumberError =
+        : Unit raises StreamError raises CharDecodeError raises NumberError =
     
     async:
       val in = socket.getInputStream.nn
