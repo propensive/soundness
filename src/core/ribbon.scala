@@ -24,7 +24,7 @@ import anticipation.*
 //import language.experimental.captureChecking
 
 object Ribbon:
-  def apply[ColorType: RgbColor](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
+  def apply[ColorType: Chromatic](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
 
 case class Ribbon(colors: Bg*):
   def fill(parts: Display*): Display =
