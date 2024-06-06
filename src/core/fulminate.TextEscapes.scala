@@ -22,8 +22,6 @@ import scala.annotation.*
 
 import anticipation.*
 
-case class EscapeError(initMessage: Message) extends Error(initMessage)
-
 object TextEscapes:
   def standardEscape
       (text: into Text, cur: Int, esc: Boolean)

@@ -16,18 +16,21 @@
 
 package fulminate
 
-import language.experimental.into
-
-import scala.quoted.*
+import language.experimental.captureChecking
 
 import anticipation.*
 
-object Fulminate:
-  def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
-    val name: String = context.valueOrAbort.parts.head
-    if !name.matches("[a-z]+")
-    then abandon(msg"the realm name should contain only lowercase letters")(using Realm("fulminate"))
-    else '{Realm.make(${Expr(name)}.tt)}
+object Communicable:
+  given Text is Communicable = Message(_)
+  given String is Communicable = string => Message(string.tt)
+  given Char is Communicable = char => Message(char.toString.tt)
+  given Int is Communicable = int => Message(int.toString.tt)
+  given Long is Communicable = long => Message(long.toString.tt)
+  given Message is Communicable = identity(_)
 
-extension (inline context: StringContext)
-  inline def realm(): Realm = ${Fulminate.realm('context)}
+  given List[Message] is Communicable as listMessage =
+    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+
+trait Communicable:
+  type Self
+  def message(value: Self): Message

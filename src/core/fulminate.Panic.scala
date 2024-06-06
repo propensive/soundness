@@ -16,21 +16,10 @@
 
 package fulminate
 
-import anticipation.*
-
 import language.experimental.captureChecking
 
-transparent abstract class Error
-    (val message: Message, private val cause: Error | Null = null, hideStack: Boolean = false)
-extends Exception(message.text.s, cause, false, !hideStack):
-  this: Error =>
-  def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
-  def className: Text = fullClass.last
-  def component: Text = fullClass.head
+import anticipation.*
 
-  override def getMessage: String = component.s+": "+message.text
-  override def getCause: Exception | Null = cause
-  
 object Panic:
   def apply(error: Exception): Panic =
     Panic(msg"""
@@ -39,4 +28,3 @@ object Panic:
     """)
 
 case class Panic(message: Message) extends java.lang.Error(message.text.s)
-

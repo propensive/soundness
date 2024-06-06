@@ -16,24 +16,17 @@
 
 package fulminate
 
-import anticipation.*
-
 import language.experimental.captureChecking
 
-object Communicable:
-  given Text is Communicable = Message(_)
-  given String is Communicable = string => Message(string.tt)
-  given Char is Communicable = char => Message(char.toString.tt)
-  given Int is Communicable = int => Message(int.toString.tt)
-  given Long is Communicable = long => Message(long.toString.tt)
-  given Message is Communicable = identity(_)
+import anticipation.*
 
-  given List[Message] is Communicable as listMessage =
-    messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
+transparent abstract class Error
+    (val message: Message, private val cause: Error | Null = null, hideStack: Boolean = false)
+extends Exception(message.text.s, cause, false, !hideStack):
+  this: Error =>
+  def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
+  def className: Text = fullClass.last
+  def component: Text = fullClass.head
 
-trait Communicable:
-  type Self
-  def message(value: Self): Message
-
-extension [ValueType: Communicable](value: ValueType)
-  def communicate: Message = ValueType.message(value)
+  override def getMessage: String = component.s+": "+message.text
+  override def getCause: Exception | Null = cause

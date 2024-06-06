@@ -16,11 +16,11 @@
 
 package fulminate
 
-import anticipation.*
+import language.experimental.captureChecking
 
 import scala.compiletime.*
 
-import language.experimental.captureChecking
+import anticipation.*
 
 object Message:
   def apply(value: Text): Message = Message(List(value))
@@ -74,20 +74,3 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
           recur(tail, false)
 
     recur(string.split("\n").nn.map(_.nn).to(List), false)
-
-extension (inline context: StringContext)
-  transparent inline def msg[ParamType](inline subs: ParamType = EmptyTuple): Message =
-    inline subs.asMatchable match
-      case tuple: Tuple =>
-        import unsafeExceptions.canThrowAny
-
-        Message
-          (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-           Message.make[tuple.type](tuple, Nil))
-
-      case other =>
-        import unsafeExceptions.canThrowAny
-
-        Message
-          (context.parts.map(Text(_)).map(TextEscapes.escape(_)).to(List),
-           List(summonInline[Communicable { type Self >: other.type }].message(other)))
