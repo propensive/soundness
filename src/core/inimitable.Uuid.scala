@@ -16,19 +16,14 @@
 
 package inimitable
 
+import language.experimental.captureChecking
+
+import java.util as ju
+
 import anticipation.*
 import vacuous.*
 import rudiments.*
 import contingency.*
-import fulminate.*
-
-import scala.quoted.*
-
-import java.util as ju
-
-import language.experimental.captureChecking
-
-case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
 
 object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text)(using Errant[UuidError]): Uuid = extract(text).or(raise(UuidError(text))(Uuid(0L, 0L)))
@@ -44,21 +39,9 @@ case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def text: Text = this.java.toString.tt
   def bytes: Bytes = unsafely((Bytes(msb).mutable ++ Bytes(lsb).mutable).immutable)
-  
+
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)
-  
+
   @targetName("xor")
   infix def ^ (right: Uuid): Uuid = Uuid(msb ^ right.msb, lsb ^ right.lsb)
-
-object Inimitable:
-  given Realm = realm"inimitable"
-
-  def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
-    val uuid = failCompilation(Uuid.parse(expr.valueOrAbort.parts.head.tt))
-    '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}
-    
-extension (inline context: StringContext)
-  inline def uuid(): Uuid = ${Inimitable.uuid('context)}
-
-lazy val jvmInstanceId: Uuid = Uuid()
