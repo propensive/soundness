@@ -26,7 +26,7 @@ object Rgb24Opaque:
 
   object Rgb24:
     given underlying: Underlying[Rgb24, Int] = ###
-    given Rgb24 is RgbColor = _.asInt
+    given Rgb24 is Chromatic = _.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb24 = ((red&255) << 16) + ((green&255) << 8) + (blue&255)
     def apply(packedInt: Int): Rgb24 = packedInt & 0x00ffffff

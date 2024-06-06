@@ -24,7 +24,7 @@ import anticipation.*
 import hypotenuse.*
 
 object Xyz:
-  given Xyz is RgbColor = _.srgb.rgb24.asInt
+  given Xyz is Chromatic = _.srgb.rgb24.asInt
 
 case class Xyz(x: Double, y: Double, z: Double):
   def luminescence: Double = y
