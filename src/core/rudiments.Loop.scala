@@ -16,18 +16,18 @@
 
 package rudiments
 
-import language.experimental.captureChecking
+object Loop:
+  enum State:
+    case Active, Stopping, Finished
 
-object ExitStatus:
-  def apply(value: Int): ExitStatus = if value == 0 then Ok else Fail(value)
+class Loop(iteration: () => Unit):
+  private var state: Loop.State = Loop.State.Active
 
-enum ExitStatus:
-  case Ok
-  case Fail(status: Int)
+  def stop(): Unit = synchronized:
+    if state == Loop.State.Active then state = Loop.State.Stopping
 
-  def apply(): Int = this match
-    case Ok           => 0
-    case Fail(status) => status
+  def run(): Unit =
+    while state == Loop.State.Active do iteration()
 
-case class Pid(value: Long):
-  override def toString(): String = "\u21af"+value
+    synchronized:
+      state = Loop.State.Finished

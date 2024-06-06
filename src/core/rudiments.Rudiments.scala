@@ -16,13 +16,13 @@
 
 package rudiments
 
-import symbolism.*
-import anticipation.*
-import fulminate.*
+import language.experimental.captureChecking
 
 import scala.quoted.*
 
-import language.experimental.captureChecking
+import anticipation.*
+import fulminate.*
+import symbolism.*
 
 object Rudiments:
   given Realm = realm"rudiments"
@@ -108,11 +108,3 @@ object Rudiments:
     '{IArray.from(${Expr(bytes)})}
 
 export Rudiments.ByteSize
-
-extension (inline context: StringContext)
-  transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
-  transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
-
-object Hex:
-  def unapply(text: Text): Option[Int] =
-    try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None

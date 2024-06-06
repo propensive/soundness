@@ -18,7 +18,12 @@ package rudiments
 
 import language.experimental.captureChecking
 
-erased trait Quickstart
+import anticipation.*
 
-package quickstart:
-  erased given defaults: Quickstart = ###
+object HomeDirectory:
+  given default(using Quickstart): HomeDirectory = () => System.getProperty("user.home").nn.tt
+
+@capability
+trait HomeDirectory:
+  def directory(): Text
+  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())

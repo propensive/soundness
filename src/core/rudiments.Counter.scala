@@ -16,21 +16,8 @@
 
 package rudiments
 
-import language.experimental.captureChecking
+import java.util.concurrent.atomic as juca
 
-extension (bs: Int)
-  def b: ByteSize = ByteSize(bs)
-  def kb: ByteSize = ByteSize(bs*1024L)
-  def mb: ByteSize = ByteSize(bs*1024L*1024)
-  def gb: ByteSize = ByteSize(bs*1024L*1024*1024)
-  def tb: ByteSize = ByteSize(bs*1024L*1024*1024*1024)
-
-extension (bs: Long)
-  def b: ByteSize = ByteSize(bs)
-  def kb: ByteSize = ByteSize(bs*1024)
-  def mb: ByteSize = ByteSize(bs*1024*1024)
-  def gb: ByteSize = ByteSize(bs*1024*1024*1024)
-  def tb: ByteSize = ByteSize(bs*1024*1024*1024*1024)
-
-extension (bytes: Bytes)
-  def byteSize: ByteSize = ByteSize(bytes.size)
+case class Counter(first: Int = 0):
+  private val atomicInt: juca.AtomicInteger = juca.AtomicInteger(first)
+  def apply(): Int = atomicInt.incrementAndGet()

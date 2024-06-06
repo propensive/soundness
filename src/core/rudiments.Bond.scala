@@ -35,14 +35,6 @@ object Bond:
     val typeclass: typeclass0.type = typeclass0
     val value: typeclass.Self = value0
 
-infix type binds[ResultType, TypeclassType <: Any { type Self }] =
-  Bond[TypeclassType] ?=> ResultType
-
-inline def bound[TypeclassType <: Any { type Self }](using bond: Bond[TypeclassType]): bond.Value =
-  bond.value
-
-inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
-
 extension (bond: Bond[GenericLogger])
   def fine(message: => into Text)(using realm: Realm): Unit =
     bond.typeclass.logFine(bond(), realm, message)
