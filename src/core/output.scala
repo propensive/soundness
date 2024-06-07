@@ -108,7 +108,7 @@ object Ansi extends Ansi2:
 
   given Stylize[Escape] = identity(_)
 
-  given [ColorType: RgbColor as color] => Stylize[ColorType] =
+  given [ColorType: Chromatic as color] => Stylize[ColorType] =
     color => Stylize(_.copy(fg = color.asRgb24Int))
 
   given Stylize[Bg] = bgColor => Stylize(_.copy(bg = bgColor.color))
@@ -361,7 +361,7 @@ object Reverse
 object Conceal
 
 object Bg:
-  def apply[ColorType: RgbColor](color: ColorType): Bg = Bg(color.asRgb24Int)
+  def apply[ColorType: Chromatic](color: ColorType): Bg = Bg(color.asRgb24Int)
 
 case class Bg(color: Int):
   def fg: Fg = Fg(color)
@@ -404,10 +404,10 @@ case class Fg(color: Int):
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
 object Highlight:
-  def apply[ValueType](using DummyImplicit)[ColorType: RgbColor](color: ColorType): Highlight[ValueType] =
+  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](color: ColorType): Highlight[ValueType] =
     value => Fg(color.asRgb24Int)
 
-  def apply[ValueType](using DummyImplicit)[ColorType: RgbColor](chooseColor: ValueType -> ColorType)
+  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](chooseColor: ValueType -> ColorType)
         : Highlight[ValueType] =
 
     value => Fg(chooseColor(value).asRgb24Int)

@@ -24,7 +24,7 @@ import anticipation.*
 //import language.experimental.captureChecking
 
 object Ribbon:
-  def apply[ColorType: RgbColor](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
+  def apply[ColorType: Chromatic](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
 
 case class Ribbon(colors: Bg*):
   def fill(parts: Display*): Display =
@@ -33,7 +33,6 @@ case class Ribbon(colors: Bg*):
       val (background, text) = cursor
       val arrow = postcursor.lay(e"$Reset${background.fg}()"): (color, _) =>
         e"${background.fg}($color())"
-      
+
       e"$background( ${background.highContrast}($text) )$arrow"
     .join
-    
