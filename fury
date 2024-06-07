@@ -5,7 +5,7 @@ repo propensive/eucalyptus
 project profanity
   module core
     sources  src/core
-    include  eucalyptus/core
+    include  eucalyptus/core diuretic/core
 
   module test
     compiler  scala
