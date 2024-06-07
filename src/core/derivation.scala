@@ -23,7 +23,7 @@ import spectacular.*
 import contingency.*
 import wisteria.*
 import anticipation.*
-import gossamer.*
+import gossamer.{at as _, *}
 
 import scala.deriving.*
 import scala.compiletime.*
@@ -33,9 +33,9 @@ import scala.compiletime.*
 trait CodlRelabelling[+TargetType]:
   def relabelling(): Map[Text, Text]
   private lazy val labels: Map[Text, Text] = relabelling()
-  
+
   def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
-  
+
 case class CodlReadError(label: Optional[Text] = Unset)
 extends Error(msg"the CoDL value ${label.or(t"<unknown>")} is not of the right format")
 
@@ -72,13 +72,13 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
       def schema: CodlSchema =
         val elements = contexts:
           [FieldType] => context =>
-            
+
             // FIXME: Move this outside of `contexts`
             val label2 = mapping.at(label).or(label)
             CodlSchema.Entry(label2, context.schema)
 
         Struct(elements.to(List), Arity.One)
-      
+
       def encode(product: DerivationType): List[IArray[CodlNode]] = List:
         IArray.from:
           fields(product):
@@ -86,7 +86,7 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
               val label2 = summonFrom:
                 case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
                 case _                                            => label
-              
+
               context.encode(field).map: value =>
                 CodlNode(Data(label2, value, Layout.empty, context.schema))
               .filter(!_.empty)
@@ -102,7 +102,7 @@ object CodlEncoder:
   def field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
     new CodlEncoder[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
-      
+
       def encode(value: ValueType): List[IArray[CodlNode]] =
         List(IArray(CodlNode(Data(encoder.encode(value)))))
 
@@ -113,32 +113,32 @@ object CodlEncoder:
 
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
-  
+
   given option[ValueType](using encoder: CodlEncoder[ValueType]): CodlEncoder[Option[ValueType]] =
     new CodlEncoder[Option[ValueType]]:
       def schema: CodlSchema = encoder.schema.optional
       def encode(value: Option[ValueType]): List[IArray[CodlNode]] = value match
         case None        => List()
         case Some(value) => encoder.encode(value)
-  
+
   given list[ElementType](using encoder: CodlEncoder[ElementType]): CodlEncoder[List[ElementType]] =
     new CodlEncoder[List[ElementType]]:
       def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
+
       def encode(value: List[ElementType]): List[IArray[CodlNode]] =
         value.map { (value: ElementType) => encoder.encode(value).head }
-  
+
   given set[ElementType](using encoder: CodlEncoder[ElementType]): CodlEncoder[Set[ElementType]] =
     new CodlEncoder[Set[ElementType]]:
       def schema: CodlSchema = encoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
+
       def encode(value: Set[ElementType]): List[IArray[CodlNode]] =
         value.map { (value: ElementType) => encoder.encode(value).head }.to(List)
-  
+
 object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlDecoder[DerivationType] =
     new CodlDecoder[DerivationType]:
@@ -148,11 +148,11 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
             val label2 = summonFrom:
               case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
               case _                                            => label
-            
+
             CodlSchema.Entry(label2, context.schema)
-        
+
         Struct(elements.to(List), Arity.One)
-          
+
       def decode(values: List[Indexed])(using codlRead: Errant[CodlReadError]): DerivationType =
         construct:
           [FieldType] => context =>
@@ -161,7 +161,7 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
               case _                                            => label
 
             context.decode(values.prim.or(abort(CodlReadError(label2))).get(label2))
- 
+
 
 object CodlDecoder:
 
@@ -179,7 +179,7 @@ object CodlDecoder:
 
     new CodlDecoder[Optional[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
-      
+
       def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): Optional[ValueType] =
         if value.isEmpty then Unset else decoder.decode(value)
 
@@ -188,33 +188,33 @@ object CodlDecoder:
       def schema: CodlSchema = decoder.schema.optional
       def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): Option[ValueType] =
         if value.isEmpty then None else Some(decoder.decode(value))
- 
+
   given list[ElementType](using decoder: CodlDecoder[ElementType]): CodlDecoder[List[ElementType]] =
     new CodlDecoder[List[ElementType]]:
       def schema: CodlSchema = decoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
+
       def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): List[ElementType] =
         decoder.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
             decoder.decode(List(CodlDoc(node)))
-        
+
           case struct: Struct =>
             value.map { v => decoder.decode(List(v)) }
-  
+
   given set[ElementType](using decoder: CodlDecoder[ElementType]): CodlDecoder[Set[ElementType]] =
     new CodlDecoder[Set[ElementType]]:
       def schema: CodlSchema = decoder.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
-      
+
       def decode(value: List[Indexed])(using coldRead: Errant[CodlReadError]): Set[ElementType] =
         decoder.schema match
           case Field(_, validator) =>
             value.flatMap(_.children).map: node =>
               decoder.decode(List(CodlDoc(node)))
             .to(Set)
-          
+
           case struct: Struct =>
             value.map { v => decoder.decode(List(v)) }.to(Set)

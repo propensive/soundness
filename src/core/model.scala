@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import vacuous.*
 import contingency.*
-import gossamer.*
+import gossamer.{where as _, at as _, *}
 import anticipation.*
 import contextual.*
 import spectacular.*
@@ -37,21 +37,21 @@ object CodlNode:
 
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
-  
-  given contrast(using Debug[CodlNode]): Contrast[CodlNode] = (left, right) =>
+
+  given (using Debug[CodlNode]) => CodlNode is Contrastable as contrast = (left, right) =>
     if left == right then Semblance.Identical(left.debug) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
           case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
           case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
           case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
-          
+
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
             else t"[key]" -> Semblance.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
 
       Semblance.Breakdown(comparison, left.key.or(t"—"), right.key.or(t"—"))
-  
+
 case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
   def empty: Boolean = unsafely(data.absent || data.assume.children.isEmpty)
@@ -71,42 +71,44 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Errant[MissingValueError]): List[Data] =
     data.or(abort(MissingValueError(key.show))).selectDynamic(key)
-  
+
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Errant[MissingValueError]): Data = selectDynamic(key)(idx)
 
   def untyped: CodlNode =
     val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
     CodlNode(data2, meta)
-  
+
   def uncommented: CodlNode =
     val data2 = data.let { data => Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema) }
     CodlNode(data2, Unset)
 
   def wiped: CodlNode = untyped.uncommented
-  
+
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
   given debug: Debug[CodlDoc] = _.write
   given show(using printer: CodlPrinter): Show[CodlDoc] = printer.serialize(_)
-  
+
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  inline given contrast: Contrast[CodlDoc] = new Contrast[CodlDoc]:
-    def apply(left: CodlDoc, right: CodlDoc) =
-      inline if left == right then Semblance.Identical(left.debug) else
-        val comparison = IArray.from:
-          (t"[schema]", left.schema.contrastWith(right.schema)) +:
-          (t"[margin]", left.margin.contrastWith(right.margin)) +:
-          diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-            case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
-            case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-            case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
-            case Sub(_, v, lv, rv) =>
-              val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
-              key -> lv.contrastWith(rv)
-        
-        Semblance.Breakdown(comparison, t"", t"")
+  inline given CodlDoc is Contrastable as contrast =
+    new Contrastable:
+      type Self = CodlDoc
+      def apply(left: CodlDoc, right: CodlDoc) =
+        inline if left == right then Semblance.Identical(left.debug) else
+          val comparison = IArray.from:
+            (t"[schema]", left.schema.contrastWith(right.schema)) +:
+            (t"[margin]", left.margin.contrastWith(right.margin)) +:
+            diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+              case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
+              case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
+              case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
+              case Sub(_, v, lv, rv) =>
+                val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
+                key -> lv.contrastWith(rv)
+
+          Semblance.Breakdown(comparison, t"", t"")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Char] = LazyList())
 extends Indexed:
@@ -120,7 +122,7 @@ extends Indexed:
   def paramIndex: Map[Text, Int] = Map()
 
   def merge(input: CodlDoc): CodlDoc =
-    
+
     def cmp(x: CodlNode, y: CodlNode): Boolean =
       if x.uniqueId.absent || y.uniqueId.absent then
         if x.data.absent || y.data.absent then x.meta == y.meta
@@ -129,22 +131,22 @@ extends Indexed:
 
     def recur(original: IArray[CodlNode], updates: IArray[CodlNode]): IArray[CodlNode] =
       val changes = diff[CodlNode](children, updates, cmp).edits
-      
+
       val nodes2 = changes.foldLeft(List[CodlNode]()):
         case (nodes, Del(left, value))         => nodes
         case (nodes, Ins(right, value))        => value :: nodes
         case (nodes, Par(left, right, value)) =>
           val orig: CodlNode = original(left)
           val origData: Data = orig.data.or(???)
-          
+
           if orig.id.absent || updates(right).id.absent then orig :: nodes
           else
             val children2 = recur(origData.children, updates(right).data.or(???).children)
             // FIXME: Check layout remains safe
             orig.copy(data = origData.copy(children = children2)) :: nodes
-      
+
       IArray.from(nodes2.reverse)
-    
+
     copy(children = recur(children, input.children))
 
   def as[T](using decoder: CodlDecoder[T])(using Errant[CodlReadError]): T = decoder.decode(List(this))
@@ -189,7 +191,7 @@ extends Indexed:
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))
 
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
-  
+
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&
                            schema == that.schema
@@ -204,7 +206,7 @@ object Layout:
   final val empty = Layout(0, false, 0)
 
 case class Layout(params: Int, multiline: Boolean, col: Int)
-derives Debug//, Contrast
+derives Debug//, Contrastable
 
 trait Indexed extends Dynamic:
   def children: IArray[CodlNode]
@@ -220,18 +222,18 @@ trait Indexed extends Dynamic:
         else acc.upsert(data.key, _.lay(List(idx))(idx :: _))
       case (acc, _) => acc
     .view.mapValues(_.reverse).to(Map)
-    
+
   protected lazy val idIndex: Map[Text, Int] =
     def recur(idx: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
       if idx < 0 then map else recur(idx - 1, children(idx).id.lay(map)(map.updated(_, idx)))
-    
+
     recur(children.length - 1)
 
   def ids: Set[Text] = idIndex.keySet
 
   def apply(idx: Int = 0)(using Errant[MissingIndexValueError]): CodlNode =
     children.at(idx).or(abort(MissingIndexValueError(idx)))
-  
+
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
   def get(key: Text): List[Indexed] =
@@ -239,7 +241,7 @@ trait Indexed extends Dynamic:
       case None => index.lift(key) match
         case None       => Nil
         case Some(idxs) => idxs.map(children(_).data.vouch(using Unsafe))
-      
+
       case Some(idx) =>
         List.range(idx, layout.params).map: idx =>
           Data(key, IArray(unsafely(children(idx))), Layout.empty, CodlSchema.Free)
@@ -247,7 +249,7 @@ trait Indexed extends Dynamic:
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Errant[MissingValueError]): List[Data] =
     index(key.show).map(children(_).data).collect:
       case data: Data => data
-  
+
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Errant[MissingValueError])
           : Data =
 

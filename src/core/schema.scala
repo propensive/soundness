@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import vacuous.*
 import contingency.*
-import gossamer.*
+import gossamer.{at as _, *}
 import anticipation.*
 import turbulence.*
 
@@ -54,7 +54,7 @@ sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Ari
 extends Dynamic:
   import CodlSchema.Entry
   protected lazy val dictionary: Map[Optional[Text], CodlSchema] = subschemas.map(_.tuple).to(Map)
-  
+
   lazy val keyMap: Map[Optional[Text], Int] = subschemas.map(_.key).zipWithIndex.to(Map)
 
   def optional: CodlSchema
@@ -64,18 +64,18 @@ extends Dynamic:
       (using aggregate: Errant[AggregateError[CodlError]], readable: Readable[SourceType, Text])
           : CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
-  
+
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)
   def apply(idx: Int): Entry = subschemas(idx)
 
   private lazy val fieldCount: Int = subschemas.indexWhere(!_.schema.is[Field]) match
     case -1    => subschemas.size
     case count => count
-  
+
   private lazy val firstVariadic: Optional[Int] = subschemas.indexWhere(_.schema.variadic) match
     case -1  => Unset
     case idx => idx
-  
+
   lazy val paramCount: Int = firstVariadic.lay(fieldCount) { f => (f + 1).min(fieldCount) }
   private lazy val endlessParams: Boolean = firstVariadic.lay(false)(_ < fieldCount)
 
@@ -85,7 +85,7 @@ extends Dynamic:
 
   def has(key: Optional[Text]): Boolean = dictionary.contains(key)
   lazy val requiredKeys: List[Text] = subschemas.filter(_.required).map(_.key).collect { case text: Text => text }.to(List)
-  
+
   export arity.{required, variadic, unique}
 
 enum Arity:
@@ -109,12 +109,12 @@ object Struct:
 case class Struct(structSubschemas: List[CodlSchema.Entry], structArity: Arity = Arity.AtMostOne)
 extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
   import CodlSchema.Entry
-  
+
   def optional: Struct = Struct(structSubschemas, Arity.AtMostOne)
   def uniqueIndex: Optional[Int] = subschemas.indexWhere(_.schema.arity == Arity.Unique) match
     case -1  => Unset
     case idx => idx
-  
+
   lazy val params: IArray[Entry] =
     def recur(subschemas: List[Entry], fields: List[Entry]): IArray[Entry] = subschemas match
       case Entry(key, struct: Struct) :: _                 => recur(Nil, fields)
