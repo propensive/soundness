@@ -25,7 +25,7 @@ import spectacular.*
 import contingency.*
 import parasite.*
 import turbulence.*
-import anticipation.*, timeInterfaces.long
+import anticipation.*, durationApi.javaLong
 
 import language.experimental.captureChecking
 
@@ -42,7 +42,7 @@ object Keyboard:
     val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
     val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
     val ctrl: EditKey | FunctionKey | Shift | Alt | Ctrl = if (n&4) == 4 then Ctrl(alt) else alt
-    
+
     if (n&8) == 8 then Meta(ctrl) else ctrl
 
   def navigation(code: Char): Keypress.EditKey = code match
@@ -75,16 +75,16 @@ class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
           case '[' #:: rest        => rest match
             case (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
               Keyboard.navigation(code) #:: process(rest)
-            
+
             case code #:: '~' #:: rest if '1' <= code <= '9' =>
               Keyboard.vt(code) #:: process(rest)
-            
+
             case code #:: ';' #:: modifiers #:: '~' #:: rest if '1' <= code <= '9' =>
               Keyboard.modified(modifiers, Keyboard.vt(code)) #:: process(rest)
-            
+
             case '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #:: rest =>
               Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
-              
+
             case '2' #:: '0' #:: '0' #:: '~' #:: tail =>
               val size = tail.indexOfSlice(List('\u001b', '[', '2', '0', '1', '~'))
               val content = tail.take(size).map(_.show).join
@@ -97,19 +97,19 @@ class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
                 case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
                   case List(As[Int](rows), As[Int](cols)) =>
                     TerminalInfo.WindowSize(rows, cols) #:: process(tail)
-                  
+
                   case _ =>
                     TerminalInfo.WindowSize(20, 30) #:: process(tail)
 
                 case 'O' #:: tail =>
                   TerminalInfo.LoseFocus #:: process(tail)
-                
+
                 case 'I' #:: tail =>
                   TerminalInfo.GainFocus #:: process(tail)
 
                 case char #:: tail =>
                   Keypress.EscapeSeq(char, sequence*) #:: process(tail)
-                
+
                 case _ =>
                   LazyList()
 
@@ -154,7 +154,7 @@ package keyboards:
     type Keypress = Int
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given standard(using monitor: Monitor, codicil: Codicil): StandardKeyboard^{monitor} =
+  given (using monitor: Monitor, codicil: Codicil) => (StandardKeyboard^{monitor}) as standard =
     StandardKeyboard()
 
 enum TerminalMode:
@@ -181,7 +181,7 @@ extends Interactivity[TerminalEvent]:
 
   def knownColumns: Int = columns.or(safely(columns0.await(50L))).or(80)
   def knownRows: Int = rows.or(safely(rows0.await(50L))).or(80)
-  
+
   val cap: Termcap = new Termcap:
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.TrueColor
@@ -201,7 +201,7 @@ extends Interactivity[TerminalEvent]:
       case Signal.Winch =>
         out.print(Terminal.reportSize)
         events.put(Signal.Winch)
-      
+
       case signal =>
         events.put(signal)
 
@@ -216,7 +216,7 @@ extends Interactivity[TerminalEvent]:
         columns = columns2
         columns0.offer(columns2)
         events.put(resize)
-      
+
       case bgColor@TerminalInfo.BgColor(red, green, blue) =>
         mode = if dark(red, green, blue) then TerminalMode.Dark else TerminalMode.Light
         events.put(bgColor)
@@ -234,7 +234,7 @@ object ProcessContext:
   def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext^{stdio} =
     inline def stdio0: Stdio = stdio
     inline def signals0: Funnel[Signal] = signals
-    
+
     new ProcessContext:
       val stdio: Stdio = stdio0
       def signals: Funnel[Signal] = signals0
@@ -281,7 +281,7 @@ def terminal[ResultType](block: Terminal ?=> ResultType)
   if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
   if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
-  
+
   try block(using terminal) finally
     terminal.signals.stop()
     terminal.stdio.in.close()
@@ -290,4 +290,3 @@ def terminal[ResultType](block: Terminal ?=> ResultType)
     safely(terminal.pumpInput.await())
     if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
-

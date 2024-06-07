@@ -18,7 +18,7 @@ package profanity
 
 import rudiments.*
 import vacuous.*
-import gossamer.*
+import gossamer.{where as _, *}
 import spectacular.*
 import turbulence.*
 import contingency.*
@@ -47,13 +47,13 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     case Backspace   => copy(t"${value.take(position - 1)}${value.drop(position)}", (position - 1) max 0)
     case Home        => copy(position0 = 0)
     case End         => copy(position0 = value.length)
-    case Left        => copy(position0 = (position - 1) max 0)
-    case Ctrl(Left)  => copy(position0 = (position - 2 max 0 to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
+    case Left        => copy(position0 = (position - 1) `max` 0)
+    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
 
-    case Ctrl(Right) => val range = ((position + 1) min (value.length - 1)) to (value.length - 1)
+    case Ctrl(Right) => val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
                         val position2 = range.where(value.at(_) == ' ').lay(value.length)(_ + 1)
-                        copy(position0 = position2 min value.length)
-    case Right       => copy(position0 = (position + 1) min value.length)
+                        copy(position0 = position2 `min` value.length)
+    case Right       => copy(position0 = (position + 1) `min` value.length)
     case _           => this
 
   catch case e: OutOfRangeError => this
@@ -62,7 +62,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
       [ResultType]
       (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
           : ResultType raises DismissError =
-    
+
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
       lambda(using Interactivity(stream))(result)
 
@@ -76,7 +76,7 @@ trait Interaction[ResultType, QuestionType]:
   final def recur(stream: LazyList[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
       (key: (QuestionType, TerminalEvent) => QuestionType)
           : Optional[(ResultType, LazyList[TerminalEvent])] =
-    
+
     render(oldState, state)
 
     stream match
@@ -89,7 +89,7 @@ trait Interaction[ResultType, QuestionType]:
   def apply(stream: LazyList[TerminalEvent], state: QuestionType)
       (key: (QuestionType, TerminalEvent) => QuestionType)
           : Optional[(ResultType, LazyList[TerminalEvent])] =
-    
+
     before()
     recur(stream, state, Unset)(key).also(after())
 
@@ -121,7 +121,7 @@ object Interaction:
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) extends Question[ItemType]:
   import Keypress.*
-  
+
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
     case Up   => copy(current = options(0 max options.indexOf(current) - 1))
     case Down => copy(current = options(options.size - 1 min options.indexOf(current) + 1))
@@ -137,7 +137,7 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
       [ResultType]
       (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
           : ResultType raises DismissError =
-  
+
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
       lambda(using Interactivity(stream))(result)
 
