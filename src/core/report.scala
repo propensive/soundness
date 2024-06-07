@@ -196,21 +196,21 @@ class TestReport(using Environment):
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
-      case Fail        => colors.Tomato
-      case Throws      => colors.DarkOrange
+      case Fail        => webColors.Tomato
+      case Throws      => webColors.DarkOrange
       case CheckThrows => rgb"#dd40a0"
       case Mixed       => rgb"#ddd700"
-      case Suite       => colors.SlateBlue
-      case Bench       => colors.CadetBlue
+      case Suite       => webColors.SlateBlue
+      case Bench       => webColors.CadetBlue
 
     def symbol: Display = this match
-      case Pass        => e"${Bg(rgb"#8abd00")}( $Bold(${colors.Black}(✓)) )"
-      case Fail        => e"${Bg(colors.Tomato)}( $Bold(${colors.Black}(✗)) )"
-      case Throws      => e"${Bg(colors.DarkOrange)}( $Bold(${colors.Black}(!)) )"
-      case CheckThrows => e"${Bg(rgb"#dd40a0")}( $Bold(${colors.Black}(‼)) )"
-      case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold(${colors.Black}(?)) )"
+      case Pass        => e"${Bg(rgb"#8abd00")}( $Bold(${webColors.Black}(✓)) )"
+      case Fail        => e"${Bg(webColors.Tomato)}( $Bold(${webColors.Black}(✗)) )"
+      case Throws      => e"${Bg(webColors.DarkOrange)}( $Bold(${webColors.Black}(!)) )"
+      case CheckThrows => e"${Bg(rgb"#dd40a0")}( $Bold(${webColors.Black}(‼)) )"
+      case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold(${webColors.Black}(?)) )"
       case Suite       => e"   "
-      case Bench       => e"${Bg(colors.CadetBlue)}( $Bold(${colors.Black}(*)) )"
+      case Bench       => e"${Bg(webColors.CadetBlue)}( $Bold(${webColors.Black}(*)) )"
 
     def describe: Display = this match
       case Pass        => e"Pass"
@@ -222,9 +222,9 @@ class TestReport(using Environment):
       case Bench       => e"Benchmark"
 
   val unitsSeq: List[Display] = List(
-    e"${colors.BurlyWood}(µs)",
-    e"${colors.Goldenrod}(ms)",
-    e"${colors.Sienna}(s) "
+    e"${webColors.BurlyWood}(µs)",
+    e"${webColors.Goldenrod}(ms)",
+    e"${webColors.Sienna}(s) "
   )
 
   def showTime(n: Long, units: List[Display] = unitsSeq): Display = units match
@@ -236,14 +236,14 @@ class TestReport(using Environment):
         val sig = (n/1000L).show
         import textMetrics.uniform
         val frac = (n%1000).show.pad(3, Rtl, '0')
-        e"${colors.Silver}(${sig}.$frac) ${unit}"
+        e"${webColors.Silver}(${sig}.$frac) ${unit}"
 
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: Display =
       val depth = id.suite.let(_.id.depth).or(0) + 1
 
       val title =
-        if status == Status.Suite then e"${colors.Silver}($Bold(${id.name}))"
+        if status == Status.Suite then e"${webColors.Silver}($Bold(${id.name}))"
         else e"${id.name}"
 
       e"${t"  "*(depth - 1)}$title"
@@ -269,12 +269,12 @@ class TestReport(using Environment):
         Column(e"")(_.status.symbol),
 
         Column(e"$Bold(Hash)"): s =>
-          e"${colors.CadetBlue}(${s.id.id})",
+          e"${webColors.CadetBlue}(${s.id.id})",
 
         Column(e"$Bold(Test)")(_.indentedName),
 
         Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
-          e"${colors.SteelBlue}(${s.iterations})",
+          e"${webColors.SteelBlue}(${s.iterations})",
 
         Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.minTime,
@@ -293,8 +293,8 @@ class TestReport(using Environment):
       Out.println(e"$Bold($Underline(Test coverage))")
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Display =
-          val main = e"${if hits == 0 then colors.Gray else colors.ForestGreen}($hits)"
-          if oldHits == 0 then main else e"${colors.Goldenrod}(${oldHits.show.subscript}) $main"
+          val main = e"${if hits == 0 then webColors.Gray else webColors.ForestGreen}($hits)"
+          if oldHits == 0 then main else e"${webColors.Goldenrod}(${oldHits.show.subscript}) $main"
 
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         val hitCount: Int = branches.to(List).map(_.id).map(coverage.hits.contains).count(identity(_))
@@ -313,7 +313,7 @@ class TestReport(using Environment):
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
 
-      import colors.*
+      import webColors.*
 
       val allHits = coverage.hits ++ coverage.oldHits
 
@@ -352,8 +352,8 @@ class TestReport(using Environment):
           val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
               data.oldHits)/_).getOrElse(0))
 
-          val bars = List(colors.ForestGreen -> covered, colors.Goldenrod -> oldCovered,
-              colors.Brown -> notCovered)
+          val bars = List(webColors.ForestGreen -> covered, webColors.Goldenrod -> oldCovered,
+              webColors.Brown -> notCovered)
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
       ).tabulate(data).layout(columns).render.each(Out.println(_))
@@ -370,7 +370,7 @@ class TestReport(using Environment):
 
       table.tabulate(summaryLines).layout(columns).render.each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
-      Out.println(e" $Bold(${colors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${colors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${colors.White}(${passed + failed})) total")
+      Out.println(e" $Bold(${webColors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${webColors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${webColors.White}(${passed + failed})) total")
       Out.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).each: statuses =>
         Out.println:
@@ -386,23 +386,23 @@ class TestReport(using Environment):
         case _                            => Nil
 
     benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
-      val ribbon = Ribbon(colors.DarkGreen.srgb, colors.MediumSeaGreen.srgb, colors.PaleGreen.srgb)
+      val ribbon = Ribbon(webColors.DarkGreen.srgb, webColors.MediumSeaGreen.srgb, webColors.PaleGreen.srgb)
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
 
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
 
       def confInt(b: Benchmark): Display =
-        if b.confidenceInterval == 0 then e"" else e"${colors.Thistle}(±)${showTime(b.confidenceInterval)}"
+        if b.confidenceInterval == 0 then e"" else e"${webColors.Thistle}(±)${showTime(b.confidenceInterval)}"
 
       def opsPerS(b: Benchmark): Display =
         if b.throughput == 0 then e""
-        else e"${colors.Silver}(${b.throughput}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
+        else e"${webColors.Silver}(${b.throughput}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
 
       val bench: Table[ReportLine.Bench, Display] = Table[ReportLine.Bench](
         (List(
           Column(e"$Bold(Hash)"): s =>
-            e"${colors.CadetBlue}(${s.test.id})",
+            e"${webColors.CadetBlue}(${s.test.id})",
           Column(e"$Bold(Test)"): s =>
             e"${s.test.name}",
 
@@ -421,7 +421,7 @@ class TestReport(using Environment):
           comparisons.map: c =>
             import Baseline.*
             val baseline = c.benchmark.baseline.vouch(using Unsafe)
-            Column(e"$Bold(${colors.CadetBlue}(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
+            Column(e"$Bold(${webColors.CadetBlue}(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.calc match
                 case Difference => left - right
                 case Ratio      => left/right
@@ -438,15 +438,15 @@ class TestReport(using Environment):
                   showTime(value.toLong)
 
                 case BySpeed =>
-                  e"${colors.Silver}(${value}) ${colors.Turquoise}(op${colors.Gray}(·)s¯¹)"
+                  e"${webColors.Silver}(${value}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
 
               baseline.calc match
                 case Difference => if value == 0 then e"★"
                                    else if value < 0
-                                   then e"${colors.Thistle}(-)${valueWithUnits.dropChars(1)}"
-                                   else e"${colors.Thistle}(+)$valueWithUnits"
+                                   then e"${webColors.Thistle}(-)${valueWithUnits.dropChars(1)}"
+                                   else e"${webColors.Thistle}(+)$valueWithUnits"
 
-                case Ratio      => if value == 1 then e"★" else e"${colors.Silver}($value)"
+                case Ratio      => if value == 1 then e"★" else e"${webColors.Silver}($value)"
         ))*
       )
 
@@ -456,35 +456,35 @@ class TestReport(using Environment):
       Out.println(t"─"*74)
       Out.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
-          e"$Bold(${colors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
+          e"$Bold(${webColors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
         .grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
       Out.println(t"─"*74)
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
-      val ribbon = Ribbon(colors.DarkRed.srgb, colors.FireBrick.srgb, colors.Tomato.srgb)
+      val ribbon = Ribbon(webColors.DarkRed.srgb, webColors.FireBrick.srgb, webColors.Tomato.srgb)
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.display, id.name.display))
 
       info.each: debugInfo =>
         Out.println(t"")
         debugInfo match
           case DebugInfo.Throws(err) =>
-            val name = e"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Out.println(e"${colors.Silver}(An exception was thrown while running test:)")
+            val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
+            Out.println(e"${webColors.Silver}(An exception was thrown while running test:)")
             Out.println(err.crop(t"probably.Runner", t"run()").display)
             showLegend()
 
           case DebugInfo.CheckThrows(err) =>
-            val name = e"$Italic(${colors.White}(${err.component}.${err.className}))"
-            Out.println(e"${colors.Silver}(An exception was thrown while checking the test predicate:)")
+            val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
+            Out.println(e"${webColors.Silver}(An exception was thrown while checking the test predicate:)")
             Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).display)
             showLegend()
 
           case DebugInfo.Compare(expected, found, cmp) =>
-            val expected2: Display = e"$Italic(${colors.White}($expected))"
-            val found2: Display = e"$Italic(${colors.White}($found))"
+            val expected2: Display = e"$Italic(${webColors.White}($expected))"
+            val found2: Display = e"$Italic(${webColors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             val instead = e"but instead it returned$nl$found2$nl"
-            Out.println(e"${colors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
+            Out.println(e"${webColors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
             Out.println(cmp.display)
 
           case DebugInfo.Captures(map) =>
@@ -510,5 +510,5 @@ class TestReport(using Environment):
 
       Out.println()
 
-      Out.println(Ribbon(colors.Crimson.srgb, colors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
+      Out.println(Ribbon(webColors.Crimson.srgb, webColors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).display)
