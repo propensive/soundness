@@ -27,6 +27,21 @@ import language.experimental.captureChecking
 // package defaultTextTypes:
 //   erased given (DefaultTextType { type TextType = Text }) = ###
 
+object Presentational:
+  given Text is Textual as text:
+    type Show[-ValueType] = spectacular.Show[ValueType]
+    val classTag: ClassTag[Text] = summon[ClassTag[Text]]
+    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
+    def text(text: Text): Text = text
+    def length(text: Text): Int = text.s.length
+    def apply(text: Text): Text = text
+    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
+    def range(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
+    def empty: Text = Text("")
+    def concat(left: Text, right: Text): Text = Text(left.s+right.s)
+    def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
+    def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
+
 trait Presentational:
   type Self
   type Show[-ValueType]
@@ -58,20 +73,6 @@ trait Textual extends Presentational:
 
 object Textual:
   def apply[TextType: Textual](text: Text): TextType = TextType(text)
-
-  given Text is Textual as text:
-    type Show[-ValueType] = spectacular.Show[ValueType]
-    val classTag: ClassTag[Text] = summon[ClassTag[Text]]
-    def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)
-    def text(text: Text): Text = text
-    def length(text: Text): Int = text.s.length
-    def apply(text: Text): Text = text
-    def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
-    def range(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
-    def empty: Text = Text("")
-    def concat(left: Text, right: Text): Text = Text(left.s+right.s)
-    def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
-    def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
 
   // given String is Textual as string:
   //   type Show[-ValueType] = spectacular.Show[ValueType]
