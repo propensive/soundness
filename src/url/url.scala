@@ -63,112 +63,113 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
     try throwErrors(Url.parse(value)) catch
       case err: UrlError      => throw InterpolationError(Message(err.message.text))
       case err: HostnameError => throw InterpolationError(Message(err.message.text))
-  
+
   def initial: Text = t""
-  
+
   def insert(state: Text, value: UrlInput): Text = value match
     case UrlInput.Integral(port) =>
       if !state.ends(t":") then throw InterpolationError(msg"a port number must be specified after a colon")
-      
+
       try throwErrors(Url.parse(state+port.show)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
         case err: HostnameError => throw InterpolationError(Message(err.message.text))
-      
+
       state+port.show
-    
+
     case UrlInput.Textual(text) =>
       if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
-      
+
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
         case err: HostnameError => throw InterpolationError(Message(err.message.text))
-      
+
       state+text.urlEncode
-    
+
     case UrlInput.RawTextual(text) =>
       if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
         case err: HostnameError => throw InterpolationError(Message(err.message.text))
-      
+
       state+text
-  
+
   override def substitute(state: Text, sub: Text): Text = state+sub
 
   def parse(state: Text, next: Text): Text =
     if !state.empty && !(next.starts(t"/") || next.empty)
     then throw InterpolationError(msg"a substitution must be followed by a slash")
-    
+
     state+next
-  
+
   def skip(state: Text): Text = state+t"1"
 
 object Url:
-  given GenericUrl[HttpUrl] = _.show
-  given (using Errant[UrlError], Errant[HostnameError]): SpecificUrl[HttpUrl] = Url.parse(_)
-  given [SchemeType <: Label]: GenericHttpRequestParam["location", Url[SchemeType]] = show.text(_)
-  
+  given HttpUrl is GenericUrl = _.show
+  given (using Errant[UrlError], Errant[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
+  given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = show.text(_)
+
   given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError]): Decoder[Url[SchemeType]] =
     parse(_)
-  
+
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
-  given [SchemeType <: Label]: Navigable[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
+  given [SchemeType <: Label] => Url[SchemeType] is Navigable["", (Scheme[SchemeType], Optional[Authority])]:
     def separator(url: Url[SchemeType]): Text = t"/"
     def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
     def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) = (url.scheme, url.authority)
-    
+
     def prefix(root: (Scheme[SchemeType], Optional[Authority])): Text =
       t"${root(0).name}:${root(1).let(t"//"+_.show).or(t"")}"
-    
+
   given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
     def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
-    
+
   given show[SchemeType <: Label]: Show[Url[SchemeType]] = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
-  
+
   given display[SchemeType <: Label]: Displayable[Url[SchemeType]] =
     url => e"$Underline(${Fg(0x00bfff)}(${show.text(url)}))"
 
-  given communicable[SchemeType <: Label]: Communicable[Url[SchemeType]] = url => Message(show.text(url))
+  given [SchemeType <: Label] => Url[SchemeType] is Communicable as communicable =
+    url => Message(show.text(url))
 
-  given action[SchemeType <: Label]: GenericHtmlAttribute["action", Url[SchemeType]] with
+  given [SchemeType <: Label] => ("action" is GenericHtmlAttribute[Url[SchemeType]]) as action:
     def name: Text = t"action"
     def serialize(url: Url[SchemeType]): Text = url.show
-  
-  given codebase[SchemeType <: Label]: GenericHtmlAttribute["codebase", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("codebase" is GenericHtmlAttribute[Url[SchemeType]]) as codebase:
     def name: Text = t"codebase"
     def serialize(url: Url[SchemeType]): Text = url.show
-  
-  given cite[SchemeType <: Label]: GenericHtmlAttribute["cite", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("cite" is GenericHtmlAttribute[Url[SchemeType]]) as cite:
     def name: Text = t"cite"
     def serialize(url: Url[SchemeType]): Text = url.show
-  
-  given data[SchemeType <: Label]: GenericHtmlAttribute["data", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("data" is GenericHtmlAttribute[Url[SchemeType]]) as data:
     def name: Text = t"data"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given formaction[SchemeType <: Label]: GenericHtmlAttribute["formaction", Url[SchemeType]] with
+  given [SchemeType <: Label] => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]) as formaction:
     def name: Text = t"formaction"
     def serialize(url: Url[SchemeType]): Text = url.show
- 
-  given poster[SchemeType <: Label]: GenericHtmlAttribute["poster", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("poster" is GenericHtmlAttribute[Url[SchemeType]]) as poster:
     def name: Text = t"poster"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given src[SchemeType <: Label]: GenericHtmlAttribute["src", Url[SchemeType]] with
+  given [SchemeType <: Label] => ("src" is GenericHtmlAttribute[Url[SchemeType]]) as src:
     def name: Text = t"src"
     def serialize(url: Url[SchemeType]): Text = url.show
-  
-  given href[SchemeType <: Label]: GenericHtmlAttribute["href", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("href" is GenericHtmlAttribute[Url[SchemeType]]) as href:
     def name: Text = t"href"
     def serialize(url: Url[SchemeType]): Text = url.show
-  
-  given manifest[SchemeType <: Label]: GenericHtmlAttribute["manifest", Url[SchemeType]] with
+
+  given [SchemeType <: Label] => ("manifest" is GenericHtmlAttribute[Url[SchemeType]]) as manifest:
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 
@@ -178,17 +179,17 @@ object Url:
     safely(value.where(_ == ':')) match
       case Unset =>
         abort(UrlError(value, value.length, Colon))
-      
+
       case colon: Int =>
         val text = value.take(colon)
         val scheme = Scheme(text)
-        
+
         val (pathStart, auth) =
           if value.slice(colon + 1, colon + 3) == t"//" then
             val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.length)
             (authEnd, Authority.parse(value.slice(colon + 3, authEnd)))
           else (colon + 1, Unset)
-        
+
         safely(value.where(_ == '?', pathStart)) match
           case Unset => safely(value.where(_ == '#', pathStart)) match
             case Unset     => Url(scheme, auth, value.drop(pathStart), Unset, Unset)
@@ -206,19 +207,19 @@ object Authority:
 
   def parse(value: Text)(using Errant[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
-    
+
     safely(value.where(_ == '@')) match
       case Unset => safely(value.where(_ == ':')) match
         case Unset =>
           Authority(Hostname.parse(value))
-        
+
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
             case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
             case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Hostname.parse(value.take(colon)), Unset, _))
-      
+
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
         case Unset =>
           Authority(Hostname.parse(value.drop(arobase + 1)), value.take(arobase))
@@ -233,12 +234,12 @@ object Authority:
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)
 
 object Weblink:
-  given Followable[Weblink, "", "..", "."] with
+  given (using ValueOf[""]) => Weblink is Followable["", "..", "."]:
     def separators: Set[Char] = Set('/')
     def descent(weblink: Weblink): List[PathName[""]] = weblink.descent
     def separator(weblink: Weblink): Text = t"/"
     def ascent(weblink: Weblink): Int = weblink.ascent
-    
+
   given PathCreator[Weblink, "", Int] with
     def path(ascent: Int, descent: List[PathName[""]]): Weblink = Weblink(ascent, descent)
 
@@ -252,7 +253,7 @@ case class Url[+SchemeType <: Label]
      pathText:  Text,
      query:     Optional[Text]      = Unset,
      fragment:  Optional[Text]      = Unset):
-  
+
   lazy val path: List[PathName[""]] =
     // FIXME: This needs to be handled better
     import errorHandlers.throwUnsafely
@@ -265,10 +266,9 @@ object UrlError:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
   object Expectation:
-    given Communicable[Expectation] =
+    given Expectation is Communicable =
       case Colon           => msg"a colon"
       case More            => msg"more characters"
       case LowerCaseLetter => msg"a lowercase letter"
       case PortRange       => msg"a port range"
       case Number          => msg"a number"
-

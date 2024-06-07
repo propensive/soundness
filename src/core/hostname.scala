@@ -37,7 +37,7 @@ object HostnameError:
     case InitialDash(label: Text)
 
   object Reason:
-    given Communicable[Reason] =
+    given Reason is Communicable =
       case LongDnsLabel(label) => msg"the DNS label $label is longer than 63 characters"
       case LongHostname        => msg"the hostname is longer than 253 characters"
       case InvalidChar(char)   => msg"the character $char is not allowed in a hostname"
@@ -53,7 +53,7 @@ object Hostname:
   given Realm = realm"nettlesome"
 
   given Show[Hostname] = _.dnsLabels.map(_.show).join(t".")
-  
+
   def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = failCompilation:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
@@ -62,7 +62,7 @@ object Hostname:
       val labels = Varargs:
         hostname.dnsLabels.map: label =>
           '{DnsLabel(${Expr(label.text)})}
-      
+
       '{Hostname($labels*)}
 
   def parse(text: Text): Hostname raises HostnameError =
@@ -76,17 +76,17 @@ object Hostname:
         if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))(())
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         buffer.clear()
-        
+
         if index < text.length then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254 then raise(HostnameError(text, LongHostname))(())
           Hostname(dnsLabels2.reverse*)
-      
+
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then buffer.append(char.toString.tt)
         else raise(HostnameError(text, InvalidChar(char)))(())
         recur(index + 1, dnsLabels)
-    
+
     recur(0, Nil)
 
 case class Hostname(dnsLabels: DnsLabel*)

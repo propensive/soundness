@@ -18,7 +18,6 @@ package nettlesome
 
 import fulminate.*
 import contingency.*
-import rudiments.*
 import vacuous.*
 
 import language.experimental.captureChecking

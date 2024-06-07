@@ -47,7 +47,7 @@ object EmailAddressError:
     case InvalidChar(char: Char)
 
   object Reason:
-    given Communicable[Reason] =
+    given Reason is Communicable =
       case Empty                                => msg"it is empty"
       case InvalidDomain(error: IpAddressError) => msg"the domain is not a valid IP address: ${error.message}"
       case InvalidDomain(error: HostnameError)  => msg"the domain is not a valid hostname: ${error.message}"
@@ -79,11 +79,11 @@ object EmailAddress:
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = failCompilation:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
-    
+
     val localPart: Expr[LocalPart] = address.localPart match
       case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
       case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
-    
+
     (address.domain.asMatchable: @unchecked) match
       case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
@@ -92,7 +92,7 @@ object EmailAddress:
   def parse(text: Text): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
-    
+
     def quoted(index: Int, escape: Boolean): (LocalPart, Int) = text.at(index) match
       case '\"' =>
         if escape then
@@ -102,18 +102,18 @@ object EmailAddress:
           if text.at(index + 1) == '@'
           then (LocalPart.Quoted(buffer.text), index + 2)
           else abort(EmailAddressError(UnescapedQuote))
-      
+
       case '\\' =>
         if escape then buffer.append('\\')
         quoted(index + 1, !escape)
-      
+
       case char: Char =>
         buffer.append(char)
         quoted(index + 1, false)
 
       case Unset =>
         raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
-    
+
     def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
       text.at(index) match
         case '@' =>
@@ -136,7 +136,7 @@ object EmailAddress:
 
         case Unset =>
           raise(EmailAddressError(MissingAtSymbol))((LocalPart.Unquoted(buffer.text), index))
-    
+
     val (localPart, index) =
       if text.starts(t"\"") then quoted(1, false) else unquoted(0, false)
 
@@ -164,4 +164,3 @@ case class EmailAddress(displayName: Optional[Text], localPart: LocalPart, domai
 enum LocalPart:
   case Quoted(text: Text)
   case Unquoted(text: Text)
-
