@@ -20,11 +20,14 @@ import aviation.*
 
 //import language.experimental.captureChecking
 
-package timeInterfaces:
-  given aviationApi: (GenericInstant[Timing.Instant] & GenericDuration[Timing.Duration] &
-      SpecificInstant[Timing.Instant] & SpecificDuration[Timing.Duration]) =
-    new GenericInstant[Timing.Instant] with GenericDuration[Timing.Duration]
-        with SpecificInstant[Timing.Instant] with SpecificDuration[Timing.Duration]:
+package instantApi:
+  given Timing.Instant is GenericInstant & SpecificInstant as aviationInstant =
+    new GenericInstant with SpecificInstant:
+      type Self = Timing.Instant
       export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
-      export Timing.Duration.generic.{duration, milliseconds}
 
+package durationApi:
+  given Timing.Duration is GenericDuration & SpecificDuration as aviationDuration =
+    new GenericDuration with SpecificDuration:
+      type Self = Timing.Duration
+      export Timing.Duration.generic.{duration, milliseconds}

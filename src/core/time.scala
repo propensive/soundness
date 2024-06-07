@@ -48,9 +48,9 @@ abstract class Clock():
   def apply(): Instant
 
 object Clock:
-  given current: Clock with
+  given Clock as current:
     def apply(): Instant = Instant.of(System.currentTimeMillis)
-  
+
   def fixed(instant: Instant): Clock = new Clock():
     def apply(): Instant = instant
 
@@ -68,7 +68,7 @@ object Dates:
   object Date:
     erased given underlying: Underlying[Date, Int] = ###
     def of(day: Int): Date = day
-    
+
     def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D)
             : Date raises DateError =
       cal.julianDay(year, month, day)
@@ -78,21 +78,21 @@ object Dates:
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
     given decoder(using Errant[DateError]): Decoder[Date] = parse(_)
-    
+
     given encoder(using cal: RomanCalendar): Encoder[Date] = date =>
       import hieroglyph.textMetrics.uniform
       t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
-    
-    inline given inequality: Inequality[Date, Date] with
+
+    inline given Inequality[Date, Date] as inequality:
       inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
         if left == right then !strict else (left < right)^greaterThan
-    
+
     given ordering: Ordering[Date] = Ordering.Int
-    
-    given plus(using calendar: Calendar): AddOperator[Date, Period] with
+
+    given (using calendar: Calendar) => AddOperator[Date, Period] as plus:
       type Result = Date
       def add(date: Date, period: Period): Date = calendar.add(date, period)
-    
+
     def parse(value: Text)(using Errant[DateError]): Date = value.cut(t"-").to(List) match
       // FIXME: This compiles successfully, but never seems to match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
@@ -103,10 +103,10 @@ object Dates:
         catch
           case error: NumberFormatException =>
             raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
-          
+
           case error: ju.NoSuchElementException =>
             raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
-      
+
       case cnt =>
         raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
@@ -117,7 +117,7 @@ object Dates:
     def yearDay(using cal: Calendar): Int = date - cal.zerothDayOfYear(cal.getYear(date))
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
-    
+
     infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("plus")
@@ -125,16 +125,16 @@ object Dates:
 
     @targetName("gt")
     infix def > (right: Date): Boolean = date > right
-    
+
     @targetName("lt")
     infix def < (right: Date): Boolean = date < right
-    
+
     @targetName("lte")
     infix def <= (right: Date): Boolean = date <= right
-    
+
     @targetName("gte")
     infix def >= (right: Date): Boolean = date >= right
-    
+
 export Dates.Date
 
 @capability
@@ -168,44 +168,44 @@ abstract class RomanCalendar() extends Calendar:
     val monthTotal = getMonth(date).ordinal + period.months
     val month2 = MonthName.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
-    
+
     safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).vouch(using Unsafe)
-  
+
   def leapYearsSinceEpoch(year: Int): Int
   def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
   def zerothDayOfYear(year: Y): Date = Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
-  
+
   def getYear(date: Date): Int =
     def recur(year: Int): Int =
       val z = zerothDayOfYear(year).julianDay
       if z < date.julianDay && z + daysInYear(year) > date.julianDay then year else recur(year + 1)
-    
+
     recur(((date.julianDay - 1721059)/366).toInt)
-  
+
   def getMonth(date: Date): MonthName =
     val year = getYear(date)
     val ly = leapYear(year)
     MonthName.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
-  
+
   def getDay(date: Date): Int =
     val year = getYear(date)
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
-  
+
   def julianDay(year: Int, month: MonthName, day: Int)(using Errant[DateError]): Date =
     if day < 1 || day > daysInMonth(month, year)
     then raise(DateError(t"$year-${month.numerical}-$day")):
       Date(using calendars.julian)(2000, MonthName(1), 1)
-    
+
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)
 
 case class YearMonth(year: Int, month: MonthName):
   import compiletime.ops.int.*
 
 object YearMonth:
-  given dayOfMonth: SubOperator[YearMonth, Int] with
+  given SubOperator[YearMonth, Int] as dayOfMonth:
     type Result = Date
-    
+
     def sub(yearMonth: YearMonth, day: Int): Date =
       safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).vouch(using Unsafe)
 
@@ -215,7 +215,7 @@ object Timing:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = ###
-    given generic: GenericInstant[Timing.TaiInstant] with
+    given Timing.TaiInstant is GenericInstant as generic:
       def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
 
@@ -225,55 +225,56 @@ object Timing:
 
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
-    
-    given generic: GenericInstant[Timing.Instant] with
+
+    given Timing.Instant is GenericInstant as generic:
       def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
-    
-    inline given inequality: Inequality[Instant, Instant] with
+
+    inline given Inequality[Instant, Instant] as inequality:
       inline def compare
           (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
         if left == right then !strict else (left < right)^greaterThan
-    
+
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given plus: AddOperator[Instant, Duration] with
+    given AddOperator[Instant, Duration] as plus:
       type Result = Instant
       def add(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
 
-    given minus: SubOperator[Instant, Instant] with
+    given SubOperator[Instant, Instant] as minus:
       type Result = Duration
       def sub(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
-    
+
   type Duration = Quantity[Seconds[1]]
 
   object Duration:
-
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: GenericDuration[Timing.Duration] with SpecificDuration[Timing.Duration] with
-      def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
-      def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
+    given Timing.Duration is (GenericDuration & SpecificDuration) as generic =
+      new GenericDuration with SpecificDuration:
+        type Self = Timing.Duration
+        def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
+        def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
     @targetName("to")
     infix def ~ (that: Instant): Interval = Interval(instant, that)
-    
+
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
     //@targetName("plus")
     //infix def + (duration: Duration): Instant = Instant.plus(instant, duration)
-    
+
     //@targetName("minus")
     //infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
 
     infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
-      
+
       val date = (zonedTime.getMonthValue: @unchecked) match
         case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
-      
+
       val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
         case (Base24(hour), Base60(minute), Base60(second)) => Time(hour, minute, second)
 
@@ -295,10 +296,10 @@ enum StandardTime extends Denomination:
 object TimeSystem:
   enum AmbiguousTimes:
     case Throw, Dilate, PreferEarlier, PreferLater
-  
+
   enum MonthArithmetic:
     case Scale, Overcount, Fixed
-  
+
   enum LeapDayArithmetic:
     case Throw, PreferFeb28, PreferMar1
 
@@ -308,40 +309,41 @@ open class TimeSystem[DenominationType <: Denomination]():
   def leapDayArithmetic: TimeSystem.LeapDayArithmetic = TimeSystem.LeapDayArithmetic.PreferFeb28
   def simplify(period: Period): Period = period
 
-given TimeSystem[StandardTime] with
+given TimeSystem[StandardTime]:
   override def simplify(timespan: Timespan): Timespan =
     val timespan2 = if timespan.seconds < 60 then timespan else
       val adjust = timespan.seconds/60
       timespan + adjust.minutes - (adjust*60).seconds
-    
+
     val timespan3 = if timespan2.minutes < 60 then timespan2 else
       val adjust = timespan2.minutes/60
       timespan2 + adjust.hours - (adjust*60).minutes
-    
+
     val result = if timespan3.months < 12 then timespan3 else
       val adjust = timespan3.months/12
       timespan3 + adjust.years - (adjust*12).months
-    
+
     result
 
 type Timespan = Period
-
 
 trait FixedDuration:
   this: Period =>
 
 object Period:
-  given genericDuration: GenericDuration[Period & FixedDuration] with SpecificDuration[Period & FixedDuration] with
-    def duration(milliseconds: Long): Period & FixedDuration =
-      val hours: Int = (milliseconds/3600000L).toInt
-      val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
-      val seconds: Int = ((milliseconds%60000L)/1000L).toInt
-      
-      new Period(0, 0, 0, hours, minutes, seconds) with FixedDuration
-    
-    def milliseconds(period: Period & FixedDuration): Long =
-      period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
-  
+  given Period & FixedDuration is GenericDuration & SpecificDuration as genericDuration =
+    new GenericDuration with SpecificDuration:
+      type Self = Period & FixedDuration
+      def duration(milliseconds: Long): Period & FixedDuration =
+        val hours: Int = (milliseconds/3600000L).toInt
+        val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
+        val seconds: Int = ((milliseconds%60000L)/1000L).toInt
+
+        new Period(0, 0, 0, hours, minutes, seconds) with FixedDuration
+
+      def milliseconds(period: Period & FixedDuration): Long =
+        period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
+
   def apply(denomination: StandardTime, n: Int): Period = (denomination: @unchecked) match
     case StandardTime.Year   => Period(n, 0, 0, 0, 0, 0)
     case StandardTime.Month  => Period(0, n, 0, 0, 0, 0)
@@ -349,7 +351,7 @@ object Period:
     case StandardTime.Hour   => Period(0, 0, 0, n, 0, 0)
     case StandardTime.Minute => Period(0, 0, 0, 0, n, 0)
     case StandardTime.Second => Period(0, 0, 0, 0, 0, n)
-  
+
   def fixed
       (denomination: (StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type),
           n: Int): Period & FixedDuration =
@@ -357,16 +359,16 @@ object Period:
       case StandardTime.Hour   => new Period(0, 0, 0, n, 0, 0) with FixedDuration
       case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
       case StandardTime.Second => new Period(0, 0, 0, 0, 0, n) with FixedDuration
-  
-  given plus(using TimeSystem[StandardTime]): AddOperator[Period, Period] with
+
+  given (using TimeSystem[StandardTime]) => AddOperator[Period, Period] as plus:
     type Result = Period
     def add(left: Period, right: Period): Period =
       Period(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
           right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
-  
-  given minus(using TimeSystem[StandardTime]): SubOperator[Period, Period] with
+
+  given (using TimeSystem[StandardTime]) => SubOperator[Period, Period] as minus:
     type Result = Period
-    
+
     def sub(left: Period, right: Period): Period =
       Period(left.years - right.years, left.months - right.months, left.days - right.days, left.hours -
           right.hours, left.minutes - right.minutes, left.seconds - right.seconds)
@@ -392,7 +394,7 @@ extends DiurnalPeriod, TemporalPeriod:
 
   @targetName("plus")
   infix def + (right: Period): Period = Period.plus.add(this, right)
-  
+
   @targetName("minus")
   infix def - (right: Period): Period = Period.minus.sub(this, right)
 
@@ -417,7 +419,7 @@ extension (int: Int)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 object Timestamp:
-  given plus: AddOperator[Timestamp, Timespan] with
+  given AddOperator[Timestamp, Timespan] as plus:
     type Result = Timestamp
     def add(left: Timestamp, right: Timespan): Timestamp = ???
 
@@ -430,17 +432,17 @@ object MonthName:
   def unapply(value: Text): Option[MonthName] =
     try Some(MonthName.valueOf(value.lower.capitalize.s))
     catch case err: IllegalArgumentException => None
-  
+
   def unapply(value: Int): Option[MonthName] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
- 
-  given monthOfYear: SubOperator[Int, MonthName] with
+
+  given SubOperator[Int, MonthName] as monthOfYear:
     type Result = YearMonth
     def sub(year: Int, month: MonthName) = new YearMonth(year, month)
 
 enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
-  
+
   def numerical: Int = ordinal + 1
 
   def offset(leapYear: Boolean): Int = (if leapYear && ordinal > 1 then 1 else 0) + this.match
@@ -464,24 +466,24 @@ trait Chronology:
   type Secondary
   type Tertiary
   type TimeRepr
-  
+
   def addPrimary(time: Time, n: Primary): Time
   def addSecondary(time: Time, n: Secondary): Time
   def addTertiary(time: Time, n: Tertiary): Time
 
-given sexagesimal: Chronology with
+given Chronology as sexagesimal:
   type Primary = Base24
   type Secondary = Base60
   type Tertiary = Base60
   type TimeRepr = Time
 
   def addPrimary(time: Time, n: Base24): Time = time.copy(hour = (time.hour + n)%%24)
-  
+
   def addSecondary(time: Time, n: Base60): Time =
     val minute: Base60 = (time.minute + n)%%60
     val hour: Base24 = (time.hour + (time.minute + n)/60)%%24
     time.copy(hour = hour, minute = minute)
-  
+
   def addTertiary(time: Time, n: Base60): Time =
     val second: Base60 = (time.second + n)%%60
     val minute: Base60 = (time.minute + (time.second + n)/60)%%60
@@ -517,7 +519,7 @@ extension (i: Int)
     val x: Int = i%j.pipe { v => if v < 0 then v + 24 else v }
     (x: @unchecked) match
     case v: Base24 => v
-  
+
   @targetName("mod60")
   infix def %% (j: 60): Base60 =
     val x: Int = i%j.pipe { v => if v < 0 then v + 60 else v }
@@ -532,42 +534,43 @@ object Aviation:
 
   def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
     import quotes.reflect.*
-    
+
     time.asTerm match
       case Inlined(None, Nil, lit@Literal(DoubleConstant(d))) =>
         val hour = d.toInt
         val minutes = ((d - hour) * 100 + 0.5).toInt
-        
-        if minutes >= 60 then fail(msg"a time cannot have a minute value above 59", lit.pos)
-        if hour < 0 then fail(msg"a time cannot be negative", lit.pos)
-        if hour > 12 then fail(msg"a time cannot have an hour value above 12", lit.pos)
-        
+
+        if minutes >= 60 then abandon(msg"a time cannot have a minute value above 59", lit.pos)
+        if hour < 0 then abandon(msg"a time cannot be negative", lit.pos)
+        if hour > 12 then abandon(msg"a time cannot have an hour value above 12", lit.pos)
+
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
-        
+
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then fail(msg"the time should have exactly two minutes digits", lit.pos)
-        
+        then abandon(msg"the time should have exactly two minutes digits", lit.pos)
+
         val m: Base60 = minutes.asInstanceOf[Base60]
-        '{Time(${Expr(h)}, ${Expr(m)}, 0)}
-      
+        '{Time(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
+
       case _ =>
-        fail(msg"expected a literal double value")
+        abandon(msg"expected a literal double value")
 
 @capability
-case class Timezone private(name: Text) 
+case class Timezone private(name: Text)
 
 case class TimezoneError(name: Text)
 extends Error(msg"the name $name does not refer to a known timezone")
 
 object LocalTime:
-  given generic(using RomanCalendar): GenericInstant[LocalTime] = _.instant.millisecondsSinceEpoch
+  given (using RomanCalendar) => LocalTime is GenericInstant as generic =
+    _.instant.millisecondsSinceEpoch
 
 case class LocalTime(date: Date, time: Time, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
     val ldt = jt.LocalDateTime.of(date.year, date.month.numerical, date.day, time.hour, time.minute,
         time.second)
-    
+
     Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
 
 object Timezone:
@@ -576,8 +579,9 @@ object Timezone:
   def apply(name: Text)(using Errant[TimezoneError]): Timezone = parse(name)
 
   def parse(name: Text)(using Errant[TimezoneError]): Timezone =
-    if ids.contains(name) then new Timezone(name) else raise(TimezoneError(name))(new Timezone(ids.head))
-   
+    if ids.contains(name) then new Timezone(name)
+    else raise(TimezoneError(name))(new Timezone(ids.head))
+
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
       try throwErrors(Timezone.parse(name))
