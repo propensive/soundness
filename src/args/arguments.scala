@@ -30,7 +30,7 @@ import language.experimental.captureChecking
 object Shell:
   given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
   given encoder: Encoder[Shell] = _.toString.tt.lower
-  given communicable: Communicable[Shell] = shell => Message(shell.toString.tt.lower)
+  given Shell is Communicable as communicable = shell => Message(shell.toString.tt.lower)
 
 enum Shell:
   case Zsh, Bash, Fish
@@ -40,7 +40,7 @@ case class Arguments(sequence: Argument*) extends FlagParameters:
       (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType] =
     Unset // FIXME
-  
+
   def focusFlag: Optional[Argument] = Unset
 
 object SimpleParameterInterpreter extends CliInterpreter:
@@ -59,7 +59,7 @@ trait Cli extends ProcessContext:
   def arguments: List[Argument]
   def environment: Environment
   def workingDirectory: WorkingDirectory
-  
+
   def readParameter[OperandType](flag: Flag[OperandType])
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType]
@@ -84,7 +84,7 @@ case class Argument(position: Int, value: Text, cursor: Optional[Int]):
   def apply(): Text = value
   def prefix: Optional[Text] = cursor.let(value.take(_))
   def suffix: Optional[Text] = cursor.let(value.drop(_))
-  
+
   def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
     cli.suggest(this, update)
 

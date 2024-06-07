@@ -18,7 +18,7 @@ package exoskeleton
 
 import rudiments.*
 import vacuous.*
-import gossamer.*
+import gossamer.{where as _, *}
 import spectacular.*
 import contingency.*
 import escapade.*
@@ -35,11 +35,11 @@ case class PosixParameters
      postpositional: List[Argument]                = Nil,
      focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
-  
+
   def read[OperandType](flag: Flag[OperandType])
       (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
           : Optional[OperandType] =
-    
+
     cli.register(flag, suggestions)
 
     parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
@@ -56,14 +56,14 @@ object PosixCliInterpreter extends CliInterpreter:
          current:    Optional[Argument],
          parameters: PosixParameters)
             : PosixParameters =
-      
+
       def push(): PosixParameters = current match
         case Unset =>
           PosixParameters(arguments.reverse)
-        
+
         case current: Argument =>
           parameters.copy(parameters = parameters.parameters.updated(current, arguments.reverse))
-      
+
       todo match
         case head :: tail =>
           if head() == t"--" then push().copy(postpositional = tail)
@@ -71,10 +71,10 @@ object PosixCliInterpreter extends CliInterpreter:
           else
             val parameters2 = if head.cursor.present then parameters.copy(focusFlag = current) else parameters
             recur(tail, head :: arguments, current, parameters2)
-        
+
         case Nil =>
           push()
-    
+
     recur(arguments, Nil, Unset, PosixParameters())
 
 object Suggestion:
@@ -85,7 +85,7 @@ object Suggestion:
        incomplete: Boolean = false,
        aliases: List[Text] = Nil)
           : Suggestion =
-    
+
     new Suggestion(text, description, hidden, incomplete, aliases)
 
 case class Suggestion
@@ -141,7 +141,7 @@ case class Flag[OperandType]
      description: Optional[Text] = Unset,
      secret: Boolean             = false)
     (using FlagInterpreter[OperandType]):
- 
+
   def suggest(suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
     cli.register(this, suggestions)
 
