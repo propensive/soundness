@@ -13,4 +13,4 @@ project guillotine
     sources  src/test
     include  probably/cli guillotine/core galilei/core
     main     guillotine.Tests
-    coverage guillotine/core
+    #coverage guillotine/core
