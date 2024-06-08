@@ -18,10 +18,18 @@ package symbolism
 
 import language.experimental.captureChecking
 
-infix type into[TypeclassType, ResultType] = TypeclassType { type Result = ResultType }
+object Rootable:
+  class Basic[RootType <: Int & Singleton, OperandType, ResultType](lambda: OperandType => ResultType)
+  extends Rootable[RootType]:
+    type Self = OperandType
+    type Result = ResultType
 
-extension [ValueType: Rootable[2] as rootable](value: ValueType)
-  def sqrt: rootable.Result = rootable.root(value)
+    def root(operand: OperandType): ResultType = lambda(operand)
 
-extension [ValueType: Rootable[3] as rootable](value: ValueType)
-  def cbrt: rootable.Result = rootable.root(value)
+  given Double is Rootable[2] into Double as double = math.sqrt(_)
+  given Double is Rootable[3] into Double as double2 = math.cbrt(_)
+
+trait Rootable[RootType <: Int & Singleton]:
+  type Self
+  type Result
+  def root(value: Self): Result

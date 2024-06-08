@@ -18,10 +18,22 @@ package symbolism
 
 import language.experimental.captureChecking
 
-infix type into[TypeclassType, ResultType] = TypeclassType { type Result = ResultType }
+import scala.annotation.targetName
 
-extension [ValueType: Rootable[2] as rootable](value: ValueType)
-  def sqrt: rootable.Result = rootable.root(value)
+object Negatable:
+  given Double is Negatable into Double as double = -_
+  given Float is Negatable into Float as float = -_
+  given Long is Negatable into Long as long = -_
+  given Int is Negatable into Int as int = -_
+  given Short is Negatable into Short as short = operand => (-operand).toShort
+  given Byte is Negatable into Byte as byte = operand => (-operand).toByte
 
-extension [ValueType: Rootable[3] as rootable](value: ValueType)
-  def cbrt: rootable.Result = rootable.root(value)
+trait Negatable:
+  type Self
+  type Operand = Self
+  type Result
+  def negate(operand: Operand): Result
+
+  extension (operand: Operand)
+    @targetName("divide")
+    inline def `unary_-`: Result = negate(operand)
