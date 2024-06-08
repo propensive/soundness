@@ -20,123 +20,105 @@ import scala.annotation.*
 
 import language.experimental.captureChecking
 
-object AddOperator:
-  given double: Addition[Double, Double, Double] = Addition(_ + _)
-  given float: Addition[Float, Float, Float] = Addition(_ + _)
-  given long: Addition[Long, Long, Long] = Addition(_ + _)
-  given int: Addition[Int, Int, Int] = Addition(_ + _)
-  given short: Addition[Short, Short, Short] = Addition({ (left, right) => (left + right).toShort })
-  given byte: Addition[Byte, Byte, Byte] = Addition({ (left, right) => (left + right).toByte })
+infix type into[TypeclassType, ResultType] = TypeclassType { type Result = ResultType }
 
-trait AddOperator[-LeftType, -RightType]:
+object Addable:
+  given Double is Addable[Double] into Double as double = _ + _
+  given Float is Addable[Float] into Float as float = _ + _
+  given Long is Addable[Long] into Long as long = _ + _
+  given Int is Addable[Int] into Int as int = _ + _
+  given Short is Addable[Short] into Short as short = (augend, addend) => (augend + addend).toShort
+  given Byte is Addable[Byte] into Byte as byte = (augend, addend) => (augend + addend).toByte
+
+trait Addable[-AddendType]:
+  type Self
+  type Augend = Self
   type Result
-  def add(left: LeftType, right: RightType): Result
-  
-  extension (left: LeftType)
+  def add(augend: Augend, addend: AddendType): Result
+
+  extension (augend: Augend)
     @targetName("add")
-    inline infix def + (right: RightType): Result = add(left, right)
+    inline infix def + (addend: AddendType): Result = add(augend, addend)
 
-final class Addition[-LeftType, -RightType, ResultType](lambda: (LeftType, RightType) => ResultType)
-extends AddOperator[LeftType, RightType]:
-  type Result = ResultType
-  inline def add(left: LeftType, right: RightType): Result = lambda(left, right)
+object Subtractable:
+  given Double is Subtractable[Double] into Double as double = _ - _
+  given Float is Subtractable[Float] into Float as float = _ - _
+  given Long is Subtractable[Long] into Long as long = _ - _
+  given Int is Subtractable[Int] into Int as int = _ - _
+  given Short is Subtractable[Short] into Short as short = (minuend, subtrahend) => (minuend - subtrahend).toShort
+  given Byte is Subtractable[Byte] into Byte as byte = (minuend, subtrahend) => (minuend - subtrahend).toByte
 
-object SubOperator:
-  given double: Subtraction[Double, Double, Double] = Subtraction(_ - _)
-  given float: Subtraction[Float, Float, Float] = Subtraction(_ - _)
-  given long: Subtraction[Long, Long, Long] = Subtraction(_ - _)
-  given int: Subtraction[Int, Int, Int] = Subtraction(_ - _)
-  
-  given short: Subtraction[Short, Short, Short] =
-    Subtraction({ (left, right) => (left - right).toShort })
-  
-  given byte: Subtraction[Byte, Byte, Byte] =
-    Subtraction({ (left, right) => (left - right).toByte })
-
-trait SubOperator[-LeftType, -RightType]:
+trait Subtractable[-SubtrahendType]:
+  type Self
   type Result
-  def sub(left: LeftType, right: RightType): Result
-  
-  extension (left: LeftType)
-    @targetName("sub")
-    inline infix def - (right: RightType): Result = sub(left, right)
+  type Minuend = Self
+  def subtract(minuend: Minuend, subtrahend: SubtrahendType): Result
 
-final class Subtraction[-LeftType, -RightType, ResultType]
-    (lambda: (LeftType, RightType) => ResultType)
-extends SubOperator[LeftType, RightType]:
+  extension (minuend: Minuend)
+    @targetName("subtract")
+    inline infix def - (subtrahend: SubtrahendType): Result = subtract(minuend, subtrahend)
 
-  type Result = ResultType
-  inline def sub(left: LeftType, right: RightType): Result = lambda(left, right)
+object Multiplicable:
+  given Double is Multiplicable[Double] into Double as double = _*_
+  given Float is Multiplicable[Float] into Float as float = _*_
+  given Long is Multiplicable[Long] into Long as long = _*_
+  given Int is Multiplicable[Int] into Int as int = _*_
 
-object MulOperator:
-  given double: Multiplication[Double, Double, Double] = Multiplication(_*_)
-  given float: Multiplication[Float, Float, Float] = Multiplication(_*_)
-  given long: Multiplication[Long, Long, Long] = Multiplication(_*_)
-  given int: Multiplication[Int, Int, Int] = Multiplication(_*_)
-  
-  given short: Multiplication[Short, Short, Short] =
-    Multiplication({ (left, right) => (left*right).toShort })
-  
-  given byte: Multiplication[Byte, Byte, Byte] =
-    Multiplication({ (left, right) => (left*right).toByte })
+  given Short is Multiplicable[Short] into Short as short =
+    (multiplicand, multiplier) => (multiplicand*multiplier).toShort
 
-trait MulOperator[-LeftType, -RightType]:
+  given Byte is Multiplicable[Byte] into Byte as byte =
+    (multiplicand, multiplier) => (multiplicand*multiplier).toByte
+
+trait Multiplicable[-MultiplierType]:
+  type Self
+  type Multiplicand = Self
   type Result
-  def mul(left: LeftType, right: RightType): Result
-  
-  extension (left: LeftType)
-    @targetName("mul")
-    inline infix def * (right: RightType): Result = mul(left, right)
 
-final class Multiplication[-LeftType, -RightType, ResultType]
-    (lambda: (LeftType, RightType) => ResultType)
-extends MulOperator[LeftType, RightType]:
+  def multiply(multiplicand: Multiplicand, multiplier: MultiplierType): Result
 
-  type Result = ResultType
-  inline def mul(left: LeftType, right: RightType): Result = lambda(left, right)
+  extension (multiplicand: Multiplicand)
+    @targetName("multiply")
+    inline infix def - (multiplier: MultiplierType): Result = multiply(multiplicand, multiplier)
 
-object DivOperator:
-  given double: Division[Double, Double, Double] = Division(_/_)
-  given float: Division[Float, Float, Float] = Division(_/_)
-  given long: Division[Long, Long, Long] = Division(_/_)
-  given int: Division[Int, Int, Int] = Division(_/_)
-  given short: Division[Short, Short, Short] = Division({ (left, right) => (left/right).toShort })
-  given byte: Division[Byte, Byte, Byte] = Division({ (left, right) => (left/right).toByte })
+object Divisible:
+  given Double is Divisible[Double] into Double as double = _/_
+  given Float is Divisible[Float] into Float as float = _/_
+  given Long is Divisible[Long] into Long as long = _/_
+  given Int is Divisible[Int] into Int as int = _/_
 
-trait DivOperator[-LeftType, -RightType]:
+  given Short is Divisible[Short] into Short as short =
+    (dividend, divisor) => (dividend/divisor).toShort
+
+  given Byte is Divisible[Byte] into Byte as byte =
+    (dividend, divisor) => (dividend/divisor).toByte
+
+trait Divisible[-DivisorType]:
+  type Self
   type Result
-  def div(left: LeftType, right: RightType): Result
-  
-  extension (left: LeftType)
-    @targetName("div")
-    inline infix def / (right: RightType): Result = div(left, right)
+  def divide(dividend: Self, divisor: DivisorType): Result
 
-final class Division[-LeftType, -RightType, ResultType](lambda: (LeftType, RightType) => ResultType)
-extends DivOperator[LeftType, RightType]:
-  type Result = ResultType
-  inline def div(left: LeftType, right: RightType): Result = lambda(left, right)
+  extension (dividend: Self)
+    @targetName("divide")
+    inline infix def / (divisor: DivisorType): Result = divide(dividend, divisor)
 
-object NegOperator:
-  given byte: Negation[Byte, Byte] = Negation({ value => (-value).toByte })
-  given short: Negation[Short, Short] = Negation({ value => (-value).toShort })
-  given int: Negation[Int, Int] = Negation(-_)
-  given long: Negation[Long, Long] = Negation(-_)
-  given float: Negation[Float, Float] = Negation(-_)
-  given double: Negation[Double, Double] = Negation(-_)
+object Negatable:
+  given Double is Negatable into Double as double = -_
+  given Float is Negatable into Float as float = -_
+  given Long is Negatable into Long as long = -_
+  given Int is Negatable into Int as int = -_
+  given Short is Negatable into Short as short = operand => (-operand).toShort
+  given Byte is Negatable into Byte as byte = operand => (-operand).toByte
 
-trait NegOperator[-LeftType]:
+trait Negatable:
+  type Self
+  type Operand = Self
   type Result
-  def neg(left: LeftType): Result
-  
-  extension (left: LeftType)
-    @targetName("neg")
-    inline def `unary_-`: Result = neg(left)
+  def negate(operand: Operand): Result
 
-class Negation[-ValueType, ResultType](lambda: ValueType => ResultType)
-extends NegOperator[ValueType]:
-
-  type Result = ResultType
-  def neg(value: ValueType): ResultType = lambda(value)
+  extension (operand: Operand)
+    @targetName("divide")
+    inline def `unary_-`: Result = negate(operand)
 
 object RootOperator:
   given double2: Extraction[2, Double, Double] = Extraction(math.sqrt(_))
@@ -154,7 +136,7 @@ extends RootOperator[RootType, ValueType]:
 
   type Result = ResultType
   def root(value: ValueType): Result = lambda(value)
-  
+
 extension [ValueType](value: ValueType)
   def sqrt(using operator: RootOperator[2, ValueType]): operator.Result = operator.root(value)
   def cbrt(using operator: RootOperator[3, ValueType]): operator.Result = operator.root(value)
