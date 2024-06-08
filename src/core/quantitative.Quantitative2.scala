@@ -308,7 +308,7 @@ trait Quantitative2:
         abandon(msg"the operands represent different physical quantities")
 
   def mulTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[MulOperator[Quantity[LeftType], Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Multiplicable[Quantity[RightType]]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -318,16 +318,16 @@ trait Quantitative2:
 
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Multiplication[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
             ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]} }
 
       case None =>
-       '{ Multiplication[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, false).asExprOf[Double]} }
 
 
   def divTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[DivOperator[Quantity[LeftType], Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Divisible[Quantity[RightType]]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -337,11 +337,11 @@ trait Quantitative2:
 
     ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Division[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]} }
 
       case None =>
-       '{ Division[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes)
@@ -428,23 +428,23 @@ trait Quantitative2:
       case _                                             => resultValue
 
   def subTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[SubOperator[Quantity[LeftType], Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Subtractable[Quantity[RightType]]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type measureType <: Measure; measureType]) =>
-       '{ Subtraction[Quantity[LeftType], Quantity[RightType], Quantity[measureType]]: (left, right) =>
+       '{ Subtractable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[measureType]]: (left, right) =>
             ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} }
 
   def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[AddOperator[Quantity[LeftType], Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Addable[Quantity[RightType]]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Addition[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
+       '{ Addable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
             ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} }
 
   def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]

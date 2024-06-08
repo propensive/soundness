@@ -50,41 +50,30 @@ object Quantitative extends Quantitative2:
     erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
-    given genericDuration: GenericDuration with
-      type Self = Quantity[Seconds[1]]
-      def milliseconds(quantity: Quantity[Seconds[1]]): Long = (quantity*1000.0).toLong
+    given Quantity[Seconds[1]] is GenericDuration as genericDuration =
+      quantity => (quantity*1000.0).toLong
 
-    given specificDuration: SpecificDuration with
-      type Self = Quantity[Seconds[1]]
-      def duration(long: Long): Quantity[Seconds[1]] = Quantity(long/1000.0)
+    given Quantity[Seconds[1]] is SpecificDuration as specificDuration = long => Quantity(long/1000.0)
 
-    transparent inline given add[LeftType <: Measure, RightType <: Measure]
-            : AddOperator[Quantity[LeftType], Quantity[RightType]] =
-
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Addable[Quantity[RightType]] as addable =
       ${Quantitative.addTypeclass[LeftType, RightType]}
 
-    transparent inline given sub[LeftType <: Measure, RightType <: Measure]
-            : SubOperator[Quantity[LeftType], Quantity[RightType]] =
-
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Subtractable[Quantity[RightType]] as subtractable =
       ${Quantitative.subTypeclass[LeftType, RightType]}
 
-    transparent inline given mul[LeftType <: Measure, RightType <: Measure]
-            : MulOperator[Quantity[LeftType], Quantity[RightType]] =
-
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Multiplicable[Quantity[RightType]] as multiplicable =
       ${Quantitative.mulTypeclass[LeftType, RightType]}
 
-    given mul2[LeftType <: Measure]: MulOperator[Quantity[LeftType], Double] with
+    given [LeftType <: Measure] => Quantity[LeftType] is Multiplicable[Double] as multiplicable2:
       type Result = Quantity[LeftType]
-      inline def mul(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
+      inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
 
-    transparent inline given div[LeftType <: Measure, RightType <: Measure]
-            : DivOperator[Quantity[LeftType], Quantity[RightType]] =
-
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Divisible[Quantity[RightType]] as divisible =
       ${Quantitative.divTypeclass[LeftType, RightType]}
 
-    given div2[LeftType <: Measure]: DivOperator[Quantity[LeftType], Double] with
+    given [LeftType <: Measure] => Quantity[LeftType] is Divisible[Double]:
       type Result = Quantity[LeftType]
-      inline def div(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
+      inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
     transparent inline given squareRoot[ValueType <: Measure]
             : RootOperator[2, Quantity[ValueType]] =
