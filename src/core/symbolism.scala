@@ -23,6 +23,14 @@ import language.experimental.captureChecking
 infix type into[TypeclassType, ResultType] = TypeclassType { type Result = ResultType }
 
 object Addable:
+  class Basic[AugendType, AddendType, ResultType]
+      (lambda: (AugendType, AddendType) => ResultType)
+  extends Addable[AddendType]:
+    type Self = AugendType
+    type Result = ResultType
+
+    def add(augend: AugendType, addend: AddendType): ResultType = lambda(augend, addend)
+
   given Double is Addable[Double] into Double as double = _ + _
   given Float is Addable[Float] into Float as float = _ + _
   given Long is Addable[Long] into Long as long = _ + _
@@ -41,6 +49,15 @@ trait Addable[-AddendType]:
     inline infix def + (addend: AddendType): Result = add(augend, addend)
 
 object Subtractable:
+  class Basic[MinuendType, SubtrahendType, ResultType]
+      (lambda: (MinuendType, SubtrahendType) => ResultType)
+  extends Subtractable[SubtrahendType]:
+    type Self = MinuendType
+    type Result = ResultType
+
+    def subtract(minuend: MinuendType, subtrahend: SubtrahendType): ResultType =
+      lambda(minuend, subtrahend)
+
   given Double is Subtractable[Double] into Double as double = _ - _
   given Float is Subtractable[Float] into Float as float = _ - _
   given Long is Subtractable[Long] into Long as long = _ - _
@@ -59,6 +76,15 @@ trait Subtractable[-SubtrahendType]:
     inline infix def - (subtrahend: SubtrahendType): Result = subtract(minuend, subtrahend)
 
 object Multiplicable:
+  class Basic[MultiplicandType, MultiplierType, ResultType]
+      (lambda: (MultiplicandType, MultiplierType) => ResultType)
+  extends Multiplicable[MultiplierType]:
+    type Self = MultiplicandType
+    type Result = ResultType
+
+    def multiply(multiplicand: MultiplicandType, multiplier: MultiplierType): ResultType =
+      lambda(multiplicand, multiplier)
+
   given Double is Multiplicable[Double] into Double as double = _*_
   given Float is Multiplicable[Float] into Float as float = _*_
   given Long is Multiplicable[Long] into Long as long = _*_
@@ -82,6 +108,13 @@ trait Multiplicable[-MultiplierType]:
     inline infix def * (multiplier: MultiplierType): Result = multiply(multiplicand, multiplier)
 
 object Divisible:
+  class Basic[DividendType, DivisorType, ResultType](lambda: (DividendType, DivisorType) => ResultType)
+  extends Divisible[DivisorType]:
+    type Self = DividendType
+    type Result = ResultType
+
+    def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
+
   given Double is Divisible[Double] into Double as double = _/_
   given Float is Divisible[Float] into Float as float = _/_
   given Long is Divisible[Long] into Long as long = _/_
