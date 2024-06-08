@@ -345,7 +345,7 @@ trait Quantitative2:
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes)
-          : Expr[RootOperator[2, Quantity[ValueType]]] =
+          : Expr[Quantity[ValueType] is Rootable[2]] =
 
     val units = UnitsMap[ValueType]
 
@@ -362,10 +362,10 @@ trait Quantitative2:
           val sqrt = '{ (value: Quantity[ValueType]) => Quantity(math.sqrt(value.value)) }
           val cast = sqrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
 
-          '{Extraction[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
+          '{Rootable.Basic[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def cbrtTypeclass[ValueType <: Measure: Type](using Quotes)
-          : Expr[RootOperator[3, Quantity[ValueType]]] =
+          : Expr[Quantity[ValueType] is Rootable[3]] =
 
     val units = UnitsMap[ValueType]
 
@@ -383,7 +383,7 @@ trait Quantitative2:
           val cbrt = '{ (value: Quantity[ValueType]) => Quantity(math.cbrt(value.value)) }
           val cast = cbrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
 
-          '{Extraction[3, Quantity[ValueType], Quantity[resultType]]($cast(_))}
+          '{Rootable.Basic[3, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def greaterThan[LeftType <: Measure: Type, RightType <: Measure: Type]
       (leftExpr:  Expr[Quantity[LeftType]],

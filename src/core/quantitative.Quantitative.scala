@@ -75,11 +75,10 @@ object Quantitative extends Quantitative2:
       type Result = Quantity[LeftType]
       inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
-    transparent inline given squareRoot[ValueType <: Measure]
-            : RootOperator[2, Quantity[ValueType]] =
+    transparent inline given [ValueType <: Measure] => Quantity[ValueType] is Rootable[2] as squareRoot =
       ${Quantitative.sqrtTypeclass[ValueType]}
 
-    transparent inline given cubeRoot[ValueType <: Measure]: RootOperator[3, Quantity[ValueType]] =
+    transparent inline given [ValueType <: Measure] => Quantity[ValueType] is Rootable[3] as cubeRoot =
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
