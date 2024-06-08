@@ -14,7 +14,14 @@
     and limitations under the License.
 */
 
-package soundness
+package anticipation
 
-export anticipation.Anticipation.Text
-export anticipation.{Textualizer, Legible, ss, tt}
+import language.experimental.captureChecking
+
+trait Legible:
+  type Self
+  def text(value: Self): Text
+
+object Legible:
+  given Text is Legible = identity(_)
+  given String is Legible = _.tt
