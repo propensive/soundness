@@ -79,7 +79,7 @@ trait Multiplicable[-MultiplierType]:
 
   extension (multiplicand: Multiplicand)
     @targetName("multiply")
-    inline infix def - (multiplier: MultiplierType): Result = multiply(multiplicand, multiplier)
+    inline infix def * (multiplier: MultiplierType): Result = multiply(multiplicand, multiplier)
 
 object Divisible:
   given Double is Divisible[Double] into Double as double = _/_
