@@ -200,7 +200,7 @@ object Ansi extends Ansi2:
       Display(state.text, state.spans, state.insertions)
 
 object Display:
-  given (using NotGiven[Display is Textual]) => AddOperator[Display, Display] as add:
+  given (using NotGiven[Display is Textual]) => Display is Addable[Display] as add:
     type Result = Display
     inline def add(left: Display, right: Display): Display = left.append(right)
 
