@@ -28,7 +28,8 @@ object LeapSeconds:
   private var december: Long = bin"11111111 00000001 01100001 00100000 01001000 00001000 00000000 00000000"
   
   def addLeapSecond(year: Int, midYear: Boolean): Unit =
-    if midYear then june |= (Long.MinValue >> (year - 1972)) else december |= (Long.MinValue >> (year - 1972))
+    if midYear then june |= (Long.MinValue >> (year - 1972))
+    else december |= (Long.MinValue >> (year - 1972))
 
   def before(year: Int, plusSixMonths: Boolean): Int =
     before((year - 1972)*2 + (if plusSixMonths then 1 else 0))
