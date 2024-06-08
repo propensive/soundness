@@ -15,5 +15,5 @@ project baroque
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli baroque/core
+    include   probably/cli baroque/core quantitative/units
     main      baroque.Tests
