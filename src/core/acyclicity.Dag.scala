@@ -16,12 +16,11 @@
 
 package acyclicity
 
-import rudiments.*
-import anticipation.*
+import language.experimental.captureChecking
 
 import scala.collection.mutable.HashMap
 
-import language.experimental.captureChecking
+import rudiments.*
 
 object Dag:
   @targetName("apply2")
@@ -35,20 +34,20 @@ object Dag:
         val key = todo.head
         dependencies(key).pipe: children =>
           recur(map.updated(key, children), (todo ++ children.filter(!done(_))) - key, done + key)
-    
+
     recur(Map(), Set(start), Set())
-  
+
   @targetName("fromEdges")
   def apply[NodeType](edges: (NodeType, NodeType)*): Dag[NodeType] = Dag:
     edges.foldLeft(Map[NodeType, Set[NodeType]]()):
       case (acc, (key, value)) => acc.updated(key, acc.get(key).fold(Set(value))(_ + value))
-  
+
   @targetName("fromNodes")
   def apply[NodeType](nodes: (NodeType, Set[NodeType])*): Dag[NodeType] = Dag(Map(nodes*))
 
 case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   private val reachableCache: HashMap[NodeType, Set[NodeType]] = HashMap()
-  
+
   def keys: Set[NodeType] = edgeMap.keySet
   def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (lambda(k), v.map(lambda)) })
   def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
@@ -57,13 +56,13 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
 
   @targetName("removeKey")
   infix def -(key: NodeType): Dag[NodeType] = Dag(edgeMap - key)
-  
+
   def sources: Set[NodeType] = edgeMap.collect { case (k, v) if v.isEmpty => k }.to(Set)
   def edges: Set[(NodeType, NodeType)] = edgeMap.to(Set).flatMap { (k, vs) => vs.map(k -> _) }
   def closure: Dag[NodeType] = Dag(keys.map { k => k -> (reachable(k) - k) }.to(Map))
   def sorted: List[NodeType] = sort(edgeMap, Nil).reverse
   def hasCycle(start: NodeType): Boolean = findCycle(start).isDefined
-  
+
   def remove(key: NodeType, value: NodeType): Dag[NodeType] =
     Dag(edgeMap.updated(key, edgeMap.get(key).fold(Set())(_ - value)))
 
@@ -77,7 +76,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   infix def ++(dag: Dag[NodeType]): Dag[NodeType] =
     val joined = edgeMap.to(List) ++ dag.edgeMap.to(List)
     Dag(joined.groupBy(_._1).view.mapValues(_.flatMap(_._2).to(Set)).to(Map))
-  
+
   def add(key: NodeType, value: NodeType): Dag[NodeType] = this ++ Dag(key -> value)
 
   def flatMap[NodeType2](lambda: NodeType => Dag[NodeType2]): Dag[NodeType2] = Dag:
@@ -89,7 +88,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def reduction: Dag[NodeType] =
     val allEdges = closure.edgeMap
     val removals = for i <- keys; j <- edgeMap(i); k <- edgeMap(j) if allEdges(i)(k) yield (i, k)
-    
+
     Dag:
       removals.foldLeft(edgeMap):
         case (m, (k, v)) => m.updated(k, m(k) - v)
@@ -108,7 +107,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
     (edgeMap - elem).view.mapValues:
       map => if map(elem) then map ++ edgeMap(elem) - elem else map
     .to(Map)
-  
+
   private def sort(todo: Map[NodeType, Set[NodeType]], done: List[NodeType]): List[NodeType] =
     if todo.isEmpty then done
     else
@@ -118,7 +117,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def filter(pred: NodeType => Boolean): Dag[NodeType] =
     val deletions = keys.filter(!pred(_))
     val inverted = invert
-    
+
     Dag:
       deletions.foldLeft(edgeMap) { (acc, next) =>
         inverted(next).foldLeft(acc):
@@ -134,12 +133,9 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
         trace.to(Set).intersect(apply(vertex)).headOption match
           case Some(element) =>
             Some(trace ++ List(vertex, element))
-            
+
           case None =>
             val queue = tail ++ apply(vertex).diff(finished).toList.map((_, trace :+ vertex))
             recur(queue, finished + vertex)
 
     recur(List((start, List())), Set())
-
-extension (dag: Dag[Text])
-  def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)

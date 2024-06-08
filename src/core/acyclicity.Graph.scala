@@ -16,13 +16,8 @@
 
 package acyclicity
 
-import spectacular.*
-
 import language.experimental.captureChecking
 
-extension (inline stringContext: StringContext)
-  transparent inline def ref(inline parts: Any*): Dot.Ref =
-    ${NodeParser.expand('stringContext, 'parts)}
-
-extension (stringContext: StringContext)
-  def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)
+object Graph:
+  def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), false, statements*)
+  def strict(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), true, statements*)
