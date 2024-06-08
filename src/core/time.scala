@@ -89,7 +89,7 @@ object Dates:
 
     given ordering: Ordering[Date] = Ordering.Int
 
-    given (using calendar: Calendar) => AddOperator[Date, Period] as plus:
+    given (using calendar: Calendar) => Date is Addable[Period] as plus:
       type Result = Date
       def add(date: Date, period: Period): Date = calendar.add(date, period)
 
@@ -203,10 +203,10 @@ case class YearMonth(year: Int, month: MonthName):
   import compiletime.ops.int.*
 
 object YearMonth:
-  given SubOperator[YearMonth, Int] as dayOfMonth:
+  given YearMonth is Subtractable[Int] as dayOfMonth:
     type Result = Date
 
-    def sub(yearMonth: YearMonth, day: Int): Date =
+    def subtract(yearMonth: YearMonth, day: Int): Date =
       safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day)).vouch(using Unsafe)
 
 object Timing:
@@ -238,13 +238,13 @@ object Timing:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given AddOperator[Instant, Duration] as plus:
+    given Instant is Addable[Duration] as plus:
       type Result = Instant
       def add(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
 
-    given SubOperator[Instant, Instant] as minus:
+    given Instant is Subtractable[Instant] as minus:
       type Result = Duration
-      def sub(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+      def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
 
   type Duration = Quantity[Seconds[1]]
 
@@ -360,16 +360,16 @@ object Period:
       case StandardTime.Minute => new Period(0, 0, 0, 0, n, 0) with FixedDuration
       case StandardTime.Second => new Period(0, 0, 0, 0, 0, n) with FixedDuration
 
-  given (using TimeSystem[StandardTime]) => AddOperator[Period, Period] as plus:
+  given (using TimeSystem[StandardTime]) => Period is Addable[Period] as plus:
     type Result = Period
     def add(left: Period, right: Period): Period =
       Period(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
           right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
 
-  given (using TimeSystem[StandardTime]) => SubOperator[Period, Period] as minus:
+  given (using TimeSystem[StandardTime]) => Period is Subtractable[Period] as minus:
     type Result = Period
 
-    def sub(left: Period, right: Period): Period =
+    def subtract(left: Period, right: Period): Period =
       Period(left.years - right.years, left.months - right.months, left.days - right.days, left.hours -
           right.hours, left.minutes - right.minutes, left.seconds - right.seconds)
 
@@ -396,7 +396,7 @@ extends DiurnalPeriod, TemporalPeriod:
   infix def + (right: Period): Period = Period.plus.add(this, right)
 
   @targetName("minus")
-  infix def - (right: Period): Period = Period.minus.sub(this, right)
+  infix def - (right: Period): Period = Period.minus.subtract(this, right)
 
 extension (one: 1)
   def year: Timespan = Period(StandardTime.Year, 1)
@@ -419,7 +419,7 @@ extension (int: Int)
 case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
 
 object Timestamp:
-  given AddOperator[Timestamp, Timespan] as plus:
+  given Timestamp is Addable[Timespan] as plus:
     type Result = Timestamp
     def add(left: Timestamp, right: Timespan): Timestamp = ???
 
@@ -436,9 +436,9 @@ object MonthName:
   def unapply(value: Int): Option[MonthName] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
 
-  given SubOperator[Int, MonthName] as monthOfYear:
+  given Int is Subtractable[MonthName] as monthOfYear:
     type Result = YearMonth
-    def sub(year: Int, month: MonthName) = new YearMonth(year, month)
+    def subtract(year: Int, month: MonthName) = new YearMonth(year, month)
 
 enum MonthName:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec

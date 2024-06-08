@@ -17,9 +17,9 @@
 package aviation
 
 import probably.*
-import rudiments.*
+import rudiments.{at as _, *}
 import symbolism.*
-import gossamer.*
+import gossamer.{at as _, *}
 import contingency.*
 import spectacular.*
 
