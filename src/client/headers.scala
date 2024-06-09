@@ -26,8 +26,8 @@ import spectacular.*
 
 trait RequestHeader[LabelType <: Label]():
   def header: Text
-  
-  def apply[ValueType](content: ValueType)(using param: GenericHttpRequestParam[LabelType, ValueType])
+
+  def apply[ValueType](content: ValueType)(using param: LabelType is GenericHttpRequestParam[ValueType])
           : RequestHeader.Value =
 
     RequestHeader.Value(this, param(content))
@@ -46,7 +46,7 @@ object RequestHeader:
 
   def unapply(str: Text): Some[RequestHeader[?]] =
     Some(standard.get(str.lower).getOrElse(RequestHeader(str.s)))
-  
+
   object Value:
     given Show[Value] = value => t"${value.header}: ${value.value}"
 
@@ -117,7 +117,7 @@ object RequestHeader:
   case object Upgrade extends SimpleRequestHeader["upgrade"]()
   case object Via extends SimpleRequestHeader["via"]()
   case object Warning extends SimpleRequestHeader["warning"]()
-  
+
 object ResponseHeader:
   lazy val standard: Map[Text, ResponseHeader[?]] = List(AcceptCharset, AccessControlAllowOrigin,
       AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
@@ -128,7 +128,7 @@ object ResponseHeader:
       PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
       TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
     .bi.map(_.header -> _).to(Map)
-  
+
   def unapply(str: Text): Some[ResponseHeader[?]] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
 
@@ -185,7 +185,7 @@ enum ResponseHeader[ValueType](val header: Text):
 
 object HttpHeaderDecoder:
   given text: HttpHeaderDecoder[Text] = identity(_)
-  
+
   given byteSize(using Errant[NumberError]): HttpHeaderDecoder[ByteSize] =
     value => ByteSize(value.decodeAs[Int])
 

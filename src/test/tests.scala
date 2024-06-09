@@ -16,7 +16,6 @@
 
 package telekinesis
 
-import rudiments.*
 import probably.*
 import anticipation.*
 import nettlesome.*
