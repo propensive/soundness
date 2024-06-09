@@ -45,16 +45,16 @@ object Abacist:
             unitValue.value match
               case Some(unitValue) =>
                 if unitValue < 0
-                then fail(msg"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative")
+                then abandon(msg"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative")
                 else if unitValue >= max
-                then fail(msg"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
+                then abandon(msg"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
 
                 recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
               
               case None =>
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
           
-          case Nil => fail:
+          case Nil => abandon:
             msg"${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units"
     
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
@@ -111,7 +111,7 @@ object Abacist:
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
     
     val multiplier: Multiplier = multipliers[UnitsType].where(_.unitPower == lookupUnit).or:
-      fail(msg"the Count does not include this unit")
+      abandon(msg"the Count does not include this unit")
     
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
   
@@ -127,7 +127,7 @@ object Abacist:
           
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
-            then fail(msg"""
+            then abandon(msg"""
               the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and ${current.name}
             """)
           
