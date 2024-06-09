@@ -21,12 +21,6 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-// erased trait DefaultTextType:
-//   type TextType
-
-// package defaultTextTypes:
-//   erased given (DefaultTextType { type TextType = Text }) = ###
-
 object Presentational:
   given Text is Textual as text:
     type Show[-ValueType] = spectacular.Show[ValueType]
