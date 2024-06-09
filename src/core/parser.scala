@@ -94,8 +94,8 @@ object JsonParseError:
     case IncorrectEscape(char: Char)
     case MultipleDecimalPoints
     case ExpectedDigit(found: Char)
-  
-  given Communicable[Reason] =
+
+  given Reason is Communicable =
     case Reason.EmptyInput =>
       msg"the input was empty"
 
@@ -176,7 +176,7 @@ object JsonAst:
     val stream = readable.read(source)
     var line: Int = 0
     var colStart: Int = 0
-    
+
     try
       if stream.isEmpty then abort(JsonParseError(0, 0, Reason.EmptyInput))
       val block: Bytes = stream.head
@@ -188,10 +188,10 @@ object JsonAst:
       var arrayBufferId: Int = -1
       var stringArrayBufferId: Int = -1
       val arrayBuffers: ArrayBuffer[ArrayBuffer[Any]] = ArrayBuffer.empty[ArrayBuffer[Any]]
-      
+
       val stringArrayBuffers: ArrayBuffer[ArrayBuffer[String]] =
         ArrayBuffer.empty[ArrayBuffer[String]]
-      
+
       def getArrayBuffer(): ArrayBuffer[Any] =
         arrayBufferId += 1
         if arrayBuffers.length <= arrayBufferId then
@@ -202,9 +202,9 @@ object JsonAst:
           val buf = arrayBuffers(arrayBufferId)
           buf.clear()
           buf
-      
+
       def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
-      
+
       def getStringArrayBuffer(): ArrayBuffer[String] =
         stringArrayBufferId += 1
         if stringArrayBuffers.length <= stringArrayBufferId then
@@ -215,31 +215,31 @@ object JsonAst:
           val buf = stringArrayBuffers(stringArrayBufferId)
           buf.clear()
           buf
-      
+
       def relinquishStringArrayBuffer(): Unit = stringArrayBufferId -= 1
 
       var arraySize: Int = 16
       var stringArray: Array[Char] = new Array(arraySize)
       var stringCursor: Int = 0
       inline def resetString(): Unit = stringCursor = 0
-      
-      def appendChar(char: Char): Unit = 
+
+      def appendChar(char: Char): Unit =
         if stringCursor == arraySize then
           arraySize *= 2
           val newArray = new Array[Char](arraySize)
           System.arraycopy(stringArray, 0, newArray, 0, stringCursor)
           stringArray = newArray
-        
+
         stringArray(stringCursor) = char
         stringCursor += 1
-      
+
       def getString(): String = String(stringArray, 0, stringCursor)
 
       if penultimate > 2 && block(0) == -17 && block(1) == -69 && block(2) == -65 then cur = 3
 
       def current: Byte = block(cur)
       def next(): Unit = cur += 1
-      
+
       inline def getNext(): Byte =
         cur += 1
         block(cur)
@@ -250,7 +250,7 @@ object JsonAst:
           if ch == Newline then
             colStart = cur
             line += 1
-          
+
           ch == Space || (ch & bin"0000 1000") == bin"0000 1000" &&
               (ch == Newline || ch == Tab || ch == Return)
         do next()
@@ -308,9 +308,9 @@ object JsonAst:
               next()
               continue = false
             case ch => error(Reason.ExpectedString(ch.toChar))
-        
+
         val result = (keys.toArray, values.toArray).asInstanceOf[(IArray[String], IArray[Any])]
-        
+
         relinquishStringArrayBuffer()
         relinquishArrayBuffer()
         result
@@ -332,9 +332,9 @@ object JsonAst:
                 case Comma        => arrayItems += value
                 case CloseBracket => arrayItems += value; continue = false
                 case ch           => error(Reason.ExpectedSomeValue(ch.toChar))
-          
+
           next()
-        
+
         val result: IArray[Any] = arrayItems.toArray.asInstanceOf[IArray[Any]]
         relinquishArrayBuffer()
         result
@@ -350,7 +350,7 @@ object JsonAst:
             case Quote =>
               continue = false
               size = cur - start - difference
-            
+
             case Tab | Newline | Return =>
               error(Reason.InvalidWhitespace)
 
@@ -362,7 +362,7 @@ object JsonAst:
 
                 case ch =>
                   difference += 1
-            
+
             case ch =>
               if (ch >> 5) > 5 then
                 if (ch & bin"0000 0000 1110 0000") == bin"0000 0000 1100 0000" then
@@ -427,12 +427,12 @@ object JsonAst:
                     char |= (getNext() & bin"0011 1111") << 6
                     char |= getNext() & bin"0011 1111"
                     appendChar(char.toChar)
-              
+
               next()
         next()
-        
+
         String(getString())
-                
+
       def fromHex(ch: Byte): Int =
         if ch <= Num9 && ch >= Num0 then ch - Num0
         else if ch <= UpperF && ch >= UpperA then ch - UpperA
@@ -449,7 +449,7 @@ object JsonAst:
         if x != 1634497381L then error(Reason.ExpectedFalse)
         next()
         false
-      
+
       def parseTrue(): JsonAst =
         var x: Int = current << 8
         x |= getNext()
@@ -458,7 +458,7 @@ object JsonAst:
         if x != 7501157L then error(Reason.ExpectedTrue)
         next()
         true
-      
+
       def parseNull(): JsonAst =
         var x: Int = current << 8
         x |= getNext()
@@ -475,10 +475,10 @@ object JsonAst:
         var scale: Int = 0
         var ch: Byte = 0
         continue = true
-        
+
         try
           val leadingZero: Boolean = first == 0
-    
+
           transparent inline def digit(inline dec: Boolean, inline ch: Byte): Unit =
             if dec then
               mantissa = mantissa*10 + (ch & 15)
@@ -492,7 +492,7 @@ object JsonAst:
               else
                 mantissa = mantissa*10 + (ch & 15)
                 next()
-    
+
           while continue do
             ch = current
             if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
@@ -504,19 +504,19 @@ object JsonAst:
                 ch = current
                 if ch <= Num9 && ch >= Num0 then digit(decimalPosition != 0, ch)
                 else error(Reason.ExpectedDigit(ch.toChar))
-                
+
                 while
                   ch = current
                   ch <= Num9 && ch >= Num0
                 do
                   mantissa = mantissa*10 + (ch & 15)
                   ch = getNext()
-                
-              
+
+
               case UpperE | LowerE =>
                 if decimalPosition != 0 then scale = decimalPosition - cur + 1
                 next()
-                
+
                 ch = current
                 var minus = false
                 (ch: @switch) match
@@ -524,16 +524,16 @@ object JsonAst:
                     minus = true
                     next()
                     ch = current
-                  
+
                   case Plus =>
                     next()
                     ch = current
-                  
+
                   case _ =>
                     ()
                 if ch <= Num9 && ch >= Num0 then exponent = (ch & 15)
                 else error(Reason.ExpectedDigit(ch.toChar))
-                
+
                 if minus then exponent *= -1
                 next()
                 while
@@ -542,24 +542,24 @@ object JsonAst:
                 do
                   exponent = exponent*10 + (ch & 15)
                   next()
-                
+
                 continue = false
-              
+
               case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
                 if ch == Newline then
                   colStart = cur
                   line += 1
                 if decimalPosition != 0 && scale == 0 then scale = decimalPosition - cur + 1
                 else if leadingZero && mantissa != 0 then error(Reason.NumberHasLeadingZero)
-                
+
                 if negative then mantissa *= -1
                 val exp = exponent + scale
-                
+
                 number =
                   if exp == 0 then mantissa else mantissa*math.pow(10.0, exponent.toDouble + scale)
 
                 continue = false
-              
+
               case ch =>
                 error(Reason.UnexpectedChar(ch.toChar))
             end if
@@ -574,12 +574,12 @@ object JsonAst:
               val mantissa2 = if negative then -mantissa else mantissa
               mantissa2.toDouble*math.pow(10.0, exponent.toDouble + scale)
             else error(Reason.PrematureEnd)
-      
+
       def parseLargeNumber(hasDecimalPoint: Boolean): Unit =
         var decimalPoint: Boolean = hasDecimalPoint
         continue = true
         var ch: Byte = 0
-        
+
         while continue do
           ch = current
           if ch <= Num9 && ch >= Num0 then
@@ -597,11 +597,11 @@ object JsonAst:
                 numberText.append(ch.toChar)
                 continue = cur != penultimate
                 next()
-            
+
             case UpperE | LowerE =>
               numberText.append('e')
               next()
-              
+
               ch = current
               if ch == Minus || ch == Plus then
                 numberText.append(ch)
@@ -611,20 +611,20 @@ object JsonAst:
                   numberText.append(ch.toChar)
                   continue = cur != penultimate
                   next()
-            
+
             case Tab | Return | Newline | Space | Comma | CloseBracket | CloseBrace =>
               if ch == Newline then
                 colStart = cur
                 line += 1
-              number = 
+              number =
                 try BigDecimal(numberText.toCharArray).also(numberText.setLength(0))
                 catch case err: NumberFormatException => throw err
-              
+
               continue = false
-            
+
             case ch =>
               error(Reason.UnexpectedChar(ch.toChar))
-      
+
       skip()
       val result = parseValue()
       while cur < block.length
@@ -635,7 +635,7 @@ object JsonAst:
             line += 1
           case Tab | Return | Space => ()
           case other                => error(Reason.SpuriousContent(other.toChar))
-        
+
         next()
 
       result
