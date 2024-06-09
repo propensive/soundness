@@ -32,7 +32,7 @@ import scala.collection.Factory
 import scala.compiletime.*
 
 import language.dynamics
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 import JsonAccessError.Reason
 
@@ -58,23 +58,23 @@ extension (json: JsonAst)
 
   inline def isArray: Boolean = json.isInstanceOf[Array[?]]
 
-  inline def array(using Errant[JsonAccessError]): IArray[JsonAst] =
+  inline def array: IArray[JsonAst] raises JsonAccessError =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Array)))(IArray[JsonAst]())
 
-  inline def double(using Errant[JsonAccessError]): Double = json.asMatchable match
+  inline def double: Double raises JsonAccessError = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
     case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0.0)
 
-  inline def bigDecimal(using Errant[JsonAccessError]): BigDecimal = json.asMatchable match
+  inline def bigDecimal: BigDecimal raises JsonAccessError = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
     case _                 => raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(BigDecimal(0))
 
-  inline def long(using Errant[JsonAccessError]): Long = json.asMatchable match
+  inline def long: Long raises JsonAccessError = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
@@ -88,40 +88,132 @@ extension (json: JsonAst)
     else if isArray then JsonPrimitive.Array
     else JsonPrimitive.Null
 
-  inline def string(using Errant[JsonAccessError]): Text =
+  inline def string: Text raises JsonAccessError =
     if isString then json.asInstanceOf[Text]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.String)))("".tt)
 
-  inline def boolean(using Errant[JsonAccessError]): Boolean =
+  inline def boolean: Boolean raises JsonAccessError =
     if isBoolean then json.asInstanceOf[Boolean]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Boolean)))(false)
 
-  inline def obj(using Errant[JsonAccessError]): (IArray[String], IArray[JsonAst]) =
+  inline def obj: (IArray[String], IArray[JsonAst]) raises JsonAccessError =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Object)))(IArray[String]() -> IArray[JsonAst]())
 
-  inline def number(using Errant[JsonAccessError]): Long | Double | BigDecimal =
+  inline def number: Long | Double | BigDecimal raises JsonAccessError =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
     else raise(JsonAccessError(Reason.NotType(JsonPrimitive.Number)))(0L)
 
-extension [ValueType](value: ValueType)(using encoder: JsonEncoder[ValueType])
-  def json: Json = Json(encoder.encode(value))
+extension [ValueType: Encodable in Json](value: ValueType)
+  def json: Json = ValueType.encode(value)
 
 object Json extends Dynamic:
+  def ast(value: JsonAst): Json = new Json(value)
+
+  object DecodableDerivation extends Derivation[[ValueType] =>> ValueType is Decodable in Json]:
+    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
+      (json, omit) =>
+        summonInline[Errant[JsonAccessError]].give:
+          val keyValues = json.root.obj
+          val values = keyValues(0).zip(keyValues(1)).to(Map)
+
+          construct: [FieldType] =>
+            context =>
+              val omit = !values.contains(label.s)
+              val value = if omit then JsonAst(0L) else values(label.s)
+              context.decode(new Json(value), omit)
+
+    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json = (json, omit) =>
+      summonInline[Errant[JsonAccessError]].give:
+        summonInline[Errant[VariantError]].give:
+          val values = json.root.obj
+
+          values(0).indexOf("_type") match
+            case -1 =>
+              abort(JsonAccessError(Reason.Label(t"_type")))
+
+            case index =>
+              delegate(values(1)(index).string): [VariantType <: DerivationType] =>
+                context => context.decode(json, omit)
+
+  object EncodableDerivation extends Derivation[[ValueType] =>> ValueType is Encodable in Json]:
+    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Encodable in Json =
+      value =>
+        val labels = fields(value): [FieldType] =>
+          field => label.s
+
+        val values = fields(value): [FieldType] =>
+          field => context.encode(field).root
+
+        Json.ast(JsonAst((labels, values)))
+
+    inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
+      variant(value): [VariantType <: DerivationType] =>
+        value => summonInline[Errant[JsonAccessError]].give:
+          Json.ast:
+            context.encode(value).root match
+              case (labels: IArray[String], values: IArray[JsonAst]) =>
+                JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
+
+  inline given [ValueType: Reflection] => ValueType is Decodable in Json as decodable =
+    DecodableDerivation.derived
+
+  inline given [ValueType: Reflection] => ValueType is Encodable in Json as encodable =
+    EncodableDerivation.derived
+
+  given Json is Decodable in Json as boolean = (value, omit) => value
+  given (using Errant[JsonAccessError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
+  given (using Errant[JsonAccessError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
+  given (using Errant[JsonAccessError]) => Byte is Decodable in Json as byte = (value, omit) => value.root.long.toByte
+  given (using Errant[JsonAccessError]) => Short is Decodable in Json as short = (value, omit) => value.root.long.toShort
+  given (using Errant[JsonAccessError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
+  given (using Errant[JsonAccessError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
+  given (using Errant[JsonAccessError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
+  given (using Errant[JsonAccessError]) => Text is Decodable in Json as text = (value, omit) => value.root.string
+  given (using Errant[JsonAccessError]) => String is Decodable in Json as string = (value, omit) => value.root.string.s
+
+  given [ValueType: Decodable in Json](using Errant[JsonAccessError])
+      => Option[ValueType] is Decodable in Json as option = (json, omit) =>
+    if omit then None else Some(ValueType.decode(json, false))
+
+
+  given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
+  given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
+  given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
+  given Double is Encodable in Json as doubleEncodable = double => Json.ast(JsonAst(double))
+  given Long is Encodable in Json as longEncodable = long => Json.ast(JsonAst(long))
+  given Byte is Encodable in Json as byteEncodable = byte => Json.ast(JsonAst(byte.toLong))
+  given Short is Encodable in Json as shortEncodable = short => Json.ast(JsonAst(short.toLong))
+  given Boolean is Encodable in Json as booleanEncodable = boolean => Json.ast(JsonAst(boolean))
+  given Json is Encodable in Json as jsonEncodable = identity(_)
+
+  given [CollectionType <: Iterable, ElementType: Encodable in Json]
+      => CollectionType[ElementType] is Encodable in Json =
+    values => Json.ast(JsonAst(IArray.from(values.map(ElementType.encode(_).root))))
+
+  given [CollectionType <: Iterable, ElementType: Decodable in Json]
+      (using factory:    Factory[ElementType, CollectionType[ElementType]],
+             jsonAccess: Errant[JsonAccessError])
+      => (CollectionType[ElementType] is Decodable in Json) as array =
+    (value, omit) =>
+      val builder = factory.newBuilder
+      value.root.array.each: json =>
+        builder += ElementType.decode(Json.ast(json), false)
+
+      builder.result()
 
   given encoder: Encoder[Json] = json => MinimalJsonPrinter.print(json.root)
 
-  def parse[SourceType](value: SourceType)
-      (using readable: Readable[SourceType, Bytes], jsonParse: Errant[JsonParseError])
-          : Json^{readable, jsonParse} =
+  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes])
+          : Json raises JsonParseError =
 
     Json(JsonAst.parse(value))
 
   given (using JsonPrinter): Show[Json] = json =>
     try json.root.show catch case err: JsonAccessError => t"<${err.reason.show}>"
 
-  given (using encoder: CharEncoder^, printer: JsonPrinter)
-      => ((Json is GenericHttpResponseStream)^{encoder}) =
+  given (using encoder: CharEncoder, printer: JsonPrinter)
+      => ((Json is GenericHttpResponseStream)) =
     new GenericHttpResponseStream:
       type Self = Json
       def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
@@ -130,7 +222,7 @@ object Json extends Dynamic:
   given (using jsonParse: Errant[JsonParseError]) => Decoder[Json] =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given (using jsonParse: Errant[JsonParseError]) => ((Json is GenericHttpReader)^{jsonParse}) =
+  given (using jsonParse: Errant[JsonParseError]) => ((Json is GenericHttpReader)) =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
   given aggregable[SourceType](using Readable[SourceType, Bytes], Errant[JsonParseError])
@@ -143,235 +235,141 @@ object Json extends Dynamic:
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
     Json(JsonAst((keys, values)))
 
-trait JsonEncoder2:
-  given optional[ValueType](using encoder: JsonEncoder[ValueType])
-      (using util.NotGiven[Unset.type <:< ValueType])
-          : JsonEncoder[Optional[ValueType]] =
+// trait JsonEncoder2:
+//   given optional[ValueType](using encoder: JsonEncoder[ValueType])
+//       (using util.NotGiven[Unset.type <:< ValueType])
+//           : JsonEncoder[Optional[ValueType]] =
 
-    new JsonEncoder[Optional[ValueType]]:
-      override def omit(value: Optional[ValueType]): Boolean = value.absent
-      def encode(value: Optional[ValueType]): JsonAst = value.let(encoder.encode(_)).or(JsonAst(null))
+//     new JsonEncoder[Optional[ValueType]]:
+//       override def omit(value: Optional[ValueType]): Boolean = value.absent
+//       def encode(value: Optional[ValueType]): JsonAst = value.let(encoder.encode(_)).or(JsonAst(null))
 
-object JsonEncoder extends JsonEncoder2:
-  given int: JsonEncoder[Int] = int => JsonAst(int.toLong)
-  given text: JsonEncoder[Text] = text => JsonAst(text.s)
-  given string: JsonEncoder[String] = JsonAst(_)
-  given double: JsonEncoder[Double] = JsonAst(_)
-  given long: JsonEncoder[Long] = JsonAst(_)
-  given byte: JsonEncoder[Byte] = byte => JsonAst(byte.toLong)
-  given short: JsonEncoder[Short] = short => JsonAst(short.toLong)
-  given boolean: JsonEncoder[Boolean] = JsonAst(_)
-  given json: JsonEncoder[Json] = _.root
+// object JsonEncoder extends JsonEncoder2:
 
-  inline given derived[ValueType]: JsonEncoder[ValueType] = summonFrom:
-    case given Encoder[ValueType]    => value => JsonAst(value.encode.s)
-    case given Reflection[ValueType] => JsonEncoderDerivation.derived[ValueType]
+//   inline given derived[ValueType]: JsonEncoder[ValueType] = summonFrom:
+//     case given Encoder[ValueType]    => value => JsonAst(value.encode.s)
+//     case given Reflection[ValueType] => JsonEncoderDerivation.derived[ValueType]
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonEncoder[Json]^{jsonAccess}) as json = _.root
-  given nil: JsonEncoder[Nil.type] = value => JsonAst(IArray[JsonAst]())
+//   given collection[CollectionType <: Iterable, ElementType: JsonEncoder]
+//           : JsonEncoder[CollectionType[ElementType]] =
 
-  given collection[CollectionType[ElementType] <: Iterable[ElementType], ElementType: JsonEncoder]
-          : JsonEncoder[CollectionType[ElementType]] =
+//     values => JsonAst(IArray.from(values.map(summon[JsonEncoder[ElementType]].encode(_))))
 
-    values => JsonAst(IArray.from(values.map(summon[JsonEncoder[ElementType]].encode(_))))
+//   given map[ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Map[String, ValueType]] = map =>
+//     val keys = new Array[String](map.size)
+//     val values = new Array[JsonAst](map.size)
+//     var index = 0
 
-  given map[ValueType](using encoder: JsonEncoder[ValueType]): JsonEncoder[Map[String, ValueType]] = map =>
-    val keys = new Array[String](map.size)
-    val values = new Array[JsonAst](map.size)
-    var index = 0
+//     map.each: (key, value) =>
+//       keys(index) = key
+//       values(index) = encoder.encode(value)
+//       index += 1
 
-    map.each: (key, value) =>
-      keys(index) = key
-      values(index) = encoder.encode(value)
-      index += 1
+//     JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
 
-    JsonAst(keys.immutable(using Unsafe), values.immutable(using Unsafe))
+//   given opt[ValueType: JsonEncoder]: JsonEncoder[Option[ValueType]] with
+//     override def omit(value: Option[ValueType]): Boolean = value.isEmpty
 
-  given opt[ValueType: JsonEncoder]: JsonEncoder[Option[ValueType]] with
-    override def omit(value: Option[ValueType]): Boolean = value.isEmpty
+//     def encode(value: Option[ValueType]): JsonAst = value match
+//       case None        => JsonAst(null)
+//       case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
 
-    def encode(value: Option[ValueType]): JsonAst = value match
-      case None        => JsonAst(null)
-      case Some(value) => summon[JsonEncoder[ValueType]].encode(value)
+// trait JsonEncoder[-ValueType]:
+//   def omit(value: ValueType): Boolean = false
+//   def encode(value: ValueType): JsonAst
 
-object JsonEncoderDerivation extends Derivation[JsonEncoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: JsonEncoder[DerivationType] = value =>
-    val labels = fields(value): [FieldType] =>
-      field => label.s
+//   def contramap[ValueType2](lambda: ValueType2 => ValueType): JsonEncoder[ValueType2] =
+//     encode.compose(lambda)(_)
 
-    val values = fields(value): [FieldType] =>
-      field => context.encode(field)
+//   def tag(label: Text)(using jsonAccess: Errant[JsonAccessError]): JsonEncoder[ValueType] =
+//     (value: ValueType) =>
+//       val (keys, values) = encode(value).obj
+//       JsonAst((keys :+ "_type", values :+ label.s))
 
-    JsonAst((labels, values))
+//trait JsonDecoder2:
+  // given [ValueType]
+  //     (using decoder: JsonDecoder[ValueType], notGiven: util.NotGiven[Unset.type <:< ValueType])
+  //     => (JsonDecoder[Optional[ValueType]]) as optional =
 
-  inline def split[DerivationType: SumReflection]: JsonEncoder[DerivationType] = value =>
-    variant(value): [VariantType <: DerivationType] =>
-      value => summonInline[Errant[JsonAccessError]].give:
-        context.tag(label).encode(value)
-
-trait JsonEncoder[-ValueType]:
-  def omit(value: ValueType): Boolean = false
-  def encode(value: ValueType): JsonAst
-
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): JsonEncoder[ValueType2]^{this, lambda} =
-    encode.compose(lambda)(_)
-
-  def tag(label: Text)(using jsonAccess: Errant[JsonAccessError]): JsonEncoder[ValueType]^{jsonAccess} =
-    (value: ValueType) =>
-      val (keys, values) = encode(value).obj
-      JsonAst((keys :+ "_type", values :+ label.s))
-
-trait JsonDecoder2:
-  given [ValueType]
-      (using decoder: JsonDecoder[ValueType]^, notGiven: util.NotGiven[Unset.type <:< ValueType])
-      => (JsonDecoder[Optional[ValueType]]^{decoder}) as optional =
-
-    new JsonDecoder[Optional[ValueType]]:
-      def decode(value: JsonAst, omit: Boolean): Optional[ValueType] =
-        if omit then Unset else decoder.decode(value, false)
+  //   new JsonDecoder[Optional[ValueType]]:
+  //     def decode(value: JsonAst, omit: Boolean): Optional[ValueType] =
+  //       if omit then Unset else decoder.decode(value, false)
 
   // given decoder
   //     [ValueType]
   //     (using jsonAccess: Errant[JsonAccessError], decoder: Decoder[ValueType])
-  //     : JsonDecoder[ValueType]^{jsonAccess, decoder} =
+  //     : JsonDecoder[ValueType] =
   //   (value, omit) => decoder.decode(value.string)
 
-object JsonDecoder extends JsonDecoder2:
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[JsonAst]^{jsonAccess}) as jsonAst =
-    (value, omit) => value
+// object JsonDecoder extends JsonDecoder2:
+//   given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Json]) as json =
+//     (value, omit) => Json(value)
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Json]^{jsonAccess}) as json =
-    (value, omit) => Json(value)
+//   given [ValueType](using decoder: JsonDecoder[ValueType])(using Errant[JsonAccessError])
+//           => (JsonDecoder[Option[ValueType]]) as option =
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Int]^{jsonAccess}) as int =
-    (value, omit) => value.long.toInt
+//     new JsonDecoder[Option[ValueType]]:
+//       def decode(value: JsonAst, omit: Boolean): Option[ValueType] =
+//         if omit then None else Some(decoder.decode(value, false))
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Byte]^{jsonAccess}) as byte =
-    (value, omit) => value.long.toByte
+//   given [ElementType](using decoder: JsonDecoder[ElementType])(using jsonAccess: Errant[JsonAccessError])
+//           => (JsonDecoder[Map[String, ElementType]]) as map =
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Short]^{jsonAccess}) as short =
-    (value, omit) => value.long.toShort
+//     (value, omit) =>
+//       val (keys, values) = value.obj
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Float]^{jsonAccess}) as float =
-    (value, omit) => value.double.toFloat
+//       keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
+//         acc.updated(keys(index), decoder.decode(values(index), false))
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Double]^{jsonAccess}) as double =
-    (value, omit) => value.double
+//   inline given [ValueType] => JsonDecoder[ValueType] as derived = summonFrom:
+//     case decoder: Decoder[ValueType] =>
+//       (value, omit) => decoder.decode(value.string(using summonInline[Errant[JsonAccessError]]))
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Long]^{jsonAccess}) as long =
-    (value, omit) => value.long
+//     case given Reflection[ValueType] =>
+//       JsonDecoderDerivation.derived[ValueType]
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Text]^{jsonAccess}) as text =
-    (value, omit) => value.string
+// trait JsonDecoder[ValueType]:
+//   private inline def decoder: this.type = this
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[String]^{jsonAccess}) as string =
-    (value, omit) => value.string.s
+//   def decode(json: JsonAst, omit: Boolean): ValueType
 
-  given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Boolean]^{jsonAccess}) as boolean =
-    (value, omit) => value.boolean
-
-  given [ValueType](using decoder: JsonDecoder[ValueType]^)(using Errant[JsonAccessError])
-          => (JsonDecoder[Option[ValueType]]^{decoder}) as option =
-
-    new JsonDecoder[Option[ValueType]]:
-      def decode(value: JsonAst, omit: Boolean): Option[ValueType] =
-        if omit then None else Some(decoder.decode(value, false))
-
-  given [CollectionType[ElementType] <: Iterable[ElementType], ElementType]
-      (using decoder:    JsonDecoder[ElementType],
-             jsonAccess: Errant[JsonAccessError],
-             factory:    Factory[ElementType, CollectionType[ElementType]])
-      => (JsonDecoder[CollectionType[ElementType]]^{jsonAccess}) as array =
-
-    new JsonDecoder[CollectionType[ElementType]]:
-      def decode(value: JsonAst, omit: Boolean): CollectionType[ElementType] =
-        val builder = factory.newBuilder
-        value.array.each(builder += decoder.decode(_, false))
-        builder.result()
-
-  given [ElementType](using decoder: JsonDecoder[ElementType])(using jsonAccess: Errant[JsonAccessError])
-          => (JsonDecoder[Map[String, ElementType]]^{jsonAccess}) as map =
-
-    (value, omit) =>
-      val (keys, values) = value.obj
-
-      keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
-        acc.updated(keys(index), decoder.decode(values(index), false))
-
-  inline given [ValueType] => JsonDecoder[ValueType] as derived = summonFrom:
-    case decoder: Decoder[ValueType] =>
-      (value, omit) => decoder.decode(value.string(using summonInline[Errant[JsonAccessError]]))
-
-    case given Reflection[ValueType] =>
-      JsonDecoderDerivation.derived[ValueType]
-
-object JsonDecoderDerivation extends Derivation[JsonDecoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Errant[JsonAccessError]].give:
-      val keyValues = json.obj
-      val values = keyValues(0).zip(keyValues(1)).to(Map)
-
-      construct: [FieldType] =>
-        context =>
-          val omit = !values.contains(label.s)
-          val value = if omit then JsonAst(0L) else values(label.s)
-          context.decode(value, omit)
-
-  inline def split[DerivationType: SumReflection]: JsonDecoder[DerivationType] = (json, omit) =>
-    summonInline[Errant[JsonAccessError]].give:
-      summonInline[Errant[VariantError]].give:
-        val values = json.obj
-
-        values(0).indexOf("_type") match
-          case -1 =>
-            abort(JsonAccessError(Reason.Label(t"_type")))
-
-          case index =>
-            delegate(values(1)(index).string): [VariantType <: DerivationType] =>
-              context => context.decode(json, omit)
-
-trait JsonDecoder[ValueType]:
-  private inline def decoder: this.type = this
-
-  def decode(json: JsonAst, omit: Boolean): ValueType
-
-  def map[ValueType2](lambda: ValueType => ValueType2): JsonDecoder[ValueType2]^{this, lambda} =
-    (json, omit) => lambda(decoder.decode(json, omit))
+//   def map[ValueType2](lambda: ValueType => ValueType2): JsonDecoder[ValueType2] =
+//     (json, omit) => lambda(decoder.decode(json, omit))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
-  def apply(index: Int)(using Errant[JsonAccessError]): Json = Json(root.array(index))
+  def apply(index: Int): Json raises JsonAccessError = Json(root.array(index))
 
-  def selectDynamic(field: String)(using erased DynamicJsonEnabler)(using Errant[JsonAccessError]): Json =
+  def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonAccessError =
     apply(field.tt)
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler, Errant[JsonAccessError]): Json =
+  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
+          : Json raises JsonAccessError =
     apply(field.tt)(index)
 
-  def apply(field: Text)(using Errant[JsonAccessError]): Json =
+  def apply(field: Text): Json raises JsonAccessError =
     root.obj(0).indexWhere(_ == field.s) match
       case -1    => raise(JsonAccessError(Reason.Label(field)))(this)
       case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =
-    def recur(value: JsonAst): Int =
-      value.asMatchable match
-        case value: Long       => value.hashCode
-        case value: Double     => value.hashCode
-        case value: BigDecimal => value.hashCode
-        case value: String     => value.hashCode
-        case value: Boolean    => value.hashCode
+    def recur(value: JsonAst): Int = value.asMatchable match
+      case value: Long       => value.hashCode
+      case value: Double     => value.hashCode
+      case value: BigDecimal => value.hashCode
+      case value: String     => value.hashCode
+      case value: Boolean    => value.hashCode
 
-        case value: IArray[JsonAst] @unchecked =>
-          value.foldLeft(value.length.hashCode)(_*31^recur(_))
+      case value: IArray[JsonAst] @unchecked =>
+        value.foldLeft(value.length.hashCode)(_*31^recur(_))
 
-        case (keys, values) => (keys.asMatchable: @unchecked) match
-          case keys: IArray[String] @unchecked => (values.asMatchable: @unchecked) match
-            case values: IArray[JsonAst] @unchecked =>
-              keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
+      case (keys, values) => (keys.asMatchable: @unchecked) match
+        case keys: IArray[String] @unchecked => (values.asMatchable: @unchecked) match
+          case values: IArray[JsonAst] @unchecked =>
+            keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
 
-        case _ =>
-          0
+      case _ =>
+        0
 
     recur(root)
 
@@ -436,8 +434,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType](using decoder: JsonDecoder[ValueType], jsonAccess: Errant[JsonAccessError]): ValueType =
-    decoder.decode(root, false)
+  def as[ValueType: Decodable in Json]: ValueType raises JsonAccessError =
+    ValueType.decode(this, false)
 
 trait JsonPrinter:
   def print(json: JsonAst): Text

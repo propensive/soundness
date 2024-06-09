@@ -44,7 +44,7 @@ object Tests extends Suite(t"Jacinta Tests"):
         val s = Json.parse(t"\"string\"")
         s.as[Text]
       .assert(_ == t"string")
-    
+
       test(t"Parse true"):
         Json.parse(t"true").as[Boolean]
       .assert(identity)
@@ -56,7 +56,7 @@ object Tests extends Suite(t"Jacinta Tests"):
       test(t"Parse float"):
         Json.parse(t"3.1415").as[Float]
       .assert(_ == 3.1415f)
-      
+
       test(t"Parse double"):
         Json.parse(t"3.1415926").as[Double]
       .assert(_ == 3.1415926)
@@ -69,15 +69,15 @@ object Tests extends Suite(t"Jacinta Tests"):
       test(t"Serialize double"):
         3.14159.json.show
       .assert(_ == t"3.14159")
-      
+
       test(t"Serialize true"):
         true.json.show
       .assert(_ == t"true")
-    
+
       test(t"Serialize false"):
         false.json.show
       .assert(_ == t"false")
-    
+
     suite(t"Misc tests"):
       test(t"Serialize to Json"):
         Foo(1, t"two").json
@@ -95,12 +95,12 @@ object Tests extends Suite(t"Jacinta Tests"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"x": 1}""").as[OptFoo].x
       .assert(_ == Some(1))
-      
+
       test(t"Extract a None"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"y": 1}""").as[OptFoo].x
       .assert(_ == None)
-    
+
     suite(t"Generic derivation tests"):
       case class Person(name: Text, age: Int)
       case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
@@ -109,7 +109,7 @@ object Tests extends Suite(t"Jacinta Tests"):
         test(t"Serialize a simple case class"):
           Person(t"Paul", 81).json.show
         .check(_ == t"""{"name":"Paul","age":81}""")
-      
+
       val john = t"""{"name": "John", "age": 40}"""
       val george = t"""{"name": "George", "age": 58}"""
       val ringo = t"""{"name": "Ringo", "age": 82}"""
@@ -132,30 +132,32 @@ object Tests extends Suite(t"Jacinta Tests"):
         case Guitarist(person: Person)
         case Drummer(person: Person)
         case Bassist(person: Person)
-      
+
       val paulCoproduct = test(t"Serialize a coproduct"):
         val paul: Player = Player.Bassist(paulObj)
         paul.json.show
-      .check(_ == t"""{"person":{"name":"Paul","age":81},"_type":"Bassist"}""")
-    
+      .check(_ == t"""{"_type":"Bassist","person":{"name":"Paul","age":81}}""")
+
       test(t"Decode a coproduct"):
+        summon[Int is Decodable in Json]
         Json.parse(paulCoproduct).as[Player]
       .assert(_ == Player.Bassist(paulObj))
-      
+
       test(t"Decode a coproduct as a precise subtype"):
         Json.parse(paulCoproduct).as[Player.Bassist]
       .assert(_ == Player.Bassist(paulObj))
-    
+
       case class NewBand(members: Set[Player])
-      
+
       import Player.*
       val newBand = NewBand(Set(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
           Guitarist(Person(t"George", 58))))
-      
+
       val newBandText = test(t"Serialize NewBand"):
+        println(newBand.json.show)
         newBand.json.show
-      .check(_ == t"""{"members":[{"person":{"name":"Paul","age":81},"_type":"Bassist"},{"person":{"name":"Ringo","age":82},"_type":"Drummer"},{"person":{"name":"John","age":40},"_type":"Guitarist"},{"person":{"name":"George","age":58},"_type":"Guitarist"}]}""")
-      
+      .check(_ == t"""{"members":[{"_type":"Bassist","person":{"name":"Paul","age":81}},{"_type":"Drummer","person":{"name":"Ringo","age":82}},{"_type":"Guitarist","person":{"name":"John","age":40}},{"_type":"Guitarist","person":{"name":"George","age":58}}]}""")
+
       test(t"Decode a NewBand"):
         Json.parse(newBandText).as[NewBand]
       .assert(_ == newBand)
