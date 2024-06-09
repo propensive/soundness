@@ -228,8 +228,9 @@ extends Directional[NameType, RootType]:
 object Followable:
   def add[LinkType <: Matchable, NameType <: Label]
       (using creator: PathCreator[LinkType, NameType, Int], followable: LinkType is Followable[NameType, ?, ?])
-          : AddOperator[LinkType, LinkType] =
-    new AddOperator[LinkType, LinkType]:
+          : LinkType is Addable[LinkType] =
+    new Addable[LinkType]:
+      type Self = LinkType
       type Result = LinkType
 
       def add(left: LinkType, right: LinkType): LinkType =

@@ -32,7 +32,7 @@ object SimplePath:
   inline given decoder(using Errant[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
     def decode(text: Text): SimplePath = Navigable.decode[SimplePath](text)
 
-  inline given add(using path: Errant[PathError]): AddOperator[SimplePath, SimpleLink] with
+  inline given (using path: Errant[PathError]) => SimplePath is Addable[SimpleLink] as addable:
     type Result = SimplePath
     def add(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
 
