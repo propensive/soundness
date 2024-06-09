@@ -23,8 +23,8 @@ import language.experimental.captureChecking
 object Extensions:
   def guess(ext: String): MediaType = mediaTypes.getOrElse(ext, mediaTypes("bin"))
 
-  val mediaTypes: Map[String, MediaType] = Map(
-    "aac"    -> media"audio/aac",
+  val mediaTypes: Map[String, MediaType] = Map
+   ("aac"    -> media"audio/aac",
     "abw"    -> media"application/x-abiword",
     "arc"    -> media"application/x-freearc",
     "avi"    -> media"video/x-msvideo",
@@ -99,5 +99,4 @@ object Extensions:
     "zip"    -> media"application/zip",
     "3gp"    -> media"video/3gpp",
     "3g2"    -> media"video/3gpp2",
-    "7z"     -> media"application/x-7z-compressed"
-  )
+    "7z"     -> media"application/x-7z-compressed")

@@ -48,7 +48,7 @@ object Media:
     case Vendor(value: Text)
     case Personal(value: Text)
     case X(value: Text)
-  
+
     def name: Text = this match
       case Standard(value) => value
       case Vendor(value)   => t"vnd.$value"
@@ -61,7 +61,7 @@ object Media:
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
         CborSeq, Zstd
-  
+
     def name: Text = this match
       case JsonSeq => t"json-seq"
       case CborSeq => t"cbor-seq"
@@ -74,14 +74,14 @@ object Media:
 
       val lines: Iterator[Text] =
         scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
-      
+
       lines.to(Set)
 
     catch case err: InterpolationError => Set()
 
   object Prefix extends Interpolator[Unit, Text, MediaType]:
     def parse(state: Text, next: Text): Text = next
-    
+
     def insert(state: Text, value: Unit): Text =
       throw InterpolationError(msg"a media type literal cannot have substitutions")
 
@@ -105,7 +105,7 @@ object Media:
 
         case _ =>
           ()
-      
+
       parsed
 
   def parse(string: Text)(using Errant[MediaTypeError]): MediaType =
@@ -113,20 +113,20 @@ object Media:
       if ps == List("")
       then raise(MediaTypeError(string, MediaTypeError.Nature.MissingParam))(())
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
-    
+
     def parseSuffixes(suffixes: List[Text]): List[Suffix] = suffixes.map(_.lower.capitalize).flatMap: suffix =>
       try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
         raise(MediaTypeError(string, MediaTypeError.Nature.InvalidSuffix(suffix)))(Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
-      
+
       (xs: @unchecked) match
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
-      
+
       case _ =>
         raise(MediaTypeError(string, MediaTypeError.Nature.NotOneSlash)):
           Group.Text *: parseInit(string)
@@ -137,24 +137,24 @@ object Media:
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
-      
+
       str.chars.find(notAllowed(_)).map: char =>
         raise(MediaTypeError(string, MediaTypeError.Nature.InvalidChar(char))):
           Subtype.X(str.chars.filter(!notAllowed(_)).text)
-      
+
       .getOrElse:
         if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
         else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
         else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.drop(2))
         else Subtype.Standard(str)
-        
+
     val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
-    
+
     (xs: @unchecked) match
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
         MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
-    
+
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
@@ -184,32 +184,31 @@ extends Dynamic:
 
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
-  
+
   def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
-  given GenericHttpRequestParam["content-type", MediaType] = show.text(_)
+  given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = show.text(_)
 
   given show: Show[MediaType] =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
-  
-  given formenctype: GenericHtmlAttribute["formenctype", MediaType] with
+
+  given ("formenctype" is GenericHtmlAttribute[MediaType]) as formenctype:
     def name: Text = t"formenctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
-  
-  given media: GenericHtmlAttribute["media", MediaType] with
+
+  given ("media" is GenericHtmlAttribute[MediaType]) as media:
     def name: Text = t"media"
     def serialize(mediaType: MediaType): Text = mediaType.show
-  
-  given enctype: GenericHtmlAttribute["enctype", MediaType] with
+
+  given ("enctype" is GenericHtmlAttribute[MediaType]) as enctype:
     def name: Text = t"enctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
-  
-  given htype: GenericHtmlAttribute["htype", MediaType] with
+
+  given ("htype" is GenericHtmlAttribute[MediaType]) as htype:
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
   def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
-  
