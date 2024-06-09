@@ -17,7 +17,7 @@
 package gastronomy
 
 import rudiments.*
-import gossamer.*
+import gossamer.{take as _, *}
 import anticipation.*
 import contingency.*
 import spectacular.*
@@ -33,11 +33,11 @@ case class Pem(kind: Text, data: Bytes):
 object Pem:
   def parse(string: Text): Pem raises PemError =
     val lines = string.trim.nn.cut(t"\n")
-    
+
     val label = lines.head match
       case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
       case _                         => abort(PemError(t"the BEGIN line could not be found"))
-    
+
     lines.tail.indexWhere:
       case r"-----* *END $label([A-Z]+) *-----*" => true
       case _                                     => false

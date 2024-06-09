@@ -22,12 +22,12 @@ import anticipation.*
 import gossamer.*
 import contingency.*, errorHandlers.throwUnsafely
 import spectacular.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, badEncodingHandlers.skip
+import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, encodingMitigation.skip
 
 import alphabets.hex.upperCase
 
 object Tests extends Suite(t"Gastronomy tests"):
- 
+
   val request: Text = t"""
     |-----BEGIN CERTIFICATE REQUEST-----
     |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
@@ -62,7 +62,7 @@ object Tests extends Suite(t"Gastronomy tests"):
     test(t"Sha384, Base64"):
       t"Hello world".digest[Sha2[384]].encodeAs[Base64]
     .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
-    
+
     test(t"Sha512, Base64"):
       t"Hello world".digest[Sha2[512]].encodeAs[Base64]
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
@@ -77,14 +77,14 @@ object Tests extends Suite(t"Gastronomy tests"):
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
         |-----END EXAMPLE-----
         """.s.stripMargin.show
-      
+
       Pem.parse(example).kind
     .assert(_ == t"EXAMPLE")
 
     test(t"Decode PEM certificate"):
       Pem.parse(request).data.digest[Md5].encodeAs[Base64]
     .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
-  
+
     test(t"PEM roundtrip"):
       Pem.parse(request).serialize
     .assert(_ == request.trim)
@@ -94,7 +94,7 @@ object Tests extends Suite(t"Gastronomy tests"):
       val message: MessageData[Rsa[1024]] = privateKey.public.encrypt(t"Hello world")
       privateKey.decrypt[Text](message.bytes)
     .assert(_ == t"Hello world")
-    
+
     test(t"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       val message = key.encrypt(t"Hello world")
@@ -118,7 +118,7 @@ object Tests extends Suite(t"Gastronomy tests"):
     test(t"MD5 HMAC"):
       pangram.hmac[Md5](t"key".bytes).encodeAs[Hex]
     .check(_ == t"80070713463E7749B90C2DC24911E275")
-    
+
     test(t"SHA1 HMAC"):
       pangram.hmac[Sha1](t"key".bytes).encodeAs[Hex]
     .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
@@ -126,11 +126,11 @@ object Tests extends Suite(t"Gastronomy tests"):
     test(t"SHA256 HMAC"):
       pangram.hmac[Sha2[256]](t"key".bytes).encodeAs[Hex]
     .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
-    
+
     test(t"SHA384 HMAC"):
       pangram.hmac[Sha2[384]](t"key".bytes).encodeAs[Base64]
     .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
-    
+
     test(t"SHA512 HMAC"):
       pangram.hmac[Sha2[512]](t"key".bytes).encodeAs[Base64]
     .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
