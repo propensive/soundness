@@ -10,7 +10,7 @@ project abacist
   module core
     compiler  scala
     sources   src/core
-    include   quantitative/core
+    include   quantitative/units
 
   module test
     compiler  scala
