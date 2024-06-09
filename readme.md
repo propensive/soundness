@@ -128,7 +128,7 @@ A contextual instance of `anticipation.HtmlAttribute` is all that is required to
 
 ## Status
 
-Honeycomb is classified as __fledgling__. For reference, Scala One projects are
+Honeycomb is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -142,7 +142,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Honeycomb is designed to be _small_. Its entire source code currently consists
-of 723 lines of code.
+of 728 lines of code.
 
 ## Building
 
@@ -211,7 +211,7 @@ O&Uuml;](https://propensive.com/).
 
 Honeycomb is named after the hexagonal prismic cells in a bees' nest, where they store their honey and their larvæ; the most innovative feature of Honeycomb is its provision of safe nesting of HTML nodes.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
