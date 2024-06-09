@@ -33,9 +33,9 @@ object Node:
     case text: Text    => text
     case int: Int      => int.show
     case node: Node[?] => node.show
-  
+
   given Show[Seq[Html[?]]] = _.map(_.show).join
-  
+
   given Show[Node[?]] = item =>
     val filling =
       item.attributes.map: keyValue =>
@@ -43,7 +43,7 @@ object Node:
           case (key, Unset)       => t" $key"
           case (key, value: Text) => t""" $key="$value""""
       .join
-    
+
     if item.children.isEmpty && !item.verbatim
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
     else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
@@ -62,18 +62,18 @@ trait Node[+NameType <: Label]:
       new Node[NameType2]:
         def label: Text = labelValue.show
         export node.{attributes, children, block, unclosed, verbatim}
-    
+
     case _ =>
       None
 
 object StartTag:
-  given GenericCssSelection[StartTag[?, ?]] = elem =>
+  given StartTag[?, ?] is GenericCssSelection = elem =>
     val tail = elem.attributes.map: (key, value) =>
       ((key, value): @unchecked) match
         case (key, value: Text) => t"[$key=$value]"
         case (key, Unset)       => t"[$key]"
     .join
-    
+
     t"${elem.label}$tail"
 
 
@@ -106,10 +106,10 @@ object Honeycomb:
         val expr: Expr[HtmlAttribute[keyType, valueType, NameType]] =
           Expr.summon[HtmlAttribute[keyType, valueType, NameType]].getOrElse:
             val typeName = TypeRepr.of[valueType].show
-            fail(msg"""the attribute $att cannot take a value of type $typeName""")
-        
+            abandon(msg"""the attribute $att cannot take a value of type $typeName""")
+
         '{($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))} :: recur(tail)
-      
+
       case _ =>
         Nil
 

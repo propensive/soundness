@@ -61,12 +61,12 @@ enum Target:
   case Self, Blank, Parent, Top
 
 object CssClass:
-  given GenericCssSelection[CssClass] = cls => t".${cls.name}"
+  given CssClass is GenericCssSelection = cls => t".${cls.name}"
 
 case class CssClass(name: Text)
 
 object DomId:
-  given GenericCssSelection[DomId] = id => t"#${id.name}"
+  given DomId is GenericCssSelection = id => t"#${id.name}"
 
 case class DomId(name: Text)
 
@@ -142,15 +142,16 @@ enum Wrap:
   case Soft, Hard
 
 object HtmlAttribute:
-  given [LabelType <: Label, ValueType, T](using att: GenericHtmlAttribute[LabelType, ValueType])
-          : HtmlAttribute[LabelType, ValueType, T] with
-    def convert(value: ValueType): Optional[Text] = att.serialize(value).show
-    override def rename: Option[Text] = Some(att.name.show)
+  given [LabelType <: Label: GenericHtmlAttribute[ValueType], ValueType, T]
+      => HtmlAttribute[LabelType, ValueType, T]:
+
+    def convert(value: ValueType): Optional[Text] = LabelType.serialize(value).show
+    override def rename: Option[Text] = Some(LabelType.name.show)
 
   given any[T, LabelType <: Label]: HtmlAttribute[LabelType, Text, T] = identity(_)
 
   given accept[T]: HtmlAttribute["accept", List[Text], T] = _.join(t",")
-  
+
   given acceptCharset[T]: HtmlAttribute["acceptCharset", Encoding, T] with
     override def rename: Option[Text] = Some(t"accept-charset")
     def convert(value: Encoding): Text = value.name
@@ -172,11 +173,11 @@ object HtmlAttribute:
   given hclass[T]: HtmlAttribute["hclass", List[CssClass], T] with
     override def rename: Option[Text] = Some(t"class")
     def convert(value: List[CssClass]): Text = value.map(_.name).join(t" ")
- 
+
   given hclass2[T]: HtmlAttribute["hclass", CssClass, T] with
     override def rename: Option[Text] = Some(t"class")
     def convert(value: CssClass): Text = value.name
- 
+
   given code[T]: HtmlAttribute["code", Text, T] = identity(_) // MediaError
   given codebase[T]: HtmlAttribute["codebase", Text, T] = identity(_)
   given cols[T]: HtmlAttribute["cols", Int, T] = _.show
@@ -196,18 +197,18 @@ object HtmlAttribute:
   given download[T]: HtmlAttribute["download", Text, T] = identity(_) // should be a filename, but probably best as `Text`
   given draggable[T]: HtmlAttribute["draggable", Boolean, T] = if _ then t"true" else t"false"
   given enctype[T]: HtmlAttribute["enctype", Text, T] = identity(_) // provided by Gesticulate
-  
+
   given hfor[T]: HtmlAttribute["hfor", DomId, T] with
     override def rename: Option[Text] = Some(t"for")
     def convert(value: DomId): Text = value.name
-  
+
   given hfors[T]: HtmlAttribute["hfor", Seq[DomId], T] with
     override def rename: Option[Text] = Some(t"for")
     def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
-  
+
   given `for`[T]: HtmlAttribute["for", DomId, T] with
     def convert(value: DomId): Text = value.name
-  
+
   given fors[T]: HtmlAttribute["for", Seq[DomId], T] with
     def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
 
@@ -226,11 +227,11 @@ object HtmlAttribute:
   given href2[T]: HtmlAttribute["href", SimplePath, T] = _.show
   given href3[T]: HtmlAttribute["href", %.type, T] = root => t"/"
   given hreflang[T]: HtmlAttribute["hreflang", Text, T] = identity(_) // Needs to be provided by Cosmopolite
-  
+
   given httpEquiv[T]: HtmlAttribute["httpEquiv", HttpEquiv, T] with
     override def rename: Option[Text] = Some(t"http-equiv")
     def convert(value: HttpEquiv): Text = value.show
-  
+
   given id[T]: HtmlAttribute["id", DomId, T] = _.name
   given ismap[T]: HtmlAttribute["ismap", Boolean, T] = _ => Unset
   given kind[T]: HtmlAttribute["kind", Kind, T] = _.show
@@ -289,11 +290,11 @@ object HtmlAttribute:
   given target[T]: HtmlAttribute["target", Target, T] = _.show
   given title[T]: HtmlAttribute["title", Text, T] = identity(_)
   given translate[T]: HtmlAttribute["translate", Boolean, T] = _ => Unset
-  
+
   given htype[T]: HtmlAttribute["htype", HType, T] with
     override def rename: Option[Text] = Some(t"type")
     def convert(value: HType): Text = value.show
-  
+
   given usemap[T]: HtmlAttribute["usemap", Text, T] = identity(_) // This needs a representation of HTML names
   given value[T]: HtmlAttribute["value", Double, T] = _.toString.show
   given valueInt[T]: HtmlAttribute["value", Int, T] = _.show

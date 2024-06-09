@@ -41,7 +41,7 @@ object Element:
 
   private def flatten[ChildType <: Label](nodes: Seq[Html[ChildType] | Seq[Html[ChildType]]])
           : Seq[Html[ChildType]] =
-    
+
     nodes.flatMap:
       case seq: Seq[Html[ChildType] @unchecked] => seq
       case node: Html[ChildType] @unchecked     => Seq(node)
@@ -58,7 +58,7 @@ object Html extends Node["html"]:
     Element(label.s, unclosed, block, verbatim, Map(), Seq(head, body))
 
 object TagType:
-  given GenericCssSelection[TagType[?, ?, ?]] = _.labelString.tt
+  given TagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
     (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
@@ -78,7 +78,7 @@ extends Node[NameType], Dynamic:
     Element(labelString, unclosed, block, verbatim, Map(), children)
 
 object ClearTagType:
-  given GenericCssSelection[ClearTagType[?, ?, ?]] = _.labelString.tt
+  given ClearTagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 case class ClearTagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
     (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
@@ -90,7 +90,7 @@ extends Node[NameType], Dynamic:
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
-    
+
     ${Honeycomb.read[NameType, ChildType, ChildType]('labelString, 'unclosed, 'block, 'verbatim, 'attributes)}
 
   def applyDynamic[Return <: Label](method: "apply")(children: (Html[Return] | Seq[Html[Return]])*)
