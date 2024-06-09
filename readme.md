@@ -79,7 +79,7 @@ column in which the error occurs, and an enumeration value (of type
 ## Status
 
 Merino
-jawn is classified as __maturescent__. For reference, Scala One projects are
+jawn is classified as __maturescent__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -174,7 +174,7 @@ O&Uuml;](https://propensive.com/).
 Merino is named after the variety of sheep known for the quality of their fleeces, in keeping with the trend for
 JSON libraries to allude to the story of Jason and the Argonauts.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
