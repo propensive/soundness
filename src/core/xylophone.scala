@@ -40,7 +40,7 @@ case class XmlName(name: Text, namespace: Optional[Namespace] = Unset)
 sealed trait Xml:
   def pointer: List[Int | Text | Unit]
   def root: XmlAst.Root
-  
+
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError
 
@@ -53,7 +53,7 @@ object Xml:
   given show: Show[Xml] = xml =>
     safely(printers.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
-  given (using enc: Encoding, printer: XmlPrinter[Text]): GenericHttpResponseStream[Xml] with
+  given (using enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
     def mediaType: Text = t"application/xml; charset=${enc.name}"
     def content(xml: Xml): LazyList[IArray[Byte]] =
       LazyList(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
@@ -77,7 +77,7 @@ object Xml:
     factory.setNamespaceAware(true)
     val builder = factory.newDocumentBuilder().nn
 
-    val root = 
+    val root =
       try
         val array = content.bytes(using charEncoders.utf8).mutable(using Unsafe)
         builder.parse(ByteArrayInputStream(array)).nn
@@ -107,7 +107,7 @@ object Xml:
           val alias: Optional[Namespace] = getNamespace(att)
           XmlName(att.getLocalName.nn.tt, alias) -> att.getTextContent.nn.tt
         }.to(Map)
-        
+
         XmlAst.Element(xmlName, children, attributes)
 
       case PROCESSING_INSTRUCTION_NODE =>
@@ -115,7 +115,7 @@ object Xml:
 
       case TEXT_NODE =>
         XmlAst.Textual(node.getTextContent.nn.tt)
-      
+
       case id =>
         XmlAst.Comment(t"unrecognized node $id")
 
@@ -158,14 +158,14 @@ extends Xml, Dynamic:
   def pointer: XmlPath = (head :: path).reverse
   def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, head :: path, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
-  
+
   @targetName("all")
   def `*`: XmlFragment = XmlFragment((), head :: path, root)
-  
+
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
-  
+
   def as
       [ValueType]
       (using decoder: XmlDecoder[ValueType])
@@ -177,10 +177,10 @@ case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dyn
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
   def attribute(attribute: Text): Attribute = Attribute(this, attribute)
   def pointer: XmlPath = (head :: path).reverse
-  
+
   @targetName("all")
   def `*`: XmlFragment = XmlFragment((), head :: path, root)
-  
+
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
@@ -192,10 +192,10 @@ case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
   def pointer: XmlPath = Nil
   def selectDynamic(tagName: String): XmlFragment = XmlFragment(tagName.tt, Nil, root)
   def applyDynamic(tagName: String)(idx: Int = 0): XmlNode = selectDynamic(tagName).apply(idx)
-  
+
   @targetName("all")
   def `*`: XmlFragment = XmlFragment((), Nil, root)
-  
+
   @targetName("add")
   infix def + (other: Xml): XmlDoc raises XmlAccessError =
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
