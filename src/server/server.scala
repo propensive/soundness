@@ -23,7 +23,7 @@ import vacuous.*
 import parasite.*
 import turbulence.*
 import contingency.*
-import gossamer.*
+import gossamer.{at as _, slice as _, *}
 import nettlesome.*
 import gastronomy.*
 import eucalyptus.*
@@ -60,12 +60,11 @@ object Handler extends FallbackHandler:
       responder.sendBody(200, HttpBody.Chunked(content.stream))
 
 
-  given bytes[ResponseType]
-      (using responseStream: GenericHttpResponseStream[ResponseType], mediaType: Errant[MediaTypeError])
-          : SimpleHandler[ResponseType] =
+  given [ResponseType: GenericHttpResponseStream](using mediaType: Errant[MediaTypeError])
+          => SimpleHandler[ResponseType] as bytes =
 
-    SimpleHandler(Media.parse(responseStream.mediaType.show),
-        value => HttpBody.Chunked(responseStream.content(value).map(identity)))
+    SimpleHandler(Media.parse(ResponseType.mediaType.show),
+        value => HttpBody.Chunked(ResponseType.content(value).map(identity)))
 
   given Handler[Redirect] with
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
@@ -112,8 +111,8 @@ case class NotFound[ContentType: SimpleHandler](content: ContentType)
 case class ServerError[ContentType: SimpleHandler](content: ContentType)
 
 object Cookie:
-  given genericHttpRequestParam: GenericHttpRequestParam["set-cookie", Cookie] = _.serialize
-  given genericHttpRequestParam2: GenericHttpRequestParam["cookie", Cookie] = _.serialize
+  given ("set-cookie" is GenericHttpRequestParam[Cookie]) as setCookie = _.serialize
+  given ("cookie" is GenericHttpRequestParam[Cookie]) as cookie = _.serialize
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
 case class Cookie
@@ -146,7 +145,7 @@ case class Response[ContentType]
 
   def respond(responder: Responder): Unit =
     val cookieHeaders: List[(ResponseHeader[?], Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
-    
+
     handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
 object Request:
@@ -154,12 +153,12 @@ object Request:
     val bodySample: Text =
       try request.body.stream.readAs[Bytes].utf8 catch
         case err: StreamError  => t"[-/-]"
-    
+
     val headers: Text =
       request.rawHeaders.map:
         case (key, values) => t"$key: ${values.join(t"; ")}"
       .join(t"\n          ")
-    
+
     val params: Text = request.params.map:
       case (k, v) => t"$k=\"$v\""
     .join(t"\n          ")
@@ -208,7 +207,7 @@ case class Request
       }
     catch case e: StreamError  => Map()
 
-  
+
   lazy val headers: Map[RequestHeader[?], List[Text]] = rawHeaders.map:
     case (RequestHeader(header), values) => header -> values
 
@@ -217,15 +216,15 @@ case class Request
       headers.get(RequestHeader.ContentLength).map(_.head).map(_.decodeAs[Int]).getOrElse:
         body.stream.map(_.length).sum
     catch case err: NumberError => abort(StreamError(0.b))
-  
+
   lazy val contentType: Optional[MediaType] =
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
-  
+
 trait RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): HttpService
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor, Codicil): HttpService
 
 extension (value: Http.type)
-  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor): HttpService =
+  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor, Codicil): HttpService =
     summon[RequestHandler].listen(handler)
 
 inline def request(using inline request: Request): Request = request
@@ -248,7 +247,7 @@ trait ParamReader[ParamType]:
   def read(value: Text): Option[ParamType]
 
 object RequestParam:
-  given GenericHtmlAttribute["name", RequestParam[?]] with
+  given ("name" is GenericHtmlAttribute[RequestParam[?]]) as name:
     def name: Text = t"name"
     def serialize(value: RequestParam[?]): Text = value.key
 
@@ -259,14 +258,14 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
   def unapply(req: Request): Option[ParamType] = opt(using req)
   def apply()(using Request): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
 
-case class HttpService(port: Int, async: Async[Unit], cancel: () => Unit)
+case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor): HttpService =
+  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor, Codicil): HttpService =
     def handle(exchange: HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
-    
+
     def startServer(): com.sun.net.httpserver.HttpServer =
       val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0).nn
       val context = httpServer.createContext("/").nn
@@ -274,36 +273,36 @@ case class HttpServer(port: Int) extends RequestHandler:
       httpServer.setExecutor(null)
       httpServer.start()
       httpServer
-    
+
     val cancel: Promise[Unit] = Promise[Unit]()
-    
+
     val asyncTask = async:
       val server = startServer()
-      try throwErrors(cancel.await()) catch case err: CancelError => ()
+      try throwErrors(cancel.await()) catch case err: ConcurrencyError => ()
       server.stop(1)
-    
+
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
-    
-  
+
+
   private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
-    
+
     def recur(): LazyList[Bytes] =
       val len = in.read(buffer)
       if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
-    
+
     HttpBody.Chunked(recur())
 
   private def makeRequest(exchange: HttpExchange)(using Log[Text]): Request =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
-    
+
     val queryParams: Map[Text, List[Text]] = query.fold(Map()): query =>
       query.nn.show.cut(t"&").foldLeft(Map[Text, List[Text]]()): (map, elem) =>
         val kv = elem.cut(t"=", 2)
         map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
-    
+
     val headers =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
 
@@ -326,7 +325,7 @@ case class HttpServer(port: Int) extends RequestHandler:
 
   class SimpleResponder(exchange: HttpExchange) extends Responder:
     def addHeader(key: Text, value: Text): Unit = exchange.getResponseHeaders.nn.add(key.s, value.s)
-    
+
     def sendBody(status: Int, body: HttpBody): Unit =
       val length = body match
         case HttpBody.Empty      => -1
@@ -334,18 +333,18 @@ case class HttpServer(port: Int) extends RequestHandler:
         case HttpBody.Chunked(_) => 0
 
       exchange.sendResponseHeaders(status, length)
-      
+
       body match
         case HttpBody.Empty =>
           ()
-        
+
         case HttpBody.Data(body) =>
           exchange.getResponseBody.nn.write(body.mutable(using Unsafe))
-        
+
         case HttpBody.Chunked(body) =>
           try body.map(_.mutable(using Unsafe)).each(exchange.getResponseBody.nn.write(_))
           catch case e: StreamError => () // FIXME: Should this be ignored?
-      
+
       exchange.getResponseBody.nn.flush()
       exchange.close()
 
@@ -360,7 +359,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
       safely(credentials.tt.decode[Base64].utf8.cut(t":").to(List)) match
         case List(username: Text, password: Text) if validate(username, password) =>
           response
-        
+
         case _ =>
           Response(Bytes(), HttpStatus.Forbidden)
 
