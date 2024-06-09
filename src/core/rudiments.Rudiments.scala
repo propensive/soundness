@@ -34,7 +34,7 @@ object Rudiments:
 
   object ByteSize:
     def apply(long: Long): ByteSize = long
-    given (GenericHttpRequestParam[ByteSize] { type Self = "content-length" }) = _.long.toString.tt
+    given ("content-length" is GenericHttpRequestParam[ByteSize]) = _.long.toString.tt
     given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
     given communicable[ByteSizeType <: ByteSize]: (Communicable { type Self = ByteSizeType }) = byteSize => Message(byteSize.text)
 
