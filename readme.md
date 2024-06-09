@@ -162,7 +162,7 @@ other representations can be used provided a `ToLocation` for that type is in co
 
 ## Status
 
-Scintillate is classified as __fledgling__. For reference, Scala One projects are
+Scintillate is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -176,7 +176,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Scintillate is designed to be _small_. Its entire source code currently consists
-of 336 lines of code.
+of 335 lines of code.
 
 ## Building
 
@@ -245,7 +245,7 @@ O&Uuml;](https://propensive.com/).
 
 To _scintillate_ is "to fluoresce momentarily when struck by a charged particle", much as a web server is dormant until an incoming request stimulates a response.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
