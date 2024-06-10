@@ -25,7 +25,7 @@ trait Encodable:
   def encode(value: Self): Codec
   def omit(value: Self): Boolean = false
 
-  def contramap[Self2](lambda: Self2 => Self): Self2 is Encodable in Codec = value =>
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Codec = value =>
     encodable.encode(lambda(value))
 
 trait Decodable:
@@ -34,5 +34,5 @@ trait Decodable:
   type Codec
   def decode(value: Codec, omit: Boolean): Self
 
-  def map[Self2](lambda: Self => Self2): Self2 is Decodable in Codec =
+  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Codec =
     (value, omit) => lambda(decodable.decode(value, omit))
