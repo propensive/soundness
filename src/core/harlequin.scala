@@ -19,7 +19,7 @@ package harlequin
 import rudiments.*
 import anticipation.*
 import anthology.*
-import gossamer.*
+import gossamer.{slice as _, *}
 import spectacular.*
 import vacuous.*
 import kaleidoscope.*
@@ -92,9 +92,11 @@ object ScalaSource:
         
     def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
       case Tokens.EOF =>
+        import gossamer.slice
         markup(text.slice(lastEnd, text.length)).filter(_.length > 0)
       
       case token =>
+        import gossamer.slice
         val start = scanner.offset max lastEnd
         
         val unparsed: LazyList[Token] =
