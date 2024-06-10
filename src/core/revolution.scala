@@ -28,43 +28,32 @@ import spectacular.*
 
 import java.util.jar as juj
 
-object ManifestDecoder:
-  given mainClass(using Errant[FqcnError]): ManifestDecoder["Main-Class"] { type Value = Fqcn } =
-    new ManifestDecoder["Main-Class"]:
-      type Value = Fqcn
-      def decode(text: Text): Fqcn = Fqcn(text)
-  
-  given createdBy: ManifestDecoder["Created-By"] { type Value = Text } =
-    new ManifestDecoder["Created-By"]:
-      type Value = Text
-      def decode(creator: Text): Text = creator
-  
-trait ManifestDecoder[KeyType <: Label]:
+infix type of[TypeclassType, ValueType] = TypeclassType { type Value = ValueType }
+
+object DecodableManifest:
+  given (using Errant[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
+  given ("Created-By" is DecodableManifest of Text) as createdBy = identity(_)
+
+trait DecodableManifest:
+  type Self <: Label
   type Value
   def decode(text: Text): Value
 
-object ManifestEncoder:
-  given mainClass: ManifestEncoder["Main-Class"] with
-    type Value = Fqcn
-    def encode(fqcn: Fqcn): Text = fqcn.text
-  
-  given manifestVersion: ManifestEncoder["Manifest-Version"] with
-    type Value = VersionNumber
-    def encode(version: VersionNumber): Text = version.text
-  
-  given createdBy: ManifestEncoder["Created-By"] with
-    type Value = Text
-    def encode(creator: Text): Text = creator
+object EncodableManifest:
+  given ("Main-Class" is EncodableManifest of Fqcn) as mainClass = _.text
+  given ("Manifest-Version" is EncodableManifest of VersionNumber) as manifestVersion = _.text
+  given ("Created-By" is EncodableManifest of Text) as createdBy = identity(_)
 
-trait ManifestEncoder[KeyType <: Label]:
+trait EncodableManifest:
+  type Self <: Label
   type Value
   def encode(value: Value): Text
 
 abstract class ManifestAttribute[KeyType <: Label: ValueOf]():
   val key: Text = valueOf[KeyType].tt
-  def parse(value: Text)(using decoder: ManifestDecoder[KeyType]): decoder.Value = decoder.decode(value)
+  def parse(value: Text)(using decoder: KeyType is DecodableManifest): decoder.Value = decoder.decode(value)
 
-  def apply(using encoder: ManifestEncoder[KeyType])(value: encoder.Value): ManifestEntry =
+  def apply(using encoder: KeyType is EncodableManifest)(value: encoder.Value): ManifestEntry =
     ManifestEntry(valueOf[KeyType].tt, encoder.encode(value))
 
 object VersionNumber:
@@ -96,7 +85,7 @@ package manifestAttributes:
 object Manifest:
   protected def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Bytes]): Manifest =
     val java = juj.Manifest(LazyListInputStream(source.readAs[LazyList[Bytes]]))
-    
+
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
         (key.toString.tt, value.toString.tt)
@@ -110,25 +99,24 @@ object Manifest:
     .to(Map)
 
 case class Manifest(entries: Map[Text, Text]):
-  def apply[KeyType <: Label](attribute: ManifestAttribute[KeyType])(using decoder: ManifestDecoder[KeyType])
-          : Optional[decoder.Value] =
-    
-    if entries.contains(attribute.key) then decoder.decode(entries(attribute.key)) else Unset
-  
+  def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
+          : Optional[KeyType.Value] =
+
+    if entries.contains(attribute.key) then KeyType.decode(entries(attribute.key)) else Unset
+
   def serialize: Bytes =
     Text.construct:
       entries.each: (key, value) =>
         buffer.append(key)
         buffer.append(t": ")
         val used = key.length + 2
-        
+
         def putValue(index: Int, space: Int): Unit =
           buffer.append(value.slice(index, index + space))
           buffer.append(t"\r\n")
           if index + space > 70 then
             buffer.append(t" ")
             putValue(index + space, 69)
-  
+
         putValue(0, 68 - key.length)
     .bytes
-  
