@@ -21,3 +21,9 @@ import scala.deriving.*
 type Reflection[DerivationType] = Mirror.Of[DerivationType]
 type ProductReflection[DerivationType <: Product] = Mirror.ProductOf[DerivationType]
 type SumReflection[DerivationType] = Mirror.SumOf[DerivationType]
+
+type Derivable[DerivationType <: { type Self }] =
+  Derivation[[SelfType] =>> DerivationType { type Self = SelfType }]
+
+type ProductDerivable[DerivationType <: { type Self }] =
+  ProductDerivation[[SelfType] =>> DerivationType { type Self = SelfType }]
