@@ -50,30 +50,30 @@ object ClasspathEntry:
   def apply(url: jn.URL): Optional[ClasspathEntry] = url.getProtocol.nn.tt match
     case t"jrt" =>
       ClasspathEntry.JavaRuntime
-    
+
     case t"file" =>
       val path: Text = url.nn.getPath.nn.tt
       if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jarfile(path)
-    
+
     case t"http" | t"https" =>
       ClasspathEntry.Url(url.toString.tt)
 
     case _ =>
       Unset
-    
+
 object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
-  
+
 class Classloader(val java: ClassLoader):
   def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
   protected def urlClassloader: Optional[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java
     case _                       => parent.let(_.urlClassloader)
-  
+
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
-  
+
   private[hellenism] def inputStream(path: Text)(using notFound: Errant[ClasspathError]): ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
@@ -83,7 +83,7 @@ object Classpath:
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
-    
+
     if entries.exists:
       case _: ClasspathEntry.Url => true
       case _                     => false
@@ -129,15 +129,15 @@ extends Classpath:
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
 
-  inline given decoder(using Errant[PathError]): Decoder[ClasspathRef] = new Decoder[ClasspathRef]:
+  inline given (using Errant[PathError]) => Decoder[ClasspathRef] as decoder:
     def decode(text: Text): ClasspathRef = Navigable.decode[ClasspathRef](text)
 
-  given navigable: Navigable[ClasspathRef, Forbidden, Classpath.type] with
+  given ClasspathRef is Navigable[Forbidden, Classpath.type] with
     def root(ref: ClasspathRef): Classpath.type = Classpath
     def prefix(classpathCompanion: Classpath.type): Text = t""
     def descent(ref: ClasspathRef): List[PathName[Forbidden]] = ref.descent
     def separator(ref: ClasspathRef): Text = t"/"
-  
+
   given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
   given show: Show[ClasspathRef] = _.text
@@ -163,7 +163,7 @@ object Hellenism extends Hellenism2:
 
   extension (classRef: ClassRef)
     def classloader: Classloader = new Classloader(classRef.getClassLoader().nn)
-    
+
     def classpathEntry: Optional[ClasspathEntry] =
       ClasspathEntry(classRef.getProtectionDomain.nn.getCodeSource.nn.getLocation.nn)
 
@@ -172,7 +172,7 @@ export Hellenism.ClassRef
 trait Hellenism2:
   def makeClass[ClassType <: AnyKind: Type](using Quotes): Expr[ClassRef] =
     import quotes.reflect.*
-    
+
     '{ClassRef(Class.forName(${Expr(TypeRepr.of[ClassType].classSymbol.get.fullName)}).nn)}
 
 case class ClasspathError(resource: Text)
