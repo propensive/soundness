@@ -16,8 +16,7 @@
 
 package octogenarian
 
-import anticipation.*, filesystemInterfaces.galileiApi
-import eucalyptus.*
+import anticipation.*, filesystemApi.galileiPath
 import fulminate.*
 import contingency.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
@@ -34,7 +33,7 @@ import turbulence.*
 
 import scala.compiletime.*
 
-//import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 given Realm = realm"octogenarian"
 
@@ -45,8 +44,8 @@ object GitError:
     case CannotExecuteGit, CloneFailed, InvalidRepoPath, RepoDoesNotExist, BranchDoesNotExist,
         CommitDoesNotExist, CommitFailed, CannotSwitchBranch, PullFailed, BranchFailed, TagFailed,
         AddFailed, NoWorkTree
-  
-  given Communicable[Detail] =
+
+  given Detail is Communicable =
     case CannotExecuteGit   => msg"the `git` command could not be executed"
     case CloneFailed        => msg"the repository could not be cloned"
     case InvalidRepoPath    => msg"the repository path was not valid"
@@ -60,7 +59,6 @@ object GitError:
     case TagFailed          => msg"the new tag could not be created"
     case NoWorkTree         => msg"this bare repository does not have a work tree"
     case CannotSwitchBranch => msg"the branch could not be changed"
-
 
 case class GitError(detail: GitError.Detail)
 extends Error(msg"the Git operation could not be completed because $detail")
@@ -77,7 +75,7 @@ object GitRepo:
 
     unsafely(path.pathText.decodeAs[Path]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
-    
+
       if (path / p".git").exists() then GitRepo((path / p".git").as[Directory], path.as[Directory])
       else new GitRepo(path.as[Directory])
 
@@ -88,50 +86,50 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
     case workTree: Directory => sh"--git-dir=${gitDir.path} --work-tree=${workTree.path}"
 
   @targetName("checkoutTag")
-  def checkout(tag: Tag)(using Log[Text], GitCommand, WorkingDirectory, Errant[ExecError]): Unit =
-      sh"$git $repoOptions checkout $tag".exec[ExitStatus]()
-  
+  def checkout(tag: Tag)(using GitCommand, WorkingDirectory, Errant[ExecError]): Unit binds GenericLogger =
+    sh"$git $repoOptions checkout $tag".exec[ExitStatus]()
+
   @targetName("checkoutBranch")
-  def checkout(branch: Branch)(using Log[Text], GitCommand, WorkingDirectory, Errant[ExecError]): Unit =
-      sh"$git $repoOptions checkout $branch".exec[ExitStatus]()
-  
+  def checkout(branch: Branch)(using GitCommand, WorkingDirectory, Errant[ExecError]): Unit binds GenericLogger =
+    sh"$git $repoOptions checkout $branch".exec[ExitStatus]()
+
   @targetName("checkoutCommitHash")
-  def checkout(commit: CommitHash)(using Log[Text], GitCommand, WorkingDirectory, Errant[ExecError]): Unit =
-      sh"$git $repoOptions checkout $commit".exec[ExitStatus]()
-  
-  def pushTags()(using Log[Text], Internet, Errant[GitError], GitCommand, WorkingDirectory, Errant[ExecError])
-          : Unit =
+  def checkout(commit: CommitHash)(using GitCommand, WorkingDirectory, Errant[ExecError]): Unit binds GenericLogger =
+    sh"$git $repoOptions checkout $commit".exec[ExitStatus]()
+
+  def pushTags()(using Internet, Errant[GitError], GitCommand, WorkingDirectory, Errant[ExecError])
+          : Unit binds GenericLogger =
 
     sh"$git $repoOptions push --tags".exec[ExitStatus]()
 
-  def push()(using Log[Text], Internet, Errant[GitError], GitCommand, WorkingDirectory, Errant[ExecError])
-          : Unit =
+  def push()(using Internet, Errant[GitError], GitCommand, WorkingDirectory, Errant[ExecError])
+          : Unit binds GenericLogger =
 
     sh"$git $repoOptions push".exec[ExitStatus]()
-  
-  def switch(branch: Branch)(using GitCommand, Log[Text], WorkingDirectory, Errant[GitError], Errant[ExecError])
-          : Unit =
+
+  def switch(branch: Branch)(using GitCommand, WorkingDirectory, Errant[GitError], Errant[ExecError])
+          : Unit binds GenericLogger =
 
     sh"$git $repoOptions switch $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(CannotSwitchBranch))
-  
-  def pull()(using GitCommand, Log[Text], Internet, WorkingDirectory)
+
+  def pull()(using GitCommand, Internet, WorkingDirectory)
       (using gitError: Errant[GitError], exec: Errant[ExecError])
-          : GitProcess[Unit]/*^{gitError, exec}*/ =
-    
+          : GitProcess[Unit] binds GenericLogger =
+
     val process = sh"$git $repoOptions pull --progress".fork[ExitStatus]()
 
     GitProcess[Unit](Git.progress(process)):
       process.await() match
         case ExitStatus.Ok => ()
         case failure       => abort(GitError(PullFailed))
-  
+
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
-      (using GitCommand, Log[Text], Internet, WorkingDirectory)
+      (using GitCommand, Internet, WorkingDirectory)
       (using gitError: Errant[GitError], exec: Errant[ExecError])
-          : GitProcess[Unit]/*^{gitError, exec}*/ =
-    
+          : GitProcess[Unit] binds GenericLogger/*^{gitError, exec}*/ =
+
     val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
     val process = command.fork[ExitStatus]()
@@ -140,33 +138,33 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       process.await() match
         case ExitStatus.Ok => ()
         case failure       => abort(GitError(PullFailed))
-  
-  def commit(message: Text)(using GitCommand, Log[Text], WorkingDirectory, Errant[GitError], Errant[ExecError])
-          : Unit =
+
+  def commit(message: Text)(using GitCommand, WorkingDirectory, Errant[GitError], Errant[ExecError])
+          : Unit binds GenericLogger =
 
     sh"$git $repoOptions commit -m $message".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(CommitFailed))
-  
-  def branches()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): List[Branch] =
+
+  def branches()(using GitCommand, WorkingDirectory, Errant[ExecError]): List[Branch] binds GenericLogger =
     sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch.unsafe(_))
-  
+
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): Branch =
+  def branch()(using GitCommand, WorkingDirectory, Errant[ExecError]): Branch binds GenericLogger =
     Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
-  
+
   def makeBranch(branch: Branch)
-      (using GitCommand, WorkingDirectory, Log[Text], Errant[GitError], Errant[ExecError])
-          : Unit =
+      (using GitCommand, WorkingDirectory, Errant[GitError], Errant[ExecError])
+          : Unit binds GenericLogger =
 
     sh"$git $repoOptions checkout -b $branch".exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(BranchFailed))
-  
+
   def add[PathType: GenericPath](path: PathType)
-      (using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError], Errant[GitError])
-          : Unit =
+      (using GitCommand, WorkingDirectory, Errant[ExecError], Errant[GitError])
+          : Unit binds GenericLogger =
 
     val relativePath: Link =
       workTree.let: workTree =>
@@ -175,31 +173,31 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       .or(abort(GitError(NoWorkTree)))
 
     val command = sh"$git $repoOptions add $relativePath"
-    Log.info(t"$command")
+
     command.exec[ExitStatus]() match
       case ExitStatus.Ok => ()
       case failure       => abort(GitError(AddFailed))
 
   def reset(): Unit = ()
   def mv(): Unit = ()
- 
+
   object config:
     def get[ValueType: Decoder](variable: Text)
-        (using GitCommand, WorkingDirectory, Log[Text], Errant[GitError], Errant[ExecError])
-            : ValueType =
+        (using GitCommand, WorkingDirectory, Errant[GitError], Errant[ExecError])
+            : ValueType binds GenericLogger =
       sh"$git $repoOptions config --get $variable".exec[Text]().decodeAs[ValueType]
 
-  def tags()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): List[Tag] =
+  def tags()(using GitCommand, WorkingDirectory, Errant[ExecError]): List[Tag] binds GenericLogger =
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
 
-  def tag(name: Tag)(using GitCommand, WorkingDirectory, Log[Text], Errant[GitError], Errant[ExecError]): Tag =
+  def tag(name: Tag)(using GitCommand, WorkingDirectory, Errant[GitError], Errant[ExecError]): Tag binds GenericLogger =
     sh"$git $repoOptions tag $name".exec[ExitStatus]() match
       case ExitStatus.Ok => name
       case failure       => abort(GitError(TagFailed))
-  
+
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
-  def log()(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): LazyList[Commit] =
+  def log()(using GitCommand, WorkingDirectory, Errant[ExecError]): LazyList[Commit] binds GenericLogger =
     def recur
         (stream:    LazyList[Text],
          hash:      Optional[CommitHash] = Unset,
@@ -210,64 +208,64 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
          signature: List[Text]           = Nil,
          lines:     List[Text]           = Nil)
             : LazyList[Commit] =
-      
+
       def commit(): LazyList[Commit] =
         if hash.absent || tree.absent || author.absent || committer.absent then LazyList()
         else
           given Unsafe = Unsafe
           val pem = parsePem(signature.join(t"\n"))
-          
+
           LazyList:
             Commit(hash.vouch, tree.vouch, parents.reverse, author.vouch, committer.vouch, pem, lines.reverse)
-      
+
       def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) = stream match
         case r" $line(.*)" #:: tail => read(tail, line :: lines)
         case _                      => (lines.reverse, stream)
-      
+
       stream match
         case head #:: tail => head match
           case t"" =>
             recur(tail, hash, tree, parents, author, committer, signature, lines)
-          
+
           case r"commit $hash(.{40})" =>
             commit() #::: recur(tail, CommitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
-          
+
           case r"tree $tree(.{40})" =>
             recur(tail, hash, CommitHash.unsafe(tree), parents, author, committer, signature, lines)
-          
+
           case r"parent $parent(.{40})" =>
             recur(tail, hash, tree, CommitHash.unsafe(parent) :: parents, author, committer, signature, lines)
 
           case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
             recur(tail, hash, tree, parents, author, committer, signature, lines)
-          
+
           case r"committer $committer(.*) $timestamp([0-9]+) $time(.....)" =>
             recur(tail, hash, tree, parents, author, committer, signature, lines)
-          
+
           case r"gpgsig $start(.*)" =>
             val (signature, rest) = read(tail, Nil)
             recur(rest, hash, tree, parents, author, committer, start :: signature, lines)
-          
+
           case r"    $line(.*)" =>
             recur(tail, hash, tree, parents, author, committer, signature, line :: lines)
 
           case other =>
             println("ignoring "+other)
             recur(tail, hash, tree, parents, author, committer, signature, lines)
-        
+
         case _ =>
           commit()
-    
+
     recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
 
   def reflog(): Unit = ()
-  
-  def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): CommitHash =
+
+  def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Errant[ExecError]): CommitHash binds GenericLogger =
     CommitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
 
-  def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Log[Text], Errant[ExecError]): List[GitPathStatus] =
+  def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Errant[ExecError]): List[GitPathStatus] binds GenericLogger =
     val ignoredParam = if ignored then sh"--ignored" else sh""
-    
+
     def unescape(text: Text): Text = if text.at(0) != '"' then text else Text.construct:
       def recur(index: Int, escape: Boolean): Unit =
         if index < text.length then
@@ -301,7 +299,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
     sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().flatMap:
       case r"$key1([ ACDMRU?!])$key2([ ADMU?!]) $path(.*)$path2( -> (.*))?" =>
-        val optionalPath = path2.optional.let(_.drop(4)).let(unescape)
+        val optionalPath = path2.let(_.drop(4)).let(unescape)
         List(GitPathStatus(key(key1), key(key2), unescape(path), optionalPath))
 
       case _ =>
@@ -337,15 +335,15 @@ object Git:
   def init
       [PathType: GenericPath]
       (targetPath: PathType, bare: Boolean = false)
-      (using Log[Text], WorkingDirectory, Errant[GitError], Decoder[Path], Errant[ExecError])
+      (using WorkingDirectory, Errant[GitError], Decoder[Path], Errant[ExecError])
       (using command: GitCommand)
-          : GitRepo =
+          : GitRepo binds GenericLogger =
     try
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
         val target: Path = targetPath.pathText.decodeAs[Path]
         sh"$command init $bareOpt $target".exec[ExitStatus]()
-        
+
         if bare then GitRepo(target.as[Directory], Unset)
         else GitRepo((target / p".git").as[Directory], target.as[Directory])
 
@@ -360,16 +358,15 @@ object Git:
              GitCommand,
              Errant[GitError],
              Errant[ExecError],
-             Log[Text],
              WorkingDirectory)
-          : GitProcess[GitRepo] =
+          : GitProcess[GitRepo] binds GenericLogger =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
       case other          => summonFrom:
-        case genericUrl: GenericUrl[SourceType] => genericUrl.text(source)
-        case given GenericPath[SourceType]      => source.pathText
-    
+        case genericUrl: (SourceType is GenericUrl) => genericUrl.text(source)
+        case given (SourceType is GenericPath)      => source.pathText
+
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone[SourceType <: Matchable, PathType: GenericPath]
@@ -378,30 +375,29 @@ object Git:
        bare:       Boolean          = false,
        branch:     Optional[Branch] = Unset,
        recursive:  Boolean          = false)
-      (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Errant[ExecError], GitCommand)
+      (using Internet, WorkingDirectory, Decoder[Path], Errant[ExecError], GitCommand)
       (using gitError: Errant[GitError])
-          : GitProcess[GitRepo] =
+          : GitProcess[GitRepo] binds GenericLogger =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
       case other          => summonFrom:
-        case genericUrl: GenericUrl[SourceType] => genericUrl.text(source)
-        case given GenericPath[SourceType]      => source.pathText
-    
+        case genericUrl: (SourceType is GenericUrl) => genericUrl.text(source)
+        case given (SourceType is GenericPath)      => source.pathText
+
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
-    
+
   private def uncheckedCloneCommit[PathType: GenericPath]
       (source: Text, targetPath: PathType, commit: CommitHash)
       (using Internet, Decoder[Path], GitCommand)
       (using gitError:         Errant[GitError],
              exec:             Errant[ExecError],
-             log:              Log[Text],
              workingDirectory: WorkingDirectory)
-          : GitProcess[GitRepo]/*^{gitError, log, workingDirectory, exec}*/ =
-    
+          : GitProcess[GitRepo] binds GenericLogger/*^{gitError, log, workingDirectory, exec}*/ =
+
     val gitRepo = init(targetPath)
     val fetch = gitRepo.fetch(1, source, commit)
-    
+
     GitProcess(fetch.progress):
       fetch.complete()
       gitRepo.checkout(commit)
@@ -413,26 +409,26 @@ object Git:
        bare:       Boolean          = false,
        branch:     Optional[Branch] = Unset,
        recursive:  Boolean          = false)
-      (using Internet, WorkingDirectory, Log[Text], Decoder[Path], Errant[ExecError], GitCommand)
+      (using Internet, WorkingDirectory, Decoder[Path], Errant[ExecError], GitCommand)
       (using gitError: Errant[GitError])
-          : GitProcess[GitRepo]/*^{gitError}*/ =
-    
+          : GitProcess[GitRepo] binds GenericLogger /*^{gitError}*/ =
+
     val target: Path =
       try targetPath.pathText.decodeAs[Path] catch case error: PathError => abort(GitError(InvalidRepoPath))
-    
+
     val bareOption = if bare then sh"--bare" else sh""
     val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
     val recursiveOption = if recursive then sh"--recursive" else sh""
-    
+
     val process =
       sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[ExitStatus]()
-    
+
     GitProcess[GitRepo](progress(process)):
       process.await() match
         case ExitStatus.Ok =>
           try throwErrors[IoError](GitRepo((target / p".git").as[Directory], target.as[Directory]))
           catch case error: IoError => abort(GitError(CloneFailed))
-        
+
         case _ =>
           abort(GitError(CloneFailed))
 
@@ -458,7 +454,7 @@ object Octogenarian:
         do if part.has(char) then raise(GitRefError(text))(text)
 
       text
-    
+
     given Encoder[Refspec] = identity(_)
     given Show[Refspec] = identity(_)
 
@@ -480,9 +476,9 @@ object Octogenarian:
     def apply(text: Text)(using Errant[GitRefError]): CommitHash = text match
       case r"[a-f0-9]{40}" => text
       case _               => raise(GitRefError(text))(text)
-    
+
     def unsafe(text: Text): CommitHash = text
-    
+
     given encoder: Encoder[CommitHash] = identity(_)
     given decoder(using Errant[GitRefError]): Decoder[CommitHash] = apply(_)
     given show: Show[CommitHash] = identity(_)
@@ -490,7 +486,7 @@ object Octogenarian:
 export Octogenarian.{Tag, Branch, CommitHash, Refspec}
 
 object GitCommand:
-  given Parameterizable[GitCommand] = _.file.path.fullname
+  given GitCommand is Parameterizable = _.file.path.fullname
 
 case class GitCommand(file: File)
 
@@ -505,7 +501,7 @@ case class Commit
 
 package gitCommands:
   given environmentDefault
-      (using WorkingDirectory, Errant[PathError], Log[Text], Errant[IoError], Errant[ExecError])
+      (using WorkingDirectory, Errant[PathError], Errant[IoError], Errant[ExecError], Bond[GenericLogger])
           : GitCommand =
 
     val path: Path = sh"which git"()
