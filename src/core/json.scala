@@ -108,6 +108,16 @@ extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)
 
 trait Json2:
+  given [ValueType: Encodable in Json] => Optional[ValueType] is Encodable in Json as optionalEncodable =
+    new Encodable:
+      type Self = Optional[ValueType]
+      type Codec = Json
+
+      override def omit(value: Optional[ValueType]): Boolean = value.absent
+
+      def encode(value: Optional[ValueType]): Json =
+        value.let(ValueType.encode(_)).or(Json.ast(JsonAst(0L)))
+
   given [ValueType: Decodable in Json](using Errant[JsonAccessError])
       => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)

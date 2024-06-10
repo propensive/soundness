@@ -89,6 +89,16 @@ object Tests extends Suite(t"Jacinta Tests"):
         Foo(1, Some(2)).json.show
       .assert(_ == t"""{"x":1,"y":2}""")
 
+      test(t"Serialize case class with Optional as Unset"):
+        case class Foo(x: Int, y: Optional[Int])
+        Foo(1, Unset).json.show
+      .assert(_ == t"""{"x":1}""")
+
+      test(t"Serialize case class with present Optional"):
+        case class Foo(x: Int, y: Optional[Int])
+        Foo(1, 2).json.show
+      .assert(_ == t"""{"x":1,"y":2}""")
+
     suite(t"Misc tests"):
       test(t"Serialize to Json"):
         Foo(1, t"two").json
@@ -101,6 +111,11 @@ object Tests extends Suite(t"Jacinta Tests"):
       test(t"Read case class"):
         Json.parse(t"""{"x": 1, "y": "two"}""").as[Foo]
       .assert(_ == Foo(1, t"two"))
+
+      test(t"Extract an absent Option"):
+        case class OptFoo(x: Option[Int])
+        Json.parse(t"""{"y": 1}""").as[OptFoo].x
+      .assert(_ == None)
 
       test(t"Extract an option"):
         case class OptFoo(x: Option[Int])
