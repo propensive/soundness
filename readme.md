@@ -83,7 +83,7 @@ It is likely that as Harlequin evolves, the set of `Accent` values will grow.
 
 ## Status
 
-Harlequin is classified as __fledgling__. For reference, Scala One projects are
+Harlequin is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -97,7 +97,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Harlequin is designed to be _small_. Its entire source code currently consists
-of 155 lines of code.
+of 157 lines of code.
 
 ## Building
 
@@ -166,7 +166,7 @@ O&Uuml;](https://propensive.com/).
 
 A harlequin's clothes are a patchwork of bright colors, much as highlighted source code is.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
