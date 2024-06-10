@@ -38,7 +38,7 @@ object MarkdownError:
     case UnexpectedNode
 
   object Reason:
-    given communicable: Communicable[Reason] =
+    given Reason is Communicable =
       case BlockInsideInline => msg"the markdown contains block-level elements"
       case BrokenImageRef    => msg"the image reference could not be resolved"
       case BadHeadingLevel   => msg"the heading level is not in the range 1-6"
@@ -50,12 +50,12 @@ extends Error(msg"the markdown could not be read because $reason")
 case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
     val buf = StringBuilder()
-    
+
     nodes.each: value =>
       (value: @unchecked) match
         case node: Markdown.Ast.Inline => node.serialize(buf)
         case node: Markdown.Ast.Block  => node.serialize(buf)
-    
+
     buf.text
 
 import Markdown.Ast.Inline.*
@@ -73,7 +73,7 @@ object Markdown:
 
   object Ast:
     type Node = Block | Inline
-  
+
     enum Block:
       case ThematicBreak()
       case Paragraph(children: Inline*)
@@ -90,7 +90,7 @@ object Markdown:
         buf.add(t"Serialization of block elements is not currently supported!")
 
     case class ListItem(children: Block*)
-    
+
     enum TablePart:
       case Head(rows: Row*)
       case Body(rows: Row*)
@@ -108,52 +108,52 @@ object Markdown:
       def serialize(buf: StringBuilder): Unit = this match
         case Break() =>
           buf.add('\n')
-        
+
         case Emphasis(children*) =>
           buf.add('_')
           children.each(_.serialize(buf))
           buf.add('_')
-        
+
         case HtmlNode(value) =>
           buf.add(value)
-        
+
         case Image(alt, src) =>
           buf.add(t"![")
           buf.add(alt)
           buf.add(t"](")
           buf.add(src)
           buf.add(t")")
-        
+
         case SourceCode(value) =>
           buf.add('`')
           buf.add(value)
           buf.add('`')
-        
+
         case Strong(children*) =>
           buf.add('*')
           children.each(_.serialize(buf))
           buf.add('*')
-        
+
         case Copy(text) =>
           buf.add(text)
-        
+
         case Weblink(location, children*) =>
           buf.add('[')
           children.each(_.serialize(buf))
           buf.add(t"](")
           buf.add(location)
           buf.add(')')
-        
+
   private val options = MutableDataSet()
   //options.set[ju.Collection[com.vladsch.flexmark.util.misc.Extension]](Parser.EXTENSIONS,
   //    ju.Arrays.asList(TablesExtension.create()))
-  
+
   private val parser = Parser.builder(options).nn.build().nn
 
   def parse(text: Text)(using Errant[MarkdownError]): Md =
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
-    
+
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
   def parseInline(text: Text)(using Errant[MarkdownError]): InlineMd = parse(text) match
@@ -162,7 +162,7 @@ object Markdown:
 
     case other =>
       raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))(Markdown[Markdown.Ast.Inline]())
-  
+
   @tailrec
   private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
       (xs: List[MdType], done: List[MdType] = Nil)
@@ -185,7 +185,7 @@ object Markdown:
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
           : Text raises MarkdownError =
-    
+
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
       raise(MarkdownError(MarkdownError.Reason.BrokenImageRef))(t"https://example.com/")
 
@@ -196,11 +196,11 @@ object Markdown:
     coalesce:
       node.getChildren.nn.iterator.nn.asScala.to(List).collect:
         case node: PhrasingInput => phrasing(root, node)
-  
+
   def flowChildren(root: cvfua.Document, node: cvfua.Node): Seq[Markdown.Ast.Block] raises MarkdownError =
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: FlowInput => flow(root, node)
-  
+
   def listItems(root: cvfua.Document, node: cvfa.BulletList | cvfa.OrderedList)
           : Seq[ListItem] raises MarkdownError =
 
@@ -225,28 +225,28 @@ object Markdown:
 
   def flow(root: cvfua.Document, node: FlowInput)(using Errant[MarkdownError]): Markdown.Ast.Block = node match
     case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
-    
+
     case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
                                             listItems(root, node)*)
-    
+
     case node: cvfa.CodeBlock         => FencedCode(Unset, Unset, node.getContentChars.toString.show)
     case node: cvfa.IndentedCodeBlock => FencedCode(Unset, Unset, node.getContentChars.toString.show)
     case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
     case node: cvfa.OrderedList       => BulletList(numbered = 1, loose = node.isLoose, listItems(root, node)*)
     case node: cvfa.ThematicBreak     => ThematicBreak()
-    
+
     case node: cvfa.FencedCodeBlock =>
       FencedCode
         (if node.getInfo.toString.show == t"" then Unset else node.getInfo.toString.show, Unset,
          node.getContentChars.toString.show)
-    
+
     case node: cvfa.Heading => node.getLevel match
       case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
-      
+
       case _ =>
         raise(MarkdownError(MarkdownError.Reason.BadHeadingLevel)):
           Heading(6, phraseChildren(root, node)*)
-      
+
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
           : Markdown.Ast.Node raises MarkdownError =
     node match
@@ -258,10 +258,10 @@ object Markdown:
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
       case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode))(Copy(t"?"))
-      
+
       case node: cvfa.Text =>
         Copy(if noFormat then node.getChars.toString.show else format(node.getChars.toString.show))
-  
+
   def table(root: cvfua.Document, node: tables.TableBlock)
           : List[Markdown.Ast.TablePart] raises MarkdownError =
 
@@ -271,20 +271,18 @@ object Markdown:
           case row: tables.TableRow =>
             val cells = node.getChildren.nn.iterator.nn.asScala.to(List).collect:
               case cell: tables.TableCell => tableCell(root, cell)
-            
+
             Row(cells*)
 
         node match
           case node: tables.TableHead => TablePart.Head(rows*)
           case node: tables.TableBody => TablePart.Body(rows*)
-      
+
   def tableCell(root: cvfua.Document, node: tables.TableCell): Cell raises MarkdownError =
     Cell(phraseChildren(root, node)*)
 
 object Punctuation:
   def md(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Markdown[Markdown.Ast.Node]] =
-    import quotes.reflect.*
-
     Md.Interpolator.expansion(context, parts) match
       case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
       case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Md]}

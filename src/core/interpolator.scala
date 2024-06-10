@@ -16,7 +16,6 @@
 
 package punctuation
 
-import rudiments.*
 import vacuous.*
 import fulminate.*
 import contextual.*
@@ -33,18 +32,18 @@ object Md:
 
   object Input:
     given Insertion[Input, Text] = Input.Inline(_)
-  
+
   object Interpolator extends contextual.Interpolator[Input, Input, Markdown[Markdown.Ast.Node]]:
-    
+
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
         safely(Markdown.parseInline(state)).or:
           throw InterpolationError(msg"the markdown could not be parsed")
-      
+
       case Input.Block(state)  =>
         safely(Markdown.parse(state)).or:
           throw InterpolationError(msg"the markdown could not be parsed")
-  
+
     def initial: Input = Input.Inline(t"")
     def skip(state: Input): Input = state
 
@@ -56,11 +55,11 @@ object Md:
       case Input.Inline(content) => state match
         case Input.Block(state)    => Input.Block(t"$state\n$content\n")
         case Input.Inline(state)   => Input.Inline(t"$state$content")
-    
+
     def parseInline(text: Text): Optional[Input.Inline] = safely:
       Markdown.parseInline(text)
       Input.Inline(text)
-    
+
     def parseBlock(text: Text): Optional[Input.Block] = safely:
       Markdown.parse(text)
       Input.Block(text)
