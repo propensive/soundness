@@ -115,7 +115,7 @@ trait Json2:
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
-  object DecodableDerivation extends Derivation[[ValueType] =>> ValueType is Decodable in Json]:
+  object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
       (json, omit) =>
         summonInline[Errant[JsonAccessError]].give:
@@ -141,16 +141,16 @@ object Json extends Json2, Dynamic:
               delegate(values(1)(index).string): [VariantType <: DerivationType] =>
                 context => context.decode(json, omit)
 
-  object EncodableDerivation extends Derivation[[ValueType] =>> ValueType is Encodable in Json]:
+  object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Encodable in Json =
       value =>
         val labels = fields(value): [FieldType] =>
-          field => label.s
+          field => if context.omit(field) then "" else label.s
 
         val values = fields(value): [FieldType] =>
-          field => context.encode(field).root
+          field => if context.omit(field) then null else context.encode(field).root
 
-        Json.ast(JsonAst((labels, values)))
+        Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
 
     inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
       variant(value): [VariantType <: DerivationType] =>
@@ -180,6 +180,17 @@ object Json extends Json2, Dynamic:
   given [ValueType: Decodable in Json](using Errant[JsonAccessError])
       => Option[ValueType] is Decodable in Json as option = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
+
+  given [ValueType: Encodable in Json] => Option[ValueType] is Encodable in Json as optionEncodable =
+    new Encodable:
+      type Self = Option[ValueType]
+      type Codec = Json
+
+      override def omit(value: Option[ValueType]): Boolean = value.isEmpty
+
+      def encode(value: Option[ValueType]): Json = value match
+        case None        => Json.ast(JsonAst(0L))
+        case Some(value) => ValueType.encode(value)
 
   given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
   given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))

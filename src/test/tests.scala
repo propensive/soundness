@@ -79,6 +79,16 @@ object Tests extends Suite(t"Jacinta Tests"):
         false.json.show
       .assert(_ == t"false")
 
+      test(t"Serialize case class with Option as None"):
+        case class Foo(x: Int, y: Option[Int])
+        Foo(1, None).json.show
+      .assert(_ == t"""{"x":1}""")
+
+      test(t"Serialize case class with Option as Some"):
+        case class Foo(x: Int, y: Option[Int])
+        Foo(1, Some(2)).json.show
+      .assert(_ == t"""{"x":1,"y":2}""")
+
     suite(t"Misc tests"):
       test(t"Serialize to Json"):
         Foo(1, t"two").json
@@ -165,7 +175,6 @@ object Tests extends Suite(t"Jacinta Tests"):
           Guitarist(Person(t"George", 58))))
 
       val newBandText = test(t"Serialize NewBand"):
-        println(newBand.json.show)
         newBand.json.show
       .check(_ == t"""{"members":[{"_type":"Bassist","person":{"name":"Paul","age":81}},{"_type":"Drummer","person":{"name":"Ringo","age":82}},{"_type":"Guitarist","person":{"name":"John","age":40}},{"_type":"Guitarist","person":{"name":"George","age":58}}]}""")
 
