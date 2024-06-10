@@ -58,10 +58,10 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   transparent inline infix def / [UnitsType2 <: Measure](inline double: into Double): Any =
     quantity/Quantity(double)
 
-  inline def sqrt(using root: RootOperator[2, Quantity[UnitsType]]): root.Result =
+  inline def sqrt(using root: Quantity[UnitsType] is Rootable[2]): root.Result =
     root.root(quantity)
 
-  inline def cbrt(using root: RootOperator[3, Quantity[UnitsType]]): root.Result =
+  inline def cbrt(using root: Quantity[UnitsType] is Rootable[3]): root.Result =
     root.root(quantity)
 
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
