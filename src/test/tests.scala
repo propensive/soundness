@@ -22,6 +22,7 @@ import contingency.*
 import probably.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 import spectacular.*
 import hieroglyph.*, charEncoders.utf8
 
@@ -95,6 +96,16 @@ object Tests extends Suite(t"Jacinta Tests"):
         case class OptFoo(x: Option[Int])
         Json.parse(t"""{"x": 1}""").as[OptFoo].x
       .assert(_ == Some(1))
+
+      test(t"Extract a present Optional"):
+        case class OptionalFoo(x: Optional[Int])
+        Json.parse(t"""{"x": 1}""").as[OptionalFoo].x
+      .assert(_ == 1)
+
+      test(t"Extract an absent Optional"):
+        case class OptionalFoo(x: Optional[Int])
+        Json.parse(t"""{"y": 1}""").as[OptionalFoo].x
+      .assert(_ == Unset)
 
       test(t"Extract a None"):
         case class OptFoo(x: Option[Int])

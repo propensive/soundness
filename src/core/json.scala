@@ -107,7 +107,12 @@ extension (json: JsonAst)
 extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)
 
-object Json extends Dynamic:
+trait Json2:
+  given [ValueType: Decodable in Json](using Errant[JsonAccessError])
+      => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
+    if omit then Unset else ValueType.decode(json, false)
+
+object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
   object DecodableDerivation extends Derivation[[ValueType] =>> ValueType is Decodable in Json]:
@@ -176,7 +181,6 @@ object Json extends Dynamic:
       => Option[ValueType] is Decodable in Json as option = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
-
   given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
   given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
   given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
@@ -201,6 +205,15 @@ object Json extends Dynamic:
         builder += ElementType.decode(Json.ast(json), false)
 
       builder.result()
+
+  given [ElementType: Decodable in Json](using jsonAccess: Errant[JsonAccessError])
+      => (Map[String, ElementType] is Decodable in Json) as map =
+
+    (value, omit) =>
+      val (keys, values) = value.root.obj
+
+      keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
+        acc.updated(keys(index), ElementType.decode(Json.ast(values(index)), false))
 
   given encoder: Encoder[Json] = json => MinimalJsonPrinter.print(json.root)
 
@@ -302,16 +315,6 @@ object Json extends Dynamic:
   //   (value, omit) => decoder.decode(value.string)
 
 // object JsonDecoder extends JsonDecoder2:
-//   given (using jsonAccess: Errant[JsonAccessError]) => (JsonDecoder[Json]) as json =
-//     (value, omit) => Json(value)
-
-//   given [ValueType](using decoder: JsonDecoder[ValueType])(using Errant[JsonAccessError])
-//           => (JsonDecoder[Option[ValueType]]) as option =
-
-//     new JsonDecoder[Option[ValueType]]:
-//       def decode(value: JsonAst, omit: Boolean): Option[ValueType] =
-//         if omit then None else Some(decoder.decode(value, false))
-
 //   given [ElementType](using decoder: JsonDecoder[ElementType])(using jsonAccess: Errant[JsonAccessError])
 //           => (JsonDecoder[Map[String, ElementType]]) as map =
 
@@ -327,14 +330,6 @@ object Json extends Dynamic:
 
 //     case given Reflection[ValueType] =>
 //       JsonDecoderDerivation.derived[ValueType]
-
-// trait JsonDecoder[ValueType]:
-//   private inline def decoder: this.type = this
-
-//   def decode(json: JsonAst, omit: Boolean): ValueType
-
-//   def map[ValueType2](lambda: ValueType => ValueType2): JsonDecoder[ValueType2] =
-//     (json, omit) => lambda(decoder.decode(json, omit))
 
 class Json(rootValue: Any) extends Dynamic derives CanEqual:
   def root: JsonAst = rootValue.asInstanceOf[JsonAst]
