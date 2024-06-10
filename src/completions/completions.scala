@@ -24,7 +24,7 @@ import profanity.*
 import escapade.*
 import guillotine.*
 import spectacular.*
-import eucalyptus.*, logging.pinned
+import eucalyptus.*
 import gossamer.*
 import ambience.*
 import hieroglyph.*, textMetrics.uniform
@@ -53,10 +53,6 @@ case class CliCompletion
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
-  locally:
-    import logging.pinned
-    Log.warn(t"Initializing CliCompletion")
-
   val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
   val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
   var explanation: Optional[Text] = Unset
@@ -78,75 +74,75 @@ extends Cli:
         if allSuggestions != Nil then cursorSuggestions = allSuggestions
 
     if !flag.secret then flags(flag) = suggestions
-  
+
   override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
   override def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
-  
+
   override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
     if argument == focus then cursorSuggestions = update(using cursorSuggestions)
-  
+
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =
     (flags.keySet.to(Set) -- seenFlags.to(Set)).to(List).flatMap: flag =>
       val allFlags = (flag.name :: flag.aliases)
-      
+
       if longOnly then
         allFlags.collect { case text: Text => text }.match
           case main :: aliases =>
             List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
           case Nil => Nil
-      
+
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
           flag.aliases.map(Flag.serialize(_))))
 
   def serialize: List[Text] =
     val items = if cursorSuggestions.isEmpty && parameters.focusFlag.absent then flagSuggestions(focus().starts(t"--")) else cursorSuggestions
-    
+
     shell match
       case Shell.Zsh =>
         val title = explanation.let { explanation => List(sh"'' -X $explanation") }.or(Nil)
         val termcap: Termcap = termcapDefinitions.xtermTrueColor
-        
+
         lazy val width = items.map(_.text.length).max
         lazy val aliasesWidth = items.map(_.aliases.join(t" ").length).max + 1
-        
+
         val itemLines: List[Command] = items.flatMap:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
-            
+
             val mainLine = (description: @unchecked) match
               case Unset =>
                 sh"'' $hiddenParam -- $text"
-              
+
               case description: Text =>
                 sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
-              
+
               case description: Display =>
                 sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l $hiddenParam -- $text"
-            
+
             val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
-              
+
             val aliasLines = aliases.map: text =>
               (description: @unchecked) match
                 case Unset             =>
                   sh"'' -n -- $text"
-                
+
                 case description: Text =>
                   sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
-                
+
                 case description: Display =>
                   sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l -n -- $text"
-            
+
             mainLine :: duplicateLine ::: aliasLines
-        
+
         (title ++ itemLines).map(_.arguments.join(t"\t"))
-            
+
       case Shell.Bash =>
         items.filter(!_.hidden).flatMap: suggestion =>
           suggestion.text :: suggestion.aliases
         .filter(_.starts(focus()))
-      
+
       case Shell.Fish =>
         items.flatMap:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
@@ -155,7 +151,7 @@ extends Cli:
                 case Unset                => t"$text"
                 case description: Text    => t"$text\t$description"
                 case description: Display => t"$text\t${description.plain}"
-      
+
 case class Execution(exitStatus: ExitStatus)
 
 def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus)(using cli: Cli): Execution =
@@ -185,18 +181,17 @@ package executives:
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
             case _       => Shell.Bash
-          
-          Log.info(t"shellName=$shellName focus=$focus position=$position")
-          
+
           CliCompletion(Cli.arguments(arguments, focus - 1, position), Cli.arguments(rest, focus - 1, position), environment,
               workingDirectory, shell, focus - 1, position, stdio, signals)
-          
+
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
-      
+
     def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
       case completion: CliCompletion =>
-        completion.serialize.each(Out.println(_)(using completion.stdio))
+        given Stdio = completion.stdio
+        completion.serialize.each(Out.println(_))
         ExitStatus.Ok
 
       case invocation: CliInvocation =>

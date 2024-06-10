@@ -17,8 +17,8 @@
 package exoskeleton
 
 import spectacular.*
-import gossamer.*
-import anticipation.*, filesystemInterfaces.galileiApi
+import gossamer.{where as _, *}
+import anticipation.*, filesystemApi.galileiPath
 import rudiments.*, homeDirectories.default
 import vacuous.*
 import serpentine.*, hierarchies.unix
@@ -39,15 +39,15 @@ enum TabCompletionsInstallation:
        fish: TabCompletionsInstallation.InstallResult)
 
 object TabCompletionsInstallation:
-  given Communicable[TabCompletionsInstallation] =
+  given TabCompletionsInstallation is Communicable =
     case CommandNotOnPath(script) =>
       msg"The ${script} command is not on the PATH, so completions scripts cannot be installed."
-    
+
     case Shells(zsh, bash, fish) =>
       msg"$zsh\n\n$bash\n\n$fish"
 
   object InstallResult:
-    given Communicable[InstallResult] =
+    given InstallResult is Communicable =
       case Installed(shell, path) =>
         msg"The $shell completion script installed to $path."
 
@@ -67,24 +67,24 @@ object TabCompletionsInstallation:
     case ShellNotInstalled(shell: Shell)
 
 object TabCompletions:
-  def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Log[Text], Effectful)
-          : TabCompletionsInstallation raises InstallError =
+  def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Effectful)
+      : TabCompletionsInstallation raises InstallError binds GenericLogger =
 
     tend:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
       val command: Text = service.scriptName
-      
+
       if !force && safely(scriptPath.decodeAs[Path]) != service.script
       then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
       else
-        val zsh: TabCompletionsInstallation.InstallResult = 
+        val zsh: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v zsh'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Zsh)
           else
             val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",").to(List)
             val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.compact
             install(Shell.Zsh, command, PathName(t"_$command"), dirs)
-          
+
         val bash: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Bash)
@@ -96,16 +96,15 @@ object TabCompletions:
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
           else install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
               p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
-        
+
         TabCompletionsInstallation.Shells(zsh, bash, fish)
     .remedy:
       case PathError(_, _)    => abort(InstallError(InstallError.Reason.Environment))
       case ExecError(_, _, _) => abort(InstallError(InstallError.Reason.Environment))
-      case IoError(_)         => abort(InstallError(InstallError.Reason.Io))
 
   def install(shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Effectful)
-          : TabCompletionsInstallation.InstallResult raises InstallError =
+          : TabCompletionsInstallation.InstallResult raises InstallError binds GenericLogger =
 
     tend:
       dirs.where { dir => dir.exists() && dir.as[Directory].writable() }.let: dir =>
@@ -116,7 +115,7 @@ object TabCompletions:
           script(shell, command).sysBytes.writeTo(path.make[File]())
           TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
       .or(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
-    
+
     .remedy:
       case IoError(_)        => abort(InstallError(InstallError.Reason.Io))
       case OverwriteError(_) => abort(InstallError(InstallError.Reason.Io))
@@ -148,7 +147,7 @@ object TabCompletions:
           |_$command
           |return 0
           |""".s.stripMargin.tt
-    
+
     case Shell.Fish =>
       t"""|function completions
           |  set position (count (commandline --tokenize --cut-at-cursor))

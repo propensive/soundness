@@ -45,7 +45,7 @@ trait Executive:
        signals:          Funnel[Signal])
       (using interpreter: CliInterpreter)
           : CliType
-  
+
   def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
 
 trait UnhandledErrorHandler:
@@ -57,23 +57,23 @@ package unhandledErrors:
       try block catch
         case error: Exception => ExitStatus(1)
         case error: Throwable => ExitStatus(2)
-  
+
   given genericErrorMessage: UnhandledErrorHandler with
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
         ExitStatus(1)
-      
+
       case error: Throwable =>
         Out.println(t"An unexpected error occurred.")
         ExitStatus(2)
-  
+
   given exceptionMessage: UnhandledErrorHandler with
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
         Out.println(error.toString.tt)
         ExitStatus(1)
-      
+
       case error: Throwable =>
         Out.println(error.toString.tt)
         ExitStatus(2)
@@ -83,7 +83,7 @@ package unhandledErrors:
       case error: Exception =>
         Out.println(StackTrace(error).display)
         ExitStatus(1)
-      
+
       case error: Throwable =>
         Out.println(StackTrace(error).display)
         ExitStatus(2)
@@ -92,7 +92,7 @@ package executives:
   given direct(using handler: UnhandledErrorHandler): Executive with
     type Return = ExitStatus
     type CliType = CliInvocation
-    
+
     def cli
         (arguments:        Iterable[Text],
          environment:      Environment,
@@ -101,7 +101,7 @@ package executives:
          signals:          Funnel[Signal])
         (using interpreter: CliInterpreter)
             : CliInvocation =
-      
+
       CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
     def process(cli: CliInvocation)(exitStatus: CliType ?=> ExitStatus): ExitStatus =
@@ -111,13 +111,13 @@ def application(using executive: Executive, interpreter: CliInterpreter)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
     (block: Cli ?=> executive.Return)
         : Unit =
-  
+
   val funnel: Funnel[Signal] = Funnel()
   signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
-  
+
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
   val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, funnel)
-  
+
   System.exit(executive.process(cli)(block)())
 
 case class CliInvocation
@@ -146,12 +146,11 @@ erased trait Effectful
 
 object InstallError:
   object Reason:
-    given communicable: Communicable[Reason] =
+    given Reason is Communicable as communicable =
       case Environment => msg"it was not possible to get enough information about the install environment"
       case Io          => msg"an I/O error occurred when trying to write an installation file"
-  
+
   enum Reason:
     case Environment, Io
 
 case class InstallError(reason: InstallError.Reason) extends Error(msg"the installation failed because $reason")
-
