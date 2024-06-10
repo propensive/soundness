@@ -316,7 +316,8 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
   // infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
   //   directional.child(path, name)
 
-  // FIXME: This should be called `/`, but it causes a spurious compiler error.
+  // FIXME: This should be called `/`, but it causes an error because there's already an object called
+  // `/` exported from `Serpentine`.
   @targetName("child2")
   inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Errant[PathError]): PathType =
     directional.child(path, PathName(name))
