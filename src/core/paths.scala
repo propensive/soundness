@@ -47,14 +47,16 @@ type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 object Path:
   given Path is GenericPath = _.fullname
 
-  inline given add(using path: Errant[PathError], followable: Followable[Link, GeneralForbidden, ?, ?])
-          : AddOperator[Path, Link] with
+  inline given add(using path: Errant[PathError], followable: Link is Followable[GeneralForbidden, ?, ?])
+          : Addable[Link] with
+    type Self = Path
 
     type Result = Path
     inline def add(left: Path, right: Link): Path = left.append(right)
 
-  inline given add2(using path: Errant[PathError], followable: Followable[SafeLink, GeneralForbidden, ?, ?])
-          : AddOperator[Path, SafeLink] with
+  inline given add2(using path: Errant[PathError], followable: SafeLink is Followable[GeneralForbidden, ?, ?])
+          : Addable[SafeLink] with
+    type Self = Path
 
     type Result = Path
     inline def add(left: Path, right: SafeLink): Path = left.append(right)
@@ -66,7 +68,7 @@ object Path:
       if !path.stdlib.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.stdlib.toFile, false))
 
-  given navigable: Navigable[Path, GeneralForbidden, Optional[Windows.Drive]] with
+  given Path is Navigable[GeneralForbidden, Optional[Windows.Drive]] as navigable:
     def root(path: Path): Optional[Windows.Drive] = path match
       case path: Windows.SafePath => path.drive
       case path: Windows.Path     => path.drive
@@ -190,7 +192,7 @@ object Windows:
     inline given (using Errant[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
 
-    given navigable: Navigable[Path, Forbidden, Drive] with
+    given Path is Navigable[Forbidden, Drive] as navigable:
       def root(path: Path): Drive = path.drive
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
@@ -216,7 +218,7 @@ object Windows:
   object Link:
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
 
-    given followable: Followable[Link, Forbidden, "..", "."] with
+    given (using ValueOf["."]) => Link is Followable[Forbidden, "..", "."] as followable:
       val separators: Set[Char] = Set('\\')
       def separator(path: Link): Text = t"\\"
       def ascent(path: Link): Int = path.ascent
@@ -266,7 +268,7 @@ object Unix:
 
     given creator: PathCreator[Path, Forbidden, Unset.type] = (root, descent) => Path(descent)
 
-    given navigable: Navigable[Path, Forbidden, Unset.type] with
+    given Path is Navigable[Forbidden, Unset.type] as navigable:
       def separator(path: Path): Text = t"/"
       def root(path: Path): Unset.type = Unset
       def prefix(root: Unset.type): Text = t"/"
@@ -287,13 +289,13 @@ object Unix:
   object Link:
     given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
 
-    given followable: Followable[Link, Forbidden, "..", "."] with
+    given (using ValueOf["."]) => Link is Followable[Forbidden, "..", "."] as followable:
       val separators: Set[Char] = Set('/')
       def separator(path: Link): Text = t"/"
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
 
-    inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
+    inline given (using Errant[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
     given show: Show[Link] = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
@@ -732,7 +734,6 @@ package filesystemOptions:
   given doNotWriteSynchronously: WriteSynchronously with
     def options(): List[jnf.StandardOpenOption] = Nil
 
-
 case class IoError(path: Path) extends Error(msg"an I/O error occurred involving $path")
 
 case class OverwriteError(path: Path)
@@ -755,9 +756,9 @@ object SafeLink:
   given encoder: Encoder[SafeLink] = _.render
   given debug: Debug[SafeLink] = _.render
 
-  given followable(using creator: PathCreator[SafeLink, GeneralForbidden, Int])
-          : Followable[SafeLink, GeneralForbidden, "..", "."] =
-    new Followable[SafeLink, GeneralForbidden, "..", "."]:
+  given (using PathCreator[SafeLink, GeneralForbidden, Int], ValueOf["."]) => SafeLink is Followable[GeneralForbidden, "..", "."] =
+    new Followable[GeneralForbidden, "..", "."]:
+      type Self = SafeLink
       val separators: Set[Char] = Set('/', '\\')
       def separator(link: SafeLink): Text = t"/"
       def ascent(link: SafeLink): Int = link.ascent
