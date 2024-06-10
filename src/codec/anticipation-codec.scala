@@ -1,5 +1,5 @@
 /*
-    Jacinta, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Anticipation, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,4 +16,4 @@
 
 package anticipation
 
-infix type in[CodingType, CodecType] = CodingType { type Codec = CodecType }
+infix type in [CodingType, CodecType] = CodingType { type Codec = CodecType }
