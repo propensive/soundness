@@ -41,6 +41,10 @@ project anticipation
     include   anticipation/text
     sources   src/http
 
+  module codec
+    compiler  scala
+    sources   src/codec
+
   module transport
     compiler  scala
     sources   src/transport
@@ -75,6 +79,7 @@ project anticipation
     include anticipation/url
     include anticipation/color
     include anticipation/transport
+    include anticipation/codec
     include anticipation/opaque
 
   module test
