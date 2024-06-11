@@ -31,7 +31,7 @@ object SerpentineMacro:
 
   def parse
       [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
-      : Expr[PExtractor[NameType]] =
+          : Expr[PExtractor[NameType]] =
     import quotes.reflect.*
 
     val (element: String, pos: Position) = (context: @unchecked) match

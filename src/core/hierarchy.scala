@@ -174,8 +174,9 @@ trait Directional[NameType <: Label, AscentType]:
           : Self2 =
     creator.path(ascent(path), name :: descent(path))
 
-trait MainRoot[PathType <: Matchable]:
-  def empty(): PathType
+trait Radical:
+  type Self <: Matchable
+  def empty(): Self
 
 trait RootParser[PathType <: Matchable, +RootType]:
   def parse(text: Text): Optional[(RootType, Text)]

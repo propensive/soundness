@@ -80,38 +80,36 @@ object Serpentine:
     given [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, RootType]
         (using erased hierarchy: Hierarchy[PathType, LinkType],
                       navigable: PathType is Navigable[NameType, RootType],
-                      mainRoot:  MainRoot[PathType]) => %.type is Navigable[NameType, RootType] as navigable:
-      def separator(path: %.type): Text = navigable.separator(mainRoot.empty())
-      def prefix(root: RootType): Text = navigable.prefix(navigable.root(mainRoot.empty()))
-      def root(path: %.type): RootType = navigable.root(mainRoot.empty())
+                      radical:   PathType is Radical) => %.type is Navigable[NameType, RootType] as navigable:
+      def separator(path: %.type): Text = navigable.separator(radical.empty())
+      def prefix(root: RootType): Text = navigable.prefix(navigable.root(radical.empty()))
+      def root(path: %.type): RootType = navigable.root(radical.empty())
       def descent(path: %.type): List[PathName[NameType]] = Nil
 
-    given show[PathType <: Matchable](using hierarchy: Hierarchy[PathType, ?])
-        (using mainRoot: MainRoot[PathType], show: Show[PathType]): Show[%.type] =
+    given show[PathType <: Matchable: Radical](using hierarchy: Hierarchy[PathType, ?])
+        (using show: Show[PathType]): Show[%.type] =
 
-      root => mainRoot.empty().show
+      root => PathType.empty().show
 
     @targetName("child")
-    infix def / [PathType <: Matchable, NameType <: Label, AscentType](using hierarchy: Hierarchy[PathType, ?])
-        (using mainRoot: MainRoot[PathType])
+    infix def / [PathType <: Matchable: Radical, NameType <: Label, AscentType](using hierarchy: Hierarchy[PathType, ?])
         (using directional: PathType is Directional[NameType, AscentType])
         (name: PathName[NameType])
         (using creator: PathCreator[PathType, NameType, AscentType])
             : PathType =
 
-      mainRoot.empty() / name
+      PathType.empty() / name
 
     @targetName("child2")
-    inline infix def / [PathType <: Matchable, NameType <: Label, AscentType]
+    inline infix def / [PathType <: Matchable: Radical, NameType <: Label, AscentType]
         (using hierarchy: Hierarchy[PathType, ?])
-        (using mainRoot: MainRoot[PathType])
         (using directional: PathType is Directional[NameType, AscentType])
         (name: Text)
         (using creator: PathCreator[PathType, NameType, AscentType])
         (using path: Errant[PathError])
             : PathType =
 
-      mainRoot.empty() / PathName(name)
+      PathType.empty() / PathName(name)
 
 export Serpentine.%
 export Serpentine./

@@ -39,8 +39,8 @@ object SimplePath:
   inline def parse(text: Text)(using path: Errant[PathError]): SimplePath/*^{path}*/ =
     text.decodeAs[SimplePath]
 
-  given show: Show[SimplePath] = _.render
-  given mainRoot: MainRoot[SimplePath] = () => SimplePath(Nil)
+  given Show[SimplePath] as show = _.render
+  given SimplePath is Radical as radical = () => SimplePath(Nil)
 
   given rootParser: RootParser[SimplePath, Root.type] with
     def parse(text: Text): Optional[(Root.type, Text)] =
