@@ -510,7 +510,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"../../user/file")
 
     suite(t"Invalid paths"):
-      given MainRoot[TestPath] = () => TestPath(Drive('C'), Nil)
+      given TestPath is Radical = () => TestPath(Drive('C'), Nil)
       
       test(t"Path cannot contain /"):
         demilitarize:
