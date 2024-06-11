@@ -258,7 +258,7 @@ object Unix:
   inline infix def / (name: Text)(using Errant[PathError]): Path = Path(List(PathName(name)))
 
   object Path:
-    given mainRoot: MainRoot[Path] = () => Path(Nil)
+    given Path is Radical as radical = () => Path(Nil)
 
     inline given (using Errant[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
