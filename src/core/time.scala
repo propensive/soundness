@@ -118,7 +118,7 @@ object Dates:
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
 
-    infix def at(time: Time)(using Calendar): Timestamp = Timestamp(date, time)
+    infix def at (time: Time)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("plus")
     infix def + (period: Period)(using Calendar): Date = Date.plus.add(date, period)
@@ -269,7 +269,7 @@ object Timing:
     //@targetName("minus")
     //infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
 
-    infix def in(using RomanCalendar)(timezone: Timezone): LocalTime =
+    infix def in (using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
 
       val date = (zonedTime.getMonthValue: @unchecked) match
@@ -424,7 +424,7 @@ object Timestamp:
     def add(left: Timestamp, right: Timespan): Timestamp = ???
 
 case class Timestamp(date: Date, time: Time):
-  infix def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
+  infix def in (timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
 
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
