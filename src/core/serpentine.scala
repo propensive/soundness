@@ -44,31 +44,30 @@ object Serpentine:
         case head :: tail => Some((creator.path(navigable.root(path), tail), head))
 
   object PathName:
-    given [NameType <: Label]: Show[PathName[NameType]] = Text(_)
+    given [NameType <: Label] => Show[PathName[NameType]] = _.tt
 
-    inline def apply[NameType <: Label](text: Text)(using errorHandler: Errant[PathError]): PathName[NameType] =
-      ${SerpentineMacro.runtimeParse[NameType]('text, 'errorHandler)}
+    inline def apply[NameType <: Label](text: Text)(using errant: Errant[PathError]): PathName[NameType] =
+      ${SerpentineMacro.runtimeParse[NameType]('text, 'errant)}
 
     def unsafe[NameType <: Label](text: Text): PathName[NameType] = text.s: PathName[NameType]
 
   extension [NameType <: Label](pathName: PathName[NameType])
     def render: Text = Text(pathName)
     def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
-    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] raises PathError = PathName(render)
+    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] raises PathError =
+      PathName(render)
 
   @targetName("Root")
   object `%`:
-    erased given hierarchy[PathType <: Matchable, LinkType <: Matchable]
+    erased given [PathType <: Matchable, LinkType <: Matchable]
         (using erased hierarchy: Hierarchy[PathType, LinkType])
-            : Hierarchy[%.type, LinkType] = ###
+        => Hierarchy[%.type, LinkType] as hierarchy = ###
 
     override def equals(other: Any): Boolean = other.asMatchable match
-      case anyRef: AnyRef         => (anyRef eq %) || {
-        anyRef match
-          case other: PathEquality[?] => other.equals(this)
-          case other                  => false
-      }
-      case _                      => false
+      case anyRef: AnyRef => (anyRef eq %) || anyRef.match
+        case other: PathEquality[?] => other.equals(this)
+        case other                  => false
+      case _              => false
 
     override def hashCode: Int = 0
 
@@ -93,8 +92,8 @@ object Serpentine:
       root => PathType.empty().show
 
     @targetName("child")
-    infix def / [PathType <: Matchable: Radical, NameType <: Label, AscentType](using hierarchy: Hierarchy[PathType, ?])
-        (using directional: PathType is Directional[NameType, AscentType])
+    infix def / [PathType <: Matchable: Radical, NameType <: Label, AscentType]
+        (using Hierarchy[PathType, ?], PathType is Directional[NameType, AscentType])
         (name: PathName[NameType])
         (using creator: PathCreator[PathType, NameType, AscentType])
             : PathType =
