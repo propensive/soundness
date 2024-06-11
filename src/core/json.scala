@@ -238,9 +238,7 @@ object Json extends Json2, Dynamic:
 
   given encoder: Encoder[Json] = json => MinimalJsonPrinter.print(json.root)
 
-  def parse[SourceType](value: SourceType)(using readable: Readable[SourceType, Bytes])
-          : Json raises JsonParseError =
-
+  def parse[SourceType: Readable by Bytes](value: SourceType): Json raises JsonParseError =
     Json(JsonAst.parse(value))
 
   given (using JsonPrinter): Show[Json] = json =>
@@ -259,9 +257,7 @@ object Json extends Json2, Dynamic:
   given (using jsonParse: Errant[JsonParseError]) => ((Json is GenericHttpReader)) =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given aggregable[SourceType](using Readable[SourceType, Bytes], Errant[JsonParseError])
-          : Aggregable[Bytes, Json] =
-
+  given [SourceType: Readable by Bytes](using Errant[JsonParseError]) => Aggregable[Bytes, Json] as aggregable =
     Json.parse(_)
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
