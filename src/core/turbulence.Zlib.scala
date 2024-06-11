@@ -18,4 +18,4 @@ package turbulence
 
 import language.experimental.captureChecking
 
-erased trait CompressionAlgorithm
+erased trait Zlib extends CompressionAlgorithm

@@ -198,6 +198,7 @@ extension (obj: LazyList.type)
       catch case err: ConcurrencyError => LazyList()
 
     recur(0)
+
 extension (bytes: Bytes)
   def gzip: Bytes =
     val out = ji.ByteArrayOutputStream()
