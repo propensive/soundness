@@ -531,7 +531,7 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
 object File:
   given debug: Debug[File] = file => t"file:${file.path.render}"
 
-  given readableBytes(using streamCut: Errant[StreamError], io: Errant[IoError]): Readable[File, Bytes] =
+  given (using streamCut: Errant[StreamError], io: Errant[IoError]) => File is Readable by Bytes as readableBytes =
     Readable.inputStream.contramap: file =>
       try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
