@@ -39,7 +39,7 @@ case class UnixMode
      otherRead:  Boolean = true,
      otherWrite: Boolean = false,
      otherExec:  Boolean = false):
-  
+
   def int: Int =
     var sum: Int = 0
     if setUid then sum += 2048
@@ -54,7 +54,7 @@ case class UnixMode
     if otherWrite then sum += 2
     if otherExec then sum += 1
     sum
-  
+
   def bytes: Bytes = int.octal.pad(7, Rtl, '0').bytes
 
 case class UnixUser(value: Int, name: Optional[Text] = Unset):
@@ -76,7 +76,7 @@ case class TarRef(descent: List[PathName[InvalidTarNames]]):
 object TarRef:
   def apply(text: Text)
       (using pathError:  Errant[PathError],
-             navigable:  Navigable[TarRef, InvalidTarNames, Unset.type],
+             navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
              rootParser: RootParser[TarRef, Unset.type],
              creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
           : TarRef =
@@ -85,18 +85,18 @@ object TarRef:
   @targetName("child")
   infix def / (name: PathName[InvalidTarNames]): TarRef = TarRef(List(name))
 
-  given navigable: Navigable[TarRef, InvalidTarNames, Unset.type] with
+  given TarRef is Navigable[InvalidTarNames, Unset.type] as navigable:
     def root(path: TarRef): Unset.type = Unset
     def descent(path: TarRef): List[PathName[InvalidTarNames]] = path.descent
     def prefix(ref: Unset.type): Text = t""
     def separator(path: TarRef): Text = t"/"
-  
-  given rootParser: RootParser[TarRef, Unset.type] with
+
+  given RootParser[TarRef, Unset.type] as rootParser:
     def parse(text: Text): (Unset.type, Text) =
-      (Unset, if text.length > 0 && text.as(0) == '/' then text.drop(1) else text)
-  
-  given pathCreator: PathCreator[TarRef, InvalidTarNames, Unset.type] = (root, descent) => TarRef(descent)
-  given show: Show[TarRef] = _.descent.reverse.map(_.render).join(t"/")
+      (Unset, if text.at(0) == '/' then text.drop(1) else text)
+
+  given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator = (root, descent) => TarRef(descent)
+  given Show[TarRef] as show = _.descent.reverse.map(_.render).join(t"/")
 
 enum TypeFlag:
   case File
@@ -132,7 +132,7 @@ object TarEntry:
        mtime: Optional[InstantType] = Unset)
       (using Readable[DataType, Bytes])
           : TarEntry =
-    
+
     val mtimeU32: U32 = (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
     TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Bytes])
 
@@ -142,21 +142,21 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 
   case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
   extends TarEntry(path, mode, user, group, mtime)
-  
+
   case Link(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
-  
+
   case Symlink(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
-  
+
   case CharSpecial
       (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
-  
+
   case BlockSpecial
       (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
-  
+
   case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
   extends TarEntry(path, mode, user, group, mtime)
 
@@ -164,7 +164,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   def size: U32 = this match
     case file: File => file.data.sumBy(_.length).bits.u32
     case _          => 0
-  
+
   def dataBlocks: LazyList[Bytes] = this match
     case file: File => file.data.chunked(512)
     case directory  => LazyList()
@@ -185,7 +185,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   def link: Optional[Text] = this.only:
     case link: Link       => link.target
     case symlink: Symlink => symlink.target
-  
+
   def deviceNumbers: Optional[(U32, U32)] = this.only:
     case special: CharSpecial  => special.device
     case special: BlockSpecial => special.device
@@ -202,19 +202,19 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     array.place(format(mtime, 12), 136)
     array.place(t"        ".bytes, 148)
     array(156) = typeFlag.id.toByte
-    
+
     link.let { link => array.place(link.bytes, 157) }
-    
+
     deviceNumbers.let: (devMajor, devMinor) =>
       array.place(format(devMajor, 8), 329)
       array.place(format(devMinor, 8), 337)
 
     user.name.let { name => array.place(name.bytes, 265) }
     group.name.let { name => array.place(name.bytes, 297) }
-    
+
     array.place(t"ustar\u0000".bytes, 257)
     array.place(t"00".bytes, 263)
-    
+
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
     array.place(format(total, 8), 148)
 
@@ -223,7 +223,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 object Tar:
   val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
 
-  given readable: Readable[Tar, Bytes] = _.serialize
+  given Readable[Tar, Bytes] as readable = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Bytes] = entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
