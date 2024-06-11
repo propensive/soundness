@@ -257,7 +257,7 @@ object Json extends Json2, Dynamic:
   given (using jsonParse: Errant[JsonParseError]) => ((Json is GenericHttpReader)) =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given [SourceType: Readable by Bytes](using Errant[JsonParseError]) => Aggregable[Bytes, Json] as aggregable =
+  given [SourceType: Readable by Bytes](using Errant[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
     Json.parse(_)
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
