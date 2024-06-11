@@ -87,7 +87,7 @@ object Compression:
       juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes]
 
 extension (lazyList: LazyList[Bytes])
-  def drop(byteSize: ByteSize): LazyList[Bytes] =
+  def skip(byteSize: ByteSize): LazyList[Bytes] =
     def recur(stream: LazyList[Bytes], skip: ByteSize): LazyList[Bytes] = stream match
       case head #:: tail =>
         if head.byteSize < skip
