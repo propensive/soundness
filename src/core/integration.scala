@@ -23,17 +23,20 @@ import galilei.*
 import language.experimental.pureFunctions
 
 package filesystemApi:
-  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[File, PathType]) => SpecificFile with GenericFile as galileiFile:
-    type Self = File
-    def file(name: Text): File = name.decodeAs[PathType].as[File]
-    def fileText(file: File): Text = file.path.fullname
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[File, PathType]) => File is SpecificFile & GenericFile as galileiFile =
+    new SpecificFile with GenericFile:
+      type Self = File
+      def file(name: Text): File = name.decodeAs[PathType].as[File]
+      def fileText(file: File): Text = file.path.fullname
 
-  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?], decoder: Decoder[PathType]) => SpecificPath with GenericPath as galileiPath:
-    type Self = PathType
-    def path(name: Text): PathType = name.decodeAs[PathType]
-    def pathText(path: PathType): Text = path.fullname
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?], decoder: Decoder[PathType]) => PathType is SpecificPath & GenericPath as galileiPath =
+    new SpecificPath with GenericPath:
+      type Self = PathType
+      def path(name: Text): PathType = name.decodeAs[PathType]
+      def pathText(path: PathType): Text = path.fullname
 
-  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[Directory, PathType]) => SpecificDirectory with GenericDirectory as galileiDirectory:
-    type Self = Directory
-    def directory(name: Text): Directory = name.decodeAs[PathType].as[Directory]
-    def directoryText(directory: Directory): Text = directory.path.fullname
+  given [PathType <: Path](using hierarchy: Hierarchy[PathType, ?])(using Decoder[PathType], PathResolver[Directory, PathType]) => Directory is SpecificDirectory & GenericDirectory as galileiDirectory =
+    new SpecificDirectory with GenericDirectory:
+      type Self = Directory
+      def directory(name: Text): Directory = name.decodeAs[PathType].as[Directory]
+      def directoryText(directory: Directory): Text = directory.path.fullname
