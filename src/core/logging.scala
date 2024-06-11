@@ -50,21 +50,19 @@ trait Envelope[-EnvelopeType]:
 object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
 
-  def apply[TargetType, TextType]
-      (target:     TargetType,
-       appendable: Appendable[TargetType, TextType],
-       format:     LogFormat[TargetType, TextType])
+  def apply[TargetType: Appendable by TextType, TextType]
+      (target: TargetType, format: LogFormat[TargetType, TextType])
       (using Monitor)
           : Logger[TextType]/*^{monitor}*/ =
 
-    LogProcess(target)(using format)(using appendable)
+    LogProcess(target)(using format)
 
 object LogWriter:
-  given active[TargetType, TextType](using format: LogFormat[TargetType, TextType])
-      (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
+  given active[TargetType: Appendable by TextType, TextType](using format: LogFormat[TargetType, TextType])
+      (using monitor: Monitor)
           : LogWriter[TargetType, TextType]/*^{monitor}*/ =
 
-    LogProcess[TargetType, TextType](_)(using format)(using appendable, monitor)
+    LogProcess[TargetType, TextType](_)(using format)
 
 trait LogWriter[TargetType, TextType]:
   def logger(target: TargetType): Logger[TextType]
@@ -72,15 +70,15 @@ trait LogWriter[TargetType, TextType]:
 trait Logger[TextType]:
   def put(entry: Entry[TextType]): Unit
 
-class LogProcess[TargetType, TextType](target: TargetType)
+class LogProcess[TargetType: Appendable by TextType, TextType](target: TargetType)
     (using format: LogFormat[TargetType, TextType])
-    (using appendable: Appendable[TargetType, TextType], monitor: Monitor)
+    (using monitor: Monitor)
 extends Logger[TextType]:
 
   private val funnel: Funnel[Entry[TextType]] = Funnel()
 
   private val task: Daemon =
-    daemon(appendable.append(target, unsafely(funnel.stream.map(format(_)))))
+    daemon(TargetType.append(target, unsafely(funnel.stream.map(format(_)))))
 
   def put(entry: Entry[TextType]): Unit = funnel.put(entry)
 
