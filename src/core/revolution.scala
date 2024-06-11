@@ -83,7 +83,7 @@ package manifestAttributes:
   object SpecifacationVersion  extends ManifestAttribute["Specification-Version"]()
 
 object Manifest:
-  protected def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Bytes]): Manifest =
+  protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =
     val java = juj.Manifest(LazyListInputStream(source.readAs[LazyList[Bytes]]))
 
     Manifest:
@@ -91,7 +91,7 @@ object Manifest:
         (key.toString.tt, value.toString.tt)
       .to(Map)
 
-  given readable: Readable[Manifest, Bytes] = manifest => LazyList(manifest.serialize)
+  given Manifest is Readable by Bytes as readable = manifest => LazyList(manifest.serialize)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
