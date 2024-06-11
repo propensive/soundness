@@ -123,14 +123,13 @@ enum TypeFlag:
     case GlobalExtension => 'g'
 
 object TarEntry:
-  def apply[DataType, InstantType: GenericInstant]
+  def apply[DataType: Readable by Bytes, InstantType: GenericInstant]
       (name:  TarRef,
        data:  DataType,
        mode:  UnixMode              = UnixMode(),
        user:  UnixUser              = UnixUser(0),
        group: UnixGroup             = UnixGroup(0),
        mtime: Optional[InstantType] = Unset)
-      (using Readable[DataType, Bytes])
           : TarEntry =
 
     val mtimeU32: U32 = (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
@@ -223,7 +222,7 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
 object Tar:
   val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
 
-  given Readable[Tar, Bytes] as readable = _.serialize
+  given Tar is Readable by Bytes as readable = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
   def serialize: LazyList[Bytes] = entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
