@@ -28,7 +28,7 @@ import java.nio as jn
 //import language.experimental.captureChecking
 
 object Writable:
-  given outputStreamBytes(using streamCut: Errant[StreamError]): Writable[ji.OutputStream, Bytes] =
+  given (using streamCut: Errant[StreamError]) => ji.OutputStream is Writable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -36,8 +36,8 @@ object Writable:
 
       outputStream.close()
 
-  given outputStreamText(using streamCut: Errant[StreamError], encoder: CharEncoder)
-          : Writable[ji.OutputStream, Text] =
+  given (using streamCut: Errant[StreamError], encoder: CharEncoder)
+          => ji.OutputStream is Writable by Text as outputStreamText =
 
     (outputStream, stream) =>
       stream.each: text =>
@@ -46,29 +46,31 @@ object Writable:
 
       outputStream.close()
 
-  given decodingAdapter[TargetType](using writable: Writable[TargetType, Text], decoder: CharDecoder)
-          : Writable[TargetType, Bytes] =
+  given [TargetType: Writable by Text](using decoder: CharDecoder)
+      => TargetType is Writable by Bytes as decodingAdapter =
+    (target, stream) => TargetType.write(target, decoder.decode(stream))
 
-    (target, stream) => writable.write(target, decoder.decode(stream))
-
-  given encodingAdapter[TargetType](using writable: Writable[TargetType, Bytes], encoder: CharEncoder)
-          : Writable[TargetType, Text] =
-
-    (target, stream) => writable.write(target, encoder.encode(stream))
+  given [TargetType: Writable by Bytes](using encoder: CharEncoder)
+      => TargetType is Writable by Text as encodingAdapter =
+    (target, stream) => TargetType.write(target, encoder.encode(stream))
 
 @capability
-trait Writable[-TargetType, -ChunkType]:
-  def write(target: TargetType, stream: LazyList[ChunkType]): Unit
+trait Writable:
+  type Self
+  type Element
+  def write(target: Self, stream: LazyList[Element]): Unit
 
-  def contramap[TargetType2](lambda: TargetType2 => TargetType): Writable[TargetType2, ChunkType] =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Element =
     (target, stream) => write(lambda(target), stream)
 
-trait SimpleWritable[-TargetType, -ChunkType] extends Writable[TargetType, ChunkType]:
-  def write(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
-    case head #:: tail => writeChunk(target, head); write(target, tail)
+trait SimpleWritable[TargetType, ElementType] extends Writable:
+  type Element = ElementType
+  type Self = TargetType
+  def write(target: Self, stream: LazyList[ElementType]): Unit = stream match
+    case head #:: tail => writeElement(target, head); write(target, tail)
     case _             =>
 
-  def writeChunk(target: TargetType, chunk: ChunkType): Unit
+  def writeElement(target: Self, element: ElementType): Unit
 
 object Appendable:
   given stdoutBytes(using stdio: Stdio): SimpleAppendable[Out.type, Bytes] =
@@ -83,7 +85,7 @@ object Appendable:
   given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
     (stderr, text) => stdio.printErr(text)
 
-  given outputStreamBytes(using streamCut: Errant[StreamError]): Appendable[ji.OutputStream, Bytes] =
+  given (using streamCut: Errant[StreamError]) => ji.OutputStream is Appendable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -91,30 +93,32 @@ object Appendable:
 
       outputStream.close()
 
-  given decodingAdapter[TargetType](using appendable: Appendable[TargetType, Text], decoder: CharDecoder)
-          : Appendable[TargetType, Bytes] =
+  given [TargetType: Appendable by Text](using decoder: CharDecoder)
+      => TargetType is Appendable by Bytes as decodingAdapter =
+    (target, stream) => TargetType.append(target, decoder.decode(stream))
 
-    (target, stream) => appendable.append(target, decoder.decode(stream))
+  given [TargetType: Appendable by Bytes](using encoder: CharEncoder)
+      => TargetType is Appendable by Text as encodingAdapter =
+    (target, stream) => TargetType.append(target, encoder.encode(stream))
 
-  given encodingAdapter[TargetType](using appendable: Appendable[TargetType, Bytes], encoder: CharEncoder)
-          : Appendable[TargetType, Text] =
+trait Appendable:
+  type Self
+  type Element
+  def append(target: Self, stream: LazyList[Element]): Unit
+  def asWritable: Self is Writable by Element = append(_, _)
 
-    (target, stream) => appendable.append(target, encoder.encode(stream))
-
-trait Appendable[-TargetType, -ChunkType]:
-  def append(target: TargetType, stream: LazyList[ChunkType]): Unit
-  def asWritable: Writable[TargetType, ChunkType] = append(_, _)
-
-  def contramap[TargetType2](lambda: TargetType2 => TargetType): Appendable[TargetType2, ChunkType] =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Appendable by Element =
     (target, stream) => append(lambda(target), stream)
 
-trait SimpleAppendable[-TargetType, -ChunkType] extends Appendable[TargetType, ChunkType]:
+trait SimpleAppendable[TargetType, ElementType] extends Appendable:
+  type Element = ElementType
+  type Self = TargetType
 
-  def append(target: TargetType, stream: LazyList[ChunkType]): Unit = stream match
-    case head #:: tail => appendChunk(target, head); append(target, tail)
+  def append(target: TargetType, stream: LazyList[Element]): Unit = stream match
+    case head #:: tail => appendElement(target, head); append(target, tail)
     case _             => ()
 
-  def appendChunk(target: TargetType, chunk: ChunkType): Unit
+  def appendElement(target: TargetType, element: Element): Unit
 
 object Readable:
   given bytes: Readable[Bytes, Bytes] = LazyList(_)
@@ -122,7 +126,6 @@ object Readable:
 
   given encodingAdapter[SourceType](using readable: Readable[SourceType, Text], encoder: CharEncoder)
           : Readable[SourceType, Bytes] =
-
     source => encoder.encode(readable.read(source))
 
   given decodingAdapter[SourceType](using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
@@ -130,7 +133,7 @@ object Readable:
 
     source => decoder.decode(readable.read(source))
 
-  given lazyList[ChunkType]: Readable[LazyList[ChunkType], ChunkType] = identity(_)
+  given lazyList[ElementType]: Readable[LazyList[ElementType], ElementType] = identity(_)
 
   given inCharReader(using stdio: Stdio): Readable[In.type, Char] = in =>
     def recur(count: ByteSize): LazyList[Char] =
@@ -216,10 +219,10 @@ object Readable:
     LazyList.defer(recur(0))
 
 @capability
-trait Readable[-SourceType, +ChunkType]:
-  def read(value: SourceType): LazyList[ChunkType]
+trait Readable[-SourceType, +ElementType]:
+  def read(value: SourceType): LazyList[ElementType]
 
-  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ChunkType] =
+  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ElementType] =
     source => read(lambda(source))
 
 object Aggregable:
@@ -233,25 +236,25 @@ object Aggregable:
   given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] =
     bytesBytes.map(decoder.decode)
 
-  given lazyList[ChunkType, ChunkType2](using aggregable: Aggregable[ChunkType, ChunkType2])
-          : Aggregable[ChunkType, LazyList[ChunkType2]] =
+  given lazyList[ElementType, ElementType2](using aggregable: Aggregable[ElementType, ElementType2])
+          : Aggregable[ElementType, LazyList[ElementType2]] =
 
-    chunk => LazyList(aggregable.aggregate(chunk))
+    element => LazyList(aggregable.aggregate(element))
 
-  given functor[ChunkType]: Functor[[ValueType] =>> Aggregable[ChunkType, ValueType]] = new Functor:
+  given functor[ElementType]: Functor[[ValueType] =>> Aggregable[ElementType, ValueType]] = new Functor:
     def map[ResultType, ResultType2]
-        (aggregable: Aggregable[ChunkType, ResultType], lambda: ResultType => ResultType2)
-            : Aggregable[ChunkType, ResultType2] =
+        (aggregable: Aggregable[ElementType, ResultType], lambda: ResultType => ResultType2)
+            : Aggregable[ElementType, ResultType2] =
 
       new Aggregable:
-        def aggregate(value: LazyList[ChunkType]): ResultType2 = lambda(aggregable.aggregate(value))
+        def aggregate(value: LazyList[ElementType]): ResultType2 = lambda(aggregable.aggregate(value))
 
 @capability
-trait Aggregable[-ChunkType, +ResultType]:
-  def aggregate(source: LazyList[ChunkType]): ResultType
+trait Aggregable[-ElementType, +ResultType]:
+  def aggregate(source: LazyList[ElementType]): ResultType
 
 extension [ValueType](value: ValueType)
-  def stream[ChunkType](using readable: Readable[ValueType, ChunkType]): LazyList[ChunkType] =
+  def stream[ElementType](using readable: Readable[ValueType, ElementType]): LazyList[ElementType] =
     readable.read(value)
 
   def readAs[ResultType]
@@ -260,15 +263,17 @@ extension [ValueType](value: ValueType)
 
     aggregable.aggregate(readable.read(value))
 
-  def writeTo[TargetType](target: TargetType)[ChunkType]
-      (using readable: Readable[ValueType, ChunkType], writable: Writable[TargetType, ChunkType])
+  def writeTo[TargetType](target: TargetType)[ElementType]
+      (using readable: Readable[ValueType, ElementType], writable: TargetType is Writable by ElementType)
           : Unit =
 
     writable.write(target, readable.read(value))
 
-  def appendTo[TargetType](target: TargetType)[ChunkType]
-      (using readable:   Readable[ValueType, ChunkType],
-             appendable: Appendable[TargetType, ChunkType])
+  def appendTo[TargetType](target: TargetType)[ElementType]
+      (using readable:   Readable[ValueType, ElementType],
+             appendable: TargetType is Appendable by ElementType)
           : Unit =
 
     appendable.append(target, readable.read(value))
+
+infix type by [ElementaryType, ElementType] = ElementaryType { type Element = ElementType }
