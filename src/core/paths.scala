@@ -63,7 +63,7 @@ object Path:
 
   given Insertion[Sh.Parameters, Path] = path => Sh.Parameters(path.fullname)
 
-  given writableBytes(using io: Errant[IoError], streamCut: Errant[StreamError]): Writable[Path, Bytes] =
+  given (using io: Errant[IoError], streamCut: Errant[StreamError]) => Path is Writable by Bytes as writableBytes =
     Writable.outputStreamBytes.contramap: path =>
       if !path.stdlib.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.stdlib.toFile, false))
@@ -536,14 +536,15 @@ object File:
       try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
 
-  given writableBytes(using io: Errant[IoError], streamCut: Errant[StreamError])
-          : Writable[File, Bytes] =
+  given (using io: Errant[IoError], streamCut: Errant[StreamError])
+      => File is Writable by Bytes as writableBytes =
+
     Writable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, false))
 
-  given appendableBytes(using io: Errant[IoError], streamCut: Errant[StreamError])
-          : Appendable[File, Bytes] =
+  given (using io: Errant[IoError], streamCut: Errant[StreamError])
+      => File is Appendable by Bytes as appendableBytes =
     Appendable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, true))
