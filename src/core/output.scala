@@ -268,10 +268,10 @@ case class Display
     if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")
-  infix def append(text: Text): Display = Display(t"$plain$text", spans)
+  def append(text: Text): Display = Display(t"$plain$text", spans)
 
   @targetName("add2")
-  infix def append(text: Display): Display =
+  def append(text: Display): Display =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
 
