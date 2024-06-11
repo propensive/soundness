@@ -147,7 +147,7 @@ case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
 
 object Resource:
-  given readableBytes(using Errant[ClasspathError]): Readable[Resource, Bytes] =
+  given (using Errant[ClasspathError]) => Resource is Readable by Bytes as readableBytes =
     Readable.reliableInputStream.contramap: resource =>
       resource.classloader.inputStream(resource.ref.text)
 
