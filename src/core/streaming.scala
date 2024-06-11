@@ -228,42 +228,37 @@ trait Readable:
     source => read(lambda(source))
 
 object Aggregable:
-  given bytesBytes: Aggregable[Bytes, Bytes] = source =>
+  given Bytes is Aggregable by Bytes as bytesBytes = source =>
     def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes = source match
       case head #:: tail => buf.write(head.mutable(using Unsafe)); recur(buf, tail)
       case _             => buf.toByteArray().nn.immutable(using Unsafe)
 
     recur(ji.ByteArrayOutputStream(), source)
 
-  given bytesText(using decoder: CharDecoder): Aggregable[Bytes, Text] =
+  given (using decoder: CharDecoder) => Text is Aggregable by Bytes as bytesText =
     bytesBytes.map(decoder.decode)
 
-  given lazyList[ElementType, ElementType2](using aggregable: Aggregable[ElementType, ElementType2])
-          : Aggregable[ElementType, LazyList[ElementType2]] =
-
+  given [ElementType, ElementType2]
+      (using aggregable: ElementType2 is Aggregable by ElementType)
+      => LazyList[ElementType2] is Aggregable by ElementType as lazyList =
     element => LazyList(aggregable.aggregate(element))
 
-  given functor[ElementType]: Functor[[ValueType] =>> Aggregable[ElementType, ValueType]] = new Functor:
-    def map[ResultType, ResultType2]
-        (aggregable: Aggregable[ElementType, ResultType], lambda: ResultType => ResultType2)
-            : Aggregable[ElementType, ResultType2] =
-
-      new Aggregable:
-        def aggregate(value: LazyList[ElementType]): ResultType2 = lambda(aggregable.aggregate(value))
-
 @capability
-trait Aggregable[-ElementType, +ResultType]:
-  def aggregate(source: LazyList[ElementType]): ResultType
+trait Aggregable:
+  aggregable =>
+  type Self
+  type Element
+  def aggregate(source: LazyList[Element]): Self
+
+  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Aggregable by Element = source =>
+    lambda(aggregable.aggregate(source))
 
 extension [ValueType](value: ValueType)
   def stream[ElementType](using readable: ValueType is Readable by ElementType): LazyList[ElementType] =
     readable.read(value)
 
-  def readAs[ResultType]
-      (using readable: ValueType is Readable by Bytes, aggregable: Aggregable[Bytes, ResultType])
-          : ResultType =
-
-    aggregable.aggregate(readable.read(value))
+  def readAs[ResultType: Aggregable by Bytes](using readable: ValueType is Readable by Bytes): ResultType =
+    ResultType.aggregate(readable.read(value))
 
   def writeTo[TargetType](target: TargetType)[ElementType]
       (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
