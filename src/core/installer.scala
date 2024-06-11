@@ -16,14 +16,14 @@
 
 package ethereal
 
-import anticipation.*, filesystemInterfaces.galileiApi
+import anticipation.*, filesystemApi.{galileiPath, galileiFile, galileiDirectory}
 import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
 import serpentine.*, hierarchies.unix
 import rudiments.*
 import vacuous.*
 import guillotine.*
 import hypotenuse.*
-import gossamer.*
+import gossamer.{take as _, *}
 import exoskeleton.*
 import turbulence.*
 import eucalyptus.*
@@ -32,11 +32,13 @@ import spectacular.*
 import ambience.*
 import fulminate.*
 
+type Path = Unix.Path
+
 object Installer:
   given Realm = realm"ethereal"
 
   object Result:
-    given Communicable[Result] =
+    given Result is Communicable =
       case AlreadyOnPath(script, path) => msg"The $script command is already installed at $path."
       case Installed(script, path)     => msg"The $script command was installed to $path."
       case PathNotWritable             => msg"No directory on the PATH environment variable was writable"
@@ -48,25 +50,24 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?])
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
-        : List[Directory] raises InstallError =
+          : List[Directory] raises InstallError =
     tend:
       val paths: List[Path] = Environment.path
-  
-      val preferences: List[Path] = List(
-        Xdg.bin[Path],
+
+      val preferences: List[Path] = List
+       (Xdg.bin[Path],
         % / p"usr" / p"local" / p"bin",
         % / p"usr" / p"bin",
         % / p"usr" / p"local" / p"sbin",
         % / p"opt" / p"bin",
         % / p"bin",
-        % / p"bin"
-      )
-  
+        % / p"bin")
+
       paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
         preferences.indexOf(directory.path) match
           case -1    => Int.MaxValue
           case index => index
-    
+
     .remedy:
       case PathError(_, _)     => abort(InstallError(InstallError.Reason.Environment))
       case EnvironmentError(_) => abort(InstallError(InstallError.Reason.Environment))
@@ -78,11 +79,11 @@ object Installer:
         : Result raises InstallError =
     import workingDirectories.default
     import systemProperties.virtualMachine
-    
+
     tend:
       val command: Text = service.scriptName
       val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
-  
+
       if safely(scriptPath.decodeAs[Path]) == service.script && !force
       then Result.AlreadyOnPath(command, service.script.show)
       else
@@ -93,13 +94,13 @@ object Installer:
         val prefixSize = fileSize - payloadSize - jarSize
         val stream = scriptFile.stream[Bytes]
         val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
-        
+
         val installFile = installDirectory.let: directory =>
           (directory / PathName(command)).make[File]()
-  
+
         installFile.let: file =>
           Log.info(t"Writing executable to ${file.debug}")
-          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.drop(fileSize - jarSize)).writeTo(file)
+          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.skip(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
           file.executable() = true
           Result.Installed(command, file.path.show)
@@ -112,5 +113,3 @@ object Installer:
       case IoError(_)             => abort(InstallError(InstallError.Reason.Io))
       case ExecError(_, _, _)     => abort(InstallError(InstallError.Reason.Io))
       case StreamError(_)         => abort(InstallError(InstallError.Reason.Io))
-
-
