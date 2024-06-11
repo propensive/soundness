@@ -32,8 +32,6 @@ import spectacular.*
 import ambience.*
 import fulminate.*
 
-type Path = Unix.Path
-
 object Installer:
   given Realm = realm"ethereal"
 
@@ -52,10 +50,10 @@ object Installer:
       (using Log[Text], Environment, HomeDirectory, SystemProperties)
           : List[Directory] raises InstallError =
     tend:
-      val paths: List[Path] = Environment.path
+      val paths: List[Unix.Path] = Environment.path
 
-      val preferences: List[Path] = List
-       (Xdg.bin[Path],
+      val preferences: List[Unix.Path] = List
+       (Xdg.bin[Unix.Path],
         % / p"usr" / p"local" / p"bin",
         % / p"usr" / p"bin",
         % / p"usr" / p"local" / p"sbin",
@@ -73,7 +71,7 @@ object Installer:
       case EnvironmentError(_) => abort(InstallError(InstallError.Reason.Environment))
       case IoError(_)          => abort(InstallError(InstallError.Reason.Io))
 
-  def install(force: Boolean = false, target: Optional[Path] = Unset)
+  def install(force: Boolean = false, target: Optional[Unix.Path] = Unset)
       (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
       (using Effectful)
         : Result raises InstallError =
@@ -84,7 +82,7 @@ object Installer:
       val command: Text = service.scriptName
       val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
 
-      if safely(scriptPath.decodeAs[Path]) == service.script && !force
+      if safely(scriptPath.decodeAs[Unix.Path]) == service.script && !force
       then Result.AlreadyOnPath(command, service.script.show)
       else
         val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
