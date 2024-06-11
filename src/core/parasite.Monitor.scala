@@ -16,17 +16,17 @@
 
 package parasite
 
-import anticipation.*
-import rudiments.*
-import contingency.*
-import fulminate.*
-import feudalism.*
-import vacuous.*
-import digression.*
+import language.experimental.pureFunctions
 
 import scala.annotation.*
 
-import language.experimental.pureFunctions
+import anticipation.*
+import contingency.*
+import digression.*
+import feudalism.*
+import fulminate.*
+import rudiments.*
+import vacuous.*
 
 import Completion.*
 import ConcurrencyError.Reason
@@ -81,14 +81,6 @@ object PlatformSupervisor extends Supervisor():
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
-
-def supervise[ResultType](block: Monitor ?=> ResultType)
-    (using model: ThreadModel, codepoint: Codepoint)
-        : ResultType raises ConcurrencyError =
-
-  block(using model.supervisor())
-
-case class Trace(codepoint: Codepoint, parent: Optional[Trace])
 
 @capability
 abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:

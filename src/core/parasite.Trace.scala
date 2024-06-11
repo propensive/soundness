@@ -16,19 +16,13 @@
 
 package parasite
 
-import fulminate.*
+import language.experimental.pureFunctions
 
-import language.experimental.captureChecking
+import scala.annotation.*
 
-object ConcurrencyError:
-  object Reason:
-    given Reason is Communicable =
-      case Cancelled       => msg"the operation was cancelled"
-      case Incomplete      => msg"the task was not completed"
-      case AlreadyComplete => msg"the promise was already completed"
-      case Timeout         => msg"the operation timed out"
+import digression.*
+import vacuous.*
 
-  enum Reason:
-    case Cancelled, Incomplete, AlreadyComplete, Timeout
+import Completion.*
 
-case class ConcurrencyError(reason: ConcurrencyError.Reason) extends Error(reason.communicate)
+case class Trace(codepoint: Codepoint, parent: Optional[Trace])

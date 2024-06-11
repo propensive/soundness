@@ -16,11 +16,11 @@
 
 package parasite
 
+import language.experimental.pureFunctions
+
 import anticipation.*
 import contingency.*
 import vacuous.*
-
-import language.experimental.pureFunctions
 
 import Completion.*
 

@@ -16,40 +16,14 @@
 
 package parasite
 
-import anticipation.*
-import rudiments.*
-import contingency.*
-import digression.*
-import vacuous.*
-
 import language.experimental.pureFunctions
 import language.experimental.into
 
-enum Completion[+ValueType]:
-  case Initializing, Cancelled
-  case Active(startTime: Long)
-  case Suspended(startTame: Long, count: Int)
-  case Completed(duration: Long, value: ValueType)
-  case Delivered(duration: Long, value: ValueType)
-  case Failed(error: Throwable)
-
-import Completion.*
-
-trait Codicil:
-  def cleanup(subordinate: Subordinate): Unit
-
-class Hook(private val thread: Thread):
-  def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)
-
-object Hook:
-  def onShutdown(block: => Unit): Hook =
-    val runnable: Runnable = () => block
-    val thread: Thread = Thread(runnable)
-    Runtime.getRuntime.nn.addShutdownHook(thread)
-    Hook(thread)
-
-trait ThreadModel:
-  def supervisor(): Supervisor
+import anticipation.*
+import contingency.*
+import digression.*
+import rudiments.*
+import vacuous.*
 
 package threadModels:
   given platform: ThreadModel = () => PlatformSupervisor
@@ -62,9 +36,7 @@ package asyncOptions:
   given failIfOrphansExist(using Errant[ConcurrencyError]): Codicil = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
 
-def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Codicil)
-        : Daemon =
-
+def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))
 
 def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)(using Monitor, Codicil)
@@ -77,58 +49,6 @@ def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=>
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = name)
-
-enum Transgression:
-  case Absorb, Escalate, Cancel
-
-object Task:
-  def apply[ResultType]
-      (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
-      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
-          : Task[ResultType] =
-    inline def evaluate0: Subordinate => ResultType = evaluate
-    inline def name0: Optional[Text] = name
-
-    new Subordinate(codepoint, monitor, codicil) with Task[ResultType]:
-      type Result = ResultType
-      def name: Optional[Text] = name0
-      def daemon: Boolean = false
-      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
-
-trait Task[+ResultType]:
-  def ready: Boolean
-  def await(): ResultType raises ConcurrencyError
-  def attend(): Unit
-  def suspend(): Unit
-  def resume(force: Boolean = false): Unit
-  def cancel(): Unit
-
-  def await[DurationType: GenericDuration](duration: DurationType)
-          : ResultType raises ConcurrencyError
-
-  def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError
-
-  def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError
-
-object Daemon:
-  def apply(evaluate: Subordinate => Unit)
-      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
-          : Daemon =
-    inline def evaluate0: Subordinate => Unit = evaluate
-
-    new Subordinate(codepoint, monitor, codicil) with Daemon:
-      type Result = Unit
-      def name: Optional[Text] = Unset
-      def daemon: Boolean = true
-      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
-
-trait Daemon:
-  def suspend(): Unit
-  def resume(force: Boolean = false): Unit
-  def attend(): Unit
-  def cancel(): Unit
 
 def intercept(lambda: (trace: Trace) ?=> PartialFunction[Throwable, Transgression])
     (using monitor: Monitor)
@@ -155,3 +75,8 @@ extension [ResultType](tasks: Iterable[Task[ResultType]])
     tasks.each(_.map(promise.offer(_)))
 
     promise.await()
+
+def supervise[ResultType](block: Monitor ?=> ResultType)
+    (using model: ThreadModel, codepoint: Codepoint)
+        : ResultType raises ConcurrencyError =
+  block(using model.supervisor())
