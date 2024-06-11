@@ -116,12 +116,12 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
     if duration.isPresent then SpecificDuration(duration.get.nn.toMillis) else Unset
 
 object Process:
-  given appendable[ChunkType](using writable: Writable[ji.OutputStream, ChunkType])
-          : Appendable[Process[?, ?], ChunkType] =
+  given [ChunkType, CommandType <: Label, ResultType](using writable: ji.OutputStream is Writable by ChunkType)
+      => Process[CommandType, ResultType] is Appendable by ChunkType as appendable =
 
     (process, stream) => process.stdin(stream)
 
-  given appendableText(using streamCut: Errant[StreamError]): Appendable[Process[?, ?], Text] =
+  given [CommandType <: Label, ResultType](using streamCut: Errant[StreamError]) => Process[CommandType, ResultType] is Appendable by Text as appendableText =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -135,8 +135,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def stderr(): LazyList[Bytes] raises StreamError =
     Readable.inputStream.read(process.getErrorStream.nn)
 
-  def stdin[ChunkType](stream: LazyList[ChunkType])
-      (using writable: Writable[ji.OutputStream, ChunkType])
+  def stdin[ChunkType](stream: LazyList[ChunkType])(using writable: ji.OutputStream is Writable by ChunkType)
           : Unit =
 
     writable.write(process.getOutputStream.nn, stream)
