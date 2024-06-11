@@ -16,26 +16,9 @@
 
 package turbulence
 
-import rudiments.*
-
 import language.experimental.captureChecking
 
-package lineSeparation:
-  import LineSeparation.Action.*
-  import LineSeparation.NewlineSeq
-
-  given LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl) as carriageReturn
-  given LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl) as strictCarriageReturn
-  given LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl) as linefeed
-  given LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl) as strictLinefeeds
-  given LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl) as carriageReturnLinefeed
-  given LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl) as adaptiveLinefeed
-
-  given LineSeparation as virtualMachine = System.lineSeparator.nn match
-    case "\r\n"    => carriageReturnLinefeed
-    case "\r"      => carriageReturn
-    case "\n"      => linefeed
-    case _: String => adaptiveLinefeed
+import rudiments.*
 
 object LineSeparation:
   given (using Quickstart) => LineSeparation as default = lineSeparation.adaptiveLinefeed

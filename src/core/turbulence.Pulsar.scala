@@ -16,16 +16,10 @@
 
 package turbulence
 
-import rudiments.*
-import fulminate.*
+import language.experimental.captureChecking
+
 import anticipation.*
 import parasite.*
-
-import java.util.concurrent.atomic as juca
-
-import java.util.concurrent as juc
-
-import language.experimental.captureChecking
 
 class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true
@@ -36,21 +30,3 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
       sleep(duration)
       () #:: stream
     catch case err: ConcurrencyError => LazyList()
-
-object Tap:
-  enum Regulation:
-    case Start, Stop
-
-class Tap(initial: Boolean = true):
-  private val flowing: juca.AtomicBoolean = juca.AtomicBoolean(initial)
-  private val funnel: Funnel[Tap.Regulation] = Funnel()
-  
-  def resume(): Unit = if !flowing.getAndSet(true) then funnel.put(Tap.Regulation.Start)
-  def pause(): Unit = if flowing.getAndSet(false) then funnel.put(Tap.Regulation.Stop)
-  def stop(): Unit = funnel.stop()
-  def state(): Boolean = flowing.get
-  def stream: LazyList[Tap.Regulation] = funnel.stream
-
-case class Line(content: Text)
-
-case class StreamError(total: ByteSize) extends Error(msg"the stream was cut prematurely after $total bytes")

@@ -18,27 +18,16 @@ package turbulence
 
 import java.util.concurrent as juc
 
-//import language.experimental.captureChecking
-
 object Funnel:
   private object Termination
 
 class Funnel[ItemType]():
   private val queue: juc.LinkedBlockingQueue[ItemType | Funnel.Termination.type] =
     juc.LinkedBlockingQueue()
-  
+
   def put(item: ItemType): Unit = queue.put(item)
   def stop(): Unit = queue.put(Funnel.Termination)
-  
+
   def stream: LazyList[ItemType] =
     LazyList.continually(queue.take().nn).takeWhile(_ != Funnel.Termination)
      .asInstanceOf[LazyList[ItemType]]
-
-class Gun() extends Funnel[Unit]():
-  def fire(): Unit = put(())
-
-def funnel[ItemType](using DummyImplicit)[ResultType](lambda: Funnel[ItemType] => ResultType)
-        : ResultType =
-
-  val funnel: Funnel[ItemType] = Funnel()
-  try lambda(funnel) finally funnel.stop()

@@ -16,62 +16,13 @@
 
 package turbulence
 
-import rudiments.*
-import vacuous.*
-import anticipation.*
+import language.experimental.captureChecking
 
 import java.io as ji
 
-package stdioSources:
-  package virtualMachine:
-    given Stdio as textOnly =
-      Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
-
-    given Stdio as ansi =
-      Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
-
-import language.experimental.captureChecking
-
-@capability
-trait Io:
-  def write(bytes: Bytes): Unit
-  def print(text: Text): Unit
-
-object Err:
-  def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
-
-  def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
-          : Unit =
-    stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
-
-  def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =
-    lines.map(_(using stdio.termcap)).pipe: lines =>
-      stdio.err.synchronized:
-        lines.foreach: line =>
-          print(line)
-          println()
-
-  def println()(using Stdio): Unit = print("\n".tt)
-
-object Out:
-  def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
-
-  def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
-          : Unit =
-    stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
-
-  def println()(using Stdio): Unit = print("\n".tt)
-
-  def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =
-    lines.map(_(using stdio.termcap)).pipe: lines =>
-      stdio.out.synchronized:
-        lines.foreach: line =>
-          print(line)
-          println()
-
-object In:
-  def read(bytes: Array[Byte])(using stdio: Stdio): Int = stdio.read(bytes)
-  def close()(using stdio: Stdio): Unit = stdio.in.close()
+import anticipation.*
+import rudiments.*
+import vacuous.*
 
 object Stdio:
   def apply
