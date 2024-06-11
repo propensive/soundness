@@ -204,17 +204,17 @@ object Display:
     type Result = Display
     inline def add(left: Display, right: Display): Display = left.append(right)
 
-  given appendableOut(using stdio: Stdio): SimpleAppendable[Out.type, Display] = (out, output) =>
+  given (using stdio: Stdio) => SimpleAppendable[Out.type, Display] as appendableOut = (out, output) =>
     stdio.print(output.render(stdio.termcap))
 
-  given appendableErr(using stdio: Stdio): SimpleAppendable[Err.type, Display] = (err, output) =>
+  given (using stdio: Stdio) => SimpleAppendable[Err.type, Display] as appendableErr = (err, output) =>
     stdio.printErr(output.render(stdio.termcap))
 
-  given appendable[TargetType](using appendable: Appendable[TargetType, Text]): Appendable[TargetType, Display] =
-    (target, output) => appendable.append(target, output.map(_.render(termcapDefinitions.basic)))
+  given [TargetType: Appendable by Text] => TargetType is Appendable by Display as appendable =
+    (target, output) => TargetType.append(target, output.map(_.render(termcapDefinitions.basic)))
 
-  given writable[TargetType](using writable: Writable[TargetType, Text]): Writable[TargetType, Display] =
-    (target, output) => writable.write(target, output.map(_.render(termcapDefinitions.basic)))
+  given [TargetType: Writable by Text] => TargetType is Writable by Display as writable =
+    (target, output) => TargetType.write(target, output.map(_.render(termcapDefinitions.basic)))
 
   given Display is Textual:
     type Show[-ValueType] = Displayable[ValueType]
