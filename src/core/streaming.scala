@@ -28,7 +28,7 @@ import java.nio as jn
 //import language.experimental.captureChecking
 
 object Writable:
-  given (using streamCut: Errant[StreamError]) => ji.OutputStream is Writable by Bytes as outputStreamBytes =
+  given [OutType <: ji.OutputStream](using streamCut: Errant[StreamError]) => OutType is Writable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -85,7 +85,7 @@ object Appendable:
   given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
     (stderr, text) => stdio.printErr(text)
 
-  given (using streamCut: Errant[StreamError]) => ji.OutputStream is Appendable by Bytes as outputStreamBytes =
+  given [OutType <: ji.OutputStream](using streamCut: Errant[StreamError]) => OutType is Appendable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -121,21 +121,21 @@ trait SimpleAppendable[TargetType, ElementType] extends Appendable:
   def appendElement(target: TargetType, element: Element): Unit
 
 object Readable:
-  given bytes: Readable[Bytes, Bytes] = LazyList(_)
-  given text: Readable[Text, Text] = LazyList(_)
+  given Bytes is Readable by Bytes as bytes = LazyList(_)
+  given Text is Readable by Text as text = LazyList(_)
 
-  given encodingAdapter[SourceType](using readable: Readable[SourceType, Text], encoder: CharEncoder)
-          : Readable[SourceType, Bytes] =
+  given [SourceType](using readable: SourceType is Readable by Text, encoder: CharEncoder)
+      => SourceType is Readable by Bytes as encodingAdapter =
     source => encoder.encode(readable.read(source))
 
-  given decodingAdapter[SourceType](using readable: Readable[SourceType, Bytes], decoder: CharDecoder)
-          : Readable[SourceType, Text] =
+  given [SourceType](using readable: SourceType is Readable by Bytes, decoder: CharDecoder)
+      => SourceType is Readable by Text as decodingAdapter =
 
     source => decoder.decode(readable.read(source))
 
-  given lazyList[ElementType]: Readable[LazyList[ElementType], ElementType] = identity(_)
+  given [ElementType] => LazyList[ElementType] is Readable by ElementType as lazyList = identity(_)
 
-  given inCharReader(using stdio: Stdio): Readable[In.type, Char] = in =>
+  given (using stdio: Stdio) => In.type is Readable by Char as inCharReader = in =>
     def recur(count: ByteSize): LazyList[Char] =
       stdio.reader.read() match
         case -1  => LazyList()
@@ -143,7 +143,7 @@ object Readable:
 
     LazyList.defer(recur(0L.b))
 
-  given inByteReader(using stdio: Stdio): Readable[In.type, Byte] = in =>
+  given (using stdio: Stdio) => In.type is Readable by Byte as inByteReader = in =>
     def recur(count: ByteSize): LazyList[Byte] =
       stdio.in.read() match
         case -1  => LazyList()
@@ -151,7 +151,7 @@ object Readable:
 
     LazyList.defer(recur(0L.b))
 
-  given reader(using streamCut: Errant[StreamError]): Readable[ji.Reader, Char] = reader =>
+  given [InType <: ji.Reader](using streamCut: Errant[StreamError]) => InType is Readable by Char as reader = reader =>
     def recur(count: ByteSize): LazyList[Char] =
       try reader.read() match
         case -1  => LazyList()
@@ -162,7 +162,7 @@ object Readable:
 
     LazyList.defer(recur(0L.b))
 
-  given bufferedReader(using streamCut: Errant[StreamError]): Readable[ji.BufferedReader, Line] =
+  given [InType <: ji.BufferedReader](using streamCut: Errant[StreamError]) => InType is Readable by Line as bufferedReader =
     reader =>
       def recur(count: ByteSize): LazyList[Line] =
         try reader.readLine() match
@@ -174,7 +174,7 @@ object Readable:
 
       LazyList.defer(recur(0L.b))
 
-  given reliableInputStream: Readable[ji.InputStream, Bytes] = in =>
+  given [InType <: ji.InputStream] => InType is Readable by Bytes as reliableInputStream = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
@@ -196,7 +196,7 @@ object Readable:
 
     LazyList.defer(recur())
 
-  given inputStream(using streamCut: Errant[StreamError]): Readable[ji.InputStream, Bytes] = in =>
+  given [InType <: ji.InputStream](using streamCut: Errant[StreamError]) => InType is Readable by Bytes as inputStream = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
@@ -219,10 +219,12 @@ object Readable:
     LazyList.defer(recur(0))
 
 @capability
-trait Readable[-SourceType, +ElementType]:
-  def read(value: SourceType): LazyList[ElementType]
+trait Readable:
+  type Self
+  type Element
+  def read(value: Self): LazyList[Element]
 
-  def contramap[SourceType2](lambda: SourceType2 => SourceType): Readable[SourceType2, ElementType] =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Element =
     source => read(lambda(source))
 
 object Aggregable:
@@ -254,23 +256,23 @@ trait Aggregable[-ElementType, +ResultType]:
   def aggregate(source: LazyList[ElementType]): ResultType
 
 extension [ValueType](value: ValueType)
-  def stream[ElementType](using readable: Readable[ValueType, ElementType]): LazyList[ElementType] =
+  def stream[ElementType](using readable: ValueType is Readable by ElementType): LazyList[ElementType] =
     readable.read(value)
 
   def readAs[ResultType]
-      (using readable: Readable[ValueType, Bytes], aggregable: Aggregable[Bytes, ResultType])
+      (using readable: ValueType is Readable by Bytes, aggregable: Aggregable[Bytes, ResultType])
           : ResultType =
 
     aggregable.aggregate(readable.read(value))
 
   def writeTo[TargetType](target: TargetType)[ElementType]
-      (using readable: Readable[ValueType, ElementType], writable: TargetType is Writable by ElementType)
+      (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
           : Unit =
 
     writable.write(target, readable.read(value))
 
   def appendTo[TargetType](target: TargetType)[ElementType]
-      (using readable:   Readable[ValueType, ElementType],
+      (using readable:   ValueType is Readable by ElementType,
              appendable: TargetType is Appendable by ElementType)
           : Unit =
 
