@@ -33,7 +33,7 @@ import language.dynamics
 object Media:
   object Group:
     given Debug[Group] = _.name
-    given Show[Group] = _.name.lower
+    given Group is Showable = _.name.lower
 
   enum Group:
     case Application, Audio, Image, Message, Multipart, Text, Video, Font, Example, Model
@@ -41,7 +41,7 @@ object Media:
     def name: Text = this.toString.tt.lower
 
   object Subtype:
-    given Show[Subtype] = _.name
+    given Subtype is Showable = _.name
 
   enum Subtype:
     case Standard(value: Text)
@@ -56,7 +56,7 @@ object Media:
       case X(value)        => t"x-$value"
 
   object Suffix:
-    given Show[Suffix] = _.toString.tt.lower
+    given Suffix is Showable = _.toString.tt.lower
 
   enum Suffix:
     case Xml, Json, Ber, Cbor, Der, FastInfoset, Wbxml, Zip, Tlv, JsonSeq, Sqlite3, Jwt, Gzip,
@@ -190,9 +190,9 @@ extends Dynamic:
 
 object MediaType:
   given Debug[MediaType] = mt => t"""media"${mt}""""
-  given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = show.text(_)
+  given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = showable.text(_)
 
-  given show: Show[MediaType] =
+  given MediaType is Showable as showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
   given ("formenctype" is GenericHtmlAttribute[MediaType]) as formenctype:
