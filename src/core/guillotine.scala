@@ -35,9 +35,11 @@ import java.io as ji
 
 import language.experimental.pureFunctions
 
-object CommandOutput extends PosixCommandOutputs
+object Intelligible extends PosixCommands
 
-erased trait CommandOutput[+ExecType <: Label, +ResultType]
+erased trait Intelligible:
+  type Self <: Label
+  type Result
 
 object Executor:
   given stream: Executor[LazyList[Text]] = proc =>
@@ -168,6 +170,9 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
       osProcess.cpuUsage[InstantType]
     catch case _: PidError => Unset
 
+
+infix type into [BaseType <: { type Result }, ResultType] = BaseType { type Result = ResultType }
+
 sealed trait Executable:
   type Exec <: Label
 
@@ -180,11 +185,11 @@ sealed trait Executable:
 
     fork[ResultType]().await()
 
-  def apply[ResultType]()(using erased commandOutput: CommandOutput[Exec, ResultType])
-      (using working: WorkingDirectory, executor: Executor[ResultType])
-          : ResultType binds GenericLogger raises ExecError =
+  def apply()(using erased intelligible: Exec is Intelligible)
+      (using working: WorkingDirectory, executor: Executor[intelligible.Result])
+          : intelligible.Result binds GenericLogger raises ExecError =
 
-    fork[ResultType]().await()
+    fork[intelligible.Result]().await()
 
   def apply(command: Executable): Pipeline = command match
     case Pipeline(commands*) => this match
