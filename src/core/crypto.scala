@@ -46,27 +46,27 @@ trait Signing:
 trait Symmetric
 
 object MessageData:
-  given Show[MessageData[?]] = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
+  given [MessageType <: CryptoAlgorithm[?]] => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
 
 case class MessageData[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable
 
 object Signature:
-  given Show[Signature[?]] = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
+  given [SignatureType <: CryptoAlgorithm[?]] => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
 
 case class Signature[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable
 
 object ExposeSecretKey
 
 object PublicKey:
-  given (using HexAlphabet): Show[PublicKey[?]] = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
+  given [KeyType <: CryptoAlgorithm[?]](using HexAlphabet) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
 
 case class PublicKey[AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes):
   def encrypt[ValueType](value: ValueType)
       (using algorithm: AlgorithmType & Encryption, codec: ByteCodec[ValueType])
           : MessageData[AlgorithmType] =
-    
+
     MessageData(algorithm.encrypt(codec.encode(value), bytes))
-  
+
   def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[AlgorithmType])
       (using codec: ByteCodec[ValueType], algorithm: AlgorithmType & Signing)
           : Boolean =
@@ -79,50 +79,50 @@ object PrivateKey:
   def generate[AlgorithmType <: CryptoAlgorithm[?]]()(using AlgorithmType): PrivateKey[AlgorithmType] =
     PrivateKey(summon[AlgorithmType].genKey())
 
-  given Show[PrivateKey[?]] =
+  given [KeyType <: CryptoAlgorithm[?]] => PrivateKey[KeyType] is Showable =
     key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
 
 case class PrivateKey[AlgorithmType <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes):
   def public(using AlgorithmType): PublicKey[AlgorithmType] =
     PublicKey(summon[AlgorithmType].privateToPublic(privateBytes))
-  
+
   inline def decrypt[ValueType: ByteCodec](message: MessageData[AlgorithmType])
       (using AlgorithmType & Encryption, Errant[DecodeError])
           : ValueType =
 
     decrypt(message.bytes)
-  
+
   inline def decrypt[ValueType: ByteCodec](bytes: Bytes)
       (using AlgorithmType & Encryption, Errant[DecodeError])
           : ValueType =
 
     summon[ByteCodec[ValueType]].decode(summon[AlgorithmType].decrypt(bytes, privateBytes))
-  
+
   inline def sign[ValueType: ByteCodec](value: ValueType)(using AlgorithmType & Signing)
           : Signature[AlgorithmType] =
 
     Signature(summon[AlgorithmType].sign(summon[ByteCodec[ValueType]].encode(value), privateBytes))
-  
+
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
 
 object SymmetricKey:
 
   def generate[AlgorithmType <: CryptoAlgorithm[?] & Symmetric]()(using AlgorithmType)
           : SymmetricKey[AlgorithmType] =
-    
+
     SymmetricKey(summon[AlgorithmType].genKey())
 
 class SymmetricKey[AlgorithmType <: CryptoAlgorithm[?]](private[gastronomy] val bytes: Bytes)
 extends PrivateKey[AlgorithmType](bytes):
   def encrypt[ValueType: ByteCodec](value: ValueType)(using AlgorithmType & Encryption)
           : MessageData[AlgorithmType] =
-    
+
     public.encrypt(value)
-  
+
   def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[AlgorithmType])
       (using AlgorithmType & Signing)
           : Boolean =
-    
+
     public.verify(value, signature)
 
 case class DecodeError(detail: Text) extends Error(msg"could not decode the encrypted data: $detail")
@@ -135,13 +135,13 @@ object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
     def decode(bytes: Bytes)(using Errant[DecodeError]): Bytes = bytes
-   
+
   given (using CharDecoder, CharEncoder): ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
 
     def decode(bytes: Bytes)(using Errant[DecodeError]): Text =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
-      
+
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
       catch CharacterCodingException =>
         abort(DecodeError(t"the message did not contain a valid UTF-8 string"))
@@ -157,9 +157,9 @@ object Dsa:
 
 class Aes[BitsType <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[BitsType], Encryption, Symmetric:
   def keySize: BitsType = valueOf[BitsType]
-  
+
   private def init() = Cipher.getInstance("AES/ECB/PKCS5Padding")
-  
+
   private def makeKey(key: Bytes): SecretKeySpec =
     SecretKeySpec(key.mutable(using Unsafe), "AES")
 
@@ -167,23 +167,23 @@ class Aes[BitsType <: 128 | 192 | 256: ValueOf]() extends CryptoAlgorithm[BitsTy
     val cipher = init().nn
     cipher.init(Cipher.ENCRYPT_MODE, makeKey(key))
     cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
-  
+
   def decrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     cipher.init(Cipher.DECRYPT_MODE, makeKey(key))
     cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
-  
+
   def genKey(): Bytes =
     val keyGen = KeyGenerator.getInstance("AES").nn
     keyGen.init(keySize)
-    
+
     keyGen.generateKey().nn.getEncoded.nn.immutable(using Unsafe)
-  
+
   def privateToPublic(key: Bytes): Bytes = key
 
 class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[BitsType], Encryption:
   def keySize: BitsType = valueOf[BitsType]
-    
+
   def privateToPublic(bytes: Bytes): Bytes =
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.mutable(using Unsafe))).nn match
       case key: js.interfaces.RSAPrivateCrtKey => key
@@ -197,13 +197,13 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends CryptoAlgorithm[BitsType],
     val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(Cipher.DECRYPT_MODE, privateKey)
     cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
-  
+
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
     val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(Cipher.ENCRYPT_MODE, publicKey)
     cipher.doFinal(message.mutable(using Unsafe)).nn.immutable(using Unsafe)
-  
+
   def genKey(): Bytes =
     val generator = js.KeyPairGenerator.getInstance("RSA").nn
     generator.initialize(keySize)
@@ -221,11 +221,11 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends CryptoAlgorit
     val random = js.SecureRandom()
     generator.initialize(keySize, random)
     val keyPair = generator.generateKeyPair().nn
-    
+
     val pubKey = keyPair.getPublic.nn match
       case key: js.interfaces.DSAPublicKey => key
       case key: js.PublicKey               => throw Panic(msg"public key did not have the correct type")
-    
+
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
@@ -266,6 +266,5 @@ object Feistel:
           val left: Int = (value >> 32).toInt
           val right: Int = value.toInt
           recur((right.toLong << 32) | (left ^ round(right, head)).toLong, tail)
-    
+
     recur(input, subkeys)
-      

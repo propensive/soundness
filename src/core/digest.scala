@@ -74,7 +74,7 @@ trait Encodable:
   def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = bytes.encodeAs[SchemeType]
 
 object Hmac:
-  given Show[Hmac[?]] = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+  given [HmacType <: HashScheme[?]] => Hmac[HmacType] is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
 case class Hmac[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable
 
@@ -92,7 +92,7 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
   def init(): DigestAccumulator = new DigestAccumulator:
     private val state: juz.CRC32 = juz.CRC32()
     def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
-    
+
     def digest(): Bytes =
       val int = state.getValue()
       IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
@@ -100,23 +100,23 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
   def name: Text = t"CRC32"
   def hmacName: Text = t"HMAC-CRC32"
   def hmac0: Mac = throw Panic(msg"this has not been implemented")
-    
+
 
 object Digest:
-  given show: Show[Digest[?]] = _.bytes.encodeAs[Base64]
+  given [DigestType <: HashScheme[?]] => Digest[DigestType] is Showable = _.bytes.encodeAs[Base64]
 
 case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest[?] => bytes.sameElements(digest.bytes)
     case _                 => false
-  
+
   override def hashCode: Int = ju.Arrays.hashCode(bytes.mutable(using Unsafe): Array[Byte])
 
 object Digestible extends Derivation[Digestible]:
   inline def join[DerivationType <: Product: ProductReflection]: Digestible[DerivationType] =
     (accumulator, value) => fields(value):
       [FieldType] => field => context.digest(accumulator, field)
-      
+
   inline def split[DerivationType: SumReflection]: Digestible[DerivationType] = (accumulator, value) =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
@@ -128,7 +128,7 @@ object Digestible extends Derivation[Digestible]:
       (using digestible: Digestible[ValueType])
       (using util.NotGiven[Unset.type <:< ValueType])
       : Digestible[Optional[ValueType]] =
-    
+
     (acc, value) => value.let(digestible.digest(acc, _))
 
   given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
@@ -136,16 +136,16 @@ object Digestible extends Derivation[Digestible]:
 
   given int: Digestible[Int] =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
-  
+
   given long: Digestible[Long] =
     (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
-  
+
   given double: Digestible[Double] =
     (acc, n) => summon[Digestible[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
-  
+
   given float: Digestible[Float] =
     (acc, n) => summon[Digestible[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
-  
+
   given boolean: Digestible[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
   given byte: Digestible[Byte] = (acc, n) => acc.append(IArray(n))
   given short: Digestible[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
@@ -163,7 +163,7 @@ case class Digester(run: DigestAccumulator => Unit):
     summon[HashFunction[HashType]].init().pipe: accumulator =>
       run(accumulator)
       Digest(accumulator.digest())
-  
+
   def digest[ValueType: Digestible](value: ValueType): Digester = Digester:
     accumulator =>
       run(accumulator)
@@ -189,7 +189,7 @@ package hashFunctions:
   given crc32: HashFunction[Crc32] = Crc32.hashFunction
   given md5: HashFunction[Md5] = Md5.hashFunction
   given sha1: HashFunction[Sha1] = Sha1.hashFunction
-  
+
   given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
     Sha2.hashFunction[BitsType]
 
@@ -197,7 +197,7 @@ package alphabets:
   package base32:
     given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
     given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
-    
+
     given zBase32Unpadded: Base32Alphabet =
       Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
 
@@ -211,28 +211,28 @@ object ByteEncoder:
 
   given (using alphabet: HexAlphabet): ByteEncoder[Hex] = bytes =>
     val array = new Array[Char](bytes.length*2)
-    
+
     bytes.indices.each: index =>
       array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
       array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
-    
+
     Text(String(array))
 
 
   given (using alphabet: Base32Alphabet): ByteEncoder[Base32] = bytes =>
     val buf: StringBuilder = StringBuilder()
-    
+
     @tailrec
     def recur(acc: Int, index: Int, unused: Int): Text =
       buf.append(alphabet.chars((acc >> 11) & 31))
-      
+
       if index >= bytes.length then
         buf.append(alphabet.chars((acc >> 6) & 31))
         if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
-        
+
         if buf.length%8 != 0
         then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
-        
+
         buf.toString.tt
 
       else
@@ -242,7 +242,7 @@ object ByteEncoder:
     if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
   given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
-  
+
   given ByteEncoder[Binary] = bytes =>
     Text.construct:
       bytes.each:
@@ -264,11 +264,11 @@ object ByteDecoder:
   given (using Errant[DecodeError]): ByteDecoder[Base64] = value =>
     try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
     catch case _: IllegalArgumentException => abort(DecodeError(t"an invalid BASE-64 character found"))
-  
+
   given ByteDecoder[Hex] = value =>
     import java.lang.Character.digit
     val data = Array.fill[Byte](value.length/2)(0)
-    
+
     (0 until value.length by 2).each: i =>
       data(i/2) = unsafely(((digit(value.at(i).vouch, 16) << 4) + digit(value.at(i + 1).vouch, 16)).toByte)
 
@@ -285,7 +285,7 @@ extension [ValueType](value: ValueType)
   def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[ValueType]): Hmac[HashType] =
     val mac = summon[HashFunction[HashType]].hmac0
     mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[HashType]].name.s))
-    
+
     Hmac:
       mac.doFinal(summon[ByteCodec[ValueType]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe)
 
