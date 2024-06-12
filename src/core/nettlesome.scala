@@ -109,7 +109,7 @@ object Nettlesome:
     opaque type UdpPort <: Port = Int & Port
 
     object DnsLabel:
-      given show: Show[DnsLabel] = identity(_)
+      given DnsLabel is Showable = identity(_)
 
       def apply(text: Text): DnsLabel = text
 
@@ -119,7 +119,7 @@ object Nettlesome:
     object Ipv4:
       erased given underlying: Underlying[Ipv4, Int] = ###
 
-      given show: Show[Ipv4] = ip =>
+      given Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encoder: Encoder[Ipv4] = _.show
@@ -147,7 +147,7 @@ object Nettlesome:
 
     object MacAddress:
       erased given underlying: Underlying[MacAddress, Long] = ###
-      given show: Show[MacAddress] = _.text
+      given MacAddress is Showable = _.text
       given encoder: Encoder[MacAddress] = _.text
       given decoder(using Errant[MacAddressError]): Decoder[MacAddress] = parse(_)
 
@@ -183,7 +183,7 @@ object Nettlesome:
 
     object TcpPort:
       erased given underlying: Underlying[TcpPort, Int] = ###
-      given show: Show[TcpPort] = port => TextConversion.int.text(port.number)
+      given TcpPort is Showable = port => TextConversion.int.text(port.number)
       given encoder: Encoder[TcpPort] = port => TextConversion.int.text(port.number)
 
       given decoder(using Errant[NumberError], Errant[PortError]): Decoder[TcpPort] =
@@ -196,7 +196,7 @@ object Nettlesome:
 
     object UdpPort:
       erased given underlying: Underlying[UdpPort, Int] = ###
-      given show: Show[UdpPort] = port => TextConversion.int.text(port.number)
+      given UdpPort is Showable = port => TextConversion.int.text(port.number)
       given encoder: Encoder[UdpPort] = port => TextConversion.int.text(port.number)
 
       given decoder(using Errant[NumberError], Errant[PortError]): Decoder[UdpPort] =
@@ -236,7 +236,7 @@ object Nettlesome:
       def int: Int = ip
 
   object Ipv4Subnet:
-    given Show[Ipv4Subnet] = subnet => t"${subnet.ipv4}/${subnet.size}"
+    given Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -276,7 +276,7 @@ object Nettlesome:
     given toExpr: ToExpr[Ipv6] with
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
-    given show: Show[Ipv6] = ip =>
+    given Ipv6 is Showable = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
         if groups.length == 4 then groups else unpack(long >>> 16, (long & 65535).toInt :: groups)
 

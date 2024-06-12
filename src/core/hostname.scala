@@ -52,7 +52,7 @@ extends Error(msg"the hostname is not valid because $reason")
 object Hostname:
   given Realm = realm"nettlesome"
 
-  given Show[Hostname] = _.dnsLabels.map(_.show).join(t".")
+  given Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
   def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = failCompilation:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))

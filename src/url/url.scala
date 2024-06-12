@@ -33,7 +33,7 @@ case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
 extends Error(msg"the URL $text is not valid: expected $expected at $offset")
 
 object Scheme:
-  given Show[Scheme[Label]] = _.name
+  given Scheme[Label] is Showable = _.name
   object Http extends Scheme["http"](t"http")
   object Https extends Scheme["https"](t"https")
 
@@ -107,7 +107,13 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 object Url:
   given HttpUrl is GenericUrl = _.show
   given (using Errant[UrlError], Errant[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
-  given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = show.text(_)
+
+  given [SchemeType <: Label] => Url[SchemeType] is Showable as showable = url =>
+    val auth = url.authority.lay(t"")(t"//"+_.show)
+    val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
+    t"${url.scheme}:$auth${url.pathText}$rest"
+
+  given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
 
   given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError]): Decoder[Url[SchemeType]] =
     parse(_)
@@ -126,16 +132,11 @@ object Url:
     def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
 
-  given show[SchemeType <: Label]: Show[Url[SchemeType]] = url =>
-    val auth = url.authority.lay(t"")(t"//"+_.show)
-    val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
-    t"${url.scheme}:$auth${url.pathText}$rest"
-
   given display[SchemeType <: Label]: Displayable[Url[SchemeType]] =
-    url => e"$Underline(${Fg(0x00bfff)}(${show.text(url)}))"
+    url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
   given [SchemeType <: Label] => Url[SchemeType] is Communicable as communicable =
-    url => Message(show.text(url))
+    url => Message(url.show)
 
   given [SchemeType <: Label] => ("action" is GenericHtmlAttribute[Url[SchemeType]]) as action:
     def name: Text = t"action"
@@ -202,7 +203,7 @@ object Url:
                                     value.drop(hash + 1))
 
 object Authority:
-  given Show[Authority] = auth =>
+  given Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   def parse(value: Text)(using Errant[UrlError]): Authority raises HostnameError =
