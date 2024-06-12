@@ -33,12 +33,12 @@ import java.util as ju
 import java.time as jt
 
 package calendars:
-  given julian: RomanCalendar() with
-    def leapYear(year: Y): Boolean = year%4 == 0
+  given RomanCalendar as julian:
+    def leapYear(year: Year): Boolean = year%4 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4
 
-  given gregorian: RomanCalendar() with
-    def leapYear(year: Y): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
+  given RomanCalendar as gregorian:
+    def leapYear(year: Year): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
 def now()(using clock: Clock): Instant = clock()
@@ -66,18 +66,17 @@ object Dates:
   opaque type Date = Int
 
   object Date:
-    erased given underlying: Underlying[Date, Int] = ###
+    erased given Underlying[Date, Int] as underlying = ###
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.Y, month: cal.M, day: cal.D)
-            : Date raises DateError =
+    def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day): Date raises DateError =
       cal.julianDay(year, month, day)
 
-    given show: Show[Date] = d =>
+    given Date is Showable as show = d =>
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
-    given decoder(using Errant[DateError]): Decoder[Date] = parse(_)
+    given (using Errant[DateError]) => Decoder[Date] as decoder = parse(_)
 
     given encoder(using cal: RomanCalendar): Encoder[Date] = date =>
       import hieroglyph.textMetrics.uniform
@@ -111,9 +110,9 @@ object Dates:
         raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
   extension (date: Date)
-    def day(using cal: Calendar): cal.D = cal.getDay(date)
-    def month(using cal: Calendar): cal.M = cal.getMonth(date)
-    def year(using cal: Calendar): cal.Y = cal.getYear(date)
+    def day(using cal: Calendar): cal.Day = cal.getDay(date)
+    def month(using cal: Calendar): cal.Month = cal.getMonth(date)
+    def year(using cal: Calendar): cal.Year = cal.getYear(date)
     def yearDay(using cal: Calendar): Int = date - cal.zerothDayOfYear(cal.getYear(date))
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
@@ -139,27 +138,27 @@ export Dates.Date
 
 @capability
 trait Calendar:
-  type D
-  type M
-  type Y
+  type Day
+  type Month
+  type Year
 
-  def daysInYear(year: Y): Int
-  def getYear(date: Date): Y
-  def getMonth(date: Date): M
-  def getDay(date: Date): D
-  def zerothDayOfYear(year: Y): Date
-  def julianDay(year: Y, month: M, day: D)(using Errant[DateError]): Date
+  def daysInYear(year: Year): Int
+  def getYear(date: Date): Year
+  def getMonth(date: Date): Month
+  def getDay(date: Date): Day
+  def zerothDayOfYear(year: Year): Date
+  def julianDay(year: Year, month: Month, day: Day): Date raises DateError
   def add(date: Date, period: Timespan): Date
 
 @capability
 abstract class RomanCalendar() extends Calendar:
-  type Y = Int
-  type M = MonthName
-  type D = Int
+  type Year = Int
+  type Month = MonthName
+  type Day = Int
 
-  def leapYear(year: Y): Boolean
+  def leapYear(year: Year): Boolean
 
-  def daysInMonth(month: M, year: Y): Int = month match
+  def daysInMonth(month: Month, year: Year): Int = month match
     case Jan | Mar | May | Jul | Aug | Oct | Dec => 31
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
@@ -172,8 +171,8 @@ abstract class RomanCalendar() extends Calendar:
     safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).vouch(using Unsafe)
 
   def leapYearsSinceEpoch(year: Int): Int
-  def daysInYear(year: Y): Int = if leapYear(year) then 366 else 365
-  def zerothDayOfYear(year: Y): Date = Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
+  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
+  def zerothDayOfYear(year: Year): Date = Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
 
   def getYear(date: Date): Int =
     def recur(year: Int): Int =
@@ -192,7 +191,7 @@ abstract class RomanCalendar() extends Calendar:
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
 
-  def julianDay(year: Int, month: MonthName, day: Int)(using Errant[DateError]): Date =
+  def julianDay(year: Int, month: MonthName, day: Int): Date raises DateError =
     if day < 1 || day > daysInMonth(month, year)
     then raise(DateError(t"$year-${month.numerical}-$day")):
       Date(using calendars.julian)(2000, MonthName(1), 1)
