@@ -57,9 +57,9 @@ object Hypotenuse:
   opaque type F32 = Float
 
   object F64:
-    erased given underlying: Underlying[F64, Double] = erasedValue
+    erased given Underlying[F64, Double] as underlying = erasedValue
 
-    inline given canEqual: CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] =
+    inline given CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     inline def apply(sign: Boolean, exponent: B16, mantissa: B64): F64 =
@@ -131,9 +131,9 @@ object Hypotenuse:
       def apply(value: I8): F64 = value.toDouble
 
   object F32:
-    erased given underlying: Underlying[F32, Float] = erasedValue
+    erased given Underlying[F32, Float] as underlying = erasedValue
 
-    inline given canEqual: CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] =
+    inline given CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     inline given Inequality[F32, F32] as inequality:
@@ -175,8 +175,8 @@ object Hypotenuse:
       def apply(value: I8): F32 = value.toFloat
 
   object U64:
-    erased given underlying: Underlying[U64, Long] = erasedValue
-    inline given canEqual: CanEqual[U64, U64] = erasedValue
+    erased given Underlying[U64, Long] as underlying = erasedValue
+    inline given CanEqual[U64, U64] as canEqual = erasedValue
 
     given FromDigits[U64] as fromDigits:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
@@ -198,9 +198,8 @@ object Hypotenuse:
           else JLong.compareUnsigned(left, right) != 1
 
   object I64:
-    erased given underlying: Underlying[I64, Long] = erasedValue
-    inline given canEqual
-            : CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+    erased given Underlying[I64, Long] as underlying = erasedValue
+    inline given CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     given FromDigits[I64] as fromDigits:
@@ -221,8 +220,8 @@ object Hypotenuse:
 
 
   object U32:
-    erased given underlying: Underlying[U32, Int] = erasedValue
-    inline given canEqual: CanEqual[U32, U32] = erasedValue
+    erased given Underlying[U32, Int] as underlying = erasedValue
+    inline given CanEqual[U32, U32] as canEqual = erasedValue
 
     given FromDigits[U32] as fromDigits:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
@@ -243,9 +242,8 @@ object Hypotenuse:
           else JInt.compareUnsigned(left, right) != 1
 
   object I32:
-    erased given underlying: Underlying[I32, Int] = erasedValue
-    inline given canEqual
-            : CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+    erased given Underlying[I32, Int] as underlying = erasedValue
+    inline given CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     given FromDigits[I32] as fromDigits:
@@ -265,8 +263,8 @@ object Hypotenuse:
         else inline if strict then left < right else left <= right
 
   object U16:
-    erased given underlying: Underlying[U16, Short] = erasedValue
-    inline given canEqual: CanEqual[U16, U16] = erasedValue
+    erased given Underlying[U16, Short] as underlying = erasedValue
+    inline given CanEqual[U16, U16] as canEqual = erasedValue
 
     given FromDigits[U16] as fromDigits:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
@@ -288,10 +286,9 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left.toInt <= right2
 
   object I16:
-    erased given underlying: Underlying[I16, Short] = erasedValue
+    erased given Underlying[I16, Short] as underlying = erasedValue
 
-    inline given canEqual
-            : CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+    inline given CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     given FromDigits[I16] as fromDigits:
@@ -311,8 +308,8 @@ object Hypotenuse:
         else inline if strict then left < right else left <= right
 
   object U8:
-    erased given underlying: Underlying[U8, Byte] = erasedValue
-    inline given canEqual: CanEqual[U8, U8] = erasedValue
+    erased given Underlying[U8, Byte] as underlying = erasedValue
+    inline given CanEqual[U8, U8] as canEqual = erasedValue
     given FromDigits[U8] as fromDigits:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
@@ -334,10 +331,9 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left2 <= right2
 
   object I8:
-    erased given underlying: Underlying[I8, Byte] = erasedValue
+    erased given Underlying[I8, Byte] as underlying = erasedValue
 
-    inline given canEqual
-            : CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
+    inline given CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     given FromDigits[I8] as fromDigits:
@@ -357,7 +353,7 @@ object Hypotenuse:
         else inline if strict then left < right else left <= right
 
   object B64:
-    erased given underlying: Underlying[B64, Long] = erasedValue
+    erased given Underlying[B64, Long] as underlying = erasedValue
     def apply(bytes: IArray[Byte], offset: Int = 0): B64 =
       var b64: Long = (bytes(offset) & 0xFF).toLong
       b64 <<= 8
@@ -378,7 +374,7 @@ object Hypotenuse:
       b64
 
   object B32:
-    erased given underlying: Underlying[B32, Int] = erasedValue
+    erased given Underlying[B32, Int] as underlying = erasedValue
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B32 =
       var b32: Int = (bytes(offset) & 0xFF)
@@ -392,7 +388,7 @@ object Hypotenuse:
       b32
 
   object B16:
-    erased given underlying: Underlying[B16, Short] = erasedValue
+    erased given Underlying[B16, Short] as underlying = erasedValue
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B16 =
       var b16: Int = (bytes(offset) & 0xFF)
@@ -402,7 +398,7 @@ object Hypotenuse:
       b16.toShort
 
   object B8:
-    erased given underlying: Underlying[B8, Byte] = erasedValue
+    erased given Underlying[B8, Byte] as underlying = erasedValue
 
   extension (i64: I64)
     @targetName("absI64")
