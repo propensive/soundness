@@ -100,8 +100,9 @@ object Quantitative extends Quantitative2:
         ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
 
 
-    inline given [UnitsType <: Measure](using Decimalizer) => Show[Quantity[UnitsType]] =
-      new Show[Quantity[UnitsType]]:
+    inline given [UnitsType <: Measure](using Decimalizer) => Quantity[UnitsType] is Showable =
+      new Showable:
+        type Self = Quantity[UnitsType]
         def text(value: Quantity[UnitsType]): Text = value.render
 
     inline given [UnitsType <: Measure](using Decimalizer) => Debug[Quantity[UnitsType]] =
