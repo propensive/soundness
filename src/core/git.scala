@@ -456,21 +456,21 @@ object Octogenarian:
       text
 
     given Encoder[Refspec] = identity(_)
-    given Show[Refspec] = identity(_)
+    given Refspec is Showable = identity(_)
 
   object Tag:
     def unsafe(text: Text): Tag = text
     def apply(text: Text)(using Errant[GitRefError]): Tag = Refspec.parse(text)
     given encoder: Encoder[Tag] = identity(_)
     given decoder(using Errant[GitRefError]): Decoder[Tag] = apply(_)
-    given show: Show[Tag] = identity(_)
+    given Tag is Showable = identity(_)
 
   object Branch:
     def unsafe(text: Text): Branch = text
     def apply(text: Text)(using Errant[GitRefError]): Branch = Refspec.parse(text)
     given encoder: Encoder[Branch] = identity(_)
     given decoder(using Errant[GitRefError]): Decoder[Branch] = apply(_)
-    given show: Show[Branch] = identity(_)
+    given Branch is Showable = identity(_)
 
   object CommitHash:
     def apply(text: Text)(using Errant[GitRefError]): CommitHash = text match
@@ -481,7 +481,7 @@ object Octogenarian:
 
     given encoder: Encoder[CommitHash] = identity(_)
     given decoder(using Errant[GitRefError]): Decoder[CommitHash] = apply(_)
-    given show: Show[CommitHash] = identity(_)
+    given CommitHash is Showable = identity(_)
 
 export Octogenarian.{Tag, Branch, CommitHash, Refspec}
 
