@@ -31,7 +31,7 @@ import scala.util.NotGiven
 case class Namespace(id: Text, uri: Text)
 
 object XmlName:
-  given Show[XmlName] = name => name.namespace match
+  given XmlName is Showable = name => name.namespace match
     case Unset                => name.name
     case Namespace(prefix, _) => t"$prefix:${name.name}"
 
@@ -50,7 +50,7 @@ sealed trait Xml:
 type XmlPath = List[Text | Int | Unit]
 
 object Xml:
-  given show: Show[Xml] = xml =>
+  given Xml is Showable = xml =>
     safely(printers.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given (using enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:

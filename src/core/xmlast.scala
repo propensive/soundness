@@ -22,17 +22,17 @@ import gossamer.*
 import spectacular.*
 
 object XmlAst:
-  given Show[XmlAst] =
+  given XmlAst is Showable =
     case Comment(content)                       => t"<!--$content-->"
     case ProcessingInstruction(target, content) => t"<?$target $content?>"
     case Textual(content)                       => content
     case CData(content)                         => t"<![CDATA[$content]]>"
     case Root(content*)                         => t"""<?xml version = "1.0"?>${content.map(_.show).join}"""
-    
+
     case Element(name, children, attributes, _) =>
       val inside = children.map(_.show).join
       val attributeString = attributes.map { case (k, v) => t"${k.show}=$v" }.join(t" ", t" ", t"")
-      
+
       t"<${name.show}${attributeString}>$inside</${name.show}>"
 
 enum XmlAst:
