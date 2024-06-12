@@ -88,7 +88,7 @@ object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
   given debug: Debug[CodlDoc] = _.write
-  given show(using printer: CodlPrinter): Show[CodlDoc] = printer.serialize(_)
+  given (using printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
