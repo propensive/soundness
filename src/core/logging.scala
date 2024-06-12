@@ -29,7 +29,7 @@ import language.experimental.pureFunctions
 
 object Level:
   given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
-  given Show[Level] = _.toString.tt.upper
+  given Level is Showable = _.toString.tt.upper
 
 enum Level:
   case Fine, Info, Warn, Fail
@@ -42,7 +42,7 @@ case class Entry[TextType]
     Entry(realm, level, lambda(message), timestamp, envelopes)
 
 object Envelope:
-  given [EnvelopeType](using Show[EnvelopeType]): Envelope[EnvelopeType] = _.show
+  given [EnvelopeType: Showable]: Envelope[EnvelopeType] = _.show
 
 trait Envelope[-EnvelopeType]:
   def envelope(value: EnvelopeType): Text
