@@ -30,8 +30,7 @@ import language.experimental.into
 object Interpolation:
   case class Input(txt: Text)
 
-  given [ValueType](using show: Show[ValueType]): Insertion[Input, ValueType] =
-    value => Input(show.text(value))
+  given [ValueType: Showable] => Insertion[Input, ValueType] = value => Input(value.show)
 
   object T extends Interpolator[Input, Text, Text]:
     def initial: Text = anticipation.Text("")
