@@ -68,10 +68,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         accumulator =>
           [FieldType] => context ?=>
             bind(accumulator): accumulator2 =>
-              bind(lambda[FieldType](context)): result => 
+              bind(lambda[FieldType](context)): result =>
                 pure(result *: accumulator2)
 
-    bind(tuple): tuple => 
+    bind(tuple): tuple =>
       pure(reflection.fromProduct(tuple.reverse))
 
   protected transparent inline def contexts[DerivationType <: Product]
@@ -145,7 +145,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       IArray.create[ResultType](tuple.size): array =>
         fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): unit =>
           [FieldType] => field =>
-            given typeclass: requirement.Optionality[TypeclassType[FieldType]] =
+            given requirement.Optionality[TypeclassType[FieldType]] as typeclass =
               requirement.wrap(context)
 
             array(index) = lambda[FieldType](field)

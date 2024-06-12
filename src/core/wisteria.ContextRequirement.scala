@@ -22,7 +22,7 @@ import vacuous.*
 import scala.compiletime.*
 
 object ContextRequirement:
-  given required: ContextRequirement with
+  given ContextRequirement as required:
     type Optionality[Type] = Type
     type Required = true
     def wrap[ValueType](optional: Optional[ValueType]): ValueType = optional.vouch(using Unsafe)
