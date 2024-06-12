@@ -234,7 +234,7 @@ object Display:
     def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) = display(value)
 
   val empty: Display = Display(t"")
-  given joinable: Joinable[Display] = _.fold(empty)(_ + _)
+  given Display is Joinable as joinable = _.fold(empty)(_ + _)
   given Display is Printable as printable = _.render(_)
 
   given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
