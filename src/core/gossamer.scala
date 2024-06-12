@@ -326,7 +326,7 @@ extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextTy
   def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
 
-case class OutOfRangeError(index: Int, from: Int, to: Int)
+case class RangeError(index: Int, from: Int, to: Int)
 extends Error(msg"the index $index is outside the range $from-$to")
 
 object Interpolation:
@@ -366,3 +366,7 @@ extension (buf: StringBuilder)
   def add(text: into Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Text(buf.toString)
+
+package decimalFormatting:
+  given DecimalConverter as javaDouble:
+    def decimalize(double: Double): Text = double.toString.tt
