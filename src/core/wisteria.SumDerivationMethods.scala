@@ -36,8 +36,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
      summonFrom:
         case given (VariantType <:< Singleton) => 
           inline erasedValue[VariantTypes] match
-            case _: (variantType *: variantsType) => fold[variantType, variantsType]
             case _: EmptyTuple => true
+            case _: (variantType *: variantsType) => fold[variantType, variantsType]
         case _ => false
 
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
