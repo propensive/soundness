@@ -41,39 +41,40 @@ erased trait Intelligible:
   type Self <: Label
   type Result
 
-object Executor:
-  given stream: Executor[LazyList[Text]] = proc =>
+object Computable:
+  given LazyList[Text] is Computable as lazyList = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(LazyList).map(_.tt)
 
-  given list: Executor[List[Text]] = proc =>
+  given List[Text] is Computable as list = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(List).map(_.tt)
 
-  given text: Executor[Text] = proc =>
-    Text.construct(stream.interpret(proc).map(_.s).each(append(_)))
+  given Text is Computable as text = proc =>
+    Text.construct(lazyList.compute(proc).map(_.s).each(append(_)))
 
-  given string: Executor[String] = proc =>
-    Text.construct(stream.interpret(proc).map(_.s).each(append(_))).s
+  given String is Computable as string = proc =>
+    Text.construct(lazyList.compute(proc).map(_.s).each(append(_))).s
 
-  given dataStream(using streamCut: Errant[StreamError]): Executor[LazyList[Bytes]] =
+  given (using streamCut: Errant[StreamError]) => LazyList[Bytes] is Computable as dataStream =
     proc => Readable.inputStream.read(proc.getInputStream.nn)
 
-  given exitStatus: Executor[ExitStatus] = _.waitFor() match
+  given ExitStatus is Computable as exitStatus = _.waitFor() match
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
 
-  given unit: Executor[Unit] = exitStatus.map(_ => ())
+  given Unit is Computable = exitStatus.map(_ => ())
 
-  given path[PathType: SpecificPath]: Executor[PathType] =
-    proc => SpecificPath(text.interpret(proc))
+  given [PathType: SpecificPath] => PathType is Computable =
+    proc => SpecificPath(text.compute(proc))
 
 @capability
-trait Executor[ResultType]:
-  def interpret(process: java.lang.Process): ResultType
+trait Computable:
+  type Self
+  def compute(process: java.lang.Process): Self
 
-  def map[ResultType2](lambda: ResultType => ResultType2): Executor[ResultType2] =
-    process => lambda(interpret(process))
+  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Computable =
+    process => lambda(compute(process))
 
 trait ProcessRef:
   def pid: Pid
@@ -142,7 +143,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
     writable.write(process.getOutputStream.nn, stream)
 
-  def await()(using executor: Executor[ResultType]): ResultType = executor.interpret(process)
+  def await()(using computable: ResultType is Computable): ResultType = computable.compute(process)
 
   def exitStatus(): ExitStatus = process.waitFor() match
     case 0     => ExitStatus.Ok
@@ -179,14 +180,16 @@ sealed trait Executable:
   def fork[ResultType]()(using working: WorkingDirectory)
           : Process[Exec, ResultType] binds GenericLogger raises ExecError
 
-  def exec[ResultType]()
-      (using working: WorkingDirectory, executor: Executor[ResultType])
+  def exec[ResultType: Computable]()
+      (using working: WorkingDirectory)
           : ResultType binds GenericLogger raises ExecError =
 
     fork[ResultType]().await()
 
-  def apply()(using erased intelligible: Exec is Intelligible)
-      (using working: WorkingDirectory, executor: Executor[intelligible.Result])
+  def apply()
+      (using erased intelligible: Exec is Intelligible,
+                    working:      WorkingDirectory,
+                    computable:   intelligible.Result is Computable)
           : intelligible.Result binds GenericLogger raises ExecError =
 
     fork[intelligible.Result]().await()
