@@ -16,11 +16,11 @@
 
 package jacinta
 
-import fulminate.*
-import anticipation.*
-
 import language.dynamics
 import language.experimental.pureFunctions
+
+import anticipation.*
+import fulminate.*
 
 object JsonError:
   enum Reason:

@@ -16,23 +16,23 @@
 
 package jacinta
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import turbulence.*
-import gossamer.*
-import anticipation.*
-import merino.*
-import hieroglyph.*
-import wisteria.*
-import spectacular.*
-import contingency.*
+import language.dynamics
+import language.experimental.pureFunctions
 
 import scala.collection.Factory
 import scala.compiletime.*
 
-import language.dynamics
-import language.experimental.pureFunctions
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import merino.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
+import wisteria.*
 
 import JsonError.Reason
 

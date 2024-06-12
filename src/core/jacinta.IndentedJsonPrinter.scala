@@ -16,16 +16,16 @@
 
 package jacinta
 
-import rudiments.*
-import gossamer.*
-import anticipation.*
-import merino.*
-import spectacular.*
+import language.dynamics
+import language.experimental.pureFunctions
 
 import scala.compiletime.*
 
-import language.dynamics
-import language.experimental.pureFunctions
+import anticipation.*
+import gossamer.*
+import merino.*
+import rudiments.*
+import spectacular.*
 
 // FIXME: Implement this
 object IndentedJsonPrinter extends JsonPrinter:

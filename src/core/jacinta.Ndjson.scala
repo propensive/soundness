@@ -16,11 +16,11 @@
 
 package jacinta
 
-import turbulence.*
+import anticipation.*
 import contingency.*
 import merino.*
-import anticipation.*
 import rudiments.*
+import turbulence.*
 
 object Ndjson:
   def parse[SourceType: Readable by Line](value: SourceType)
