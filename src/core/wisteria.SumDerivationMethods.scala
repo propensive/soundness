@@ -27,7 +27,7 @@ import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
 
-  transparent inline def isSimpleSum[DerivationType](using reflection: SumReflection[DerivationType]): Boolean =
+  transparent inline def allSingletons[DerivationType](using reflection: SumReflection[DerivationType]): Boolean =
     inline erasedValue[reflection.MirroredElemTypes] match
       case _: (variantType *: variantTypes) =>
         fold[variantType, variantTypes]
