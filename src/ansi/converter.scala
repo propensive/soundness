@@ -39,7 +39,7 @@ case class TextBlock(indent: Int, text: Display):
         try
           val pt = text.plain.where(_ == ' ', width - indent*2, Rtl)
           rest(text.drop(pt + 1), text.take(pt) :: lines)
-        catch case err: OutOfRangeError =>
+        catch case err: RangeError =>
           rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
     
     rest(text, Nil).map((e"  "*indent)+_).join(e"\n")
