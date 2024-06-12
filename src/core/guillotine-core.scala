@@ -225,7 +225,7 @@ object Command:
     val commandText: Text = formattedArguments(command.arguments)
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
-  given Show[Command] = command => formattedArguments(command.arguments)
+  given Command is Showable = command => formattedArguments(command.arguments)
 
 case class Command(arguments: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory)
@@ -244,7 +244,7 @@ object Pipeline:
     pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
 
   given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
-  given Show[Pipeline] = _.commands.map(_.show).join(t" | ")
+  given Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory)
@@ -381,7 +381,6 @@ trait Parameterizable:
   def show(value: Self): Text
 
 object Guillotine:
-
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
     import quotes.reflect.*
 
@@ -393,3 +392,6 @@ object Guillotine:
         '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}
 
 given Realm = realm"guillotine"
+
+extension (inline context: StringContext)
+  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
