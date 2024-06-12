@@ -299,21 +299,22 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
 object Joinable:
-  given [TextType: Textual]: Joinable[TextType] = elements =>
+  given [TextType: Textual] => TextType is Joinable = elements =>
     var acc: TextType = TextType.empty
     for element <- elements do acc = TextType.concat(acc, element)
     acc
 
-trait Joinable[TextType]:
-  def join(elements: Iterable[TextType]): TextType
+trait Joinable:
+  type Self
+  def join(elements: Iterable[Self]): Self
 
 extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
 
-extension [TextType](values: Iterable[TextType])(using joinable: Joinable[TextType])
-  def join: TextType = joinable.join(values)
+extension [TextType: Joinable](values: Iterable[TextType])
+  def join: TextType = TextType.join(values)
 
   def join(separator: TextType): TextType =
-    joinable.join(values.flatMap(Iterable(separator, _)).drop(1))
+    TextType.join(values.flatMap(Iterable(separator, _)).drop(1))
 
   def join(left: TextType, separator: TextType, right: TextType): TextType =
     Iterable(left, join(separator), right).join
