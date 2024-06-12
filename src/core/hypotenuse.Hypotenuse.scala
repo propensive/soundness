@@ -68,7 +68,7 @@ object Hypotenuse:
     inline def apply(bits: B64): F64 = JDouble.longBitsToDouble(bits)
     inline def apply(double: Double): F64 = double
 
-    inline given inequality: Inequality[F64, F64] with
+    inline given Inequality[F64, F64] as inequality:
 
       inline def compare
           (inline left: F64, inline right: F64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -78,7 +78,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given inequalityInt: Inequality[F64, Int] with
+    inline given Inequality[F64, Int] as inequalityInt:
 
       inline def compare
           (inline left: F64, inline right: Int, inline strict: Boolean, inline greaterThan: Boolean)
@@ -88,7 +88,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given inequalityDouble: Inequality[F64, Double] with
+    inline given Inequality[F64, Double] as inequalityDouble:
 
       inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
           inline greaterThan: Boolean): Boolean =
@@ -100,10 +100,10 @@ object Hypotenuse:
     inline given Conversion[Double, F64] as doubleConversion:
       inline def apply(value: Double): F64 = value
 
-    inline given floatConversion: Conversion[Float, F64] with
+    inline given Conversion[Float, F64] as floatConversion:
       def apply(value: Float): F64 = value.toDouble
 
-    inline given intConversion: Conversion[Int, F64] with
+    inline given Conversion[Int, F64] as intConversion:
       def apply(value: Int): F64 = value.toDouble
 
     inline given Conversion[Short, F64] as shortConversion:
@@ -115,7 +115,7 @@ object Hypotenuse:
     inline given Conversion[U32, F64] as u32Conversion:
       def apply(value: U32): F64 = JInt.toUnsignedLong(value).toDouble
 
-    inline given i32Conversion: Conversion[I32, F64] with
+    inline given Conversion[I32, F64] as i32Conversion:
       def apply(value: I32): F64 = value.toDouble
 
     inline given Conversion[U16, F64] as u16Conversion:
@@ -136,7 +136,7 @@ object Hypotenuse:
     inline given canEqual: CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] =
       erasedValue
 
-    inline given inequality: Inequality[F32, F32] with
+    inline given Inequality[F32, F32] as inequality:
 
       inline def compare
           (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -153,10 +153,10 @@ object Hypotenuse:
     inline def apply(bits: B32): F32 = JFloat.intBitsToFloat(bits)
     inline def apply(float: Float): F32 = float
 
-    inline given floatConversion: Conversion[Float, F32] with
+    inline given Conversion[Float, F32] as floatConversion:
       def apply(value: Float): F32 = value
 
-    inline given shortConversion: Conversion[Short, F32] with
+    inline given Conversion[Short, F32] as shortConversion:
       def apply(value: Short): F32 = value.toFloat
 
     inline given Conversion[Byte, F32] as byteConversion:
@@ -178,13 +178,13 @@ object Hypotenuse:
     erased given underlying: Underlying[U64, Long] = erasedValue
     inline given canEqual: CanEqual[U64, U64] = erasedValue
 
-    given fromDigits: FromDigits[U64] with
+    given FromDigits[U64] as fromDigits:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
 
     given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
     inline def apply(bits: B64): U64 = bits
 
-    inline given inequality: Inequality[U64, U64] with
+    inline given Inequality[U64, U64] as inequality:
 
       inline def compare
           (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -203,13 +203,13 @@ object Hypotenuse:
             : CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given fromDigits: FromDigits[I64] with
+    given FromDigits[I64] as fromDigits:
       inline def fromDigits(digits: String): I64 = ${Hypotenuse2.parseI64('digits)}
 
     given I64 is Textualizer = _.toString.tt
     inline def apply(bits: B64): I64 = bits
 
-    inline given inequality: Inequality[I64, I64] with
+    inline given Inequality[I64, I64] as inequality:
 
       inline def compare
           (inline left: I64, inline right: I64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -224,7 +224,7 @@ object Hypotenuse:
     erased given underlying: Underlying[U32, Int] = erasedValue
     inline given canEqual: CanEqual[U32, U32] = erasedValue
 
-    given fromDigits: FromDigits[U32] with
+    given FromDigits[U32] as fromDigits:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
     given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
@@ -254,7 +254,7 @@ object Hypotenuse:
     given I32 is Textualizer = _.toString.tt
     inline def apply(bits: B32): I32 = bits
 
-    inline given inequality: Inequality[I32, I32] with
+    inline given Inequality[I32, I32] as inequality:
 
       inline def compare
           (inline left: I32, inline right: I32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -274,7 +274,7 @@ object Hypotenuse:
     given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(bits: B16): U16 = bits
 
-    inline given inequality: Inequality[U16, U16] with
+    inline given Inequality[U16, U16] as inequality:
 
       inline def compare
           (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -294,13 +294,13 @@ object Hypotenuse:
             : CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given fromDigits: FromDigits[I16] with
+    given FromDigits[I16] as fromDigits:
       inline def fromDigits(digits: String): I16 = ${Hypotenuse2.parseI16('digits)}
 
     given I16 is Textualizer = _.toString.tt
     inline def apply(bits: B16): I16 = bits
 
-    inline given inequality: Inequality[I16, I16] with
+    inline given Inequality[I16, I16] as inequality:
 
       inline def compare
           (inline left: I16, inline right: I16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -320,7 +320,7 @@ object Hypotenuse:
     inline def apply(bits: B8): U8 = bits
 
 
-    inline given inequality: Inequality[U8, U8] with
+    inline given Inequality[U8, U8] as inequality:
 
       inline def compare
           (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)

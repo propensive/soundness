@@ -391,7 +391,7 @@ package arithmeticOptions:
       inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
       inline def divideI8(left: I8, right: I8): I8 = I8((left.byte/right.byte).toByte.bits)
 
-    inline given checked: DivisionByZero with
+    inline given DivisionByZero as checked:
       type Wrap[ResultType] = ResultType raises DivisionError
 
       inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
@@ -434,7 +434,7 @@ package arithmeticOptions:
       inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
       inline def addI8(left: I8, right: I8): I8 = I8((left.byte + right.byte).toByte.bits)
 
-    inline given checked: CheckOverflow with
+    inline given CheckOverflow as checked:
       type Wrap[ResultType] = ResultType raises OverflowError
 
       inline def addU64(left: U64, right: U64): U64 raises OverflowError =
