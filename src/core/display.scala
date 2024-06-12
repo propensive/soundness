@@ -32,7 +32,7 @@ object Displayable:
   given text: Displayable[Text] = text => Display(text)
   given pid: Displayable[Pid] = pid => e"${pid.value.show}"
 
-  given highlighted[ValueType](using highlight: Highlight[ValueType], show: Show[ValueType])
+  given highlighted[ValueType: Showable](using highlight: Highlight[ValueType])
         : Displayable[ValueType] =
 
     value => e"${highlight.color(value)}(${value.show})"
@@ -46,9 +46,8 @@ object Displayable:
   given option[T: Displayable]: Displayable[Option[T]] =
     case None    => Display("empty".show)
     case Some(v) => summon[Displayable[T]](v)
-  
-  given show[ValueType](using show: Show[ValueType]): Displayable[ValueType] = value =>
-    Display(show.text(value))
+
+  given [ValueType: Showable] => Displayable[ValueType] = value => Display(value.show)
 
   given exception(using TextMetrics): Displayable[Exception] = e =>
     summon[Displayable[StackTrace]](StackTrace.apply(e))
@@ -59,10 +58,10 @@ object Displayable:
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
-    
+
     val fullClass = e"$Italic(${stack.component}.$Bold(${stack.className}))"
     val init = e"${Fg(0xffffff)}($fullClass): ${stack.message}"
-    
+
     val root = stack.frames.foldLeft(init):
       case (msg, frame) =>
         val obj = frame.method.className.ends(t"#")
@@ -72,12 +71,12 @@ object Displayable:
         val className = e"${Fg(0xc61485)}(${frame.method.className.drop(drop, Rtl).fit(classWidth, Rtl)})"
         val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
         val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-        
+
         e"$msg\n  ${Fg(0x808080)}(at) $className${Fg(0x808080)}($dot)$method $file${Fg(0x808080)}(:)$line"
-    
+
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
-  
+
   given (using TextMetrics): Displayable[StackTrace.Frame] = frame =>
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
@@ -89,7 +88,7 @@ object Displayable:
     val className = e"${Fg(0xc61485)}(${method.className})"
     val methodName = e"${Fg(0xdb6f92)}(${method.method})"
     e"$className${Fg(0x808080)}(#)$methodName"
-  
+
   given (using decimalizer: Decimalizer): Displayable[Double] = double =>
     Display.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
 

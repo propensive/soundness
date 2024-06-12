@@ -97,7 +97,7 @@ trait Ansi2:
   inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
     val display: ValueType => Display = value => compiletime.summonFrom:
       case display: Displayable[ValueType] => display(value)
-      case given Show[ValueType]           => Display(value.show)
+      case given (ValueType is Showable)   => Display(value.show)
 
     DisplaySubstitution[ValueType](display)
 
@@ -256,7 +256,7 @@ object Display:
 
   given Ordering[Display] = Ordering.by(_.plain)
 
-  def make[ValueType](value: ValueType, transform: Ansi.Transform)(using Show[ValueType]): Display =
+  def make[ValueType: Showable](value: ValueType, transform: Ansi.Transform): Display =
     val text: Text = value.show
     Display(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
