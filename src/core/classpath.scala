@@ -140,7 +140,7 @@ object ClasspathRef:
 
   given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
-  given show: Show[ClasspathRef] = _.text
+  given ClasspathRef is Showable = _.text
 
 case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
