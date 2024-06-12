@@ -44,7 +44,7 @@ object Serpentine:
         case head :: tail => Some((creator.path(navigable.root(path), tail), head))
 
   object PathName:
-    given [NameType <: Label] => Show[PathName[NameType]] = _.tt
+    given [NameType <: Label] => PathName[NameType] is Showable = _.tt
 
     inline def apply[NameType <: Label](text: Text)(using errant: Errant[PathError]): PathName[NameType] =
       ${SerpentineMacro.runtimeParse[NameType]('text, 'errant)}
@@ -86,8 +86,8 @@ object Serpentine:
       def root(path: %.type): RootType = navigable.root(PathType.empty())
       def descent(path: %.type): List[PathName[NameType]] = Nil
 
-    given show[PathType <: Matchable: Radical](using hierarchy: Hierarchy[PathType, ?])
-        (using show: Show[PathType]): Show[%.type] =
+    given [PathType <: Matchable: {Radical as radical, Showable as showable}]
+        (using hierarchy: Hierarchy[PathType, ?]) => %.type is Showable =
 
       root => PathType.empty().show
 
