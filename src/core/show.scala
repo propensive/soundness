@@ -28,17 +28,21 @@ import scala.deriving.*
 
 import language.experimental.captureChecking
 
-trait TextConversion[-ValueType]:
-  def text(value: ValueType): Text
+trait TextConversion:
+  type Self
+  def text(value: Self): Text
 
-trait Show[-ValueType] extends TextConversion[ValueType]
-trait Debug[ValueType] extends TextConversion[ValueType]
+trait Showable extends TextConversion:
+  type Self
 
-object Show:
-  given specializable: Show[Specializable] = value =>
+trait Debug[ValueType] extends TextConversion:
+  type Self = ValueType
+
+object Showable:
+  given Specializable is Showable as specializable = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
-  given stackTrace: Show[StackTrace] = stack =>
+  given StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
@@ -67,7 +71,7 @@ object Debug:
   inline given derived[ValueType]: Debug[ValueType] = compiletime.summonFrom:
     case encoder: Encoder[ValueType]   => encoder.encode(_)
     case given Reflection[ValueType]   => DebugDerivation.derived[ValueType].text(_)
-    case given Show[ValueType]         => _.show
+    case given (ValueType is Showable) => _.show
     case _                             => value => s"⸉${value.toString.tt}⸊".tt
 
   given char: Debug[Char] = char => ("'"+escape(char).s+"'").tt
@@ -181,41 +185,34 @@ object DebugDerivation extends Derivation[Debug]:
         context.let(_.give(variant.debug)).or(variant.debug)
 
 object TextConversion:
-  given textualize[ValueType: Textualizer]: Show[ValueType] = ValueType.textual(_)
+  given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
+  given Text is Showable as text = identity(_)
+  given String is Showable as string = _.tt
+  given Char is Showable as char = char => char.toString.tt
+  given Long is Showable as long = long => long.toString.tt
+  given Int is Showable as int = int => int.toString.tt
+  given Short is Showable as short = short => short.toString.tt
+  given Byte is Showable as byte = byte => byte.toString.tt
+  given Message is Showable as message = _.text
+  given (using decimalizer: DecimalConverter) => Double is Showable as double= decimalizer.decimalize(_)
+  given Pid is Showable as pid = pid => ("\u21af"+pid.value).tt
+  given (using booleanStyle: BooleanStyle) => Boolean is Showable as boolean = booleanStyle(_)
+  given [ValueType: Showable] => Option[ValueType] is Showable as option = _.fold("none".tt)(ValueType.text(_))
+  given Uuid is Showable as uuid = _.text
+  given ByteSize is Showable as byteSize = _.text
+  given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.show
+  given [ElemType: Showable] => Set[ElemType] is Showable as set = _.map(_.show).mkString("{", ", ", "}").tt
+  given [ElemType: Showable] => List[ElemType] is Showable as list = _.map(_.show).mkString("[", ", ", "]").tt
 
-  given text: Show[Text] = identity(_)
-  given string: Show[String] = _.tt
-  given char: Show[Char] = char => char.toString.tt
-  given long: Show[Long] = long => long.toString.tt
-  given int: Show[Int] = int => int.toString.tt
-  given short: Show[Short] = short => short.toString.tt
-  given byte: Show[Byte] = byte => byte.toString.tt
-  given message: Show[Message] = _.text
-  given double(using decimalizer: DecimalConverter): Show[Double] = decimalizer.decimalize(_)
-  given pid: Show[Pid] = pid => ("\u21af"+pid.value).tt
-  given boolean(using booleanStyle: BooleanStyle): Show[Boolean] = booleanStyle(_)
+  given [ElemType: Showable] => Vector[ElemType] is Showable as vector =
+    _.map(_.show).mkString("[ ", " ", " ]").tt
 
-  given option[ValueType](using show: Show[ValueType]): Show[Option[ValueType]] =
-    case Some(value) => show.text(value)
-    case None        => "none".tt
+  given None.type is Showable as none = none => "none".tt
 
-  given uuid: Show[Uuid] = _.text
-  given byteSize: Show[ByteSize] = _.text
-  given reflectEnum: Show[reflect.Enum] = _.toString.show
-
-  given set[ElemType](using Show[ElemType]): Show[Set[ElemType]] = set =>
-    set.map(_.show).mkString("{", ", ", "}").tt
-
-  given list[ElemType](using Show[ElemType]): Show[List[ElemType]] = list =>
-    list.map(_.show).mkString("[", ", ", "]").tt
-
-  given vector[ElemType](using Show[ElemType]): Show[Vector[ElemType]] =
-    vector => vector.map(_.show).mkString("[ ", " ", " ]").tt
-
-  given none: Show[None.type] = none => "none".tt
+extension [ValueType: Showable](value: ValueType)
+  def show: Text = ValueType.text(value)
 
 extension [ValueType](value: ValueType)
-  def show(using show: Show[ValueType]): Text = show.text(value)
   def debug(using debug: Debug[ValueType]): Text = debug.text(value)
 
 case class BooleanStyle(yes: Text, no: Text):
