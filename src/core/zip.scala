@@ -82,7 +82,7 @@ object ZipRef:
       (Unset, if text.length > 0 && text.at(0) == '/' then text.drop(1) else text)
 
   given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
-  given show: Show[ZipRef] = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
+  given ZipRef is Showable = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
 
 case class ZipRef(descent: List[PathName[InvalidZipNames]]):
   def parent: Optional[ZipRef] = descent match
