@@ -96,7 +96,7 @@ object TarRef:
       (Unset, if text.at(0) == '/' then text.drop(1) else text)
 
   given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator = (root, descent) => TarRef(descent)
-  given Show[TarRef] as show = _.descent.reverse.map(_.render).join(t"/")
+  given TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")
 
 enum TypeFlag:
   case File
