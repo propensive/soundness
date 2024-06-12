@@ -48,7 +48,7 @@ object RequestHeader:
     Some(standard.get(str.lower).getOrElse(RequestHeader(str.s)))
 
   object Value:
-    given Show[Value] = value => t"${value.header}: ${value.value}"
+    given Value is Showable = value => t"${value.header}: ${value.value}"
 
   case class Value(header: RequestHeader[?], value: Text)
 
@@ -70,7 +70,7 @@ object RequestHeader:
     case object XCorrelationId extends SimpleRequestHeader["x-correlation-id"]()
     case object SaveData extends SimpleRequestHeader["save-data"]()
 
-  given Show[RequestHeader[?]] = _.header
+  given RequestHeader[?] is Showable = _.header
 
   def apply(paramName: String): RequestHeader[paramName.type] =
     new RequestHeader[paramName.type]():
@@ -193,7 +193,7 @@ trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType
 
 object Auth:
-  given Show[Auth] =
+  given Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encodeAs[Base64]}"
     case Bearer(token)             => t"Bearer $token"
     case Digest(digest)            => t"Digest $digest"
