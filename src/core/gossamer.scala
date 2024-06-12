@@ -298,16 +298,6 @@ case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text =
   def apply(elements: Iterable[?]): Text = apply(elements.size)
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
 
-object Joinable:
-  given [TextType: Textual] => TextType is Joinable = elements =>
-    var acc: TextType = TextType.empty
-    for element <- elements do acc = TextType.concat(acc, element)
-    acc
-
-trait Joinable:
-  type Self
-  def join(elements: Iterable[Self]): Self
-
 extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
 
 extension [TextType: Joinable](values: Iterable[TextType])
