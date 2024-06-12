@@ -56,7 +56,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     case Right       => copy(position0 = (position + 1) `min` value.length)
     case _           => this
 
-  catch case e: OutOfRangeError => this
+  catch case e: RangeError => this
 
   def ask(using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
       [ResultType]
@@ -129,7 +129,7 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
     case End  => copy(current = options.last)
     case _    => this
 
-  catch case e: OutOfRangeError => this
+  catch case e: RangeError => this
 
   def ask
       (using interactivity: Interactivity[TerminalEvent],
