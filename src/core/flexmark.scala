@@ -69,7 +69,7 @@ type Md = Markdown[Markdown.Ast.Block]
 object Markdown:
   given decoder(using Errant[MarkdownError]): Decoder[InlineMd] = parseInline(_)
   given encoder: Encoder[InlineMd] = _.serialize
-  given show: Show[InlineMd] = _.serialize
+  given InlineMd is Showable = _.serialize
 
   object Ast:
     type Node = Block | Inline
