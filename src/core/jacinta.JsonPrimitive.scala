@@ -16,8 +16,11 @@
 
 package jacinta
 
-/*object Jacinta:
-  object J extends Interpolator
+import fulminate.*
+import spectacular.*
 
-extension (inline context: StringContext)
-  transparent inline def j(inline parts: Any*): Json = ${Jacinta.J.expand('context, 'parts)}*/
+object JsonPrimitive:
+  given JsonPrimitive is Communicable = primitive => Message(primitive.show)
+
+enum JsonPrimitive:
+  case Array, Object, Number, Null, Boolean, String

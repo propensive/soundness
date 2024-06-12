@@ -1,0 +1,100 @@
+/*
+    Jacinta, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
+package jacinta
+
+import rudiments.*
+import anticipation.*
+import merino.*
+import spectacular.*
+import contingency.*
+
+import scala.compiletime.*
+
+import language.dynamics
+import language.experimental.pureFunctions
+
+import JsonError.Reason
+
+given (using js: JsonPrinter) => JsonAst is Showable = js.print(_)
+
+extension (json: JsonAst)
+  inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
+  inline def isLong: Boolean = json.isInstanceOf[Long]
+  inline def isDouble: Boolean = json.isInstanceOf[Double]
+  inline def isBigDecimal: Boolean = json.isInstanceOf[BigDecimal]
+  inline def isObject: Boolean = json.isInstanceOf[(?, ?)]
+  inline def isString: Boolean = json.isInstanceOf[String]
+  inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
+
+  inline def isNull: Boolean = json.asMatchable match
+    case v: Null => v == null
+    case _       => false
+
+  inline def isArray: Boolean = json.isInstanceOf[Array[?]]
+
+  inline def array: IArray[JsonAst] raises JsonError =
+    if isArray then json.asInstanceOf[IArray[JsonAst]]
+    else raise(JsonError(Reason.NotType(JsonPrimitive.Array)))(IArray[JsonAst]())
+
+  inline def double: Double raises JsonError = json.asMatchable match
+    case value: Double     => value
+    case value: Long       => value.toDouble
+    case value: BigDecimal => value.toDouble
+    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)))(0.0)
+
+  inline def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
+    case value: BigDecimal => value
+    case value: Long       => BigDecimal(value)
+    case value: Double     => BigDecimal(value)
+    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)))(BigDecimal(0))
+
+  inline def long: Long raises JsonError = json.asMatchable match
+    case value: Long       => value
+    case value: Double     => value.toLong
+    case value: BigDecimal => value.toLong
+    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)))(0L)
+
+  def primitive: JsonPrimitive =
+    if isNumber then JsonPrimitive.Number
+    else if isBoolean then JsonPrimitive.Boolean
+    else if isString then JsonPrimitive.String
+    else if isObject then JsonPrimitive.Object
+    else if isArray then JsonPrimitive.Array
+    else JsonPrimitive.Null
+
+  inline def string: Text raises JsonError =
+    if isString then json.asInstanceOf[Text]
+    else raise(JsonError(Reason.NotType(JsonPrimitive.String)))("".tt)
+
+  inline def boolean: Boolean raises JsonError =
+    if isBoolean then json.asInstanceOf[Boolean]
+    else raise(JsonError(Reason.NotType(JsonPrimitive.Boolean)))(false)
+
+  inline def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
+    if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
+    else raise(JsonError(Reason.NotType(JsonPrimitive.Object)))(IArray[String]() -> IArray[JsonAst]())
+
+  inline def number: Long | Double | BigDecimal raises JsonError =
+    if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
+    else raise(JsonError(Reason.NotType(JsonPrimitive.Number)))(0L)
+
+extension [ValueType: Encodable in Json](value: ValueType)
+  def json: Json = ValueType.encode(value)
+
+package jsonPrinters:
+  given JsonPrinter as indented = IndentedJsonPrinter
+  given JsonPrinter as minimal = MinimalJsonPrinter
