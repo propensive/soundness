@@ -105,7 +105,7 @@ object Path:
   inline given (using Errant[PathError]) => Decoder[Path] as decoder:
     def decode(text: Text): Path = Navigable.decode(text)
 
-  given show: Show[Path] = _.render
+  given Path is Showable as showable = _.render
   given encoder: Encoder[Path] = _.render
   given debug: Debug[Path] = _.render
 
@@ -174,13 +174,13 @@ object Link:
     def decode(text: Text): Link =
       if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
 
-  given show: Show[Link] =
+  given Link is Showable as showable =
     case link: Unix.Link    => link.render
     case link: Windows.Link => link.render
     case link: SafeLink     => link.render
 
-  given encoder: Encoder[Link] = show.text(_)
-  given debug: Debug[Link] = show.text(_)
+  given encoder: Encoder[Link] = showable.text(_)
+  given debug: Debug[Link] = showable.text(_)
 
 sealed trait Link
 
@@ -203,7 +203,7 @@ object Windows:
     given rootParser: RootParser[Path, Drive] = text => text.only:
       case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter.at(0).vouch).toUpper), text.drop(3))
 
-    given show: Show[Path] = _.render
+    given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
     given debug: Debug[Path] = _.render
 
@@ -225,13 +225,13 @@ object Windows:
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
 
     inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
-    given show: Show[Link] = _.render
+    given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
 
   object Drive:
     given debug: Debug[Drive] = drive => t"drive:${drive.letter}"
-    given show: Show[Drive] = drive => t"${drive.letter}"
+    given Drive is Showable as showable = drive => t"${drive.letter}"
     given default: Default[Drive] = () => Drive('C')
 
   case class Drive(letter: Char):
@@ -274,7 +274,7 @@ object Unix:
       def prefix(root: Unset.type): Text = t"/"
       def descent(path: Path): List[PathName[Forbidden]] = path.descent
 
-    given show: Show[Path] = _.render
+    given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
     given debug: Debug[Path] = _.render
 
@@ -296,7 +296,7 @@ object Unix:
       def descent(path: Link): List[PathName[Forbidden]] = path.descent
 
     inline given (using Errant[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
-    given show: Show[Link] = _.render
+    given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
 
@@ -753,7 +753,7 @@ case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) exte
 
 object SafeLink:
   given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
-  given show: Show[SafeLink] = _.render
+  given SafeLink is Showable as show = _.render
   given encoder: Encoder[SafeLink] = _.render
   given debug: Debug[SafeLink] = _.render
 
