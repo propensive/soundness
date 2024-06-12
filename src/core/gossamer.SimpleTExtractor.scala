@@ -17,16 +17,8 @@
 package gossamer
 
 import anticipation.*
-import spectacular.*
 
 import language.experimental.captureChecking
 
 case class SimpleTExtractor(text: Text):
   def unapply(scrutinee: Text): Boolean = text == scrutinee
-
-extension (inline ctx: StringContext)
-  transparent inline def txt(inline parts: Any*): Text = ${Interpolation.Text.expand('ctx, 'parts)}
-  transparent inline def t(inline parts: Any*): Text = ${Interpolation.T.expand('ctx, 'parts)}
-
-extension (ctx: StringContext)
-  def t = SimpleTExtractor(ctx.parts.head.show)

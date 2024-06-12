@@ -22,8 +22,6 @@ import fulminate.*
 import anticipation.*
 import hieroglyph.*
 import spectacular.*
-import kaleidoscope.*
-import contextual.*
 
 import scala.reflect.*
 
@@ -33,17 +31,35 @@ import java.net.{URLEncoder, URLDecoder}
 import language.experimental.pureFunctions
 import language.experimental.into
 
-enum Bidi:
-  case Ltr, Rtl
+def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+    (using show: TextType.Show[ValueType])
+        : Unit =
+  buffer.append(TextType.show(value))
 
-export Bidi.Ltr, Bidi.Rtl
+extension (textObject: Text.type)
+  def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
+    val buffer = TextBuffer()
+    block(using buffer)
+    buffer()
 
+  def fill(length: Int)(lambda: Int => Char): Text =
+    val array = new Array[Char](length)
+    (0 until length).each { index => array(index) = lambda(index) }
+
+    String(array).tt
+
+extension (inline ctx: StringContext)
+  transparent inline def txt(inline parts: Any*): Text = ${Interpolation.Text.expand('ctx, 'parts)}
+  transparent inline def t(inline parts: Any*): Text = ${Interpolation.T.expand('ctx, 'parts)}
+
+extension (ctx: StringContext)
+  def t = SimpleTExtractor(ctx.parts.head.show)
 extension (value: Bytes)
   def utf8: Text = Text(String(value.to(Array), "UTF-8"))
   def utf16: Text = Text(String(value.to(Array), "UTF-16"))
   def ascii: Text = Text(String(value.to(Array), "ASCII"))
   def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
-  def text(using decoder: CharDecoder): Text = decoder.decode(value)
+  def text(using CharDecoder): Text = summon[CharDecoder].decode(value)
 
   // Printable Unicode Encoding
   def pue: Text =
@@ -51,53 +67,6 @@ extension (value: Bytes)
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
     .mkString.tt
-
-object Pue:
-  def apply(text: into Text): Bytes =
-    val length = text.length
-
-    IArray.create[Byte](length): array =>
-      var i = 0
-      while i < length do
-        array(i) = (text.s.charAt(i)%0x100).toByte
-        i += 1
-
-object Cuttable:
-  given [TextType: Textual]: Cuttable[TextType, Text] = (text, delimiter, limit) =>
-    val string = TextType.text(text).s
-    val dLength = delimiter.s.length
-
-    @tailrec
-    def recur(start: Int, results: List[TextType]): List[TextType] =
-      string.indexOf(delimiter.s, start) match
-        case -1    => TextType.range(text, start, text.length) :: results
-        case index => recur(index + dLength, TextType.range(text, start, index) :: results)
-
-    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
-
-  given [TextType: Textual]: Cuttable[TextType, Regex] = (text, regex, limit) =>
-    val string = TextType.text(text).s
-    val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
-
-    @tailrec
-    def recur(start: Int, results: List[TextType]): List[TextType] =
-      if matcher.find(start)
-      then recur(matcher.end, TextType.range(text, matcher.start, matcher.end) :: results)
-      else results
-
-    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
-
-  given Cuttable[Text, Text] = (text, delimiter, limit) =>
-    text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).immutable(using Unsafe)
-
-  given Cuttable[Text, Regex] = (text, regex, limit) =>
-    text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).immutable(using Unsafe)
-
-  given [TextType](using cuttable: Cuttable[TextType, Text]): Cuttable[TextType, Char] = (text, delimiter, limit) =>
-    cuttable.cut(text, delimiter.show, limit)
-
-trait Cuttable[TextType, DelimiterType]:
-  def cut(value: TextType, delimiter: DelimiterType, limit: Int): IArray[TextType]
 
 extension [TextType](value: TextType)
   def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
@@ -294,10 +263,6 @@ extension (text: into Text)
 
     dist(n)
 
-case class Numerous(word: Text, pluralEnd: Text = Text("s"), singularEnd: Text = Text("")):
-  def apply(elements: Iterable[?]): Text = apply(elements.size)
-  def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))
-
 extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
 
 extension [TextType: Joinable](values: Iterable[TextType])
@@ -316,42 +281,6 @@ extension [TextType: Joinable](values: Iterable[TextType])
 
   def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
-
-case class RangeError(index: Int, from: Int, to: Int)
-extends Error(msg"the index $index is outside the range $from-$to")
-
-object Interpolation:
-  case class Input(txt: Text)
-
-  given [ValueType](using show: Show[ValueType]): Insertion[Input, ValueType] =
-    value => Input(show.text(value))
-
-  object T extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
-
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
-
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-    def complete(state: Text): Text = state
-
-  object Text extends Interpolator[Input, Text, Text]:
-    def initial: Text = anticipation.Text("")
-
-    def parse(state: Text, next: Text): Text =
-      try anticipation.Text(state.s+TextEscapes.escape(next).s)
-      catch case error: EscapeError => error match
-        case EscapeError(message) => throw InterpolationError(message)
-
-    def skip(state: Text): Text = state
-    def insert(state: Text, input: Input): Text = anticipation.Text(state.s+input.txt.s)
-
-    def complete(state: Text): Text =
-      val array = state.s.split("\\n\\s*\\n").nn.map(_.nn.replaceAll("\\s\\s*", " ").nn.trim.nn)
-      anticipation.Text(String.join("\n", array*).nn)
 
 extension (buf: StringBuilder)
   def add(text: into Text): Unit = buf.append(text.s)
