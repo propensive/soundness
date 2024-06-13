@@ -23,7 +23,7 @@ import anticipation.*
 import inimitable.*
 import digression.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 case class NumberError(text: Text, specializable: Specializable)
 extends Error(msg"$text is not a valid ${specializable.show}")
@@ -35,7 +35,7 @@ object Decoder:
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int))(0)
 
-  //given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
+  given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
   given uuid(using uuid: Errant[UuidError]): Decoder[Uuid] = Uuid.parse(_)
 
   given byte(using number: Errant[NumberError]): Decoder[Byte] = text =>
@@ -98,8 +98,8 @@ trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
   def contramap[ValueType2](lambda: ValueType2 => ValueType): Encoder[ValueType2] = value => encode(lambda(value))
 
 extension (text: Text)
-  def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType^{decoder} =
+  def decodeAs[ValueType](using decoder: Decoder[ValueType]): ValueType =
     decoder.decode(text)
 
 extension [ValueType](value: ValueType)
-  def encode(using encoder: Encoder[ValueType]): Text^{encoder} = encoder.encode(value)
+  def encode(using encoder: Encoder[ValueType]): Text = encoder.encode(value)

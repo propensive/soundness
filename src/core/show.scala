@@ -186,6 +186,7 @@ object DebugDerivation extends Derivation[Debug]:
 
 object TextConversion:
   given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
+
   given Text is Showable as text = identity(_)
   given String is Showable as string = _.tt
   given Char is Showable as char = char => char.toString.tt
@@ -194,7 +195,7 @@ object TextConversion:
   given Short is Showable as short = short => short.toString.tt
   given Byte is Showable as byte = byte => byte.toString.tt
   given Message is Showable as message = _.text
-  given (using decimalizer: DecimalConverter) => Double is Showable as double= decimalizer.decimalize(_)
+  given (using decimalizer: DecimalConverter) => Double is Showable as double = decimalizer.decimalize(_)
   given Pid is Showable as pid = pid => ("\u21af"+pid.value).tt
   given (using booleanStyle: BooleanStyle) => Boolean is Showable as boolean = booleanStyle(_)
   given [ValueType: Showable] => Option[ValueType] is Showable as option = _.fold("none".tt)(ValueType.text(_))
