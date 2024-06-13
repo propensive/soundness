@@ -177,7 +177,7 @@ enum Adt:
   case First
   case Second(a: Boolean)
 
-// @main
+@main
 def main(): Unit =
   val george = Person("George Washington".tt, 61, true)
   val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)
