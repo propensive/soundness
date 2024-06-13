@@ -29,7 +29,7 @@ import scala.language.experimental.into
 object Log:
   val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-  given textLog[TextType: Presentational](using log: Log[TextType]): Log[Text] = log.contramap(TextType(_))
+  given textLog[TextType: {Log as log, Presentational}]: Log[Text] = log.contramap(TextType(_))
 
   inline def fine[MessageType](inline message: MessageType)[TextType]
       (using inline log: Log[TextType], inline realm: Realm, presentational: TextType is Presentational)
