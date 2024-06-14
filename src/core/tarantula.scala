@@ -34,7 +34,7 @@ import nettlesome.*
 import hieroglyph.*, charEncoders.utf8
 import gesticulate.*
 import parasite.*
-import anticipation.*, timeInterfaces.long
+import anticipation.*, durationApi.javaLong
 
 import errorHandlers.throwUnsafely
 
@@ -74,7 +74,7 @@ object Chrome extends Browser(t"chrome"):
 
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
-case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])
+case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: IArray[Text])
 extends Error(msg"the action caused the error $error in the browser, with the message: $wdMsg")
 
 case class WebDriver(server: Browser#Server):
