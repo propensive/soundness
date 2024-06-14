@@ -21,7 +21,7 @@ import serpentine.*, hierarchies.unix
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
     deleteRecursively}
 
-import anticipation.*, filesystemApi.{galileiFile, galileiPath, galileiDirectory}
+import anticipation.*, filesystemApi.galileiPath
 import rudiments.*, homeDirectories.default
 import vacuous.*
 import contingency.*

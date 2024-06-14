@@ -16,7 +16,7 @@
 
 package ethereal
 
-import anticipation.*, filesystemApi.{galileiPath, galileiFile, galileiDirectory}
+import anticipation.*, filesystemApi.galileiPath
 import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
 import serpentine.*, hierarchies.unix
 import rudiments.*
