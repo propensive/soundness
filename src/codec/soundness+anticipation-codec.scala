@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.{Decodable, Encodable, in, Bytes}
+export anticipation.{Decodable, Encodable, in, Bytes, binary}
