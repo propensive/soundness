@@ -25,6 +25,7 @@ import contingency.*
 import hieroglyph.*, charEncoders.utf8
 import digression.*
 import spectacular.*
+import symbolism.*
 
 import java.util.jar as juj
 
