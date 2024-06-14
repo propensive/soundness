@@ -22,7 +22,7 @@ import language.experimental.pureFunctions
 import scala.collection.Factory
 import scala.compiletime.*
 
-import anticipation.{bytes as _, *}
+import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
