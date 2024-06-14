@@ -16,7 +16,7 @@ project mosquito
     compiler  scala
     sources   src/test
     coverage  mosquito/core
-    include   probably/cli quantitative/core mosquito/core larceny/plugin
+    include   probably/cli quantitative/units mosquito/core larceny/plugin
     main      mosquito.Tests
 
 
