@@ -65,7 +65,7 @@ case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Labe
 extends Node[NameType], Dynamic:
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
-  def label: Text = labelString.show
+  def label: Text = labelString.tt
 
   type ChildElements = ChildType
 
@@ -86,7 +86,7 @@ extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
-  def label: Text = labelString.show
+  def label: Text = labelString.tt
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
