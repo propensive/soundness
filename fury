@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target quantitative/units
+target quantitative/test
 
 repo propensive/probably
 repo propensive/larceny
@@ -20,7 +20,7 @@ project quantitative
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli quantitative/core larceny/plugin
+    include   probably/cli quantitative/units larceny/plugin
     main      quantitative.Tests
 
 
