@@ -18,6 +18,7 @@ package turbulence
 
 import language.experimental.captureChecking
 
+import anticipation.*
 import rudiments.*
 
 object LineSeparation:

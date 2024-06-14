@@ -20,6 +20,7 @@ import language.experimental.captureChecking
 
 import java.io as ji
 
+import anticipation.*
 import rudiments.*
 
 object LazyListInputStream:

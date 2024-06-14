@@ -22,6 +22,7 @@ import java.io as ji
 
 import scala.collection.mutable as scm
 
+import anticipation.*
 import rudiments.*
 import vacuous.*
 

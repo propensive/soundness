@@ -21,6 +21,7 @@ import language.experimental.captureChecking
 import java.io as ji
 import java.util.zip as juz
 
+import anticipation.*
 import rudiments.*
 import vacuous.*
 
