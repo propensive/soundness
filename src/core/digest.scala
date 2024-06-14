@@ -112,51 +112,47 @@ case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
 
   override def hashCode: Int = ju.Arrays.hashCode(bytes.mutable(using Unsafe): Array[Byte])
 
-object Digestible extends Derivation[Digestible]:
-  inline def join[DerivationType <: Product: ProductReflection]: Digestible[DerivationType] =
+object Digestible extends Derivable[Digestible]:
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Digestible =
     (accumulator, value) => fields(value):
       [FieldType] => field => context.digest(accumulator, field)
 
-  inline def split[DerivationType: SumReflection]: Digestible[DerivationType] = (accumulator, value) =>
+  inline def split[DerivationType: SumReflection]: DerivationType is Digestible = (accumulator, value) =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
         int.digest(accumulator, index)
         context.digest(accumulator, variant)
 
-  given optional
-      [ValueType]
-      (using digestible: Digestible[ValueType])
-      (using util.NotGiven[Unset.type <:< ValueType])
-      : Digestible[Optional[ValueType]] =
+  given [ValueType: Digestible](using util.NotGiven[Unset.type <:< ValueType])
+      => Optional[ValueType] is Digestible as optional =
+    (acc, value) => value.let(ValueType.digest(acc, _))
 
-    (acc, value) => value.let(digestible.digest(acc, _))
+  given [ValueType: Digestible] => Iterable[ValueType] is Digestible as iterable =
+    (accumulator, iterable) => iterable.each(ValueType.digest(accumulator, _))
 
-  given[ValueType: Digestible]: Digestible[Iterable[ValueType]] =
-    (accumulator, iterable) => iterable.each(summon[Digestible[ValueType]].digest(accumulator, _))
-
-  given int: Digestible[Int] =
+  given Int is Digestible as int =
     (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
-  given long: Digestible[Long] =
+  given Long is Digestible as long =
     (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
-  given double: Digestible[Double] =
-    (acc, n) => summon[Digestible[Long]].digest(acc, jl.Double.doubleToRawLongBits(n))
+  given Double is Digestible =
+    (acc, n) => long.digest(acc, jl.Double.doubleToRawLongBits(n))
 
-  given float: Digestible[Float] =
-    (acc, n) => summon[Digestible[Int]].digest(acc, jl.Float.floatToRawIntBits(n))
+  given Float is Digestible =
+    (acc, n) => int.digest(acc, jl.Float.floatToRawIntBits(n))
 
-  given boolean: Digestible[Boolean] = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
-  given byte: Digestible[Byte] = (acc, n) => acc.append(IArray(n))
-  given short: Digestible[Short] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given char: Digestible[Char] = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
-  given text: Digestible[Text] = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
-  given bytes: Digestible[Bytes] = _.append(_)
-  given iterable: Digestible[Iterable[Bytes]] = (acc, stream) => stream.each(acc.append(_))
-  given digest: Digestible[Digest[?]] = (acc, d) => acc.append(d.bytes)
+  given Boolean is Digestible = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
+  given Byte is Digestible = (acc, n) => acc.append(IArray(n))
+  given Short is Digestible = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Char is Digestible = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
+  given Text is Digestible = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
+  given Bytes is Digestible = _.append(_)
+  given Digest[?] is Digestible = (acc, d) => acc.append(d.bytes)
 
-trait Digestible[-ValueType]:
-  def digest(acc: DigestAccumulator, value: ValueType): Unit
+trait Digestible:
+  type Self
+  def digest(acc: DigestAccumulator, value: Self): Unit
 
 case class Digester(run: DigestAccumulator => Unit):
   def apply[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
@@ -167,7 +163,7 @@ case class Digester(run: DigestAccumulator => Unit):
   def digest[ValueType: Digestible](value: ValueType): Digester = Digester:
     accumulator =>
       run(accumulator)
-      summon[Digestible[ValueType]].digest(accumulator, value)
+      ValueType.digest(accumulator, value)
 
 trait DigestAccumulator:
   def append(bytes: Bytes): Unit
@@ -277,17 +273,18 @@ object ByteDecoder:
 extension (value: Text)
   def decode[SchemeType <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[SchemeType]].decode(value)
 
-extension [ValueType](value: ValueType)
-  def digest[HashType <: HashScheme[?]: HashFunction](using Digestible[ValueType]): Digest[HashType] =
-    val digester = Digester(summon[Digestible[ValueType]].digest(_, value))
+extension [ValueType: Digestible](value: ValueType)
+  def digest[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
+    val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
-  def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes)(using ByteCodec[ValueType]): Hmac[HashType] =
-    val mac = summon[HashFunction[HashType]].hmac0
-    mac.init(SecretKeySpec(key.to(Array), summon[HashFunction[HashType]].name.s))
+extension [ValueType: ByteCodec](value: ValueType)
+  def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes): Hmac[HashType] =
+    val mac = HashType.hmac0
+    mac.init(SecretKeySpec(key.to(Array), HashType.name.s))
 
     Hmac:
-      mac.doFinal(summon[ByteCodec[ValueType]].encode(value).mutable(using Unsafe)).nn.immutable(using Unsafe)
+      unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
 
 extension (bytes: Bytes)
   def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[SchemeType]].encode(bytes)
