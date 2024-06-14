@@ -17,7 +17,6 @@
 package capricious
 
 import hypotenuse.*
-import rudiments.*
 import anticipation.*
 
 import language.experimental.genericNumberLiterals
