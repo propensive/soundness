@@ -273,19 +273,15 @@ object BinaryEncodable:
       Text(String(array))
 
   given (using alphabet: Alphabet[Base32]) => BinaryEncodable in Base32:
-    def encode(bytes: Bytes): Text =
-      val buf: StringBuilder = StringBuilder()
-
+    def encode(bytes: Bytes): Text = Text.construct:
       @tailrec
-      def recur(acc: Int, index: Int, unused: Int): Text =
-        buf.append(alphabet((acc >> 11) & 31))
+      def recur(acc: Int, index: Int, unused: Int): Unit =
+        append(alphabet((acc >> 11) & 0x1f))
 
         if index >= bytes.length then
-          buf.append(alphabet((acc >> 6) & 31))
-          if unused == 5 then buf.append(alphabet((acc >> 1) & 31))
-          if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet(64))
-
-          buf.toString.tt
+          append(alphabet((acc >> 6) & 0x1f))
+          if unused == 5 then append(alphabet((acc >> 1) & 0x1f))
+          if index%8 != 0 then for i <- 0 until (5 - index%8) do append(alphabet(32))
 
         else
           if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
@@ -294,31 +290,30 @@ object BinaryEncodable:
       if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
   given (using alphabet: Alphabet[Base64]) => BinaryEncodable in Base64:
-    def encode(bytes: Bytes): Text =
-      Text.construct:
-        def recur(i: Int = 0): Int = if i >= bytes.length - 2 then i else
-          val word = ((bytes(i) & 0xff) << 16) | ((bytes(i + 1) & 0xff) << 8) | (bytes(i + 2) & 0xff)
-          append(alphabet((word >> 18) & 0x3f))
-          append(alphabet((word >> 12) & 0x3f))
-          append(alphabet((word >> 6) & 0x3f))
-          append(alphabet(word & 0x3f))
-          recur(i + 3)
+    def encode(bytes: Bytes): Text = Text.construct:
+      @tailrec
+      def recur(i: Int = 0): Int = if i >= bytes.length - 2 then i else
+        val word = ((bytes(i) & 0xff) << 16) | ((bytes(i + 1) & 0xff) << 8) | (bytes(i + 2) & 0xff)
+        append(alphabet((word >> 18) & 0x3f))
+        append(alphabet((word >> 12) & 0x3f))
+        append(alphabet((word >> 6) & 0x3f))
+        append(alphabet(word & 0x3f))
+        recur(i + 3)
 
-        val last = recur()
-        if last < bytes.length then
-          val word = (bytes(last) & 0xff) << 16
-          append(alphabet((word >> 18) & 0x3f))
-          if last + 1 < bytes.length then
-            val word2 = word | ((bytes(last + 1) & 0xff) << 8)
-            append(alphabet((word2 >> 12) & 0x3f))
-            append(alphabet((word2 >> 6) & 0x3f))
-            if alphabet.padding then
-              append(alphabet(64))
-          else
-            append(alphabet((word >> 12) & 0x3f))
-            if alphabet.padding then
-              append(alphabet(64))
-              append(alphabet(64))
+      val last = recur()
+      if last < bytes.length then
+        val word = (bytes(last) & 0xff) << 16
+        append(alphabet((word >> 18) & 0x3f))
+        if last + 1 < bytes.length then
+          val word2 = word | ((bytes(last + 1) & 0xff) << 8)
+          append(alphabet((word2 >> 12) & 0x3f))
+          append(alphabet((word2 >> 6) & 0x3f))
+          if alphabet.padding then append(alphabet(64))
+        else
+          append(alphabet((word >> 12) & 0x3f))
+          if alphabet.padding then
+            append(alphabet(64))
+            append(alphabet(64))
 
   given BinaryEncodable in Binary:
     def encode(bytes: Bytes): Text = Text.construct:
