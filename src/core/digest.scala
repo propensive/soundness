@@ -39,11 +39,17 @@ import java.lang as jl
 case class Base32Alphabet(chars: IArray[Char], padding: Text)
 case class HexAlphabet(chars: IArray[Char])
 
-sealed trait HashScheme[Size <: Nat]
+sealed trait HashScheme:
+  type Of <: Nat
+  type Size = Of
 
-sealed trait Md5 extends HashScheme[16]
+sealed trait Md5 extends HashScheme:
+  type Bits = 16
 
-sealed trait Crc32 extends HashScheme[32]
+sealed trait Crc32 extends HashScheme:
+  type Bits = 32
+
+infix type of [Type <: { type Of }, OfType] = Type { type Of = OfType }
 
 type ByteCount[BitsType] <: Nat = BitsType match
   case 224 => 28
@@ -51,44 +57,61 @@ type ByteCount[BitsType] <: Nat = BitsType match
   case 384 => 48
   case 512 => 64
 
-sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends HashScheme[ByteCount[BitsType]]
-sealed trait Sha1 extends HashScheme[20]
-sealed trait Sha384 extends HashScheme[48]
-sealed trait Sha512 extends HashScheme[64]
+sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends HashScheme:
+  type Bits = ByteCount[BitsType]
+
+sealed trait Sha1 extends HashScheme:
+  type Bits = 20
+
+sealed trait Sha384 extends HashScheme:
+  type Bits = 48
+
+sealed trait Sha512 extends HashScheme:
+  type Bits = 64
 
 object Crc32:
-  given hashFunction: HashFunction[Crc32] = Crc32HashFunction
+  given HashFunction of Crc32 as hashFunction = Crc32HashFunction
 
 object Md5:
-  given hashFunction: HashFunction[Md5] = MdHashFunction(t"MD5", t"HmacMD5")
+  given HashFunction of Md5 as hashFunction:
+    val name: Text = t"MD5"
+    val hmacName: Text = t"HmacMD5"
+    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 object Sha1:
-  given hashFunction: HashFunction[Sha1] = MdHashFunction(t"SHA1", t"HmacSHA1")
+  given HashFunction of Sha1 as hashFunction:
+    val name: Text = t"SHA1"
+    val hmacName: Text = t"HmacSHA1"
+    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 object Sha2:
-  given hashFunction[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
-    MdHashFunction(t"SHA-${valueOf[BitsType]}", t"HmacSHA${valueOf[BitsType]}")
+  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction of Sha2[BitsType] as hashFunction:
+    private val bits: Int = valueOf[BitsType]
+    val name: Text = t"SHA-$bits"
+    val hmacName: Text = t"HmacSHA$bits"
+    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 trait Encodable:
   val bytes: Bytes
   def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = bytes.encodeAs[SchemeType]
 
 object Hmac:
-  given [HmacType <: HashScheme[?]] => Hmac[HmacType] is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+  given [HmacType <: HashScheme] => Hmac[HmacType] is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
-case class Hmac[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable
+case class Hmac[HashType <: HashScheme](bytes: Bytes) extends Encodable
 
-trait HashFunction[HashType <: HashScheme[?]]:
+trait HashFunction:
+  type Of <: HashScheme
   def name: Text
   def hmacName: Text
   def init(): DigestAccumulator
   def hmac0: Mac
 
-case class MdHashFunction[HashType <: HashScheme[?]](name: Text, hmacName: Text) extends HashFunction[HashType]:
-  def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
-  def hmac0: Mac = Mac.getInstance(hmacName.s).nn
-
-case object Crc32HashFunction extends HashFunction[Crc32]:
+case object Crc32HashFunction extends HashFunction:
+  type Of = Crc32
   def init(): DigestAccumulator = new DigestAccumulator:
     private val state: juz.CRC32 = juz.CRC32()
     def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
@@ -103,9 +126,9 @@ case object Crc32HashFunction extends HashFunction[Crc32]:
 
 
 object Digest:
-  given [DigestType <: HashScheme[?]] => Digest[DigestType] is Showable = _.bytes.encodeAs[Base64]
+  given [DigestType <: HashScheme] => Digest[DigestType] is Showable = _.bytes.encodeAs[Base64]
 
-case class Digest[HashType <: HashScheme[?]](bytes: Bytes) extends Encodable:
+case class Digest[HashType <: HashScheme](bytes: Bytes) extends Encodable:
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest[?] => bytes.sameElements(digest.bytes)
     case _                 => false
@@ -155,8 +178,8 @@ trait Digestible:
   def digest(acc: DigestAccumulator, value: Self): Unit
 
 case class Digester(run: DigestAccumulator => Unit):
-  def apply[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
-    summon[HashFunction[HashType]].init().pipe: accumulator =>
+  def apply[HashType <: HashScheme](using function: HashFunction of HashType): Digest[HashType] =
+    function.init().pipe: accumulator =>
       run(accumulator)
       Digest(accumulator.digest())
 
@@ -182,11 +205,11 @@ trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
 
 package hashFunctions:
-  given crc32: HashFunction[Crc32] = Crc32.hashFunction
-  given md5: HashFunction[Md5] = Md5.hashFunction
-  given sha1: HashFunction[Sha1] = Sha1.hashFunction
+  given HashFunction of Crc32 as crc32 = Crc32.hashFunction
+  given HashFunction of Md5 as md5 = Md5.hashFunction
+  given HashFunction of Sha1 as sha1 = Sha1.hashFunction
 
-  given sha2[BitsType <: 224 | 256 | 384 | 512: ValueOf]: HashFunction[Sha2[BitsType]] =
+  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction of Sha2[BitsType] as sha2 =
     Sha2.hashFunction[BitsType]
 
 package alphabets:
@@ -237,18 +260,14 @@ object ByteEncoder:
 
     if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
-  given ByteEncoder[Base64] = bytes => Text(Base64Encoder.nn.encodeToString(bytes.to(Array)).nn)
+  given ByteEncoder[Base64] = bytes => Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
 
-  given ByteEncoder[Binary] = bytes =>
-    Text.construct:
-      bytes.each:
-        byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
+  given ByteEncoder[Binary] = bytes => Text.construct:
+    bytes.each:
+      byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
   given ByteEncoder[Base64Url] = bytes =>
-    Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
-      .tr('+', '-')
-      .tr('/', '_')
-      .upto(_ == '=')
+    Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt.tr('+', '-').tr('/', '_').upto(_ == '=')
 
 trait ByteDecoder[SchemeType <: EncodingScheme]:
   def decode(value: Text): Bytes
@@ -274,14 +293,14 @@ extension (value: Text)
   def decode[SchemeType <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[SchemeType]].decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
-  def digest[HashType <: HashScheme[?]: HashFunction]: Digest[HashType] =
+  def digest[HashType <: HashScheme](using HashFunction of HashType): Digest[HashType] =
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
 extension [ValueType: ByteCodec](value: ValueType)
-  def hmac[HashType <: HashScheme[?]: HashFunction](key: Bytes): Hmac[HashType] =
-    val mac = HashType.hmac0
-    mac.init(SecretKeySpec(key.to(Array), HashType.name.s))
+  def hmac[HashType <: HashScheme](key: Bytes)(using function: HashFunction of HashType): Hmac[HashType] =
+    val mac = function.hmac0
+    mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
     Hmac:
       unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
