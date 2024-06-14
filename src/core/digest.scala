@@ -41,14 +41,14 @@ import java.lang as jl
 case class Alphabet[EncodingType <: BinaryEncoding](chars: Text, padding: Boolean):
   def apply(index: Int): Char = chars.s.charAt(index)
 
-sealed trait HashScheme:
+sealed trait Algorithm:
   type Of <: Nat
   type Size = Of
 
-sealed trait Md5 extends HashScheme:
+sealed trait Md5 extends Algorithm:
   type Bits = 16
 
-sealed trait Crc32 extends HashScheme:
+sealed trait Crc32 extends Algorithm:
   type Bits = 32
 
 infix type of [Type <: { type Of }, OfType] = Type { type Of = OfType }
@@ -59,16 +59,16 @@ type ByteCount[BitsType] <: Nat = BitsType match
   case 384 => 48
   case 512 => 64
 
-sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends HashScheme:
+sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends Algorithm:
   type Bits = ByteCount[BitsType]
 
-sealed trait Sha1 extends HashScheme:
+sealed trait Sha1 extends Algorithm:
   type Bits = 20
 
-sealed trait Sha384 extends HashScheme:
+sealed trait Sha384 extends Algorithm:
   type Bits = 48
 
-sealed trait Sha512 extends HashScheme:
+sealed trait Sha512 extends Algorithm:
   type Bits = 64
 
 object Crc32:
@@ -113,17 +113,18 @@ trait Encodable:
     bytes.encodeAs[SchemeType]
 
 object Hmac:
-  def apply[SchemeType <: HashScheme](bytes: Bytes) = new Hmac(bytes):
+  def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
     type Of = SchemeType
 
-  given [HmacType <: HashScheme](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
+  given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
     t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
 class Hmac(val bytes: Bytes):
-  type Of <: HashScheme
+  type Of <: Algorithm
 
 trait HashFunction:
-  type Of <: HashScheme
+  type Of <: Algorithm
+
   def name: Text
   def hmacName: Text
   def init(): DigestAccumulator
@@ -131,14 +132,15 @@ trait HashFunction:
 
 
 object Digest:
-  def apply[HashType <: HashScheme](bytes: Bytes): Digest of HashType = new Digest(bytes):
+  def apply[HashType <: Algorithm](bytes: Bytes): Digest of HashType = new Digest(bytes):
     type Of = HashType
 
-  given [DigestType <: HashScheme](using Alphabet[Base64]) => Digest of DigestType is Showable =
+  given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest of DigestType is Showable =
     _.bytes.encodeAs[Base64]
 
 class Digest(val bytes: Bytes):
-  type Of <: HashScheme
+  type Of <: Algorithm
+
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest => bytes.sameElements(digest.bytes)
     case _              => false
@@ -192,7 +194,7 @@ trait Digestible:
   def digest(acc: DigestAccumulator, value: Self): Unit
 
 case class Digester(run: DigestAccumulator => Unit):
-  def apply[HashType <: HashScheme](using function: HashFunction of HashType): Digest of HashType =
+  def apply[HashType <: Algorithm](using function: HashFunction of HashType): Digest of HashType =
     function.init().pipe: accumulator =>
       run(accumulator)
       Digest[HashType](accumulator.digest())
@@ -357,12 +359,12 @@ extension (value: Text)
   def decode[SchemeType <: BinaryEncoding](using decodable: BinaryDecodable in SchemeType): Bytes = decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
-  def digest[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
+  def digest[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
 extension [ValueType: ByteCodec](value: ValueType)
-  def hmac[HashType <: HashScheme](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
+  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
     val mac = function.hmac0
     mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
@@ -374,5 +376,5 @@ extension (bytes: Bytes)
     encodable.encode(bytes)
 
 extension [SourceType: Readable by Bytes](source: SourceType)
-  def checksum[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
+  def checksum[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
     source.stream[Bytes].digest[HashType]
