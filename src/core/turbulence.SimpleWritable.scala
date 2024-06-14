@@ -17,7 +17,7 @@
 package turbulence
 
 trait SimpleWritable[TargetType, ElementType] extends Writable:
-  type Element = ElementType
+  type Operand = ElementType
   type Self = TargetType
   def write(target: Self, stream: LazyList[ElementType]): Unit = stream match
     case head #:: tail => writeElement(target, head); write(target, tail)

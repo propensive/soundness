@@ -27,6 +27,7 @@ import contingency.*
 import hypotenuse.*
 import parasite.*, asyncOptions.waitForOrphans
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 extension [ValueType](value: ValueType)
@@ -48,8 +49,6 @@ extension [ValueType](value: ValueType)
           : Unit =
 
     appendable.append(target, readable.read(value))
-
-infix type by [ElementaryType, ElementType] = ElementaryType { type Element = ElementType }
 
 package stdioSources:
   package virtualMachine:

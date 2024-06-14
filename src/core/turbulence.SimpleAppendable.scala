@@ -17,11 +17,11 @@
 package turbulence
 
 trait SimpleAppendable[TargetType, ElementType] extends Appendable:
-  type Element = ElementType
+  type Operand = ElementType
   type Self = TargetType
 
-  def append(target: TargetType, stream: LazyList[Element]): Unit = stream match
+  def append(target: TargetType, stream: LazyList[Operand]): Unit = stream match
     case head #:: tail => appendElement(target, head); append(target, tail)
     case _             => ()
 
-  def appendElement(target: TargetType, element: Element): Unit
+  def appendElement(target: TargetType, element: Operand): Unit

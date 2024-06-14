@@ -21,6 +21,7 @@ import java.io as ji
 import anticipation.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Aggregable:
@@ -43,8 +44,8 @@ object Aggregable:
 trait Aggregable:
   aggregable =>
   type Self
-  type Element
-  def aggregate(source: LazyList[Element]): Self
+  type Operand
+  def aggregate(source: LazyList[Operand]): Self
 
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Aggregable by Element = source =>
+  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Aggregable by Operand = source =>
     lambda(aggregable.aggregate(source))

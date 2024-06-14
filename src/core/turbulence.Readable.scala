@@ -23,6 +23,7 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Readable:
@@ -126,8 +127,8 @@ object Readable:
 @capability
 trait Readable:
   type Self
-  type Element
-  def read(value: Self): LazyList[Element]
+  type Operand
+  def read(value: Self): LazyList[Operand]
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Element =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Operand =
     source => read(lambda(source))

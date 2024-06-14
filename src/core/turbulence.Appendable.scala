@@ -22,6 +22,7 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Appendable:
@@ -55,9 +56,9 @@ object Appendable:
 
 trait Appendable:
   type Self
-  type Element
-  def append(target: Self, stream: LazyList[Element]): Unit
-  def asWritable: Self is Writable by Element = append(_, _)
+  type Operand
+  def append(target: Self, stream: LazyList[Operand]): Unit
+  def asWritable: Self is Writable by Operand = append(_, _)
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Appendable by Element =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Appendable by Operand =
     (target, stream) => append(lambda(target), stream)

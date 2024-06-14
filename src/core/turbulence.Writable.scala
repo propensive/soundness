@@ -22,6 +22,7 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import rudiments.*
+import symbolism.*
 import vacuous.*
 
 object Writable:
@@ -54,8 +55,8 @@ object Writable:
 @capability
 trait Writable:
   type Self
-  type Element
-  def write(target: Self, stream: LazyList[Element]): Unit
+  type Operand
+  def write(target: Self, stream: LazyList[Operand]): Unit
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Element =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Operand =
     (target, stream) => write(lambda(target), stream)
