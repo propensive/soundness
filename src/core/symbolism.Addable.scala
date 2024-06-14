@@ -23,25 +23,28 @@ import scala.annotation.targetName
 object Addable:
   class Basic[AugendType, AddendType, ResultType]
       (lambda: (AugendType, AddendType) => ResultType)
-  extends Addable[AddendType]:
+  extends Addable:
     type Self = AugendType
     type Result = ResultType
+    type Operand = AddendType
 
     def add(augend: AugendType, addend: AddendType): ResultType = lambda(augend, addend)
 
-  given Double is Addable[Double] into Double as double = _ + _
-  given Float is Addable[Float] into Float as float = _ + _
-  given Long is Addable[Long] into Long as long = _ + _
-  given Int is Addable[Int] into Int as int = _ + _
-  given Short is Addable[Short] into Short as short = (augend, addend) => (augend + addend).toShort
-  given Byte is Addable[Byte] into Byte as byte = (augend, addend) => (augend + addend).toByte
+  given Double is Addable by Double into Double as double = _ + _
+  given Float is Addable by Float into Float as float = _ + _
+  given Long is Addable by Long into Long as long = _ + _
+  given Int is Addable by Int into Int as int = _ + _
+  given Short is Addable by Short into Short as short = (augend, addend) => (augend + addend).toShort
+  given Byte is Addable by Byte into Byte as byte = (augend, addend) => (augend + addend).toByte
 
-trait Addable[-AddendType]:
+trait Addable:
   type Self
   type Augend = Self
+  type Addend = Operand
   type Result
-  def add(augend: Augend, addend: AddendType): Result
+  type Operand
+  def add(augend: Augend, addend: Addend): Result
 
   extension (augend: Augend)
     @targetName("add")
-    inline infix def + (addend: AddendType): Result = add(augend, addend)
+    inline infix def + (addend: Addend): Result = add(augend, addend)

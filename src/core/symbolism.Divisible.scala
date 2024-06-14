@@ -22,28 +22,33 @@ import scala.annotation.targetName
 
 object Divisible:
   class Basic[DividendType, DivisorType, ResultType](lambda: (DividendType, DivisorType) => ResultType)
-  extends Divisible[DivisorType]:
+  extends Divisible:
     type Self = DividendType
     type Result = ResultType
+    type Operand = DivisorType
 
     def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
 
-  given Double is Divisible[Double] into Double as double = _/_
-  given Float is Divisible[Float] into Float as float = _/_
-  given Long is Divisible[Long] into Long as long = _/_
-  given Int is Divisible[Int] into Int as int = _/_
+  given Double is Divisible by Double into Double as double = _/_
+  given Float is Divisible by Float into Float as float = _/_
+  given Long is Divisible by Long into Long as long = _/_
+  given Int is Divisible by Int into Int as int = _/_
 
-  given Short is Divisible[Short] into Short as short =
+  given Short is Divisible by Short into Short as short =
     (dividend, divisor) => (dividend/divisor).toShort
 
-  given Byte is Divisible[Byte] into Byte as byte =
+  given Byte is Divisible by Byte into Byte as byte =
     (dividend, divisor) => (dividend/divisor).toByte
 
-trait Divisible[-DivisorType]:
+trait Divisible:
   type Self
   type Result
-  def divide(dividend: Self, divisor: DivisorType): Result
+  type Operand
+  type Dividend = Self
+  type Divisor = Operand
+
+  def divide(dividend: Self, divisor: Divisor): Result
 
   extension (dividend: Self)
     @targetName("divide")
-    inline infix def / (divisor: DivisorType): Result = divide(dividend, divisor)
+    inline infix def / (divisor: Divisor): Result = divide(dividend, divisor)

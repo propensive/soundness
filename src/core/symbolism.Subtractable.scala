@@ -23,26 +23,34 @@ import scala.annotation.targetName
 object Subtractable:
   class Basic[MinuendType, SubtrahendType, ResultType]
       (lambda: (MinuendType, SubtrahendType) => ResultType)
-  extends Subtractable[SubtrahendType]:
+  extends Subtractable:
     type Self = MinuendType
     type Result = ResultType
+    type Operand = SubtrahendType
 
     def subtract(minuend: MinuendType, subtrahend: SubtrahendType): ResultType =
       lambda(minuend, subtrahend)
 
-  given Double is Subtractable[Double] into Double as double = _ - _
-  given Float is Subtractable[Float] into Float as float = _ - _
-  given Long is Subtractable[Long] into Long as long = _ - _
-  given Int is Subtractable[Int] into Int as int = _ - _
-  given Short is Subtractable[Short] into Short as short = (minuend, subtrahend) => (minuend - subtrahend).toShort
-  given Byte is Subtractable[Byte] into Byte as byte = (minuend, subtrahend) => (minuend - subtrahend).toByte
+  given Double is Subtractable by Double into Double as double = _ - _
+  given Float is Subtractable by Float into Float as float = _ - _
+  given Long is Subtractable by Long into Long as long = _ - _
+  given Int is Subtractable by Int into Int as int = _ - _
 
-trait Subtractable[-SubtrahendType]:
+  given Short is Subtractable by Short into Short as short =
+    (minuend, subtrahend) => (minuend - subtrahend).toShort
+
+  given Byte is Subtractable by Byte into Byte as byte =
+    (minuend, subtrahend) => (minuend - subtrahend).toByte
+
+trait Subtractable:
   type Self
   type Result
+  type Operand
   type Minuend = Self
-  def subtract(minuend: Minuend, subtrahend: SubtrahendType): Result
+  type Subtrahend = Operand
+
+  def subtract(minuend: Minuend, subtrahend: Subtrahend): Result
 
   extension (minuend: Minuend)
     @targetName("subtract")
-    inline infix def - (subtrahend: SubtrahendType): Result = subtract(minuend, subtrahend)
+    inline infix def - (subtrahend: Subtrahend): Result = subtract(minuend, subtrahend)

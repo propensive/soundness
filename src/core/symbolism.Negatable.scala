@@ -30,10 +30,9 @@ object Negatable:
 
 trait Negatable:
   type Self
-  type Operand = Self
   type Result
-  def negate(operand: Operand): Result
+  def negate(operand: Self): Result
 
-  extension (operand: Operand)
+  extension (operand: Self)
     @targetName("divide")
     inline def `unary_-`: Result = negate(operand)

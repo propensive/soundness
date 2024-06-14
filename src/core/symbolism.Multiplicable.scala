@@ -23,31 +23,34 @@ import scala.annotation.targetName
 object Multiplicable:
   class Basic[MultiplicandType, MultiplierType, ResultType]
       (lambda: (MultiplicandType, MultiplierType) => ResultType)
-  extends Multiplicable[MultiplierType]:
+  extends Multiplicable:
     type Self = MultiplicandType
     type Result = ResultType
+    type Operand = MultiplierType
 
     def multiply(multiplicand: MultiplicandType, multiplier: MultiplierType): ResultType =
       lambda(multiplicand, multiplier)
 
-  given Double is Multiplicable[Double] into Double as double = _*_
-  given Float is Multiplicable[Float] into Float as float = _*_
-  given Long is Multiplicable[Long] into Long as long = _*_
-  given Int is Multiplicable[Int] into Int as int = _*_
+  given Double is Multiplicable by Double into Double as double = _*_
+  given Float is Multiplicable by Float into Float as float = _*_
+  given Long is Multiplicable by Long into Long as long = _*_
+  given Int is Multiplicable by Int into Int as int = _*_
 
-  given Short is Multiplicable[Short] into Short as short =
+  given Short is Multiplicable by Short into Short as short =
     (multiplicand, multiplier) => (multiplicand*multiplier).toShort
 
-  given Byte is Multiplicable[Byte] into Byte as byte =
+  given Byte is Multiplicable by Byte into Byte as byte =
     (multiplicand, multiplier) => (multiplicand*multiplier).toByte
 
-trait Multiplicable[-MultiplierType]:
+trait Multiplicable:
   type Self
   type Multiplicand = Self
   type Result
+  type Operand
+  type Multiplier = Operand
 
-  def multiply(multiplicand: Multiplicand, multiplier: MultiplierType): Result
+  def multiply(multiplicand: Multiplicand, multiplier: Multiplier): Result
 
   extension (multiplicand: Multiplicand)
     @targetName("multiply")
-    inline infix def * (multiplier: MultiplierType): Result = multiply(multiplicand, multiplier)
+    inline infix def * (multiplier: Multiplier): Result = multiply(multiplicand, multiplier)
