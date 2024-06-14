@@ -21,6 +21,7 @@ import vacuous.*
 import fulminate.*
 import wisteria.*
 import contingency.*
+import turbulence.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
@@ -160,6 +161,9 @@ object Digestible extends Derivable[Digestible]:
     (acc, value) => value.let(ValueType.digest(acc, _))
 
   given [ValueType: Digestible] => Iterable[ValueType] is Digestible as iterable =
+    (accumulator, iterable) => iterable.each(ValueType.digest(accumulator, _))
+
+  given [ValueType: Digestible] => LazyList[ValueType] is Digestible as lazyList =
     (accumulator, iterable) => iterable.each(ValueType.digest(accumulator, _))
 
   given Int is Digestible as int = (accumulator, value) =>
@@ -367,3 +371,7 @@ extension [ValueType: ByteCodec](value: ValueType)
 extension (bytes: Bytes)
   def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =
     encodable.encode(bytes)
+
+extension [SourceType: Readable by Bytes](source: SourceType)
+  def checksum[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
+    source.stream[Bytes].digest[HashType]
