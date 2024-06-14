@@ -83,7 +83,7 @@ when multiplying a `String` by an `Int`, with a `String` as the result.
 
 The type of each typeclass can be specified is the form,
 `LeftOperand is Operation[RightOperand] into Result`. Hence, we have:
-- `Augend is Addable by Summand into Result`
+- `Augend is Addable by Addend into Result`
 - `Minuend is Subtractable by Subtrahend into Result`
 - `Multiplicand is Multiplicable by Multiplier into Result`
 - `Dividend is Divisible by Divisor into Result`
@@ -202,7 +202,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Symbolism is designed to be _small_. Its entire source code currently consists
-of 147 lines of code.
+of 162 lines of code.
 
 ## Building
 
