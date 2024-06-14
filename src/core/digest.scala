@@ -22,6 +22,7 @@ import fulminate.*
 import wisteria.*
 import contingency.*
 import turbulence.*
+import symbolism.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
