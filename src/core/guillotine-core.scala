@@ -25,6 +25,7 @@ import turbulence.*
 import gossamer.*
 import spectacular.*
 import anticipation.*
+import symbolism.*
 
 import scala.jdk.StreamConverters.StreamHasToScala
 import scala.quoted.*
