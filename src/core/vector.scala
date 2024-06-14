@@ -99,7 +99,7 @@ object Matrix:
       .join(before, t" ", after)
     .join(t"\n")
 
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using DummyImplicit)[ElementType]
+  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased DummyImplicit)[ElementType]
       (rows: Tuple)
       (using Tuple.Union[Tuple.Fold[
                rows.type,
