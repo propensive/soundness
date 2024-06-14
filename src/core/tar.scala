@@ -26,6 +26,7 @@ import serpentine.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import spectacular.*
+import symbolism.*
 
 case class UnixMode
     (setUid:     Boolean = false,
