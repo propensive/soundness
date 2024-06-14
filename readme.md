@@ -77,7 +77,7 @@ as an `Rgb24` value, using `Image`'s `apply` method, i.e. `image(x, y)`.
 
 ## Status
 
-Hallucination is classified as __embryotic__. For reference, Scala One projects are
+Hallucination is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -161,7 +161,7 @@ O&Uuml;](https://propensive.com/).
 An _hallucination_ is a sensation of something appearing real, but existing
 only in ones mind. An image is a visual hallucination.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
