@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import merino.*
 import rudiments.*
+import symbolism.*
 import turbulence.*
 
 object Ndjson:

@@ -22,13 +22,14 @@ import language.experimental.pureFunctions
 import scala.collection.Factory
 import scala.compiletime.*
 
-import anticipation.*
+import anticipation.{bytes as _, *}
 import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import merino.*
 import rudiments.*
+import symbolism.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
