@@ -82,9 +82,10 @@ object Tests extends Suite(t"Gastronomy tests"):
         |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
         |-----END EXAMPLE-----
         """.s.stripMargin.show
+      println(example)
 
-      Pem.parse(example).kind
-    .assert(_ == t"EXAMPLE")
+      Pem.parse(example).label
+    .assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
 
     test(t"Decode PEM certificate"):
       import alphabets.base64.standard

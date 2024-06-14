@@ -23,31 +23,54 @@ import contingency.*
 import spectacular.*
 import fulminate.*
 import kaleidoscope.*
+import vacuous.*
 
-case class Pem(kind: Text, data: Bytes):
+object PemLabel:
+  lazy val index: Map[Text, PemLabel] =
+    (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
+
+  given PemLabel is Showable =
+    case Proprietary(label) => label
+    case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
+
+  def unapply(text: Text): Some[PemLabel] = Some(index.get(text).getOrElse(Proprietary(text)))
+
+enum PemLabel:
+  case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey, DsaPrivateKey,
+      EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters, X509Crl, AttributeCertificate,
+      EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
+
+  case Proprietary(label: Text)
+
+case class Pem(label: PemLabel, data: Bytes):
   def serialize: Text =
     import alphabets.base64.standard
     Seq
-     (Seq(t"-----BEGIN $kind-----"),
+     (Seq(t"-----BEGIN $label-----"),
       data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
-      Seq(t"-----END $kind-----")).flatten.join(t"\n")
+      Seq(t"-----END $label-----")).flatten.join(t"\n")
 
 object Pem:
   def parse(text: Text): Pem raises PemError =
     val lines = text.trim.cut(t"\n")
 
-    val label = lines.head match
-      case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
-      case _                         => abort(PemError(PemError.Reason.BeginMissing))
+    val label = lines.prim match
+      case Unset =>
+        abort(PemError(PemError.Reason.EmptyFile))
+
+      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" =>
+        label
+
+      case _ =>
+        abort(PemError(PemError.Reason.BeginMissing))
 
     lines.tail.indexWhere:
-      case r"-----* *END $label([A-Z]+) *-----*" => true
+      case r"-----* *END $label([ A-Z]+) *-----*" => true
       case _                                     => false
-    match
-      case -1  =>
-        abort(PemError(PemError.Reason.EndMissing))
-      case idx =>
-        val joined: Text = lines.tail.take(idx).join
+    .match
+      case -1  => abort(PemError(PemError.Reason.EndMissing))
+      case index =>
+        val joined: Text = lines.tail.take(index).join
         tend(Pem(label, joined.decode[Base64])).remedy:
           case CryptoError(_) => abort(PemError(PemError.Reason.BadBase64))
 
@@ -56,9 +79,10 @@ object PemError:
     case Reason.BadBase64    => msg"could not parse the BASE-64 PEM message"
     case Reason.BeginMissing => msg"the BEGIN line could not be found"
     case Reason.EndMissing   => msg"the END line could not be found"
+    case Reason.EmptyFile    => msg"the file was empty"
 
   enum Reason:
-    case BeginMissing, EndMissing, BadBase64
+    case BeginMissing, EndMissing, BadBase64, EmptyFile
 
 case class PemError(reason: PemError.Reason)
 extends Error(msg"could not parse PEM content because $reason")

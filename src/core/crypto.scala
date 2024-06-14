@@ -74,7 +74,7 @@ case class PublicKey[CipherType <: Cipher](bytes: Bytes):
 
     algorithm.verify(codec.encode(value), signature.bytes, bytes)
 
-  def pem: Pem = Pem(t"PUBLIC KEY", bytes)
+  def pem: Pem = Pem(PemLabel.PublicKey, bytes)
 
 object PrivateKey:
   def generate[CipherType <: Cipher]()(using CipherType): PrivateKey[CipherType] =
@@ -104,7 +104,7 @@ case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes
 
     Signature(summon[CipherType].sign(summon[ByteCodec[ValueType]].encode(value), privateBytes))
 
-  def pem(reveal: ExposeSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
+  def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
 
 object SymmetricKey:
 
