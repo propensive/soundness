@@ -529,9 +529,10 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   inline infix def / (name: Text)(using Errant[PathError]): Path = path / PathName(name)
 
 object File:
-  given debug: Debug[File] = file => t"file:${file.path.render}"
+  given Debug[File] as debug = file => t"file:${file.path.render}"
 
-  given (using streamCut: Errant[StreamError], io: Errant[IoError]) => File is Readable by Bytes as readableBytes =
+  given [FileType <: File](using Errant[StreamError], Errant[IoError])
+      => FileType is Readable by Bytes as readableBytes =
     Readable.inputStream.contramap: file =>
       try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
