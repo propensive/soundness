@@ -32,7 +32,7 @@ given Realm = realm"cataclysm"
 
 private[cataclysm] type Label = String & Singleton
 
-given decimalizer: Decimalizer = Decimalizer(6)
+given Decimalizer as decimalizer = Decimalizer(6)
 
 object Cataclysm:
   def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]])(using Quotes): Expr[CssRule] =
@@ -46,11 +46,11 @@ object Cataclysm:
 
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-        val exp: Expr[PropertyDef[keyType, valueType]] = Expr.summon[PropertyDef[keyType, valueType]].getOrElse:
+        val exp: Expr[keyType is PropertyDef[valueType]] = Expr.summon[keyType is PropertyDef[valueType]].getOrElse:
           val typeName = TypeRepr.of[valueType].show
           abandon(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
-        '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
+        '{CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[valueType]].show($value))} :: recur(tail)
 
       case _ =>
         Nil
@@ -58,23 +58,26 @@ object Cataclysm:
     (properties: @unchecked) match
       case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
 
-case class PropertyDef[Name <: Label, -PropertyType: ShowProperty]():
-  def show(value: PropertyType): Text = summon[ShowProperty[PropertyType]].show(value)
+
+
+erased trait PropertyDef[-PropertyType]:
+  type Self <: Label
 
 object Selectable:
-  given ident: Selectable[Selector] = identity(_)
+  given Selector is Selectable as ident = identity(_)
 
-  given [SelectableType: GenericCssSelection]: Selectable[SelectableType] =
+  given [SelectableType: GenericCssSelection] => SelectableType is Selectable =
     SelectableType.selection(_).s match
       case s".$cls" => Selector.Class(cls.tt)
       case s"#$id"  => Selector.Id(id.tt)
       case elem     => Selector.Element(elem.tt)
 
-trait Selectable[-SelectorType]:
-  def selector(value: SelectorType): Selector
+trait Selectable:
+  type Self
+  def selector(value: Self): Selector
 
-def select[SelectorType](sel: SelectorType)(using selectable: Selectable[SelectorType])(css: CssStyle) =
-  CssRule(selectable.selector(sel), css)
+def select[SelectorType: Selectable](sel: SelectorType)(css: CssStyle) =
+  CssRule(SelectorType.selector(sel), css)
 
 extension [SelectorType: Selectable](left: SelectorType)
   @targetName("descendant")
@@ -98,272 +101,318 @@ extension [SelectorType: Selectable](left: SelectorType)
     SelectorType.selector(left) ~ SelectorType2.selector(right)
 
 object PropertyDef:
-  given alignContent: PropertyDef["alignContent", Text] = PropertyDef()
-  given alignItems: PropertyDef["alignItems", Text] = PropertyDef()
-  given alignSelf: PropertyDef["alignSelf", Text] = PropertyDef()
-  given all: PropertyDef["all", Text] = PropertyDef()
-  given animation: PropertyDef["animation", Text] = PropertyDef()
-  given animationDelay: PropertyDef["animationDelay", Duration] = PropertyDef()
-  given animationDirection: PropertyDef["animationDirection", Text] = PropertyDef()
-  given animationDuration: PropertyDef["animationDuration", Duration] = PropertyDef()
-  given animationFillMode: PropertyDef["animationFillMode", AnimationFillMode] = PropertyDef()
-  given animationIterationCount: PropertyDef["animationIterationCount", Text] = PropertyDef()
-  given animationName: PropertyDef["animationName", Text] = PropertyDef()
-  given animationPlayState: PropertyDef["animationPlayState", Text] = PropertyDef()
-  given animationTimingFunction: PropertyDef["animationTimingFunction", Text] = PropertyDef()
-  given backfaceVisibility: PropertyDef["backfaceVisibility", Text] = PropertyDef()
-  given background: PropertyDef["background", Text] = PropertyDef()
-  given backgroundAttachment: PropertyDef["backgroundAttachment", Text] = PropertyDef()
-  given backgroundBlendMode: PropertyDef["backgroundBlendMode", Text] = PropertyDef()
-  given backgroundClip: PropertyDef["backgroundClip", Text] = PropertyDef()
-  given backgroundColor1[ColorType: Chromatic]: PropertyDef["backgroundColor", ColorType] = PropertyDef()
-  given backgroundColor2: PropertyDef["backgroundColor", Transparent.type] = PropertyDef()
-  given backgroundImage: PropertyDef["backgroundImage", Text] = PropertyDef()
-  //given backgroundImage2: PropertyDef["backgroundImage", Relative] = PropertyDef()
-  given backgroundImage3[PathType: GenericPath]: PropertyDef["backgroundImage", PathType] = PropertyDef()
-  given backgroundImage4: PropertyDef["backgroundImage", SimplePath] = PropertyDef()
-  given backgroundOrigin: PropertyDef["backgroundOrigin", Text] = PropertyDef()
-  given backgroundPosition: PropertyDef["backgroundPosition", Text] = PropertyDef()
-  given backgroundPosition2: PropertyDef["backgroundPosition", Dimension] = PropertyDef()
-  given backgroundPosition3: PropertyDef["backgroundPosition", (Dimension, Dimension)] = PropertyDef()
-  given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
-  given backgroundRepeat2: PropertyDef["backgroundRepeat", BackgroundRepeat] = PropertyDef()
+  erased given ("alignContent" is PropertyDef[Text]) as alignContent = ###
+  erased given ("alignItems" is PropertyDef[Text]) as alignItems = ###
+  erased given ("alignSelf" is PropertyDef[Text]) as alignSelf = ###
+  erased given ("all" is PropertyDef[Text]) as all = ###
+  erased given ("animation" is PropertyDef[Text]) as animation = ###
+  erased given ("animationDelay" is PropertyDef[Duration]) as animationDelay = ###
+  erased given ("animationDirection" is PropertyDef[Text]) as animationDirection = ###
+  erased given ("animationDuration" is PropertyDef[Duration]) as animationDuration = ###
+  erased given ("animationFillMode" is PropertyDef[AnimationFillMode]) as animationFillMode = ###
+  erased given ("animationIterationCount" is PropertyDef[Text]) as animationIterationCount = ###
+  erased given ("animationName" is PropertyDef[Text]) as animationName = ###
+  erased given ("animationPlayState" is PropertyDef[Text]) as animationPlayState = ###
+  erased given ("animationTimingFunction" is PropertyDef[Text]) as animationTimingFunction = ###
+  erased given ("backfaceVisibility" is PropertyDef[Text]) as backfaceVisibility = ###
+  erased given ("background" is PropertyDef[Text]) as background = ###
+  erased given ("backgroundAttachment" is PropertyDef[Text]) as backgroundAttachment = ###
+  erased given ("backgroundBlendMode" is PropertyDef[Text]) as backgroundBlendMode = ###
+  erased given ("backgroundClip" is PropertyDef[Text]) as backgroundClip = ###
 
-  given backgroundRepeat3: PropertyDef["backgroundRepeat", (BackgroundRepeat, BackgroundRepeat)] =
-      PropertyDef()
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("backgroundColor" is PropertyDef[ColorType]) as backgroundColor1 = ###
 
-  given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
-  given backgroundSize2: PropertyDef["backgroundSize", Dimension] = PropertyDef()
-  given border[ColorType: Chromatic]: PropertyDef["border", (BorderStyle, Dimension, ColorType)] = PropertyDef()
-  given borderBottom[ColorType: Chromatic]: PropertyDef["borderBottom", (BorderStyle, Dimension, ColorType)] = PropertyDef()
-  given borderBottomColor1[ColorType: Chromatic]: PropertyDef["borderBottomColor", ColorType] = PropertyDef()
-  given borderBottomColor2: PropertyDef["borderBottomColor", Transparent.type] = PropertyDef()
-  given borderBottomLeftRadius: PropertyDef["borderBottomLeftRadius", Dimension] = PropertyDef()
-  given borderBottomRightRadius: PropertyDef["borderBottomRightRadius", Dimension] = PropertyDef()
-  given borderBottomStyle: PropertyDef["borderBottomStyle", BorderStyle] = PropertyDef()
-  given borderBottomWidth: PropertyDef["borderBottomWidth", Dimension] = PropertyDef()
-  given borderCollapse: PropertyDef["borderCollapse", Text] = PropertyDef()
-  given borderColor1[ColorType: Chromatic]: PropertyDef["borderColor", ColorType] = PropertyDef()
-  given borderColor2: PropertyDef["borderColor", Transparent.type] = PropertyDef()
-  given borderImage: PropertyDef["borderImage", Text] = PropertyDef()
-  given borderImageOutset: PropertyDef["borderImageOutset", Text] = PropertyDef()
-  given borderImageRepeat: PropertyDef["borderImageRepeat", Text] = PropertyDef()
-  given borderImageSlice: PropertyDef["borderImageSlice", Text] = PropertyDef()
-  given borderImageSource: PropertyDef["borderImageSource", Text] = PropertyDef()
-  given borderImageWidth: PropertyDef["borderImageWidth", Dimension] = PropertyDef()
-  given borderLeft[ColorType: Chromatic]: PropertyDef["borderLeft", (BorderStyle, Dimension, ColorType)] = PropertyDef()
-  given borderLeftColor1[ColorType: Chromatic]: PropertyDef["borderLeftColor", ColorType] = PropertyDef()
-  given borderLeftColor2: PropertyDef["borderLeftColor", Transparent.type] = PropertyDef()
-  given borderLeftStyle: PropertyDef["borderLeftStyle", BorderStyle] = PropertyDef()
-  given borderLeftWidth: PropertyDef["borderLeftWidth", Dimension] = PropertyDef()
-  given borderRadius: PropertyDef["borderRadius", Dimension] = PropertyDef()
-  given borderRight[ColorType: Chromatic]: PropertyDef["borderRight", (BorderStyle, Dimension, ColorType)] = PropertyDef()
-  given borderRightColor1[ColorType: Chromatic]: PropertyDef["borderRightColor", ColorType] = PropertyDef()
-  given borderRightColor2: PropertyDef["borderRightColor", Transparent.type] = PropertyDef()
-  given borderRightStyle: PropertyDef["borderRightStyle", BorderStyle] = PropertyDef()
-  given borderRightWidth: PropertyDef["borderRightWidth", Dimension] = PropertyDef()
-  given borderSpacing: PropertyDef["borderSpacing", Dimension] = PropertyDef()
-  given borderStyle: PropertyDef["borderStyle", BorderStyle] = PropertyDef()
-  given borderTop[ColorType: Chromatic]: PropertyDef["borderTop", (BorderStyle, Dimension, ColorType)] = PropertyDef()
-  given borderTopColor1[ColorType: Chromatic]: PropertyDef["borderTopColor", ColorType] = PropertyDef()
-  given borderTopColor2: PropertyDef["borderTopColor", Transparent.type] = PropertyDef()
-  given borderTopLeftRadius: PropertyDef["borderTopLeftRadius", Dimension] = PropertyDef()
-  given borderTopRightRadius: PropertyDef["borderTopRightRadius", Dimension] = PropertyDef()
-  given borderTopStyle: PropertyDef["borderTopStyle", BorderStyle] = PropertyDef()
-  given borderTopWidth: PropertyDef["borderTopWidth", Dimension] = PropertyDef()
-  given borderWidth: PropertyDef["borderWidth", Dimension] = PropertyDef()
-  given bottom: PropertyDef["bottom", Dimension] = PropertyDef()
-  given boxDecorationBreak: PropertyDef["boxDecorationBreak", Text] = PropertyDef()
-  given boxShadow[ColorType: Chromatic]: PropertyDef["boxShadow", (Dimension, Dimension, Dimension, ColorType)] = PropertyDef()
-  given boxSizing: PropertyDef["boxSizing", Text] = PropertyDef()
-  given breakAfter: PropertyDef["breakAfter", Text] = PropertyDef()
-  given breakBefore: PropertyDef["breakBefore", Text] = PropertyDef()
-  given breakInside: PropertyDef["breakInside", Text] = PropertyDef()
-  given captionSide: PropertyDef["captionSide", Text] = PropertyDef()
-  given caretColor1[ColorType: Chromatic]: PropertyDef["caretColor", ColorType] = PropertyDef()
-  given caretColor2: PropertyDef["caretColor", Transparent.type] = PropertyDef()
-  given clear: PropertyDef["clear", Text] = PropertyDef()
-  given clip: PropertyDef["clip", Text] = PropertyDef()
-  given color1[ColorType: Chromatic]: PropertyDef["color", ColorType] = PropertyDef()
-  given color2: PropertyDef["color", Transparent.type] = PropertyDef()
-  given columnCount: PropertyDef["columnCount", Text] = PropertyDef()
-  given columnFill: PropertyDef["columnFill", Text] = PropertyDef()
-  given columnGap: PropertyDef["columnGap", Text] = PropertyDef()
-  given columnRule: PropertyDef["columnRule", Text] = PropertyDef()
-  given columnRuleColor1[ColorType: Chromatic]: PropertyDef["columnRuleColor", ColorType] = PropertyDef()
-  given columnRuleColor2: PropertyDef["columnRuleColor", Transparent.type] = PropertyDef()
-  given columnRuleStyle: PropertyDef["columnRuleStyle", Text] = PropertyDef()
-  given columnRuleWidth: PropertyDef["columnRuleWidth", Text] = PropertyDef()
-  given columnSpan: PropertyDef["columnSpan", Text] = PropertyDef()
-  given columnWidth: PropertyDef["columnWidth", Text] = PropertyDef()
-  given columns: PropertyDef["columns", Text] = PropertyDef()
-  given content: PropertyDef["content", Text] = PropertyDef()
-  given counterIncrement: PropertyDef["counterIncrement", Text] = PropertyDef()
-  given counterReset: PropertyDef["counterReset", Text] = PropertyDef()
-  given cursor: PropertyDef["cursor", Cursor] = PropertyDef()
-  given direction: PropertyDef["direction", Text] = PropertyDef()
-  given display: PropertyDef["display", Display] = PropertyDef()
-  given emptyCells: PropertyDef["emptyCells", Text] = PropertyDef()
-  given filter: PropertyDef["filter", Text] = PropertyDef()
-  given flex: PropertyDef["flex", Text] = PropertyDef()
-  given flexBasis: PropertyDef["flexBasis", Text] = PropertyDef()
-  given flexDirection: PropertyDef["flexDirection", Text] = PropertyDef()
-  given flexFlow: PropertyDef["flexFlow", Text] = PropertyDef()
-  given flexGrow: PropertyDef["flexGrow", Text] = PropertyDef()
-  given flexShrink: PropertyDef["flexShrink", Text] = PropertyDef()
-  given flexWrap: PropertyDef["flexWrap", Text] = PropertyDef()
-  given float: PropertyDef["float", Float] = PropertyDef()
-  given font: PropertyDef["font", Text] = PropertyDef()
-  given fontFamily: PropertyDef["fontFamily", Font] = PropertyDef()
-  given fontFeatureSettings: PropertyDef["fontFeatureSettings", Text] = PropertyDef()
-  given fontKerning: PropertyDef["fontKerning", Text] = PropertyDef()
-  given fontLanguageOverride: PropertyDef["fontLanguageOverride", Text] = PropertyDef()
-  given fontSize: PropertyDef["fontSize", Dimension] = PropertyDef()
-  given fontSizeAdjust: PropertyDef["fontSizeAdjust", Text] = PropertyDef()
-  given fontStretch: PropertyDef["fontStretch", Text] = PropertyDef()
-  given fontStyle: PropertyDef["fontStyle", FontStyle] = PropertyDef()
-  given fontSynthesis: PropertyDef["fontSynthesis", Text] = PropertyDef()
-  given fontVariant: PropertyDef["fontVariant", Text] = PropertyDef()
-  given fontVariantAlternates: PropertyDef["fontVariantAlternates", Text] = PropertyDef()
-  given fontVariantCaps: PropertyDef["fontVariantCaps", Text] = PropertyDef()
-  given fontVariantEastAsian: PropertyDef["fontVariantEastAsian", Text] = PropertyDef()
-  given fontVariantLigatures: PropertyDef["fontVariantLigatures", Text] = PropertyDef()
-  given fontVariantNumeric: PropertyDef["fontVariantNumeric", Text] = PropertyDef()
-  given fontVariantPosition: PropertyDef["fontVariantPosition", Text] = PropertyDef()
-  given fontWeight1: PropertyDef["fontWeight", Int] = PropertyDef()
-  given fontWeight2: PropertyDef["fontWeight", FontWeight] = PropertyDef()
-  given gap: PropertyDef["gap", Text] = PropertyDef()
-  given grid: PropertyDef["grid", Text] = PropertyDef()
-  given gridArea: PropertyDef["gridArea", Text] = PropertyDef()
-  given gridAutoColumns: PropertyDef["gridAutoColumns", Text] = PropertyDef()
-  given gridAutoFlow: PropertyDef["gridAutoFlow", Text] = PropertyDef()
-  given gridAutoRows: PropertyDef["gridAutoRows", Text] = PropertyDef()
-  given gridColumn: PropertyDef["gridColumn", Text] = PropertyDef()
-  given gridColumnEnd: PropertyDef["gridColumnEnd", Text] = PropertyDef()
-  given gridColumnGap: PropertyDef["gridColumnGap", Text] = PropertyDef()
-  given gridColumnStart: PropertyDef["gridColumnStart", Text] = PropertyDef()
-  given gridGap: PropertyDef["gridGap", Text] = PropertyDef()
-  given gridRow: PropertyDef["gridRow", Text] = PropertyDef()
-  given gridRowEnd: PropertyDef["gridRowEnd", Text] = PropertyDef()
-  given gridRowGap: PropertyDef["gridRowGap", Text] = PropertyDef()
-  given gridRowStart: PropertyDef["gridRowStart", Text] = PropertyDef()
-  given gridTemplate: PropertyDef["gridTemplate", Text] = PropertyDef()
-  given gridTemplateAreas: PropertyDef["gridTemplateAreas", Text] = PropertyDef()
-  given gridTemplateColumns: PropertyDef["gridTemplateColumns", Text] = PropertyDef()
-  given gridTemplateRows: PropertyDef["gridTemplateRows", Text] = PropertyDef()
-  given hangingPunctuation: PropertyDef["hangingPunctuation", Text] = PropertyDef()
-  given height: PropertyDef["height", Dimension] = PropertyDef()
-  given hyphens: PropertyDef["hyphens", Text] = PropertyDef()
-  given imageRendering: PropertyDef["imageRendering", Text] = PropertyDef()
-  given isolation: PropertyDef["isolation", Text] = PropertyDef()
-  given justifyContent: PropertyDef["justifyContent", Text] = PropertyDef()
-  given left: PropertyDef["left", Dimension] = PropertyDef()
-  given letterSpacing: PropertyDef["letterSpacing", Text] = PropertyDef()
-  given lineBreak: PropertyDef["lineBreak", Text] = PropertyDef()
-  given lineHeight: PropertyDef["lineHeight", Dimension] = PropertyDef()
-  given listStyle: PropertyDef["listStyle", Text] = PropertyDef()
-  given listStyleImage: PropertyDef["listStyleImage", Text] = PropertyDef()
-  given listStylePosition: PropertyDef["listStylePosition", Text] = PropertyDef()
-  given listStyleType: PropertyDef["listStyleType", Text] = PropertyDef()
-  given margin1: PropertyDef["margin", Dimension] = PropertyDef()
-  given margin2: PropertyDef["margin", (Dimension, Dimension)] = PropertyDef()
-  given margin3: PropertyDef["margin", (Dimension, Dimension, Dimension)] = PropertyDef()
-  given margin4: PropertyDef["margin", (Dimension, Dimension, Dimension, Dimension)] = PropertyDef()
-  given marginBottom: PropertyDef["marginBottom", Dimension] = PropertyDef()
-  given marginLeft: PropertyDef["marginLeft", Dimension] = PropertyDef()
-  given marginRight: PropertyDef["marginRight", Dimension] = PropertyDef()
-  given marginTop: PropertyDef["marginTop", Dimension] = PropertyDef()
-  given mask: PropertyDef["mask", Text] = PropertyDef()
-  given maskType: PropertyDef["maskType", Text] = PropertyDef()
-  given maxHeight: PropertyDef["maxHeight", Dimension] = PropertyDef()
-  given maxWidth: PropertyDef["maxWidth", Dimension] = PropertyDef()
-  given minHeight: PropertyDef["minHeight", Dimension] = PropertyDef()
-  given minWidth: PropertyDef["minWidth", Dimension] = PropertyDef()
-  given mixBlendMode: PropertyDef["mixBlendMode", MixBlendMode] = PropertyDef()
-  given objectFit: PropertyDef["objectFit", Text] = PropertyDef()
-  given objectPosition: PropertyDef["objectPosition", Text] = PropertyDef()
-  given opacity: PropertyDef["opacity", Text] = PropertyDef()
-  given order: PropertyDef["order", Text] = PropertyDef()
-  given orphans: PropertyDef["orphans", Text] = PropertyDef()
-  given outline: PropertyDef["outline", Text] = PropertyDef()
-  given outlineColor1[ColorType: Chromatic]: PropertyDef["outlineColor", ColorType] = PropertyDef()
-  given outlineColor2: PropertyDef["outlineColor", Transparent.type] = PropertyDef()
-  given outlineOffset: PropertyDef["outlineOffset", Text] = PropertyDef()
-  given outlineStyle: PropertyDef["outlineStyle", Text] = PropertyDef()
-  given outlineWidth: PropertyDef["outlineWidth", Text] = PropertyDef()
-  given over: PropertyDef["over", Text] = PropertyDef()
-  given overflowWrap: PropertyDef["overflowWrap", Text] = PropertyDef()
-  given overflow: PropertyDef["overflow", (Overflow, Overflow)] = PropertyDef()
-  given overflowX: PropertyDef["overflowX", Overflow] = PropertyDef()
-  given overflowY: PropertyDef["overflowY", Overflow] = PropertyDef()
-  given padding1: PropertyDef["padding", Dimension] = PropertyDef()
-  given padding2: PropertyDef["padding", (Dimension, Dimension)] = PropertyDef()
-  given padding3: PropertyDef["padding", (Dimension, Dimension, Dimension)] = PropertyDef()
-  given padding4: PropertyDef["padding", (Dimension, Dimension, Dimension, Dimension)] = PropertyDef()
-  given paddingBottom: PropertyDef["paddingBottom", Dimension] = PropertyDef()
-  given paddingLeft: PropertyDef["paddingLeft", Dimension] = PropertyDef()
-  given paddingRight: PropertyDef["paddingRight", Dimension] = PropertyDef()
-  given paddingTop: PropertyDef["paddingTop", Dimension] = PropertyDef()
-  given pageBreakAfter: PropertyDef["pageBreakAfter", Text] = PropertyDef()
-  given pageBreakBefore: PropertyDef["pageBreakBefore", Text] = PropertyDef()
-  given pageBreakInside: PropertyDef["pageBreakInside", Text] = PropertyDef()
-  given perspective: PropertyDef["perspective", Text] = PropertyDef()
-  given perspectiveOrigin: PropertyDef["perspectiveOrigin", Text] = PropertyDef()
-  given pointerEvents: PropertyDef["pointerEvents", PointerEvents] = PropertyDef()
-  given position: PropertyDef["position", Position] = PropertyDef()
-  given quotes: PropertyDef["quotes", Text] = PropertyDef()
-  given resize: PropertyDef["resize", Text] = PropertyDef()
-  given right: PropertyDef["right", Dimension] = PropertyDef()
-  given rowGap: PropertyDef["rowGap", Text] = PropertyDef()
-  given scrollBehavior: PropertyDef["scrollBehavior", Text] = PropertyDef()
-  given scrollbarWidth: PropertyDef["scrollbarWidth", Text] = PropertyDef()
-  given tabSize: PropertyDef["tabSize", Text] = PropertyDef()
-  given tableLayout: PropertyDef["tableLayout", Text] = PropertyDef()
-  given textAlign: PropertyDef["textAlign", TextAlign] = PropertyDef()
-  given textAlignLast: PropertyDef["textAlignLast", TextAlign] = PropertyDef()
-  given textCombineUpright: PropertyDef["textCombineUpright", Text] = PropertyDef()
-  given textDecoration1: PropertyDef["textDecoration", TextDecorationLine] = PropertyDef()
+  erased given ("backgroundColor" is PropertyDef[Transparent.type]) as backgroundColor2 = ###
+  erased given ("backgroundImage" is PropertyDef[Text]) as backgroundImage = ###
+  //given ("backgroundImage" is PropertyDef[Relative]) as backgroundImage2 = ###
 
-  given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text, TextDecorationStyle)] =
-    PropertyDef()
+  erased given [PathType](using erased PathType is GenericPath)
+      => ("backgroundImage" is PropertyDef[PathType]) as backgroundImage3 = ###
 
-  given textDecorationColor1[ColorType: Chromatic]: PropertyDef["textDecorationColor", ColorType] = PropertyDef()
-  given textDecorationColor2: PropertyDef["textDecorationColor", Transparent.type] = PropertyDef()
-  given textDecorationLine: PropertyDef["textDecorationLine", TextDecorationLine] = PropertyDef()
-  given textDecorationStyle: PropertyDef["textDecorationStyle", TextDecorationStyle] = PropertyDef()
-  given textIndent: PropertyDef["textIndent", Dimension] = PropertyDef()
-  given textJustify: PropertyDef["textJustify", Text] = PropertyDef()
-  given textOrientation: PropertyDef["textOrientation", Text] = PropertyDef()
-  given textOverflow: PropertyDef["textOverflow", Text] = PropertyDef()
-  given textShadow: PropertyDef["textShadow", Text] = PropertyDef()
-  given textTransform: PropertyDef["textTransform", Text] = PropertyDef()
-  given textUnderlinePosition: PropertyDef["textUnderlinePosition", Text] = PropertyDef()
-  given top: PropertyDef["top", Dimension] = PropertyDef()
-  given transform: PropertyDef["transform", Text] = PropertyDef()
-  given transformOrigin: PropertyDef["transformOrigin", Text] = PropertyDef()
-  given transformStyle: PropertyDef["transformStyle", Text] = PropertyDef()
-  given transition: PropertyDef["transition", Text] = PropertyDef()
-  given transitionDelay: PropertyDef["transitionDelay", Text] = PropertyDef()
-  given transitionDuration: PropertyDef["transitionDuration", Text] = PropertyDef()
-  given transitionProperty: PropertyDef["transitionProperty", Text] = PropertyDef()
-  given transitionTimingFunction: PropertyDef["transitionTimingFunction", Text] = PropertyDef()
-  given unicodeBidi: PropertyDef["unicodeBidi", Text] = PropertyDef()
-  given userSelect: PropertyDef["userSelect", UserSelect] = PropertyDef()
-  given verticalAlign1: PropertyDef["verticalAlign", VerticalAlign] = PropertyDef()
-  given verticalAlign2: PropertyDef["verticalAlign", Dimension] = PropertyDef()
-  given visibility: PropertyDef["visibility", Text] = PropertyDef()
-  given whiteSpace: PropertyDef["whiteSpace", Text] = PropertyDef()
-  given widows: PropertyDef["widows", Text] = PropertyDef()
-  given width: PropertyDef["width", Dimension] = PropertyDef()
-  given wordBreak: PropertyDef["wordBreak", Text] = PropertyDef()
-  given wordSpacing: PropertyDef["wordSpacing", Text] = PropertyDef()
-  given wordWrap: PropertyDef["wordWrap", Text] = PropertyDef()
-  given writingMode: PropertyDef["writingMode", Text] = PropertyDef()
-  given zIndex: PropertyDef["zIndex", Int] = PropertyDef()
+  erased given ("backgroundImage" is PropertyDef[SimplePath]) as backgroundImage4 = ###
+  erased given ("backgroundOrigin" is PropertyDef[Text]) as backgroundOrigin = ###
+  erased given ("backgroundPosition" is PropertyDef[Text]) as backgroundPosition = ###
+  erased given ("backgroundPosition" is PropertyDef[Dimension]) as backgroundPosition2 = ###
+  erased given ("backgroundPosition" is PropertyDef[(Dimension, Dimension)]) as backgroundPosition3 = ###
+  erased given ("backgroundRepeat" is PropertyDef[Text]) as backgroundRepeat = ###
+  erased given ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) as backgroundRepeat2 = ###
 
-  given inherit[LabelType <: Label]: PropertyDef[LabelType, Inherit.type] = PropertyDef()
-  given initial[LabelType <: Label]: PropertyDef[LabelType, Initial.type] = PropertyDef()
-  given transparent[LabelType <: Label]: PropertyDef[LabelType, Transparent.type] = PropertyDef()
+  erased given ("backgroundRepeat" is PropertyDef[(BackgroundRepeat, BackgroundRepeat)]) as backgroundRepeat3 =
+      ###
+
+  erased given ("backgroundSize" is PropertyDef[Text]) as backgroundSize = ###
+  erased given ("backgroundSize" is PropertyDef[Dimension]) as backgroundSize2 = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("border" is PropertyDef[(BorderStyle, Dimension, ColorType)]) as border = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderBottom" is PropertyDef[(BorderStyle, Dimension, ColorType)]) as borderBottom = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderBottomColor" is PropertyDef[ColorType]) as borderBottomColor1 = ###
+
+  erased given ("borderBottomColor" is PropertyDef[Transparent.type]) as borderBottomColor2 = ###
+  erased given ("borderBottomLeftRadius" is PropertyDef[Dimension]) as borderBottomLeftRadius = ###
+  erased given ("borderBottomRightRadius" is PropertyDef[Dimension]) as borderBottomRightRadius = ###
+  erased given ("borderBottomStyle" is PropertyDef[BorderStyle]) as borderBottomStyle = ###
+  erased given ("borderBottomWidth" is PropertyDef[Dimension]) as borderBottomWidth = ###
+  erased given ("borderCollapse" is PropertyDef[Text]) as borderCollapse = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderColor" is PropertyDef[ColorType]) as borderColor1 = ###
+
+  erased given ("borderColor" is PropertyDef[Transparent.type]) as borderColor2 = ###
+  erased given ("borderImage" is PropertyDef[Text]) as borderImage = ###
+  erased given ("borderImageOutset" is PropertyDef[Text]) as borderImageOutset = ###
+  erased given ("borderImageRepeat" is PropertyDef[Text]) as borderImageRepeat = ###
+  erased given ("borderImageSlice" is PropertyDef[Text]) as borderImageSlice = ###
+  erased given ("borderImageSource" is PropertyDef[Text]) as borderImageSource = ###
+  erased given ("borderImageWidth" is PropertyDef[Dimension]) as borderImageWidth = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderLeft" is PropertyDef[(BorderStyle, Dimension, ColorType)]) as borderLeft = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderLeftColor" is PropertyDef[ColorType]) as borderLeftColor1 = ###
+
+  erased given ("borderLeftColor" is PropertyDef[Transparent.type]) as borderLeftColor2 = ###
+  erased given ("borderLeftStyle" is PropertyDef[BorderStyle]) as borderLeftStyle = ###
+  erased given ("borderLeftWidth" is PropertyDef[Dimension]) as borderLeftWidth = ###
+  erased given ("borderRadius" is PropertyDef[Dimension]) as borderRadius = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderRight" is PropertyDef[(BorderStyle, Dimension, ColorType)]) as borderRight = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderRightColor" is PropertyDef[ColorType]) as borderRightColor1 = ###
+
+  erased given ("borderRightColor" is PropertyDef[Transparent.type]) as borderRightColor2 = ###
+  erased given ("borderRightStyle" is PropertyDef[BorderStyle]) as borderRightStyle = ###
+  erased given ("borderRightWidth" is PropertyDef[Dimension]) as borderRightWidth = ###
+  erased given ("borderSpacing" is PropertyDef[Dimension]) as borderSpacing = ###
+  erased given ("borderStyle" is PropertyDef[BorderStyle]) as borderStyle = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderTop" is PropertyDef[(BorderStyle, Dimension, ColorType)]) as borderTop = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("borderTopColor" is PropertyDef[ColorType]) as borderTopColor1 = ###
+
+  erased given ("borderTopColor" is PropertyDef[Transparent.type]) as borderTopColor2 = ###
+  erased given ("borderTopLeftRadius" is PropertyDef[Dimension]) as borderTopLeftRadius = ###
+  erased given ("borderTopRightRadius" is PropertyDef[Dimension]) as borderTopRightRadius = ###
+  erased given ("borderTopStyle" is PropertyDef[BorderStyle]) as borderTopStyle = ###
+  erased given ("borderTopWidth" is PropertyDef[Dimension]) as borderTopWidth = ###
+  erased given ("borderWidth" is PropertyDef[Dimension]) as borderWidth = ###
+  erased given ("bottom" is PropertyDef[Dimension]) as bottom = ###
+  erased given ("boxDecorationBreak" is PropertyDef[Text]) as boxDecorationBreak = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+       => ("boxShadow" is PropertyDef[(Dimension, Dimension, Dimension, ColorType)]) as boxShadow = ###
+
+  erased given ("boxSizing" is PropertyDef[Text]) as boxSizing = ###
+  erased given ("breakAfter" is PropertyDef[Text]) as breakAfter = ###
+  erased given ("breakBefore" is PropertyDef[Text]) as breakBefore = ###
+  erased given ("breakInside" is PropertyDef[Text]) as breakInside = ###
+  erased given ("captionSide" is PropertyDef[Text]) as captionSide = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("caretColor" is PropertyDef[ColorType]) as caretColor1 = ###
+
+  erased given ("caretColor" is PropertyDef[Transparent.type]) as caretColor2 = ###
+  erased given ("clear" is PropertyDef[Text]) as clear = ###
+  erased given ("clip" is PropertyDef[Text]) as clip = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("color" is PropertyDef[ColorType]) as color1 = ###
+
+  erased given ("color" is PropertyDef[Transparent.type]) as color2 = ###
+  erased given ("columnCount" is PropertyDef[Text]) as columnCount = ###
+  erased given ("columnFill" is PropertyDef[Text]) as columnFill = ###
+  erased given ("columnGap" is PropertyDef[Text]) as columnGap = ###
+  erased given ("columnRule" is PropertyDef[Text]) as columnRule = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("columnRuleColor" is PropertyDef[ColorType]) as columnRuleColor1 = ###
+
+  erased given ("columnRuleColor" is PropertyDef[Transparent.type]) as columnRuleColor2 = ###
+  erased given ("columnRuleStyle" is PropertyDef[Text]) as columnRuleStyle = ###
+  erased given ("columnRuleWidth" is PropertyDef[Text]) as columnRuleWidth = ###
+  erased given ("columnSpan" is PropertyDef[Text]) as columnSpan = ###
+  erased given ("columnWidth" is PropertyDef[Text]) as columnWidth = ###
+  erased given ("columns" is PropertyDef[Text]) as columns = ###
+  erased given ("content" is PropertyDef[Text]) as content = ###
+  erased given ("counterIncrement" is PropertyDef[Text]) as counterIncrement = ###
+  erased given ("counterReset" is PropertyDef[Text]) as counterReset = ###
+  erased given ("cursor" is PropertyDef[Cursor]) as cursor = ###
+  erased given ("direction" is PropertyDef[Text]) as direction = ###
+  erased given ("display" is PropertyDef[Display]) as display = ###
+  erased given ("emptyCells" is PropertyDef[Text]) as emptyCells = ###
+  erased given ("filter" is PropertyDef[Text]) as filter = ###
+  erased given ("flex" is PropertyDef[Text]) as flex = ###
+  erased given ("flexBasis" is PropertyDef[Text]) as flexBasis = ###
+  erased given ("flexDirection" is PropertyDef[Text]) as flexDirection = ###
+  erased given ("flexFlow" is PropertyDef[Text]) as flexFlow = ###
+  erased given ("flexGrow" is PropertyDef[Text]) as flexGrow = ###
+  erased given ("flexShrink" is PropertyDef[Text]) as flexShrink = ###
+  erased given ("flexWrap" is PropertyDef[Text]) as flexWrap = ###
+  erased given ("float" is PropertyDef[Float]) as float = ###
+  erased given ("font" is PropertyDef[Text]) as font = ###
+  erased given ("fontFamily" is PropertyDef[Font]) as fontFamily = ###
+  erased given ("fontFeatureSettings" is PropertyDef[Text]) as fontFeatureSettings = ###
+  erased given ("fontKerning" is PropertyDef[Text]) as fontKerning = ###
+  erased given ("fontLanguageOverride" is PropertyDef[Text]) as fontLanguageOverride = ###
+  erased given ("fontSize" is PropertyDef[Dimension]) as fontSize = ###
+  erased given ("fontSizeAdjust" is PropertyDef[Text]) as fontSizeAdjust = ###
+  erased given ("fontStretch" is PropertyDef[Text]) as fontStretch = ###
+  erased given ("fontStyle" is PropertyDef[FontStyle]) as fontStyle = ###
+  erased given ("fontSynthesis" is PropertyDef[Text]) as fontSynthesis = ###
+  erased given ("fontVariant" is PropertyDef[Text]) as fontVariant = ###
+  erased given ("fontVariantAlternates" is PropertyDef[Text]) as fontVariantAlternates = ###
+  erased given ("fontVariantCaps" is PropertyDef[Text]) as fontVariantCaps = ###
+  erased given ("fontVariantEastAsian" is PropertyDef[Text]) as fontVariantEastAsian = ###
+  erased given ("fontVariantLigatures" is PropertyDef[Text]) as fontVariantLigatures = ###
+  erased given ("fontVariantNumeric" is PropertyDef[Text]) as fontVariantNumeric = ###
+  erased given ("fontVariantPosition" is PropertyDef[Text]) as fontVariantPosition = ###
+  erased given ("fontWeight" is PropertyDef[Int]) as fontWeight1 = ###
+  erased given ("fontWeight" is PropertyDef[FontWeight]) as fontWeight2 = ###
+  erased given ("gap" is PropertyDef[Text]) as gap = ###
+  erased given ("grid" is PropertyDef[Text]) as grid = ###
+  erased given ("gridArea" is PropertyDef[Text]) as gridArea = ###
+  erased given ("gridAutoColumns" is PropertyDef[Text]) as gridAutoColumns = ###
+  erased given ("gridAutoFlow" is PropertyDef[Text]) as gridAutoFlow = ###
+  erased given ("gridAutoRows" is PropertyDef[Text]) as gridAutoRows = ###
+  erased given ("gridColumn" is PropertyDef[Text]) as gridColumn = ###
+  erased given ("gridColumnEnd" is PropertyDef[Text]) as gridColumnEnd = ###
+  erased given ("gridColumnGap" is PropertyDef[Text]) as gridColumnGap = ###
+  erased given ("gridColumnStart" is PropertyDef[Text]) as gridColumnStart = ###
+  erased given ("gridGap" is PropertyDef[Text]) as gridGap = ###
+  erased given ("gridRow" is PropertyDef[Text]) as gridRow = ###
+  erased given ("gridRowEnd" is PropertyDef[Text]) as gridRowEnd = ###
+  erased given ("gridRowGap" is PropertyDef[Text]) as gridRowGap = ###
+  erased given ("gridRowStart" is PropertyDef[Text]) as gridRowStart = ###
+  erased given ("gridTemplate" is PropertyDef[Text]) as gridTemplate = ###
+  erased given ("gridTemplateAreas" is PropertyDef[Text]) as gridTemplateAreas = ###
+  erased given ("gridTemplateColumns" is PropertyDef[Text]) as gridTemplateColumns = ###
+  erased given ("gridTemplateRows" is PropertyDef[Text]) as gridTemplateRows = ###
+  erased given ("hangingPunctuation" is PropertyDef[Text]) as hangingPunctuation = ###
+  erased given ("height" is PropertyDef[Dimension]) as height = ###
+  erased given ("hyphens" is PropertyDef[Text]) as hyphens = ###
+  erased given ("imageRendering" is PropertyDef[Text]) as imageRendering = ###
+  erased given ("isolation" is PropertyDef[Text]) as isolation = ###
+  erased given ("justifyContent" is PropertyDef[Text]) as justifyContent = ###
+  erased given ("left" is PropertyDef[Dimension]) as left = ###
+  erased given ("letterSpacing" is PropertyDef[Text]) as letterSpacing = ###
+  erased given ("lineBreak" is PropertyDef[Text]) as lineBreak = ###
+  erased given ("lineHeight" is PropertyDef[Dimension]) as lineHeight = ###
+  erased given ("listStyle" is PropertyDef[Text]) as listStyle = ###
+  erased given ("listStyleImage" is PropertyDef[Text]) as listStyleImage = ###
+  erased given ("listStylePosition" is PropertyDef[Text]) as listStylePosition = ###
+  erased given ("listStyleType" is PropertyDef[Text]) as listStyleType = ###
+  erased given ("margin" is PropertyDef[Dimension]) as margin1 = ###
+  erased given ("margin" is PropertyDef[(Dimension, Dimension)]) as margin2 = ###
+  erased given ("margin" is PropertyDef[(Dimension, Dimension, Dimension)]) as margin3 = ###
+  erased given ("margin" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) as margin4 = ###
+  erased given ("marginBottom" is PropertyDef[Dimension]) as marginBottom = ###
+  erased given ("marginLeft" is PropertyDef[Dimension]) as marginLeft = ###
+  erased given ("marginRight" is PropertyDef[Dimension]) as marginRight = ###
+  erased given ("marginTop" is PropertyDef[Dimension]) as marginTop = ###
+  erased given ("mask" is PropertyDef[Text]) as mask = ###
+  erased given ("maskType" is PropertyDef[Text]) as maskType = ###
+  erased given ("maxHeight" is PropertyDef[Dimension]) as maxHeight = ###
+  erased given ("maxWidth" is PropertyDef[Dimension]) as maxWidth = ###
+  erased given ("minHeight" is PropertyDef[Dimension]) as minHeight = ###
+  erased given ("minWidth" is PropertyDef[Dimension]) as minWidth = ###
+  erased given ("mixBlendMode" is PropertyDef[MixBlendMode]) as mixBlendMode = ###
+  erased given ("objectFit" is PropertyDef[Text]) as objectFit = ###
+  erased given ("objectPosition" is PropertyDef[Text]) as objectPosition = ###
+  erased given ("opacity" is PropertyDef[Text]) as opacity = ###
+  erased given ("order" is PropertyDef[Text]) as order = ###
+  erased given ("orphans" is PropertyDef[Text]) as orphans = ###
+  erased given ("outline" is PropertyDef[Text]) as outline = ###
+
+  erased given [ColorType](using erased ColorType is Chromatic)
+      => ("outlineColor" is PropertyDef[ColorType]) as outlineColor1 = ###
+
+  erased given ("outlineColor" is PropertyDef[Transparent.type]) as outlineColor2 = ###
+  erased given ("outlineOffset" is PropertyDef[Text]) as outlineOffset = ###
+  erased given ("outlineStyle" is PropertyDef[Text]) as outlineStyle = ###
+  erased given ("outlineWidth" is PropertyDef[Text]) as outlineWidth = ###
+  erased given ("over" is PropertyDef[Text]) as over = ###
+  erased given ("overflowWrap" is PropertyDef[Text]) as overflowWrap = ###
+  erased given ("overflow" is PropertyDef[(Overflow, Overflow)]) as overflow = ###
+  erased given ("overflowX" is PropertyDef[Overflow]) as overflowX = ###
+  erased given ("overflowY" is PropertyDef[Overflow]) as overflowY = ###
+  erased given ("padding" is PropertyDef[Dimension]) as padding1 = ###
+  erased given ("padding" is PropertyDef[(Dimension, Dimension)]) as padding2 = ###
+  erased given ("padding" is PropertyDef[(Dimension, Dimension, Dimension)]) as padding3 = ###
+  erased given ("padding" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) as padding4 = ###
+  erased given ("paddingBottom" is PropertyDef[Dimension]) as paddingBottom = ###
+  erased given ("paddingLeft" is PropertyDef[Dimension]) as paddingLeft = ###
+  erased given ("paddingRight" is PropertyDef[Dimension]) as paddingRight = ###
+  erased given ("paddingTop" is PropertyDef[Dimension]) as paddingTop = ###
+  erased given ("pageBreakAfter" is PropertyDef[Text]) as pageBreakAfter = ###
+  erased given ("pageBreakBefore" is PropertyDef[Text]) as pageBreakBefore = ###
+  erased given ("pageBreakInside" is PropertyDef[Text]) as pageBreakInside = ###
+  erased given ("perspective" is PropertyDef[Text]) as perspective = ###
+  erased given ("perspectiveOrigin" is PropertyDef[Text]) as perspectiveOrigin = ###
+  erased given ("pointerEvents" is PropertyDef[PointerEvents]) as pointerEvents = ###
+  erased given ("position" is PropertyDef[Position]) as position = ###
+  erased given ("quotes" is PropertyDef[Text]) as quotes = ###
+  erased given ("resize" is PropertyDef[Text]) as resize = ###
+  erased given ("right" is PropertyDef[Dimension]) as right = ###
+  erased given ("rowGap" is PropertyDef[Text]) as rowGap = ###
+  erased given ("scrollBehavior" is PropertyDef[Text]) as scrollBehavior = ###
+  erased given ("scrollbarWidth" is PropertyDef[Text]) as scrollbarWidth = ###
+  erased given ("tabSize" is PropertyDef[Text]) as tabSize = ###
+  erased given ("tableLayout" is PropertyDef[Text]) as tableLayout = ###
+  erased given ("textAlign" is PropertyDef[TextAlign]) as textAlign = ###
+  erased given ("textAlignLast" is PropertyDef[TextAlign]) as textAlignLast = ###
+  erased given ("textCombineUpright" is PropertyDef[Text]) as textCombineUpright = ###
+  erased given ("textDecoration" is PropertyDef[TextDecorationLine]) as textDecoration1 = ###
+
+  erased given ("textDecoration" is PropertyDef[(TextDecorationLine, Text, TextDecorationStyle)]) as textDecoration2 =
+    ###
+
+  erased given [ColorType](using erased ColorType is Chromatic) => ("textDecorationColor" is PropertyDef[ColorType]) as textDecorationColor1 = ###
+  erased given ("textDecorationColor" is PropertyDef[Transparent.type]) as textDecorationColor2 = ###
+  erased given ("textDecorationLine" is PropertyDef[TextDecorationLine]) as textDecorationLine = ###
+  erased given ("textDecorationStyle" is PropertyDef[TextDecorationStyle]) as textDecorationStyle = ###
+  erased given ("textIndent" is PropertyDef[Dimension]) as textIndent = ###
+  erased given ("textJustify" is PropertyDef[Text]) as textJustify = ###
+  erased given ("textOrientation" is PropertyDef[Text]) as textOrientation = ###
+  erased given ("textOverflow" is PropertyDef[Text]) as textOverflow = ###
+  erased given ("textShadow" is PropertyDef[Text]) as textShadow = ###
+  erased given ("textTransform" is PropertyDef[Text]) as textTransform = ###
+  erased given ("textUnderlinePosition" is PropertyDef[Text]) as textUnderlinePosition = ###
+  erased given ("top" is PropertyDef[Dimension]) as top = ###
+  erased given ("transform" is PropertyDef[Text]) as transform = ###
+  erased given ("transformOrigin" is PropertyDef[Text]) as transformOrigin = ###
+  erased given ("transformStyle" is PropertyDef[Text]) as transformStyle = ###
+  erased given ("transition" is PropertyDef[Text]) as transition = ###
+  erased given ("transitionDelay" is PropertyDef[Text]) as transitionDelay = ###
+  erased given ("transitionDuration" is PropertyDef[Text]) as transitionDuration = ###
+  erased given ("transitionProperty" is PropertyDef[Text]) as transitionProperty = ###
+  erased given ("transitionTimingFunction" is PropertyDef[Text]) as transitionTimingFunction = ###
+  erased given ("unicodeBidi" is PropertyDef[Text]) as unicodeBidi = ###
+  erased given ("userSelect" is PropertyDef[UserSelect]) as userSelect = ###
+  erased given ("verticalAlign" is PropertyDef[VerticalAlign]) as verticalAlign1 = ###
+  erased given ("verticalAlign" is PropertyDef[Dimension]) as verticalAlign2 = ###
+  erased given ("visibility" is PropertyDef[Text]) as visibility = ###
+  erased given ("whiteSpace" is PropertyDef[Text]) as whiteSpace = ###
+  erased given ("widows" is PropertyDef[Text]) as widows = ###
+  erased given ("width" is PropertyDef[Dimension]) as width = ###
+  erased given ("wordBreak" is PropertyDef[Text]) as wordBreak = ###
+  erased given ("wordSpacing" is PropertyDef[Text]) as wordSpacing = ###
+  erased given ("wordWrap" is PropertyDef[Text]) as wordWrap = ###
+  erased given ("writingMode" is PropertyDef[Text]) as writingMode = ###
+  erased given ("zIndex" is PropertyDef[Int]) as zIndex = ###
+
+  erased given [LabelType <: Label] => LabelType is PropertyDef[Inherit.type] as inherit = ###
+  erased given [LabelType <: Label] => LabelType is PropertyDef[Initial.type] as initial = ###
+  erased given [LabelType <: Label] => LabelType is PropertyDef[Transparent.type] as transparent = ###
 
 object Inherit
 object Transparent
@@ -379,26 +428,22 @@ object ShowProperty:
     case length: Length => length.show
     case int: Int       => int.show
 
-  given [PropertyType, PropertyType2]
-      (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2])
+  given [PropertyType: ShowProperty, PropertyType2: ShowProperty]
           : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
-    t"${show.show(tuple(0))} ${show2.show(tuple(1))}"
+    t"${PropertyType.show(tuple(0))} ${PropertyType2.show(tuple(1))}"
 
-  given [PropertyType, PropertyType2, PropertyType3]
-      (using show:  ShowProperty[PropertyType],
-             show2: ShowProperty[PropertyType2],
-             show3: ShowProperty[PropertyType3])
+  given [PropertyType: ShowProperty, PropertyType2: ShowProperty, PropertyType3: ShowProperty]
           : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] =
 
-    tuple => List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2))).join(t" ")
+    tuple => List(PropertyType.show(tuple(0)), PropertyType2.show(tuple(1)), PropertyType3.show(tuple(2))).join(t" ")
 
-  given [PropertyType, PropertyType2, PropertyType3, PropertyType4]
-      (using show: ShowProperty[PropertyType],
-             show2: ShowProperty[PropertyType2],
-             show3: ShowProperty[PropertyType3],
-             show4: ShowProperty[PropertyType4])
+  given [PropertyType: ShowProperty, PropertyType2: ShowProperty, PropertyType3: ShowProperty, PropertyType4: ShowProperty]
           : ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
-    List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2)), show4.show(tuple(3))).join(t" ")
+    List
+     (PropertyType.show(tuple(0)),
+      PropertyType2.show(tuple(1)),
+      PropertyType3.show(tuple(2)),
+      PropertyType4.show(tuple(3))).join(t" ")
 
   given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
@@ -480,16 +525,16 @@ enum Length:
   case Calc(value: Text)
 
   @targetName("add")
-  infix def +(dim: Length): Length = infixOp(t" + ", dim)
+  infix def + (dim: Length): Length = infixOp(t" + ", dim)
 
   @targetName("sub")
-  infix def -(dim: Length): Length = infixOp(t" - ", dim)
+  infix def - (dim: Length): Length = infixOp(t" - ", dim)
 
   @targetName("mul")
-  infix def *(double: Double): Length = infixOp(t" * ", double)
+  infix def * (double: Double): Length = infixOp(t" * ", double)
 
   @targetName("div")
-  infix def /(double: Double): Length = infixOp(t" / ", double)
+  infix def / (double: Double): Length = infixOp(t" / ", double)
 
   private def infixOp(operator: Text, dim: Length | Double): Length.Calc = this match
     case Calc(calc) => dim match
@@ -587,7 +632,10 @@ enum Dir:
 
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")
-  def has[T](sel: T)(using selectable: Selectable[T]) = Selector.PseudoClass(t"has(${selectable.selector(sel).value})")
+
+  def has[SelectorType: Selectable](selector: SelectorType) =
+     Selector.PseudoClass(t"has(${SelectorType.selector(selector).value})")
+
   def webkitScrollbar = Selector.PseudoClass(t":-webkit-scrollbar")
   def lang(language: Text) = Selector.PseudoClass(t"lang($language)")
   val after = Selector.PseudoClass(t":after")
