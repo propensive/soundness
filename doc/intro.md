@@ -1,9 +1,7 @@
-Many projects will find it useful to be able to define symbolic operators as
-extension methods for a variety of different types. Unfortunately, such methods
-do not always coexist happily, and overload resolution between different—but
-like-named—extension methods do not happily coexist in the same project: the
-compiler is often unable to disambiguate between different methods.  Contextual
-resolution is, however, much more reliable, so _Symbolism_ provides a single
-definition of each of the arithmetic and comparison operators, which defers
-their implementation to typeclasses inferred from their parameter types.
+Many different types support, in some way, the concept of arithmetic
+operations: they can be added, subtracted, multiplied and divided. Or perhaps
+just some of these. We want to use the familiar binary arithmetic operators
+(`+`, `-`, `*` and `/`) to work with these types, so that is the first thing
+Symbolism provides, though typeclass definitions for the four main arithmetic
+operations, plus negation and square and cube root methods.
 
