@@ -32,12 +32,12 @@ object Anticipation:
     def apply(string: String): Text = string
     extension (text: Text) inline def s: String = text
 
-    given Text is Addable[Text] into Text as addable = _ + _
+    given Text is Addable by Text into Text as addable = _ + _
 
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, acc+text)
-    
-    given Text is Multiplicable[Int] into Text as multiplicable =
+
+    given Text is Multiplicable by Int into Text as multiplicable =
       (text, n) => recur(text, n.max(0), "".tt)
 
     given Ordering[Text] as ordering = Ordering.String.on[Text](identity)

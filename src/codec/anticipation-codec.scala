@@ -17,3 +17,8 @@
 package anticipation
 
 infix type in [CodingType, CodecType] = CodingType { type Codec = CodecType }
+
+erased trait Binary
+
+extension [ValueType: Encodable in Binary](value: ValueType)
+  def binary: Bytes = ValueType.encode(value)
