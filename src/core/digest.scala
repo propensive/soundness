@@ -36,7 +36,7 @@ import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import ju.Base64.getDecoder as Base64Decoder
 import java.lang as jl
 
-case class Alphabet[EncodingType <: EncodingScheme](chars: Text, padding: Boolean):
+case class Alphabet[EncodingType <: BinaryEncoding](chars: Text, padding: Boolean):
   def apply(index: Int): Char = chars.s.charAt(index)
 
 sealed trait HashScheme:
@@ -98,7 +98,8 @@ object Sha1:
     val hmacName: Text = t"HmacSHA1"
 
 object Sha2:
-  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => JavaHashFunction of Sha2[BitsType] as hashFunction:
+  given [BitsType <: 224 | 256 | 384 | 512: ValueOf]
+      => JavaHashFunction of Sha2[BitsType] as hashFunction:
     private val bits: Int = valueOf[BitsType]
     val name: Text = t"SHA-$bits"
     val hmacName: Text = t"HmacSHA$bits"
@@ -106,14 +107,15 @@ object Sha2:
 trait Encodable:
   val bytes: Bytes
 
-  def encodeAs[SchemeType <: EncodingScheme](using encodable: BinaryEncodable in SchemeType): Text =
+  def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =
     bytes.encodeAs[SchemeType]
 
 object Hmac:
   def apply[SchemeType <: HashScheme](bytes: Bytes) = new Hmac(bytes):
     type Of = SchemeType
 
-  given [HmacType <: HashScheme](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+  given [HmacType <: HashScheme](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
+    t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
 class Hmac(val bytes: Bytes):
   type Of <: HashScheme
@@ -130,7 +132,8 @@ object Digest:
   def apply[HashType <: HashScheme](bytes: Bytes): Digest of HashType = new Digest(bytes):
     type Of = HashType
 
-  given [DigestType <: HashScheme](using Alphabet[Base64]) => Digest of DigestType is Showable = _.bytes.encodeAs[Base64]
+  given [DigestType <: HashScheme](using Alphabet[Base64]) => Digest of DigestType is Showable =
+    _.bytes.encodeAs[Base64]
 
 class Digest(val bytes: Bytes):
   type Of <: HashScheme
@@ -145,11 +148,12 @@ object Digestible extends Derivable[Digestible]:
     (accumulator, value) => fields(value):
       [FieldType] => field => context.digest(accumulator, field)
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Digestible = (accumulator, value) =>
-    variant(value):
-      [VariantType <: DerivationType] => variant =>
-        int.digest(accumulator, index)
-        context.digest(accumulator, variant)
+  inline def split[DerivationType: SumReflection]: DerivationType is Digestible =
+    (accumulator, value) =>
+      variant(value):
+        [VariantType <: DerivationType] => variant =>
+          int.digest(accumulator, index)
+          context.digest(accumulator, variant)
 
   given [ValueType: Digestible](using util.NotGiven[Unset.type <:< ValueType])
       => Optional[ValueType] is Digestible as optional =
@@ -158,17 +162,17 @@ object Digestible extends Derivable[Digestible]:
   given [ValueType: Digestible] => Iterable[ValueType] is Digestible as iterable =
     (accumulator, iterable) => iterable.each(ValueType.digest(accumulator, _))
 
-  given Int is Digestible as int =
-    (acc, n) => acc.append((24 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
+  given Int is Digestible as int = (accumulator, value) =>
+    accumulator.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
-  given Long is Digestible as long =
-    (acc, n) => acc.append((52 to 0 by -8).map(n >> _).map(_.toByte).toArray.immutable(using Unsafe))
+  given Long is Digestible as long = (accumulator, value) =>
+    accumulator.append((52 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
   given Double is Digestible =
-    (acc, n) => long.digest(acc, jl.Double.doubleToRawLongBits(n))
+    (accumulator, value) => long.digest(accumulator, jl.Double.doubleToRawLongBits(value))
 
   given Float is Digestible =
-    (acc, n) => int.digest(acc, jl.Float.floatToRawIntBits(n))
+    (accumulator, value) => int.digest(accumulator, jl.Float.floatToRawIntBits(value))
 
   given Boolean is Digestible = (acc, n) => acc.append(IArray(if n then 1.toByte else 0.toByte))
   given Byte is Digestible = (acc, n) => acc.append(IArray(n))
@@ -202,11 +206,11 @@ class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
   def append(bytes: Bytes): Unit = messageDigest.update(bytes.mutable(using Unsafe))
   def digest(): Bytes = messageDigest.digest.nn.immutable(using Unsafe)
 
-trait EncodingScheme
-trait Base64 extends EncodingScheme
-trait Base32 extends EncodingScheme
-trait Hex extends EncodingScheme
-trait Binary extends EncodingScheme
+erased trait BinaryEncoding
+erased trait Base64 extends BinaryEncoding
+erased trait Base32 extends BinaryEncoding
+erased trait Hex extends BinaryEncoding
+erased trait Binary extends BinaryEncoding
 
 package hashFunctions:
   given HashFunction of Crc32 as crc32 = Crc32.hashFunction
@@ -321,11 +325,11 @@ object BinaryEncodable:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
 trait BinaryDecodable:
-  type In <: EncodingScheme
+  type In <: BinaryEncoding
   def decode(value: Text): Bytes
 
 trait BinaryEncodable:
-  type In <: EncodingScheme
+  type In <: BinaryEncoding
   def encode(bytes: Bytes): Text
 
 object BinaryDecodable:
@@ -345,7 +349,7 @@ object BinaryDecodable:
       data.immutable(using Unsafe)
 
 extension (value: Text)
-  def decode[SchemeType <: EncodingScheme](using decodable: BinaryDecodable in SchemeType): Bytes = decodable.decode(value)
+  def decode[SchemeType <: BinaryEncoding](using decodable: BinaryDecodable in SchemeType): Bytes = decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
   def digest[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
@@ -361,5 +365,5 @@ extension [ValueType: ByteCodec](value: ValueType)
       unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
 
 extension (bytes: Bytes)
-  def encodeAs[SchemeType <: EncodingScheme](using encodable: BinaryEncodable in SchemeType): Text =
+  def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =
     encodable.encode(bytes)

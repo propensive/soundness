@@ -24,15 +24,16 @@ import spectacular.*
 import kaleidoscope.*
 
 case class Pem(kind: Text, data: Bytes):
-  def serialize(using Alphabet[Base64]): Text = Seq(
-    Seq(t"-----BEGIN $kind-----"),
-    data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
-    Seq(t"-----END $kind-----")
-  ).flatten.join(t"\n")
+  def serialize: Text =
+    import alphabets.base64.standard
+    Seq
+     (Seq(t"-----BEGIN $kind-----"),
+      data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
+      Seq(t"-----END $kind-----")).flatten.join(t"\n")
 
 object Pem:
-  def parse(string: Text): Pem raises PemError =
-    val lines = string.trim.nn.cut(t"\n")
+  def parse(text: Text): Pem raises PemError =
+    val lines = text.trim.cut(t"\n")
 
     val label = lines.head match
       case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
