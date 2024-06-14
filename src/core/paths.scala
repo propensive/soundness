@@ -48,15 +48,17 @@ object Path:
   given Path is GenericPath = _.fullname
 
   inline given add(using path: Errant[PathError], followable: Link is Followable[GeneralForbidden, ?, ?])
-          : Addable[Link] with
+          : Addable with
     type Self = Path
+    type Operand = Link
 
     type Result = Path
     inline def add(left: Path, right: Link): Path = left.append(right)
 
   inline given add2(using path: Errant[PathError], followable: SafeLink is Followable[GeneralForbidden, ?, ?])
-          : Addable[SafeLink] with
+          : Addable with
     type Self = Path
+    type Operand = SafeLink
 
     type Result = Path
     inline def add(left: Path, right: SafeLink): Path = left.append(right)
