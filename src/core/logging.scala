@@ -23,6 +23,7 @@ import contingency.*
 import parasite.*, asyncOptions.cancelOrphans
 import turbulence.*
 import spectacular.*
+import symbolism.*
 import hieroglyph.*
 
 import language.experimental.pureFunctions
