@@ -47,4 +47,4 @@ object Pem:
       case idx =>
         val joined: Text = lines.tail.take(idx).join
         tend(Pem(label, joined.decode[Base64])).remedy:
-          case DecodeError(_) => abort(PemError(t"could not parse Base64 PEM message"))
+          case CryptoError(_) => abort(PemError(t"could not parse Base64 PEM message"))

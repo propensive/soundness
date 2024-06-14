@@ -88,13 +88,13 @@ case class PrivateKey[AlgorithmType <: Cipher](private[gastronomy] val privateBy
     PublicKey(summon[AlgorithmType].privateToPublic(privateBytes))
 
   inline def decrypt[ValueType: ByteCodec](message: MessageData[AlgorithmType])
-      (using AlgorithmType & Encryption, Errant[DecodeError])
+      (using AlgorithmType & Encryption, Errant[CryptoError])
           : ValueType =
 
     decrypt(message.bytes)
 
   inline def decrypt[ValueType: ByteCodec](bytes: Bytes)
-      (using AlgorithmType & Encryption, Errant[DecodeError])
+      (using AlgorithmType & Encryption, Errant[CryptoError])
           : ValueType =
 
     summon[ByteCodec[ValueType]].decode(summon[AlgorithmType].decrypt(bytes, privateBytes))
@@ -126,26 +126,26 @@ extends PrivateKey[AlgorithmType](bytes):
 
     public.verify(value, signature)
 
-case class DecodeError(detail: Text) extends Error(msg"could not decode the encrypted data: $detail")
+case class CryptoError(detail: Text) extends Error(msg"could not decode the encrypted data: $detail")
 
 trait ByteCodec[ValueType]:
   def encode(value: ValueType): Bytes
-  def decode(bytes: Bytes)(using Errant[DecodeError]): ValueType
+  def decode(bytes: Bytes)(using Errant[CryptoError]): ValueType
 
 object ByteCodec:
   given ByteCodec[Bytes] with
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes)(using Errant[DecodeError]): Bytes = bytes
+    def decode(bytes: Bytes)(using Errant[CryptoError]): Bytes = bytes
 
   given (using CharDecoder, CharEncoder): ByteCodec[Text] with
     def encode(value: Text): Bytes = value.bytes
 
-    def decode(bytes: Bytes)(using Errant[DecodeError]): Text =
+    def decode(bytes: Bytes)(using Errant[CryptoError]): Text =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
 
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
       catch CharacterCodingException =>
-        abort(DecodeError(t"the message did not contain a valid UTF-8 string"))
+        abort(CryptoError(t"the message did not contain a valid UTF-8 string"))
 
 object Aes:
   given aes[BitsType <: 128 | 192 | 256: ValueOf]: Aes[BitsType] = Aes()
@@ -159,11 +159,8 @@ object Dsa:
 class Aes[BitsType <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
   type Size = BitsType
   def keySize: BitsType = valueOf[BitsType]
-
   private def init() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
-
-  private def makeKey(key: Bytes): SecretKeySpec =
-    SecretKeySpec(key.mutable(using Unsafe), "AES")
+  private def makeKey(key: Bytes): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
 
   def encrypt(message: Bytes, key: Bytes): Bytes =
     val cipher = init().nn

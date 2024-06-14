@@ -106,13 +106,17 @@ object Sha2:
 trait Encodable:
   val bytes: Bytes
 
-  def encodeAs[SchemeType <: EncodingScheme](using encodable: ByteEncodable in SchemeType): Text =
+  def encodeAs[SchemeType <: EncodingScheme](using encodable: BinaryEncodable in SchemeType): Text =
     bytes.encodeAs[SchemeType]
 
 object Hmac:
-  given [HmacType <: HashScheme] => Hmac[HmacType] is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+  def apply[SchemeType <: HashScheme](bytes: Bytes) = new Hmac(bytes):
+    type Of = SchemeType
 
-case class Hmac[HashType <: HashScheme](bytes: Bytes)
+  given [HmacType <: HashScheme] => Hmac of HmacType is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+
+class Hmac(val bytes: Bytes):
+  type Of <: HashScheme
 
 trait HashFunction:
   type Of <: HashScheme
@@ -224,10 +228,10 @@ package alphabets:
     given HexAlphabet as lowerCase = HexAlphabet(t"0123456789abcdef".chars)
     given HexAlphabet as bioctal = HexAlphabet(t"01234567cjzwfsbv".chars)
 
-object ByteEncodable:
+object BinaryEncodable:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
-  given (using alphabet: HexAlphabet) => ByteEncodable in Hex:
+  given (using alphabet: HexAlphabet) => BinaryEncodable in Hex:
     def encode(bytes: Bytes): Text =
       val array = new Array[Char](bytes.length*2)
 
@@ -237,7 +241,7 @@ object ByteEncodable:
 
       Text(String(array))
 
-  given (using alphabet: Base32Alphabet) => ByteEncodable in Base32:
+  given (using alphabet: Base32Alphabet) => BinaryEncodable in Base32:
     def encode(bytes: Bytes): Text =
       val buf: StringBuilder = StringBuilder()
 
@@ -258,41 +262,44 @@ object ByteEncodable:
 
       if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
-  given ByteEncodable in Base64:
+  given BinaryEncodable in Base64:
     def encode(bytes: Bytes): Text = Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
 
-  given ByteEncodable in Binary:
+  given BinaryEncodable in Binary:
     def encode(bytes: Bytes): Text = Text.construct:
       bytes.each:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
-  given ByteEncodable in Base64Url:
+  given BinaryEncodable in Base64Url:
     def encode(bytes: Bytes): Text =
       Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt.tr('+', '-').tr('/', '_').upto(_ == '=')
 
-trait ByteDecoder[SchemeType <: EncodingScheme]:
+trait BinaryDecodable:
+  type In <: EncodingScheme
   def decode(value: Text): Bytes
 
-trait ByteEncodable:
+trait BinaryEncodable:
   type In <: EncodingScheme
   def encode(bytes: Bytes): Text
 
-object ByteDecoder:
-  given (using Errant[DecodeError]): ByteDecoder[Base64] = value =>
-    try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
-    catch case _: IllegalArgumentException => abort(DecodeError(t"an invalid BASE-64 character found"))
+object BinaryDecodable:
+  given (using Errant[CryptoError]) => BinaryDecodable in Base64:
+    def decode(value: Text): Bytes =
+      try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
+      catch case _: IllegalArgumentException => abort(CryptoError(t"an invalid BASE-64 character found"))
 
-  given ByteDecoder[Hex] = value =>
-    import java.lang.Character.digit
-    val data = Array.fill[Byte](value.length/2)(0)
+  given BinaryDecodable in Hex:
+    def decode(value: Text): Bytes =
+      import java.lang.Character.digit
+      val data = Array.fill[Byte](value.length/2)(0)
 
-    (0 until value.length by 2).each: i =>
-      data(i/2) = unsafely(((digit(value.at(i).vouch, 16) << 4) + digit(value.at(i + 1).vouch, 16)).toByte)
+      (0 until value.length by 2).each: i =>
+        data(i/2) = unsafely(((digit(value.at(i).vouch, 16) << 4) + digit(value.at(i + 1).vouch, 16)).toByte)
 
-    data.immutable(using Unsafe)
+      data.immutable(using Unsafe)
 
 extension (value: Text)
-  def decode[SchemeType <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[SchemeType]].decode(value)
+  def decode[SchemeType <: EncodingScheme](using decodable: BinaryDecodable in SchemeType): Bytes = decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
   def digest[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
@@ -300,7 +307,7 @@ extension [ValueType: Digestible](value: ValueType)
     digester.apply
 
 extension [ValueType: ByteCodec](value: ValueType)
-  def hmac[HashType <: HashScheme](key: Bytes)(using function: HashFunction of HashType): Hmac[HashType] =
+  def hmac[HashType <: HashScheme](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
     val mac = function.hmac0
     mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
@@ -308,5 +315,5 @@ extension [ValueType: ByteCodec](value: ValueType)
       unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
 
 extension (bytes: Bytes)
-  def encodeAs[SchemeType <: EncodingScheme](using encodable: ByteEncodable in SchemeType): Text =
+  def encodeAs[SchemeType <: EncodingScheme](using encodable: BinaryEncodable in SchemeType): Text =
     encodable.encode(bytes)
