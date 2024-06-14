@@ -24,6 +24,7 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks}
 import spectacular.*
 import ambience.*
 import gossamer.*
+import symbolism.*
 import contingency.*
 import anticipation.*
 import turbulence.*
