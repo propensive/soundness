@@ -48,11 +48,13 @@ trait Symmetric
 
 object MessageData:
   given [MessageType <: Cipher](using Alphabet[Base64]) => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
+  given [CipherType <: Cipher] => MessageData[CipherType] is Encodable in Bytes = _.bytes
 
 case class MessageData[+CipherType <: Cipher](bytes: Bytes)
 
 object Signature:
   given [SignatureType <: Cipher](using Alphabet[Base64]) => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
+  given [CipherType <: Cipher] => Signature[CipherType] is Encodable in Bytes = _.bytes
 
 case class Signature[+CipherType <: Cipher](bytes: Bytes)
 
@@ -60,6 +62,7 @@ object ExposeSecretKey
 
 object PublicKey:
   given [KeyType <: Cipher](using Alphabet[Hex]) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
+  given [CipherType <: Cipher] => PublicKey[CipherType] is Encodable in Bytes = _.bytes
 
 case class PublicKey[CipherType <: Cipher](bytes: Bytes):
   def encrypt[ValueType](value: ValueType)
@@ -107,7 +110,7 @@ case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
 
 object SymmetricKey:
-
+  given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
   def generate[CipherType <: Cipher & Symmetric]()(using CipherType)
           : SymmetricKey[CipherType] =
 
