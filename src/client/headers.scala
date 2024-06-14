@@ -193,6 +193,7 @@ trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType
 
 object Auth:
+  import alphabets.base64.standard
   given Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".bytes.encodeAs[Base64]}"
     case Bearer(token)             => t"Bearer $token"
