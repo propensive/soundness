@@ -38,10 +38,10 @@ object Rudiments:
     given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
     given communicable[ByteSizeType <: ByteSize]: (Communicable { type Self = ByteSizeType }) = byteSize => Message(byteSize.text)
 
-    given ByteSize is Addable[ByteSize] into ByteSize as addable = _ + _
-    given ByteSize is Subtractable[ByteSize] into ByteSize as subtractable = _ - _
-    given ByteSize is Multiplicable[Int] into ByteSize as multiplicable = _*_
-    given ByteSize is Divisible[Int] into ByteSize as divisible = _/_
+    given ByteSize is Addable by ByteSize into ByteSize as addable = _ + _
+    given ByteSize is Subtractable by ByteSize into ByteSize as subtractable = _ - _
+    given ByteSize is Multiplicable by Int into ByteSize as multiplicable = _*_
+    given ByteSize is Divisible by Int into ByteSize as divisible = _/_
 
     extension (left: ByteSize)
       def long: Long = left

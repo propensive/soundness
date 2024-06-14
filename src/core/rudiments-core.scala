@@ -37,6 +37,13 @@ extension [ValueType](value: ValueType)
   def waive: Any => ValueType = _ => value
   def twin: (ValueType, ValueType) = (value, value)
   def triple: (ValueType, ValueType, ValueType) = (value, value, value)
+
+  inline def iff(inline predicate: Boolean)(inline lambda: ValueType => ValueType): ValueType =
+    if predicate then lambda(value) else value
+
+  inline def iff(inline predicate: ValueType => Boolean)(inline lambda: ValueType => ValueType): ValueType =
+    if predicate(value) then lambda(value) else value
+
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
 
   transparent inline def matchable(using Unsafe): ValueType & Matchable =
