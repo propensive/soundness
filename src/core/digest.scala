@@ -126,12 +126,16 @@ case object Crc32HashFunction extends HashFunction:
 
 
 object Digest:
-  given [DigestType <: HashScheme] => Digest[DigestType] is Showable = _.bytes.encodeAs[Base64]
+  def apply[HashType <: HashScheme](bytes: Bytes): Digest of HashType = new Digest(bytes):
+    type Of = HashType
 
-case class Digest[HashType <: HashScheme](bytes: Bytes) extends Encodable:
+  given [DigestType <: HashScheme] => Digest of DigestType is Showable = _.bytes.encodeAs[Base64]
+
+class Digest(val bytes: Bytes) extends Encodable:
+  type Of <: HashScheme
   override def equals(that: Any) = that.asMatchable match
-    case digest: Digest[?] => bytes.sameElements(digest.bytes)
-    case _                 => false
+    case digest: Digest => bytes.sameElements(digest.bytes)
+    case _              => false
 
   override def hashCode: Int = ju.Arrays.hashCode(bytes.mutable(using Unsafe): Array[Byte])
 
@@ -171,17 +175,17 @@ object Digestible extends Derivable[Digestible]:
   given Char is Digestible = (acc, n) => acc.append(IArray((n >> 8).toByte, n.toByte))
   given Text is Digestible = (acc, s) => acc.append(s.bytes(using charEncoders.utf8))
   given Bytes is Digestible = _.append(_)
-  given Digest[?] is Digestible = (acc, d) => acc.append(d.bytes)
+  given Digest is Digestible = (acc, d) => acc.append(d.bytes)
 
 trait Digestible:
   type Self
   def digest(acc: DigestAccumulator, value: Self): Unit
 
 case class Digester(run: DigestAccumulator => Unit):
-  def apply[HashType <: HashScheme](using function: HashFunction of HashType): Digest[HashType] =
+  def apply[HashType <: HashScheme](using function: HashFunction of HashType): Digest of HashType =
     function.init().pipe: accumulator =>
       run(accumulator)
-      Digest(accumulator.digest())
+      Digest[HashType](accumulator.digest())
 
   def digest[ValueType: Digestible](value: ValueType): Digester = Digester:
     accumulator =>
@@ -293,7 +297,7 @@ extension (value: Text)
   def decode[SchemeType <: EncodingScheme: ByteDecoder]: Bytes = summon[ByteDecoder[SchemeType]].decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
-  def digest[HashType <: HashScheme](using HashFunction of HashType): Digest[HashType] =
+  def digest[HashType <: HashScheme](using HashFunction of HashType): Digest of HashType =
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
