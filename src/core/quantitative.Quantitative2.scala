@@ -308,7 +308,7 @@ trait Quantitative2:
         abandon(msg"the operands represent different physical quantities")
 
   def mulTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Multiplicable[Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Multiplicable by Quantity[RightType]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -327,7 +327,7 @@ trait Quantitative2:
 
 
   def divTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Divisible[Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Divisible by Quantity[RightType]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -428,7 +428,7 @@ trait Quantitative2:
       case _                                             => resultValue
 
   def subTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Subtractable[Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Subtractable by Quantity[RightType]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
@@ -438,7 +438,7 @@ trait Quantitative2:
             ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} }
 
   def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Addable[Quantity[RightType]]] =
+          : Expr[Quantity[LeftType] is Addable by Quantity[RightType]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 

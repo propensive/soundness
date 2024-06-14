@@ -55,24 +55,27 @@ object Quantitative extends Quantitative2:
 
     given Quantity[Seconds[1]] is SpecificDuration as specificDuration = long => Quantity(long/1000.0)
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Addable[Quantity[RightType]] as addable =
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Addable by Quantity[RightType] as addable =
       ${Quantitative.addTypeclass[LeftType, RightType]}
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Subtractable[Quantity[RightType]] as subtractable =
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Subtractable by Quantity[RightType] as subtractable =
       ${Quantitative.subTypeclass[LeftType, RightType]}
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Multiplicable[Quantity[RightType]] as multiplicable =
+    transparent inline given [LeftType <: Measure, RightType <: Measure]
+        => Quantity[LeftType] is Multiplicable by Quantity[RightType] as multiplicable =
       ${Quantitative.mulTypeclass[LeftType, RightType]}
 
-    given [LeftType <: Measure] => Quantity[LeftType] is Multiplicable[Double] as multiplicable2:
+    given [LeftType <: Measure] => Quantity[LeftType] is Multiplicable as multiplicable2:
+      type Operand = Double
       type Result = Quantity[LeftType]
       inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Divisible[Quantity[RightType]] as divisible =
+    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Divisible by Quantity[RightType] as divisible =
       ${Quantitative.divTypeclass[LeftType, RightType]}
 
-    given [LeftType <: Measure] => Quantity[LeftType] is Divisible[Double]:
+    given [LeftType <: Measure] => Quantity[LeftType] is Divisible:
       type Result = Quantity[LeftType]
+      type Operand = Double
       inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
     transparent inline given [ValueType <: Measure] => Quantity[ValueType] is Rootable[2] as squareRoot =
