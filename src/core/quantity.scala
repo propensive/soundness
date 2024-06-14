@@ -39,7 +39,7 @@ object Abacist:
       values match
         case Nil =>
           expr
-        
+
         case unitValue :: valuesTail => multipliers match
           case Multiplier(unitPower, subdivision, max) :: tail =>
             unitValue.value match
@@ -50,13 +50,13 @@ object Abacist:
                 then abandon(msg"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
 
                 recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
-              
+
               case None =>
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
-          
+
           case Nil => abandon:
             msg"${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units"
-    
+
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
   def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
@@ -66,7 +66,7 @@ object Abacist:
       slices match
         case Nil =>
           expr
-        
+
         case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
           recur(tail, '{$expr.updated(${unitPower.ref.unitName}, $value)})
@@ -95,53 +95,53 @@ object Abacist:
           : Expr[Count[CountUnitsType]] =
 
     import quotes.reflect.*
-    
+
     val lastUnit = multipliers[CountUnitsType].last.unitPower
     val quantityUnit = readUnitPower(TypeRepr.of[QuantityType].dealias)
     val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
 
     '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[CountUnitsType]]}
-    
+
   def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type](value: Expr[Count[UnitsType]])
       (using Quotes)
           : Expr[Int] =
 
     import quotes.reflect.*
-    
+
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
-    
+
     val multiplier: Multiplier = multipliers[UnitsType].where(_.unitPower == lookupUnit).or:
       abandon(msg"the Count does not include this unit")
-    
+
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
-  
+
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 
   private def multipliers[UnitsType: Type](using Quotes): List[Multiplier] =
     import quotes.reflect.*
-    
+
     def untuple[TupleType: Type](dimension: Optional[DimensionRef], result: List[UnitPower]): List[UnitPower] =
       TypeRepr.of[TupleType].dealias.asType match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
-          
+
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
             then abandon(msg"""
               the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and ${current.name}
             """)
-          
+
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
-        
+
         case _ =>
           result
 
     val cascade: List[UnitPower] = untuple[UnitsType](Unset, Nil)
-    
+
     def recur(todo: List[UnitPower], units: List[Multiplier] = Nil): List[Multiplier] = todo match
       case Nil =>
         units
-      
+
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)

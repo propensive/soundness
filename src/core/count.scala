@@ -22,37 +22,37 @@ import quantitative.*
 import spectacular.*
 
 import scala.quoted.*
-import scala.compiletime.ops.int.*
+import scala.compiletime.*, ops.int.*
 
 object CountOpaques:
   opaque type Count[UnitsType <: Tuple] = Long
 
-  object Count extends Count2:
-    erased given underlying[UnitsType <: Tuple]: Underlying[Count[UnitsType], Long] = ###
+  object Count:
+    erased given [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] as underlying = ###
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
-    
+
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
 
-    inline given [UnitsType <: Tuple](using names: UnitsNames[UnitsType]): Show[Count[UnitsType]] =
-      new Show[Count[UnitsType]]:
-        def text(count: Count[UnitsType]): Text =
-          val nonzeroUnits = count.components.filter(_(1) != 0).map(_(1).toString.tt).to(List)
+    inline given [UnitsType <: Tuple] => Count[UnitsType] is Showable = count =>
+      val nonzeroComponents = count.components.filter(_(1) != 0)
+
+      summonFrom:
+        case names: UnitsNames[UnitsType] =>
+          val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
           val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
           units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
-    
-  trait Count2:
-    inline given [UnitsType <: Tuple]: Show[Count[UnitsType]] = new Show[Count[UnitsType]]:
-      def text(count: Count[UnitsType]): Text =
-        count.components.filter(_(1) != 0).map { (unit, count) => count.toString+unit }.mkString(" ").tt
-    
+
+        case _ =>
+          nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
+
   extension [UnitsType <: Tuple](count: Count[UnitsType])
     def longValue: Long = count
-    
+
   extension [UnitsType <: Tuple](inline count: Count[UnitsType])
     @targetName("add")
     inline infix def + (right: Count[UnitsType]): Count[UnitsType] = count + right
-    
+
     @targetName("sub")
     inline infix def - (right: Count[UnitsType]): Count[UnitsType] = count - right
 
@@ -61,17 +61,17 @@ object CountOpaques:
 
     inline def apply[UnitType[PowerType <: Nat] <: Units[PowerType, ? <: Dimension]]: Int =
       ${Abacist.get[UnitsType, UnitType[1]]('count)}
-    
+
     transparent inline def quantity: Any =
       ${Abacist.toQuantity[UnitsType]('count)}
-    
+
     inline def components: ListMap[Text, Long] =
       ${Abacist.describeCount[UnitsType]('count)}
-    
+
     @targetName("multiply")
     transparent inline infix def * (inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, false)}
-    
+
     @targetName("divide")
     transparent inline infix def / (inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, true)}
