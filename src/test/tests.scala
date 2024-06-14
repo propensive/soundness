@@ -48,23 +48,23 @@ object Tests extends Suite(t"Gastronomy tests"):
 
   def run(): Unit =
     test(t"Sha256, Hex"):
-      t"Hello world".digest[Sha2[256]].encodeAs[Hex]
+      t"Hello world".digest[Sha2[256]].bytes.encodeAs[Hex]
     .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(t"Md5, Base64"):
-      t"Hello world".digest[Md5].encodeAs[Base64]
+      t"Hello world".digest[Md5].bytes.encodeAs[Base64]
     .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
     test(t"Sha1, Base64Url"):
-      t"Hello world".digest[Sha1].encodeAs[Base64Url]
+      t"Hello world".digest[Sha1].bytes.encodeAs[Base64Url]
     .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(t"Sha384, Base64"):
-      t"Hello world".digest[Sha2[384]].encodeAs[Base64]
+      t"Hello world".digest[Sha2[384]].bytes.encodeAs[Base64]
     .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(t"Sha512, Base64"):
-      t"Hello world".digest[Sha2[512]].encodeAs[Base64]
+      t"Hello world".digest[Sha2[512]].bytes.encodeAs[Base64]
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(t"Encode to Binary"):
@@ -82,7 +82,7 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(_ == t"EXAMPLE")
 
     test(t"Decode PEM certificate"):
-      Pem.parse(request).data.digest[Md5].encodeAs[Base64]
+      Pem.parse(request).data.digest[Md5].bytes.encodeAs[Base64]
     .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(t"PEM roundtrip"):
@@ -116,21 +116,21 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(!identity(_))
 
     test(t"MD5 HMAC"):
-      pangram.hmac[Md5](t"key".bytes).encodeAs[Hex]
+      pangram.hmac[Md5](t"key".bytes).bytes.encodeAs[Hex]
     .check(_ == t"80070713463E7749B90C2DC24911E275")
 
     test(t"SHA1 HMAC"):
-      pangram.hmac[Sha1](t"key".bytes).encodeAs[Hex]
+      pangram.hmac[Sha1](t"key".bytes).bytes.encodeAs[Hex]
     .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
 
     test(t"SHA256 HMAC"):
-      pangram.hmac[Sha2[256]](t"key".bytes).encodeAs[Hex]
+      pangram.hmac[Sha2[256]](t"key".bytes).bytes.encodeAs[Hex]
     .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(t"SHA384 HMAC"):
-      pangram.hmac[Sha2[384]](t"key".bytes).encodeAs[Base64]
+      pangram.hmac[Sha2[384]](t"key".bytes).bytes.encodeAs[Base64]
     .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(t"SHA512 HMAC"):
-      pangram.hmac[Sha2[512]](t"key".bytes).encodeAs[Base64]
+      pangram.hmac[Sha2[512]](t"key".bytes).bytes.encodeAs[Base64]
     .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")

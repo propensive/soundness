@@ -70,38 +70,49 @@ sealed trait Sha512 extends HashScheme:
   type Bits = 64
 
 object Crc32:
-  given HashFunction of Crc32 as hashFunction = Crc32HashFunction
+  given HashFunction of Crc32 as hashFunction:
+    def init(): DigestAccumulator = new DigestAccumulator:
+      private val state: juz.CRC32 = juz.CRC32()
+      def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
+
+      def digest(): Bytes =
+        val int = state.getValue()
+        IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
+
+    def name: Text = t"CRC32"
+    def hmacName: Text = t"HMAC-CRC32"
+    def hmac0: Mac = throw Panic(msg"this has not been implemented")
+
+trait JavaHashFunction extends HashFunction:
+  def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
+  def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 object Md5:
-  given HashFunction of Md5 as hashFunction:
+  given JavaHashFunction of Md5 as hashFunction:
     val name: Text = t"MD5"
     val hmacName: Text = t"HmacMD5"
-    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
-    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 object Sha1:
-  given HashFunction of Sha1 as hashFunction:
+  given JavaHashFunction of Sha1 as hashFunction:
     val name: Text = t"SHA1"
     val hmacName: Text = t"HmacSHA1"
-    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
-    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 object Sha2:
-  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction of Sha2[BitsType] as hashFunction:
+  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => JavaHashFunction of Sha2[BitsType] as hashFunction:
     private val bits: Int = valueOf[BitsType]
     val name: Text = t"SHA-$bits"
     val hmacName: Text = t"HmacSHA$bits"
-    def init(): DigestAccumulator = new MessageDigestAccumulator(MessageDigest.getInstance(name.s).nn)
-    def hmac0: Mac = Mac.getInstance(hmacName.s).nn
 
 trait Encodable:
   val bytes: Bytes
-  def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = bytes.encodeAs[SchemeType]
+
+  def encodeAs[SchemeType <: EncodingScheme](using encodable: ByteEncodable in SchemeType): Text =
+    bytes.encodeAs[SchemeType]
 
 object Hmac:
   given [HmacType <: HashScheme] => Hmac[HmacType] is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
-case class Hmac[HashType <: HashScheme](bytes: Bytes) extends Encodable
+case class Hmac[HashType <: HashScheme](bytes: Bytes)
 
 trait HashFunction:
   type Of <: HashScheme
@@ -110,20 +121,6 @@ trait HashFunction:
   def init(): DigestAccumulator
   def hmac0: Mac
 
-case object Crc32HashFunction extends HashFunction:
-  type Of = Crc32
-  def init(): DigestAccumulator = new DigestAccumulator:
-    private val state: juz.CRC32 = juz.CRC32()
-    def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))
-
-    def digest(): Bytes =
-      val int = state.getValue()
-      IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
-
-  def name: Text = t"CRC32"
-  def hmacName: Text = t"HMAC-CRC32"
-  def hmac0: Mac = throw Panic(msg"this has not been implemented")
-
 
 object Digest:
   def apply[HashType <: HashScheme](bytes: Bytes): Digest of HashType = new Digest(bytes):
@@ -131,7 +128,7 @@ object Digest:
 
   given [DigestType <: HashScheme] => Digest of DigestType is Showable = _.bytes.encodeAs[Base64]
 
-class Digest(val bytes: Bytes) extends Encodable:
+class Digest(val bytes: Bytes):
   type Of <: HashScheme
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest => bytes.sameElements(digest.bytes)
@@ -218,65 +215,66 @@ package hashFunctions:
 
 package alphabets:
   package base32:
-    given default: Base32Alphabet = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
-    given zBase32: Base32Alphabet = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
-
-    given zBase32Unpadded: Base32Alphabet =
-      Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
+    given Base32Alphabet as default = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
+    given Base32Alphabet as zBase32 = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
+    given Base32Alphabet as zBase32Unpadded = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
 
   package hex:
-    given upperCase: HexAlphabet = HexAlphabet(t"0123456789ABCDEF".chars)
-    given lowerCase: HexAlphabet = HexAlphabet(t"0123456789abcdef".chars)
-    given bioctal: HexAlphabet = HexAlphabet(t"01234567cjzwfsbv".chars)
+    given HexAlphabet as upperCase = HexAlphabet(t"0123456789ABCDEF".chars)
+    given HexAlphabet as lowerCase = HexAlphabet(t"0123456789abcdef".chars)
+    given HexAlphabet as bioctal = HexAlphabet(t"01234567cjzwfsbv".chars)
 
-object ByteEncoder:
+object ByteEncodable:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
-  given (using alphabet: HexAlphabet): ByteEncoder[Hex] = bytes =>
-    val array = new Array[Char](bytes.length*2)
+  given (using alphabet: HexAlphabet) => ByteEncodable in Hex:
+    def encode(bytes: Bytes): Text =
+      val array = new Array[Char](bytes.length*2)
 
-    bytes.indices.each: index =>
-      array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
-      array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
+      bytes.indices.each: index =>
+        array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
+        array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
 
-    Text(String(array))
+      Text(String(array))
 
+  given (using alphabet: Base32Alphabet) => ByteEncodable in Base32:
+    def encode(bytes: Bytes): Text =
+      val buf: StringBuilder = StringBuilder()
 
-  given (using alphabet: Base32Alphabet): ByteEncoder[Base32] = bytes =>
-    val buf: StringBuilder = StringBuilder()
+      @tailrec
+      def recur(acc: Int, index: Int, unused: Int): Text =
+        buf.append(alphabet.chars((acc >> 11) & 31))
 
-    @tailrec
-    def recur(acc: Int, index: Int, unused: Int): Text =
-      buf.append(alphabet.chars((acc >> 11) & 31))
+        if index >= bytes.length then
+          buf.append(alphabet.chars((acc >> 6) & 31))
+          if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
+          if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
 
-      if index >= bytes.length then
-        buf.append(alphabet.chars((acc >> 6) & 31))
-        if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
+          buf.toString.tt
 
-        if buf.length%8 != 0
-        then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
+        else
+          if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
+          else recur(acc << 5, index, unused + 5)
 
-        buf.toString.tt
+      if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
-      else
-        if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
-        else recur(acc << 5, index, unused + 5)
+  given ByteEncodable in Base64:
+    def encode(bytes: Bytes): Text = Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
 
-    if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
+  given ByteEncodable in Binary:
+    def encode(bytes: Bytes): Text = Text.construct:
+      bytes.each:
+        byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
-  given ByteEncoder[Base64] = bytes => Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
-
-  given ByteEncoder[Binary] = bytes => Text.construct:
-    bytes.each:
-      byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
-
-  given ByteEncoder[Base64Url] = bytes =>
-    Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt.tr('+', '-').tr('/', '_').upto(_ == '=')
+  given ByteEncodable in Base64Url:
+    def encode(bytes: Bytes): Text =
+      Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt.tr('+', '-').tr('/', '_').upto(_ == '=')
 
 trait ByteDecoder[SchemeType <: EncodingScheme]:
   def decode(value: Text): Bytes
 
-trait ByteEncoder[SchemeType <: EncodingScheme]:
+trait ByteEncodable:
+  type In <: EncodingScheme
   def encode(bytes: Bytes): Text
 
 object ByteDecoder:
@@ -310,4 +308,5 @@ extension [ValueType: ByteCodec](value: ValueType)
       unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
 
 extension (bytes: Bytes)
-  def encodeAs[SchemeType <: EncodingScheme: ByteEncoder]: Text = summon[ByteEncoder[SchemeType]].encode(bytes)
+  def encodeAs[SchemeType <: EncodingScheme](using encodable: ByteEncodable in SchemeType): Text =
+    encodable.encode(bytes)

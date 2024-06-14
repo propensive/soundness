@@ -48,12 +48,12 @@ trait Symmetric
 object MessageData:
   given [MessageType <: CryptoAlgorithm[?]] => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
 
-case class MessageData[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable
+case class MessageData[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes)
 
 object Signature:
   given [SignatureType <: CryptoAlgorithm[?]] => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
 
-case class Signature[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes) extends Encodable
+case class Signature[+AlgorithmType <: CryptoAlgorithm[?]](bytes: Bytes)
 
 object ExposeSecretKey
 
@@ -79,8 +79,8 @@ object PrivateKey:
   def generate[AlgorithmType <: CryptoAlgorithm[?]]()(using AlgorithmType): PrivateKey[AlgorithmType] =
     PrivateKey(summon[AlgorithmType].genKey())
 
-  given [KeyType <: CryptoAlgorithm[?]] => PrivateKey[KeyType] is Showable =
-    key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
+  // given [KeyType <: CryptoAlgorithm[?]] => PrivateKey[KeyType] is Showable =
+  //   key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
 
 case class PrivateKey[AlgorithmType <: CryptoAlgorithm[?]](private[gastronomy] val privateBytes: Bytes):
   def public(using AlgorithmType): PublicKey[AlgorithmType] =
