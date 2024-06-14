@@ -259,8 +259,8 @@ object Hypotenuse:
               : Boolean =
 
         inline if greaterThan
-        then inline if strict then left > right else left >= right
-        else inline if strict then left < right else left <= right
+        then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
+        else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
 
   object U16:
     erased given Underlying[U16, Short] as underlying = erasedValue
