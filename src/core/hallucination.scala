@@ -34,12 +34,12 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
   protected def mediaType: MediaType
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
-  
-  given response: GenericHttpResponseStream[Image[ImageFormatType]] with
+
+  given Image[ImageFormatType] is GenericHttpResponseStream as response:
     def mediaType = mediaType.show
     def content(image: Image[ImageFormatType]): LazyList[Bytes] = image.serialize(using codec)
-  
-  def read[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[ImageFormatType] =
+
+  def read[InputType: Readable by Bytes](inputType: InputType): Image[ImageFormatType] =
     reader.synchronized:
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.readAs[Bytes].javaInputStream).nn)
       Image(reader.read(0).nn).also(reader.dispose())
@@ -65,7 +65,7 @@ object Png extends ImageCodec[Png]("PNG".tt):
 case class Image[ImageFormatType <: ImageFormat](private[hallucination] val image: jai.BufferedImage):
   def width: Int = image.getWidth
   def height: Int = image.getHeight
-  
+
   def apply(x: Int, y: Int): Rgb24 =
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
     Rgb24(color.getRed, color.getGreen, color.getBlue)
@@ -81,5 +81,5 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
     out.stream
 
 object Image:
-  def apply[InputType](inputType: InputType)(using Readable[InputType, Bytes]): Image[?] =
+  def apply[InputType: Readable by Bytes](inputType: InputType): Image[?] =
     Image(ji.ImageIO.read(inputType.readAs[Bytes].javaInputStream).nn)
