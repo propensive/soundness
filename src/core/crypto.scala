@@ -256,16 +256,6 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signi
   private def init(): js.Signature = js.Signature.getInstance("DSA").nn
   private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
 
-object PemError:
-  given Reason is Communicable =
-    case BadBase64    => msg"could not parse the BASE-64 PEM message"
-    case BeginMissing => msg"the BEGIN line could not be found"
-
-  enum Reason:
-    case BeginMissing, BadBase64
-
-case class PemError(detail: Text) extends Error(msg"could not parse PEM-encoded content: $detail")
-
 object Feistel:
   def apply(subkeys: List[Int], round: (Int, Int) => Int)(input: Long): Long =
     def recur(value: Long, subkeys: List[Int]): Long =

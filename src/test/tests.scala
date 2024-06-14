@@ -92,7 +92,6 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(t"PEM roundtrip"):
-      import alphabets.base64.standard
       Pem.parse(request).serialize
     .assert(_ == request.trim)
 

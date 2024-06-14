@@ -21,6 +21,7 @@ import gossamer.{take as _, *}
 import anticipation.*
 import contingency.*
 import spectacular.*
+import fulminate.*
 import kaleidoscope.*
 
 case class Pem(kind: Text, data: Bytes):
@@ -37,15 +38,27 @@ object Pem:
 
     val label = lines.head match
       case r"-----* *BEGIN $label([A-Z]+) *-----*" => label.show
-      case _                         => abort(PemError(t"the BEGIN line could not be found"))
+      case _                         => abort(PemError(PemError.Reason.BeginMissing))
 
     lines.tail.indexWhere:
       case r"-----* *END $label([A-Z]+) *-----*" => true
       case _                                     => false
     match
       case -1  =>
-        abort(PemError(t"the message's END line could not be found"))
+        abort(PemError(PemError.Reason.EndMissing))
       case idx =>
         val joined: Text = lines.tail.take(idx).join
         tend(Pem(label, joined.decode[Base64])).remedy:
-          case CryptoError(_) => abort(PemError(t"could not parse Base64 PEM message"))
+          case CryptoError(_) => abort(PemError(PemError.Reason.BadBase64))
+
+object PemError:
+  given Reason is Communicable =
+    case Reason.BadBase64    => msg"could not parse the BASE-64 PEM message"
+    case Reason.BeginMissing => msg"the BEGIN line could not be found"
+    case Reason.EndMissing   => msg"the END line could not be found"
+
+  enum Reason:
+    case BeginMissing, EndMissing, BadBase64
+
+case class PemError(reason: PemError.Reason)
+extends Error(msg"could not parse PEM content because $reason")
