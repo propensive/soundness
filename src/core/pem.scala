@@ -24,7 +24,7 @@ import spectacular.*
 import kaleidoscope.*
 
 case class Pem(kind: Text, data: Bytes):
-  def serialize: Text = Seq(
+  def serialize(using Alphabet[Base64]): Text = Seq(
     Seq(t"-----BEGIN $kind-----"),
     data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
     Seq(t"-----END $kind-----")

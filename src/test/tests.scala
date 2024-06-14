@@ -52,18 +52,23 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(t"Md5, Base64"):
+      import alphabets.base64.standard
       t"Hello world".digest[Md5].bytes.encodeAs[Base64]
     .assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
     test(t"Sha1, Base64Url"):
-      t"Hello world".digest[Sha1].bytes.encodeAs[Base64Url]
+      import alphabets.base64.url
+      println(t"Hello world".digest[Sha1].bytes.encodeAs[Base64])
+      t"Hello world".digest[Sha1].bytes.encodeAs[Base64]
     .assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(t"Sha384, Base64"):
+      import alphabets.base64.standard
       t"Hello world".digest[Sha2[384]].bytes.encodeAs[Base64]
     .assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(t"Sha512, Base64"):
+      import alphabets.base64.standard
       t"Hello world".digest[Sha2[512]].bytes.encodeAs[Base64]
     .assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
@@ -82,10 +87,12 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(_ == t"EXAMPLE")
 
     test(t"Decode PEM certificate"):
+      import alphabets.base64.standard
       Pem.parse(request).data.digest[Md5].bytes.encodeAs[Base64]
     .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
     test(t"PEM roundtrip"):
+      import alphabets.base64.standard
       Pem.parse(request).serialize
     .assert(_ == request.trim)
 
@@ -128,9 +135,11 @@ object Tests extends Suite(t"Gastronomy tests"):
     .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(t"SHA384 HMAC"):
+      import alphabets.base64.standard
       pangram.hmac[Sha2[384]](t"key".bytes).bytes.encodeAs[Base64]
     .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(t"SHA512 HMAC"):
+      import alphabets.base64.standard
       pangram.hmac[Sha2[512]](t"key".bytes).bytes.encodeAs[Base64]
     .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")

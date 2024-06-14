@@ -47,29 +47,29 @@ trait Signing:
 trait Symmetric
 
 object MessageData:
-  given [MessageType <: Cipher] => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
+  given [MessageType <: Cipher](using Alphabet[Base64]) => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
 
-case class MessageData[+AlgorithmType <: Cipher](bytes: Bytes)
+case class MessageData[+CipherType <: Cipher](bytes: Bytes)
 
 object Signature:
-  given [SignatureType <: Cipher] => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
+  given [SignatureType <: Cipher](using Alphabet[Base64]) => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
 
-case class Signature[+AlgorithmType <: Cipher](bytes: Bytes)
+case class Signature[+CipherType <: Cipher](bytes: Bytes)
 
 object ExposeSecretKey
 
 object PublicKey:
-  given [KeyType <: Cipher](using HexAlphabet) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
+  given [KeyType <: Cipher](using Alphabet[Hex]) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
 
-case class PublicKey[AlgorithmType <: Cipher](bytes: Bytes):
+case class PublicKey[CipherType <: Cipher](bytes: Bytes):
   def encrypt[ValueType](value: ValueType)
-      (using algorithm: AlgorithmType & Encryption, codec: ByteCodec[ValueType])
-          : MessageData[AlgorithmType] =
+      (using algorithm: CipherType & Encryption, codec: ByteCodec[ValueType])
+          : MessageData[CipherType] =
 
     MessageData(algorithm.encrypt(codec.encode(value), bytes))
 
-  def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[AlgorithmType])
-      (using codec: ByteCodec[ValueType], algorithm: AlgorithmType & Signing)
+  def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[CipherType])
+      (using codec: ByteCodec[ValueType], algorithm: CipherType & Signing)
           : Boolean =
 
     algorithm.verify(codec.encode(value), signature.bytes, bytes)
@@ -77,51 +77,51 @@ case class PublicKey[AlgorithmType <: Cipher](bytes: Bytes):
   def pem: Pem = Pem(t"PUBLIC KEY", bytes)
 
 object PrivateKey:
-  def generate[AlgorithmType <: Cipher]()(using AlgorithmType): PrivateKey[AlgorithmType] =
-    PrivateKey(summon[AlgorithmType].genKey())
+  def generate[CipherType <: Cipher]()(using CipherType): PrivateKey[CipherType] =
+    PrivateKey(summon[CipherType].genKey())
 
   // given [KeyType <: Cipher] => PrivateKey[KeyType] is Showable =
   //   key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
 
-case class PrivateKey[AlgorithmType <: Cipher](private[gastronomy] val privateBytes: Bytes):
-  def public(using AlgorithmType): PublicKey[AlgorithmType] =
-    PublicKey(summon[AlgorithmType].privateToPublic(privateBytes))
+case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes: Bytes):
+  def public(using CipherType): PublicKey[CipherType] =
+    PublicKey(summon[CipherType].privateToPublic(privateBytes))
 
-  inline def decrypt[ValueType: ByteCodec](message: MessageData[AlgorithmType])
-      (using AlgorithmType & Encryption, Errant[CryptoError])
+  inline def decrypt[ValueType: ByteCodec](message: MessageData[CipherType])
+      (using CipherType & Encryption, Errant[CryptoError])
           : ValueType =
 
     decrypt(message.bytes)
 
   inline def decrypt[ValueType: ByteCodec](bytes: Bytes)
-      (using AlgorithmType & Encryption, Errant[CryptoError])
+      (using CipherType & Encryption, Errant[CryptoError])
           : ValueType =
 
-    summon[ByteCodec[ValueType]].decode(summon[AlgorithmType].decrypt(bytes, privateBytes))
+    summon[ByteCodec[ValueType]].decode(summon[CipherType].decrypt(bytes, privateBytes))
 
-  inline def sign[ValueType: ByteCodec](value: ValueType)(using AlgorithmType & Signing)
-          : Signature[AlgorithmType] =
+  inline def sign[ValueType: ByteCodec](value: ValueType)(using CipherType & Signing)
+          : Signature[CipherType] =
 
-    Signature(summon[AlgorithmType].sign(summon[ByteCodec[ValueType]].encode(value), privateBytes))
+    Signature(summon[CipherType].sign(summon[ByteCodec[ValueType]].encode(value), privateBytes))
 
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(t"PRIVATE KEY", privateBytes)
 
 object SymmetricKey:
 
-  def generate[AlgorithmType <: Cipher & Symmetric]()(using AlgorithmType)
-          : SymmetricKey[AlgorithmType] =
+  def generate[CipherType <: Cipher & Symmetric]()(using CipherType)
+          : SymmetricKey[CipherType] =
 
-    SymmetricKey(summon[AlgorithmType].genKey())
+    SymmetricKey(summon[CipherType].genKey())
 
-class SymmetricKey[AlgorithmType <: Cipher](private[gastronomy] val bytes: Bytes)
-extends PrivateKey[AlgorithmType](bytes):
-  def encrypt[ValueType: ByteCodec](value: ValueType)(using AlgorithmType & Encryption)
-          : MessageData[AlgorithmType] =
+class SymmetricKey[CipherType <: Cipher](private[gastronomy] val bytes: Bytes)
+extends PrivateKey[CipherType](bytes):
+  def encrypt[ValueType: ByteCodec](value: ValueType)(using CipherType & Encryption)
+          : MessageData[CipherType] =
 
     public.encrypt(value)
 
-  def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[AlgorithmType])
-      (using AlgorithmType & Signing)
+  def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[CipherType])
+      (using CipherType & Signing)
           : Boolean =
 
     public.verify(value, signature)

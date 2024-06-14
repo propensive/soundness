@@ -33,11 +33,11 @@ import java.util as ju
 import ju.zip as juz
 import java.security.*
 import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
-import ju.Base64.{getEncoder as Base64Encoder, getDecoder as Base64Decoder}
+import ju.Base64.getDecoder as Base64Decoder
 import java.lang as jl
 
-case class Base32Alphabet(chars: IArray[Char], padding: Text)
-case class HexAlphabet(chars: IArray[Char])
+case class Alphabet[EncodingType <: EncodingScheme](chars: Text, padding: Boolean):
+  def apply(index: Int): Char = chars.s.charAt(index)
 
 sealed trait HashScheme:
   type Of <: Nat
@@ -113,7 +113,7 @@ object Hmac:
   def apply[SchemeType <: HashScheme](bytes: Bytes) = new Hmac(bytes):
     type Of = SchemeType
 
-  given [HmacType <: HashScheme] => Hmac of HmacType is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+  given [HmacType <: HashScheme](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac => t"Hmac(${hmac.bytes.encodeAs[Base64]})"
 
 class Hmac(val bytes: Bytes):
   type Of <: HashScheme
@@ -130,7 +130,7 @@ object Digest:
   def apply[HashType <: HashScheme](bytes: Bytes): Digest of HashType = new Digest(bytes):
     type Of = HashType
 
-  given [DigestType <: HashScheme] => Digest of DigestType is Showable = _.bytes.encodeAs[Base64]
+  given [DigestType <: HashScheme](using Alphabet[Base64]) => Digest of DigestType is Showable = _.bytes.encodeAs[Base64]
 
 class Digest(val bytes: Bytes):
   type Of <: HashScheme
@@ -204,7 +204,6 @@ class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
 
 trait EncodingScheme
 trait Base64 extends EncodingScheme
-trait Base64Url extends EncodingScheme
 trait Base32 extends EncodingScheme
 trait Hex extends EncodingScheme
 trait Binary extends EncodingScheme
@@ -219,40 +218,72 @@ package hashFunctions:
 
 package alphabets:
   package base32:
-    given Base32Alphabet as default = Base32Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567".chars, t"=")
-    given Base32Alphabet as zBase32 = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"=")
-    given Base32Alphabet as zBase32Unpadded = Base32Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769".chars, t"")
+    given Alphabet[Base32] as default = Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
+    given Alphabet[Base32] as zBase32 = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
+    given Alphabet[Base32] as zBase32Unpadded = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
 
   package hex:
-    given HexAlphabet as upperCase = HexAlphabet(t"0123456789ABCDEF".chars)
-    given HexAlphabet as lowerCase = HexAlphabet(t"0123456789abcdef".chars)
-    given HexAlphabet as bioctal = HexAlphabet(t"01234567cjzwfsbv".chars)
+    given Alphabet[Hex] as upperCase = Alphabet(t"0123456789ABCDEF", false)
+    given Alphabet[Hex] as lowerCase = Alphabet(t"0123456789abcdef", false)
+    given Alphabet[Hex] as bioctal = Alphabet(t"01234567cjzwfsbv", false)
+
+  package base64:
+    given Alphabet[Base64] as standard =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
+
+    given Alphabet[Base64] as unpadded =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", false)
+
+    given Alphabet[Base64] as url =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", false)
+
+    given Alphabet[Base64] as xml =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.", true)
+
+    given Alphabet[Base64] as imap =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
+
+    given Alphabet[Base64] as yui =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._", false)
+
+    given Alphabet[Base64] as radix64 =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
+
+    given Alphabet[Base64] as bcrypt =
+      Alphabet(t"./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", false)
+
+    given Alphabet[Base64] as sasl =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
+
+    given Alphabet[Base64] as Uuencoding =
+      Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
+
 
 object BinaryEncodable:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
-  given (using alphabet: HexAlphabet) => BinaryEncodable in Hex:
+  given (using alphabet: Alphabet[Hex]) => BinaryEncodable in Hex:
     def encode(bytes: Bytes): Text =
       val array = new Array[Char](bytes.length*2)
 
       bytes.indices.each: index =>
-        array(2*index) = alphabet.chars((bytes(index) >> 4) & 0xf)
-        array(2*index + 1) = alphabet.chars(bytes(index) & 0xf)
+        array(2*index) = alphabet((bytes(index) >> 4) & 0xf)
+        array(2*index + 1) = alphabet(bytes(index) & 0xf)
 
       Text(String(array))
 
-  given (using alphabet: Base32Alphabet) => BinaryEncodable in Base32:
+  given (using alphabet: Alphabet[Base32]) => BinaryEncodable in Base32:
     def encode(bytes: Bytes): Text =
       val buf: StringBuilder = StringBuilder()
 
       @tailrec
       def recur(acc: Int, index: Int, unused: Int): Text =
-        buf.append(alphabet.chars((acc >> 11) & 31))
+        buf.append(alphabet((acc >> 11) & 31))
 
         if index >= bytes.length then
-          buf.append(alphabet.chars((acc >> 6) & 31))
-          if unused == 5 then buf.append(alphabet.chars((acc >> 1) & 31))
-          if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet.padding)
+          buf.append(alphabet((acc >> 6) & 31))
+          if unused == 5 then buf.append(alphabet((acc >> 1) & 31))
+          if buf.length%8 != 0 then for i <- 0 until (8 - buf.length%8) do buf.append(alphabet(64))
 
           buf.toString.tt
 
@@ -262,17 +293,37 @@ object BinaryEncodable:
 
       if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
-  given BinaryEncodable in Base64:
-    def encode(bytes: Bytes): Text = Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt
+  given (using alphabet: Alphabet[Base64]) => BinaryEncodable in Base64:
+    def encode(bytes: Bytes): Text =
+      Text.construct:
+        def recur(i: Int = 0): Int = if i >= bytes.length - 2 then i else
+          val word = ((bytes(i) & 0xff) << 16) | ((bytes(i + 1) & 0xff) << 8) | (bytes(i + 2) & 0xff)
+          append(alphabet((word >> 18) & 0x3f))
+          append(alphabet((word >> 12) & 0x3f))
+          append(alphabet((word >> 6) & 0x3f))
+          append(alphabet(word & 0x3f))
+          recur(i + 3)
+
+        val last = recur()
+        if last < bytes.length then
+          val word = (bytes(last) & 0xff) << 16
+          append(alphabet((word >> 18) & 0x3f))
+          if last + 1 < bytes.length then
+            val word2 = word | ((bytes(last + 1) & 0xff) << 8)
+            append(alphabet((word2 >> 12) & 0x3f))
+            append(alphabet((word2 >> 6) & 0x3f))
+            if alphabet.padding then
+              append(alphabet(64))
+          else
+            append(alphabet((word >> 12) & 0x3f))
+            if alphabet.padding then
+              append(alphabet(64))
+              append(alphabet(64))
 
   given BinaryEncodable in Binary:
     def encode(bytes: Bytes): Text = Text.construct:
       bytes.each:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
-
-  given BinaryEncodable in Base64Url:
-    def encode(bytes: Bytes): Text =
-      Base64Encoder.nn.encodeToString(bytes.to(Array)).nn.tt.tr('+', '-').tr('/', '_').upto(_ == '=')
 
 trait BinaryDecodable:
   type In <: EncodingScheme
