@@ -29,14 +29,14 @@ type Attributes = Map[String, Unset.type | Text]
 type Html[ChildType <: Label] = Node[ChildType] | Text | Int
 
 object Node:
-  given Show[Html[?]] = html => (html: @unchecked) match
+  given [HtmlType <: Html[?]] => HtmlType is Showable as html = html => (html: @unchecked) match
     case text: Text    => text
     case int: Int      => int.show
     case node: Node[?] => node.show
 
-  given Show[Seq[Html[?]]] = _.map(_.show).join
+  given Seq[Html[?]] is Showable as seq = _.map(_.show).join
 
-  given Show[Node[?]] = item =>
+  given [NodeType <: Node[?]] => NodeType is Showable as node = item =>
     val filling =
       item.attributes.map: keyValue =>
         (keyValue: @unchecked) match

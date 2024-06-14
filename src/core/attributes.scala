@@ -29,7 +29,7 @@ trait HtmlAttribute[KeyType <: Label, -ValueType, -T]:
   def rename: Option[Text] = None
 
 object Rel:
-  given Show[Rel] = _.toString.show.uncamel.kebab
+  given Rel is Showable = _.toString.show.uncamel.kebab
 
 enum Rel:
   case Alternate, Author, Bookmark, Canonical, DnsPrefetch, External, Help, Icon, License, Manifest,
@@ -37,19 +37,19 @@ enum Rel:
       Preload, Prerender, Prev, Search, Stylesheet, Tag
 
 object Autocomplete:
-  given Show[Autocomplete] = _.toString.show.lower
+  given Autocomplete is Showable = _.toString.show.lower
 
 enum Autocomplete:
   case On, Off
 
 object Method:
-  given Show[Method] = _.toString.show.lower
+  given Method is Showable = _.toString.show.lower
 
 enum Method:
   case Post, Get, Dialog
 
 object Target:
-  given Show[Target] =
+  given Target is Showable =
     case Browse(value) => value
     case Self          => t"_self"
     case Blank         => t"_blank"
@@ -71,25 +71,25 @@ object DomId:
 case class DomId(name: Text)
 
 object Crossorigin:
-  given Show[Crossorigin] = _.toString.show.uncamel.kebab
+  given Crossorigin is Showable = _.toString.show.uncamel.kebab
 
 enum Crossorigin:
   case UseCredentials, Anonymous
 
 object HDir:
-  given Show[HDir] = _.toString.show.lower
+  given HDir is Showable = _.toString.show.lower
 
 enum HDir:
   case Ltr, Rtl, Auto
 
 object HttpEquiv:
-  given Show[HttpEquiv] = _.toString.show.uncamel.kebab
+  given HttpEquiv is Showable = _.toString.show.uncamel.kebab
 
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh
 
 object HType:
-  given Show[HType] =
+  given HType is Showable =
     case DatetimeLocal => t"datetime-local"
     case other         => other.toString.show.lower
 
@@ -98,45 +98,45 @@ enum HType:
       Password, Radio, Range, Reset, Search, Submit, Tel, Text, Time, Url, Week
 
 object Kind:
-  given Show[Kind] = _.toString.show.lower
+  given Kind is Showable = _.toString.show.lower
 
 enum Kind:
   case Subtitles, Captions, Descriptions, Chapters, Metadata
 
 object Preload:
-  given Show[Preload] = _.toString.show.lower
+  given Preload is Showable = _.toString.show.lower
 
 enum Preload:
   case None, Metadata, Auto
 
 object Rev:
-  given Show[Rev] = _.toString.show.lower
+  given Rev is Showable = _.toString.show.lower
 
 enum Rev:
   case Alternate, Stylesheet, Start, Next, Prev, Contents, Index, Glossary, Copyright, Chapter,
       Section, Subsection, Appendix, Help, Bookmark
 
 object Sandbox:
-  given Show[Sandbox] = _.toString.show.uncamel.kebab
+  given Sandbox is Showable = _.toString.show.uncamel.kebab
 
 enum Sandbox:
   case AllowForms, AllowPointerLock, AllowPopups, AllowPresentation, AllowSameOrigin, AllowScripts,
       AllowTopNavigation
 
 object Scope:
-  given Show[Scope] = _.toString.show.lower
+  given Scope is Showable = _.toString.show.lower
 
 enum Scope:
   case Row, Col, Rowgroup, Colgroup
 
 object Shape:
-  given Show[Shape] = _.toString.show.lower
+  given Shape is Showable = _.toString.show.lower
 
 enum Shape:
   case Circle, Default, Poly, Rect
 
 object Wrap:
-  given Show[Wrap] = _.toString.show.lower
+  given Wrap is Showable = _.toString.show.lower
 
 enum Wrap:
   case Soft, Hard
@@ -240,7 +240,7 @@ object HtmlAttribute:
   given list[T]: HtmlAttribute["list", Seq[DomId], T] = _.map(_.name).join(t" ")
   given list2[T]: HtmlAttribute["list", DomId, T] = _.name
   given loop[T]: HtmlAttribute["loop", Boolean, T] = _ => Unset
-  given low[T]: HtmlAttribute["low", Double, T] = _.toString.show
+  given low[T]: HtmlAttribute["low", Double, T] = _.toString.tt
   given manifest[T]: HtmlAttribute["manifest", Text, T] = identity(_) // Provided by Scintillate
   given max[T]: HtmlAttribute["max", Double | Int, T] = _.toString.show
   given maxlength[T]: HtmlAttribute["maxlength", Int, T] = _.show
