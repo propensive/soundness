@@ -24,6 +24,7 @@ import gesticulate.*
 import spectacular.*
 import iridescence.*
 import gossamer.*
+import symbolism.*
 
 import java.awt.image as jai
 import java.awt as ja
