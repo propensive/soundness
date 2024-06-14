@@ -27,11 +27,10 @@ import annotation.targetName
 import language.dynamics
 
 object CssStylesheet:
-  given (using charEncoder: CharEncoder)
-        : GenericHttpResponseStream[CssStylesheet] with
+  given (using charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
     def mediaType: Text = t"text/css; charset=${charEncoder.encoding.name}"
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
-  
+
   trait Item:
     def text: Text
 
@@ -43,7 +42,7 @@ case class MediaRule(query: Text)(rules: CssStylesheet.Item*) extends CssStylesh
 
 case class Keyframes(name: Text)(frames: Keyframe*) extends CssStylesheet.Item:
   def text: Text = frames.map(_.text).join(t"@keyframes ${name} {\n  ", t"\n  ", t"\n}\n")
-  
+
 case class Keyframe(ref: Text, style: CssStyle):
   def text: Text = style.properties.map(_.text). join(t"$ref { ", t"; ", t" }")
 
@@ -63,7 +62,7 @@ case class FontFace
         lineGapOverride: Optional[Text] = Unset, sizeAdjust: Optional[Text] = Unset,
         src: Optional[Text] = Unset, unicodeRange: Optional[Text] = Unset)
 extends CssStylesheet.Item:
-  
+
   def text: Text =
     val params = List(
       t"ascent-override"         -> ascentOverride,
@@ -77,23 +76,22 @@ extends CssStylesheet.Item:
       t"src"                     -> src,
       t"unicode-range"           -> unicodeRange
     ).filter(!_(1).absent)
-    
+
     params.collect:
       case (key: Text, value: Text) => t"$key: $value;"
     .join(t"@font-face { ", t" ", t" }")
-    
 
 case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"
 
 object CssStyle:
-  given GenericHtmlAttribute["style", CssStyle] with
+  given ("style" is GenericHtmlAttribute[CssStyle]):
     def serialize(value: CssStyle): Text = value.properties.map(_.text).join(t";")
     def name: Text = t"style"
 
 case class CssStyle(properties: CssProperty*):
   def text: Text = properties.map(_.text).join(t"\n")
-  
+
   def apply(nested: (Selector => CssRule)*): Selector => CssStylesheet = sel =>
     CssStylesheet(nested.map(_(sel))*)
 
@@ -114,21 +112,21 @@ object Css extends Dynamic:
 sealed trait Selector(val value: Text):
   inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
     ${Cataclysm.rule('this, 'properties)}
-  
+
   def normalize: Selector
 
   @targetName("or")
   infix def | (that: Selector): Selector = Selector.Or(this, that)
-  
+
   @targetName("descendant")
   infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
-  
+
   @targetName("after")
   infix def + (that: Selector): Selector = Selector.After(this, that)
-  
+
   @targetName("and")
   infix def & (that: Selector): Selector = Selector.And(this, that)
-  
+
   @targetName("before")
   infix def ~ (that: Selector): Selector = Selector.Before(this, that)
 
@@ -150,7 +148,7 @@ object Selector:
       case left     => right.normalize match
         case Or(a, b) => Or(Before(left, a).normalize, Before(left, b).normalize)
         case right    => Before(left, right)
-      
+
   case class After(left: Selector, right: Selector)
   extends Selector(t"${left.value}+${right.value}"):
     def normalize: Selector = left.normalize match
@@ -158,13 +156,13 @@ object Selector:
       case left     => right.normalize match
         case Or(a, b) => Or(After(left, a).normalize, After(left, b).normalize)
         case right    => After(left, right)
-      
+
   case class Id(id: Text) extends Selector(t"#$id"):
     def normalize: Selector = this
-  
+
   case class Class(cls: Text) extends Selector(t".$cls"):
     def normalize: Selector = this
-  
+
   case class PseudoClass(name: Text) extends Selector(t":$name"):
     def normalize: Selector = this
 

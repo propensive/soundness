@@ -48,13 +48,13 @@ object Cataclysm:
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
         val exp: Expr[PropertyDef[keyType, valueType]] = Expr.summon[PropertyDef[keyType, valueType]].getOrElse:
           val typeName = TypeRepr.of[valueType].show
-          fail(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
-        
+          abandon(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
+
         '{CssProperty(Text($key).uncamel.kebab, $exp.show($value))} :: recur(tail)
-      
+
       case _ =>
         Nil
-    
+
     (properties: @unchecked) match
       case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
 
@@ -64,8 +64,8 @@ case class PropertyDef[Name <: Label, -PropertyType: ShowProperty]():
 object Selectable:
   given ident: Selectable[Selector] = identity(_)
 
-  given [SelectableType](using sel: GenericCssSelection[SelectableType]): Selectable[SelectableType] =
-    sel.selection(_).s match
+  given [SelectableType: GenericCssSelection]: Selectable[SelectableType] =
+    SelectableType.selection(_).s match
       case s".$cls" => Selector.Class(cls.tt)
       case s"#$id"  => Selector.Id(id.tt)
       case elem     => Selector.Element(elem.tt)
@@ -76,27 +76,27 @@ trait Selectable[-SelectorType]:
 def select[SelectorType](sel: SelectorType)(using selectable: Selectable[SelectorType])(css: CssStyle) =
   CssRule(selectable.selector(sel), css)
 
-extension [SelectorType: Selectable](left: SelectorType)(using selectable: Selectable[SelectorType])
+extension [SelectorType: Selectable](left: SelectorType)
   @targetName("descendant")
-  infix def >> [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) >> selectable2.selector(right)
-  
+  infix def >> [SelectorType2: Selectable](right: SelectorType2): Selector =
+    SelectorType.selector(left) >> SelectorType2.selector(right)
+
   @targetName("after")
-  infix def ~ [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) + selectable2.selector(right)
-  
+  infix def ~ [SelectorType2: Selectable](right: SelectorType2): Selector =
+    SelectorType.selector(left) + SelectorType2.selector(right)
+
   @targetName("or")
-  infix def || [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) | selectable2.selector(right)
-  
+  infix def || [SelectorType2: Selectable](right: SelectorType2): Selector =
+    SelectorType.selector(left) | SelectorType2.selector(right)
+
   @targetName("and")
-  infix def && [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) & selectable2.selector(right)
-  
+  infix def && [SelectorType2: Selectable](right: SelectorType2): Selector =
+    SelectorType.selector(left) & SelectorType2.selector(right)
+
   @targetName("before")
-  infix def ~~ [SelectorType2](right: SelectorType2)(using selectable2: Selectable[SelectorType2]): Selector =
-    selectable.selector(left) ~ selectable2.selector(right)
-  
+  infix def ~~ [SelectorType2: Selectable](right: SelectorType2): Selector =
+    SelectorType.selector(left) ~ SelectorType2.selector(right)
+
 object PropertyDef:
   given alignContent: PropertyDef["alignContent", Text] = PropertyDef()
   given alignItems: PropertyDef["alignItems", Text] = PropertyDef()
@@ -128,10 +128,10 @@ object PropertyDef:
   given backgroundPosition3: PropertyDef["backgroundPosition", (Dimension, Dimension)] = PropertyDef()
   given backgroundRepeat: PropertyDef["backgroundRepeat", Text] = PropertyDef()
   given backgroundRepeat2: PropertyDef["backgroundRepeat", BackgroundRepeat] = PropertyDef()
-  
+
   given backgroundRepeat3: PropertyDef["backgroundRepeat", (BackgroundRepeat, BackgroundRepeat)] =
       PropertyDef()
-  
+
   given backgroundSize: PropertyDef["backgroundSize", Text] = PropertyDef()
   given backgroundSize2: PropertyDef["backgroundSize", Dimension] = PropertyDef()
   given border[ColorType: Chromatic]: PropertyDef["border", (BorderStyle, Dimension, ColorType)] = PropertyDef()
@@ -323,7 +323,7 @@ object PropertyDef:
   given textAlignLast: PropertyDef["textAlignLast", TextAlign] = PropertyDef()
   given textCombineUpright: PropertyDef["textCombineUpright", Text] = PropertyDef()
   given textDecoration1: PropertyDef["textDecoration", TextDecorationLine] = PropertyDef()
-  
+
   given textDecoration2: PropertyDef["textDecoration", (TextDecorationLine, Text, TextDecorationStyle)] =
     PropertyDef()
 
@@ -374,7 +374,7 @@ type Dimension = Length | Int
 object ShowProperty:
   given ShowProperty[Length] = _.show
   given ShowProperty[Duration] = _.show
-  
+
   given ShowProperty[Dimension] =
     case length: Length => length.show
     case int: Int       => int.show
@@ -383,7 +383,7 @@ object ShowProperty:
       (using show: ShowProperty[PropertyType], show2: ShowProperty[PropertyType2])
           : ShowProperty[(PropertyType, PropertyType2)] = tuple =>
     t"${show.show(tuple(0))} ${show2.show(tuple(1))}"
-  
+
   given [PropertyType, PropertyType2, PropertyType3]
       (using show:  ShowProperty[PropertyType],
              show2: ShowProperty[PropertyType2],
@@ -391,7 +391,7 @@ object ShowProperty:
           : ShowProperty[(PropertyType, PropertyType2, PropertyType3)] =
 
     tuple => List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2))).join(t" ")
-  
+
   given [PropertyType, PropertyType2, PropertyType3, PropertyType4]
       (using show: ShowProperty[PropertyType],
              show2: ShowProperty[PropertyType2],
@@ -399,22 +399,22 @@ object ShowProperty:
              show4: ShowProperty[PropertyType4])
           : ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
     List(show.show(tuple(0)), show2.show(tuple(1)), show3.show(tuple(2)), show4.show(tuple(3))).join(t" ")
-  
+
   given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
   .join(t", ")
 
   given ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  given [PathType](using generic: GenericPath[PathType]): ShowProperty[PathType] =
+  given [PathType: GenericPath]: ShowProperty[PathType] =
     path => t"url('${path.pathText}')"
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show
-  
-  given [ColorType](using rgbColor: Chromatic[ColorType]): ShowProperty[ColorType] = color =>
-    t"rgb(${rgbColor.red(color)},${rgbColor.green(color)},${rgbColor.blue(color)})"
-  
+
+  given [ColorType: Chromatic]: ShowProperty[ColorType] = color =>
+    t"rgb(${ColorType.red(color)},${ColorType.green(color)},${ColorType.blue(color)})"
+
   //given ShowProperty[Relative] = rel => t"url('$rel')"
   //given ShowProperty[GenericPath] = rel => t"url('$rel')"
   given ShowProperty[PropertyValue] = _.show
@@ -426,12 +426,12 @@ trait ShowProperty[-PropertyType]:
   def show(value: PropertyType): Text
 
 object PropertyValue:
-  given Show[PropertyValue] = _.toString.show.uncamel.kebab
+  given PropertyValue is Showable = _.toString.show.uncamel.kebab
 
 trait PropertyValue
 
 object Duration:
-  given Show[Duration] =
+  given Duration is Showable =
     case S(value)  => t"${value}s"
     case Ms(value) => t"${value}ms"
 
@@ -443,7 +443,7 @@ def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"
 def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"min", _))
 
 object Length:
-  given Show[Length] =
+  given Length is Showable =
     case Auto        => t"auto"
     case Px(value)   => t"${value}px"
     case Pt(value)   => t"${value}pt"
@@ -481,13 +481,13 @@ enum Length:
 
   @targetName("add")
   infix def +(dim: Length): Length = infixOp(t" + ", dim)
-  
+
   @targetName("sub")
   infix def -(dim: Length): Length = infixOp(t" - ", dim)
-  
+
   @targetName("mul")
   infix def *(double: Double): Length = infixOp(t" * ", double)
-  
+
   @targetName("div")
   infix def /(double: Double): Length = infixOp(t" / ", double)
 
@@ -496,12 +496,12 @@ enum Length:
       case double: Double => Calc(t"($calc)$operator${double}")
       case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
       case length: Length => Calc(t"($calc)$operator$length")
-    
+
     case other => dim match
       case double: Double => Calc(t"${this.show}$operator$double")
       case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
       case length: Length => Calc(t"${this.show}$operator$length")
-    
+
   def function(name: Text, right: Length | Double): Length =
     Calc(t"$name(${infixOp(t", ", right).value})")
 
@@ -533,11 +533,11 @@ enum Display extends PropertyValue:
   case Inline, Block, Contents, Flex, Grid, InlineBlock, InlineFlex, InlineGrid, InlineTable,
       ListItem, RunIn, Table, TableCaption, TableColumnGroup, TableHeaderGroup, TableFooterGroup,
       TableRowGroup, TableCell, TableColumn, TableRow, None
-  
+
 enum Cursor extends PropertyValue:
   case Auto, Default, None, ContextMenu, Help, Pointer, Progress, Wait, Cell, Crosshair, Text,
       VerticalText, Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, AllScroll, ColResize,
-      RowResize, NResize, EResize, SResize, WResize, NeResize, NwResize, SeResize, SwResize, 
+      RowResize, NResize, EResize, SResize, WResize, NeResize, NwResize, SeResize, SwResize,
       EwResize, NsResize, NeswResize, NwseResize, ZoomIn, ZoomOut
 
 enum UserSelect extends PropertyValue:
@@ -633,17 +633,16 @@ package pseudo:
   val userInvalid = Selector.PseudoClass(t"user-invalid")
   val root = Selector.PseudoClass(t"root")
   val empty = Selector.PseudoClass(t"empty")
-  
+
   private def expr(a: Int, b: Int): Text = if a == 0 then t"$b" else if b != 0 then t"${a}n+$b" else t"${a}n"
   def nthChild(a: Int, b: Int) = Selector.PseudoClass(t"nth-child(${expr(a, b)})")
   def nthLastChild(a: Int, b: Int) = Selector.PseudoClass(t"nth-last-child(${expr(a, b)})")
   def nthOfType(a: Int, b: Int) = Selector.PseudoClass(t"nth-of-type(${expr(a, b)})")
   def nthLastOfType(a: Int, b: Int) = Selector.PseudoClass(t"nth-last-of-type(${expr(a, b)})")
-  
+
   val firstChild = Selector.PseudoClass(t"first-child")
   val lastChild = Selector.PseudoClass(t"last-child")
   val onlyChild = Selector.PseudoClass(t"only-child")
   val firstOfType = Selector.PseudoClass(t"first-of-type")
   val lastOfType = Selector.PseudoClass(t"last-of-type")
   val onlyOfType = Selector.PseudoClass(t"only-of-type")
-
