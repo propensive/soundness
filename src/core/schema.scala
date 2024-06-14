@@ -21,6 +21,7 @@ import vacuous.*
 import contingency.*
 import gossamer.{at as _, *}
 import anticipation.*
+import symbolism.*
 import turbulence.*
 
 //import language.experimental.captureChecking
