@@ -47,7 +47,9 @@ trait Signing:
 trait Symmetric
 
 object MessageData:
-  given [MessageType <: Cipher](using Alphabet[Base64]) => MessageData[MessageType] is Showable = msg => t"MessageData(${msg.bytes.encodeAs[Base64]})"
+  given [MessageType <: Cipher](using Alphabet[Base64]) => MessageData[MessageType] is Showable =
+    _.bytes.encodeAs[Base64]
+
   given [CipherType <: Cipher] => MessageData[CipherType] is Encodable in Bytes = _.bytes
 
 case class MessageData[+CipherType <: Cipher](bytes: Bytes)
@@ -72,49 +74,49 @@ case class PublicKey[CipherType <: Cipher](bytes: Bytes):
     MessageData(algorithm.encrypt(codec.encode(value), bytes))
 
   def verify[ValueType: ByteCodec](value: ValueType, signature: Signature[CipherType])
-      (using codec: ByteCodec[ValueType], algorithm: CipherType & Signing)
+      (using algorithm: CipherType & Signing)
           : Boolean =
 
-    algorithm.verify(codec.encode(value), signature.bytes, bytes)
+    algorithm.verify(ValueType.encode(value), signature.bytes, bytes)
 
   def pem: Pem = Pem(PemLabel.PublicKey, bytes)
 
 object PrivateKey:
-  def generate[CipherType <: Cipher]()(using CipherType): PrivateKey[CipherType] =
-    PrivateKey(summon[CipherType].genKey())
+  def generate[CipherType <: Cipher]()(using cipher: CipherType): PrivateKey[CipherType] =
+    PrivateKey(cipher.genKey())
 
   // given [KeyType <: Cipher] => PrivateKey[KeyType] is Showable =
   //   key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
 
 case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes: Bytes):
-  def public(using CipherType): PublicKey[CipherType] =
-    PublicKey(summon[CipherType].privateToPublic(privateBytes))
+  def public(using cipher: CipherType): PublicKey[CipherType] =
+    PublicKey(cipher.privateToPublic(privateBytes))
 
   inline def decrypt[ValueType: ByteCodec](message: MessageData[CipherType])
-      (using CipherType & Encryption, Errant[CryptoError])
-          : ValueType =
+      (using CipherType & Encryption)
+          : ValueType raises CryptoError =
 
     decrypt(message.bytes)
 
   inline def decrypt[ValueType: ByteCodec](bytes: Bytes)
-      (using CipherType & Encryption, Errant[CryptoError])
-          : ValueType =
+      (using cipher: CipherType & Encryption)
+          : ValueType raises CryptoError =
 
-    summon[ByteCodec[ValueType]].decode(summon[CipherType].decrypt(bytes, privateBytes))
+    ValueType.decode(cipher.decrypt(bytes, privateBytes))
 
-  inline def sign[ValueType: ByteCodec](value: ValueType)(using CipherType & Signing)
+  inline def sign[ValueType: ByteCodec](value: ValueType)(using cipher: CipherType & Signing)
           : Signature[CipherType] =
 
-    Signature(summon[CipherType].sign(summon[ByteCodec[ValueType]].encode(value), privateBytes))
+    Signature(cipher.sign(ValueType.encode(value), privateBytes))
 
   def pem(reveal: ExposeSecretKey.type): Pem = Pem(PemLabel.PrivateKey, privateBytes)
 
 object SymmetricKey:
   given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
-  def generate[CipherType <: Cipher & Symmetric]()(using CipherType)
+  def generate[CipherType <: Cipher & Symmetric]()(using cipher: CipherType)
           : SymmetricKey[CipherType] =
 
-    SymmetricKey(summon[CipherType].genKey())
+    SymmetricKey(cipher.genKey())
 
 class SymmetricKey[CipherType <: Cipher](private[gastronomy] val bytes: Bytes)
 extends PrivateKey[CipherType](bytes):
@@ -133,17 +135,17 @@ case class CryptoError(detail: Text) extends Error(msg"could not decode the encr
 
 trait ByteCodec[ValueType]:
   def encode(value: ValueType): Bytes
-  def decode(bytes: Bytes)(using Errant[CryptoError]): ValueType
+  def decode(bytes: Bytes): ValueType raises CryptoError
 
 object ByteCodec:
-  given ByteCodec[Bytes] with
+  given ByteCodec[Bytes]:
     def encode(value: Bytes): Bytes = value
-    def decode(bytes: Bytes)(using Errant[CryptoError]): Bytes = bytes
+    def decode(bytes: Bytes): Bytes raises CryptoError = bytes
 
-  given (using CharDecoder, CharEncoder): ByteCodec[Text] with
+  given (using CharDecoder, CharEncoder) => ByteCodec[Text]:
     def encode(value: Text): Bytes = value.bytes
 
-    def decode(bytes: Bytes)(using Errant[CryptoError]): Text =
+    def decode(bytes: Bytes): Text raises CryptoError =
       val buffer = ByteBuffer.wrap(bytes.mutable(using Unsafe))
 
       try Charset.forName("UTF-8").nn.newDecoder().nn.decode(buffer).toString.show
@@ -151,17 +153,18 @@ object ByteCodec:
         abort(CryptoError(t"the message did not contain a valid UTF-8 string"))
 
 object Aes:
-  given aes[BitsType <: 128 | 192 | 256: ValueOf]: Aes[BitsType] = Aes()
+  given [BitsType <: 128 | 192 | 256: ValueOf] => Aes[BitsType] = Aes()
 
 object Rsa:
-  given rsa[I <: 1024 | 2048: ValueOf]: Rsa[I] = Rsa()
+  given [I <: 1024 | 2048: ValueOf] => Rsa[I] = Rsa()
 
 object Dsa:
-  given dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]: Dsa[BitsType] = Dsa()
+  given [BitsType <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[BitsType] = Dsa()
 
 class Aes[BitsType <: 128 | 192 | 256: ValueOf]() extends Cipher, Encryption, Symmetric:
   type Size = BitsType
   def keySize: BitsType = valueOf[BitsType]
+
   private def init() = jc.Cipher.getInstance("AES/ECB/PKCS5Padding")
   private def makeKey(key: Bytes): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), "AES")
 
@@ -188,7 +191,7 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   def keySize: BitsType = valueOf[BitsType]
 
   def privateToPublic(bytes: Bytes): Bytes =
-    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(bytes.mutable(using Unsafe))).nn match
+    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn match
       case key: js.interfaces.RSAPrivateCrtKey => key
       case key: js.PrivateKey                  => throw Panic(msg"public key did not have the correct type")
 
@@ -261,12 +264,9 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signi
 
 object Feistel:
   def apply(subkeys: List[Int], round: (Int, Int) => Int)(input: Long): Long =
-    def recur(value: Long, subkeys: List[Int]): Long =
-      subkeys match
-        case Nil => value
-        case head :: tail =>
-          val left: Int = (value >> 32).toInt
-          val right: Int = value.toInt
-          recur((right.toLong << 32) | (left ^ round(right, head)).toLong, tail)
+    def recur(value: Long, subkeys: List[Int]): Long = subkeys match
+      case Nil => value
+      case next :: more =>
+        recur((value.toInt.toLong << 32) | ((value >> 32).toInt ^ round(value.toInt, next)).toLong, more)
 
     recur(input, subkeys)
