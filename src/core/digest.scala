@@ -111,7 +111,9 @@ object Hmac:
     type Of = SchemeType
 
   given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
-    t"Hmac(${hmac.bytes.encodeAs[Base64]})"
+    t"Hmac(${hmac.bytes.serialize[Base64]})"
+
+  given [HmacType <: Algorithm] => Hmac of HmacType is Encodable in Bytes = _.bytes
 
 class Hmac(val bytes: Bytes):
   type Of <: Algorithm
@@ -130,7 +132,9 @@ object Digest:
     type Of = HashType
 
   given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest of DigestType is Showable =
-    _.bytes.encodeAs[Base64]
+    _.bytes.serialize[Base64]
+
+  given [DigestType <: Algorithm] => Digest of DigestType is Encodable in Bytes = _.bytes
 
 class Digest(val bytes: Bytes):
   type Of <: Algorithm
@@ -264,10 +268,10 @@ package alphabets:
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 
-object BinaryEncodable:
+object Serializable:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))
 
-  given (using alphabet: Alphabet[Hex]) => BinaryEncodable in Hex:
+  given (using alphabet: Alphabet[Hex]) => Serializable in Hex:
     def encode(bytes: Bytes): Text =
       val array = new Array[Char](bytes.length*2)
 
@@ -277,7 +281,7 @@ object BinaryEncodable:
 
       Text(String(array))
 
-  given (using alphabet: Alphabet[Base32]) => BinaryEncodable in Base32:
+  given (using alphabet: Alphabet[Base32]) => Serializable in Base32:
     def encode(bytes: Bytes): Text = Text.construct:
       @tailrec
       def recur(acc: Int, index: Int, unused: Int): Unit =
@@ -294,7 +298,7 @@ object BinaryEncodable:
 
       if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
 
-  given (using alphabet: Alphabet[Base64]) => BinaryEncodable in Base64:
+  given (using alphabet: Alphabet[Base64]) => Serializable in Base64:
     def encode(bytes: Bytes): Text = Text.construct:
       @tailrec
       def recur(i: Int = 0): Int = if i >= bytes.length - 2 then i else
@@ -320,26 +324,26 @@ object BinaryEncodable:
             append(alphabet(64))
             append(alphabet(64))
 
-  given BinaryEncodable in Binary:
+  given Serializable in Binary:
     def encode(bytes: Bytes): Text = Text.construct:
       bytes.each:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
-trait BinaryDecodable:
+trait Deserializable:
   type In <: BinaryEncoding
   def decode(value: Text): Bytes
 
-trait BinaryEncodable:
+trait Serializable:
   type In <: BinaryEncoding
   def encode(bytes: Bytes): Text
 
-object BinaryDecodable:
-  given (using Errant[CryptoError]) => BinaryDecodable in Base64:
+object Deserializable:
+  given (using Errant[CryptoError]) => Deserializable in Base64:
     def decode(value: Text): Bytes =
       try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
       catch case _: IllegalArgumentException => abort(CryptoError(t"an invalid BASE-64 character found"))
 
-  given BinaryDecodable in Hex:
+  given Deserializable in Hex:
     def decode(value: Text): Bytes =
       import java.lang.Character.digit
       val data = Array.fill[Byte](value.length/2)(0)
@@ -350,7 +354,7 @@ object BinaryDecodable:
       data.immutable(using Unsafe)
 
 extension (value: Text)
-  def decode[SchemeType <: BinaryEncoding](using decodable: BinaryDecodable in SchemeType): Bytes =
+  def decode[SchemeType <: BinaryEncoding](using decodable: Deserializable in SchemeType): Bytes =
     decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
@@ -365,9 +369,8 @@ extension [ValueType: Encodable in Bytes](value: ValueType)
 
     Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))
 
-extension (bytes: Bytes)
-  def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =
-    encodable.encode(bytes)
+  def serialize[SchemeType <: BinaryEncoding](using encodable: Serializable in SchemeType): Text =
+    encodable.encode(value.binary)
 
 extension [SourceType: Readable by Bytes](source: SourceType)
   def checksum[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =

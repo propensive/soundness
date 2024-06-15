@@ -26,9 +26,6 @@ import gossamer.*
 import contingency.*
 import spectacular.*
 import anticipation.*
-import hieroglyph.*
-
-import java.nio.*, charset.*
 
 trait Cipher:
   type Size <: Nat
@@ -47,7 +44,7 @@ trait Signing:
 trait Symmetric
 
 object Signature:
-  given [SignatureType <: Cipher](using Alphabet[Base64]) => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.encodeAs[Base64]})"
+  given [SignatureType <: Cipher](using Alphabet[Base64]) => Signature[SignatureType] is Showable = sig => t"Signature(${sig.bytes.serialize[Base64]})"
   given [CipherType <: Cipher] => Signature[CipherType] is Encodable in Bytes = _.bytes
 
 case class Signature[+CipherType <: Cipher](bytes: Bytes)
@@ -55,7 +52,7 @@ case class Signature[+CipherType <: Cipher](bytes: Bytes)
 object ExposeSecretKey
 
 object PublicKey:
-  given [KeyType <: Cipher](using Alphabet[Hex]) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.encodeAs[Hex]})"
+  given [KeyType <: Cipher](using Alphabet[Hex]) => PublicKey[KeyType] is Showable = key => t"PublicKey(${key.bytes.serialize[Hex]})"
   given [CipherType <: Cipher] => PublicKey[CipherType] is Encodable in Bytes = _.bytes
 
 case class PublicKey[CipherType <: Cipher](bytes: Bytes):
@@ -77,7 +74,7 @@ object PrivateKey:
     PrivateKey(cipher.genKey())
 
   // given [KeyType <: Cipher] => PrivateKey[KeyType] is Showable =
-  //   key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].encodeAs[Base64]})"
+  //   key => t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
 
 case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes: Bytes):
   def public(using cipher: CipherType): PublicKey[CipherType] =

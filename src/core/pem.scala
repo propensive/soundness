@@ -47,7 +47,7 @@ case class Pem(label: PemLabel, data: Bytes):
     import alphabets.base64.standard
     Seq
      (Seq(t"-----BEGIN $label-----"),
-      data.grouped(48).to(Seq).map(_.encodeAs[Base64]),
+      data.grouped(48).to(Seq).map(_.serialize[Base64]),
       Seq(t"-----END $label-----")).flatten.join(t"\n")
 
 object Pem:
