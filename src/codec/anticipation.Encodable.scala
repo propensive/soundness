@@ -16,6 +16,9 @@
 
 package anticipation
 
+object Encodable:
+  given Bytes is Encodable in Bytes = identity(_)
+
 trait Encodable:
   private inline def encodable: this.type = this
   type Self

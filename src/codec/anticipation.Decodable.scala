@@ -16,6 +16,9 @@
 
 package anticipation
 
+object Decodable:
+  given Bytes is Decodable in Bytes = (value, omit) => value
+
 trait Decodable:
   inline def decodable: this.type = this
   type Self
