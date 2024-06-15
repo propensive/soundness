@@ -20,9 +20,10 @@ import rudiments.*
 import hypotenuse.*
 import anticipation.*
 import contingency.*
-import gossamer.*
+import gossamer.{at as _, *}
 import fulminate.*
 import vacuous.*
+import symbolism.*
 import turbulence.*
 import bifurcate.*
 import quantitative.*
@@ -37,14 +38,14 @@ erased trait Ems[Power <: Nat] extends Units[Power, FontSize]
 val Em: Quantity[Ems[1]] = Quantity(1.0)
 
 object Ttf:
-  def apply[SourceType](source: SourceType)(using Readable[SourceType, Bytes]): Ttf =
+  def apply[SourceType: Readable by Bytes](source: SourceType): Ttf =
     val data = source.readAs[Bytes]
     println(B32(data).hex)
     Ttf(data)
 
   enum PlatformId:
     case Unicode, Macintosh, Windows, Custom
-  
+
   enum EncodingId:
     case Unicode1, Unicode1_1, IsoIec10646, Unicode2Bmp, Unicode2Full, UnicodeVariation, UnicodeFull
 
@@ -53,8 +54,8 @@ object FontError:
     case MissingTable(tag: TableTag)
     case UnknownFormat
     case MagicNumber
-  
-  given communicable: Communicable[Reason] =
+
+  given Reason is Communicable =
     case Reason.MissingTable(tag) => msg"the table ${tag.text} was not found"
     case Reason.UnknownFormat     => msg"the table contains data in an unknown format"
     case Reason.MagicNumber       => msg"the font did not contain expected check data"
@@ -113,7 +114,7 @@ case class Ttf(data: Bytes):
   lazy val searchRange = B16(data, 6).u16.int
   lazy val entrySelector = B16(data, 8).u16.int
   lazy val rangeShift = B16(data, 10).u16.int
-  
+
   // FIXME: Don't just assume encoding 0
   def glyph(char: Char): Glyph[ttf.type] raises FontError = cmap.glyphEncodings(0).format.glyph(char)
 
@@ -128,7 +129,7 @@ case class Ttf(data: Bytes):
       val checksum = B32(data, start + 4)
       val offset = B32(data, start + 8).i32.int
       val length = B32(data, start + 12).i32.int
-      
+
       tableTag match
         case OtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
@@ -139,19 +140,19 @@ case class Ttf(data: Bytes):
     tables.at(TtfTag.Head).let: ref =>
       data.deserialize[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits then raise(FontError(FontError.Reason.MagicNumber))(())
-        
+
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
 
   def cmap: CmapTable raises FontError =
     tables.at(TtfTag.Cmap).let: ref =>
       CmapTable(ref.offset)
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Cmap))))
-  
+
   def hhea: HheaTable raises FontError =
     tables.at(TtfTag.Hhea).let: ref =>
       data.deserialize[HheaTable](ref.offset)
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
-  
+
   def hmtx: HmtxTable raises FontError =
     tables.at(TtfTag.Hmtx).let: ref =>
       HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
@@ -199,7 +200,7 @@ case class Ttf(data: Bytes):
 
     case class GlyphEncoding(platformId: Int, encodingId: Int, offset: Int):
       val formatId: Int = B16(data, offset).u16.int
-      
+
       private var formatMemo: Optional[Format] = Unset
 
       def format: Format raises FontError = synchronized:
@@ -228,7 +229,7 @@ case class Ttf(data: Bytes):
                    B16(data, endCodesStart + n*2).u16.int.toChar,
                    B16(data, idDeltaStart).i16.int,
                    B16(data, idRangeOffsetsStart).u16.int)
-             
+
               Format4(length, language, segCount, searchRange, entrySelector, rangeShift, IArray.from(segments))
 
             case 12 =>
@@ -244,13 +245,13 @@ case class Ttf(data: Bytes):
             formatMemo = format
 
       case class Segment(start: Char, end: Char, delta: Int, rangeOffset: Int)
-      
+
       sealed trait Format:
         def glyph(char: Char): Glyph[ttf.type]
 
       case class Format0(length: Int, language: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] = ???
-      
+
       case class Format4
           (length:        Int,
            language:      Int,
@@ -265,17 +266,17 @@ case class Ttf(data: Bytes):
           val segment = segments(segments.indexWhere(_.start > char) - 1)
           // FIXME: Understand why we need to add a `+1` here to fix an off-by-one error
           Glyph(ttf, segment.rangeOffset/2 + (char - segment.start) + segment.rangeOffset + segment.delta + 1)
-      
+
       case class Format12(length: Int, language: Int, nGroups: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] = ???
 
 
     lazy val version = B16(data, offset).u16.int
     lazy val numTables = B16(data, offset + 2).u16.int
-    
+
     lazy val glyphEncodings: Seq[GlyphEncoding] = (0 until numTables).map: n =>
       val platformId = B16(data, offset + 4 + n*8).u16.int
       val encodingId = B16(data, offset + 6 + n*8).u16.int
       val subOffset = B32(data, offset + 8 + n*8).i32.int
-      
+
       GlyphEncoding(platformId, encodingId, offset + subOffset)
