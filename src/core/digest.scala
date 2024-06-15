@@ -38,7 +38,7 @@ import javax.crypto.Mac, javax.crypto.spec.SecretKeySpec
 import ju.Base64.getDecoder as Base64Decoder
 import java.lang as jl
 
-case class Alphabet[EncodingType <: BinaryEncoding](chars: Text, padding: Boolean):
+case class Alphabet[EncodingType <: Serialization](chars: Text, padding: Boolean):
   def apply(index: Int): Char = chars.s.charAt(index)
 
 sealed trait Algorithm:
@@ -126,7 +126,6 @@ trait HashFunction:
   def init(): DigestAccumulator
   def hmac0: Mac
 
-
 object Digest:
   def apply[HashType <: Algorithm](bytes: Bytes): Digest of HashType = new Digest(bytes):
     type Of = HashType
@@ -197,10 +196,9 @@ case class Digester(run: DigestAccumulator => Unit):
       run(accumulator)
       Digest[HashType](accumulator.digest())
 
-  def digest[ValueType: Digestible](value: ValueType): Digester = Digester:
-    accumulator =>
-      run(accumulator)
-      ValueType.digest(accumulator, value)
+  def digest[ValueType: Digestible](value: ValueType): Digester = Digester: accumulator =>
+    run(accumulator)
+    ValueType.digest(accumulator, value)
 
 trait DigestAccumulator:
   def append(bytes: Bytes): Unit
@@ -211,11 +209,11 @@ class MessageDigestAccumulator(md: MessageDigest) extends DigestAccumulator:
   def append(bytes: Bytes): Unit = messageDigest.update(bytes.mutable(using Unsafe))
   def digest(): Bytes = messageDigest.digest.nn.immutable(using Unsafe)
 
-erased trait BinaryEncoding
-erased trait Base64 extends BinaryEncoding
-erased trait Base32 extends BinaryEncoding
-erased trait Hex extends BinaryEncoding
-erased trait Binary extends BinaryEncoding
+erased trait Serialization
+erased trait Base64 extends Serialization
+erased trait Base32 extends Serialization
+erased trait Hex extends Serialization
+erased trait Binary extends Serialization
 
 package hashFunctions:
   given HashFunction of Crc32 as crc32 = Crc32.hashFunction
@@ -330,11 +328,11 @@ object Serializable:
         byte => append(Integer.toBinaryString(byte).nn.show.fit(8, Rtl, '0'))
 
 trait Deserializable:
-  type In <: BinaryEncoding
+  type In <: Serialization
   def decode(value: Text): Bytes
 
 trait Serializable:
-  type In <: BinaryEncoding
+  type In <: Serialization
   def encode(bytes: Bytes): Text
 
 object Deserializable:
@@ -354,7 +352,7 @@ object Deserializable:
       data.immutable(using Unsafe)
 
 extension (value: Text)
-  def decode[SchemeType <: BinaryEncoding](using decodable: Deserializable in SchemeType): Bytes =
+  def decode[SchemeType <: Serialization](using decodable: Deserializable in SchemeType): Bytes =
     decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
@@ -369,7 +367,7 @@ extension [ValueType: Encodable in Bytes](value: ValueType)
 
     Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))
 
-  def serialize[SchemeType <: BinaryEncoding](using encodable: Serializable in SchemeType): Text =
+  def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
     encodable.encode(value.binary)
 
 extension [SourceType: Readable by Bytes](source: SourceType)
