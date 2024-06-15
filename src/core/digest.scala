@@ -106,12 +106,6 @@ object Sha2:
     val name: Text = t"SHA-$bits"
     val hmacName: Text = t"HmacSHA$bits"
 
-trait Encodable:
-  val bytes: Bytes
-
-  def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =
-    bytes.encodeAs[SchemeType]
-
 object Hmac:
   def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
     type Of = SchemeType
@@ -356,20 +350,20 @@ object BinaryDecodable:
       data.immutable(using Unsafe)
 
 extension (value: Text)
-  def decode[SchemeType <: BinaryEncoding](using decodable: BinaryDecodable in SchemeType): Bytes = decodable.decode(value)
+  def decode[SchemeType <: BinaryEncoding](using decodable: BinaryDecodable in SchemeType): Bytes =
+    decodable.decode(value)
 
 extension [ValueType: Digestible](value: ValueType)
   def digest[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
-extension [ValueType: ByteCodec](value: ValueType)
+extension [ValueType: Encodable in Bytes](value: ValueType)
   def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
     val mac = function.hmac0
     mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
-    Hmac:
-      unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable)
+    Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))
 
 extension (bytes: Bytes)
   def encodeAs[SchemeType <: BinaryEncoding](using encodable: BinaryEncodable in SchemeType): Text =

@@ -98,14 +98,14 @@ object Tests extends Suite(t"Gastronomy tests"):
 
     test(t"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
-      val message: MessageData[Rsa[1024]] = privateKey.public.encrypt(t"Hello world")
-      privateKey.decrypt[Text](message.bytes)
+      val message: Bytes = privateKey.public.encrypt(t"Hello world")
+      privateKey.decrypt[Text](message)
     .assert(_ == t"Hello world")
 
     test(t"AES roundtrip"):
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       val message = key.encrypt(t"Hello world")
-      key.decrypt[Text](message.bytes)
+      key.decrypt[Text](message)
     .assert(_ == t"Hello world")
 
     test(t"Sign some data with DSA"):
