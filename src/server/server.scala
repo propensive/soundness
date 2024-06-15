@@ -47,7 +47,7 @@ trait Responder:
 case class Content(media: MediaType, stream: LazyList[Bytes])
 
 trait FallbackHandler:
-  given [ResponseType: Show](using encoder: CharEncoder): SimpleHandler[ResponseType] =
+  given [ResponseType: Showable](using encoder: CharEncoder): SimpleHandler[ResponseType] =
     SimpleHandler(media"text/plain"(charset = encoder.encoding.name), value =>
         HttpBody.Chunked(LazyList(value.show.bytes)))
 
@@ -149,7 +149,7 @@ case class Response[ContentType]
     handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
 object Request:
-  given Show[Request] = request =>
+  given Request is Showable = request =>
     val bodySample: Text =
       try request.body.stream.readAs[Bytes].utf8 catch
         case err: StreamError  => t"[-/-]"
