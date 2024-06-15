@@ -31,6 +31,9 @@ object CharEncoder:
   def unapply(name: Text): Option[CharEncoder] =
     Encoding.codecs.get(name.s.toLowerCase.nn.tt).map(CharEncoder(_))
 
-class CharEncoder(val encoding: Encoding { type CanEncode = true }):
+class CharEncoder(val encoding: Encoding { type CanEncode = true })
+extends Encodable:
+  type Self = Text
+  type Codec = Bytes
   def encode(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
   def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)

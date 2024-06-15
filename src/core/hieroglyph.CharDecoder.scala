@@ -36,11 +36,17 @@ object CharDecoder:
   def unapply(name: Text)(using EncodingMitigation): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
-class CharDecoder(val encoding: Encoding)(using handler: EncodingMitigation):
-  def decode(bytes: Bytes): Text =
+class CharDecoder(val encoding: Encoding)(using handler: EncodingMitigation)
+extends Decodable:
+  type Self = Text
+  type Codec = Bytes
+
+  def decode(bytes: Bytes, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()
     decode(LazyList(bytes)).each { text => buf.append(text.s) }
     buf.toString.tt
+
+  def decode(bytes: Bytes): Text = decode(bytes, false)
 
   def decode(stream: LazyList[Bytes]): LazyList[Text] =
     val decoder = encoding.charset.newDecoder().nn
