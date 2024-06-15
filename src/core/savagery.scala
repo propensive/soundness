@@ -40,7 +40,7 @@ object DxDy:
 
 object Xy:
   given encoder: Encoder[Xy] = value => t"${value.x.toString} ${value.y.toString}"
-  
+
 object Savagery:
   opaque type Degrees = Double
   opaque type SvgId = Text
@@ -52,14 +52,14 @@ object Savagery:
     def apply(degrees: Double): Degrees = degrees
 
     given encoder: Encoder[Degrees] = _.toString.tt
-    
+
   extension (point: Xy)
     @targetName("plus")
     infix def + (vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
-    
+
     @targetName("asVector")
     def `unary_~`: DxDy = DxDy(point.x, point.y)
-  
+
   extension (vector: DxDy)
     @targetName("plus2")
     infix def + (right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
@@ -78,7 +78,7 @@ enum Coords:
   def key(char: Char): Text = this match
     case Rel(_) => char.show.lower
     case Abs(_) => char.show.upper
-  
+
 export Coords.{Rel, Abs}
 
 enum PathOp:
@@ -91,7 +91,7 @@ enum PathOp:
 
 object PathOp:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
-  
+
   given Encoder[PathOp] =
     case Move(coords)                => t"${coords.key('m')} $coords"
     case Line(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
@@ -102,7 +102,7 @@ object PathOp:
     case Cubic(ctrl1, ctrl2, coords) => t"${coords.key('c')} ${ctrl1.option.get}, $ctrl2, $coords"
     case Quadratic(Unset, coords)    => t"${coords.key('t')} $coords"
     case Quadratic(ctrl1, coords)    => t"${coords.key('q')} ${ctrl1.option.get}, $coords"
-    
+
     case Arc(rx, ry, angle, largeArc, sweep, coords) =>
       t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep)} ${coords.encode}"
 
@@ -113,12 +113,12 @@ case class Path
      transform: List[Transform]    = Nil)
 extends Shape:
   import PathOp.*
-  
+
   def xml: Xml =
     val d: Text = ops.reverse.map(_.encode).join(t" ")
     // FIXME
     unsafely(Xml.parse(t"""<path d="$d"/>"""))
-  
+
   def moveTo(point: Xy): Path = Path(Move(Abs(point)) :: ops)
   def lineTo(point: Xy): Path = Path(Line(Abs(point)) :: ops)
   def move(vector: DxDy): Path = Path(Move(Rel(vector)) :: ops)
@@ -126,23 +126,23 @@ extends Shape:
 
   def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Path =
     Path(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
-  
+
   def curveTo(ctrl1: Xy, ctrl2: Xy, point: Xy): Path = Path(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
-  
+
   def curve(ctrl2: DxDy, vector: DxDy): Path = Path(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
   def curveTo(ctrl2: Xy, point: Xy): Path = Path(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
-  
+
   def quadCurve(ctrl1: DxDy, vector: DxDy): Path = Path(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
   def quadCurveTo(ctrl1: Xy, point: Xy): Path = Path(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
-  
+
   def quadCurve(vector: DxDy): Path = Path(Quadratic(Unset, Rel(vector)) :: ops)
   def quadCurveTo(point: Xy): Path = Path(Quadratic(Unset, Abs(point)) :: ops)
-  
+
   def moveUp(value: Float): Path = Path(Move(Rel(DxDy(value, 0.0))) :: ops)
   def moveDown(value: Float): Path = Path(Move(Rel(DxDy(-value, 0.0))) :: ops)
   def moveLeft(value: Float): Path = Path(Move(Rel(DxDy(0.0, -value))) :: ops)
   def moveRight(value: Float): Path = Path(Move(Rel(DxDy(0.0, value))) :: ops)
-  
+
   def lineUp(value: Float): Path = Path(Line(Rel(DxDy(value, 0.0))) :: ops)
   def lineDown(value: Float): Path = Path(Line(Rel(DxDy(-value, 0.0))) :: ops)
   def lineLeft(value: Float): Path = Path(Line(Rel(DxDy(0.0, -value))) :: ops)
@@ -158,7 +158,7 @@ case class Rectangle(position: Xy, width: Float, height: Float) extends Shape:
 
 case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
   def circle: Boolean = xRadius == yRadius
-  
+
   def xml: Xml = unsafely:
     Xml.parse:
       if circle then t"""<circle cx="${center.x.toDouble}" cy="${center.y.toDouble}" r="${xRadius.toDouble}"/>"""
@@ -184,15 +184,15 @@ enum Transform:
 
 sealed trait SvgDef
 
-case class LinearGradient[ColorType: RgbColor](stops: Stop[ColorType]*) extends SvgDef
+case class LinearGradient[ColorType: Chromatic](stops: Stop[ColorType]*) extends SvgDef
 
-case class Stop[ColorType: RgbColor](offset: 0.0 ~ 1.0, color: ColorType)
+case class Stop[ColorType: Chromatic](offset: 0.0 ~ 1.0, color: ColorType)
 
 case class SvgDoc(svg: Svg, encoding: Encoding)
 
 
 // extension (elem: Shape)
-//   def translate(vector: DxDy) 
+//   def translate(vector: DxDy)
 //   def scale(xScale: Float, yScale: Optional[Float])
 //   def skew()
 //   def rotate(angle: 0.0 ~ 360.0)
