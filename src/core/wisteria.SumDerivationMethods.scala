@@ -37,24 +37,22 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _: (variantType *: variantsType)  => all[variantType, variantsType]
     case _                                 => false
 
-  protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
-      (using variantIndex: Int & VariantIndex[VariantType],
-             reflection:   SumReflection[DerivationType])
+  protected transparent inline def complement[DerivationType: SumReflection, VariantType]
+      (sum: DerivationType)
+      (using variantIndex: Int & VariantIndex[VariantType])
           : Optional[VariantType] =
 
-    type Labels = reflection.MirroredElemLabels
-    type Variants = reflection.MirroredElemTypes
-    val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+    type Labels = DerivationType.MirroredElemLabels
+    type Variants = DerivationType.MirroredElemTypes
+    val size: Int = valueOf[Tuple.Size[DerivationType.MirroredElemTypes]]
 
-    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
+    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == DerivationType.ordinal(sum)):
       [VariantType2 <: DerivationType] => field =>
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
-  protected inline def variantLabels[DerivationType]
-      (using reflection: SumReflection[DerivationType])
-          : List[Text] =
+  protected inline def variantLabels[DerivationType: SumReflection]: List[Text] =
 
-    constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+    constValueTuple[DerivationType.MirroredElemLabels].toList.map(_.toString.tt)
 
   protected transparent inline def delegate[DerivationType](label: Text)
       (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
@@ -78,8 +76,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
     .vouch(using Unsafe)
 
-  protected transparent inline def variant[DerivationType](sum: DerivationType)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+  protected transparent inline def variant[DerivationType: SumReflection](sum: DerivationType)
+      (using requirement: ContextRequirement)
       [ResultType]
       (inline lambda: [VariantType <: DerivationType] =>
                           VariantType =>
@@ -89,18 +87,19 @@ trait SumDerivationMethods[TypeclassType[_]]:
                                   ResultType)
           : ResultType =
 
-    type Labels = reflection.MirroredElemLabels
-    type Variants = reflection.MirroredElemTypes
+    type Labels = DerivationType.MirroredElemLabels
+    type Variants = DerivationType.MirroredElemTypes
 
-    val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+    val size: Int = valueOf[Tuple.Size[DerivationType.MirroredElemTypes]]
 
-    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
+    fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == DerivationType.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
     .vouch(using Unsafe)
 
-  private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+  private transparent inline def fold
+      [DerivationType: SumReflection, VariantsType <: Tuple, LabelsType <: Tuple]
       (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+      (using requirement: ContextRequirement)
       (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
       [ResultType]
       (inline lambda: [VariantType <: DerivationType] =>
@@ -137,9 +136,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
         then raise(VariantError[DerivationType](inputLabel))(Unset)(using summonInline[Errant[VariantError]])
         else throw Panic(msg"Should be unreachable")
 
-  private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+  private transparent inline def fold[DerivationType: SumReflection, VariantsType <: Tuple, LabelsType <: Tuple]
       (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+      (using requirement: ContextRequirement)
       (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
       [ResultType]
       (inline lambda: [VariantType <: DerivationType] =>
