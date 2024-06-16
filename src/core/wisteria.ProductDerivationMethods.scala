@@ -24,8 +24,8 @@ import scala.deriving.*
 import scala.compiletime.*
 
 trait ProductDerivationMethods[TypeclassType[_]]:
-  protected transparent inline def construct[DerivationType <: Product: ProductReflection]
-      (using requirement: ContextRequirement)
+  protected transparent inline def construct[DerivationType <: Product]
+      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
       (inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
                               (typeclass: requirement.Optionality[TypeclassType[FieldType]],
@@ -35,17 +35,18 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                   FieldType)
           : DerivationType =
 
-    type Fields = DerivationType.MirroredElemTypes
-    type Labels = DerivationType.MirroredElemLabels
+    type Fields = reflection.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
 
-    DerivationType.fromProduct:
+    reflection.fromProduct:
       fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
       .reverse
 
   protected transparent inline def constructWith[ConstructorType[_]]
       (using requirement: ContextRequirement)
-      [DerivationType <: Product: ProductReflection]
+      [DerivationType <: Product]
+      (using reflection: ProductReflection[DerivationType])
       (inline bind: [InputType, OutputType] => ConstructorType[InputType] =>
                         (InputType => ConstructorType[OutputType]) =>
                             ConstructorType[OutputType],
@@ -59,8 +60,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                   ConstructorType[FieldType])
           : ConstructorType[DerivationType] =
 
-    type Fields = DerivationType.MirroredElemTypes
-    type Labels = DerivationType.MirroredElemLabels
+    type Fields = reflection.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
 
     val tuple: ConstructorType[Tuple] =
       fold[DerivationType, Fields, Labels, ConstructorType[Tuple]](pure(EmptyTuple), 0):
@@ -71,10 +72,10 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                 pure(result *: accumulator2)
 
     bind(tuple): tuple =>
-      pure(DerivationType.fromProduct(tuple.reverse))
+      pure(reflection.fromProduct(tuple.reverse))
 
-  protected transparent inline def contexts[DerivationType <: Product: ProductReflection]
-      (using requirement: ContextRequirement)
+  protected transparent inline def contexts[DerivationType <: Product]
+      (using reflection: ProductReflection[DerivationType], requirement: ContextRequirement)
       [ResultType]
       (inline lambda: [FieldType] =>
                           requirement.Optionality[TypeclassType[FieldType]] =>
@@ -86,32 +87,36 @@ trait ProductDerivationMethods[TypeclassType[_]]:
                                   ResultType)
           : IArray[ResultType] =
 
-    type Fields = DerivationType.MirroredElemTypes
-    type Labels = DerivationType.MirroredElemLabels
+    type Fields = reflection.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
 
     summonInline[ClassTag[ResultType]].give:
       IArray.create[ResultType](valueOf[Tuple.Size[Fields]]): array =>
         fold[DerivationType, Fields, Labels, Unit]((), 0): accumulator =>
           [FieldType] => context ?=> array(index) = lambda[FieldType](context)
 
-  inline def typeName[DerivationType: Reflection]: Text = valueOf[DerivationType.MirroredLabel].tt
+  inline def typeName[DerivationType](using reflection: Reflection[DerivationType]): Text =
+    valueOf[reflection.MirroredLabel].tt
 
-  inline def tuple[DerivationType: Reflection]: Boolean = compiletime.summonFrom:
-    case given (DerivationType.MirroredMonoType <:< Tuple) => true
-    case _                                                 => false
+  inline def tuple[DerivationType](using reflection: Reflection[DerivationType]): Boolean =
+    compiletime.summonFrom:
+      case given (reflection.MirroredMonoType <:< Tuple) => true
+      case _                                             => false
 
-  inline def singleton[DerivationType: Reflection]: Boolean = compiletime.summonFrom:
-    case given (DerivationType.MirroredMonoType <:< Singleton) => true
-    case _                                                     => false
+  inline def singleton[DerivationType](using reflection: Reflection[DerivationType]): Boolean =
+    compiletime.summonFrom:
+      case given (reflection.MirroredMonoType <:< Singleton) => true
+      case _                                                 => false
 
-  protected transparent inline def complement
-      [DerivationType <: Product: ProductReflection, FieldType]
+  protected transparent inline def complement[DerivationType <: Product, FieldType]
       (product: DerivationType)
-      (using fieldIndex:  Int & FieldIndex[FieldType], requirement: ContextRequirement)
+      (using fieldIndex:  Int & FieldIndex[FieldType],
+             reflection:  ProductReflection[DerivationType],
+             requirement: ContextRequirement)
           : FieldType =
 
-    type Labels = DerivationType.MirroredElemLabels
-    type Fields = DerivationType.MirroredElemTypes
+    type Labels = reflection.MirroredElemLabels
+    type Fields = reflection.MirroredElemTypes
     val tuple: Fields = Tuple.fromProductTyped(product)
 
     fold[DerivationType, Fields, Labels, Optional[FieldType]](tuple, Unset, 0):
@@ -119,9 +124,9 @@ trait ProductDerivationMethods[TypeclassType[_]]:
         if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
     .vouch(using Unsafe)
 
-  protected transparent inline def fields[DerivationType <: Product: ProductReflection]
-      (inline product: DerivationType)
+  protected transparent inline def fields[DerivationType <: Product](inline product: DerivationType)
       (using requirement: ContextRequirement)
+      (using reflection: ProductReflection[DerivationType])
       [ResultType]
       (inline lambda: [FieldType] =>
                           FieldType =>
@@ -133,8 +138,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           : IArray[ResultType] =
 
     summonInline[ClassTag[ResultType]].give:
-      type Labels = DerivationType.MirroredElemLabels
-      type Fields = DerivationType.MirroredElemTypes
+      type Labels = reflection.MirroredElemLabels
+      type Fields = reflection.MirroredElemTypes
       val tuple: Fields = Tuple.fromProductTyped(product)
 
       IArray.create[ResultType](tuple.size): array =>
