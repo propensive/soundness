@@ -573,6 +573,41 @@ object Decoder extends Derivation[Decoder]:
         [VariantType <: DerivationType] => decoder => decoder.decode(content)
 ```
 
+#### Derivation for Sum with all `Singleton` variants
+
+Sometimes it is useful to derive a typeclass _only_ for enums of singleton variants, such as,
+```
+enum Country:
+  case De, Fr, Gb
+```
+but not for enumerations with one or more structural cases such as:
+```
+enum Language:
+  case En(dialect: Dialect) // English; multiple dialects
+  case Eo                   // Esperanto; no dialects
+```
+The `allSingletons` method returns `true` if every case in a sum type is a
+singleton. This also applies to sealed traits of case objects.
+
+Here is an example of its use deriving `Show`:
+```
+trait Show[ValueType]:
+  def show(value: ValueType): String
+
+object Show extends Derivation[Show]:
+  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+    value => ???
+
+  inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
+    inline if !allSingletons then compiletime.error("cannot derive") else
+      variant(value): [VariantType <: DerivationType] =>
+        variant => typeName.s+"."+variant.show
+```
+
+Note that `inline if` is used to ensure that `allSingletons` is evaluated at
+_compiletime_, enabling the error branch (`compiletime.error`) to be retained
+or eliminated. If it is retained, compilation will fail.
+
 ### Optional Derivation
 
 By default, derivation will fail at compiletime if a field's or variant's corresponding typeclass instance

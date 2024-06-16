@@ -26,6 +26,17 @@ import scala.deriving.*
 import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
+
+  transparent inline def allSingletons[DerivationType: SumReflection]: Boolean =
+    inline erasedValue[DerivationType.MirroredElemTypes] match
+      case _: (variantType *: variantTypes) => all[variantType, variantTypes]
+
+  private transparent inline def all[VariantType, VariantTypes <: Tuple]: Boolean = summonFrom:
+    case given (VariantType <:< Singleton) => inline erasedValue[VariantTypes] match
+      case _: EmptyTuple                     => true
+      case _: (variantType *: variantsType)  => all[variantType, variantsType]
+    case _                                 => false
+
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
       (using variantIndex: Int & VariantIndex[VariantType],
              reflection:   SumReflection[DerivationType])
