@@ -27,18 +27,15 @@ import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
 
-  transparent inline def allSingletons[DerivationType](using reflection: SumReflection[DerivationType]): Boolean =
-    inline erasedValue[reflection.MirroredElemTypes] match
-      case _: (variantType *: variantTypes) =>
-        fold[variantType, variantTypes]
+  transparent inline def allSingletons[DerivationType: SumReflection]: Boolean =
+    inline erasedValue[DerivationType.MirroredElemTypes] match
+      case _: (variantType *: variantTypes) => all[variantType, variantTypes]
 
-  private transparent inline def fold[VariantType, VariantTypes <: Tuple]: Boolean = 
-     summonFrom:
-        case given (VariantType <:< Singleton) => 
-          inline erasedValue[VariantTypes] match
-            case _: EmptyTuple => true
-            case _: (variantType *: variantsType) => fold[variantType, variantsType]
-        case _ => false
+  private transparent inline def all[VariantType, VariantTypes <: Tuple]: Boolean = summonFrom:
+    case given (VariantType <:< Singleton) => inline erasedValue[VariantTypes] match
+      case _: EmptyTuple                     => true
+      case _: (variantType *: variantsType)  => all[variantType, variantsType]
+    case _                                 => false
 
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
       (using variantIndex: Int & VariantIndex[VariantType],

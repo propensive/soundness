@@ -575,37 +575,38 @@ object Decoder extends Derivation[Decoder]:
 
 #### Derivation for Sum with all `Singleton` variants
 
-Sometimes you want to derive a typeclass for enums that contain singleton variants only:
+Sometimes it is useful to derive a typeclass _only_ for enums of singleton variants, such as,
 ```
-// only singleton variants
 enum Country:
-  case DE, FR, GB
-
-// Http is case class
-enum Error:
-  case Simple
-  case Http(statusCode: Int)
+  case De, Fr, Gb
 ```
-there is a method you can use to remove complex enums from derivation, called `allSingletons`. It can help determine if `DerivationType` variants are all `Singleton` type, like `Country`:
+but not for enumerations with one or more structural cases such as:
 ```
-trait Show[T] {
-  def show(value: T): String
-}
+enum Language:
+  case En(dialect: Dialect) // English; multiple dialects
+  case Eo                   // Esperanto; no dialects
+```
+The `allSingletons` method returns `true` if every case in a sum type is a
+singleton. This also applies to sealed traits of case objects.
 
-object Show extends Derivation[Show] {
+Here is an example of its use deriving `Show`:
+```
+trait Show[ValueType]:
+  def show(value: ValueType): String
 
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
-    ???
+object Show extends Derivation[Show]:
+  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+    value => ???
 
   inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-    inline if allSingletons then
+    inline if !allSingletons then compiletime.error("cannot derive") else
       variant(value): [VariantType <: DerivationType] =>
         variant => typeName.s+"."+variant.show
-    else 
-      compiletime.error("cannot derive Show for adt")
-}
 ```
-Using `inline if` is what makes this check compiletime
+
+Note that `inline if` is used to ensure that `allSingletons` is evaluated at
+_compiletime_, enabling the error branch (`compiletime.error`) to be retained
+or eliminated. If it is retained, compilation will fail.
 
 ### Optional Derivation
 
