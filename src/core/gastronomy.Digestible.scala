@@ -16,18 +16,18 @@
 
 package gastronomy
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import wisteria.*
-import gossamer.*
-import anticipation.*
-import hieroglyph.*
+import java.lang as jl
 
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
 
-import java.lang as jl
+import anticipation.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import rudiments.*
+import vacuous.*
+import wisteria.*
 
 object Digestible extends Derivable[Digestible]:
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Digestible =

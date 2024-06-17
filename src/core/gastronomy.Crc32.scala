@@ -16,15 +16,14 @@
 
 package gastronomy
 
+import java.util as ju, ju.zip as juz
+import javax.crypto as jc
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-
-import java.util as ju
-import ju.zip as juz
-import javax.crypto as jc
 
 object Crc32:
   given HashFunction of Crc32 as hashFunction:

@@ -16,14 +16,14 @@
 
 package gastronomy
 
-import rudiments.*
-import vacuous.*
-import anticipation.*
-import spectacular.*
+import java.util as ju
 
 import scala.compiletime.*
 
-import java.util as ju
+import anticipation.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 object Digest:
   def apply[HashType <: Algorithm](bytes: Bytes): Digest of HashType = new Digest(bytes):

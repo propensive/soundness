@@ -16,11 +16,11 @@
 
 package gastronomy
 
-import rudiments.*
-import gossamer.*
 import anticipation.*
-import spectacular.*
+import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import rudiments.*
+import spectacular.*
 
 object Serializable:
   private val HexLookup: Bytes = IArray.from(t"0123456789ABCDEF".bytes(using charEncoders.ascii))

@@ -16,9 +16,9 @@
 
 package gastronomy
 
-import anticipation.*
-
 import javax.crypto as jc
+
+import anticipation.*
 
 trait HashFunction:
   type Of <: Algorithm

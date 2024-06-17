@@ -16,8 +16,8 @@
 
 package gastronomy
 
-import gossamer.*
 import anticipation.*
+import gossamer.*
 import spectacular.*
 
 object Hmac:

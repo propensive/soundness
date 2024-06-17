@@ -16,11 +16,11 @@
 
 package gastronomy
 
+import java.security as js
+
+import anticipation.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
-
-import java.security as js
 
 class MessageDigestion(md: js.MessageDigest) extends Digestion:
   private val messageDigest: js.MessageDigest = md

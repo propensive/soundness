@@ -16,12 +16,12 @@
 
 package gastronomy
 
-import java.security as js, js.spec.*
+import java.security as js, js.spec as jss, js.interfaces as jsi
 
+import anticipation.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
-import anticipation.*
 
 object Dsa:
   given [BitsType <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[BitsType] = Dsa()
@@ -37,33 +37,33 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signi
     val keyPair = generator.generateKeyPair().nn
 
     val pubKey = keyPair.getPublic.nn match
-      case key: js.interfaces.DSAPublicKey => key
-      case key: js.PublicKey               => throw Panic(msg"unexpected public key type")
+      case key: jsi.DSAPublicKey => key
+      case key: js.PublicKey     => throw Panic(msg"unexpected public key type")
 
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
   def sign(data: Bytes, keyBytes: Bytes): Bytes =
     val sig = init()
-    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array)))
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyBytes.to(Array)))
     sig.initSign(key)
     sig.update(data.to(Array))
     sig.sign().nn.immutable(using Unsafe)
 
   def verify(data: Bytes, signature: Bytes, keyBytes: Bytes): Boolean =
     val sig = init()
-    val key = keyFactory().generatePublic(X509EncodedKeySpec(keyBytes.to(Array)))
+    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyBytes.to(Array)))
     sig.initVerify(key)
     sig.update(data.to(Array))
     sig.verify(signature.to(Array))
 
   def privateToPublic(keyBytes: Bytes): Bytes =
-    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(keyBytes.to(Array))).nn match
-      case key: js.interfaces.DSAPrivateKey => key
-      case key: js.PrivateKey               => throw Panic(msg"unexpected private key type")
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyBytes.to(Array))).nn match
+      case key: jsi.DSAPrivateKey => key
+      case key: js.PrivateKey     => throw Panic(msg"unexpected private key type")
 
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)
-    val spec = DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
+    val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
   private def init(): js.Signature = js.Signature.getInstance("DSA").nn

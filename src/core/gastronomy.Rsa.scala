@@ -17,13 +17,13 @@
 package gastronomy
 
 import javax.crypto as jc
-import java.security as js, js.spec.*
+import java.security as js, js.spec as jss, js.interfaces as jsi
 
+import anticipation.*
+import contingency.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
-import contingency.*
-import anticipation.*
 
 object Rsa:
   given [I <: 1024 | 2048: ValueOf] => Rsa[I] = Rsa()
@@ -33,22 +33,22 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   def keySize: BitsType = valueOf[BitsType]
 
   def privateToPublic(bytes: Bytes): Bytes =
-    val key = keyFactory().generatePrivate(PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn match
-      case key: js.interfaces.RSAPrivateCrtKey => key
-      case key: js.PrivateKey                  => throw Panic(msg"unexpected private key type")
+    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn match
+      case key: jsi.RSAPrivateCrtKey => key
+      case key: js.PrivateKey        => throw Panic(msg"unexpected private key type")
 
-    val spec = RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
+    val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
 
   def decrypt(bytes: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
-    val privateKey = keyFactory().generatePrivate(PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
+    val privateKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(jc.Cipher.DECRYPT_MODE, privateKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
   def encrypt(bytes: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
-    val publicKey = keyFactory().generatePublic(X509EncodedKeySpec(key.mutable(using Unsafe)))
+    val publicKey = keyFactory().generatePublic(jss.X509EncodedKeySpec(key.mutable(using Unsafe)))
     cipher.init(jc.Cipher.ENCRYPT_MODE, publicKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 

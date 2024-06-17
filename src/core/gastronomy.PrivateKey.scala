@@ -16,10 +16,10 @@
 
 package gastronomy
 
-import contingency.*
 import anticipation.*
-import spectacular.*
+import contingency.*
 import gossamer.*
+import spectacular.*
 
 object PrivateKey:
   def generate[CipherType <: Cipher]()(using cipher: CipherType): PrivateKey[CipherType] =

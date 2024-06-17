@@ -16,9 +16,9 @@
 
 package gastronomy
 
-import rudiments.*
-
 import scala.compiletime.*, ops.int.*
+
+import rudiments.*
 
 case class Digester(run: Digestion => Unit):
   def apply[HashType <: Algorithm](using function: HashFunction of HashType): Digest of HashType =

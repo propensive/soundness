@@ -16,9 +16,9 @@
 
 package gastronomy
 
+import anticipation.*
 import gossamer.*
 import spectacular.*
-import anticipation.*
 
 object PublicKey:
   given [KeyType <: Cipher] => PublicKey[KeyType] is Showable = key =>

@@ -16,18 +16,18 @@
 
 package gastronomy
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import contingency.*
-import gossamer.*
-import anticipation.*
+import java.util as ju
+import ju.Base64.getDecoder as Base64Decoder
 
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
 
-import java.util as ju
-import ju.Base64.getDecoder as Base64Decoder
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
 trait Deserializable:
   type In <: Serialization

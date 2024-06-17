@@ -16,13 +16,13 @@
 
 package gastronomy
 
-import rudiments.*
-import anticipation.*
+import java.security as js
+import javax.crypto as jc
 
 import scala.compiletime.*, ops.int.*
 
-import java.security as js
-import javax.crypto as jc
+import anticipation.*
+import rudiments.*
 
 trait JavaHashFunction extends HashFunction:
   def init(): Digestion = new MessageDigestion(js.MessageDigest.getInstance(name.s).nn)

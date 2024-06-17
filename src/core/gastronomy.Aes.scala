@@ -18,9 +18,9 @@ package gastronomy
 
 import javax.crypto as jc, javax.crypto.spec.*
 
+import anticipation.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
 
 object Aes:
   given [BitsType <: 128 | 192 | 256: ValueOf] => Aes[BitsType] = Aes()

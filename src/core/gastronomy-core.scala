@@ -16,16 +16,16 @@
 
 package gastronomy
 
-import rudiments.*
-import contingency.*
-import turbulence.*
-import symbolism.*
-import gossamer.*
-import anticipation.*
+import javax.crypto.spec.SecretKeySpec
 
 import scala.compiletime.*, ops.int.*
 
-import javax.crypto.spec.SecretKeySpec
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
 
 infix type of [Type <: { type Of }, OfType] = Type { type Of = OfType }
 

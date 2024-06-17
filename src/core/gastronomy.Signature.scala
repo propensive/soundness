@@ -16,9 +16,9 @@
 
 package gastronomy
 
+import anticipation.*
 import gossamer.*
 import spectacular.*
-import anticipation.*
 
 object Signature:
   given [SignatureType <: Cipher] => Signature[SignatureType] is Showable = sig =>

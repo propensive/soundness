@@ -16,9 +16,9 @@
 
 package gastronomy
 
-import rudiments.*
-import gossamer.{take as _, *}
 import anticipation.*
+import gossamer.{take as _, *}
+import rudiments.*
 import spectacular.*
 
 object PemLabel:

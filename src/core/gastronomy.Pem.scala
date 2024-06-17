@@ -16,11 +16,11 @@
 
 package gastronomy
 
-import rudiments.*
-import gossamer.{take as _, *}
 import anticipation.*
 import contingency.*
+import gossamer.{take as _, *}
 import kaleidoscope.*
+import rudiments.*
 import vacuous.*
 
 case class Pem(label: PemLabel, data: Bytes):

@@ -16,8 +16,8 @@
 
 package gastronomy
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 
 trait Cipher:
   type Size <: Nat

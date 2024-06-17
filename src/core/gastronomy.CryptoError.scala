@@ -16,7 +16,7 @@
 
 package gastronomy
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 case class CryptoError(detail: Text) extends Error(msg"could not decode the encrypted data: $detail")
