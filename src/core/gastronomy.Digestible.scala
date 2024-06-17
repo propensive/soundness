@@ -45,10 +45,12 @@ object Digestible extends Derivable[Digestible]:
       => Optional[ValueType] is Digestible as optional =
     (acc, value) => value.let(ValueType.digest(acc, _))
 
-  given [IterableType <: Iterable, ValueType: Digestible] => IterableType[ValueType] is Digestible as iterable =
+  given [IterableType <: Iterable, ValueType: Digestible]
+      => IterableType[ValueType] is Digestible as iterable =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
-  given [KeyType: Digestible, ValueType: Digestible] => Map[KeyType, ValueType] is Digestible as map =
+  given [KeyType: Digestible, ValueType: Digestible]
+      => Map[KeyType, ValueType] is Digestible as map =
     (digestion, map) => map.each: (key, value) =>
       KeyType.digest(digestion, key)
       ValueType.digest(digestion, value)
@@ -68,15 +70,25 @@ object Digestible extends Derivable[Digestible]:
   given Float is Digestible =
     (digestion, value) => int.digest(digestion, jl.Float.floatToRawIntBits(value))
 
-  given Boolean is Digestible = (digestion, boolean) => digestion.append(IArray(if boolean then 1.toByte else 0.toByte))
+  given Boolean is Digestible =
+    (digestion, boolean) => digestion.append(IArray(if boolean then 1.toByte else 0.toByte))
+
   given Byte is Digestible = (digestion, byte) => digestion.append(IArray(byte))
-  given Short is Digestible = (digestion, short) => digestion.append(IArray((short >> 8).toByte, short.toByte))
-  given Char is Digestible = (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
-  given Text is Digestible = (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
+
+  given Short is Digestible =
+    (digestion, short) => digestion.append(IArray((short >> 8).toByte, short.toByte))
+
+  given Char is Digestible =
+    (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
+
+  given Text is Digestible =
+    (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
+
   given Bytes is Digestible as bytes = _.append(_)
   given Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
-  given [ValueType: Encodable in Bytes] => ValueType is Digestible = bytes.contramap(ValueType.encode)
 
+  given [ValueType: Encodable in Bytes] => ValueType is Digestible =
+    bytes.contramap(ValueType.encode)
 
 trait Digestible:
   digestible =>
@@ -86,4 +98,6 @@ trait Digestible:
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Digestible = new Digestible:
     type Self = SelfType2
-    def digest(digestion: Digestion, value: Self): Unit = digestible.digest(digestion, lambda(value))
+
+    def digest(digestion: Digestion, value: Self): Unit =
+      digestible.digest(digestion, lambda(value))
