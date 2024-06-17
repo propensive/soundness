@@ -20,7 +20,6 @@ import probably.*
 import rudiments.*
 import anticipation.*
 import gossamer.*
-import enigmatic.*
 import monotonous.*
 import contingency.*, errorHandlers.throwUnsafely
 import spectacular.*
@@ -78,70 +77,3 @@ object Tests extends Suite(t"Gastronomy tests"):
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     .assert(_ == t"00000001000000100000001100000100")
 
-    test(t"Extract PEM message type"):
-      val example = t"""
-        |-----BEGIN EXAMPLE-----
-        |MIIB9TCCAWACAQAwgbgxGTAXBgNVBAoMEFF1b1ZhZGlzIExpbWl0ZWQxHDAaBgNV
-        |-----END EXAMPLE-----
-        """.s.stripMargin.show
-      println(example)
-
-      Pem.parse(example).label
-    .assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
-
-    test(t"Decode PEM certificate"):
-      import alphabets.base64.standard
-      Pem.parse(request).data.digest[Md5].serialize[Base64]
-    .assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
-
-    test(t"PEM roundtrip"):
-      Pem.parse(request).serialize
-    .assert(_ == request.trim)
-
-    test(t"RSA roundtrip"):
-      val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
-      val message: Bytes = privateKey.public.encrypt(t"Hello world")
-      privateKey.decrypt[Text](message)
-    .assert(_ == t"Hello world")
-
-    test(t"AES roundtrip"):
-      val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
-      val message = key.encrypt(t"Hello world")
-      key.decrypt[Text](message)
-    .assert(_ == t"Hello world")
-
-    test(t"Sign some data with DSA"):
-      val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
-      val message = t"Hello world"
-      val signature = privateKey.sign(message)
-      privateKey.public.verify(message, signature)
-    .assert(identity)
-
-    test(t"Check bad signature"):
-      val privateKey: PrivateKey[Dsa[1024]] = PrivateKey.generate[Dsa[1024]]()
-      val message = t"Hello world"
-      val signature = privateKey.sign(t"Something else")
-      privateKey.public.verify(message, signature)
-    .assert(!identity(_))
-
-    test(t"MD5 HMAC"):
-      pangram.hmac[Md5](t"key".bytes).serialize[Hex]
-    .check(_ == t"80070713463E7749B90C2DC24911E275")
-
-    test(t"SHA1 HMAC"):
-      pangram.hmac[Sha1](t"key".bytes).serialize[Hex]
-    .assert(_ == t"DE7C9B85B8B78AA6BC8A7A36F70A90701C9DB4D9")
-
-    test(t"SHA256 HMAC"):
-      pangram.hmac[Sha2[256]](t"key".bytes).serialize[Hex]
-    .assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
-
-    test(t"SHA384 HMAC"):
-      import alphabets.base64.standard
-      pangram.hmac[Sha2[384]](t"key".bytes).serialize[Base64]
-    .assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
-
-    test(t"SHA512 HMAC"):
-      import alphabets.base64.standard
-      pangram.hmac[Sha2[512]](t"key".bytes).serialize[Base64]
-    .assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")

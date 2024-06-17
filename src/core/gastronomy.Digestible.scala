@@ -18,7 +18,7 @@ package gastronomy
 
 import java.lang as jl
 
-import scala.collection.*
+import scala.collection as sc
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
@@ -45,8 +45,13 @@ object Digestible extends Derivable[Digestible]:
       => Optional[ValueType] is Digestible as optional =
     (acc, value) => value.let(ValueType.digest(acc, _))
 
-  given [ValueType: Digestible] => Iterable[ValueType] is Digestible as iterable =
+  given [IterableType <: Iterable, ValueType: Digestible] => IterableType[ValueType] is Digestible as iterable =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
+
+  given [KeyType: Digestible, ValueType: Digestible] => sc.Map[KeyType, ValueType] is Digestible as map =
+    (digestion, map) => map.each: (key, value) =>
+      KeyType.digest(digestion, key)
+      ValueType.digest(digestion, value)
 
   given [ValueType: Digestible] => LazyList[ValueType] is Digestible as lazyList =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
@@ -68,9 +73,17 @@ object Digestible extends Derivable[Digestible]:
   given Short is Digestible = (digestion, short) => digestion.append(IArray((short >> 8).toByte, short.toByte))
   given Char is Digestible = (digestion, char) => digestion.append(IArray((char >> 8).toByte, char.toByte))
   given Text is Digestible = (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
-  given Bytes is Digestible = _.append(_)
+  given Bytes is Digestible as bytes = _.append(_)
   given Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
+  given [ValueType: Encodable in Bytes] => ValueType is Digestible = bytes.contramap(ValueType.encode)
+
 
 trait Digestible:
+  digestible =>
+
   type Self
   def digest(digestion: Digestion, value: Self): Unit
+
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Digestible = new Digestible:
+    type Self = SelfType2
+    def digest(digestion: Digestion, value: Self): Unit = digestible.digest(digestion, lambda(value))
