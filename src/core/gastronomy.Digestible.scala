@@ -48,7 +48,7 @@ object Digestible extends Derivable[Digestible]:
   given [IterableType <: Iterable, ValueType: Digestible] => IterableType[ValueType] is Digestible as iterable =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
-  given [KeyType: Digestible, ValueType: Digestible] => sc.Map[KeyType, ValueType] is Digestible as map =
+  given [KeyType: Digestible, ValueType: Digestible] => Map[KeyType, ValueType] is Digestible as map =
     (digestion, map) => map.each: (key, value) =>
       KeyType.digest(digestion, key)
       ValueType.digest(digestion, value)
