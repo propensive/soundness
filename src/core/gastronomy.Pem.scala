@@ -20,27 +20,8 @@ import rudiments.*
 import gossamer.{take as _, *}
 import anticipation.*
 import contingency.*
-import spectacular.*
-import fulminate.*
 import kaleidoscope.*
 import vacuous.*
-
-object PemLabel:
-  lazy val index: Map[Text, PemLabel] =
-    (0 to 17).map(fromOrdinal(_)).indexBy(_.toString.tt.uncamel.map(_.upper).join(t" "))
-
-  given PemLabel is Showable =
-    case Proprietary(label) => label
-    case other              => other.toString.tt.uncamel.map(_.upper).join(t" ")
-
-  def unapply(text: Text): Some[PemLabel] = Some(index.get(text).getOrElse(Proprietary(text)))
-
-enum PemLabel:
-  case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey, DsaPrivateKey,
-      EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters, X509Crl, AttributeCertificate,
-      EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
-
-  case Proprietary(label: Text)
 
 case class Pem(label: PemLabel, data: Bytes):
   def serialize: Text =
@@ -73,16 +54,3 @@ object Pem:
         val joined: Text = lines.tail.take(index).join
         tend(Pem(label, joined.decode[Base64])).remedy:
           case CryptoError(_) => abort(PemError(PemError.Reason.BadBase64))
-
-object PemError:
-  given Reason is Communicable =
-    case Reason.BadBase64    => msg"could not parse the BASE-64 PEM message"
-    case Reason.BeginMissing => msg"the BEGIN line could not be found"
-    case Reason.EndMissing   => msg"the END line could not be found"
-    case Reason.EmptyFile    => msg"the file was empty"
-
-  enum Reason:
-    case BeginMissing, EndMissing, BadBase64, EmptyFile
-
-case class PemError(reason: PemError.Reason)
-extends Error(msg"could not parse PEM content because $reason")
