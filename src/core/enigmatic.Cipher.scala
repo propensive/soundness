@@ -14,24 +14,13 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
+import rudiments.*
 
-object SymmetricKey:
-  given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
-  def generate[CipherType <: Cipher & Symmetric]()(using cipher: CipherType)
-          : SymmetricKey[CipherType] =
-
-    SymmetricKey(cipher.genKey())
-
-class SymmetricKey[CipherType <: Cipher](private[gastronomy] val bytes: Bytes)
-extends PrivateKey[CipherType](bytes):
-  def encrypt[ValueType: Encodable in Bytes](value: ValueType)(using CipherType & Encryption): Bytes =
-    public.encrypt(value)
-
-  def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
-      (using CipherType & Signing)
-          : Boolean =
-
-    public.verify(value, signature)
+trait Cipher:
+  type Size <: Nat
+  def keySize: Size
+  def privateToPublic(key: Bytes): Bytes
+  def genKey(): Bytes

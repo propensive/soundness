@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import java.security as js, js.spec as jss, js.interfaces as jsi
 

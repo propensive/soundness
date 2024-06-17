@@ -16,14 +16,8 @@
 
 package gastronomy
 
-import javax.crypto.spec.SecretKeySpec
-
-import scala.compiletime.*, ops.int.*
-
 import anticipation.*
-import contingency.*
 import gossamer.*
-import rudiments.*
 import symbolism.*
 import turbulence.*
 
@@ -88,16 +82,10 @@ extension [ValueType: Digestible](value: ValueType)
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
-    val mac = function.hmac0
-    mac.init(SecretKeySpec(key.to(Array), function.name.s))
-
-    Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))
-
-  def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
-    encodable.encode(value.binary)
-
 extension [SourceType: Readable by Bytes](source: SourceType)
   def checksum[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
     source.stream[Bytes].digest[HashType]
+
+extension [ValueType: Encodable in Bytes](value: ValueType)
+  def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
+    encodable.encode(value.binary)

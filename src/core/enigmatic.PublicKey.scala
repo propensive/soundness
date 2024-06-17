@@ -14,9 +14,10 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
+import gastronomy.*
 import gossamer.*
 import spectacular.*
 

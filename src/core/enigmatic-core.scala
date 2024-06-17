@@ -14,6 +14,20 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
-trait Symmetric
+import javax.crypto.spec.SecretKeySpec
+
+import scala.compiletime.*, ops.int.*
+
+import anticipation.*
+import contingency.*
+import gastronomy.*
+import rudiments.*
+
+extension [ValueType: Encodable in Bytes](value: ValueType)
+  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
+    val mac = function.hmac0
+    mac.init(SecretKeySpec(key.to(Array), function.name.s))
+
+    Hmac(unsafely(mac.doFinal(ValueType.encode(value).mutable).nn.immutable))

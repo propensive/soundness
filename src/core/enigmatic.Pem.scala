@@ -14,10 +14,11 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
 import contingency.*
+import gastronomy.*
 import gossamer.{take as _, *}
 import kaleidoscope.*
 import rudiments.*

@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
 import gossamer.{take as _, *}

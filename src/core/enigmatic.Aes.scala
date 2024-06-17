@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import javax.crypto as jc, javax.crypto.spec.*
 

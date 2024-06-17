@@ -14,10 +14,11 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
 import contingency.*
+import gastronomy.*
 import gossamer.*
 import spectacular.*
 
@@ -29,7 +30,7 @@ object PrivateKey:
     import alphabets.base64.standard
     t"PrivateKey(${key.privateBytes.digest[Sha2[256]].serialize[Base64]})"
 
-open case class PrivateKey[CipherType <: Cipher](private[gastronomy] val privateBytes: Bytes):
+open case class PrivateKey[CipherType <: Cipher](private[enigmatic] val privateBytes: Bytes):
   def public(using cipher: CipherType): PublicKey[CipherType] =
     PublicKey(cipher.privateToPublic(privateBytes))
 

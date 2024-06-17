@@ -14,20 +14,24 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
-import fulminate.*
 
-object PemError:
-  given Reason is Communicable =
-    case Reason.BadBase64    => msg"could not parse the BASE-64 PEM message"
-    case Reason.BeginMissing => msg"the BEGIN line could not be found"
-    case Reason.EndMissing   => msg"the END line could not be found"
-    case Reason.EmptyFile    => msg"the file was empty"
+object SymmetricKey:
+  given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
+  def generate[CipherType <: Cipher & Symmetric]()(using cipher: CipherType)
+          : SymmetricKey[CipherType] =
 
-  enum Reason:
-    case BeginMissing, EndMissing, BadBase64, EmptyFile
+    SymmetricKey(cipher.genKey())
 
-case class PemError(reason: PemError.Reason)
-extends Error(msg"could not parse PEM content because $reason")
+class SymmetricKey[CipherType <: Cipher](private[enigmatic] val bytes: Bytes)
+extends PrivateKey[CipherType](bytes):
+  def encrypt[ValueType: Encodable in Bytes](value: ValueType)(using CipherType & Encryption): Bytes =
+    public.encrypt(value)
+
+  def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
+      (using CipherType & Signing)
+          : Boolean =
+
+    public.verify(value, signature)

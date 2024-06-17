@@ -14,17 +14,21 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
+import gastronomy.*
 import gossamer.*
 import spectacular.*
 
-object Signature:
-  given [SignatureType <: Cipher] => Signature[SignatureType] is Showable = sig =>
-    import alphabets.base64.standard
-    t"Signature(${sig.bytes.serialize[Base64]})"
+object Hmac:
+  def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
+    type Of = SchemeType
 
-  given [CipherType <: Cipher] => Signature[CipherType] is Encodable in Bytes = _.bytes
+  given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
+    t"Hmac(${hmac.bytes.serialize[Base64]})"
 
-case class Signature[+CipherType <: Cipher](bytes: Bytes)
+  given [HmacType <: Algorithm] => Hmac of HmacType is Encodable in Bytes = _.bytes
+
+class Hmac(val bytes: Bytes):
+  type Of <: Algorithm

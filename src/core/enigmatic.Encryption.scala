@@ -14,13 +14,10 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
-import rudiments.*
 
-trait Cipher:
-  type Size <: Nat
-  def keySize: Size
-  def privateToPublic(key: Bytes): Bytes
-  def genKey(): Bytes
+trait Encryption:
+  def encrypt(value: Bytes, privateKey: Bytes): Bytes
+  def decrypt(bytes: Bytes, publicKey: Bytes): Bytes

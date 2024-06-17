@@ -14,6 +14,20 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
-object ExposeSecretKey
+import anticipation.*
+import fulminate.*
+
+object PemError:
+  given Reason is Communicable =
+    case Reason.BadBase64    => msg"could not parse the BASE-64 PEM message"
+    case Reason.BeginMissing => msg"the BEGIN line could not be found"
+    case Reason.EndMissing   => msg"the END line could not be found"
+    case Reason.EmptyFile    => msg"the file was empty"
+
+  enum Reason:
+    case BeginMissing, EndMissing, BadBase64, EmptyFile
+
+case class PemError(reason: PemError.Reason)
+extends Error(msg"could not parse PEM content because $reason")

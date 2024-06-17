@@ -14,10 +14,18 @@
     and limitations under the License.
 */
 
-package gastronomy
+package enigmatic
 
 import anticipation.*
+import gastronomy.*
+import gossamer.*
+import spectacular.*
 
-trait Encryption:
-  def encrypt(value: Bytes, privateKey: Bytes): Bytes
-  def decrypt(bytes: Bytes, publicKey: Bytes): Bytes
+object Signature:
+  given [SignatureType <: Cipher] => Signature[SignatureType] is Showable = sig =>
+    import alphabets.base64.standard
+    t"Signature(${sig.bytes.serialize[Base64]})"
+
+  given [CipherType <: Cipher] => Signature[CipherType] is Encodable in Bytes = _.bytes
+
+case class Signature[+CipherType <: Cipher](bytes: Bytes)
