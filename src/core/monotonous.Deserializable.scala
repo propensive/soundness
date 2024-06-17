@@ -31,17 +31,17 @@ import vacuous.*
 
 trait Deserializable:
   type In <: Serialization
-  def decode(value: Text): Bytes
+  def deserialize(value: Text): Bytes
 
 object Deserializable:
   given (using Errant[SerializationError]) => Deserializable in Base64:
-    def decode(value: Text): Bytes =
+    def deserialize(value: Text): Bytes =
       try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
       catch case _: IllegalArgumentException =>
         abort(SerializationError(t"an invalid BASE-64 character found"))
 
   given Deserializable in Hex:
-    def decode(value: Text): Bytes =
+    def deserialize(value: Text): Bytes =
       import java.lang.Character.digit
       val data = Array.fill[Byte](value.length/2)(0)
 

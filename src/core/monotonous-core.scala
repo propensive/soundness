@@ -62,8 +62,8 @@ package alphabets:
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
-  def decode[SchemeType <: Serialization](using decodable: Deserializable in SchemeType): Bytes =
-    decodable.decode(value)
+  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType): Bytes =
+    deserializable.deserialize(value)
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
   def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
