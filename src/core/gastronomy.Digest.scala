@@ -21,6 +21,7 @@ import java.util as ju
 import scala.compiletime.*
 
 import anticipation.*
+import monotonous.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

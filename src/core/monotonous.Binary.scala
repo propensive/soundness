@@ -14,6 +14,6 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
-erased trait Base32 extends Serialization
+erased trait Binary extends Serialization

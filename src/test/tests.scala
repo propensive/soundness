@@ -21,6 +21,7 @@ import rudiments.*
 import anticipation.*
 import gossamer.*
 import enigmatic.*
+import monotonous.*
 import contingency.*, errorHandlers.throwUnsafely
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, encodingMitigation.skip

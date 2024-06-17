@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import gastronomy.*
 import gossamer.*
+import monotonous.*
 import spectacular.*
 
 object PrivateKey:

@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
 import anticipation.*
 import gossamer.*

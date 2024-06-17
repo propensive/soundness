@@ -14,6 +14,9 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
-erased trait Serialization
+import anticipation.*
+
+case class Alphabet[EncodingType <: Serialization](chars: Text, padding: Boolean):
+  def apply(index: Int): Char = chars.s.charAt(index)

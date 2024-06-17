@@ -18,9 +18,9 @@ package enigmatic
 
 import anticipation.*
 import contingency.*
-import gastronomy.*
 import gossamer.{take as _, *}
 import kaleidoscope.*
+import monotonous.*
 import rudiments.*
 import vacuous.*
 
@@ -54,4 +54,4 @@ object Pem:
       case index =>
         val joined: Text = lines.tail.take(index).join
         tend(Pem(label, joined.decode[Base64])).remedy:
-          case CryptoError(_) => abort(PemError(PemError.Reason.BadBase64))
+          case SerializationError(_) => abort(PemError(PemError.Reason.BadBase64))

@@ -14,6 +14,6 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
-erased trait Hex extends Serialization
+erased trait Base64 extends Serialization

@@ -17,8 +17,8 @@
 package enigmatic
 
 import anticipation.*
-import gastronomy.*
 import gossamer.*
+import monotonous.*
 import spectacular.*
 
 object PublicKey:

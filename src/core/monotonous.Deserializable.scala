@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
 import java.util as ju
 import ju.Base64.getDecoder as Base64Decoder
@@ -34,10 +34,11 @@ trait Deserializable:
   def decode(value: Text): Bytes
 
 object Deserializable:
-  given (using Errant[CryptoError]) => Deserializable in Base64:
+  given (using Errant[SerializationError]) => Deserializable in Base64:
     def decode(value: Text): Bytes =
       try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
-      catch case _: IllegalArgumentException => abort(CryptoError(t"an invalid BASE-64 character found"))
+      catch case _: IllegalArgumentException =>
+        abort(SerializationError(t"an invalid BASE-64 character found"))
 
   given Deserializable in Hex:
     def decode(value: Text): Bytes =

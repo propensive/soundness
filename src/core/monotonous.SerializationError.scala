@@ -14,9 +14,10 @@
     and limitations under the License.
 */
 
-package gastronomy
+package monotonous
 
 import anticipation.*
+import fulminate.*
 
-case class Alphabet[EncodingType <: Serialization](chars: Text, padding: Boolean):
-  def apply(index: Int): Char = chars.s.charAt(index)
+case class SerializationError(detail: Text)
+extends Error(msg"could not decode the encrypted data: $detail")
