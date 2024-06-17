@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-repo propensive/gastronomy
+repo propensive/monotonous
 repo propensive/gesticulate
 repo propensive/eucalyptus
 repo propensive/serpentine
@@ -12,7 +12,7 @@ target telekinesis/test
 project telekinesis
   module client
     sources  src/client
-    include  gastronomy/core gesticulate/core eucalyptus/core hieroglyph/core wisteria/core nettlesome/url
+    include  monotonous/core gesticulate/core eucalyptus/core hieroglyph/core wisteria/core nettlesome/url
 
   module test
     sources  src/test

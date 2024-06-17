@@ -21,7 +21,7 @@ import contingency.*
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
-import gastronomy.*
+import monotonous.*
 import spectacular.*
 
 trait RequestHeader[LabelType <: Label]():
