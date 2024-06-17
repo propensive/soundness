@@ -1,1 +1,3 @@
-- serialization into Hex, BASE-64, and URL-safe BASE-64
+- provides a simple and general mechanism for serialization to binary formats
+- supports serialization into binary, hexadecimal, BASE-32 and BASE-64
+- allows custom alphabets to be used (with custom padding for BASE-64)

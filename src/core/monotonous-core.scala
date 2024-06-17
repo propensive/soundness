@@ -58,7 +58,7 @@ package alphabets:
     given Alphabet[Base64] as sasl =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
-    given Alphabet[Base64] as Uuencoding =
+    given Alphabet[Base64] as uuencoding =
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
