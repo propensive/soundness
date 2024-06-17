@@ -20,10 +20,10 @@ import anticipation.*, filesystemApi.galileiPath
 import fulminate.*
 import contingency.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
-import gastronomy.*
 import gossamer.*
 import guillotine.*
 import nettlesome.*
+import enigmatic.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
