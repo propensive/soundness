@@ -21,70 +21,61 @@ import rudiments.*
 import anticipation.*
 import hypotenuse.*
 
-object Bifurcate:
-  opaque type P8[PackType <: Nat] = Byte
-  opaque type P16[PackType <: Nat] = Short
-  opaque type P32[PackType <: Nat] = Int
-  opaque type P64[PackType <: Nat] = Long
+object Unpackable extends ProductDerivable[Unpackable]:
 
-  opaque type I[WidthType <: Nat] = Int
-  opaque type U[WidthType <: Nat] = Int
-
-object Deserializer extends ProductDerivation[Deserializer]:
-
-  def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): Deserializer[DataType] =
-    new Deserializer:
-      def deserialize(data: Bytes, offset: Int): DataType = lambda(data, offset)
+  def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): DataType is Unpackable =
+    new Unpackable:
+      type Self = DataType
+      def unpack(data: Bytes, offset: Int): DataType = lambda(data, offset)
       def width: Int = byteWidth
 
-  given b8: Deserializer[B8] = Deserializer(1) { (data, offset) => data(offset).bits }
-  given b16: Deserializer[B16] = Deserializer(2)(B16(_, _))
-  given b32: Deserializer[B32] = Deserializer(4)(B32(_, _))
-  given b64: Deserializer[B64] = Deserializer(8)(B64(_, _))
-  
-  given i8: Deserializer[I8] = Deserializer(1) { (data, offset) => data(offset).bits.i8 }
-  given i16: Deserializer[I16] = Deserializer(2)(B16(_, _).i16)
-  given i32: Deserializer[I32] = Deserializer(4)(B32(_, _).i32)
-  given i64: Deserializer[I64] = Deserializer(8)(B64(_, _).i64)
-  
-  given u8: Deserializer[U8] = Deserializer(1) { (data, offset) => data(offset).bits.u8 }
-  given u16: Deserializer[U16] = Deserializer(2)(B16(_, _).u16)
-  given u32: Deserializer[U32] = Deserializer(4)(B32(_, _).u32)
-  given u64: Deserializer[U64] = Deserializer(8)(B64(_, _).u64)
-  
-  given byte: Deserializer[Byte] = Deserializer(1) { (data, offset) => data(offset) }
-  given short: Deserializer[Short] = Deserializer(2)(B16(_, _).i16.short)
-  given int: Deserializer[Int] = Deserializer(4)(B32(_, _).i32.int)
-  given long: Deserializer[Long] = Deserializer(8)(B64(_, _).i64.long)
+  given B8 is Unpackable = Unpackable(1) { (data, offset) => data(offset).bits }
+  given B16 is Unpackable = Unpackable(2)(B16(_, _))
+  given B32 is Unpackable = Unpackable(4)(B32(_, _))
+  given B64 is Unpackable = Unpackable(8)(B64(_, _))
 
-  inline def join[DerivationType <: Product: ProductReflection]: Deserializer[DerivationType] =
-    new Deserializer[DerivationType]:
-      def deserialize(data: Bytes, offset: Int): DerivationType =
-        var position: Int = offset
-        
-        construct:
-          [FieldType] => deserializer =>
-            deserializer.deserialize(data, position).also:
-              position += deserializer.width
-      
-      def width: Int = contexts { [FieldType] => deserializer => deserializer.width }.sum
-  
-trait Deserializer[+DataType]:
-  def deserialize(data: Bytes, offset: Int): DataType
+  given I8 is Unpackable = Unpackable(1) { (data, offset) => data(offset).bits.i8 }
+  given I16 is Unpackable = Unpackable(2)(B16(_, _).i16)
+  given I32 is Unpackable = Unpackable(4)(B32(_, _).i32)
+  given I64 is Unpackable = Unpackable(8)(B64(_, _).i64)
+
+  given U8 is Unpackable = Unpackable(1) { (data, offset) => data(offset).bits.u8 }
+  given U16 is Unpackable = Unpackable(2)(B16(_, _).u16)
+  given U32 is Unpackable = Unpackable(4)(B32(_, _).u32)
+  given U64 is Unpackable = Unpackable(8)(B64(_, _).u64)
+
+  given Byte is Unpackable = Unpackable(1) { (data, offset) => data(offset) }
+  given Short is Unpackable = Unpackable(2)(B16(_, _).i16.short)
+  given Int is Unpackable = Unpackable(4)(B32(_, _).i32.int)
+  given Long is Unpackable = Unpackable(8)(B64(_, _).i64.long)
+
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Unpackable = new:
+    def unpack(data: Bytes, offset: Int): DerivationType =
+      var position: Int = offset
+
+      construct:
+        [FieldType] => context =>
+          context.unpack(data, position).also:
+            position += context.width
+
+    def width: Int = contexts { [FieldType] => _.width }.sum
+
+trait Unpackable:
+  type Self
+  def unpack(data: Bytes, offset: Int): Self
   def width: Int
 
 extension (bytes: Bytes)
-  def deserialize[DataType](offset: Int = 0)(using deserializer: Deserializer[DataType]): DataType =
-    deserializer.deserialize(bytes, offset)
-  
-  def deserializeIArray[DataType: ClassTag](size: Int, offset: Int = 0)
-      (using deserializer: Deserializer[DataType])
+  def unpack[DataType: Unpackable](offset: Int = 0): DataType =
+    DataType.unpack(bytes, offset)
+
+  def unpackIArray[DataType: {ClassTag, Unpackable as unpackable}](size: Int, offset: Int = 0)
           : IArray[DataType] =
 
-    val width = deserializer.width
-    
+    val width = unpackable.width
+
     IArray.create[DataType](size): array =>
       array.indices.each: index =>
-        array(index) = deserializer.deserialize(bytes, offset + index*width)
+        array(index) = unpackable.unpack(bytes, offset + index*width)
 
-def byteWidth[DataType](using deserializer: Deserializer[DataType]): Int = deserializer.width
+def byteWidth[DataType: Unpackable]: Int = DataType.width
