@@ -21,40 +21,6 @@ import hypotenuse.*
 import rudiments.*
 import wisteria.*
 
-object Unpackable:
-  given [PackType: Unspoolable](using ClassTag[PackType]) => IArray[PackType] is Unpackable:
-    type Wrap[Type] = Int => Type
-    def unpack(spool: Spool): Int => IArray[PackType] = count =>
-      IArray.create[PackType](count): array =>
-        array.indices.each: index =>
-          array(index) = PackType.unspool(spool)
-
-  given [PackType: Unspoolable] => PackType is Unpackable:
-    type Wrap[Type] = Type
-    def unpack(spool: Spool): PackType = PackType.unspool(spool)
-
-trait Unpackable:
-  type Self
-  type Wrap[_]
-  type Result = Wrap[Self]
-  def unpack(spool: Spool): Wrap[Self]
-
-extension (bytes: Bytes)
-  def unpackFrom[DataType: Unpackable](offset: Int): DataType.Result =
-    DataType.unpack(Spool(bytes, offset))
-
-  def spool[ResultType](lambda: Spool ?=> ResultType): ResultType = lambda(using Spool(bytes))
-
-def unpack[ValueType: Unpackable](using spool: Spool): ValueType.Result =
-  ValueType.unpack(spool)
-
-class Spool(private[bifurcate] val bytes: Bytes, initialPosition: Int = 0):
-  private[bifurcate] var position: Int = initialPosition
-  def offset: Int = position
-  def advance(count: Int): Unit = position += count
-
-def byteWidth[DataType: Unspoolable]: Int = DataType.width
-
 object Unspoolable extends ProductDerivable[Unspoolable]:
   def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): DataType is Unspoolable =
     new:
