@@ -22,5 +22,4 @@ extension (inline ctx: StringContext)
   transparent inline def e(inline parts: Any*): Display =
     ${Ansi.Interpolator.expand('ctx, 'parts)}
 
-extension [T](value: T)
-  def display(using displayable: Displayable[T]): Display = displayable(value)
+extension [ValueType: Displayable](value: ValueType) def display: Display = ValueType.display(value)

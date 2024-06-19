@@ -96,8 +96,8 @@ trait Ansi2:
 
   inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
     val display: ValueType => Display = value => compiletime.summonFrom:
-      case display: Displayable[ValueType] => display(value)
-      case given (ValueType is Showable)   => Display(value.show)
+      case given (ValueType is Displayable) => value.display
+      case given (ValueType is Showable)    => Display(value.show)
 
     DisplaySubstitution[ValueType](display)
 
@@ -218,7 +218,7 @@ object Display:
     (target, output) => TargetType.write(target, output.map(_.render(termcapDefinitions.basic)))
 
   given Display is Textual:
-    type Show[-ValueType] = Displayable[ValueType]
+    type Show[ValueType] = ValueType is Displayable
     def classTag: ClassTag[Display] = summon[ClassTag[Display]]
     def text(display: Display): Text = display.plain
     def length(text: Display): Int = text.plain.s.length
@@ -232,7 +232,7 @@ object Display:
     def concat(left: Display, right: Display): Display = left.append(right)
     def unsafeChar(text: Display, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Display, sub: Text): Int = text.plain.s.indexOf(sub.s)
-    def show[ValueType](value: ValueType)(using display: Displayable[ValueType]) = display(value)
+    def show[ValueType: Displayable](value: ValueType) = value.display
 
   val empty: Display = Display(t"")
   given Display is Joinable as joinable = _.fold(empty)(_ + _)
