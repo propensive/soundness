@@ -18,8 +18,6 @@ package rudiments
 
 import language.experimental.into
 
-import anticipation.*
-
 trait Bond[TypeclassType <: Any { type Self }]:
   val typeclass: TypeclassType
   val value: typeclass.Self
@@ -34,16 +32,3 @@ object Bond:
       (using typeclass0: TypeclassType, value0: typeclass0.Self) => Bond[TypeclassType]:
     val typeclass: typeclass0.type = typeclass0
     val value: typeclass.Self = value0
-
-extension (bond: Bond[GenericLogger])
-  def fine(message: => into Text)(using realm: Realm): Unit =
-    bond.typeclass.logFine(bond(), realm, message)
-
-  def info(message: => into Text)(using realm: Realm): Unit =
-    bond.typeclass.logInfo(bond(), realm, message)
-
-  def warn(message: => into Text)(using realm: Realm): Unit =
-    bond.typeclass.logWarn(bond(), realm, message)
-
-  def fail(message: => into Text)(using realm: Realm): Unit =
-    bond.typeclass.logFail(bond(), realm, message)

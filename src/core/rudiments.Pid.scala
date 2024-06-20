@@ -18,5 +18,11 @@ package rudiments
 
 import language.experimental.captureChecking
 
+import anticipation.*
+import fulminate.*
+
+object Pid:
+  given Pid is Communicable = pid => Message(pid.toString.tt)
+
 case class Pid(value: Long):
   override def toString(): String = "\u21af"+value
