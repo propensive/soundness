@@ -32,14 +32,14 @@ import language.experimental.pureFunctions
 case class TableError(minimumWidth: Int, availableWidth: Int)
 extends Error(msg"The table required a minimum width of $minimumWidth, but only $availableWidth was available")
 
-trait InsufficientSpaceHandler:
+trait Attenuation:
   def apply(minimumWidth: Int, availableWidth: Int): Unit
 
-package insufficientSpaceHandling:
-  given fail(using Errant[TableError]): InsufficientSpaceHandler =
+package columnAttenuation:
+  given fail(using Errant[TableError]): Attenuation =
     (minimum, available) => raise(TableError(minimum, available))(())
 
-  given ignore: InsufficientSpaceHandler = (minimum, available) => ()
+  given ignore: Attenuation = (minimum, available) => ()
 
 enum Breaks:
   case Never, Space, Zwsp, Character
@@ -129,7 +129,7 @@ object Table:
     new Table(columns0*)
 
 object Tabulation:
-  given [TextType: {Textual as textual, Printable as printable}](using TextMetrics, TableStyle, InsufficientSpaceHandler) => Tabulation[TextType] is Printable =
+  given [TextType: {Textual as textual, Printable as printable}](using TextMetrics, TableStyle, Attenuation) => Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.layout(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
 
@@ -143,7 +143,7 @@ abstract class Tabulation[TextType: ClassTag]():
   def dataLength: Int
 
   def layout(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: TextType is Textual)
-      (using insufficientSpace: InsufficientSpaceHandler)
+      (using attenuation: Attenuation)
           : TableLayout[TextType] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
@@ -190,7 +190,7 @@ abstract class Tabulation[TextType: ClassTag]():
     val rowLayout2 = bisect(rowLayout.include(_))(0)
 
     // We may be able to increase the slack in some of the remaining columns
-    if rowLayout2.totalWidth > width then insufficientSpace(rowLayout2.totalWidth, width)
+    if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
 
     def lines(data: Seq[IArray[IArray[TextType]]]): LazyList[TableRow[TextType]] =
       data.to(LazyList).map: cells =>

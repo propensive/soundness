@@ -27,7 +27,7 @@ import hieroglyph.*, textMetrics.uniform
 case class Person(name: Text, age: Int, size: Double, description: Text)
 given Decimalizer = Decimalizer(3)
 
-import insufficientSpaceHandling.fail
+import columnAttenuation.fail
 
 @main
 def run(): Unit =
