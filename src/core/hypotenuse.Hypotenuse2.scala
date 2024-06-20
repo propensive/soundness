@@ -32,7 +32,7 @@ object Hypotenuse2:
     case None         => '{JLong.parseUnsignedLong($digits)}
     case Some(digits) => Expr(JLong.parseUnsignedLong(digits))
 
-  def parseI64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
+  def parseS64(digits: Expr[String])(using Quotes): Expr[Long] = digits.value match
     case None         => '{JLong.parseLong($digits)}
     case Some(digits) => Expr(JLong.parseLong(digits))
 
@@ -40,7 +40,7 @@ object Hypotenuse2:
     case None         => '{JInt.parseUnsignedInt($digits)}
     case Some(digits) => Expr(JInt.parseUnsignedInt(digits))
 
-  def parseI32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
+  def parseS32(digits: Expr[String])(using Quotes): Expr[Int] = digits.value match
     case None         => '{JInt.parseInt($digits)}
     case Some(digits) => Expr(JInt.parseInt(digits))
 
@@ -54,13 +54,13 @@ object Hypotenuse2:
 
       Expr(int.toShort)
 
-  def parseI16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
+  def parseS16(digits: Expr[String])(using Quotes): Expr[Short] = digits.value match
     case None => '{JInt.parseInt($digits).toShort}
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Short.MinValue then abandon(msg"an I16 may not be less than ${Short.MinValue.toInt}")
-      if int > Short.MaxValue then abandon(msg"an I16 may not be greater than ${Short.MaxValue.toInt}")
+      if int < Short.MinValue then abandon(msg"an S16 may not be less than ${Short.MinValue.toInt}")
+      if int > Short.MaxValue then abandon(msg"an S16 may not be greater than ${Short.MaxValue.toInt}")
 
       Expr(int.toShort)
 
@@ -74,13 +74,13 @@ object Hypotenuse2:
 
       Expr(int.toByte)
 
-  def parseI8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
+  def parseS8(digits: Expr[String])(using Quotes): Expr[Byte] = digits.value match
     case None => '{JInt.parseInt($digits).toByte}
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Byte.MinValue then abandon(msg"an I8 may not be less than ${Byte.MinValue.toInt}")
-      if int > Byte.MaxValue then abandon(msg"an I8 may not be greater than ${Byte.MaxValue.toInt}")
+      if int < Byte.MinValue then abandon(msg"an S8 may not be less than ${Byte.MinValue.toInt}")
+      if int > Byte.MaxValue then abandon(msg"an S8 may not be greater than ${Byte.MaxValue.toInt}")
 
       Expr(int.toByte)
 

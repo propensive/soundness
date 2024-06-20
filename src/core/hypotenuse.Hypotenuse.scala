@@ -48,10 +48,10 @@ object Hypotenuse:
   opaque type U16 = Short
   opaque type U8  = Byte
 
-  opaque type I64 = Long
-  opaque type I32 = Int
-  opaque type I16 = Short
-  opaque type I8  = Byte
+  opaque type S64 = Long
+  opaque type S32 = Int
+  opaque type S16 = Short
+  opaque type S8  = Byte
 
   opaque type F64 = Double
   opaque type F32 = Float
@@ -59,7 +59,7 @@ object Hypotenuse:
   object F64:
     erased given Underlying[F64, Double] as underlying = erasedValue
 
-    inline given CanEqual[F64, F64 | I64 | I32 | I16 | I8 | Double | Long | Int | Short | Byte] as canEqual =
+    inline given CanEqual[F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     inline def apply(sign: Boolean, exponent: B16, mantissa: B64): F64 =
@@ -115,8 +115,8 @@ object Hypotenuse:
     inline given Conversion[U32, F64] as u32Conversion:
       def apply(value: U32): F64 = JInt.toUnsignedLong(value).toDouble
 
-    inline given Conversion[I32, F64] as i32Conversion:
-      def apply(value: I32): F64 = value.toDouble
+    inline given Conversion[S32, F64] as s32Conversion:
+      def apply(value: S32): F64 = value.toDouble
 
     inline given Conversion[U16, F64] as u16Conversion:
       def apply(value: U16): F64 = JShort.toUnsignedInt(value).toDouble
@@ -124,16 +124,16 @@ object Hypotenuse:
     inline given Conversion[U8, F64] as u8Conversion:
       def apply(value: U8): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given Conversion[I16, F64] as i16Conversion:
-      def apply(value: I16): F64 = value.toDouble
+    inline given Conversion[S16, F64] as s16Conversion:
+      def apply(value: S16): F64 = value.toDouble
 
-    inline given Conversion[I8, F64] as i8Conversion:
-      def apply(value: I8): F64 = value.toDouble
+    inline given Conversion[S8, F64] as s8Conversion:
+      def apply(value: S8): F64 = value.toDouble
 
   object F32:
     erased given Underlying[F32, Float] as underlying = erasedValue
 
-    inline given CanEqual[F32, F32 | I64 | I32 | I16 | I8 | Float | Long | Int | Short | Byte] as canEqual =
+    inline given CanEqual[F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
     inline given Inequality[F32, F32] as inequality:
@@ -168,11 +168,11 @@ object Hypotenuse:
     inline given Conversion[U8, F32] as u8Conversion:
       def apply(value: U8): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given Conversion[I16, F32] as i16Conversion:
-      def apply(value: I16): F32 = value.toFloat
+    inline given Conversion[S16, F32] as s16Conversion:
+      def apply(value: S16): F32 = value.toFloat
 
-    inline given Conversion[I8, F32] as i8Conversion:
-      def apply(value: I8): F32 = value.toFloat
+    inline given Conversion[S8, F32] as s8Conversion:
+      def apply(value: S8): F32 = value.toFloat
 
   object U64:
     erased given Underlying[U64, Long] as underlying = erasedValue
@@ -197,21 +197,21 @@ object Hypotenuse:
           inline if strict then JLong.compareUnsigned(left, right) == -1
           else JLong.compareUnsigned(left, right) != 1
 
-  object I64:
-    erased given Underlying[I64, Long] as underlying = erasedValue
-    inline given CanEqual[I64, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+  object S64:
+    erased given Underlying[S64, Long] as underlying = erasedValue
+    inline given CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    given FromDigits[I64] as fromDigits:
-      inline def fromDigits(digits: String): I64 = ${Hypotenuse2.parseI64('digits)}
+    given FromDigits[S64] as fromDigits:
+      inline def fromDigits(digits: String): S64 = ${Hypotenuse2.parseS64('digits)}
 
-    given I64 is Textualizer = _.toString.tt
-    inline def apply(bits: B64): I64 = bits
+    given S64 is Textualizer = _.toString.tt
+    inline def apply(bits: B64): S64 = bits
 
-    inline given Inequality[I64, I64] as inequality:
+    inline given Inequality[S64, S64] as inequality:
 
       inline def compare
-          (inline left: I64, inline right: I64, inline strict: Boolean, inline greaterThan: Boolean)
+          (inline left: S64, inline right: S64, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
 
         inline if greaterThan
@@ -241,21 +241,21 @@ object Hypotenuse:
           inline if strict then JLong.compareUnsigned(left, right) == -1
           else JInt.compareUnsigned(left, right) != 1
 
-  object I32:
-    erased given Underlying[I32, Int] as underlying = erasedValue
-    inline given CanEqual[I32, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+  object S32:
+    erased given Underlying[S32, Int] as underlying = erasedValue
+    inline given CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    given FromDigits[I32] as fromDigits:
-      inline def fromDigits(digits: String): I32 = ${Hypotenuse2.parseI32('digits)}
+    given FromDigits[S32] as fromDigits:
+      inline def fromDigits(digits: String): S32 = ${Hypotenuse2.parseS32('digits)}
 
-    given I32 is Textualizer = _.toString.tt
-    inline def apply(bits: B32): I32 = bits
+    given S32 is Textualizer = _.toString.tt
+    inline def apply(bits: B32): S32 = bits
 
-    inline given Inequality[I32, I32] as inequality:
+    inline given Inequality[S32, S32] as inequality:
 
       inline def compare
-          (inline left: I32, inline right: I32, inline strict: Boolean, inline greaterThan: Boolean)
+          (inline left: S32, inline right: S32, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
 
         inline if greaterThan
@@ -285,22 +285,22 @@ object Hypotenuse:
         then inline if strict then left2 > right2 else left.toInt >= right2
         else inline if strict then left2 < right2 else left.toInt <= right2
 
-  object I16:
-    erased given Underlying[I16, Short] as underlying = erasedValue
+  object S16:
+    erased given Underlying[S16, Short] as underlying = erasedValue
 
-    inline given CanEqual[I16, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    inline given CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    given FromDigits[I16] as fromDigits:
-      inline def fromDigits(digits: String): I16 = ${Hypotenuse2.parseI16('digits)}
+    given FromDigits[S16] as fromDigits:
+      inline def fromDigits(digits: String): S16 = ${Hypotenuse2.parseS16('digits)}
 
-    given I16 is Textualizer = _.toString.tt
-    inline def apply(bits: B16): I16 = bits
+    given S16 is Textualizer = _.toString.tt
+    inline def apply(bits: B16): S16 = bits
 
-    inline given Inequality[I16, I16] as inequality:
+    inline given Inequality[S16, S16] as inequality:
 
       inline def compare
-          (inline left: I16, inline right: I16, inline strict: Boolean, inline greaterThan: Boolean)
+          (inline left: S16, inline right: S16, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
 
         inline if greaterThan
@@ -330,22 +330,22 @@ object Hypotenuse:
         then inline if strict then left2 > right2 else left2 >= right2
         else inline if strict then left2 < right2 else left2 <= right2
 
-  object I8:
-    erased given Underlying[I8, Byte] as underlying = erasedValue
+  object S8:
+    erased given Underlying[S8, Byte] as underlying = erasedValue
 
-    inline given CanEqual[I8, F64 | F32 | I64 | I32 | I16 | I8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    inline given CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    given FromDigits[I8] as fromDigits:
-      inline def fromDigits(digits: String): I8 = ${Hypotenuse2.parseI8('digits)}
+    given FromDigits[S8] as fromDigits:
+      inline def fromDigits(digits: String): S8 = ${Hypotenuse2.parseS8('digits)}
 
-    given I8 is Textualizer = _.toString.tt
-    inline def apply(bits: B8): I8 = bits
+    given S8 is Textualizer = _.toString.tt
+    inline def apply(bits: B8): S8 = bits
 
-    inline given Inequality[I8, I8] as inquality:
+    inline given Inequality[S8, S8] as inquality:
 
       inline def compare
-          (inline left: I8, inline right: I8, inline strict: Boolean, inline greaterThan: Boolean)
+          (inline left: S8, inline right: S8, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
 
         inline if greaterThan
@@ -400,187 +400,187 @@ object Hypotenuse:
   object B8:
     erased given Underlying[B8, Byte] as underlying = erasedValue
 
-  extension (i64: I64)
-    @targetName("absI64")
-    inline def abs: I64 = math.abs(i64)
+  extension (s64: S64)
+    @targetName("absS64")
+    inline def abs: S64 = math.abs(s64)
 
-    @targetName("longI64")
-    inline def long: Long = i64
+    @targetName("longS64")
+    inline def long: Long = s64
 
-    @targetName("octalI64")
-    inline def octal: Text = JLong.toOctalString(i64).nn.tt
+    @targetName("octalS64")
+    inline def octal: Text = JLong.toOctalString(s64).nn.tt
 
-    @targetName("hexI64")
-    inline def hex: Text = JLong.toHexString(i64).nn.tt
+    @targetName("hexS64")
+    inline def hex: Text = JLong.toHexString(s64).nn.tt
 
-    @targetName("base32I64")
-    inline def base32: Text = JLong.toString(i64, 32).nn.tt
+    @targetName("base32S64")
+    inline def base32: Text = JLong.toString(s64, 32).nn.tt
 
-    @targetName("binaryI64")
-    inline def binary: Text = JLong.toBinaryString(i64).nn.tt
+    @targetName("binaryS64")
+    inline def binary: Text = JLong.toBinaryString(s64).nn.tt
 
-    @targetName("floorModI64")
-    inline infix def %% (right: into I64): I64 = math.floorMod(i64, right)
+    @targetName("floorModS64")
+    inline infix def %% (right: into S64): S64 = math.floorMod(s64, right)
 
-    @targetName("floorDivI64")
-    inline infix def \ (right: into I64): I64 = math.floorDiv(i64, right)
+    @targetName("floorDivS64")
+    inline infix def \ (right: into S64): S64 = math.floorDiv(s64, right)
 
-    @targetName("powerI64")
-    inline infix def ** (exponent: Double): Double = math.pow(i64.toDouble, exponent)
+    @targetName("powerS64")
+    inline infix def ** (exponent: Double): Double = math.pow(s64.toDouble, exponent)
 
-    @targetName("divI64")
-    inline infix def / (right: into I64)(using division: DivisionByZero): division.Wrap[I64] =
-      division.divideI64(i64, right)
+    @targetName("divS64")
+    inline infix def / (right: into S64)(using division: DivisionByZero): division.Wrap[S64] =
+      division.divideS64(s64, right)
 
-    @targetName("modI64")
-    inline infix def % (right: into I64): I64 = i64%right
+    @targetName("modS64")
+    inline infix def % (right: into S64): S64 = s64%right
 
-    @targetName("bitsI64")
-    inline def bits: B64 = i64
+    @targetName("bitsS64")
+    inline def bits: B64 = s64
 
-  extension (i32: I32)
-    @targetName("plusI32")
-    inline infix def + (right: into I32)(using overflow: CheckOverflow): overflow.Wrap[I32] =
-      overflow.addI32(i32, right)
+  extension (s32: S32)
+    @targetName("plusS32")
+    inline infix def + (right: into S32)(using overflow: CheckOverflow): overflow.Wrap[S32] =
+      overflow.addS32(s32, right)
 
-    @targetName("intI32")
-    inline def int: Int = i32
+    @targetName("intS32")
+    inline def int: Int = s32
 
-    @targetName("longI32")
-    inline def long: Long = i32.toLong
+    @targetName("longS32")
+    inline def long: Long = s32.toLong
 
-    @targetName("absI32")
-    inline def abs: I32 = math.abs(i32)
+    @targetName("absS32")
+    inline def abs: S32 = math.abs(s32)
 
-    @targetName("powerI32")
-    inline infix def ** (exponent: Double): Double = math.pow(i32.toDouble, exponent)
+    @targetName("powerS32")
+    inline infix def ** (exponent: Double): Double = math.pow(s32.toDouble, exponent)
 
-    @targetName("octalI32")
-    inline def octal: Text = JInt.toOctalString(i32).nn.tt
+    @targetName("octalS32")
+    inline def octal: Text = JInt.toOctalString(s32).nn.tt
 
-    @targetName("hexI32")
-    inline def hex: Text = JInt.toHexString(i32).nn.tt
+    @targetName("hexS32")
+    inline def hex: Text = JInt.toHexString(s32).nn.tt
 
-    @targetName("base32I32")
-    inline def base32: Text = JInt.toString(i32, 32).nn.tt
+    @targetName("base32S32")
+    inline def base32: Text = JInt.toString(s32, 32).nn.tt
 
-    @targetName("binaryI32")
-    inline def binary: Text = JInt.toBinaryString(i32).nn.tt
+    @targetName("binaryS32")
+    inline def binary: Text = JInt.toBinaryString(s32).nn.tt
 
-    @targetName("floorModI32")
-    inline infix def %% (right: into I32): I32 = math.floorMod(i32, right)
+    @targetName("floorModS32")
+    inline infix def %% (right: into S32): S32 = math.floorMod(s32, right)
 
-    @targetName("floorDivI32")
-    inline infix def \ (right: into I32): I32 = math.floorDiv(i32, right)
+    @targetName("floorDivS32")
+    inline infix def \ (right: into S32): S32 = math.floorDiv(s32, right)
 
-    @targetName("divI32")
-    inline infix def / (right: into I32)(using division: DivisionByZero): division.Wrap[I32] =
-      division.divideI32(i32, right)
+    @targetName("divS32")
+    inline infix def / (right: into S32)(using division: DivisionByZero): division.Wrap[S32] =
+      division.divideS32(s32, right)
 
-    @targetName("modI32")
-    inline infix def % (right: into I32): I32 = i32%right
+    @targetName("modS32")
+    inline infix def % (right: into S32): S32 = s32%right
 
-    @targetName("bitsI32")
-    inline def bits: B32 = i32
+    @targetName("bitsS32")
+    inline def bits: B32 = s32
 
-  extension (i16: I16)
-    @targetName("plusI16")
-    inline infix def + (right: into I16)(using overflow: CheckOverflow): overflow.Wrap[I16] =
-      overflow.addI16(i16, right)
+  extension (s16: S16)
+    @targetName("plusS16")
+    inline infix def + (right: into S16)(using overflow: CheckOverflow): overflow.Wrap[S16] =
+      overflow.addS16(s16, right)
 
-    @targetName("shortI16")
-    inline def short: Short = i16
+    @targetName("shortS16")
+    inline def short: Short = s16
 
-    @targetName("intI16")
-    inline def int: Int = i16.toInt
+    @targetName("intS16")
+    inline def int: Int = s16.toInt
 
-    @targetName("longI16")
-    inline def long: Long = i16.toLong
+    @targetName("longS16")
+    inline def long: Long = s16.toLong
 
-    @targetName("absI16")
-    inline def abs: I16 = math.abs(i16).toShort
+    @targetName("absS16")
+    inline def abs: S16 = math.abs(s16).toShort
 
-    @targetName("powerI16")
-    inline infix def ** (exponent: Double): Double = math.pow(i16.toDouble, exponent)
+    @targetName("powerS16")
+    inline infix def ** (exponent: Double): Double = math.pow(s16.toDouble, exponent)
 
-    @targetName("octalI16")
-    inline def octal: Text = JInt.toOctalString(i16).nn.tt
+    @targetName("octalS16")
+    inline def octal: Text = JInt.toOctalString(s16).nn.tt
 
-    @targetName("hexI16")
-    inline def hex: Text = JInt.toHexString(i16).nn.tt
+    @targetName("hexS16")
+    inline def hex: Text = JInt.toHexString(s16).nn.tt
 
-    @targetName("base32I16")
-    inline def base32: Text = JInt.toString(i16, 32).nn.tt
+    @targetName("base32S16")
+    inline def base32: Text = JInt.toString(s16, 32).nn.tt
 
-    @targetName("binaryI16")
-    inline def binary: Text = JInt.toBinaryString(i16).nn.tt
+    @targetName("binaryS16")
+    inline def binary: Text = JInt.toBinaryString(s16).nn.tt
 
-    @targetName("floorModI16")
-    inline infix def %% (right: into I16): I16 = math.floorMod(i16, right).toShort
+    @targetName("floorModS16")
+    inline infix def %% (right: into S16): S16 = math.floorMod(s16, right).toShort
 
-    @targetName("floorDivI16")
-    inline infix def \ (right: into I16): I16 = math.floorDiv(i16, right).toShort
+    @targetName("floorDivS16")
+    inline infix def \ (right: into S16): S16 = math.floorDiv(s16, right).toShort
 
-    @targetName("divI16")
-    inline infix def / (right: into I16)(using division: DivisionByZero): division.Wrap[I16] =
-      division.divideI16(i16, right)
+    @targetName("divS16")
+    inline infix def / (right: into S16)(using division: DivisionByZero): division.Wrap[S16] =
+      division.divideS16(s16, right)
 
-    @targetName("modI16")
-    inline infix def % (right: into I16): I16 = (i16%right).toShort
+    @targetName("modS16")
+    inline infix def % (right: into S16): S16 = (s16%right).toShort
 
-    @targetName("bitsI16")
-    inline def bits: B16 = i16
+    @targetName("bitsS16")
+    inline def bits: B16 = s16
 
-  extension (i8: I8)
-    @targetName("plusI8")
-    inline infix def + (right: into I8)(using overflow: CheckOverflow): overflow.Wrap[I8] =
-      overflow.addI8(i8, right)
+  extension (s8: S8)
+    @targetName("plusS8")
+    inline infix def + (right: into S8)(using overflow: CheckOverflow): overflow.Wrap[S8] =
+      overflow.addS8(s8, right)
 
-    @targetName("byteI8")
-    inline def byte: Byte = i8
+    @targetName("byteS8")
+    inline def byte: Byte = s8
 
-    @targetName("shortI8")
-    inline def short: Short = i8.toShort
+    @targetName("shortS8")
+    inline def short: Short = s8.toShort
 
-    @targetName("intI8")
-    inline def int: Int = i8.toInt
+    @targetName("intS8")
+    inline def int: Int = s8.toInt
 
-    @targetName("longI8")
-    inline def long: Long = i8.toLong
+    @targetName("longS8")
+    inline def long: Long = s8.toLong
 
-    @targetName("absI8")
-    inline def abs: I8 = math.abs(i8).toByte
+    @targetName("absS8")
+    inline def abs: S8 = math.abs(s8).toByte
 
-    @targetName("powerI8")
-    inline infix def ** (exponent: Double): Double = math.pow(i8.toDouble, exponent)
+    @targetName("powerS8")
+    inline infix def ** (exponent: Double): Double = math.pow(s8.toDouble, exponent)
 
-    @targetName("octalI8")
-    inline def octal: Text = JInt.toOctalString(i8).nn.tt
+    @targetName("octalS8")
+    inline def octal: Text = JInt.toOctalString(s8).nn.tt
 
-    @targetName("hexI8")
-    inline def hex: Text = JInt.toHexString(i8).nn.tt
+    @targetName("hexS8")
+    inline def hex: Text = JInt.toHexString(s8).nn.tt
 
-    @targetName("base32I8")
-    inline def base32: Text = JInt.toString(i8, 32).nn.tt
+    @targetName("base32S8")
+    inline def base32: Text = JInt.toString(s8, 32).nn.tt
 
-    @targetName("binaryI8")
-    inline def binary: Text = JInt.toBinaryString(i8).nn.tt
+    @targetName("binaryS8")
+    inline def binary: Text = JInt.toBinaryString(s8).nn.tt
 
-    @targetName("floorModI8")
-    inline infix def %% (right: into I8): I8 = math.floorMod(i8, right).toByte
+    @targetName("floorModS8")
+    inline infix def %% (right: into S8): S8 = math.floorMod(s8, right).toByte
 
-    @targetName("floorDivI8")
-    inline infix def \ (right: into I8): I8 = math.floorDiv(i8, right).toByte
+    @targetName("floorDivS8")
+    inline infix def \ (right: into S8): S8 = math.floorDiv(s8, right).toByte
 
-    @targetName("divI8")
-    inline infix def / (right: into I8)(using division: DivisionByZero): division.Wrap[I8] =
-      division.divideI8(i8, right)
+    @targetName("divS8")
+    inline infix def / (right: into S8)(using division: DivisionByZero): division.Wrap[S8] =
+      division.divideS8(s8, right)
 
-    @targetName("modI8")
-    inline infix def % (right: into I8): I8 = (i8%right).toByte
+    @targetName("modS8")
+    inline infix def % (right: into S8): S8 = (s8%right).toByte
 
-    @targetName("bitsI8")
-    inline def bits: B8 = i8
+    @targetName("bitsS8")
+    inline def bits: B8 = s8
 
 
   extension (bitmap: B8)
@@ -615,10 +615,10 @@ object Hypotenuse:
     inline def trailingZeros: Int = JInt.numberOfTrailingZeros(bitmap.toInt)
 
     @targetName("onesB8")
-    inline def ones: I32 = JInt.bitCount(bitmap.toInt)
+    inline def ones: S32 = JInt.bitCount(bitmap.toInt)
 
     @targetName("zerosB8")
-    inline def zeros: I32 = 8 - JInt.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 8 - JInt.bitCount(bitmap.toInt)
 
     @targetName("reverseB8")
     inline def reverse: B8 = (JInt.reverse(bitmap.toInt) >>> 24).toByte
@@ -644,7 +644,7 @@ object Hypotenuse:
 
       new String(chars).tt
 
-    def i8: I8 = bitmap
+    def s8: S8 = bitmap
     def u8: U8 = bitmap
 
   extension (bitmap: B16)
@@ -682,10 +682,10 @@ object Hypotenuse:
     inline def reverse: B16 = (JInt.reverse(bitmap.toInt) >>> 16).toShort
 
     @targetName("onesB16")
-    inline def ones: I32 = JInt.bitCount(bitmap.toInt)
+    inline def ones: S32 = JInt.bitCount(bitmap.toInt)
 
     @targetName("zerosB16")
-    inline def zeros: I32 = 16 - JInt.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 16 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB16")
     def bytes: IArray[Byte] =
@@ -715,7 +715,7 @@ object Hypotenuse:
 
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
-    def i16: I16 = bitmap
+    def s16: S16 = bitmap
     def u16: U16 = bitmap
 
   extension (bitmap: B32)
@@ -753,10 +753,10 @@ object Hypotenuse:
     inline def reverse: B32 = JInt.reverse(bitmap)
 
     @targetName("onesB32")
-    inline def ones: I32 = JInt.bitCount(bitmap.toInt)
+    inline def ones: S32 = JInt.bitCount(bitmap.toInt)
 
     @targetName("zerosB32")
-    inline def zeros: I32 = 32 - JInt.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 32 - JInt.bitCount(bitmap.toInt)
 
     @targetName("bytesB32")
     def bytes: IArray[Byte] =
@@ -788,7 +788,7 @@ object Hypotenuse:
 
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
-    def i32: I32 = bitmap
+    def s32: S32 = bitmap
     def u32: U32 = bitmap
 
   extension (bitmap: B64)
@@ -826,10 +826,10 @@ object Hypotenuse:
     inline def reverse: B64 = JLong.reverse(bitmap)
 
     @targetName("onesB64")
-    inline def ones: I32 = JLong.bitCount(bitmap.toInt)
+    inline def ones: S32 = JLong.bitCount(bitmap.toInt)
 
     @targetName("zerosB64")
-    inline def zeros: I32 = 64 - JLong.bitCount(bitmap.toInt)
+    inline def zeros: S32 = 64 - JLong.bitCount(bitmap.toInt)
 
     @targetName("bytesB64")
     def bytes: IArray[Byte] =
@@ -865,7 +865,7 @@ object Hypotenuse:
 
     inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
-    def i64: I64 = bitmap
+    def s64: S64 = bitmap
     def u64: U64 = bitmap
 
   extension (f64: F64)
@@ -1095,8 +1095,8 @@ object Hypotenuse:
     @targetName("modU32")
     inline infix def % (right: into U32): U32 = JInt.remainderUnsigned(u32, right)
 
-    @targetName("u32ToI64")
-    inline def i64: I64 = JInt.toUnsignedLong(u32)
+    @targetName("u32ToS64")
+    inline def s64: S64 = JInt.toUnsignedLong(u32)
 
     @targetName("u32ToU64")
     inline def u64: U64 = JInt.toUnsignedLong(u32)
@@ -1144,11 +1144,11 @@ object Hypotenuse:
     @targetName("modU16")
     inline infix def % (right: into U16): U16 = JInt.remainderUnsigned(u16, right).toShort
 
-    @targetName("u16ToI32")
-    inline def i32: I32 = JShort.toUnsignedInt(u16)
+    @targetName("u16ToS32")
+    inline def s32: S32 = JShort.toUnsignedInt(u16)
 
-    @targetName("u16ToI64")
-    inline def i64: I64 = JShort.toUnsignedLong(u16)
+    @targetName("u16ToS64")
+    inline def s64: S64 = JShort.toUnsignedLong(u16)
 
     @targetName("u16ToU32")
     inline def u32: U32 = JShort.toUnsignedInt(u16)
@@ -1204,14 +1204,14 @@ object Hypotenuse:
     @targetName("byteU8")
     inline def byte: Byte = u8
 
-    @targetName("u8ToI16")
-    inline def i16: I16 = JByte.toUnsignedInt(u8).toShort
+    @targetName("u8ToS16")
+    inline def s16: S16 = JByte.toUnsignedInt(u8).toShort
 
-    @targetName("u8ToI32")
-    inline def i32: I32 = JByte.toUnsignedInt(u8)
+    @targetName("u8ToS32")
+    inline def s32: S32 = JByte.toUnsignedInt(u8)
 
-    @targetName("u8ToI64")
-    inline def i64: I64 = JByte.toUnsignedLong(u8)
+    @targetName("u8ToS64")
+    inline def s64: S64 = JByte.toUnsignedLong(u8)
 
     @targetName("u8ToU16")
     inline def u16: U16 = JByte.toUnsignedInt(u8).toShort
