@@ -34,10 +34,10 @@ object Unspoolable extends ProductDerivable[Unspoolable]:
   given B32 is Unspoolable = Unspoolable(4)(B32(_, _))
   given B64 is Unspoolable = Unspoolable(8)(B64(_, _))
 
-  given I8 is Unspoolable = Unspoolable(1)(_(_).bits.i8)
-  given I16 is Unspoolable = Unspoolable(2)(B16(_, _).i16)
-  given I32 is Unspoolable = Unspoolable(4)(B32(_, _).i32)
-  given I64 is Unspoolable = Unspoolable(8)(B64(_, _).i64)
+  given S8 is Unspoolable = Unspoolable(1)(_(_).bits.s8)
+  given S16 is Unspoolable = Unspoolable(2)(B16(_, _).s16)
+  given S32 is Unspoolable = Unspoolable(4)(B32(_, _).s32)
+  given S64 is Unspoolable = Unspoolable(8)(B64(_, _).s64)
 
   given U8 is Unspoolable = Unspoolable(1)(_(_).bits.u8)
   given U16 is Unspoolable = Unspoolable(2)(B16(_, _).u16)
@@ -45,9 +45,9 @@ object Unspoolable extends ProductDerivable[Unspoolable]:
   given U64 is Unspoolable = Unspoolable(8)(B64(_, _).u64)
 
   given Byte is Unspoolable = Unspoolable(1)(_(_))
-  given Short is Unspoolable = Unspoolable(2)(B16(_, _).i16.short)
-  given Int is Unspoolable = Unspoolable(4)(B32(_, _).i32.int)
-  given Long is Unspoolable = Unspoolable(8)(B64(_, _).i64.long)
+  given Short is Unspoolable = Unspoolable(2)(B16(_, _).s16.short)
+  given Int is Unspoolable = Unspoolable(4)(B32(_, _).s32.int)
+  given Long is Unspoolable = Unspoolable(8)(B64(_, _).s64.long)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Unspoolable =
     new:
