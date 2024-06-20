@@ -404,14 +404,15 @@ case class Fg(color: Int):
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
-object Highlight:
-  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](color: ColorType): Highlight[ValueType] =
+object Colorable:
+  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](color: ColorType): ValueType is Colorable =
     value => Fg(color.asRgb24Int)
 
   def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](chooseColor: ValueType -> ColorType)
-        : Highlight[ValueType] =
+          : ValueType is Colorable =
 
     value => Fg(chooseColor(value).asRgb24Int)
 
-trait Highlight[-ValueType]:
-  def color(value: ValueType): Fg
+trait Colorable:
+  type Self
+  extension (value: Self) def color: Fg

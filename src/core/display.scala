@@ -32,8 +32,8 @@ object Displayable:
   given Text is Displayable = text => Display(text)
   given Pid is Displayable = pid => e"${pid.value.show}"
 
-  given [ValueType: Showable](using highlight: Highlight[ValueType]) => ValueType is Displayable =
-    value => e"${highlight.color(value)}(${value.show})"
+  given [ValueType: {Showable as showable, Colorable as colorable}] => ValueType is Displayable =
+    value => e"${value.color}(${value.show})"
 
   given Message is Displayable = _.fold[Display](e""): (acc, next, level) =>
     level match
