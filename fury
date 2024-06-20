@@ -5,14 +5,14 @@ repo propensive/turbulence
 repo propensive/probably
 repo propensive/guillotine
 
-target eucalyptus/core
+target eucalyptus/example
 
 project eucalyptus
   module core
     compiler  scala
     sources   src/core
     include   turbulence/core gossamer/core
-  
+
   module syslog
     compiler  scala
     sources   src/syslog
@@ -23,9 +23,18 @@ project eucalyptus
     sources   src/ansi
     include   escapade/core eucalyptus/core iridescence/core
 
+  module example
+    compiler  scala
+    sources   src/example
+    include   eucalyptus/ansi
+    main      example.run
+
+  module all
+    compiler  scala
+    include   eucalyptus/syslog eucalyptus/ansi
+
   module test
     compiler  scala
     sources   src/test
     include   probably/cli eucalyptus/syslog eucalyptus/ansi
     main      eucalyptus.Tests
-

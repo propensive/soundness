@@ -36,8 +36,15 @@ val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
 
 package logFormats:
-  given Message is Inscribable in Line as standard = (level, realm, timestamp, message) =>
-    Line(t"$level ${realm.name} $timestamp $message")
+  given Message is Inscribable in Text as standard = (level, realm, timestamp, message) =>
+    import textMetrics.uniform
+    given Level is Showable =
+      case Level.Fine => t"[FINE]"
+      case Level.Info => t"[INFO]"
+      case Level.Warn => t"[WARN]"
+      case Level.Fail => t"[FAIL]"
+
+    t"${dateFormat.format(timestamp)} $level ${realm.name.fit(10)} > $message\n"
 
 trait Inscribable:
   type Self
@@ -50,17 +57,17 @@ extension (logObject: Log.type)
     def record(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
   def apply[FormatType](using DummyImplicit)
-      [TargetType: Appendable by FormatType, EntryType: Inscribable in FormatType]
+      [EntryType: Inscribable in FormatType, TargetType: Appendable by FormatType]
       (target: TargetType)
       (using Monitor)
           : EntryType is Loggable =
-    new Loggable:
+
+    new:
       type Self = EntryType
 
       private lazy val funnel: Funnel[TargetType.Operand] =
         Funnel().tap: funnel =>
-          val task = async:
-            funnel.stream.appendTo(target)
+          val task = async(funnel.stream.appendTo(target))
 
           Hook.onShutdown:
             funnel.stop()

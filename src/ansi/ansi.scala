@@ -21,6 +21,9 @@ import iridescence.*, webColors.*
 import anticipation.*
 import gossamer.*
 import symbolism.*
+import fulminate.*
+import spectacular.*
+import hieroglyph.*
 import turbulence.*
 import hieroglyph.textMetrics.uniform
 
@@ -29,23 +32,16 @@ import java.text as jt
 //import scala.language.experimental.captureChecking
 
 package logFormats:
-  private given Level is Displayable = level =>
+  given Level is Displayable = level =>
     val color = level match
       case Level.Fine => LightSeaGreen
       case Level.Info => YellowGreen
       case Level.Warn => Gold
       case Level.Fail => Tomato
 
-    e"${Bg(color)}[$Black($Bold( $level ))]"
+    e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
-  given [TargetType] => Entry[Display] is Inscribable into Line = entry =>
-    // FIXME: This is far too much object creation for every log message
-    val realm: Display = e"${SteelBlue}(${entry.realm.name.fit(8)})"
-    val colorSeq = List(Chocolate, OliveDrab, CadetBlue, DarkGoldenrod)
+  given Message is Inscribable in Display as ansiStandard = (level, realm, timestamp, message) =>
+    import textMetrics.uniform
 
-    // val stack: Display =
-    //   entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
-
-    val dateTime = dateFormat.format(entry.timestamp).nn.tt
-
-    e"${SlateGray}($dateTime) ${entry.level} $realm ${entry.message}\n"
+    e"$Gray(${dateFormat.format(timestamp)}) $level $Chocolate(${realm.name.fit(10)}) > $message\n"
