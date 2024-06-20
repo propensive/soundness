@@ -26,9 +26,15 @@ import java.text as jt
 import scala.language.experimental.pureFunctions
 import scala.language.experimental.into
 
-object Log:
-  val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
+// object Log:
+//   inline def route[TextType](inline routes: PartialFunction[Entry[?], Any])
+//       (using monitor: Monitor)
+//       (using inline presentational: TextType is Presentational)
+//           : TextType is Loggable =
 
+//     ${Eucalyptus.route[TextType]('routes, 'monitor, 'presentational)}
+
+/*object Log:
   given textLog[TextType: {Log as log, Presentational}]: Log[Text] = log.contramap(TextType(_))
 
   inline def fine[MessageType](inline message: MessageType)[TextType]
@@ -59,13 +65,6 @@ object Log:
 
     ${Eucalyptus.record[MessageType, TextType]('{Level.Fail}, 'message, 'log, 'realm, 'presentational, 'show)}
 
-  inline def route[TextType](inline routes: PartialFunction[Entry[?], Any])
-      (using monitor: Monitor)
-      (using inline presentational: TextType is Presentational)
-          : Log[TextType] =
-
-    ${Eucalyptus.route[TextType]('routes, 'monitor, 'presentational)}
-
   private val localLog: ThreadLocal[AnyRef] = ThreadLocal()
 
   inline def pin()(using inline log: SimpleLogger): Unit = localLog.set(log)
@@ -90,7 +89,7 @@ object Log:
     block(using log2)
 
 @capability
-abstract class Log[MessageType]() extends SimpleLogger:
+abstract class Log[MessageType]():
   private inline def outer: this.type = this
 
   val envelopes: List[Text] = Nil
@@ -116,3 +115,4 @@ abstract class TextLog[MessageType](present: Text => MessageType) extends Log[Me
 
   def logFail(realm: Realm, message: => Text): Unit =
     record(Entry(realm, Level.Fail, present(message), System.currentTimeMillis, Nil))
+*/

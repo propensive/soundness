@@ -16,26 +16,61 @@
 
 package eucalyptus
 
-import gossamer.*
-import rudiments.*
+import java.text as jt
+
 import anticipation.*
 import contingency.*
+import fulminate.*
+import gossamer.*
+import hieroglyph.*
 import parasite.*, asyncOptions.cancelOrphans
-import turbulence.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
-import hieroglyph.*
+import turbulence.*
 
 import language.experimental.pureFunctions
 
-object Level:
-  given Ordering[Level] = Ordering[Int].on[Level](_.ordinal)
-  given Level is Showable = _.toString.tt.upper
+val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-enum Level:
-  case Fine, Info, Warn, Fail
-  def unapply(entry: Entry[?]): Boolean = entry.level == this
+infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
 
+package logFormats:
+  given Message is Inscribable in Line as standard = (level, realm, timestamp, message) =>
+    Line(t"$level ${realm.name} $timestamp $message")
+
+trait Inscribable:
+  type Self
+  type Format
+  def format(level: Level, realm: Realm, timestamp: Long, message: Self): Format
+
+extension (logObject: Log.type)
+  def silent[FormatType]: FormatType is Loggable = new Loggable:
+    type Self = FormatType
+    def record(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
+
+  def apply[FormatType](using DummyImplicit)
+      [TargetType: Appendable by FormatType, EntryType: Inscribable in FormatType]
+      (target: TargetType)
+      (using Monitor)
+          : EntryType is Loggable =
+    new Loggable:
+      type Self = EntryType
+
+      private lazy val funnel: Funnel[TargetType.Operand] =
+        Funnel().tap: funnel =>
+          val task = async:
+            funnel.stream.appendTo(target)
+
+          Hook.onShutdown:
+            funnel.stop()
+            unsafely(task.await())
+
+      def record(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
+        funnel.put(EntryType.format(level, realm, timestamp, event))
+
+
+/*
 case class Entry[TextType]
     (realm: Realm, level: Level, message: TextType, timestamp: Long, envelopes: List[Text]):
 
@@ -52,7 +87,7 @@ object Logger:
   def drain[AnyType]: Logger[AnyType] = stream => ()
 
   def apply[TargetType: Appendable by TextType, TextType]
-      (target: TargetType, format: LogFormat[TargetType, TextType])
+      (target: TargetType, : LogFormat[TargetType, TextType])
       (using Monitor)
           : Logger[TextType]/*^{monitor}*/ =
 
@@ -106,3 +141,4 @@ package logging:
     def logInfo(realm: Realm, message: => Text): Unit = ()
     def logWarn(realm: Realm, message: => Text): Unit = ()
     def logFail(realm: Realm, message: => Text): Unit = ()
+*/

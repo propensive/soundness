@@ -17,32 +17,35 @@
 package eucalyptus
 
 import escapade.*
-import iridescence.*
+import iridescence.*, webColors.*
 import anticipation.*
 import gossamer.*
-import spectacular.*
+import symbolism.*
+import turbulence.*
 import hieroglyph.textMetrics.uniform
+
+import java.text as jt
 
 //import scala.language.experimental.captureChecking
 
 package logFormats:
-  given standardColor[TargetType]: LogFormat[TargetType, Display] = entry =>
-    given displayLevel: Displayable[Level] = level =>
-      val color = level match
-        case Level.Fine => colors.LightSeaGreen
-        case Level.Info => colors.YellowGreen
-        case Level.Warn => colors.Gold
-        case Level.Fail => colors.Tomato
+  private given Level is Displayable = level =>
+    val color = level match
+      case Level.Fine => LightSeaGreen
+      case Level.Info => YellowGreen
+      case Level.Warn => Gold
+      case Level.Fail => Tomato
 
-      e"${Bg(color)}[${colors.Black}($Bold( ${level.show} ))]"
+    e"${Bg(color)}[$Black($Bold( $level ))]"
 
+  given [TargetType] => Entry[Display] is Inscribable into Line = entry =>
     // FIXME: This is far too much object creation for every log message
-    val realm: Display = e"${colors.SteelBlue}(${entry.realm.name.fit(8)})"
-    val colorSeq = List(colors.Chocolate, colors.OliveDrab, colors.CadetBlue, colors.DarkGoldenrod)
-    
-    val stack: Display =
-      entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
-    
-    val dateTime = Log.dateFormat.format(entry.timestamp).nn.tt
+    val realm: Display = e"${SteelBlue}(${entry.realm.name.fit(8)})"
+    val colorSeq = List(Chocolate, OliveDrab, CadetBlue, DarkGoldenrod)
 
-    e"${colors.SlateGray}($dateTime) ${entry.level} $realm $stack ${entry.message}\n"
+    // val stack: Display =
+    //   entry.envelopes.reverse.zip(colorSeq).map { (item, color) => e"$color($item)" }.join(e"", e" ⟩ ", e" ⟩")
+
+    val dateTime = dateFormat.format(entry.timestamp).nn.tt
+
+    e"${SlateGray}($dateTime) ${entry.level} $realm ${entry.message}\n"
