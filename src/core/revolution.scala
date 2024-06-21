@@ -29,7 +29,7 @@ import symbolism.*
 
 import java.util.jar as juj
 
-infix type of[TypeclassType, ValueType] = TypeclassType { type Value = ValueType }
+infix type of [Type, ValueType] = Type { type Value = ValueType }
 
 object DecodableManifest:
   given (using Errant[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
