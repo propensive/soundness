@@ -24,6 +24,7 @@ import fulminate.*
 import symbolism.*
 import escapade.*
 import contingency.*
+import gossamer.*
 import guillotine.*
 import rudiments.workingDirectories.default
 import vacuous.*
@@ -33,8 +34,8 @@ import stdioSources.virtualMachine.ansi
 given Realm = realm"example"
 
 @main def run(): Unit =
-  import logFormats.ansiStandard
-  given Message is Loggable = safely(supervise(Log(Out))).or(Log.silent)
+  import logFormats.untimestamped
+  given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.mute)
   val message1 = msg"yes!"
   val message2 = msg"world $message1"
   given ExecEvent is Recordable into Message = Log.skip

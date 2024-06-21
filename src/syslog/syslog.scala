@@ -33,22 +33,9 @@ case class Syslog(tag: Text)
 object Syslog:
   given Syslog is Parameterizable = _.tag
 
-  given logFormat: LogFormat[Syslog, Text] = entry =>
-    val realm: Text = entry.realm.name.fit(8)
-    val stack: Text = entry.envelopes.reverse.join(t"", t" ⟩ ", t" ⟩")
-
-    t"[${entry.level}] $realm: $stack ${entry.message}\n"
-
   given (using Monitor) => Syslog is Appendable by Text = (syslog, stream) =>
     import workingDirectories.default
-    import logging.silent
 
-    tend:
-      stream.appendTo(sh"logger --tag $syslog".fork[Unit]())
-    .remedy:
+    tend(mute[ExecEvent](stream.appendTo(sh"logger -t $syslog".fork[Unit]()))).remedy:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
-
-package logging:
-  given syslog(using realm: Realm, monitor: Monitor): Log[Text] = Log.route:
-    case _ => Syslog(realm.name)
