@@ -32,10 +32,17 @@ extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncode
 package charDecoders:
   given (using EncodingMitigation) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
   given (using EncodingMitigation) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
-  given (using EncodingMitigation) => CharDecoder as utf16Le = CharDecoder.unapply("UTF-16LE".tt).get
-  given (using EncodingMitigation) => CharDecoder as utf16Be = CharDecoder.unapply("UTF-16BE".tt).get
+
+  given (using EncodingMitigation) => CharDecoder as utf16Le =
+    CharDecoder.unapply("UTF-16LE".tt).get
+
+  given (using EncodingMitigation) => CharDecoder as utf16Be =
+    CharDecoder.unapply("UTF-16BE".tt).get
+
   given (using EncodingMitigation) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
-  given CharDecoder as iso88591 = CharDecoder.unapply("ISO-8859-1".tt)(using encodingMitigation.skip).get
+
+  given CharDecoder as iso88591 =
+    CharDecoder.unapply("ISO-8859-1".tt)(using encodingMitigation.skip).get
 
 package charEncoders:
   given CharEncoder as utf8 = CharEncoder.unapply("UTF-8".tt).get
@@ -59,7 +66,8 @@ package encodingMitigation:
     def handle(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
 
-  given collect(using aggregate: Errant[AggregateError[CharDecodeError]]): (EncodingMitigation^{aggregate}) =
+  given (using aggregate: Errant[AggregateError[CharDecodeError]])
+      => (EncodingMitigation^{aggregate}) as collect =
     new EncodingMitigation:
       private val mistakes: scm.ArrayBuffer[CharDecodeError] = scm.ArrayBuffer()
       def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset

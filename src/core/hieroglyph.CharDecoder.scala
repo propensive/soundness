@@ -39,7 +39,7 @@ object CharDecoder:
 class CharDecoder(val encoding: Encoding)(using handler: EncodingMitigation)
 extends Decodable:
   type Self = Text
-  type Codec = Bytes
+  type Format = Bytes
 
   def decode(bytes: Bytes, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()
