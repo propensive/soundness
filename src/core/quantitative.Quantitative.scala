@@ -40,14 +40,14 @@ object Quantitative extends Quantitative2:
       case _                                   => quantity
 
   object MetricUnit:
-    erased given underlying[UnitsType <: Measure]: Underlying[MetricUnit[UnitsType], Double] = ###
+    erased given [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] as underlying = ###
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
     @targetName("makeDerivedUnit")
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
-    erased given underlying[UnitsType <: Measure]: Underlying[Quantity[UnitsType], Double] = ###
+    erased given [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] as underlying = ###
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     given Quantity[Seconds[1]] is GenericDuration as genericDuration =
@@ -85,9 +85,11 @@ object Quantitative extends Quantitative2:
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
-    given convertDouble[UnitsType <: Measure]: Conversion[Double, Quantity[UnitsType]] = Quantity(_)
 
-    given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] =
+    given [UnitsType <: Measure] => Conversion[Double, Quantity[UnitsType]] as convertDouble =
+      Quantity(_)
+
+    given [UnitsType <: Measure] => Conversion[Int, Quantity[UnitsType]] as convertInt =
       int => Quantity(int.toDouble)
 
     given [UnitsType <: Measure, UnitsType2 <: Measure]
