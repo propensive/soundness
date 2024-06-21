@@ -20,8 +20,8 @@ import escapade.*
 import rudiments.*
 
 extension (value: Markdown[Markdown.Ast.Node])
-  def render(width: Int): Display = TextConverter().convert(value.nodes, 0).serialize(width)
+  def render(width: Int): Teletype = TextConverter().convert(value.nodes, 0).serialize(width)
 
 extension (value: Markdown.Ast.Inline)
   @targetName("ansi2")
-  def render(width: Int): Display = TextConverter().phrasing(value)
+  def render(width: Int): Teletype = TextConverter().phrasing(value)

@@ -26,14 +26,14 @@ import spectacular.*
 import hieroglyph.*, textMetrics.eastAsianScripts
 
 case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): Display = blocks.map(_.render(width)).join(e"\n\n")
+  def serialize(width: Int): Teletype = blocks.map(_.render(width)).join(e"\n\n")
 
-case class TextBlock(indent: Int, text: Display):
+case class TextBlock(indent: Int, text: Teletype):
   @targetName("add")
-  infix def + (txt: Display): TextBlock = TextBlock(indent, text+txt)
-  
-  def render(width: Int): Display =
-    def rest(text: Display, lines: List[Display]): List[Display] =
+  infix def + (txt: Teletype): TextBlock = TextBlock(indent, text+txt)
+
+  def render(width: Int): Teletype =
+    def rest(text: Teletype, lines: List[Teletype]): List[Teletype] =
       if text.length == 0 then lines.reverse
       else
         try
@@ -41,13 +41,13 @@ case class TextBlock(indent: Int, text: Display):
           rest(text.drop(pt + 1), text.take(pt) :: lines)
         catch case err: RangeError =>
           rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
-    
+
     rest(text, Nil).map((e"  "*indent)+_).join(e"\n")
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =
     val content = e"${children.map(phrasing).join}"
-    
+
     TextBlock(0, level match
       case 1 => e"$Bold($Underline(${content.upper}))"
       case 2 => e"$Bold($Underline($content))"
@@ -62,14 +62,14 @@ open class TextConverter():
       case ((fresh, acc), next) => next match
         case node: Markdown.Ast.Block  =>
           (true, node :: acc)
-        
+
         case node: Markdown.Ast.Inline =>
           if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc)
           else
             val content = acc.head match
               case Markdown.Ast.Block.Paragraph(nodes*) =>
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
-              
+
               case _ =>
                 throw Panic("unexpected non-paragraph node found while folding inline nodes")
             (false, content)
@@ -80,16 +80,16 @@ open class TextConverter():
       case (acc, next) => next match
         case Markdown.Ast.Block.Paragraph(children*) =>
           acc :+ TextBlock(indent, children.map(phrasing).join)
-        
+
         case Markdown.Ast.Block.Heading(level, children*) =>
           acc :+ heading(level, children)
-        
+
         case Markdown.Ast.Block.Blockquote(children*) =>
           acc ++ convert(children, indent + 1).blocks
-        
+
         case Markdown.Ast.Block.ThematicBreak() =>
           acc :+ TextBlock(indent, e"---")
-        
+
         case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
           if syntax == Some(t"scala") then
             val highlightedLines = ScalaSyntax.highlight(value).map:
@@ -109,18 +109,18 @@ open class TextConverter():
                   case Token.Unparsed(content)   => e"${content}"
                   case _                       => throw Panic("Should not have a newline")
                 .join
-            
+
             acc :+ TextBlock(indent, highlightedLines.join(e"\n"))
           else acc :+ TextBlock(indent, e"${foreground.BrightGreen}($value)")
-        
+
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
             e"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
           }.join(e"\n"))
-    
+
         case Markdown.Ast.Block.Table(parts*) =>
           acc :+ TextBlock(indent, e"[table]")
-        
+
         case other =>
           acc
     }*)
@@ -140,7 +140,7 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): Display = node.map:
+  def text(node: Seq[Markdown.Ast.Node]): Teletype = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => e"[ $text ]"
     case Markdown.Ast.Inline.Weblink(s, desc)       => e"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
     case Markdown.Ast.Inline.Break()                => e""
@@ -159,7 +159,7 @@ open class TextConverter():
     case _                                          => e""
   .join
 
-  def phrasing(node: Markdown.Ast.Inline): Display = node match
+  def phrasing(node: Markdown.Ast.Inline): Teletype = node match
     case Markdown.Ast.Inline.Image(altText, location) => e"[ $altText ]"
     case Markdown.Ast.Inline.Break()                  => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
