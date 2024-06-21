@@ -78,7 +78,7 @@ object Dates:
 
     given (using Errant[DateError]) => Decoder[Date] as decoder = parse(_)
 
-    given encoder(using cal: RomanCalendar): Encoder[Date] = date =>
+    given (using RomanCalendar) => Encoder[Date] as encoder = date =>
       import hieroglyph.textMetrics.uniform
       t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
 
@@ -111,10 +111,10 @@ object Dates:
         raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
   extension (date: Date)
-    def day(using cal: Calendar): cal.Day = cal.getDay(date)
-    def month(using cal: Calendar): cal.Month = cal.getMonth(date)
-    def year(using cal: Calendar): cal.Year = cal.getYear(date)
-    def yearDay(using cal: Calendar): Int = date - cal.zerothDayOfYear(cal.getYear(date))
+    def day(using calendar: Calendar): calendar.Day = calendar.getDay(date)
+    def month(using calendar: Calendar): calendar.Month = calendar.getMonth(date)
+    def year(using calendar: Calendar): calendar.Year = calendar.getYear(date)
+    def yearDay(using calendar: Calendar): Int = date - calendar.zerothDayOfYear(calendar.getYear(date))
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
 
