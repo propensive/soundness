@@ -19,7 +19,7 @@ package escapade
 import language.experimental.captureChecking
 
 extension (inline ctx: StringContext)
-  transparent inline def e(inline parts: Any*): Display =
+  transparent inline def e(inline parts: Any*): Teletype =
     ${Ansi.Interpolator.expand('ctx, 'parts)}
 
-extension [ValueType: Displayable](value: ValueType) def display: Display = ValueType.display(value)
+extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype = ValueType.teletype(value)

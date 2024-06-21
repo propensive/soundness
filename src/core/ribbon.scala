@@ -27,7 +27,7 @@ object Ribbon:
   def apply[ColorType: Chromatic](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
 
 case class Ribbon(colors: Bg*):
-  def fill(parts: Display*): Display =
+  def fill(parts: Teletype*): Teletype =
     import escapes.*
     IArray.from(colors.zip(parts)).curse:
       val (background, text) = cursor

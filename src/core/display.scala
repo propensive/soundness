@@ -27,32 +27,32 @@ import spectacular.*
 
 import language.experimental.captureChecking
 
-object Displayable:
-  given Display is Displayable = identity(_)
-  given Text is Displayable = text => Display(text)
-  given Pid is Displayable = pid => e"${pid.value.show}"
+object Teletypeable:
+  given Teletype is Teletypeable = identity(_)
+  given Text is Teletypeable = text => Teletype(text)
+  given Pid is Teletypeable = pid => e"${pid.value.show}"
 
-  given [ValueType: {Showable as showable, Colorable as colorable}] => ValueType is Displayable =
+  given [ValueType: {Showable as showable, Colorable as colorable}] => ValueType is Teletypeable =
     value => e"${value.color}(${value.show})"
 
-  given Message is Displayable = _.fold[Display](e""): (acc, next, level) =>
+  given Message is Teletypeable = _.fold[Teletype](e""): (acc, next, level) =>
     level match
       case 0 => e"$acc${Fg(0xefe68b)}($next)"
       case 1 => e"$acc$Italic(${Fg(0xffd600)}($next))"
       case _ => e"$acc$Italic($Bold(${Fg(0xffff00)}($next)))"
 
-  given [ValueType: Displayable] => Option[ValueType] is Displayable =
-    case None        => Display("empty".show)
-    case Some(value) => value.display
+  given [ValueType: Teletypeable] => Option[ValueType] is Teletypeable =
+    case None        => Teletype("empty".show)
+    case Some(value) => value.teletype
 
-  given [ValueType: Showable] => ValueType is Displayable = value => Display(value.show)
+  given [ValueType: Showable] => ValueType is Teletypeable = value => Teletype(value.show)
 
-  given (using TextMetrics) => Exception is Displayable = exception =>
-    summon[StackTrace is Displayable].display(StackTrace(exception))
+  given (using TextMetrics) => Exception is Teletypeable = exception =>
+    summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
 
-  given Error is Displayable = _.message.display
+  given Error is Teletypeable = _.message.teletype
 
-  given (using TextMetrics) => StackTrace is Displayable = stack =>
+  given (using TextMetrics) => StackTrace is Teletypeable = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
@@ -75,25 +75,25 @@ object Displayable:
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
 
-  given (using TextMetrics) => StackTrace.Frame is Displayable = frame =>
+  given (using TextMetrics) => StackTrace.Frame is Teletypeable = frame =>
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
     val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"
     val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
     e"$className${Fg(0x808080)}(#)$method $file${Fg(0x808080)}(:)$line"
 
-  given StackTrace.Method is Displayable = method =>
+  given StackTrace.Method is Teletypeable = method =>
     val className = e"${Fg(0xc61485)}(${method.className})"
     val methodName = e"${Fg(0xdb6f92)}(${method.method})"
     e"$className${Fg(0x808080)}(#)$methodName"
 
-  given (using decimalizer: Decimalizer) => Double is Displayable = double =>
-    Display.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
+  given (using decimalizer: Decimalizer) => Double is Teletypeable = double =>
+    Teletype.make(decimalizer.decimalize(double), _.copy(fg = 0xffd600))
 
-  given Throwable is Displayable = throwable =>
-    Display.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
+  given Throwable is Teletypeable = throwable =>
+    Teletype.make[String](throwable.getClass.getName.nn.show.cut(t".").last.s,
         _.copy(fg = 0xdc133b))
 
-trait Displayable:
+trait Teletypeable:
   type Self
-  def display(value: Self): Display
+  def teletype(value: Self): Teletype

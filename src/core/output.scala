@@ -90,16 +90,16 @@ object Stylize:
 
 trait Ansi2:
 
-  class DisplaySubstitution[ValueType](display: ValueType => Display)
+  class TeletypeSubstitution[ValueType](teletype: ValueType => Teletype)
   extends Substitution[Ansi.Input, ValueType, "t"]:
-    def embed(value: ValueType) = Ansi.Input.TextInput(display(value))
+    def embed(value: ValueType) = Ansi.Input.TextInput(teletype(value))
 
-  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as display =
-    val display: ValueType => Display = value => compiletime.summonFrom:
-      case given (ValueType is Displayable) => value.display
-      case given (ValueType is Showable)    => Display(value.show)
+  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as teletype =
+    val teletype: ValueType => Teletype = value => compiletime.summonFrom:
+      case given (ValueType is Teletypeable) => value.teletype
+      case given (ValueType is Showable)    => Teletype(value.show)
 
-    DisplaySubstitution[ValueType](display)
+    TeletypeSubstitution[ValueType](teletype)
 
 object Ansi extends Ansi2:
   type Transform = TextStyle => TextStyle
@@ -122,7 +122,7 @@ object Ansi extends Ansi2:
   given Stylize[Reverse.type] = _ => Stylize(_.copy(reverse = true))
 
   enum Input:
-    case TextInput(text: Display)
+    case TextInput(text: Teletype)
     case Markup(transform: Transform)
     case Escape(on: Text, off: Text)
 
@@ -142,7 +142,7 @@ object Ansi extends Ansi2:
       val insertions2 = insertions.get(pos).fold(t"\e"+esc.on)(_+t"\e"+esc.on)
       copy(insertions = insertions.updated(pos, insertions2))
 
-  object Interpolator extends contextual.Interpolator[Input, State, Display]:
+  object Interpolator extends contextual.Interpolator[Input, State, Teletype]:
     private val complement = Map('[' -> ']', '(' -> ')', '{' -> '}', '<' -> '>', '«' -> '»')
     def initial: State = State()
 
@@ -191,59 +191,53 @@ object Ansi extends Ansi2:
       case esc@Input.Escape(on, off) =>
         state.copy(last = None).add(state.text.length, esc)
 
-    def skip(state: State): State = insert(state, Input.TextInput(Display.empty))
+    def skip(state: State): State = insert(state, Input.TextInput(Teletype.empty))
 
-    def complete(state: State): Display =
+    def complete(state: State): Teletype =
       if !state.stack.isEmpty
       then throw InterpolationError(msg"the closing brace does not match an opening brace")
 
-      Display(state.text, state.spans, state.insertions)
+      Teletype(state.text, state.spans, state.insertions)
 
-object Display:
-  given (using NotGiven[Display is Textual]) => Display is Addable as add:
-    type Operand = Display
-    type Result = Display
-    inline def add(left: Display, right: Display): Display = left.append(right)
+object Teletype:
+  given (using NotGiven[Teletype is Textual]) => Teletype is Addable as add:
+    type Operand = Teletype
+    type Result = Teletype
+    inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
-  given (using stdio: Stdio) => SimpleAppendable[Out.type, Display] as appendableOut = (out, output) =>
-    stdio.print(output.render(stdio.termcap))
+  given (using Stdio) => SimpleAppendable[Out.type, Teletype] as appendableOut =
+    (_, output) => Out.print(output)
 
-  given (using stdio: Stdio) => SimpleAppendable[Err.type, Display] as appendableErr = (err, output) =>
-    stdio.printErr(output.render(stdio.termcap))
+  given (using Stdio) => SimpleAppendable[Err.type, Teletype] as appendableErr =
+    (_, output) => Err.print(output)
 
-  given [TargetType: Appendable by Text] => TargetType is Appendable by Display as appendable =
-    (target, output) => TargetType.append(target, output.map(_.render(termcapDefinitions.basic)))
+  given Teletype is Textual:
+    type Show[ValueType] = ValueType is Teletypeable
+    def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
+    def text(teletype: Teletype): Text = teletype.plain
+    def length(text: Teletype): Int = text.plain.s.length
+    def apply(text: Text): Teletype = Teletype(text)
 
-  given [TargetType: Writable by Text] => TargetType is Writable by Display as writable =
-    (target, output) => TargetType.write(target, output.map(_.render(termcapDefinitions.basic)))
+    def map(text: Teletype, lambda: Char => Char): Teletype =
+      Teletype(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-  given Display is Textual:
-    type Show[ValueType] = ValueType is Displayable
-    def classTag: ClassTag[Display] = summon[ClassTag[Display]]
-    def text(display: Display): Text = display.plain
-    def length(text: Display): Int = text.plain.s.length
-    def apply(text: Text): Display = Display(text)
+    def range(text: Teletype, start: Int, end: Int): Teletype = text.dropChars(start).takeChars(end - start)
+    val empty: Teletype = Teletype.empty
+    def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
+    def unsafeChar(text: Teletype, index: Int): Char = text.plain.s.charAt(index)
+    def indexOf(text: Teletype, sub: Text): Int = text.plain.s.indexOf(sub.s)
+    def show[ValueType: Teletypeable](value: ValueType) = value.teletype
 
-    def map(text: Display, lambda: Char => Char): Display =
-      Display(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
+  val empty: Teletype = Teletype(t"")
+  given Teletype is Joinable as joinable = _.fold(empty)(_ + _)
+  given Teletype is Printable as printable = _.render(_)
 
-    def range(text: Display, start: Int, end: Int): Display = text.dropChars(start).takeChars(end - start)
-    val empty: Display = Display.empty
-    def concat(left: Display, right: Display): Display = left.append(right)
-    def unsafeChar(text: Display, index: Int): Char = text.plain.s.charAt(index)
-    def indexOf(text: Display, sub: Text): Int = text.plain.s.indexOf(sub.s)
-    def show[ValueType: Displayable](value: ValueType) = value.display
-
-  val empty: Display = Display(t"")
-  given Display is Joinable as joinable = _.fold(empty)(_ + _)
-  given Display is Printable as printable = _.render(_)
-
-  given cuttable: Cuttable[Display, Text] = (text, delimiter, limit) =>
+  given cuttable: Cuttable[Teletype, Text] = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
 
     @tailrec
-    def recur(source: Display, limit: Int, acc: List[Display]): List[Display] =
+    def recur(source: Teletype, limit: Int, acc: List[Teletype]): List[Teletype] =
       if limit <= 0 then acc
       else
         val matcher = pattern.matcher(source.plain.s).nn
@@ -255,13 +249,13 @@ object Display:
 
     IArray.from(recur(text, limit, Nil))
 
-  given Ordering[Display] = Ordering.by(_.plain)
+  given Ordering[Teletype] = Ordering.by(_.plain)
 
-  def make[ValueType: Showable](value: ValueType, transform: Ansi.Transform): Display =
+  def make[ValueType: Showable](value: ValueType, transform: Ansi.Transform): Teletype =
     val text: Text = value.show
-    Display(text, TreeMap(CharSpan(0, text.s.length) -> transform))
+    Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
-case class Display
+case class Teletype
     (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
         insertions: TreeMap[Int, Text] = TreeMap()):
 
@@ -269,16 +263,16 @@ case class Display
     if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")
-  def append(text: Text): Display = Display(t"$plain$text", spans)
+  def append(text: Text): Teletype = Teletype(t"$plain$text", spans)
 
   @targetName("add2")
-  def append(text: Display): Display =
+  def append(text: Teletype): Teletype =
     val newSpans: TreeMap[CharSpan, Ansi.Transform] = text.spans.map:
       case (span, transform) => (span.shift(plain.length): CharSpan) -> transform
 
-    Display(plain+text.plain, spans ++ newSpans)
+    Teletype(plain+text.plain, spans ++ newSpans)
 
-  def dropChars(n: Int, dir: Bidi = Ltr): Display = dir match
+  def dropChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl =>
       takeChars(plain.length - n)
 
@@ -290,9 +284,9 @@ case class Display
             charSpan -> transform
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
-      Display(plain.drop(n), newSpans)
+      Teletype(plain.drop(n), newSpans)
 
-  def takeChars(n: Int, dir: Bidi = Ltr): Display = dir match
+  def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl =>
       dropChars(plain.length - n)
 
@@ -304,7 +298,7 @@ case class Display
             charSpan -> tf
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
-      Display(plain.take(n), newSpans)
+      Teletype(plain.take(n), newSpans)
 
   def render(termcap: Termcap): Text =
     val buf = StringBuilder()
