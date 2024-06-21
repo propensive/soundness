@@ -491,7 +491,7 @@ object EntryMaker:
              working:                  WorkingDirectory,
              io:                       Errant[IoError],
              exec:                     Errant[ExecError])
-          : (EntryMaker[Fifo, Unix.Path] binds GenericLogger) =
+          : (EntryMaker[Fifo, Unix.Path] logs IoEvent) =
 
     path => createNonexistentParents(path):
       overwritePreexisting(path):
@@ -769,3 +769,12 @@ object SafeLink:
       def descent(link: SafeLink): List[PathName[GeneralForbidden]] = link.descent
 
   inline given decoder(using Errant[PathError]): Decoder[SafeLink] = Followable.decoder[SafeLink]
+
+given (using log: IoEvent is Loggable) => ExecEvent is Loggable = log.contramap(IoEvent.Exec(_))
+
+object IoEvent:
+  given IoEvent is Communicable =
+    case Exec(event) => event.communicate
+
+enum IoEvent:
+  case Exec(event: ExecEvent)
