@@ -20,7 +20,6 @@ import anticipation.*
 import parasite.*
 import digression.*
 import ambience.*
-import eucalyptus.*
 import hellenism.*
 import gossamer.*
 import contingency.*
@@ -46,11 +45,11 @@ case class Javac(options: List[JavacOption]):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor, Codicil)
-          : CompileProcess raises CompileError =
-    Log.info(t"Starting Java compilation")
+      (using SystemProperties, Monitor, Codicil)
+          : CompileProcess logs CompileEvent raises CompileError =
+    Log.record(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()
-    
+
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
 
       def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject]): Unit =
@@ -69,28 +68,27 @@ case class Javac(options: List[JavacOption]):
 
         process.put:
           Notice(importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
-    
+
     val options = List(t"-classpath", classpath(), t"-d", out.pathText)
     val javaSources = sources.map(JavaSource(_, _)).asJava
-    Log.fine(t"javac ${options.join(t" ")}")
+    Log.record(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
     async:
       try
         val success =
           process.put(CompileProgress(0.1, t"javac"))
-          
+
           Javac.compiler()
            .getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
            .nn.call().nn
-        
+
         if success then process.put(CompileProgress(1.0, t"javac"))
 
         process.put(if success then CompileResult.Success else CompileResult.Failure)
 
       catch case suc.NonFatal(error) =>
         Javac.refresh()
-        Log.warn(error.stackTrace)
+        Log.record(CompileEvent.CompilerCrash)
         process.put(CompileResult.Crash(error.stackTrace))
 
     process
-

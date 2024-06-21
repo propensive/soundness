@@ -22,7 +22,6 @@ import digression.*
 import parasite.*
 import turbulence.*
 import fulminate.*
-import eucalyptus.*
 import contingency.*
 import rudiments.*
 import hellenism.*
@@ -48,8 +47,8 @@ case class CompileProgress(complete: Double, stage: Text)
 trait Compiler:
   def apply(classpath: LocalClasspath)[PathType: GenericPath]
       (sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor)
-          : CompileProcess raises CompileError
+      (using SystemProperties, Monitor)
+          : CompileProcess logs CompileEvent raises CompileError
 
 class CompileProcess():
   private[anthology] var continue: Boolean = true
@@ -62,7 +61,7 @@ class CompileProcess():
 
   def put(notice: Notice): Unit =
     noticesFunnel.put(notice)
-    
+
     notice.importance match
       case Importance.Error   => errorCount += 1
       case Importance.Warning => warningCount += 1
@@ -72,14 +71,20 @@ class CompileProcess():
   def put(result: CompileResult): Unit = completion.offer(result)
   def put(task: Task[Unit]): Unit = compilation = task
 
-  def complete()(using Monitor, Log[Text]): CompileResult raises ConcurrencyError =
+  def complete()(using Monitor): CompileResult logs CompileEvent raises ConcurrencyError =
     try completion.await() finally
       safely(compilation.let(_.await()))
       safely(noticesFunnel.stop())
       safely(progressFunnel.stop())
-  
+
   def abort(): Unit = continue = false
   def cancelled: Boolean = !continue
 
   lazy val progress: LazyList[CompileProgress] = progressFunnel.stream
   lazy val notices: LazyList[Notice] = noticesFunnel.stream
+
+enum CompileEvent:
+  case Start
+  case CompilerCrash
+  case Notice(diagnostic: Text)
+  case Running(args: List[Text])

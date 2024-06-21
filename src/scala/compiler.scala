@@ -22,7 +22,6 @@ import fulminate.*
 import digression.*
 import ambience.*
 import parasite.*
-import eucalyptus.*
 import vacuous.*
 import gossamer.*
 import rudiments.*
@@ -65,7 +64,7 @@ package scalacOptions:
     val unstableInlineAccessors = ScalacOption[3.4](t"-WunstableInlineAccessors")
     val nonUnitStatement = ScalacOption[3.4](t"-Wnonunit-statement")
     val valueDiscard = ScalacOption[3.4](t"-Wvalue-discard")
-    
+
     def unused[VersionType <: Scalac.All](selection: Unused[VersionType]) =
       val option = (selection: @unchecked) match
         case Unused.All              => t"-Wunused:all"
@@ -101,6 +100,7 @@ package scalacOptions:
       val pureFunctions =           ScalacOption[3.3 | 3.4](t"-language:experimental.pureFunctions")
       val captureChecking =         ScalacOption[3.3 | 3.4](t"-language:experimental.captureChecking")
 
+
 object Scalac:
   type All = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5
   private var Scala3: dtd.Compiler = new dtd.Compiler()
@@ -123,70 +123,70 @@ extension (companion: Notice.type)
     .nn.orElse:
       Notice(importance, file, message, Unset)
     .nn
-    
+
 case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionType]]):
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Log[Text], Monitor, Codicil)
-          : CompileProcess raises CompileError =
-    
+      (using SystemProperties, Monitor, Codicil)
+          : CompileProcess logs CompileEvent raises CompileError =
+
     val scalacProcess: CompileProcess = CompileProcess()
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-        Log.fine(Notice(diagnostic).debug)
+        Log.record(CompileEvent.Notice(diagnostic.toString.tt))
         scalacProcess.put(Notice(diagnostic))
-    
+
     val callbackApi = new dtdi.CompilerCallback {}
-    
+
     object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
       override def informUnitStarting(stage: String, unit: dtd.CompilationUnit): Unit = ()
-      
+
       override def progress(current: Int, total: Int, currentStage: String, nextStage: String): Boolean =
         val int = (100.0*current/total).toInt
-        
+
         if int > last then
           last = int
           scalacProcess.put(CompileProgress(last/100.0, currentStage.tt))
-        
+
         scalacProcess.continue
-      
+
     object driver extends dtd.Driver:
       val currentCtx =
         val ctx = initCtx.fresh
         //val pluginParams = plugins
-        //val jsParams = 
+        //val jsParams =
         val args: List[Text] =
           List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
 
-        Log.fine(args.join(t"Running: scalac ", t" ", t""))
+        Log.record(CompileEvent.Running(args))
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
-        
+
       def run(): CompileProcess =
         given dtdc.Contexts.Context = currentCtx.fresh.pipe: ctx =>
           ctx.setReporter(reporter).setCompilerCallback(callbackApi).setProgressCallback(ProgressApi)
-        
+
         val sourceFiles: List[dtdu.SourceFile] = sources.to(List).map: (name, content) =>
           dtdu.SourceFile.virtual(name.s, content.s)
-        
+
         scalacProcess.put:
           task(t"scalac"):
             try
               Scalac.compiler().newRun.tap: run =>
                 run.compileSources(sourceFiles)
                 if !reporter.hasErrors then finish(Scalac.Scala3, run)
-                
+
               scalacProcess.put(if reporter.hasErrors then CompileResult.Failure else CompileResult.Success)
 
             catch case suc.NonFatal(error) =>
               scalacProcess.put(CompileResult.Crash(error.stackTrace))
               Scalac.refresh()
-  
+
         scalacProcess
-      
+
     driver.run()
 
 enum WarningFlag:
