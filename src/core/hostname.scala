@@ -57,7 +57,7 @@ object Hostname:
   def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = failCompilation:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
-  given toExpr: ToExpr[Hostname] with
+  given ToExpr[Hostname] as toExpr:
     def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
       val labels = Varargs:
         hostname.dnsLabels.map: label =>

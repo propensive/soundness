@@ -84,17 +84,19 @@ case class IpAddressError(reason: Reason)
 extends Error(msg"the IP address is not valid because $reason")
 
 object Remote:
-  given ipv4: Remote[Ipv4] = _.show
-  given ipv6: Remote[Ipv6] = _.show
-  given hostname: Remote[Hostname] = _.show
+  given Ipv4 is Remote as ipv4 = _.show
+  given Ipv6 is Remote as ipv6 = _.show
+  given Hostname is Remote as hostname = _.show
 
-trait Remote[RemoteType]:
-  def remoteName(remote: RemoteType): Text
+trait Remote:
+  type Self
+  def remoteName(remote: Self): Text
 
 case class Endpoint[+PortType](remote: Text, port: PortType)
 
-extension [RemoteType](value: RemoteType)(using remote: Remote[RemoteType])
-  infix def on [PortType](port: PortType): Endpoint[PortType] = Endpoint(remote.remoteName(value), port)
+extension [RemoteType: Remote](value: RemoteType)
+  infix def on [PortType](port: PortType): Endpoint[PortType] =
+    Endpoint(RemoteType.remoteName(value), port)
 
 erased trait Port
 
@@ -117,13 +119,13 @@ object Nettlesome:
       def text: Text = label
 
     object Ipv4:
-      erased given underlying: Underlying[Ipv4, Int] = ###
+      erased given Underlying[Ipv4, Int] as underlying = ###
 
       given Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
-      given encoder: Encoder[Ipv4] = _.show
-      given decoder(using Errant[IpAddressError]): Decoder[Ipv4] = parse(_)
+      given Encoder[Ipv4] as encoder = _.show
+      given (using Errant[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -146,10 +148,10 @@ object Nettlesome:
         else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))(0)
 
     object MacAddress:
-      erased given underlying: Underlying[MacAddress, Long] = ###
+      erased given Underlying[MacAddress, Long] as underlying = ###
       given MacAddress is Showable = _.text
-      given encoder: Encoder[MacAddress] = _.text
-      given decoder(using Errant[MacAddressError]): Decoder[MacAddress] = parse(_)
+      given Encoder[MacAddress] as encoder = _.text
+      given (using Errant[MacAddressError]) => Decoder[MacAddress] as decoder = parse(_)
 
       def apply(value: Long): MacAddress = value
 
@@ -182,11 +184,11 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
-      erased given underlying: Underlying[TcpPort, Int] = ###
+      erased given Underlying[TcpPort, Int] as underlying = ###
       given TcpPort is Showable = port => TextConversion.int.text(port.number)
-      given encoder: Encoder[TcpPort] = port => TextConversion.int.text(port.number)
+      given Encoder[TcpPort] as encoder = port => TextConversion.int.text(port.number)
 
-      given decoder(using Errant[NumberError], Errant[PortError]): Decoder[TcpPort] =
+      given (using Errant[NumberError], Errant[PortError]) => Decoder[TcpPort] as decoder =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
@@ -195,11 +197,11 @@ object Nettlesome:
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
 
     object UdpPort:
-      erased given underlying: Underlying[UdpPort, Int] = ###
+      erased given Underlying[UdpPort, Int] as underlying = ###
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
-      given encoder: Encoder[UdpPort] = port => TextConversion.int.text(port.number)
+      given Encoder[UdpPort] as encoder = port => TextConversion.int.text(port.number)
 
-      given decoder(using Errant[NumberError], Errant[PortError]): Decoder[UdpPort] =
+      given (using Errant[NumberError], Errant[PortError]) => Decoder[UdpPort] as decoder =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
@@ -230,8 +232,7 @@ object Nettlesome:
       def byte2: Int = (ip >>> 8) & 255
       def byte3: Int = ip & 255
 
-      @targetName("subnet")
-      infix def / (size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
+      def subnet(size: Int): Ipv4Subnet = Ipv4Subnet(ip & (-1 << (32 - size)), size)
 
       def int: Int = ip
 
@@ -273,7 +274,7 @@ object Nettlesome:
   object Ipv6:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
 
-    given toExpr: ToExpr[Ipv6] with
+    given ToExpr[Ipv6] as toExpr:
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
     given Ipv6 is Showable = ip =>

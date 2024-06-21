@@ -20,4 +20,4 @@ import rudiments.*
 import nettlesome.*
 
 package hierarchies:
-  erased given urls: Hierarchy[Url["http" | "https"], Weblink] = ###
+  erased given Hierarchy[Url["http" | "https"], Weblink] as urls = ###

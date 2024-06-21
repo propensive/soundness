@@ -120,19 +120,23 @@ object Url:
 
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
 
-  given [SchemeType <: Label] => Url[SchemeType] is Navigable["", (Scheme[SchemeType], Optional[Authority])]:
+  given [SchemeType <: Label]
+      => Url[SchemeType] is Navigable["", (Scheme[SchemeType], Optional[Authority])]:
     def separator(url: Url[SchemeType]): Text = t"/"
     def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
-    def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) = (url.scheme, url.authority)
+
+    def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) =
+      (url.scheme, url.authority)
 
     def prefix(root: (Scheme[SchemeType], Optional[Authority])): Text =
       t"${root(0).name}:${root(1).let(t"//"+_.show).or(t"")}"
 
-  given [SchemeType <: Label]: PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])] with
+  given [SchemeType <: Label]
+      => PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])]:
     def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
 
-  given display[SchemeType <: Label]: Displayable[Url[SchemeType]] =
+  given [SchemeType <: Label] => Url[SchemeType] is Teletypeable as teletype =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
   given [SchemeType <: Label] => Url[SchemeType] is Communicable as communicable =
@@ -154,7 +158,8 @@ object Url:
     def name: Text = t"data"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]) as formaction:
+  given [SchemeType <: Label]
+      => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]) as formaction:
     def name: Text = t"formaction"
     def serialize(url: Url[SchemeType]): Text = url.show
 
@@ -174,7 +179,8 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  def parse[SchemeType <: Label](value: Text)(using Errant[UrlError], Errant[HostnameError]): Url[SchemeType] =
+  def parse[SchemeType <: Label](value: Text)(using Errant[UrlError], Errant[HostnameError])
+          : Url[SchemeType] =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')) match
@@ -241,7 +247,7 @@ object Weblink:
     def separator(weblink: Weblink): Text = t"/"
     def ascent(weblink: Weblink): Int = weblink.ascent
 
-  given PathCreator[Weblink, "", Int] with
+  given PathCreator[Weblink, "", Int]:
     def path(ascent: Int, descent: List[PathName[""]]): Weblink = Weblink(ascent, descent)
 
 case class Weblink(ascent: Int, descent: List[PathName[""]])
