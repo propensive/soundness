@@ -33,14 +33,15 @@ abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
   given runner: Runner[TestReport] =
     given Stdio = suiteIo
     try Runner() catch case err: EnvironmentError =>
-      println(StackTrace(err).display.render)
+      println(StackTrace(err).teletype.render)
       ???
 
   given TestSuite = this
-  
+
   def run(): Unit
-  
+
   final def main(args: IArray[Text]): Unit =
     try runner.suite(this, run())
     catch case err: Throwable => runner.terminate(err)
-    finally try runner.complete() catch case err: EnvironmentError => println(StackTrace(err).display.render)
+    finally try runner.complete() catch case err: EnvironmentError =>
+      println(StackTrace(err).teletype.render)

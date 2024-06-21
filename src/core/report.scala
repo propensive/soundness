@@ -27,7 +27,7 @@ import chiaroscuro.*
 import ambience.*
 import escritoire.*, tableStyles.default
 import dendrology.*
-import escapade.*, insufficientSpaceHandling.ignore
+import escapade.*, columnAttenuation.ignore
 import turbulence.*
 import iridescence.*
 import spectacular.*
@@ -203,7 +203,7 @@ class TestReport(using Environment):
       case Suite       => webColors.SlateBlue
       case Bench       => webColors.CadetBlue
 
-    def symbol: Display = this match
+    def symbol: Teletype = this match
       case Pass        => e"${Bg(rgb"#8abd00")}( $Bold(${webColors.Black}(✓)) )"
       case Fail        => e"${Bg(webColors.Tomato)}( $Bold(${webColors.Black}(✗)) )"
       case Throws      => e"${Bg(webColors.DarkOrange)}( $Bold(${webColors.Black}(!)) )"
@@ -212,7 +212,7 @@ class TestReport(using Environment):
       case Suite       => e"   "
       case Bench       => e"${Bg(webColors.CadetBlue)}( $Bold(${webColors.Black}(*)) )"
 
-    def describe: Display = this match
+    def describe: Teletype = this match
       case Pass        => e"Pass"
       case Fail        => e"Fail"
       case Throws      => e"Throws exception"
@@ -221,15 +221,15 @@ class TestReport(using Environment):
       case Suite       => e"Suite"
       case Bench       => e"Benchmark"
 
-  val unitsSeq: List[Display] = List(
+  val unitsSeq: List[Teletype] = List(
     e"${webColors.BurlyWood}(µs)",
     e"${webColors.Goldenrod}(ms)",
     e"${webColors.Sienna}(s) "
   )
 
-  def showTime(n: Long, units: List[Display] = unitsSeq): Display = units match
+  def showTime(n: Long, units: List[Teletype] = unitsSeq): Teletype = units match
     case Nil =>
-      n.show.display
+      n.show.teletype
 
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
@@ -239,7 +239,7 @@ class TestReport(using Environment):
         e"${webColors.Silver}(${sig}.$frac) ${unit}"
 
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
-    def indentedName: Display =
+    def indentedName: Teletype =
       val depth = id.suite.let(_.id.depth).or(0) + 1
 
       val title =
@@ -248,10 +248,10 @@ class TestReport(using Environment):
 
       e"${t"  "*(depth - 1)}$title"
 
-    def minTime: Display = if min == 0L then e"" else showTime(min)
-    def maxTime: Display = if max == 0L then e"" else showTime(max)
-    def avgTime: Display = if avg == 0L then e"" else showTime(avg)
-    def iterations: Display = if count == 0 then e"" else count.display
+    def minTime: Teletype = if min == 0L then e"" else showTime(min)
+    def maxTime: Teletype = if max == 0L then e"" else showTime(max)
+    def avgTime: Teletype = if avg == 0L then e"" else showTime(avg)
+    def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
     given TextMetrics with
@@ -292,7 +292,7 @@ class TestReport(using Environment):
     coverage.each: coverage =>
       Out.println(e"$Bold($Underline(Test coverage))")
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
-        def hitsText: Display =
+        def hitsText: Teletype =
           val main = e"${if hits == 0 then webColors.Gray else webColors.ForestGreen}($hits)"
           if oldHits == 0 then main else e"${webColors.Goldenrod}(${oldHits.show.subscript}) $main"
 
@@ -305,11 +305,11 @@ class TestReport(using Environment):
 
       import treeStyles.default
 
-      def describe(surface: Surface): Display =
-        if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.display}"
+      def describe(surface: Surface): Teletype =
+        if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
          else e"• ${surface.juncture.shortCode}"
 
-      def render(junctures: List[Surface]): LazyList[(Surface, Display)] =
+      def render(junctures: List[Surface]): LazyList[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
 
@@ -322,7 +322,7 @@ class TestReport(using Environment):
           .filter(!_.covered(allHits))
           .map(_.copy(children = Nil))
 
-      Table[(Surface, Display)](
+      Table[(Surface, Teletype)](
         Column(e""): row =>
           if row(0).juncture.branch then e"⎇" else e"",
         Column(e""): row =>
@@ -374,8 +374,8 @@ class TestReport(using Environment):
       Out.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).each: statuses =>
         Out.println:
-          statuses.map[Display]: status =>
-            gossamer.pad[Display](e"  ${status.symbol} ${status.describe}")(20)
+          statuses.map[Teletype]: status =>
+            gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
           .join(e" ")
       Out.println(t"─"*72)
 
@@ -392,14 +392,14 @@ class TestReport(using Environment):
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
 
-      def confInt(b: Benchmark): Display =
+      def confInt(b: Benchmark): Teletype =
         if b.confidenceInterval == 0 then e"" else e"${webColors.Thistle}(±)${showTime(b.confidenceInterval)}"
 
-      def opsPerS(b: Benchmark): Display =
+      def opsPerS(b: Benchmark): Teletype =
         if b.throughput == 0 then e""
         else e"${webColors.Silver}(${b.throughput}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
 
-      val bench: Table[ReportLine.Bench, Display] = Table[ReportLine.Bench](
+      val bench: Table[ReportLine.Bench, Teletype] = Table[ReportLine.Bench](
         (List(
           Column(e"$Bold(Hash)"): s =>
             e"${webColors.CadetBlue}(${s.test.id})",
@@ -413,7 +413,7 @@ class TestReport(using Environment):
             showTime(s.benchmark.mean.toLong),
 
           Column(e"$Bold(Confidence)", textAlign = TextAlignment.Right): s =>
-            e"P${s.benchmark.confidence} ${confInt(s.benchmark)}",
+            e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${opsPerS(s.benchmark)}"
@@ -462,7 +462,7 @@ class TestReport(using Environment):
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
       val ribbon = Ribbon(webColors.DarkRed.srgb, webColors.FireBrick.srgb, webColors.Tomato.srgb)
-      Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.display, id.name.display))
+      Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.teletype, id.name.teletype))
 
       info.each: debugInfo =>
         Out.println(t"")
@@ -470,25 +470,25 @@ class TestReport(using Environment):
           case DebugInfo.Throws(err) =>
             val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
             Out.println(e"${webColors.Silver}(An exception was thrown while running test:)")
-            Out.println(err.crop(t"probably.Runner", t"run()").display)
+            Out.println(err.crop(t"probably.Runner", t"run()").teletype)
             showLegend()
 
           case DebugInfo.CheckThrows(err) =>
             val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
             Out.println(e"${webColors.Silver}(An exception was thrown while checking the test predicate:)")
-            Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).display)
+            Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).teletype)
             showLegend()
 
           case DebugInfo.Compare(expected, found, cmp) =>
-            val expected2: Display = e"$Italic(${webColors.White}($expected))"
-            val found2: Display = e"$Italic(${webColors.White}($found))"
+            val expected2: Teletype = e"$Italic(${webColors.White}($expected))"
+            val found2: Teletype = e"$Italic(${webColors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             val instead = e"but instead it returned$nl$found2$nl"
             Out.println(e"${webColors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
-            Out.println(cmp.display)
+            Out.println(cmp.teletype)
 
           case DebugInfo.Captures(map) =>
-            Table[(Text, Text), Display](
+            Table[(Text, Text), Teletype](
               Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)),
             ).tabulate(map.to(List)).layout(140).render.each(Out.println(_))
@@ -511,4 +511,4 @@ class TestReport(using Environment):
       Out.println()
 
       Out.println(Ribbon(webColors.Crimson.srgb, webColors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
-      Out.println(StackTrace(error).display)
+      Out.println(StackTrace(error).teletype)
