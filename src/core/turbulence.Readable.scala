@@ -28,7 +28,7 @@ import vacuous.*
 
 object Readable:
   given Bytes is Readable by Bytes as bytes = LazyList(_)
-  given Text is Readable by Text as text = LazyList(_)
+  given [TextType <: Text] => TextType is Readable by Text as text = LazyList(_)
 
   given [SourceType](using readable: SourceType is Readable by Text, encoder: CharEncoder)
       => SourceType is Readable by Bytes as encodingAdapter =
