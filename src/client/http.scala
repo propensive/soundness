@@ -242,9 +242,9 @@ object Http:
       (using Online)
           : HttpResponse logs HttpEvent =
 
-    Log.record(HttpEvent.Send(method, url, headers))
+    Log.info(HttpEvent.Send(method, url, headers))
 
-    Log.record(HttpEvent.Request(PostType.preview(content)))
+    Log.fine(HttpEvent.Request(PostType.preview(content)))
 
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case conn: HttpURLConnection =>
@@ -274,7 +274,7 @@ object Http:
             try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
 
         val HttpStatus(status) = conn.getResponseCode: @unchecked
-        Log.record(HttpEvent.Response(status))
+        Log.fine(HttpEvent.Response(status))
 
         val responseHeaders: Map[ResponseHeader[?], List[Text]] =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
