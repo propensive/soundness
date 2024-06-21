@@ -27,7 +27,6 @@ import turbulence.*
 import gesticulate.*
 import wisteria.*
 import spectacular.*
-import eucalyptus.*
 import anticipation.*
 import nettlesome.*
 
@@ -185,77 +184,72 @@ trait Locatable[-UrlType]:
 object Http:
   def post[PostType: Postable, UrlType: Locatable]
       (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
-      (using Online, Log[Text])
-          : HttpResponse =
+      (using Online)
+          : HttpResponse logs HttpEvent =
 
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Post, headers)
 
   def put[PostType: Postable, UrlType: Locatable]
       (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
-      (using Online, Log[Text])
-          : HttpResponse =
+      (using Online)
+          : HttpResponse logs HttpEvent =
 
     request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Put, headers)
 
-  def get[UrlType: Locatable]
-      (url: UrlType, headers: Seq[RequestHeader.Value] = Nil)
-      (using Online, Log[Text])
-          : HttpResponse =
+  def get[UrlType: Locatable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Get, headers)
 
   def options[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Options, headers)
 
   def head[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Head, headers)
 
   def delete[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Delete, headers)
 
   def connect[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Connect, headers)
 
   def trace[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Trace, headers)
 
   def patch[UrlType: Locatable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online, Log[Text])
-          : HttpResponse =
+      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+          : HttpResponse logs HttpEvent =
 
     request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Patch, headers)
 
-  private def request[PostType]
+  private def request[PostType: Postable]
       (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
-      (using Online, Log[Text])
-      (using postable: Postable[PostType])
-          : HttpResponse =
+      (using Online)
+          : HttpResponse logs HttpEvent =
 
-    Log.info(msg"Sending HTTP $method request to $url")
-    headers.each: header =>
-      Log.fine(Message(header.show))
+    Log.record(HttpEvent.Send(method, url, headers))
 
-    Log.fine(msg"HTTP request body: ${summon[Postable[PostType]].preview(content)}")
+    Log.record(HttpEvent.Request(PostType.preview(content)))
 
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case conn: HttpURLConnection =>
         conn.setRequestMethod(method.toString.show.upper.s)
-        conn.setRequestProperty(RequestHeader.ContentType.header.s, postable.contentType.show.s)
+        conn.setRequestProperty(RequestHeader.ContentType.header.s, PostType.contentType.show.s)
         conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
         headers.each:
@@ -264,7 +258,7 @@ object Http:
         if method == HttpMethod.Post || method == HttpMethod.Put then
           conn.setDoOutput(true)
           val out = conn.getOutputStream().nn
-          summon[Postable[PostType]].content(content).map(_.to(Array)).each(out.write(_))
+          PostType.content(content).map(_.to(Array)).each(out.write(_))
           out.close()
 
         val buf = new Array[Byte](65536)
@@ -280,7 +274,7 @@ object Http:
             try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
 
         val HttpStatus(status) = conn.getResponseCode: @unchecked
-        Log.info(msg"Received response with HTTP status ${status.show}")
+        Log.record(HttpEvent.Response(status))
 
         val responseHeaders: Map[ResponseHeader[?], List[Text]] =
           val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
@@ -371,15 +365,29 @@ case class Params(values: List[(Text, Text)]):
     if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
   .join(t"&")
 
-extension (url: HttpUrl)(using Online, Log[Text])
-  def post[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse = Http.post(url, body, headers*)
-  def put[T: Postable](headers: RequestHeader.Value*)(body: T): HttpResponse = Http.put(url, body, headers*)
-  def post[T: Postable](body: T): HttpResponse = Http.post(url, body)
-  def put[T: Postable](body: T): HttpResponse = Http.put(url, body)
-  def get(headers: RequestHeader.Value*): HttpResponse = Http.get(url, headers)
-  def options(headers: RequestHeader.Value*): HttpResponse = Http.options(url, headers*)
-  def trace(headers: RequestHeader.Value*): HttpResponse = Http.trace(url, headers*)
-  def patch(headers: RequestHeader.Value*): HttpResponse = Http.patch(url, headers*)
-  def head(headers: RequestHeader.Value*): HttpResponse = Http.head(url, headers*)
-  def delete(headers: RequestHeader.Value*): HttpResponse = Http.delete(url, headers*)
-  def connect(headers: RequestHeader.Value*): HttpResponse = Http.connect(url, headers*)
+extension (url: HttpUrl)(using Online)
+  def post[BodyType: Postable](headers: RequestHeader.Value*)(body: BodyType)
+          : HttpResponse logs HttpEvent =
+    Http.post(url, body, headers*)
+
+  def put[BodyType: Postable](headers: RequestHeader.Value*)(body: BodyType)
+          : HttpResponse logs HttpEvent =
+    Http.put(url, body, headers*)
+
+  def post[BodyType: Postable](body: BodyType): HttpResponse logs HttpEvent = Http.post(url, body)
+  def put[BodyType: Postable](body: BodyType): HttpResponse logs HttpEvent = Http.put(url, body)
+  def get(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.get(url, headers)
+
+  def options(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
+    Http.options(url, headers*)
+
+  def trace(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.trace(url, headers*)
+  def patch(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.patch(url, headers*)
+  def head(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.head(url, headers*)
+  def delete(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.delete(url, headers*)
+  def connect(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.connect(url, headers*)
+
+enum HttpEvent:
+  case Response(status: HttpStatus)
+  case Request(preview: Text)
+  case Send(method: HttpMethod, url: HttpUrl, headers: Seq[RequestHeader.Value])
