@@ -81,11 +81,11 @@ package unhandledErrors:
   given stackTrace: UnhandledErrorHandler with
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
-        Out.println(StackTrace(error).display)
+        Out.println(StackTrace(error).teletype)
         ExitStatus(1)
 
       case error: Throwable =>
-        Out.println(StackTrace(error).display)
+        Out.println(StackTrace(error).teletype)
         ExitStatus(2)
 
 package executives:
