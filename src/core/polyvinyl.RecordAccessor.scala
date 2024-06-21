@@ -16,7 +16,8 @@
 
 package polyvinyl
 
+import anticipation.*
 import rudiments.*
 
-trait RecordAccessor[RecordType <: Record[DataType], DataType, LabelType <: Label, TypeConstructorType[_]]:
+trait RecordAccessor[RecordType <: Record in DataType, DataType, LabelType <: Label, TypeConstructorType[_]]:
   def transform(data: DataType, make: DataType => RecordType): TypeConstructorType[RecordType]

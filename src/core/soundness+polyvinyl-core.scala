@@ -16,4 +16,4 @@
 
 package soundness
 
-export polyvinyl.{Record, RecordAccessor, RecordField, Schema, ValueAccessor}
+export polyvinyl.{Record, RecordAccessor, RecordField, Schema, Schematic}

@@ -22,7 +22,7 @@ import rudiments.*
 import anticipation.*
 import fulminate.*
 
-trait Schema[DataType, RecordType <: Record[DataType]]:
+trait Schema[DataType, RecordType <: Record in DataType]:
   def fields: Map[String, RecordField]
   def make(data: DataType, transform: String => DataType => Any): RecordType
   def access(name: String, value: DataType): DataType
@@ -52,11 +52,11 @@ trait Schema[DataType, RecordType <: Record[DataType]]:
         case (name, RecordField.Value(typeName, params*)) :: tail =>
           (ConstantType(StringConstant(typeName)).asType: @unchecked) match
             case '[type typeName <: Label; typeName] =>
-              (Expr.summon[ValueAccessor[RecordType, DataType, typeName, ?]]: @unchecked) match
+              (Expr.summon[Schematic[RecordType, DataType, typeName, ?]]: @unchecked) match
                 case None =>
-                  abandon(msg"could not find a ValueAccessor instance for the field $name with type $typeName")
+                  abandon(msg"could not find a Schematic instance for the field $name with type $typeName")
 
-                case Some('{$accessor: ValueAccessor[RecordType, DataType, typeName, valueType]}) =>
+                case Some('{$accessor: Schematic[RecordType, DataType, typeName, valueType]}) =>
 
                   val rhs: Expr[DataType => Any] =
                     '{

@@ -16,7 +16,8 @@
 
 package polyvinyl
 
+import anticipation.*
 import rudiments.*
 
-trait ValueAccessor[RecordType <: Record[DataType], DataType, LabelType <: Label, ValueType]:
+trait Schematic[RecordType <: Record in DataType, DataType, LabelType <: Label, ValueType]:
   def transform(data: DataType, params: List[String]): ValueType

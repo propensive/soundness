@@ -16,5 +16,8 @@
 
 package polyvinyl
 
-trait Record[DataType](data: DataType, access: String => DataType => Any) extends Selectable:
+trait Record extends Selectable:
+  type Format
+  val data: Format
+  def access: String => Format => Any
   def selectDynamic(name: String): Any = access(name)(data)
