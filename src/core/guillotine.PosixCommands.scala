@@ -17,6 +17,7 @@
 package guillotine
 
 import rudiments.*
+import symbolism.*
 import anticipation.*
 
 import language.experimental.captureChecking

@@ -79,8 +79,8 @@ trait Computable:
 
 trait ProcessRef:
   def pid: Pid
-  def kill(): Unit binds GenericLogger
-  def abort(): Unit binds GenericLogger
+  def kill(): Unit logs ExecEvent
+  def abort(): Unit logs ExecEvent
   def alive: Boolean
   def attend(): Unit
   def startTime[InstantType: SpecificInstant]: Optional[InstantType]
@@ -99,8 +99,8 @@ object OsProcess:
 
 class OsProcess private (java: ProcessHandle) extends ProcessRef:
   def pid: Pid = Pid(java.pid)
-  def kill(): Unit binds GenericLogger = java.destroy()
-  def abort(): Unit binds GenericLogger = java.destroyForcibly()
+  def kill(): Unit logs ExecEvent = java.destroy()
+  def abort(): Unit logs ExecEvent = java.destroyForcibly()
   def alive: Boolean = java.isAlive
   def attend(): Unit = java.onExit.nn.get()
 
@@ -150,12 +150,12 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     case 0     => ExitStatus.Ok
     case other => ExitStatus.Fail(other)
 
-  def abort(): Unit binds GenericLogger =
-    bond[GenericLogger].info(t"The process with PID ${pid.value} was aborted")
+  def abort(): Unit logs ExecEvent =
+    Log.info(ExecEvent.AbortProcess(pid))
     process.destroy()
 
-  def kill(): Unit binds GenericLogger =
-    bond[GenericLogger].warn(t"The process with PID ${pid.value} was killed")
+  def kill(): Unit logs ExecEvent =
+    Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
   def osProcess(using Errant[PidError]) = OsProcess(pid)
@@ -172,18 +172,15 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
       osProcess.cpuUsage[InstantType]
     catch case _: PidError => Unset
 
-
-infix type into [BaseType <: { type Result }, ResultType] = BaseType { type Result = ResultType }
-
 sealed trait Executable:
   type Exec <: Label
 
   def fork[ResultType]()(using working: WorkingDirectory)
-          : Process[Exec, ResultType] binds GenericLogger raises ExecError
+          : Process[Exec, ResultType] logs ExecEvent raises ExecError
 
   def exec[ResultType: Computable]()
       (using working: WorkingDirectory)
-          : ResultType binds GenericLogger raises ExecError =
+          : ResultType logs ExecEvent raises ExecError =
 
     fork[ResultType]().await()
 
@@ -191,7 +188,7 @@ sealed trait Executable:
       (using erased intelligible: Exec is Intelligible,
                     working:      WorkingDirectory,
                     computable:   intelligible.Result is Computable)
-          : intelligible.Result binds GenericLogger raises ExecError =
+          : intelligible.Result logs ExecEvent raises ExecError =
 
     fork[intelligible.Result]().await()
 
@@ -230,12 +227,12 @@ object Command:
 
 case class Command(arguments: Text*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory)
-      : Process[Exec, ResultType] binds GenericLogger raises ExecError =
+      : Process[Exec, ResultType] logs ExecEvent raises ExecError =
 
     val processBuilder = ProcessBuilder(arguments.ss*)
     processBuilder.directory(ji.File(working.directory().s))
 
-    //Log.info(msg"Starting process ${this}")
+    Log.info(ExecEvent.ProcessStart(this))
 
     try new Process(processBuilder.start().nn)
     catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
@@ -249,7 +246,7 @@ object Pipeline:
 
 case class Pipeline(commands: Command*) extends Executable:
   def fork[ResultType]()(using working: WorkingDirectory)
-      : Process[Exec, ResultType] binds GenericLogger raises ExecError =
+      : Process[Exec, ResultType] logs ExecEvent raises ExecError =
 
     val processBuilders = commands.map: command =>
       val processBuilder = ProcessBuilder(command.arguments.ss*)
@@ -258,7 +255,7 @@ case class Pipeline(commands: Command*) extends Executable:
 
       processBuilder.nn
 
-    bond[GenericLogger].info(t"Starting pipelined processes ${this}")
+    Log.info(ExecEvent.PipelineStart(commands))
 
     val pipeline = ProcessBuilder.startPipeline(processBuilders.asJava).nn.asScala.to(List).last
     new Process[Exec, ResultType](pipeline)
@@ -396,3 +393,19 @@ given Realm = realm"guillotine"
 
 extension (inline context: StringContext)
   transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+
+object ExecEvent:
+
+  summon[Pid is Communicable]
+
+  given ExecEvent is Communicable =
+    case AbortProcess(pid)       => msg"The process with PID $pid was aborted"
+    case PipelineStart(commands) => msg"Started pipeline ${commands.map(_.show).join(t" ")}"
+    case KillProcess(pid)        => msg"Killed process with PID $pid"
+    case ProcessStart(command)   => msg"Starting process $command"
+
+enum ExecEvent:
+  case ProcessStart(command: Command)
+  case AbortProcess(pid: Pid)
+  case PipelineStart(commands: Seq[Command])
+  case KillProcess(pid: Pid)
