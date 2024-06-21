@@ -41,7 +41,7 @@ trait Json2:
   given [ValueType: Encodable in Json] => Optional[ValueType] is Encodable in Json as optionalEncodable =
     new Encodable:
       type Self = Optional[ValueType]
-      type Codec = Json
+      type Format = Json
 
       override def omit(value: Optional[ValueType]): Boolean = value.absent
 
@@ -124,7 +124,7 @@ object Json extends Json2, Dynamic:
   given [ValueType: Encodable in Json] => Option[ValueType] is Encodable in Json as optionEncodable =
     new Encodable:
       type Self = Option[ValueType]
-      type Codec = Json
+      type Format = Json
 
       override def omit(value: Option[ValueType]): Boolean = value.isEmpty
 
