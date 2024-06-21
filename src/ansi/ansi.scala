@@ -32,7 +32,7 @@ import java.text as jt
 //import scala.language.experimental.captureChecking
 
 package logFormats:
-  given Level is Displayable = level =>
+  given Level is Teletypeable = level =>
     val color = level match
       case Level.Fine => LightSeaGreen
       case Level.Info => YellowGreen
@@ -41,7 +41,7 @@ package logFormats:
 
     e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
-  given Message is Inscribable in Display as ansiStandard = (level, realm, timestamp, message) =>
+  given Message is Inscribable in Teletype as ansiStandard = (level, realm, timestamp, message) =>
     import textMetrics.uniform
 
-    e"$Gray(${dateFormat.format(timestamp)}) $level $Chocolate(${realm.name.fit(10)}) > $message\n"
+    e"$SlateGray(${dateFormat.format(timestamp)}) $level $CadetBlue(${realm.name.fit(10)}) > $message\n"

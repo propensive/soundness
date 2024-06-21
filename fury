@@ -26,7 +26,7 @@ project eucalyptus
   module example
     compiler  scala
     sources   src/example
-    include   eucalyptus/ansi
+    include   eucalyptus/ansi guillotine/core
     main      example.run
 
   module all

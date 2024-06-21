@@ -52,9 +52,17 @@ trait Inscribable:
   def format(level: Level, realm: Realm, timestamp: Long, message: Self): Format
 
 extension (logObject: Log.type)
+
+  def skip[EventType, MessageType]: EventType is Recordable into MessageType = new Recordable:
+    type Self = EventType
+    type Result = MessageType
+    override def skip(event: EventType): Boolean = true
+    def record(event: EventType): MessageType =
+      throw Panic(msg"`skip` should prevent this from ever running")
+
   def silent[FormatType]: FormatType is Loggable = new Loggable:
     type Self = FormatType
-    def record(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
+    def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
   def apply[FormatType](using DummyImplicit)
       [EntryType: Inscribable in FormatType, TargetType: Appendable by FormatType]
@@ -73,7 +81,7 @@ extension (logObject: Log.type)
             funnel.stop()
             unsafely(task.await())
 
-      def record(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
+      def log(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
         funnel.put(EntryType.format(level, realm, timestamp, event))
 
 

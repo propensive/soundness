@@ -21,8 +21,11 @@ import turbulence.*
 import anticipation.*
 import parasite.*, threadModels.virtual
 import fulminate.*
+import symbolism.*
 import escapade.*
 import contingency.*
+import guillotine.*
+import rudiments.workingDirectories.default
 import vacuous.*
 
 import stdioSources.virtualMachine.ansi
@@ -32,8 +35,14 @@ given Realm = realm"example"
 @main def run(): Unit =
   import logFormats.ansiStandard
   given Message is Loggable = safely(supervise(Log(Out))).or(Log.silent)
+  val message1 = msg"yes!"
+  val message2 = msg"world $message1"
+  given ExecEvent is Recordable into Message = Log.skip
 
   Log.fine(msg"hello")
   Log.info(msg"world")
+  Log.info(msg"hello $message2")
+  tend(sh"sleep 1"()).remedy:
+    case ExecError(cmd, _, _) => Log.fail(msg"failed to execute")
   Log.warn(msg"!")
   Log.fail(msg"!!!")
