@@ -17,6 +17,7 @@
 package exoskeleton
 
 import spectacular.*
+import symbolism.*
 import gossamer.{where as _, *}
 import anticipation.*, filesystemApi.galileiPath
 import rudiments.*, homeDirectories.default
@@ -25,7 +26,6 @@ import serpentine.*, hierarchies.unix
 import contingency.*
 import guillotine.*
 import fulminate.*
-import eucalyptus.*
 import turbulence.*
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
@@ -68,7 +68,7 @@ object TabCompletionsInstallation:
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Effectful)
-      : TabCompletionsInstallation raises InstallError binds GenericLogger =
+          : TabCompletionsInstallation raises InstallError logs CliEvent =
 
     tend:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
@@ -104,7 +104,7 @@ object TabCompletions:
 
   def install(shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
       (using Effectful)
-          : TabCompletionsInstallation.InstallResult raises InstallError binds GenericLogger =
+          : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
     tend:
       dirs.where { dir => dir.exists() && dir.as[Directory].writable() }.let: dir =>
@@ -163,3 +163,10 @@ object TabCompletions:
           |}
           |complete -F _${command}_complete $command
           |""".s.stripMargin.tt
+
+object CliEvent:
+    given ExecEvent is Adaptable into CliEvent = CliEvent.Exec(_)
+
+enum CliEvent:
+  case Exec(event: ExecEvent)
+  case Installing(location: Text)

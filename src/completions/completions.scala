@@ -24,7 +24,6 @@ import profanity.*
 import escapade.*
 import guillotine.*
 import spectacular.*
-import eucalyptus.*
 import gossamer.*
 import ambience.*
 import hieroglyph.*, textMetrics.uniform
@@ -118,7 +117,7 @@ extends Cli:
               case description: Text =>
                 sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
 
-              case description: Display =>
+              case description: Teletype =>
                 sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l $hiddenParam -- $text"
 
             val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
@@ -131,7 +130,7 @@ extends Cli:
                 case description: Text =>
                   sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
 
-                case description: Display =>
+                case description: Teletype =>
                   sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l -n -- $text"
 
             mainLine :: duplicateLine ::: aliasLines
@@ -148,9 +147,9 @@ extends Cli:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
             (text :: aliases).map: text =>
               (description: @unchecked) match
-                case Unset                => t"$text"
-                case description: Text    => t"$text\t$description"
-                case description: Display => t"$text\t${description.plain}"
+                case Unset                 => t"$text"
+                case description: Text     => t"$text\t$description"
+                case description: Teletype => t"$text\t${description.plain}"
 
 case class Execution(exitStatus: ExitStatus)
 
