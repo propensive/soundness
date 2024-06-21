@@ -26,9 +26,9 @@ import hieroglyph.*, textMetrics.uniform
 package syntaxHighlighting:
   import Accent.*
 
-  given displayableToken: Displayable[Token] =
-    case Token.Unparsed(text)       => text.display
-    case Token.Markup(text)         => text.display
+  given teletypeableToken: Teletypeable[Token] =
+    case Token.Unparsed(text)       => text.teletype
+    case Token.Markup(text)         => text.teletype
     case Token.Newline              => e"\n"
     case Token.Code(text, Error)    => e"${rgb"#cc0033"}($text)"
     case Token.Code(text, Number)   => e"${rgb"#cc3366"}($text)"
@@ -41,7 +41,7 @@ package syntaxHighlighting:
     case Token.Code(text, Parens)   => e"${rgb"#cc6699"}($text)"
     case Token.Code(text, Symbol)   => e"${rgb"#cc3366"}($text)"
 
-  given numbered: Displayable[ScalaSource] = source =>
+  given numbered: Teletypeable[ScalaSource] = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${rgb"#cc0033"}(║)"
     
@@ -52,7 +52,7 @@ package syntaxHighlighting:
           else e"\n${t" "*(startColumn + indent + 3)}${rgb"#ff0033"}(${t"‾"*(endColumn - startColumn)})"
       
     (source.offset to source.lastLine).map: lineNo =>
-      val content = source(lineNo).map(_.display).join
+      val content = source(lineNo).map(_.teletype).join
       source.focus.mask:
         case ((startLine, _), (endLine, _)) => startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
       .let: focus =>
@@ -62,9 +62,9 @@ package syntaxHighlighting:
 
     .join(e"", e"\n", markup)
   
-  given unnumbered: Displayable[ScalaSource] = source =>
+  given unnumbered: Teletypeable[ScalaSource] = source =>
     (source.offset to source.lastLine).map: lineNo =>
-      source(lineNo).map(_.display).join
+      source(lineNo).map(_.teletype).join
     .join(e"\n")
     
     
