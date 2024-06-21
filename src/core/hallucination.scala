@@ -30,8 +30,8 @@ import java.awt.image as jai
 import java.awt as ja
 import javax.imageio as ji
 
-abstract class ImageFormat[ImageFormatType <: ImageFormat](name: Text):
-  inline def codec: ImageFormat[ImageFormatType] = this
+abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
+  inline def codec: ImageCodec[ImageFormatType] = this
   protected def mediaType: MediaType
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
@@ -51,16 +51,16 @@ erased trait Jpeg extends ImageFormat
 erased trait Gif extends ImageFormat
 erased trait Png extends ImageFormat
 
-object Jpeg extends ImageFormat[Jpeg]("JPEG".tt):
+object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
   def mediaType = media"image/jpeg"
 
-object Bmp extends ImageFormat[Bmp]("BMP".tt):
+object Bmp extends ImageCodec[Bmp]("BMP".tt):
   def mediaType = media"image/bmp"
 
-object Gif extends ImageFormat[Gif]("GIF".tt):
+object Gif extends ImageCodec[Gif]("GIF".tt):
   def mediaType = media"image/gif"
 
-object Png extends ImageFormat[Png]("PNG".tt):
+object Png extends ImageCodec[Png]("PNG".tt):
   def mediaType = media"image/png"
 
 case class Image[ImageFormatType <: ImageFormat](private[hallucination] val image: jai.BufferedImage):
@@ -76,7 +76,7 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
       for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
       append('\n')
 
-  def serialize(using codec: ImageFormat[ImageFormatType]): LazyList[Bytes] =
+  def serialize(using codec: ImageCodec[ImageFormatType]): LazyList[Bytes] =
     val out = LazyListOutputStream()
     ji.ImageIO.createImageOutputStream(out)
     out.stream
