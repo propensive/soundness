@@ -90,8 +90,8 @@ object Quantitative extends Quantitative2:
     given convertInt[UnitsType <: Measure]: Conversion[Int, Quantity[UnitsType]] =
       int => Quantity(int.toDouble)
 
-    given inequality[UnitsType <: Measure, UnitsType2 <: Measure]
-            : Inequality[Quantity[UnitsType], Quantity[UnitsType2]] with
+    given [UnitsType <: Measure, UnitsType2 <: Measure]
+        => Orderable[Quantity[UnitsType], Quantity[UnitsType2]] as orderable:
 
       inline def compare
           (inline left:        Quantity[UnitsType],
