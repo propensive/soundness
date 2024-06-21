@@ -23,25 +23,34 @@ import contingency.*
 import hieroglyph.*
 import rudiments.*
 import symbolism.*
-import vacuous.*
 
 object Appendable:
-  given stdoutBytes(using stdio: Stdio): SimpleAppendable[Out.type, Bytes] =
-    (stderr, bytes) => stdio.write(bytes)
 
-  given stdoutText(using stdio: Stdio): SimpleAppendable[Out.type, Text] =
-    (stdout, text) => stdio.print(text)
+  given (using Stdio) => SimpleAppendable[Out.type, Bytes] as stdoutBytes = (_, bytes) =>
+    Out.write(bytes)
 
-  given stderrBytes(using stdio: Stdio): SimpleAppendable[Err.type, Bytes] =
-    (stderr, bytes) => stdio.writeErr(bytes)
+  given (using Stdio) => SimpleAppendable[Out.type, Text] as stdoutText = (_, text) =>
+    Out.print(text)
 
-  given stderrText(using stdio: Stdio): SimpleAppendable[Err.type, Text] =
-    (stderr, text) => stdio.printErr(text)
+  given (using Stdio) => SimpleAppendable[Out.type, Line] as stdoutLine = (_, line) =>
+    Out.print(line.content)
+    Out.println()
 
-  given [OutType <: ji.OutputStream](using streamCut: Errant[StreamError]) => OutType is Appendable by Bytes as outputStreamBytes =
+  given (using Stdio) => SimpleAppendable[Err.type, Bytes] as sterrBytes = (_, bytes) =>
+    Err.write(bytes)
+
+  given (using Stdio) => SimpleAppendable[Err.type, Text] as stderrText = (_, text) =>
+    Err.print(text)
+
+  given (using Stdio) => SimpleAppendable[Err.type, Line] as stderrLine = (_, line) =>
+    Err.print(line.content)
+    Err.println()
+
+  given [OutType <: ji.OutputStream](using Errant[StreamError])
+      => OutType is Appendable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
-        outputStream.write(bytes.mutable(using Unsafe))
+        outputStream.write(unsafely(bytes.mutable))
         outputStream.flush()
 
       outputStream.close()
@@ -57,6 +66,7 @@ object Appendable:
 trait Appendable:
   type Self
   type Operand
+
   def append(target: Self, stream: LazyList[Operand]): Unit
   def asWritable: Self is Writable by Operand = append(_, _)
 

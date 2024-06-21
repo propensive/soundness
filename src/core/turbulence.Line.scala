@@ -20,4 +20,5 @@ import language.experimental.captureChecking
 
 import anticipation.*
 
-case class Line(content: Text)
+case class Line(content: Text):
+  def apply()(using lineSeparation: LineSeparation): Text = content+lineSeparation.newline.text

@@ -61,6 +61,12 @@ object LineSeparation:
   enum NewlineSeq:
     case Cr, Lf, CrLf, LfCr
 
+    def text: Text = this match
+      case Cr   => "\r".tt
+      case Lf   => "\n".tt
+      case CrLf => "\r\n".tt
+      case LfCr => "\n\r".tt
+
   enum Action:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
