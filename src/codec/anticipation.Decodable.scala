@@ -22,9 +22,9 @@ object Decodable:
 trait Decodable:
   inline def decodable: this.type = this
   type Self
-  type Codec
+  type Format
 
-  def decode(value: Codec, omit: Boolean): Self
+  def decode(value: Format, omit: Boolean): Self
 
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Codec =
+  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Format =
     (value, omit) => lambda(decodable.decode(value, omit))

@@ -16,19 +16,17 @@
 
 package anticipation
 
-infix type in [CodingType, FormatType] = CodingType { type Format = FormatType }
+import language.experimental.into
 
-type Bytes = IArray[Byte]
+object Log:
+  def fine[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
+    MessageType.log(Level.Fine, realm, System.currentTimeMillis, message)
 
-object Bytes:
-  def apply(xs: Byte*): Bytes = IArray(xs*)
-  def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
-  def empty: Bytes = IArray()
-  
-  def construct(count: Int)(lambda: Array[Byte] => Unit): Bytes =
-    val array: Array[Byte] = new Array[Byte](count)
-    lambda(array)
-    array.asInstanceOf[IArray[Byte]]
+  def info[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
+    MessageType.log(Level.Info, realm, System.currentTimeMillis, message)
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def binary: Bytes = ValueType.encode(value)
+  def warn[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
+    MessageType.log(Level.Warn, realm, System.currentTimeMillis, message)
+
+  def fail[MessageType: Loggable](message: MessageType)(using realm: Realm): Unit =
+    MessageType.log(Level.Fail, realm, System.currentTimeMillis, message)

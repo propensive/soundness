@@ -16,19 +16,25 @@
 
 package anticipation
 
-infix type in [CodingType, FormatType] = CodingType { type Format = FormatType }
+import language.experimental.into
 
-type Bytes = IArray[Byte]
+import symbolism.*
 
-object Bytes:
-  def apply(xs: Byte*): Bytes = IArray(xs*)
-  def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
-  def empty: Bytes = IArray()
-  
-  def construct(count: Int)(lambda: Array[Byte] => Unit): Bytes =
-    val array: Array[Byte] = new Array[Byte](count)
-    lambda(array)
-    array.asInstanceOf[IArray[Byte]]
+object Loggable:
+  given [InputType: Loggable, OutputType: Recordable into InputType]
+      => OutputType is Loggable =
 
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def binary: Bytes = ValueType.encode(value)
+    (level, realm, timestamp, event) =>
+      if !OutputType.skip(event)
+      then InputType.log(level, realm, timestamp, OutputType.record(event))
+
+trait Loggable:
+  loggable =>
+    type Self
+    def log(level: Level, realm: Realm, timestamp: Long, event: Self): Unit
+
+    def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Loggable = new Loggable:
+      type Self = SelfType2
+
+      def log(level: Level, realm: Realm, timestamp: Long, event: Self): Unit =
+        loggable.log(level, realm, timestamp, lambda(event))

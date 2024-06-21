@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.{GenericLogger, SimpleLogger, Realm}
+export anticipation.{Loggable, Realm, Level, Recordable, logs}

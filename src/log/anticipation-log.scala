@@ -16,19 +16,4 @@
 
 package anticipation
 
-infix type in [CodingType, FormatType] = CodingType { type Format = FormatType }
-
-type Bytes = IArray[Byte]
-
-object Bytes:
-  def apply(xs: Byte*): Bytes = IArray(xs*)
-  def apply(long: Long): Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
-  def empty: Bytes = IArray()
-  
-  def construct(count: Int)(lambda: Array[Byte] => Unit): Bytes =
-    val array: Array[Byte] = new Array[Byte](count)
-    lambda(array)
-    array.asInstanceOf[IArray[Byte]]
-
-extension [ValueType: Encodable in Bytes](value: ValueType)
-  def binary: Bytes = ValueType.encode(value)
+infix type logs [ResultType, EventType] = (EventType is Loggable) ?=> ResultType

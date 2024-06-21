@@ -16,10 +16,8 @@
 
 package anticipation
 
-import language.experimental.into
-
-trait SimpleLogger:
-  def logFine(realm: Realm, message: => Text): Unit
-  def logInfo(realm: Realm, message: => Text): Unit
-  def logWarn(realm: Realm, message: => Text): Unit
-  def logFail(realm: Realm, message: => Text): Unit
+trait Recordable:
+  type Self
+  type Result
+  def skip(value: Self): Boolean = false
+  def record(value: Self): Result

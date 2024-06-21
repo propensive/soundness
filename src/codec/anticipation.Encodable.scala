@@ -22,14 +22,14 @@ object Encodable:
 trait Encodable:
   private inline def encodable: this.type = this
   type Self
-  type Codec
-  def encode(value: Self): Codec
+  type Format
+  def encode(value: Self): Format
   def omit(value: Self): Boolean = false
 
-  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Codec =
+  def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Format =
     new Encodable:
       type Self = SelfType2
-      type Codec = encodable.Codec
+      type Format = encodable.Format
 
-      def encode(value: Self): Codec = encodable.encode(lambda(value))
+      def encode(value: Self): Format = encodable.encode(lambda(value))
       override def omit(value: Self): Boolean = encodable.omit(lambda(value))
