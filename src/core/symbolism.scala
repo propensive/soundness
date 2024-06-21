@@ -18,8 +18,8 @@ package symbolism
 
 import language.experimental.captureChecking
 
-infix type into[Type, ResultType] = Type { type Result = ResultType }
-infix type by [Type, OperandType] = Type { type Operand = OperandType }
+infix type into [BaseType <: { type Result }, ResultType] = BaseType { type Result = ResultType }
+infix type by [Type <: { type Operand }, OperandType] = Type { type Operand = OperandType }
 
 extension [ValueType: Rootable[2] as rootable](value: ValueType)
   def sqrt: rootable.Result = rootable.root(value)
