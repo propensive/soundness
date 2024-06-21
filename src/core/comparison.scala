@@ -24,7 +24,7 @@ import escapade.*
 import iridescence.*
 import vacuous.*
 import dendrology.*
-import escritoire.*, insufficientSpaceHandling.ignore
+import escritoire.*, columnAttenuation.ignore
 import spectacular.*
 import hieroglyph.*
 import anticipation.*
@@ -37,7 +37,7 @@ enum Semblance:
   case Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
 
 object Semblance:
-  given (using calc: TextMetrics): Displayable[Semblance] =
+  given (using calc: TextMetrics) => Semblance is Teletypeable =
     case Semblance.Breakdown(cmp, l, r) =>
       import tableStyles.default
 
@@ -46,7 +46,7 @@ object Semblance:
         case Different(left, right, difference) => Nil
         case Breakdown(comparison, left, right) => comparison.to(List)
 
-      case class Row(treeLine: Text, left: Display, right: Display, difference: Display)
+      case class Row(treeLine: Text, left: Teletype, right: Teletype, difference: Teletype)
 
       given (using Text is Textual) => TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)

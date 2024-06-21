@@ -45,19 +45,19 @@ object Tests extends Suite(t"Chiaroscuro tests"):
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
       .assert(_ == Person(t"Jill", 12))
-      
+
       test(t"nested comparison"):
         Organization(t"Acme Inc", Person(t"Jack", 12), Nil)
       .assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
-      
+
       test(t"nested comparison 2"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
       .assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
-      
+
       test(t"nested comparison 3"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
       .assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jill", 32), Person(t"Jerry", 18))))
-      
+
       test(t"nested comparison 4"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
       .assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person(t"Jerry", 18))))
@@ -76,8 +76,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
         import escapade.*
         import turbulence.*
         import stdioSources.virtualMachine
-        Out.println(result.display)
+        Out.println(result.teletype)
 
         result
       .assert(_ == Identical(t""))
-
