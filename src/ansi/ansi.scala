@@ -26,7 +26,7 @@ import hieroglyph.*, textMetrics.uniform
 package syntaxHighlighting:
   import Accent.*
 
-  given teletypeableToken: Teletypeable[Token] =
+  given Token is Teletypeable =
     case Token.Unparsed(text)       => text.teletype
     case Token.Markup(text)         => text.teletype
     case Token.Newline              => e"\n"
@@ -41,16 +41,16 @@ package syntaxHighlighting:
     case Token.Code(text, Parens)   => e"${rgb"#cc6699"}($text)"
     case Token.Code(text, Symbol)   => e"${rgb"#cc3366"}($text)"
 
-  given numbered: Teletypeable[ScalaSource] = source =>
+  given ScalaSource is Teletypeable as numbered = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${rgb"#cc0033"}(║)"
-    
+
     val markup = source.focus.lay(e""):
       case ((startLine, startColumn), (endLine, endColumn)) =>
         if startLine != endLine then e"\n" else
           if startColumn == endColumn then e"\n${t" "*(startColumn + indent + 2)}${rgb"#ff0033"}(╱╲)"
           else e"\n${t" "*(startColumn + indent + 3)}${rgb"#ff0033"}(${t"‾"*(endColumn - startColumn)})"
-      
+
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.teletype).join
       source.focus.mask:
@@ -61,10 +61,8 @@ package syntaxHighlighting:
         e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $error$content"
 
     .join(e"", e"\n", markup)
-  
-  given unnumbered: Teletypeable[ScalaSource] = source =>
+
+  given ScalaSource is Teletypeable as unnumbered = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
     .join(e"\n")
-    
-    
