@@ -24,4 +24,4 @@ project nettlesome
     sources   src/test
     include   nettlesome/core probably/cli larceny/plugin nettlesome/url nettlesome/email
     main      nettlesome.Tests
-    coverage  nettlesome/core
+    # coverage  nettlesome/core
