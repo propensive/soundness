@@ -18,14 +18,16 @@ package profanity
 
 import anticipation.*
 import gossamer.*
+import fulminate.*
 import spectacular.*
 import rudiments.*
 
 import language.experimental.captureChecking
 
 object Signal:
-  given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[Signal] = _.shortName
+  given Decoder[Signal] as decoder = text => Signal.valueOf(text.lower.capitalize.s)
+  given Encoder[Signal] as encoder = _.shortName
+  given Signal is Communicable = signal => Message(signal.shortName)
 
 sealed trait TerminalEvent
 
@@ -39,7 +41,7 @@ enum TerminalInfo extends TerminalEvent:
 enum Signal extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld, Cont, Stop,
       Tstp, Ttin, Ttou, Urg, Xcpu, Xfsz, Vtalrm, Prof, Winch, Io, Pwr, Sys
-  
+
   def shortName: Text = this.toString.show.upper
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal - 1 else ordinal
@@ -61,7 +63,7 @@ object CtrlChar:
 
       case _ =>
         None
-    
+
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up, Down
   case CharKey(char: Char)
@@ -74,5 +76,3 @@ enum Keypress extends TerminalEvent:
                    'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' |
                    'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@')
   case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)
-
-
