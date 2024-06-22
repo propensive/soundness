@@ -165,7 +165,11 @@ object TabCompletions:
           |""".s.stripMargin.tt
 
 object CliEvent:
-    given ExecEvent is Adaptable into CliEvent = CliEvent.Exec(_)
+  given ExecEvent is Recordable into CliEvent = CliEvent.Exec(_)
+
+  given CliEvent is Communicable =
+    case Exec(event)          => msg"exeution error: $event"
+    case Installing(location) => msg"installing to $location"
 
 enum CliEvent:
   case Exec(event: ExecEvent)
