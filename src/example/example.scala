@@ -17,25 +17,21 @@
 package example
 
 import eucalyptus.*
-import turbulence.*
 import anticipation.*
 import parasite.*, threadModels.virtual
 import fulminate.*
 import symbolism.*
-import escapade.*
 import contingency.*
 import gossamer.*
 import guillotine.*
 import rudiments.workingDirectories.default
 import vacuous.*
 
-import stdioSources.virtualMachine.ansi
-
 given Realm = realm"example"
 
 @main def run(): Unit =
   import logFormats.untimestamped
-  given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.mute)
+  given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.silent)
   val message1 = msg"yes!"
   val message2 = msg"world $message1"
   given ExecEvent is Recordable into Message = Log.skip

@@ -16,15 +16,15 @@
 
 package eucalyptus
 
-import rudiments.*
-import fulminate.*
-import anticipation.*
-import parasite.*
-import gossamer.*
+// import rudiments.*
+// import fulminate.*
+// import anticipation.*
+// import parasite.*
+// import gossamer.*
 
-import scala.quoted.*
+// import scala.quoted.*
 
-import language.experimental.captureChecking
+// import language.experimental.captureChecking
 
 // object Eucalyptus:
 //   given Realm = realm"eucalyptus"

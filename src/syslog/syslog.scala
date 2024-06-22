@@ -21,10 +21,8 @@ import rudiments.*
 import parasite.*
 import anticipation.*
 import symbolism.*
-import gossamer.*
 import turbulence.*
 import contingency.*
-import hieroglyph.*, textMetrics.uniform
 
 //import scala.language.experimental.captureChecking
 

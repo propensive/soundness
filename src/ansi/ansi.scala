@@ -20,14 +20,9 @@ import escapade.*
 import iridescence.*, webColors.*
 import anticipation.*
 import gossamer.*
-import symbolism.*
 import fulminate.*
 import spectacular.*
-import hieroglyph.*
-import turbulence.*
-import hieroglyph.textMetrics.uniform
-
-import java.text as jt
+import hieroglyph.*, textMetrics.uniform
 
 //import scala.language.experimental.captureChecking
 
@@ -41,7 +36,5 @@ package logFormats:
 
     e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
-  given Message is Inscribable in Teletype as ansiStandard = (level, realm, timestamp, message) =>
-    import textMetrics.uniform
-
-    e"$SlateGray(${dateFormat.format(timestamp)}) $level $CadetBlue(${realm.name.fit(10)}) > $message\n"
+  given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
+    e"$SlateGray(${dateFormat.format(timestamp)}) $level $CadetBlue(${realm.name.fit(10)}) > $event\n"
