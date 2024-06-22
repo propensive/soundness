@@ -268,17 +268,17 @@ object Authority:
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)
 
-object Weblink:
-  given (using ValueOf[""]) => Weblink is Followable["", "..", "."]:
+object Hyperlink:
+  given (using ValueOf[""]) => Hyperlink is Followable["", "..", "."]:
     def separators: Set[Char] = Set('/')
-    def descent(weblink: Weblink): List[PathName[""]] = weblink.descent
-    def separator(weblink: Weblink): Text = t"/"
-    def ascent(weblink: Weblink): Int = weblink.ascent
+    def descent(hyperlink: Hyperlink): List[PathName[""]] = hyperlink.descent
+    def separator(hyperlink: Hyperlink): Text = t"/"
+    def ascent(hyperlink: Hyperlink): Int = hyperlink.ascent
 
-  given PathCreator[Weblink, "", Int]:
-    def path(ascent: Int, descent: List[PathName[""]]): Weblink = Weblink(ascent, descent)
+  given PathCreator[Hyperlink, "", Int]:
+    def path(ascent: Int, descent: List[PathName[""]]): Hyperlink = Hyperlink(ascent, descent)
 
-case class Weblink(ascent: Int, descent: List[PathName[""]])
+case class Hyperlink(ascent: Int, descent: List[PathName[""]])
 
 type HttpUrl = Url["https" | "http"]
 
