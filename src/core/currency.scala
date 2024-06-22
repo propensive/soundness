@@ -22,6 +22,7 @@ import hieroglyph.*, textMetrics.uniform
 import spectacular.*
 import hypotenuse.*
 import rudiments.*
+import symbolism.*
 
 import language.experimental.captureChecking
 
@@ -31,7 +32,7 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
     val integral = value.toLong
     val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
     Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
-  
+
   def zero: Money[this.type] = apply(0.00)
 
 case class Price[CurrencyType <: Currency & Singleton: ValueOf]
@@ -42,17 +43,17 @@ case class Price[CurrencyType <: Currency & Singleton: ValueOf]
   @targetName("add")
   infix def + (right: Price[CurrencyType]): Price[CurrencyType] =
     Price(principal + right.principal, tax + right.tax)
-  
+
   @targetName("subtract")
   infix def - (right: Price[CurrencyType]): Price[CurrencyType] =
     Price(principal - right.principal, tax - right.tax)
-  
+
   @targetName("negate")
   def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
-  
+
   @targetName("multiply")
   infix def * (right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
-  
+
   @targetName("divide")
   infix def / (right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
 
@@ -73,21 +74,39 @@ object Plutocrat:
 
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
-    
+
     given [CurrencyType <: Currency & Singleton]: Ordering[Money[CurrencyType]] =
       Ordering.Long match
         case ordering: Ordering[Money[CurrencyType]] => ordering
 
     given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle)
-            : Show[Money[CurrencyType]] =
+        => Money[CurrencyType] is Showable =
 
       money =>
         val currency = valueOf[CurrencyType]
         val units = (money/currency.modulus).toString.show
         val subunit = (money%currency.modulus).toString.show.pad(2, Rtl, '0')
-        
+
         currencyStyle.format(currency, units, subunit)
-  
+
+    given [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Addable by Money[CurrencyType] into Money[CurrencyType] as addable =
+      _ + _
+
+    given [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Subtractable by Money[CurrencyType] into Money[CurrencyType] as subtractable =
+      _ - _
+
+    given [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Multiplicable by Int into Money[CurrencyType] as multiplicable =
+      _*_
+
+    // given [CurrencyType <: Currency & Singleton, DoubleType <: Double]
+    //     => Money[CurrencyType] is Multiplicable by DoubleType into Money[CurrencyType] as multiplicable2 =
+    //   (left, right) =>
+    //     val value = left*right
+    //     (value + value.signum/2).toLong
+
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
     @targetName("greaterThan")
     infix def > (right: Money[CurrencyType]): Boolean = (left: Long) > (right: Long)
@@ -101,20 +120,6 @@ object Plutocrat:
     @targetName("lessThanOrEqual")
     infix def <= (right: Money[CurrencyType]): Boolean = (left: Long) <= (right: Long)
 
-    @targetName("add")
-    infix def + (right: Money[CurrencyType]): Money[CurrencyType] = left + right
-    
-    @targetName("subtract")
-    infix def - (right: Money[CurrencyType]): Money[CurrencyType] = left - right
-    
-    @targetName("multiply")
-    infix def * (right: Int): Money[CurrencyType] = left*right
-    
-    @targetName("multiply2")
-    infix def * (right: Double): Money[CurrencyType] =
-      val value = left*right
-      (value + value.signum/2).toLong
-    
     @targetName("divide")
     infix def / (right: Double): Money[CurrencyType] =
       val value = left/right
@@ -140,6 +145,6 @@ extension [CurrencyType <: Currency & Singleton: ValueOf](seq: Iterable[Money[Cu
   def total: Money[CurrencyType] =
     def recur(seq: Iterable[Money[CurrencyType]], total: Money[CurrencyType]): Money[CurrencyType] =
       if seq.isEmpty then total else recur(seq.tail, total + seq.head)
-    
+
     val currency: CurrencyType = summon[ValueOf[CurrencyType]].value
     recur(seq, currency.zero)
