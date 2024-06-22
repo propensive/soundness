@@ -23,7 +23,7 @@ import scala.annotation.*
 import rudiments.*
 
 object NumericallyComparable:
-  inline given Inequality[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
+  inline given Orderable[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
     inline def compare
         (inline left:        Boolean,
          inline right:       Int | Double | Char | Byte | Short | Float | Long,
@@ -31,9 +31,9 @@ object NumericallyComparable:
          inline greaterThan: Boolean)
             : Boolean =
 
-      ${Hypotenuse2.inequality('left, 'right, 'strict, 'greaterThan)}
+      ${Hypotenuse2.orderable('left, 'right, 'strict, 'greaterThan)}
 
-  given Inequality[ByteSize, ByteSize] as inequality:
+  given Orderable[ByteSize, ByteSize] as orderable:
     inline def compare
         (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
             : Boolean =

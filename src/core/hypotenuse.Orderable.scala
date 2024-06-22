@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 
 import scala.annotation.*
 
-trait Inequality[-LeftType, -RightType]
+trait Orderable[-LeftType, -RightType]
 extends
     CompareGreaterEqual[LeftType, RightType, Boolean],
     CompareLess[LeftType, RightType, Boolean],

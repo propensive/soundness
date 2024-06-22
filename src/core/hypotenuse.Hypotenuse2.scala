@@ -84,7 +84,7 @@ object Hypotenuse2:
 
       Expr(int.toByte)
 
-  def inequality
+  def orderable
       (expr: Expr[Boolean],
        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
        strict: Expr[Boolean],
