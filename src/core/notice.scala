@@ -21,6 +21,7 @@ import vacuous.*
 import digression.*
 import parasite.*
 import turbulence.*
+import gossamer.*
 import fulminate.*
 import contingency.*
 import rudiments.*
@@ -88,3 +89,10 @@ enum CompileEvent:
   case CompilerCrash
   case Notice(diagnostic: Text)
   case Running(args: List[Text])
+
+object CompileEvent:
+  given CompileEvent is Communicable =
+    case Start              => msg"Starting compilation"
+    case CompilerCrash      => msg"Compiler crashed"
+    case Notice(diagnostic) => msg"The compiler emitted a diagnostic message: $diagnostic"
+    case Running(args)      => msg"Running compiler with arguments ${args.join(t" ")}"

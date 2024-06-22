@@ -136,7 +136,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
 
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
-        Log.record(CompileEvent.Notice(diagnostic.toString.tt))
+        Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
         scalacProcess.put(Notice(diagnostic))
 
     val callbackApi = new dtdi.CompilerCallback {}
@@ -162,7 +162,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
         val args: List[Text] =
           List(t"-d", out.pathText, t"-classpath", classpath()) ::: commandLineArguments ::: List(t"")
 
-        Log.record(CompileEvent.Running(args))
+        Log.info(CompileEvent.Running(args))
         setup(args.map(_.s).to(Array), ctx).map(_(1)).get
 
       def run(): CompileProcess =

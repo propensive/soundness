@@ -47,7 +47,7 @@ case class Javac(options: List[JavacOption]):
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
       (using SystemProperties, Monitor, Codicil)
           : CompileProcess logs CompileEvent raises CompileError =
-    Log.record(CompileEvent.Start)
+    Log.info(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()
 
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
@@ -71,7 +71,7 @@ case class Javac(options: List[JavacOption]):
 
     val options = List(t"-classpath", classpath(), t"-d", out.pathText)
     val javaSources = sources.map(JavaSource(_, _)).asJava
-    Log.record(CompileEvent.Running(List(t"javac", options.join(t" "))))
+    Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
     async:
       try
@@ -88,7 +88,7 @@ case class Javac(options: List[JavacOption]):
 
       catch case suc.NonFatal(error) =>
         Javac.refresh()
-        Log.record(CompileEvent.CompilerCrash)
+        Log.warn(CompileEvent.CompilerCrash)
         process.put(CompileResult.Crash(error.stackTrace))
 
     process
