@@ -16,11 +16,8 @@
 
 package nettlesome
 
-import rudiments.*
+import anticipation.*
 
-extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+import IpAddressError.Reason, Reason.*
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+case class Endpoint[+PortType](remote: Text, port: PortType)

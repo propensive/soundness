@@ -16,11 +16,14 @@
 
 package nettlesome
 
-import rudiments.*
+import spectacular.*
+import anticipation.*
 
-extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+object Remote:
+  given Ipv4 is Remote as ipv4 = _.show
+  given Ipv6 is Remote as ipv6 = _.show
+  given Hostname is Remote as hostname = _.show
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+trait Remote:
+  type Self
+  def remoteName(remote: Self): Text

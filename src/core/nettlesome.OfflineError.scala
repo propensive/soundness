@@ -17,24 +17,7 @@
 package nettlesome
 
 import fulminate.*
-import contingency.*
-import vacuous.*
 
 import language.experimental.captureChecking
 
 case class OfflineError() extends Error(msg"an Internet connection is not available")
-
-class Internet(val online: Boolean):
-  def require[ResultType](block: Online ?=> ResultType)(using Errant[OfflineError]): ResultType =
-    if online then block(using Online) else abort(OfflineError())
-
-  def appropriate[ResultType](block: Online ?=> ResultType): Optional[ResultType] =
-    if online then block(using Online) else Unset
-
-class Online() extends Internet(true)
-object Online extends Online()
-
-def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): ResultType =
-  block(using Internet(online))
-
-def online(using internet: Internet): Boolean = internet.online

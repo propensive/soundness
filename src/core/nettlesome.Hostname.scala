@@ -28,26 +28,7 @@ import spectacular.*
 
 import scala.quoted.*
 
-object HostnameError:
-  enum Reason:
-    case LongDnsLabel(label: Text)
-    case LongHostname
-    case InvalidChar(char: Char)
-    case EmptyDnsLabel(n: Int)
-    case InitialDash(label: Text)
-
-  object Reason:
-    given Reason is Communicable =
-      case LongDnsLabel(label) => msg"the DNS label $label is longer than 63 characters"
-      case LongHostname        => msg"the hostname is longer than 253 characters"
-      case InvalidChar(char)   => msg"the character $char is not allowed in a hostname"
-      case EmptyDnsLabel(n)    => msg"a DNS label cannot be empty"
-      case InitialDash(label)  => msg"the DNS label $label begins with a dash which is not allowed"
-
 import HostnameError.Reason.*
-
-case class HostnameError(text: Text, reason: HostnameError.Reason)
-extends Error(msg"the hostname is not valid because $reason")
 
 object Hostname:
   given Realm = realm"nettlesome"
@@ -78,7 +59,9 @@ object Hostname:
         buffer.clear()
 
         if index < text.length then recur(index + 1, dnsLabels2) else
-          if dnsLabels2.map(_.text.length + 1).sum > 254 then raise(HostnameError(text, LongHostname))(())
+          if dnsLabels2.map(_.text.length + 1).sum > 254
+          then raise(HostnameError(text, LongHostname))(())
+
           Hostname(dnsLabels2.reverse*)
 
       case char: Char =>

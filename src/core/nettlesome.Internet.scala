@@ -16,11 +16,14 @@
 
 package nettlesome
 
-import rudiments.*
+import contingency.*
+import vacuous.*
 
-extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+import language.experimental.captureChecking
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+class Internet(val online: Boolean):
+  def require[ResultType](block: Online ?=> ResultType)(using Errant[OfflineError]): ResultType =
+    if online then block(using Online) else abort(OfflineError())
+
+  def appropriate[ResultType](block: Online ?=> ResultType): Optional[ResultType] =
+    if online then block(using Online) else Unset

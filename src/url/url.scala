@@ -56,8 +56,11 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Url[Label]] =
     import quotes.reflect.*
 
-    (ConstantType(StringConstant(context.value.get.parts.head.split(":").nn.head.nn)).asType: @unchecked) match
-      case '[type labelType <: Label; labelType] => '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
+    val constant = context.value.get.parts.head.split(":").nn.head.nn
+
+    (ConstantType(StringConstant(constant)).asType: @unchecked) match
+      case '[type labelType <: Label; labelType] =>
+        '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
 
   def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
@@ -68,7 +71,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
   def insert(state: Text, value: UrlInput): Text = value match
     case UrlInput.Integral(port) =>
-      if !state.ends(t":") then throw InterpolationError(msg"a port number must be specified after a colon")
+      if !state.ends(t":")
+      then throw InterpolationError(msg"a port number must be specified after a colon")
 
       try throwErrors(Url.parse(state+port.show)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -77,7 +81,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
       state+port.show
 
     case UrlInput.Textual(text) =>
-      if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
+      if !state.ends(t"/")
+      then throw InterpolationError(msg"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -86,7 +91,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
       state+text.urlEncode
 
     case UrlInput.RawTextual(text) =>
-      if !state.ends(t"/") then throw InterpolationError(msg"a substitution may only be made after a slash")
+      if !state.ends(t"/")
+      then throw InterpolationError(msg"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -115,7 +121,8 @@ object Url:
 
   given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
 
-  given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError]): Decoder[Url[SchemeType]] =
+  given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError])
+      => Decoder[Url[SchemeType]] =
     parse(_)
 
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
@@ -133,7 +140,10 @@ object Url:
 
   given [SchemeType <: Label]
       => PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])]:
-    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]]): Url[SchemeType] =
+
+    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]])
+            : Url[SchemeType] =
+
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
 
   given [SchemeType <: Label] => Url[SchemeType] is Teletypeable as teletype =
@@ -199,14 +209,24 @@ object Url:
 
         safely(value.where(_ == '?', pathStart)) match
           case Unset => safely(value.where(_ == '#', pathStart)) match
-            case Unset     => Url(scheme, auth, value.drop(pathStart), Unset, Unset)
-            case hash: Int => Url(scheme, auth, value.slice(pathStart, hash), Unset, value.drop(hash + 1))
+            case Unset =>
+              Url(scheme, auth, value.drop(pathStart), Unset, Unset)
+
+            case hash: Int =>
+              Url(scheme, auth, value.slice(pathStart, hash), Unset, value.drop(hash + 1))
 
           case qmark: Int =>
             safely(value.where(_ == '#', qmark + 1)) match
-              case Unset     => Url(scheme, auth, value.slice(pathStart, qmark), value.drop(qmark + 1), Unset)
-              case hash: Int => Url(scheme, auth, value.slice(pathStart, qmark), value.slice(qmark + 1, hash),
-                                    value.drop(hash + 1))
+              case Unset =>
+                Url(scheme, auth, value.slice(pathStart, qmark), value.drop(qmark + 1), Unset)
+
+              case hash: Int =>
+                Url
+                 (scheme,
+                  auth,
+                  value.slice(pathStart, qmark),
+                  value.slice(qmark + 1, hash),
+                  value.drop(hash + 1))
 
 object Authority:
   given Authority is Showable = auth =>
@@ -223,8 +243,12 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
-            case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
+
+            case port: Int =>
+              raise(UrlError(value, colon + 1, PortRange))(0)
+
+            case Unset =>
+              raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Hostname.parse(value.take(colon)), Unset, _))
 
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
@@ -234,8 +258,12 @@ object Authority:
         case colon: Int =>
           safely(value.drop(colon + 1).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
-            case port: Int                               => raise(UrlError(value, colon + 1, PortRange))(0)
-            case Unset                                   => raise(UrlError(value, colon + 1, Number))(0)
+
+            case port: Int =>
+              raise(UrlError(value, colon + 1, PortRange))(0)
+
+            case Unset =>
+              raise(UrlError(value, colon + 1, Number))(0)
           .pipe(Authority(Hostname.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

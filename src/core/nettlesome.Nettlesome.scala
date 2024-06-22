@@ -27,78 +27,7 @@ import hieroglyph.*, textMetrics.uniform
 
 import scala.quoted.*
 
-object IpAddressError:
-  enum Reason:
-    case Ipv4ByteOutOfRange(byte: Int)
-    case Ipv4ByteNotNumeric(byte: Text)
-    case Ipv4WrongNumberOfGroups(count: Int)
-    case Ipv6GroupWrongLength(group: Text)
-    case Ipv6GroupNotHex(group: Text)
-    case Ipv6TooManyNonzeroGroups(count: Int)
-    case Ipv6WrongNumberOfGroups(count: Int)
-    case Ipv6MultipleDoubleColons
-
-  object Reason:
-    given Reason is Communicable =
-      case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
-      case Ipv4ByteNotNumeric(byte)       => msg"the part $byte is not a number"
-      case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
-      case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
-      case Ipv6MultipleDoubleColons       => msg":: appears more than once"
-
-      case Ipv4WrongNumberOfGroups(count) =>
-        msg"the address contains $count period-separated groups instead of 4"
-
-      case Ipv6TooManyNonzeroGroups(count) =>
-        msg"the address has $count non-zero groups, which is more than is permitted"
-
-      case Ipv6GroupWrongLength(group) =>
-        msg"the group is more than 4 hexadecimal characters long"
-
-object MacAddressError:
-  enum Reason:
-    case WrongGroupCount(count: Int)
-    case WrongGroupLength(group: Int, length: Int)
-    case NotHex(group: Int, content: Text)
-
-  object Reason:
-    given Reason is Communicable =
-      case WrongGroupCount(count) =>
-        msg"there should be six colon-separated groups, but there were $count"
-
-      case WrongGroupLength(group, length) =>
-        msg"group $group should be two hex digits, but its length is $length"
-
-      case NotHex(group, content) =>
-        msg"group $group should be a two-digit hex number, but it is $content"
-
-
-case class MacAddressError(reason: MacAddressError.Reason)
-extends Error(msg"the MAC address is not valid because $reason")
-
 import IpAddressError.Reason, Reason.*
-
-case class PortError() extends Error(msg"the port is not in the valid range")
-
-case class IpAddressError(reason: Reason)
-extends Error(msg"the IP address is not valid because $reason")
-
-object Remote:
-  given Ipv4 is Remote as ipv4 = _.show
-  given Ipv6 is Remote as ipv6 = _.show
-  given Hostname is Remote as hostname = _.show
-
-trait Remote:
-  type Self
-  def remoteName(remote: Self): Text
-
-case class Endpoint[+PortType](remote: Text, port: PortType)
-
-extension [RemoteType: Remote](value: RemoteType)
-  infix def on [PortType](port: PortType): Endpoint[PortType] =
-    Endpoint(RemoteType.remoteName(value), port)
-
-erased trait Port
 
 object Nettlesome:
   given Realm = realm"nettlesome"
@@ -148,6 +77,7 @@ object Nettlesome:
         else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))(0)
 
     object MacAddress:
+      import MacAddressError.Reason.*
       erased given Underlying[MacAddress, Long] as underlying = ###
       given MacAddress is Showable = _.text
       given Encoder[MacAddress] as encoder = _.text
@@ -159,7 +89,7 @@ object Nettlesome:
         val groups = text.cut(t"-").to(List)
 
         if groups.length != 6
-        then raise(MacAddressError(MacAddressError.Reason.WrongGroupCount(groups.length)))(())
+        then raise(MacAddressError(WrongGroupCount(groups.length)))(())
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -167,16 +97,18 @@ object Nettlesome:
 
           case head :: tail =>
             if head.length != 2
-            then raise(MacAddressError(MacAddressError.Reason.WrongGroupLength(index, head.length)))(())
+            then raise(MacAddressError(WrongGroupLength(index, head.length)))(())
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              raise(MacAddressError(MacAddressError.Reason.NotHex(index, head)))(0)
+              raise(MacAddressError(NotHex(index, head)))(0)
 
             recur(tail, index + 1, (acc << 8) + value)
 
         recur(groups)
 
-      def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte): MacAddress =
+      def apply(byte0: Byte, byte1: Byte, byte2: Byte, byte3: Byte, byte4: Byte, byte5: Byte)
+              : MacAddress =
+
         def recur(todo: List[Byte], done: Long): Long = todo match
           case head :: tail => recur(tail, (done << 8) + head)
           case Nil          => done
@@ -331,16 +263,3 @@ object Nettlesome:
           raise(IpAddressError(Ipv6MultipleDoubleColons))(zeroes)
 
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))
-
-export Nettlesome.Ipv6
-export Nettlesome.Opaques.Ipv4
-export Nettlesome.Opaques.MacAddress
-export Nettlesome.Opaques.DnsLabel
-export Nettlesome.Opaques.TcpPort
-export Nettlesome.Opaques.UdpPort
-
-extension (inline context: StringContext)
-  transparent inline def ip(): Ipv4 | Ipv6 = ${Nettlesome.ip('context)}
-  inline def mac(): MacAddress = ${Nettlesome.mac('context)}
-  inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
-  inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}

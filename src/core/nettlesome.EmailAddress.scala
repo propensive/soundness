@@ -28,49 +28,6 @@ import contextual.*
 import scala.quoted.*
 import scala.compiletime.*
 
-case class EmailAddressError(reason: EmailAddressError.Reason)
-extends Error(msg"the email address is not valid because $reason")
-
-object EmailAddressError:
-  enum Reason:
-    case Empty
-    case InvalidDomain(error: IpAddressError | HostnameError)
-    case LongLocalPart
-    case TerminalPeriod
-    case SuccessivePeriods
-    case InitialPeriod
-    case UnescapedQuote
-    case UnclosedQuote
-    case MissingDomain
-    case MissingAtSymbol
-    case UnclosedIpAddress
-    case InvalidChar(char: Char)
-
-  object Reason:
-    given Reason is Communicable =
-      case Empty                                => msg"it is empty"
-      case InvalidDomain(error: IpAddressError) => msg"the domain is not a valid IP address: ${error.message}"
-      case InvalidDomain(error: HostnameError)  => msg"the domain is not a valid hostname: ${error.message}"
-      case LongLocalPart                        => msg"the local part is more than 64 characters long"
-      case TerminalPeriod                       => msg"the local part ends in a period, which is not allowed"
-      case SuccessivePeriods                    => msg"the local part contains two adjacent periods"
-      case UnclosedQuote                        => msg"the quoted local part has no closing quote"
-      case MissingDomain                        => msg"the domain is missing"
-      case MissingAtSymbol                      => msg"the at-symbol is missing"
-
-      case InitialPeriod =>
-        msg"the local part starts with a period, which is not allowed"
-
-      case UnclosedIpAddress =>
-        msg"the domain begins with ${'['} but does not end with ${']'}"
-
-      case InvalidChar(char) =>
-        msg"the local part contains the character $char which is not allowed"
-
-      case UnescapedQuote =>
-        msg"the local part contains a quote character which is not escaped"
-
-
 import EmailAddressError.Reason.*
 
 object EmailAddress:
@@ -129,7 +86,9 @@ object EmailAddress:
           unquoted(index + 1, true)
 
         case char: Char =>
-          if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || t"!#$$%&'*+-/=?^_`{|}~".has(char)
+          def symbolic: Boolean = t"!#$$%&'*+-/=?^_`{|}~".has(char)
+
+          if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || symbolic
           then buffer.append(char)
           else raise(EmailAddressError(InvalidChar(char)))(())
           unquoted(index + 1, false)
@@ -147,7 +106,9 @@ object EmailAddress:
           if text.last != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import errorHandlers.throwUnsafely
           val ipAddress = text.slice(index + 1, text.length - 1)
-          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5)) else Ipv4.parse(ipAddress)
+
+          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5))
+          else Ipv4.parse(ipAddress)
         catch case error: IpAddressError => abort(EmailAddressError(InvalidDomain(error)))
 
       else
@@ -159,8 +120,5 @@ object EmailAddress:
 
     EmailAddress(Unset, localPart, domain)
 
-case class EmailAddress(displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)
-
-enum LocalPart:
-  case Quoted(text: Text)
-  case Unquoted(text: Text)
+case class EmailAddress
+    (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)

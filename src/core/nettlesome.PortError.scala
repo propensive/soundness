@@ -16,11 +16,9 @@
 
 package nettlesome
 
-import rudiments.*
+import fulminate.*
+import anticipation.*
 
-extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+import IpAddressError.Reason, Reason.*
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+case class PortError() extends Error(msg"the port is not in the valid range")
