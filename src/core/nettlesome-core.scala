@@ -29,9 +29,9 @@ extension (inline context: StringContext)
   inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
   inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
 
-extension [RemoteType: Remote](value: RemoteType)
+extension [RemoteType: Connectable](value: RemoteType)
   infix def on [PortType](port: PortType): Endpoint[PortType] =
-    Endpoint(RemoteType.remoteName(value), port)
+    Endpoint(RemoteType.remote(value), port)
 
 def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): ResultType =
   block(using Internet(online))

@@ -19,11 +19,11 @@ package nettlesome
 import spectacular.*
 import anticipation.*
 
-object Remote:
-  given Ipv4 is Remote as ipv4 = _.show
-  given Ipv6 is Remote as ipv6 = _.show
-  given Hostname is Remote as hostname = _.show
+object Connectable:
+  given Ipv4 is Connectable as ipv4 = _.show
+  given Ipv6 is Connectable as ipv6 = _.show
+  given Hostname is Connectable as hostname = _.show
 
-trait Remote:
+trait Connectable:
   type Self
-  def remoteName(remote: Self): Text
+  def remote(remote: Self): Text
