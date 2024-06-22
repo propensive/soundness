@@ -22,15 +22,43 @@ import serpentine.*, hierarchies.unix
 import rudiments.*
 import vacuous.*
 import guillotine.*
+import profanity.*
 import hypotenuse.*
 import gossamer.{take as _, *}
 import exoskeleton.*
-import turbulence.*
 import eucalyptus.*
+import turbulence.*
 import contingency.*
 import spectacular.*
 import ambience.*
 import fulminate.*
+
+enum DaemonLogEvent:
+  case WriteExecutable(location: Text)
+  case Shutdown
+  case Termination
+  case Failure
+  case NewCli
+  case UnrecognizedMessage
+  case ReceivedSignal(signal: Signal)
+  case ExitStatusRequest(pid: Pid)
+  case CloseConnection(pid: Pid)
+  case StderrRequest(pid: Pid)
+  case Init(pid: Pid)
+
+object DaemonLogEvent:
+  given DaemonLogEvent is Communicable =
+    case WriteExecutable(location) => msg"Writing executable to $location"
+    case Shutdown                  => msg"Shutting down"
+    case Termination               => msg"Terminating client connection"
+    case Failure                   => msg"A failure occurred"
+    case NewCli                    => msg"Instantiating a new CLI"
+    case UnrecognizedMessage       => msg"Unrecognized message"
+    case ReceivedSignal(signal)    => msg"Received signal $signal"
+    case ExitStatusRequest(pid)    => msg"Exit status requested from $pid"
+    case CloseConnection(pid)      => msg"Connection closed from $pid"
+    case StderrRequest(pid)        => msg"STDERR requested from $pid"
+    case Init(pid)                 => msg"Initializing $pid"
 
 object Installer:
   given Realm = realm"ethereal"
@@ -47,8 +75,8 @@ object Installer:
     case PathNotWritable
 
   def candidateTargets()(using service: DaemonService[?])
-      (using Log[Text], Environment, HomeDirectory, SystemProperties)
-          : List[Directory] raises InstallError =
+      (using Environment, HomeDirectory, SystemProperties)
+          : List[Directory] logs DaemonLogEvent raises InstallError =
     tend:
       val paths: List[Unix.Path] = Environment.path
 
@@ -72,15 +100,15 @@ object Installer:
       case IoError(_)          => abort(InstallError(InstallError.Reason.Io))
 
   def install(force: Boolean = false, target: Optional[Unix.Path] = Unset)
-      (using service: DaemonService[?], log: Log[Text], environment: Environment, home: HomeDirectory)
+      (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
       (using Effectful)
-        : Result raises InstallError =
+        : Result logs DaemonLogEvent raises InstallError =
     import workingDirectories.default
     import systemProperties.virtualMachine
 
     tend:
       val command: Text = service.scriptName
-      val scriptPath = sh"sh -c 'command -v $command'".exec[Text]()
+      val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
       if safely(scriptPath.decodeAs[Unix.Path]) == service.script && !force
       then Result.AlreadyOnPath(command, service.script.show)
@@ -97,7 +125,8 @@ object Installer:
           (directory / PathName(command)).make[File]()
 
         installFile.let: file =>
-          Log.info(t"Writing executable to ${file.debug}")
+          val filename: Text = file.debug
+          Log.info(DaemonLogEvent.WriteExecutable(filename))
           if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.skip(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
           file.executable() = true
