@@ -16,11 +16,17 @@
 
 package nettlesome
 
+import serpentine.*
+import gossamer.*
 import rudiments.*
+import vacuous.*
+import fulminate.*
+import contingency.*
+import escapade.*
+import anticipation.*
+import contextual.*
+import spectacular.*
 
-extension (inline ctx: StringContext)
-  transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('ctx, 'parts)}
+import scala.quoted.*
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('ctx)}
-  transparent inline def host(): Hostname = ${Hostname.expand('ctx)}
+case class Raw(text: Text)
