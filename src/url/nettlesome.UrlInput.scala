@@ -16,18 +16,8 @@
 
 package nettlesome
 
-import serpentine.*
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import contingency.*
-import escapade.*
 import anticipation.*
 import contextual.*
-import spectacular.*
-
-import scala.quoted.*
 
 object UrlInput:
   given Substitution[UrlInput, Text, "x"] = UrlInput.Textual(_)

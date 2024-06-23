@@ -27,8 +27,6 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
-import scala.quoted.*
-
 case class Url[+SchemeType <: Label]
     (scheme:    Scheme[SchemeType],
      authority: Optional[Authority],
