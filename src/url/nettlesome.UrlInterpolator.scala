@@ -39,8 +39,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
   def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
-      case err: UrlError      => throw InterpolationError(Message(err.message.text))
-      case err: HostnameError => throw InterpolationError(Message(err.message.text))
+      case error: UrlError      => throw InterpolationError(error.message)
+      case error: HostnameError => throw InterpolationError(error.message)
 
   def initial: Text = t""
 
