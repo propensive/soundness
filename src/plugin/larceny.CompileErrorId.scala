@@ -16,16 +16,6 @@
 
 package larceny
 
-def demilitarize(code: Matchable): List[CompileError] = code match
-  case xs: List[CompileError] @unchecked => xs
-  case _ => Nil
-
-def procrastinate(errors: List[CompileError]): List[CompileError] = errors
-
-case class CompileError(ordinal: Int, message: String, code: String, start: Int, offset: Int):
-  def id: CompileErrorId = CompileErrorId.fromOrdinal(ordinal + 1)
-  def point: Int = start + offset
-
 object CompileErrorId:
   def unapply(compileError: CompileError): Some[CompileErrorId] = Some(compileError.id)
 
