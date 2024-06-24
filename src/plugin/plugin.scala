@@ -59,7 +59,6 @@ class LarcenyTransformer() extends PluginPhase:
     val errors: List[CompileError] =
       Subcompiler.compile(ctx.settings.classpath.value, source, regions)
 
-
     object transformer extends UntypedTreeMap:
 
       override def transform(tree: Tree)(using Context): Tree = tree match
@@ -81,7 +80,7 @@ class LarcenyTransformer() extends PluginPhase:
             Apply(
               Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName),
               List(
-                Literal(Constant(error.id)),
+                Literal(Constant(error.ordinal)),
                 Literal(Constant(error.message)),
                 Literal(Constant(error.code)),
                 Literal(Constant(error.start)),
@@ -107,6 +106,7 @@ object Subcompiler:
     val errors: scm.ListBuffer[CompileError] = scm.ListBuffer()
 
     def doReport(diagnostic: Diagnostic)(using Context): Unit =
+      println(diagnostic)
       try
         val pos = diagnostic.pos
         val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))

@@ -1,32 +1,9 @@
-/*
-    Larceny, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+import larceny.*
 
-    The primary distribution site is: https://propensive.com/
+import CompileErrorId.*
 
-    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
-    file except in compliance with the License. You may obtain a copy of the License at
+@main def run(): Unit =
+  val errors = demilitarize:
+    compiletime.error("it failed")
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-    Unless required by applicable law or agreed to in writing, software distributed under the
-    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
-    either express or implied. See the License for the specific language governing permissions
-    and limitations under the License.
-*/
-
-package larceny
-
-@main
-def run(): Unit = for i <- 1 to 4000 do repeat()
-
-def repeat(): Unit =
-  
-  val t0 = System.currentTimeMillis
-  
-  procrastinate:
-    def foo(x: Int): Unit = x*x + x/x
-  
-  println(-t0 + System.currentTimeMillis)
-
-trait Incomplete:
-  def foo: Int
+  println(errors)
