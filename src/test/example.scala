@@ -17,13 +17,13 @@
 package larceny
 
 @main
-def run(): Unit = for i <- 1 to 40 do repeat()
+def run(): Unit = for i <- 1 to 4000 do repeat()
 
 def repeat(): Unit =
   
   val t0 = System.currentTimeMillis
   
-  deferCompilation:
+  procrastinate:
     def foo(x: Int): Unit = x*x + x/x
   
   println(-t0 + System.currentTimeMillis)

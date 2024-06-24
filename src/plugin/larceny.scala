@@ -22,8 +22,8 @@ def demilitarize(code: Matchable): List[CompileError] = code match
   case xs: List[CompileError] @unchecked => xs
   case _ => Nil
 
-def deferCompilation(errors: List[CompileError]): List[CompileError] = errors
-  
+def procrastinate(errors: List[CompileError]): List[CompileError] = errors
+
 case class CompileError(id: Int, message: String, code: String, start: Int, offset: Int):
   def errorId: dtdr.ErrorMessageID = dtdr.ErrorMessageID.fromOrdinal(id)
   def point: Int = start + offset
