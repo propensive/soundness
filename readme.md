@@ -4,7 +4,7 @@
 
 # Larceny
 
-____
+__Scala 3 compiler plugin for testing compiletime errors__
 
 Unlike runtime errors, compilation errors prevent successful compilation, which
 makes them harder to test, since we can't even compile the units tests we want
