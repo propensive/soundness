@@ -4,13 +4,18 @@
 target larceny/test
 
 project larceny
+  module core
+    compiler  scala
+    sources   src/core
+
   module plugin
     compiler  scala
     sources   src/plugin
+    include   larceny/core
     plugin    yes
 
   module test
     compiler  scala
     sources   src/test
     include   larceny/plugin
-    main      larceny.run
+    main      run
