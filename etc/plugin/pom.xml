@@ -23,9 +23,6 @@
   </properties>
   <dependencies>
     <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>larceny-core</artifactId>
-      <version>0.1.0</version>
     </dependency>
   </dependencies>
   <organization>
