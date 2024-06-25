@@ -22,6 +22,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala3-compiler_3</artifactId>
+      <version>3.5.0-RC1</version>
+    </dependency>
   </dependencies>
   <organization>
     <name>Propensive</name>
