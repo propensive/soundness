@@ -6,7 +6,7 @@ scalac -d bin -Xplugin:larceny.jar -classpath larceny.jar *.scala`
 
 The compiler plugin identifies code blocks whose compilation errors should be
 suppressed, which are inside a `demilitarize` block (using any
-valid Scala block syntax), for example:
+valid Scala syntax), for example:
 ```scala
 package com.example
 
@@ -26,7 +26,7 @@ because `missingMethod` is not a member of `Int`.
 
 But despite this, if the Larceny plugin is enabled, then the code will compile.
 
-And any invalid code that is _not_ within a `demilitarize` block will
+Any invalid code that is _not_ within a `demilitarize` block will
 still result in the expected compilation errors.
 
 The compilation error from each `demilitarize` block will be
@@ -38,18 +38,21 @@ like so:
     "Hello world".substring("5")
 
   errors.foreach:
-    case CompileError(id, message, code, offset) =>
+    case CompileError(ordinal, message, code, position, offset) =>
       println(s"[$id] Found error '$message' in the code '$code' with offset $offset")
 ```
 
-The four parameters of `CompileError` need some explanation:
-- `id` is an integer representing the type of error
+The parameters of `CompileError` need some explanation:
+- `ordinal` is the ordinal identifier representing the type of error; the Scala
+  compiler defines about 200 such error types (though some occur more
+  frequently than others)
 - `message` is the human-readable error message text that would be output by
   the compiler
-- `code` is the fragment of code which would be marked as problematic (often
-  with a wavy red underline)
+- `code` is the fragment of code which would be marked as problematic (in an
+  IDE, this would usually be done with a wavy red underline)
+- `position` is the location of the code from the start of the source file
 - `offset` is the number of characters from the start of `code` that is
-  indicated as the exact point of the error
+  marked as the exact point of the error
 
 Taking the second example above,
 ```scala
@@ -67,11 +70,12 @@ value `2` is because the erroneous code begins `x.`, but the point of the error
 is considered to be the `m` of `missingMethod`, which is character `2`.
 
 The error IDs are defined in the Scala compiler and correspond to an
-enumeration of values. For convenience, these values are exported into the
-`ErrorId` object, and can be accessed by the `errorId` method of
+enumeration of values. For convenience, these values have been copied into the
+`CompileErrorId` enumeration, and can be accessed by the `id` method of
 `CompileError`.
 
-`ErrorId` is also an extractor on `CompileError`, so it's possible to write:
+`CompileErrorId` is also an extractor on `CompileError`, so it's possible to
+write:
 ```scala
 demilitarize(summon[Ordering[Exception]]) match
   case ErrorId(ErrorId.MissingImplicitArgumentID) => "expected"
@@ -79,6 +83,11 @@ demilitarize(summon[Ordering[Exception]]) match
 ```
 
 ### Implementation
+
+Here are the details of how Larceny works. It should not be necessary to
+understand its implementation for normal usage, but as experimental software,
+it may behave unexpectedly, and this explanation may help to diagnose
+misbehavior.
 
 Larceny runs on each source file before typechecking, but after parsing. Any
 blocks named `demilitarize` found in the the untyped AST will trigger
@@ -93,7 +102,7 @@ a new `CompileError` instance, and inserts it into the `demilitarize`
 block, in place of entire erroneous contents.
 
 If there are multiple `demilitarize` blocks in the same source file,
-some errors which occur in earlier phases of compilation may prevent later
+some errors which occur in earlier phases of compilation may suppress later
 phases from running, and the errors from those later phases will not be
 captured during the first compilation. Larceny will rerun the compiler as
 many times as necessary to capture errors from later phases, each time
@@ -105,17 +114,13 @@ there are no compilation errors _outside_ of a `demilitarize` block,
 compilation should succeed. When the code is run, each `demilitarize`
 block will simply return a list of `CompileError`s.
 
-### Probably
+### Testing Frameworks
 
-Larceny works well with [Probably](https://github.com/propensive/probably/).
-
-For example, we could write a compile error test with,
+Larceny should work with any Scala unit testing framework or library. For
+example, with [Probably](https://github.com/propensive/probably/), we could
+write a compile error test with:
 ```scala
 test(t"cannot sort data without an Ordering"):
   demilitarize(data.sorted).head.message
 .assert(_.startsWith("No implicit Ordering"))
 ```
-
-
-
-
