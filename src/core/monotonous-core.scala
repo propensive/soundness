@@ -51,10 +51,26 @@ package alphabets:
     given Alphabet[Base32] as lowerCase =
       Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, strictUpperCase.inverse)
 
+    given Alphabet[Base32] as extendedHexUpperCase =
+      Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, strictLowerCase.inverse)
+
+    given Alphabet[Base32] as extendedHexLowerCase =
+      Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, strictUpperCase.inverse)
+
     given Alphabet[Base32] as zBase32 = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
 
     given Alphabet[Base32] as zBase32Unpadded =
       Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
+
+    given Alphabet[Base32] as geohash = Alphabet(t"0123456789bcdefghjkmnpqrstuvwxyz", false)
+    given Alphabet[Base32] as wordSafe = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
+
+    private val crockfordAlternatives =
+      Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse ++ Map('o' -> 0, 'O' -> 0,
+          'i' -> 1, 'I' -> 1, 'L' -> 1)
+
+    given Alphabet[Base32] as crockford =
+      Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)
 
   package base64:
     given Alphabet[Base64] as standard =
