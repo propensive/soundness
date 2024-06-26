@@ -30,6 +30,8 @@ object Anticipation:
 
   object Text:
     def apply(string: String): Text = string
+    def apply(chars: IArray[Char]): Text = String(chars.asInstanceOf[Array[Char]])
+
     extension (text: Text) inline def s: String = text
 
     given Text is Addable by Text into Text as addable = _ + _
