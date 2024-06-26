@@ -20,17 +20,5 @@ import scala.util as su
 
 import language.experimental.genericNumberLiterals
 
-object Random:
-  lazy val global: Random = new Random(randomization.unseeded.make())
-
-  def apply(seed: Seed)(using randomization: Randomization): Random =
-    new Random(randomization.make())
-
-class Random(private val generator: su.Random):
-  def long(): Long = generator.nextLong()
-  def gaussian(): Double = generator.nextGaussian()
-  def unitInterval(): Double = generator.nextDouble()
-  def apply[ValueType: Randomizable](): ValueType = ValueType.from(this)
-
-  transparent inline def shuffle[ElementType](seq: Seq[ElementType]): Seq[ElementType] =
-    generator.shuffle(seq)
+trait Randomization:
+  def make(): su.Random

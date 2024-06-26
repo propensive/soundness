@@ -16,9 +16,7 @@
 
 package capricious
 
-import scala.util as su
-
 import language.experimental.genericNumberLiterals
 
-trait RandomNumberGenerator:
-  def make(): su.Random
+trait RandomLength:
+  def generate(random: Random): Int

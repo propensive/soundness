@@ -26,22 +26,30 @@ import java.security as js
 
 import language.experimental.genericNumberLiterals
 
-package randomNumberGenerators:
-  given RandomNumberGenerator as unseeded = () => su.Random(java.util.Random())
-  given RandomNumberGenerator as secureUnseeded = () => su.Random(js.SecureRandom())
+package randomization:
 
-  given RandomNumberGenerator as stronglySecure = () =>
+  package lengths:
+    given RandomLength as uniformUpto10 = _.long().abs.toInt%10
+    given RandomLength as uniformUpto100 = _.long().abs.toInt%100
+    given RandomLength as uniformUpto1000 = _.long().abs.toInt%1000
+    given RandomLength as uniformUpto10000 = _.long().abs.toInt%10000
+    given RandomLength as uniformUpto100000 = _.long().abs.toInt%100000
+
+  given Randomization as unseeded = () => su.Random(java.util.Random())
+  given Randomization as secureUnseeded = () => su.Random(js.SecureRandom())
+
+  given Randomization as stronglySecure = () =>
     su.Random(js.SecureRandom.getInstanceStrong().nn)
 
-  given (using seed: Seed) => RandomNumberGenerator as seeded = () =>
+  given (using seed: Seed) => Randomization as seeded = () =>
     su.Random(ju.Random(seed.long))
 
-  given (using seed: Seed) => RandomNumberGenerator as secureSeeded = () =>
+  given (using seed: Seed) => Randomization as secureSeeded = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
-def stochastic[ResultType](using generator: RandomNumberGenerator)(block: Random ?=> ResultType)
+def stochastic[ResultType](using randomization: Randomization)(block: Random ?=> ResultType)
         : ResultType =
-  block(using new Random(generator.make()))
+  block(using new Random(randomization.make()))
 
 def arbitrary[ValueType: Randomizable]()(using Random): ValueType = ValueType()
 

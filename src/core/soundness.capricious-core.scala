@@ -17,10 +17,10 @@
 package soundness
 
 export capricious.{Randomizable, Distribution, Gamma, Gaussian, PolarGaussian, Random,
-    RandomNumberGenerator, Seed, UniformDistribution, stochastic, arbitrary, random}
+    Randomization, Seed, UniformDistribution, stochastic, arbitrary, random}
 
-package randomNumberGenerators:
-  export capricious.randomNumberGenerators.{unseeded, secureUnseeded, stronglySecure, seeded,
+package randomization:
+  export capricious.randomization.{unseeded, secureUnseeded, stronglySecure, seeded,
       secureSeeded}
 
 package randomDistributions:
