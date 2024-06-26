@@ -19,7 +19,7 @@ package monotonous
 import probably.*
 import anticipation.*
 import contingency.*
-import capricious.*, randomNumberGenerators.seeded
+import capricious.*, randomization.seeded, randomization.lengths.uniformUpto100000
 import gossamer.*
 
 import scala.compiletime.*
@@ -100,13 +100,47 @@ object Tests extends Suite(t"Monotonous tests"):
     .assert(_ == SerializationError(7, '?'))
 
     given Seed = Seed(1L)
-    import alphabets.base64.standard
 
     stochastic:
       for i <- 1 to 1000 do
-        val arb = IArray[Byte](arbitrary[Byte]())
+        val arb = arbitrary[IArray[Byte]]()
         val arbList = arb.to(List)
 
-        test(t"Single character tests"):
-          arb.serialize[Base64].deserialize[Base64].to(List)
+        locally:
+          import alphabets.base64
+          for alphabet <- List(base64.standard, base64.unpadded, base64.url, base64.xml,
+              base64.imap, base64.yui, base64.radix64, base64.bcrypt, base64.sasl) do
+            test(t"Roundtrip BASE64 tests"):
+              given Alphabet[Base64] = alphabet
+              arb.serialize[Base64].deserialize[Base64].to(List)
+            .assert(_ == arbList)
+
+        locally:
+          import alphabets.base32
+          for alphabet <- List(base32.strictUpperCase, base32.strictLowerCase, base32.upperCase,
+              base32.lowerCase, base32.extendedHexUpperCase, base32.extendedHexLowerCase,
+              base32.zBase32, base32.zBase32Unpadded, base32.geohash, base32.wordSafe,
+              base32.crockford) do
+            test(t"Roundtrip BASE32 tests"):
+              given Alphabet[Base32] = alphabet
+              arb.serialize[Base32].deserialize[Base32].to(List)
+            .assert(_ == arbList)
+
+        locally:
+          import alphabets.hex
+          for alphabet <- List(hex.strictUpperCase, hex.strictLowerCase, hex.upperCase,
+              hex.lowerCase, hex.bioctal) do
+            test(t"Roundtrip Hex tests"):
+              given Alphabet[Hex] = alphabet
+              arb.serialize[Hex].deserialize[Hex].to(List)
+            .assert(_ == arbList)
+
+        test(t"Roundtrip Octal tests"):
+          import alphabets.octal.standard
+          arb.serialize[Octal].deserialize[Octal].to(List)
+        .assert(_ == arbList)
+
+        test(t"Roundtrip Binary tests"):
+          import alphabets.binary.standard
+          arb.serialize[Binary].deserialize[Binary].to(List)
         .assert(_ == arbList)
