@@ -34,10 +34,10 @@ object Serializable:
         def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
           if index < length then
             if loaded < bits then
-              if bytes.length > next then
+              if next < bytes.length then
                 recur((current << 8) | (bytes(next) & 0xff), next + 1, index, loaded + 8)
               else
-                array(index) = alphabet((current >>> 8) & mask)
+                array(index) = alphabet((current << (bits - loaded)) & mask)
                 ((index + 1) until length).each { i => array(i) = alphabet(1 << bits) }
             else
               array(index) = alphabet((current >>> (loaded - bits)) & mask)

@@ -32,8 +32,7 @@ trait Deserializable:
 
 object Deserializable:
   def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
-      (using Errant[SerializationError])
-          : Deserializable in BaseType =
+          : Deserializable in BaseType raises SerializationError =
     new:
       def deserialize(text: Text): Bytes =
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'

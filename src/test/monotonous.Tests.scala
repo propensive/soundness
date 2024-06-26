@@ -19,6 +19,7 @@ package monotonous
 import probably.*
 import anticipation.*
 import contingency.*
+import capricious.*, randomNumberGenerators.seeded
 import gossamer.*
 
 import scala.compiletime.*
@@ -47,7 +48,7 @@ object Tests extends Suite(t"Monotonous tests"):
     test(t"Serialize to BASE32"):
       import alphabets.base32.upperCase
       numbers.serialize[Base32]
-    .assert(_ == t"AAAQEA4DQKAYB7H57376====")
+    .assert(_ == t"AAAQEA4DQKAYB7H5737Q====")
 
     test(t"Serialize to BASE64"):
       import alphabets.base64.standard
@@ -73,7 +74,7 @@ object Tests extends Suite(t"Monotonous tests"):
 
     test(t"Deserialize from BASE32"):
       import alphabets.base32.upperCase
-      t"AAAQEA4DQKAYB7H57376====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
     .assert(_ == numberList)
 
     test(t"Deserialize from BASE64"):
@@ -83,17 +84,29 @@ object Tests extends Suite(t"Monotonous tests"):
 
     test(t"Tolerant BASE32"):
       import alphabets.base32.lowerCase
-      t"AAAQEA4DQKAYB7H57376====".deserialize[Base32].to(List)
+      t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
     .assert(_ == numberList)
 
     test(t"Intolerant BASE32"):
       capture[SerializationError]:
         import alphabets.base32.strictLowerCase
-        t"AAAQEA4DQKAYB7H57376====".deserialize[Base32].to(List)
+        t"AAAQEA4DQKAYB7H5737Q====".deserialize[Base32].to(List)
     .assert(_ == SerializationError(0, 'A'))
 
     test(t"Bad character offset"):
       capture[SerializationError]:
         import alphabets.base32.lowerCase
-        t"AAAQEA4?DQKAYB7H57376====".deserialize[Base32].to(List)
+        t"AAAQEA4?DQKAYB7H5737Q====".deserialize[Base32].to(List)
     .assert(_ == SerializationError(7, '?'))
+
+    given Seed = Seed(1L)
+    import alphabets.base64.standard
+
+    stochastic:
+      for i <- 1 to 1000 do
+        val arb = IArray[Byte](arbitrary[Byte]())
+        val arbList = arb.to(List)
+
+        test(t"Single character tests"):
+          arb.serialize[Base64].deserialize[Base64].to(List)
+        .assert(_ == arbList)
