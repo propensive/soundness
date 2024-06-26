@@ -240,7 +240,7 @@ extension (lazyList: LazyList[Bytes])
   def decompress[CompressionType <: CompressionAlgorithm: Compression]: LazyList[Bytes] =
     summon[Compression].decompress(lazyList)
 
-  def shred(mean: Double, variance: Double)(using RandomNumberGenerator): LazyList[Bytes] =
+  def shred(mean: Double, variance: Double)(using Randomization): LazyList[Bytes] =
     stochastic:
       given Distribution = Gamma.approximate(mean, variance)
 
