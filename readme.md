@@ -19,9 +19,10 @@ formats.
 
 ## Features
 
-- provides a simple and general mechanism for serialization to binary formats
-- supports serialization into binary, hexadecimal, BASE-32 and BASE-64
-- allows custom alphabets to be used (with custom padding for BASE-64)
+- provides a simple and general mechanism for serialization and deserialization
+- supports binary, quaternary, octal, hexadecimal, BASE-32 and BASE-64
+- allows custom alphabets to be used (with custom padding, where appropriate)
+- optionally permits "tolerant" deserialization of equivalent characters, e.g. `1` and `l`, or `A` and `a`
 
 
 ## Availability Plan
@@ -71,7 +72,7 @@ import soundness.*
 
 ### Usage
 
-To serialize a `Bytes` value (an instance of `IArray[Byte]`) to BASE-64, can
+To serialize a `Bytes` value (an instance of `IArray[Byte]`) to BASE-64, we can
 use:
 ```scala
 import alphabets.base64.standard
@@ -81,17 +82,17 @@ bytes.serialize[Base64]
 
 In general, to convert from a `Bytes` instance—an `IArray[Byte]`—we can call
 `serialize` on that value with an output serialization format; one of,
- - `Base32`
  - `Base64`
- - `Binary`
+ - `Base32`
  - `Hex`
+ - `Octal`
+ - `Binary`
 provided an appropriate contextual `Alphabet` instance is in-scope for that
 format.
 
 #### Alphabets
 
-With the exception of `Binary` (which is always just a series of `0`s and `1`s),
-each of these serializations formats has a number of representations. For
+Each of these serializations formats has a number of possible representations. For
 example,
 - hexadecimal (`Hex`) may be upper-case or lower-case
 - BASE-64 requires two or three non-alphanumeric characters to represent all 64
@@ -103,8 +104,24 @@ example,
 In general, these variations are called _alphabets_, since they primarily
 specify the full set of valid characters for the serialization format. In the
 case of BASE-64, they also configure the presence or absence of padding. (This
-is not a feature of alphabets in the real world, but it makes sense to include
+is not a feature of _alphabets_ in the real world, but it makes sense to include
 this parameter in the `Alphabet` type.)
+
+An `Alphabet` instance can also specify whether any other characters (which are
+_not_ in the alphabet) should be considered "equivalent" to others that _are_ in
+the alphabet. For example, `l` and `1` are easy to transcribe incorrectly. If an
+alphabet contains, for example, `l`, then it might be helpful to specify that
+`1` refers to the same index.
+
+Monotonous provides a variety of different alphabets for different serializations.
+While each of these has a unique, deterministic serialization (e.g. `hex.upperCase`
+always uses the letters `A`-`F`), for deserialization the BASE-32 and BASE-64
+alphabets are _tolerant_ by default.
+
+That means that `a5bc29ae` can be deserialized successfully using the `hex.upperCase`
+alphabet, even though that alphabet would serialize the same data as `A5BC29AE`.
+Alphabets which are not tolerant are labelled `strict`, for example,
+`base32.strictLowerCase`.
 
 Monotonous provides implementations of most commonly-used alphabets for each
 output format. These are:
@@ -120,13 +137,31 @@ output format. These are:
   - `sasl`
   - `uuencoding`
 - `base32`
-  - `standard`
+  - `strictUpperCase`
+  - `strictLowerCase`
+  - `upperCase`
+  - `lowerCase`
+  - `extendedHexUpperCase`
+  - `extendedHexLowerCase`
   - `zBase32`
   - `zBase32Unpadded`
+  - `geohash`
+  - `wordSafe`
+  - `crockford`
 - `hex`
+  - `strictUpperCase`
+  - `strictLowerCase`
   - `upperCase`
   - `lowerCase`
   - `bioctal`
+- `octal`
+  - `standard`
+- `quaternary`
+  - `standard`
+  - `dnaNucleotide`
+- `binary`
+  - `standard`
+
 and are all available in the `alphabets` package.
 
 
@@ -230,7 +265,7 @@ language.
 ## Logo
 
 The logo shows several sine waves, representing a single monotonous tone,
-overlaid upon each other.
+overlaid upon each other, monotonously.
 
 ## License
 
