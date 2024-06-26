@@ -32,6 +32,7 @@ object Tests extends Suite(t"Monotonous tests"):
   def run(): Unit =
 
     test(t"Serialize to Binary"):
+      import alphabets.binary.standard
       numbers.serialize[Binary]
     .assert(_ == t"000000000000000100000010000000111000001110000010100000011000000011111100111111011111111011111111")
 
@@ -138,6 +139,11 @@ object Tests extends Suite(t"Monotonous tests"):
         test(t"Roundtrip Octal tests"):
           import alphabets.octal.standard
           arb.serialize[Octal].deserialize[Octal].to(List)
+        .assert(_ == arbList)
+
+        test(t"Roundtrip Quaternary tests"):
+          import alphabets.quaternary.dnaNucleotide
+          arb.serialize[Quaternary].deserialize[Quaternary].to(List)
         .assert(_ == arbList)
 
         test(t"Roundtrip Binary tests"):

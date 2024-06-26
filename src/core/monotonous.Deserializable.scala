@@ -55,4 +55,5 @@ object Deserializable:
   given (using Alphabet[Base32], Errant[SerializationError]) => Deserializable in Base32 = base(5)
   given (using Alphabet[Hex], Errant[SerializationError]) => Deserializable in Hex = base(4)
   given (using Alphabet[Octal], Errant[SerializationError]) => Deserializable in Octal = base(3)
+  given (using Alphabet[Quaternary], Errant[SerializationError]) => Deserializable in Quaternary = base(2)
   given (using Alphabet[Binary], Errant[SerializationError]) => Deserializable in Binary = base(1)

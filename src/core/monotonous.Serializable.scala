@@ -48,10 +48,8 @@ object Serializable:
       Text(chars)
 
 
-  given Serializable in Binary =
-    given Alphabet[Binary] = Alphabet(t"01", false)
-    base(1)
-
+  given (using Alphabet[Binary]) => Serializable in Binary = base(1)
+  given (using Alphabet[Quaternary]) => Serializable in Quaternary = base(2)
   given (using Alphabet[Octal]) => Serializable in Octal = base(3)
   given (using Alphabet[Hex]) => Serializable in Hex = base(4)
   given (using Alphabet[Base32]) => Serializable in Base32 = base(5)

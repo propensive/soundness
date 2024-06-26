@@ -23,6 +23,10 @@ package alphabets:
   package binary:
     given Alphabet[Binary] as standard = Alphabet(t"01", false)
 
+  package quaternary:
+    given Alphabet[Quaternary] as standard = Alphabet(t"0123", false)
+    given Alphabet[Quaternary] as dnaNucleotide = Alphabet(t"ATCG", false)
+  
   package octal:
     given Alphabet[Octal] as standard = Alphabet(t"01234567=", false)
 
