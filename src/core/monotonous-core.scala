@@ -21,9 +21,12 @@ import gossamer.*
 
 package alphabets:
   package base32:
-    given Alphabet[Base32] as default = Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
+    given Alphabet[Base32] as upperCase = Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
+    given Alphabet[Base32] as lowerCase = Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
     given Alphabet[Base32] as zBase32 = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
-    given Alphabet[Base32] as zBase32Unpadded = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
+
+    given Alphabet[Base32] as zBase32Unpadded =
+      Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
 
   package hex:
     given Alphabet[Hex] as upperCase = Alphabet(t"0123456789ABCDEF", false)
@@ -62,7 +65,8 @@ package alphabets:
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
-  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType): Bytes =
+  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
+          : Bytes =
     deserializable.deserialize(value)
 
 extension [ValueType: Encodable in Bytes](value: ValueType)

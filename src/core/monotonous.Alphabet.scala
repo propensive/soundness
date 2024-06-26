@@ -17,6 +17,16 @@
 package monotonous
 
 import anticipation.*
+import contingency.*
+import gossamer.{at as _, *}
+import rudiments.*
+import vacuous.*
 
-case class Alphabet[EncodingType <: Serialization](chars: Text, padding: Boolean):
+case class Alphabet[EncodingType <: Serialization]
+    (chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map()):
   def apply(index: Int): Char = chars.s.charAt(index)
+
+  def invert(char: Char): Int raises SerializationError =
+    inverse.getOrElse(char, raise(SerializationError(t"invalid character $char"))(0))
+
+  lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to(Map)

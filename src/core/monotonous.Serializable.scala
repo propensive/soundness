@@ -47,7 +47,8 @@ object Serializable:
           if index%8 != 0 then for i <- 0 until (5 - index%8) do append(alphabet(32))
 
         else
-          if unused >= 8 then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
+          if unused >= 8
+          then recur((acc << 5) + (bytes(index) << (unused - 3)), index + 1, unused - 3)
           else recur(acc << 5, index, unused + 5)
 
       if bytes.isEmpty then t"" else recur(bytes.head.toInt << 8, 1, 8)
