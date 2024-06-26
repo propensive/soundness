@@ -16,9 +16,6 @@
 
 package monotonous
 
-import java.util as ju
-import ju.Base64.getDecoder as Base64Decoder
-
 import scala.collection.*
 import scala.compiletime.*, ops.int.*
 
@@ -34,36 +31,29 @@ trait Deserializable:
   def deserialize(value: Text): Bytes
 
 object Deserializable:
-  given (using Errant[SerializationError]) => Deserializable in Base64:
-    def deserialize(value: Text): Bytes =
-      try Base64Decoder.nn.decode(value.s).nn.immutable(using Unsafe)
-      catch case _: IllegalArgumentException =>
-        abort(SerializationError(t"an invalid BASE-64 character found"))
 
-  given (using alphabet: Alphabet[Base32])(using Errant[SerializationError])
-      => Deserializable in Base32:
-    def deserialize(text: Text): Bytes =
-      val padding: Char = alphabet(32)
-      val length = text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*5/8
+  def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
+      (using Errant[SerializationError])
+          : Deserializable in BaseType =
+    new:
+      type In = BaseType
+      def deserialize(text: Text): Bytes =
+        val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
+        val length = text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*base/8
+        IArray.create[Byte](length): array =>
+          def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index: Int = 0): Unit =
+            if count < length then
+              val value: Int = alphabet.invert(text.s.charAt(index))
+              val next: Int = (buffer << base) | value
+              if bits + base >= 8 then
+                array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
+                recur(next, bits + base - 8, count + 1, index + 1)
+              else recur(next, bits + base, count, index + 1)
 
-      IArray.create[Byte](length): array =>
-        def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index: Int = 0): Unit =
-          if count < length then
-            val next: Int = ((buffer << 5) | alphabet.invert(text.s.charAt(index)))
-            if bits >= 3 then
-              array(count) = ((next >> (bits - 3)) & 0xff).toByte
-              recur(next, bits - 3, count + 1, index + 1)
-            else recur(next, bits + 5, count, index + 1)
+          recur()
 
-        recur()
-
-  given Deserializable in Hex:
-    def deserialize(value: Text): Bytes =
-      import java.lang.Character.digit
-      val data = Array.fill[Byte](value.length/2)(0)
-
-      (0 until value.length by 2).each: i =>
-        data(i/2) = unsafely(((digit(value.at(i).vouch, 16) << 4) + digit(value.at(i + 1).vouch,
-            16)).toByte)
-
-      data.immutable(using Unsafe)
+  given (using Alphabet[Base64],  Errant[SerializationError]) => Deserializable in Base64 = base(6)
+  given (using Alphabet[Base32], Errant[SerializationError]) => Deserializable in Base32 = base(5)
+  given (using Alphabet[Hex], Errant[SerializationError]) => Deserializable in Hex = base(4)
+  given (using Alphabet[Octal], Errant[SerializationError]) => Deserializable in Octal = base(3)
+  given (using Alphabet[Binary], Errant[SerializationError]) => Deserializable in Binary = base(1)

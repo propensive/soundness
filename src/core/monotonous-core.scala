@@ -20,6 +20,17 @@ import anticipation.*
 import gossamer.*
 
 package alphabets:
+  package binary:
+    given Alphabet[Binary] as standard = Alphabet(t"01", false)
+
+  package octal:
+    given Alphabet[Octal] as standard = Alphabet(t"01234567=", false)
+
+  package hex:
+    given Alphabet[Hex] as upperCase = Alphabet(t"0123456789ABCDEF", false)
+    given Alphabet[Hex] as lowerCase = Alphabet(t"0123456789abcdef", false)
+    given Alphabet[Hex] as bioctal = Alphabet(t"01234567cjzwfsbv", false)
+
   package base32:
     given Alphabet[Base32] as upperCase = Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
     given Alphabet[Base32] as lowerCase = Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
@@ -27,11 +38,6 @@ package alphabets:
 
     given Alphabet[Base32] as zBase32Unpadded =
       Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
-
-  package hex:
-    given Alphabet[Hex] as upperCase = Alphabet(t"0123456789ABCDEF", false)
-    given Alphabet[Hex] as lowerCase = Alphabet(t"0123456789abcdef", false)
-    given Alphabet[Hex] as bioctal = Alphabet(t"01234567cjzwfsbv", false)
 
   package base64:
     given Alphabet[Base64] as standard =
