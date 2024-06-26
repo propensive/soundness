@@ -16,6 +16,7 @@
 
 package capricious
 
+import anticipation.*
 import hypotenuse.*
 import rudiments.*
 
@@ -28,12 +29,19 @@ import language.experimental.genericNumberLiterals
 
 package randomization:
 
+  package text:
+    given Text is Randomizable as bigListOfNaughtyStrings:
+      val resource = getClass.getResourceAsStream("/capricious/blns.txt")
+      val blns = IArray.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
+
+      def from(random: Random) = blns(random.long().toInt.abs%blns.length)
+
   package lengths:
-    given RandomLength as uniformUpto10 = _.long().abs.toInt%10
-    given RandomLength as uniformUpto100 = _.long().abs.toInt%100
-    given RandomLength as uniformUpto1000 = _.long().abs.toInt%1000
-    given RandomLength as uniformUpto10000 = _.long().abs.toInt%10000
-    given RandomLength as uniformUpto100000 = _.long().abs.toInt%100000
+    given RandomLength as uniformUpto10 = _.long().toInt.abs%10
+    given RandomLength as uniformUpto100 = _.long().toInt.abs%100
+    given RandomLength as uniformUpto1000 = _.long().toInt.abs%1000
+    given RandomLength as uniformUpto10000 = _.long().toInt.abs%10000
+    given RandomLength as uniformUpto100000 = _.long().toInt.abs%100000
 
   given Randomization as unseeded = () => su.Random(java.util.Random())
   given Randomization as secureUnseeded = () => su.Random(js.SecureRandom())
