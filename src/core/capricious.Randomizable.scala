@@ -24,24 +24,24 @@ import scala.compiletime.*
 
 import language.experimental.genericNumberLiterals
 
-object Arbitrary extends Derivation[[DerivationType] =>> DerivationType is Arbitrary]:
-  given Int is Arbitrary as int = _.long().toInt
-  given Long is Arbitrary as long = _.long()
-  given Char is Arbitrary as char = _.long().toChar
-  given Seed is Arbitrary as seed = _.long().pipe(Seed(_))
-  given Boolean is Arbitrary as boolean = _.long() < 0L
-  given (using Distribution) => Double is Arbitrary = summon[Distribution].transform(_)
+object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Randomizable]:
+  given Int is Randomizable as int = _.long().toInt
+  given Long is Randomizable as long = _.long()
+  given Char is Randomizable as char = _.long().toChar
+  given Seed is Randomizable as seed = _.long().pipe(Seed(_))
+  given Boolean is Randomizable as boolean = _.long() < 0L
+  given (using Distribution) => Double is Randomizable = summon[Distribution].transform(_)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Arbitrary = random =>
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Randomizable = random =>
     stochastic(using summonInline[RandomNumberGenerator]):
-      construct { [FieldType] => arbitrary => arbitrary.from(summon[Random]) }
+      construct { [FieldType] => _.from(summon[Random]) }
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Arbitrary = random =>
+  inline def split[DerivationType: SumReflection]: DerivationType is Randomizable = random =>
     stochastic(using summonInline[RandomNumberGenerator]):
       delegate(variantLabels(random.long().abs.toInt%variantLabels.length)):
-        [VariantType <: DerivationType] => arbitrary => arbitrary.from(summon[Random])
+        [VariantType <: DerivationType] => _.from(summon[Random])
 
-trait Arbitrary:
+trait Randomizable:
   type Self
   def apply()(using random: Random): Self = from(random)
   def from(random: Random): Self
