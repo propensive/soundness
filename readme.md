@@ -117,7 +117,9 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-TBC
+Something that is _enigmatic_ is _difficult to understand_, which is precisely
+the desirable quality of encrypted data. It is also an allusion to the
+codebreaking Enigma Machine.
 
 In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -132,7 +134,7 @@ language.
 
 ## Logo
 
-
+The logo shows three overlaid discs from the Enigma machine.
 
 ## License
 
