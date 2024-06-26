@@ -20,13 +20,12 @@ import anticipation.*
 import contingency.*
 import gossamer.{take as _, *}
 import kaleidoscope.*
-import monotonous.*
+import monotonous.*, alphabets.base64.standard
 import rudiments.*
 import vacuous.*
 
 case class Pem(label: PemLabel, data: Bytes):
   def serialize: Text =
-    import alphabets.base64.standard
     Seq
      (Seq(t"-----BEGIN $label-----"),
       data.grouped(48).to(Seq).map(_.serialize[Base64]),
@@ -54,4 +53,4 @@ object Pem:
       case index =>
         val joined: Text = lines.tail.take(index).join
         tend(Pem(label, joined.deserialize[Base64])).remedy:
-          case SerializationError(_) => abort(PemError(PemError.Reason.BadBase64))
+          case SerializationError(_, _) => abort(PemError(PemError.Reason.BadBase64))
