@@ -51,7 +51,7 @@ object Deserializable:
 
           recur()
 
-  given (using Alphabet[Base64],  Errant[SerializationError]) => Deserializable in Base64 = base(6)
+  given (using Alphabet[Base64], Errant[SerializationError]) => Deserializable in Base64 = base(6)
   given (using Alphabet[Base32], Errant[SerializationError]) => Deserializable in Base32 = base(5)
   given (using Alphabet[Hex], Errant[SerializationError]) => Deserializable in Hex = base(4)
   given (using Alphabet[Octal], Errant[SerializationError]) => Deserializable in Octal = base(3)
