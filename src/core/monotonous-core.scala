@@ -27,13 +27,30 @@ package alphabets:
     given Alphabet[Octal] as standard = Alphabet(t"01234567=", false)
 
   package hex:
-    given Alphabet[Hex] as upperCase = Alphabet(t"0123456789ABCDEF", false)
-    given Alphabet[Hex] as lowerCase = Alphabet(t"0123456789abcdef", false)
+    given Alphabet[Hex] as strictUpperCase = Alphabet(t"0123456789ABCDEF", false)
+    given Alphabet[Hex] as strictLowerCase = Alphabet(t"0123456789abcdef", false)
+
+    given Alphabet[Hex] as upperCase =
+      Alphabet(t"0123456789ABCDEF", false, strictLowerCase.inverse)
+
+    given Alphabet[Hex] as lowerCase =
+      Alphabet(t"0123456789abcdef", false, strictUpperCase.inverse)
+
     given Alphabet[Hex] as bioctal = Alphabet(t"01234567cjzwfsbv", false)
 
   package base32:
-    given Alphabet[Base32] as upperCase = Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
-    given Alphabet[Base32] as lowerCase = Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
+    given Alphabet[Base32] as strictUpperCase =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
+
+    given Alphabet[Base32] as strictLowerCase =
+      Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
+
+    given Alphabet[Base32] as upperCase =
+      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true, strictLowerCase.inverse)
+
+    given Alphabet[Base32] as lowerCase =
+      Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, strictUpperCase.inverse)
+
     given Alphabet[Base32] as zBase32 = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
 
     given Alphabet[Base32] as zBase32Unpadded =

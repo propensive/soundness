@@ -13,4 +13,3 @@ project monotonous
     sources   src/test
     main      monotonous.Tests
     include   monotonous/core probably/cli
-    coverage  monotonous/core

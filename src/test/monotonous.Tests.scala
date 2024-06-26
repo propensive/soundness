@@ -80,3 +80,20 @@ object Tests extends Suite(t"Monotonous tests"):
       import alphabets.base64.standard
       t"AAECA4OCgYD8/f7/".deserialize[Base64].to(List)
     .assert(_ == numberList)
+
+    test(t"Tolerant BASE32"):
+      import alphabets.base32.lowerCase
+      t"AAAQEA4DQKAYB7H57376====".deserialize[Base32].to(List)
+    .assert(_ == numberList)
+
+    test(t"Intolerant BASE32"):
+      capture[SerializationError]:
+        import alphabets.base32.strictLowerCase
+        t"AAAQEA4DQKAYB7H57376====".deserialize[Base32].to(List)
+    .assert(_ == SerializationError(0, 'A'))
+
+    test(t"Bad character offset"):
+      capture[SerializationError]:
+        import alphabets.base32.lowerCase
+        t"AAAQEA4?DQKAYB7H57376====".deserialize[Base32].to(List)
+    .assert(_ == SerializationError(7, '?'))

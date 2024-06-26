@@ -19,5 +19,5 @@ package monotonous
 import anticipation.*
 import fulminate.*
 
-case class SerializationError(detail: Text)
-extends Error(msg"could not decode the encrypted data: $detail")
+case class SerializationError(position: Int, char: Char)
+extends Error(msg"""the character $char at $position was not valid""")

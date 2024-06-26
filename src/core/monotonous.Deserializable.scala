@@ -31,20 +31,20 @@ trait Deserializable:
   def deserialize(value: Text): Bytes
 
 object Deserializable:
-
   def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
       (using Errant[SerializationError])
           : Deserializable in BaseType =
     new:
-      type In = BaseType
       def deserialize(text: Text): Bytes =
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
         val length = text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*base/8
+
         IArray.create[Byte](length): array =>
           def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index: Int = 0): Unit =
             if count < length then
-              val value: Int = alphabet.invert(text.s.charAt(index))
+              val value: Int = alphabet.invert(index, text.s.charAt(index))
               val next: Int = (buffer << base) | value
+
               if bits + base >= 8 then
                 array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
                 recur(next, bits + base - 8, count + 1, index + 1)
