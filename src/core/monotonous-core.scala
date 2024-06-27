@@ -26,7 +26,7 @@ package alphabets:
   package quaternary:
     given Alphabet[Quaternary] as standard = Alphabet(t"0123", false)
     given Alphabet[Quaternary] as dnaNucleotide = Alphabet(t"ATCG", false)
-  
+
   package octal:
     given Alphabet[Octal] as standard = Alphabet(t"01234567=", false)
 
@@ -111,6 +111,11 @@ extension (value: Text)
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
           : Bytes =
     deserializable.deserialize(value)
+
+extension (stream: LazyList[Text])
+  def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
+          : LazyList[Bytes] =
+    deserializable.deserialize(stream)
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
   def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =

@@ -24,32 +24,62 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import hypotenuse.*
 import vacuous.*
 
 trait Deserializable:
   type In <: Serialization
-  def deserialize(value: Text): Bytes
+  protected val atomicity: Int = 1
+
+  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Bytes
+  def deserialize(value: Text): Bytes = deserialize(t"", value, 0, true)
+
+  def deserialize(stream: LazyList[Text]): LazyList[Bytes] =
+    def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Bytes] = stream match
+      case head #:: tail =>
+        println(s"   carry = $carry")
+        val carry2 = (carry + head.length)%atomicity
+        deserialize(previous, head, -carry, tail.isEmpty) #:: recur(tail, head, carry2)
+
+      case _ =>
+        println(s"   carry = $carry")
+        if carry > 0 then LazyList(deserialize(previous, t"", -carry, true)) else LazyList()
+
+    recur(stream, t"", 0)
 
 object Deserializable:
   def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
           : Deserializable in BaseType raises SerializationError =
     new:
-      def deserialize(text: Text): Bytes =
+      override protected val atomicity = 8.lcm(base)/base
+
+      def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
+        println(s"deserialize(${previous.length}, ${text.length}, $index0, $last")
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
-        val length = text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*base/8
+
+        val length =
+          if last then text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*base/8
+          else ((text.length - index0)/atomicity)*atomicity*base/8
+
+        println(s"   length = $length")
 
         IArray.create[Byte](length): array =>
-          def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index: Int = 0): Unit =
+          var source = if index0 < 0 then previous else text
+
+          def recur(buffer: Int = 0, bits: Int = 0, count: Int = 0, index0: Int = 0): Unit =
+            val index = if index0 >= 0 then index0 else index0 + source.length
+            if index == 0 then source = text
+
             if count < length then
-              val value: Int = alphabet.invert(index, text.s.charAt(index))
+              val value: Int = alphabet.invert(index, source.s.charAt(index))
               val next: Int = (buffer << base) | value
 
               if bits + base >= 8 then
                 array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
-                recur(next, bits + base - 8, count + 1, index + 1)
-              else recur(next, bits + base, count, index + 1)
+                recur(next, bits + base - 8, count + 1, index0 + 1)
+              else recur(next, bits + base, count, index0 + 1)
 
-          recur()
+          recur(index0 = index0)
 
   given (using Alphabet[Base64], Errant[SerializationError]) => Deserializable in Base64 = base(6)
   given (using Alphabet[Base32], Errant[SerializationError]) => Deserializable in Base32 = base(5)

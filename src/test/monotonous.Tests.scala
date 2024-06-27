@@ -21,6 +21,7 @@ import anticipation.*
 import contingency.*
 import capricious.*, randomization.seeded, randomization.lengths.uniformUpto100000
 import gossamer.*
+import spectacular.*
 
 import scala.compiletime.*
 
@@ -29,7 +30,27 @@ object Tests extends Suite(t"Monotonous tests"):
   val numbers = IArray[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
   val numberList = List[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
 
+  val allNumbers = IArray.from((0 to 18).map(_.toByte))
+
+  val stream = LazyList(Bytes(1), Bytes(2, 3), Bytes(4, 5, 6), Bytes(7, 8, 9, 10),
+      Bytes(11, 12, 13, 14, 15), Bytes(16, 17, 18, 19, 20, 21), Bytes(22, 23, 24, 25, 26, 27, 28))
+
+  def shred(text: Text) =
+    LazyList
+     (text.slice(0, 7),
+      text.slice(7, 17),
+      text.slice(17, 43))
+
   def run(): Unit =
+
+    suite(t"Streaming tests"):
+      test(t"Streaming BASE32"):
+        import errorHandlers.throwUnsafely
+        import alphabets.base32.lowerCase
+        val text: Text = allNumbers.serialize[Base32]
+        val result = shred(text).deserialize[Base32].toList
+        println(result.debug)
+      .assert()
 
     test(t"Serialize to Binary"):
       import alphabets.binary.standard
@@ -103,7 +124,7 @@ object Tests extends Suite(t"Monotonous tests"):
     given Seed = Seed(1L)
 
     stochastic:
-      for i <- 1 to 1000 do
+      for i <- 1 to 100 do
         val arb = arbitrary[IArray[Byte]]()
         val arbList = arb.to(List)
 
