@@ -17,7 +17,6 @@
 package monotonous
 
 import anticipation.*
-import gossamer.*
 import rudiments.*
 
 object Serializable:
