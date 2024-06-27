@@ -25,18 +25,16 @@ import turbulence.*
 import contingency.*
 import gossamer.{at as _, slice as _, *}
 import nettlesome.*
-import gastronomy.*
-import eucalyptus.*
+import monotonous.*, alphabets.base64.standard
 import gesticulate.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
 import spectacular.*, booleanStyles.trueFalse
-import hieroglyph.*
 
 import java.net.InetSocketAddress
 import java.text as jt
-import com.sun.net.httpserver.{HttpServer as JavaHttpServer, *}
+import com.sun.net.httpserver as csnh
 
 case class MissingParamError(key: Text) extends Error(msg"the parameter $key was not sent in the request")
 
@@ -46,69 +44,74 @@ trait Responder:
 
 case class Content(media: MediaType, stream: LazyList[Bytes])
 
-trait FallbackHandler:
-  given [ResponseType: Showable](using encoder: CharEncoder): SimpleHandler[ResponseType] =
-    SimpleHandler(media"text/plain"(charset = encoder.encoding.name), value =>
-        HttpBody.Chunked(LazyList(value.show.bytes)))
+object Servable:
 
-object Handler extends FallbackHandler:
+  trait Simple[ResponseType](val mediaType: MediaType, val stream: ResponseType => HttpBody)
+  extends Servable:
+    type Self = ResponseType
+    final def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+      responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
+      headers.each(responder.addHeader)
+      responder.sendBody(status, stream(content))
 
-  given content: Handler[Content] with
+  def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => HttpBody)
+          : ResponseType is Servable =
+    new Servable:
+      type Self = ResponseType
+
+      def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+        responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
+        headers.each(responder.addHeader)
+        responder.sendBody(status, lambda(content))
+
+  given Content is Servable as content:
     def process(content: Content, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.ContentType.header, content.media.show)
       headers.each(responder.addHeader)
       responder.sendBody(200, HttpBody.Chunked(content.stream))
 
 
-  given [ResponseType: GenericHttpResponseStream](using mediaType: Errant[MediaTypeError])
-          => SimpleHandler[ResponseType] as bytes =
+  given [ResponseType: GenericHttpResponseStream](using Errant[MediaTypeError])
+          => ResponseType is Servable as bytes =
+    Servable(Media.parse(ResponseType.mediaType.show)): value =>
+      HttpBody.Chunked(ResponseType.content(value).map(identity))
 
-    SimpleHandler(Media.parse(ResponseType.mediaType.show),
-        value => HttpBody.Chunked(ResponseType.content(value).map(identity)))
-
-  given Handler[Redirect] with
+  given Redirect is Servable:
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
       headers.each(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
-  given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[NotFound[ResponseType]] with
+  given [ResponseType: Servable.Simple] => NotFound[ResponseType] is Servable:
     def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
 
-      responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
+      responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
       headers.each(responder.addHeader)
-      responder.sendBody(404, handler.stream(notFound.content))
+      responder.sendBody(404, ResponseType.stream(notFound.content))
 
-  given [ResponseType](using handler: SimpleHandler[ResponseType]): Handler[ServerError[ResponseType]] with
+  given [ResponseType: Servable.Simple] => ServerError[ResponseType] is Servable:
     def process
         (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
-      responder.addHeader(ResponseHeader.ContentType.header, handler.mediaType.show)
+      responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
       headers.each(responder.addHeader)
-      responder.sendBody(500, handler.stream(notFound.content))
+      responder.sendBody(500, ResponseType.stream(notFound.content))
 
-  given SimpleHandler[Bytes](media"application/octet-stream", HttpBody.Data(_))
+  given Bytes is Servable = Servable(media"application/octet-stream")(HttpBody.Data(_))
 
 object Redirect:
-  def apply[T: Locatable](location: T): Redirect =
-    new Redirect(summon[Locatable[T]].location(location))
+  def apply[LocationType: Locatable](location: LocationType): Redirect =
+    new Redirect(LocationType.location(location))
 
 case class Redirect(location: Url["http" | "https"])
 
-trait Handler[ResponseType]:
-  def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit
+trait Servable:
+  type Self
+  def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
-case class SimpleHandler[ResponseType](mediaType: MediaType, stream: ResponseType => HttpBody)
-extends Handler[ResponseType]:
-
-  def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
-    responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
-    headers.each(responder.addHeader)
-    responder.sendBody(status, stream(content))
-
-case class NotFound[ContentType: SimpleHandler](content: ContentType)
-case class ServerError[ContentType: SimpleHandler](content: ContentType)
+case class NotFound[ContentType: Servable](content: ContentType)
+case class ServerError[ContentType: Servable](content: ContentType)
 
 object Cookie:
   given ("set-cookie" is GenericHttpRequestParam[Cookie]) as setCookie = _.serialize
@@ -136,17 +139,16 @@ case class Cookie
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-case class Response[ContentType]
+case class Response[ContentType: Servable]
     (content: ContentType,
      status: HttpStatus = HttpStatus.Ok,
      headers: Map[ResponseHeader[?], Text] = Map(),
-     cookies: List[Cookie] = Nil)
-    (using val handler: Handler[ContentType]):
+     cookies: List[Cookie] = Nil):
 
   def respond(responder: Responder): Unit =
     val cookieHeaders: List[(ResponseHeader[?], Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
 
-    handler.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
+    ContentType.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
 object Request:
   given Request is Showable = request =>
@@ -220,17 +222,17 @@ case class Request
   lazy val contentType: Optional[MediaType] =
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
-trait RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor, Codicil): HttpService
+trait RequestServable:
+  def listen(handle: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs Text
 
 extension (value: Http.type)
-  def listen(handler: (request: Request) ?=> Response[?])(using RequestHandler, Log[Text], Monitor, Codicil): HttpService =
-    summon[RequestHandler].listen(handler)
+  def listen(handle: (request: Request) ?=> Response[?])(using RequestServable, Monitor, Codicil): HttpService logs Text =
+    summon[RequestServable].listen(handle)
 
 inline def request(using inline request: Request): Request = request
 
 inline def param(using Request)(key: Text): Text raises MissingParamError =
-  summon[Request].params.get(key).getOrElse:
+  request.params.get(key).getOrElse:
     abort(MissingParamError(key))
 
 def header(using Request)(header: RequestHeader[?]): Optional[List[Text]] =
@@ -260,14 +262,14 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
-case class HttpServer(port: Int) extends RequestHandler:
-  def listen(handler: (request: Request) ?=> Response[?])(using Log[Text], Monitor, Codicil): HttpService =
-    def handle(exchange: HttpExchange | Null) =
+case class HttpServer(port: Int) extends RequestServable:
+  def listen(handler: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs Text =
+    def handle(exchange: csnh.HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
 
     def startServer(): com.sun.net.httpserver.HttpServer =
-      val httpServer = JavaHttpServer.create(InetSocketAddress("localhost", port), 0).nn
+      val httpServer = csnh.HttpServer.create(InetSocketAddress("localhost", port), 0).nn
       val context = httpServer.createContext("/").nn
       context.setHandler(handle(_))
       httpServer.setExecutor(null)
@@ -284,7 +286,7 @@ case class HttpServer(port: Int) extends RequestHandler:
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
 
-  private def streamBody(exchange: HttpExchange): HttpBody.Chunked =
+  private def streamBody(exchange: csnh.HttpExchange): HttpBody.Chunked =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
 
@@ -294,7 +296,7 @@ case class HttpServer(port: Int) extends RequestHandler:
 
     HttpBody.Chunked(recur())
 
-  private def makeRequest(exchange: HttpExchange)(using Log[Text]): Request =
+  private def makeRequest(exchange: csnh.HttpExchange): Request logs Text =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
 
@@ -323,7 +325,7 @@ case class HttpServer(port: Int) extends RequestHandler:
 
     request
 
-  class SimpleResponder(exchange: HttpExchange) extends Responder:
+  class SimpleResponder(exchange: csnh.HttpExchange) extends Responder:
     def addHeader(key: Text, value: Text): Unit = exchange.getResponseHeaders.nn.add(key.s, value.s)
 
     def sendBody(status: Int, body: HttpBody): Unit =
@@ -350,13 +352,14 @@ case class HttpServer(port: Int) extends RequestHandler:
 
 case class Ttf(content: Bytes)
 object Ttf:
-  given SimpleHandler[Ttf] = SimpleHandler(media"application/octet-stream", ttf => HttpBody.Data(ttf.content))
+  given Ttf is Servable = Servable(media"application/octet-stream"): ttf =>
+    HttpBody.Data(ttf.content)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Response[?])
              (using Request): Response[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
-      safely(credentials.tt.decode[Base64].utf8.cut(t":").to(List)) match
+      safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
         case List(username: Text, password: Text) if validate(username, password) =>
           response
 
