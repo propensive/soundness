@@ -31,6 +31,8 @@ import language.dynamics
 //import language.experimental.captureChecking
 
 object Media:
+  given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
+
   object Group:
     given Debug[Group] = _.name
     given Group is Showable = _.name.lower
@@ -157,6 +159,10 @@ object Media:
 
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
+
+trait Media:
+  type Self
+  extension (value: Self) def mediaType: MediaType
 
 object MediaTypeError:
   enum Nature:
