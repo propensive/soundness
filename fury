@@ -18,11 +18,6 @@ project probably
     sources   src/core
     include   gossamer/core chiaroscuro/core ambience/core probably/coverage turbulence/core eucalyptus/core
 
-  module bench
-    compiler  scala
-    sources   src/bench
-    include   probably/core diuretic/core
-
   module cli
     compiler  scala
     sources   src/cli
@@ -36,5 +31,5 @@ project probably
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli probably/core probably/bench probably/coverage
+    include   probably/cli probably/core probably/coverage
     main      probably.Tests
