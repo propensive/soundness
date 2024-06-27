@@ -25,7 +25,6 @@ import rudiments.*
 import symbolism.*
 
 object Appendable:
-
   given (using Stdio) => SimpleAppendable[Out.type, Bytes] as stdoutBytes = (_, bytes) =>
     Out.write(bytes)
 
