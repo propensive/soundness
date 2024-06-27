@@ -438,6 +438,15 @@ object Hypotenuse:
     @targetName("bitsS64")
     inline def bits: B64 = s64
 
+    @targetName("gcdS64")
+    def gcd(right: S64): S64 =
+      @tailrec
+      def recur(left: S64, right: S64): S64 =
+        if right == 0 then left else recur(right, left%right)
+
+      recur(s64, right)
+
+
   extension (s32: S32)
     @targetName("plusS32")
     inline infix def + (right: into S32)(using overflow: CheckOverflow): overflow.Wrap[S32] =
@@ -482,6 +491,14 @@ object Hypotenuse:
 
     @targetName("bitsS32")
     inline def bits: B32 = s32
+
+    @targetName("gcdS32")
+    def gcd(right: S32): S32 =
+      @tailrec
+      def recur(left: S32, right: S32): S32 =
+        if right == 0 then left else recur(right, left%right)
+
+      recur(s32, right)
 
   extension (s16: S16)
     @targetName("plusS16")
@@ -530,6 +547,14 @@ object Hypotenuse:
 
     @targetName("bitsS16")
     inline def bits: B16 = s16
+
+    @targetName("gcdS16")
+    def gcd(right: S16): S16 =
+      @tailrec
+      def recur(left: S16, right: S16): S16 =
+        if right == 0 then left else recur(right, (left%right).toShort)
+
+      recur(s16, right)
 
   extension (s8: S8)
     @targetName("plusS8")
@@ -582,6 +607,14 @@ object Hypotenuse:
     @targetName("bitsS8")
     inline def bits: B8 = s8
 
+
+    @targetName("gcdS8")
+    def gcd(right: S8): S8 =
+      @tailrec
+      def recur(left: S8, right: S8): S8 =
+        if right == 0 then left else recur(right, (left%right).toByte)
+
+      recur(s8, right)
 
   extension (bitmap: B8)
     @targetName("rotateLeftB8")
@@ -1056,6 +1089,12 @@ object Hypotenuse:
     @targetName("modU64")
     inline infix def % (right: into U64): U64 = JLong.remainderUnsigned(u64, right)
 
+    @targetName("gcdU64")
+    def gcd(right: U64): U64 =
+      @tailrec
+      def recur(left: U64, right: U64): U64 = if right == 0 then left else recur(right, left%right)
+      recur(u64, right)
+
   extension (u32: U32)
     @targetName("plusU32")
     inline infix def + (right: into U32)(using overflow: CheckOverflow): overflow.Wrap[U32] =
@@ -1100,6 +1139,12 @@ object Hypotenuse:
 
     @targetName("u32ToU64")
     inline def u64: U64 = JInt.toUnsignedLong(u32)
+
+    @targetName("gcdU32")
+    def gcd(right: U32): U32 =
+      @tailrec
+      def recur(left: U32, right: U32): U32 = if right == 0 then left else recur(right, left%right)
+      recur(u32, right)
 
   extension (u16: U16)
     @targetName("plusU16")
@@ -1155,6 +1200,14 @@ object Hypotenuse:
 
     @targetName("u16ToU64")
     inline def u64: U64 = JShort.toUnsignedLong(u16)
+
+    @targetName("gcdU16")
+    def gcd(right: U16): U16 =
+      @tailrec
+      def recur(left: U16, right: U16): U16 =
+        if right == 0 then left else recur(right, (left%right).toShort)
+
+      recur(u16, right)
 
   extension (u8: U8)
     @targetName("plusU8")
@@ -1221,3 +1274,11 @@ object Hypotenuse:
 
     @targetName("u8ToU64")
     inline def u64: U64 = JByte.toUnsignedLong(u8)
+
+    @targetName("gcdU8")
+    def gcd(right: U8): U8 =
+      @tailrec
+      def recur(left: U8, right: U8): U8 =
+        if right == 0 then left else recur(right, (left%right).toByte)
+
+      recur(u8, right)

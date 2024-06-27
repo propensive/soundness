@@ -178,6 +178,9 @@ extension (byte: Byte)
   @targetName("floorDivByte")
   inline infix def \ (right: Int): Int = math.floorDiv(byte, right)
 
+  @tailrec @targetName("gcdByte")
+  def gcd(right: Byte): Byte = if right == 0 then byte else right.gcd((byte%right).toByte)
+
 extension (short: Short)
   @targetName("bitsShort")
   inline def bits: B16 = short.asInstanceOf[B16]
@@ -208,6 +211,9 @@ extension (short: Short)
 
   @targetName("floorDivShort")
   inline infix def \ (right: Short): Short = math.floorDiv(short, right).toShort
+
+  @tailrec @targetName("gcdShort")
+  def gcd(right: Short): Short = if right == 0 then short else right.gcd((short%right).toShort)
 
 extension (int: Int)
   @targetName("bitsInt")
@@ -240,6 +246,9 @@ extension (int: Int)
   @targetName("floorDivInt")
   inline infix def \ (right: Int): Int = math.floorDiv(int, right)
 
+  @tailrec @targetName("gcdInt")
+  def gcd(right: Int): Int = if right == 0 then int else right.gcd(int%right)
+
 extension (long: Long)
   @targetName("absLong")
   inline def abs: Long = math.abs(long)
@@ -267,6 +276,9 @@ extension (long: Long)
 
   @targetName("powerLong")
   inline infix def ** (exponent: Double): Double = math.pow(long.toDouble, exponent)
+
+  @tailrec @targetName("gcdLong")
+  def gcd(right: Long): Long = if right == 0 then long else right.gcd(long%right)
 
 extension (doubleObject: Double.type)
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)
