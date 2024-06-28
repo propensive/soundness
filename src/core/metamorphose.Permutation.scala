@@ -20,6 +20,8 @@ import scala.collection.mutable.BitSet
 import scala.annotation.*
 
 import contingency.*
+import rudiments.*
+import anticipation.*
 
 object Permutation:
 
@@ -49,6 +51,8 @@ object Permutation:
 case class Permutation(factoradic: Factoradic):
   lazy val lehmer: List[Int] = factoradic.expand
   lazy val expansion: List[Int] = unsafely(apply[Int](List.range(0, lehmer.length)))
+
+  def bytes: Bytes = unsafely(factoradic.number.toByteArray.immutable)
 
   def apply(n: Int): Int = expansion(n)
 
