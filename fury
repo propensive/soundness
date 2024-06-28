@@ -16,4 +16,3 @@ project metamorphose
     sources   src/test
     include   probably/cli metamorphose/core
     main      metamorphose.Tests
-    coverage  metamorphose/core
