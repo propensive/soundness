@@ -4,7 +4,7 @@
 
 # Metamorphose
 
-____
+__Efficient permutation representations__
 
 
 
