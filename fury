@@ -9,7 +9,7 @@ project metamorphose
   module core
     compiler  scala
     sources   src/core
-    include   fulminate/core contingency/core
+    include   contingency/core
 
   module test
     compiler  scala
