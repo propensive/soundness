@@ -1,0 +1,19 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target metamorphose/test
+
+repo propensive/probably
+
+project metamorphose
+  module core
+    compiler  scala
+    sources   src/core
+    include   fulminate/core contingency/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli metamorphose/core
+    main      metamorphose.Tests
+    coverage  metamorphose/core
