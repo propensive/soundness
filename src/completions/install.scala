@@ -165,7 +165,7 @@ object TabCompletions:
           |""".s.stripMargin.tt
 
 object CliEvent:
-  given ExecEvent is Recordable into CliEvent = CliEvent.Exec(_)
+  given ExecEvent is Transcribable into CliEvent = CliEvent.Exec(_)
 
   given CliEvent is Communicable =
     case Exec(event)          => msg"exeution error: $event"
