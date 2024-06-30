@@ -31,7 +31,7 @@ package randomization:
 
   package text:
     given Text is Randomizable as bigListOfNaughtyStrings:
-      val resource = getClass.getResourceAsStream("/capricious/blns.txt")
+      val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
       val blns = IArray.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
       def from(random: Random) = blns(random.long().toInt.abs%blns.length)
