@@ -46,7 +46,7 @@ import scala.compiletime.*
 
 import language.experimental.pureFunctions
 
-given DaemonLogEvent is Transcribable into Message = _.communicate
+given Message transcribes DaemonLogEvent = _.communicate
 
 import java.net as jn
 import java.io as ji
