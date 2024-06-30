@@ -21,7 +21,7 @@ import language.experimental.into
 import symbolism.*
 
 object Loggable:
-  given [InputType: Loggable, OutputType: Recordable into InputType]
+  given [InputType: Loggable, OutputType: Transcribable into InputType]
       => OutputType is Loggable =
 
     (level, realm, timestamp, event) =>

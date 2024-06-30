@@ -16,7 +16,7 @@
 
 package anticipation
 
-trait Recordable:
+trait Transcribable:
   type Self
   type Result
   def skip(value: Self): Boolean = false
