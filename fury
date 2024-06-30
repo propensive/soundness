@@ -7,7 +7,7 @@ target monotonous/test
 project monotonous
   module core
     sources src/core
-    include gossamer/core
+    include gossamer/core hypotenuse/core
 
   module test
     sources   src/test

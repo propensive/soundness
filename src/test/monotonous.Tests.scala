@@ -28,7 +28,7 @@ import scala.compiletime.*
 object Tests extends Suite(t"Monotonous tests"):
 
   val numbers = IArray[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
-  val numberList = List[Byte](0, 1, 2, 3, -125, -126, -127, -128, -4, -3, -2, -1)
+  val numberList = numbers.to(List)
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
