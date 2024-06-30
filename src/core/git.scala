@@ -514,7 +514,7 @@ case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
     t"$userText@$hostname$path"
 
 object GitEvent:
-    given ExecEvent is Recordable into GitEvent = GitEvent.Exec(_)
+    given ExecEvent is Transcribable into GitEvent = GitEvent.Exec(_)
 
 enum GitEvent:
   case Exec(event: ExecEvent)
