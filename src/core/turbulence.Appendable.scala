@@ -24,7 +24,7 @@ import hieroglyph.*
 import rudiments.*
 import symbolism.*
 
-object Appendable:
+object Appendable extends FallbackAppendable:
   given (using Stdio) => SimpleAppendable[Out.type, Bytes] as stdoutBytes = (_, bytes) =>
     Out.write(bytes)
 
@@ -54,6 +54,7 @@ object Appendable:
 
       outputStream.close()
 
+sealed trait FallbackAppendable:
   given [TargetType: Appendable by Text](using decoder: CharDecoder)
       => TargetType is Appendable by Bytes as decodingAdapter =
     (target, stream) => TargetType.append(target, decoder.decode(stream))

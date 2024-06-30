@@ -35,6 +35,11 @@ object Aggregable:
   given (using decoder: CharDecoder) => Text is Aggregable by Bytes as bytesText =
     bytesBytes.map(decoder.decode)
 
+  given Text is Aggregable by Text as textText = source =>
+    val buffer = new StringBuffer()
+    source.each { chunk => buffer.append(chunk.s) }
+    buffer.toString.tt
+
   given [ElementType, ElementType2]
       (using aggregable: ElementType2 is Aggregable by ElementType)
       => LazyList[ElementType2] is Aggregable by ElementType as lazyList =
