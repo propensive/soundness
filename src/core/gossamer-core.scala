@@ -233,7 +233,9 @@ extension [TextType: Textual](text: TextType)
 
 extension (text: into Text)
   inline def rsub(from: into Text, to: into Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
-  inline def sub(from: into Text, to: into Text): Text = text.s.replaceAll(Pattern.quote(from.s), to.s).nn.tt
+
+  inline def sub(from: into Text, to: into Text): Text =
+    text.s.replaceAll(Pattern.quote(from.s).nn, to.s).nn.tt
 
   def flatMap(lambda: Char => Text): Text =
     String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))).tt
