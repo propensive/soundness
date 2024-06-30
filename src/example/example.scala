@@ -34,7 +34,7 @@ given Realm = realm"example"
   given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.silent)
   val message1 = msg"yes!"
   val message2 = msg"world $message1"
-  given ExecEvent is Transcribable into Message = Log.skip
+  given Message transcribes ExecEvent = Log.skip
 
   Log.fine(msg"hello")
   Log.info(msg"world")
