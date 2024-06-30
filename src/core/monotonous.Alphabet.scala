@@ -18,7 +18,7 @@ package monotonous
 
 import anticipation.*
 import contingency.*
-import gossamer.{at as _, *}
+import gossamer.*
 import rudiments.*
 
 case class Alphabet[EncodingType <: Serialization]
