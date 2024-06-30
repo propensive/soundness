@@ -131,8 +131,8 @@ case class Ttf(data: Bytes):
       val start = 12 + n*16
       val tableTag = String(data.mutable(using Unsafe), start, 4, "ASCII").tt
       val checksum = B32(data, start + 4)
-      val offset = B32(data, start + 8).i32.int
-      val length = B32(data, start + 12).i32.int
+      val offset = B32(data, start + 8).s32.int
+      val length = B32(data, start + 12).s32.int
 
       tableTag match
         case OtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
@@ -142,7 +142,7 @@ case class Ttf(data: Bytes):
 
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>
-      data.unpack[HeadTable](ref.offset).tap: table =>
+      data.unpackFrom[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits
         then raise(FontError(FontError.Reason.MagicNumber))(())
 
@@ -155,7 +155,7 @@ case class Ttf(data: Bytes):
 
   def hhea: HheaTable raises FontError =
     tables.at(TtfTag.Hhea).let: ref =>
-      data.unpack[HheaTable](ref.offset)
+      data.unpackFrom[HheaTable](ref.offset)
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
 
   def hmtx: HmtxTable raises FontError =
@@ -176,28 +176,28 @@ case class Ttf(data: Bytes):
   case class HheaTable
       (majorVersion:        U16,
        minorVersion:        U16,
-       ascender:            I16,
-       descender:           I16,
-       lineGap:             I16,
+       ascender:            S16,
+       descender:           S16,
+       lineGap:             S16,
        advanceWidthMax:     U16,
-       minLeftSideBearing:  I16,
-       minRightSideBearing: I16,
-       xMaxExtent:          I16,
-       caretSlopeRise:      I16,
-       caretSlopeRun:       I16,
-       caretOffset:         I16,
+       minLeftSideBearing:  S16,
+       minRightSideBearing: S16,
+       xMaxExtent:          S16,
+       caretSlopeRise:      S16,
+       caretSlopeRun:       S16,
+       caretOffset:         S16,
        reserved0:           U16,
        reserved1:           U16,
        reserved2:           U16,
        reserved4:           U16,
-       metricDataFormat:    I16,
+       metricDataFormat:    S16,
        numberOfHMetrics:    U16)
 
   case class HmtxTable(offset: Int, count: Int):
     lazy val metrics: IArray[HMetrics] =
       IArray.from:
         (0 until count).map: index =>
-          HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).i16.int)
+          HMetrics(B16(data, offset + index*4).u16.int, B16(data, offset + index*4 + 2).s16.int)
 
     case class HMetrics(advanceWidth: Int, leftSideBearing: Int)
 
@@ -231,7 +231,7 @@ case class Ttf(data: Bytes):
                 Segment
                  (B16(data, startCodesStart + n*2).u16.int.toChar,
                   B16(data, endCodesStart + n*2).u16.int.toChar,
-                  B16(data, idDeltaStart).i16.int,
+                  B16(data, idDeltaStart).s16.int,
                   B16(data, idRangeOffsetsStart).u16.int)
 
               Format4
@@ -244,9 +244,9 @@ case class Ttf(data: Bytes):
                 IArray.from(segments))
 
             case 12 =>
-              val length = B32(data, offset + 2).i32.int
-              val language = B32(data, offset + 6).i32.int
-              val nGroups = B32(data, offset + 10).i32.int
+              val length = B32(data, offset + 2).s32.int
+              val language = B32(data, offset + 6).s32.int
+              val nGroups = B32(data, offset + 10).s32.int
               Format12(length, language, nGroups)
 
             case other =>
@@ -289,6 +289,6 @@ case class Ttf(data: Bytes):
     lazy val glyphEncodings: Seq[GlyphEncoding] = (0 until numTables).map: n =>
       val platformId = B16(data, offset + 4 + n*8).u16.int
       val encodingId = B16(data, offset + 6 + n*8).u16.int
-      val subOffset = B32(data, offset + 8 + n*8).i32.int
+      val subOffset = B32(data, offset + 8 + n*8).s32.int
 
       GlyphEncoding(platformId, encodingId, offset + subOffset)
