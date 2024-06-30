@@ -19,6 +19,8 @@ package parasite
 import language.experimental.pureFunctions
 import language.experimental.into
 
+import scala.compiletime.*
+
 import anticipation.*
 import contingency.*
 import digression.*
@@ -26,15 +28,17 @@ import rudiments.*
 import vacuous.*
 
 package threadModels:
-  given platform: ThreadModel = () => PlatformSupervisor
-  given virtual: ThreadModel = () => VirtualSupervisor
+  given ThreadModel as platform = () => PlatformSupervisor
+  given ThreadModel as virtual = () => VirtualSupervisor
 
 package asyncOptions:
-  given waitForOrphans: Codicil = _.delegate(_.attend())
-  given cancelOrphans: Codicil = _.delegate(_.cancel())
+  given Codicil as waitForOrphans = _.delegate(_.attend())
+  given Codicil as cancelOrphans = _.delegate(_.cancel())
 
-  given failIfOrphansExist(using Errant[ConcurrencyError]): Codicil = _.delegate: child =>
+  given (using Errant[ConcurrencyError]) => Codicil as failIfOrphansExist = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
+
+transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 
 def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))
@@ -51,18 +55,18 @@ def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=>
   Task(evaluate(using _), daemon = false, name = name)
 
 def intercept(lambda: (trace: Trace) ?=> PartialFunction[Throwable, Transgression])
-    (using monitor: Monitor)
+    (using Monitor)
         : Unit =
 
   monitor.interceptor { trace => lambda(using trace) }
 
-def relent[ResultType]()(using monitor: Subordinate): Unit = monitor.relent()
-def cancel[ResultType]()(using monitor: Monitor): Unit = monitor.cancel()
+def relent[ResultType]()(using Subordinate): Unit = monitor.relent()
+def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 
-def sleep[DurationType: GenericDuration](duration: DurationType)(using monitor: Monitor): Unit =
+def sleep[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
   monitor.sleep(duration.milliseconds)
 
-def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using monitor: Monitor): Unit =
+def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
