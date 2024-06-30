@@ -18,7 +18,6 @@ package anthology
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import digression.*
 import ambience.*
 import parasite.*
