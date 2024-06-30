@@ -21,6 +21,12 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
+object Errant:
+  given [ErrorType <: Error, ErrorType2 <: Error]
+      (using mitigator: Mitigator[ErrorType2, ErrorType], errant: Errant[ErrorType])
+      => Errant[ErrorType2] =
+    errant.contramap(mitigator.mitigate(_))
+
 @capability
 trait Errant[-ErrorType <: Error]:
   private inline def errant: this.type = this
@@ -28,7 +34,7 @@ trait Errant[-ErrorType <: Error]:
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
-  def contramap[ErrorType2 <: Error](lambda: ErrorType2 -> ErrorType): Errant[ErrorType2] =
+  def contramap[ErrorType2 <: Error](lambda: ErrorType2 => ErrorType): Errant[ErrorType2] =
     new Errant[ErrorType2]:
       def record(error: ErrorType2): Unit = errant.record(lambda(error))
       def abort(error: ErrorType2): Nothing = errant.abort(lambda(error))

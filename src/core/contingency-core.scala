@@ -126,3 +126,5 @@ package errorHandlers:
   given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
           : ThrowStrategy[ErrorType, SuccessType] =
     ThrowStrategy()
+
+infix type mitigates [ErrorType <: Error, ErrorType2 <: Error] = Mitigator[ErrorType2, ErrorType]
