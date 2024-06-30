@@ -54,8 +54,10 @@ object Probably:
         val debug: Expr[Debug[testType]] =
           Expr.summon[Debug[testType]].getOrElse('{ _.toString.tt })
 
-        val contrast: Expr[testType is Contrastable] = '{Contrastable.general[testType]}
-        //val contrast = Expr.summon[testType is Contrastable].getOrElse('{Contrastable.general[testType]})
+        //val contrast: Expr[testType is Contrastable] = '{Contrastable.general[testType]}
+
+        val contrast = Expr.summon[testType is Contrastable].getOrElse('{Contrastable.general[testType]})
+
         '{
           assertion[testType, TestType, ReportType, ResultType]
               ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $debug)
