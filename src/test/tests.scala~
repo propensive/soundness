@@ -37,13 +37,11 @@ object Tests extends Suite(t"Nettlesome tests"):
           remoteCall()
       .assert()
 
-      /*test(t"Check remote call is not callable without `Internet`"):
-        val result = demilitarize:
+      test(t"Check remote call is not callable without `Internet`"):
+        demilitarize:
           remoteCall()
         .map(_.id)
-        println(result)
-        result
-      .assert(_ == List(CompileErrorId.MissingImplicitArgument))*/
+      .assert(_ == List(ErrorId.MissingImplicitArgumentID))
 
 
     suite(t"IPv4 tests"):

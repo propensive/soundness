@@ -28,7 +28,8 @@ import scala.quoted.*
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
 
-  def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Url[Label]] =
+  def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
+          : Expr[Url[Label]] =
     import quotes.reflect.*
 
     val constant = context.value.get.parts.head.split(":").nn.head.nn

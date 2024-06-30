@@ -66,9 +66,10 @@ object Nettlesome:
       def parse(text: Text)(using Errant[IpAddressError]): Ipv4 =
         val bytes = text.cut(t".")
         if bytes.length == 4 then
-          tend(bytes.map(Decoder.int.decode(_))).remedy:
-            case NumberError(text, _) => abort(IpAddressError(Ipv4ByteNotNumeric(text)))
-          .pipe: bytes =>
+          given IpAddressError mitigates NumberError =
+            case NumberError(text, _) => IpAddressError(Ipv4ByteNotNumeric(text))
+          
+          bytes.map(Decoder.int.decode(_)).pipe: bytes =>
             for byte <- bytes
             do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
 
