@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.{Loggable, Realm, Level, Transcribable, logs}
+export anticipation.{Loggable, Realm, Level, Transcribable, logs, transcribes}
