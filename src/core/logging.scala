@@ -43,7 +43,7 @@ package logFormats:
     case Level.Fail => t"[FAIL]"
 
   given Message is Inscribable in Text as standard = (event, level, realm, timestamp) =>
-    t"${dateFormat.format(timestamp)} $level ${realm.name.fit(10)} > $event\n"
+    t"${dateFormat.format(timestamp).nn} $level ${realm.name.fit(10)} > $event\n"
 
   given Message is Inscribable in Text as untimestamped = (event, level, realm, timestamp) =>
     t"$level ${realm.name.fit(10)} > $event\n"
