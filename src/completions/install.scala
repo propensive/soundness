@@ -17,7 +17,6 @@
 package exoskeleton
 
 import spectacular.*
-import symbolism.*
 import gossamer.{where as _, *}
 import anticipation.*, filesystemApi.galileiPath
 import rudiments.*, homeDirectories.default
