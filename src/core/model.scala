@@ -92,11 +92,11 @@ object CodlDoc:
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  inline given CodlDoc is Contrastable as contrast =
+  given CodlDoc is Contrastable as contrast =
     new Contrastable:
       type Self = CodlDoc
       def apply(left: CodlDoc, right: CodlDoc) =
-        inline if left == right then Semblance.Identical(left.debug) else
+        if left == right then Semblance.Identical(left.debug) else
           val comparison = IArray.from:
             (t"[schema]", left.schema.contrastWith(right.schema)) +:
             (t"[margin]", left.margin.contrastWith(right.margin)) +:

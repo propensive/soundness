@@ -71,11 +71,7 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
     new CodlEncoder[DerivationType]:
       def schema: CodlSchema =
         val elements = contexts:
-          [FieldType] => context =>
-
-            // FIXME: Move this outside of `contexts`
-            val label2 = mapping.at(label).or(label)
-            CodlSchema.Entry(label2, context.schema)
+          [FieldType] => context => CodlSchema.Entry(mapping.at(label).or(label), context.schema)
 
         Struct(elements.to(List), Arity.One)
 
@@ -83,9 +79,7 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
         IArray.from:
           fields(product):
             [FieldType] => field =>
-              val label2 = summonFrom:
-                case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
-                case _                                            => label
+              val label2 = mapping.at(label).or(label)
 
               context.encode(field).map: value =>
                 CodlNode(Data(label2, value, Layout.empty, context.schema))
