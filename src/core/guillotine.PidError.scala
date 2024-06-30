@@ -16,12 +16,8 @@
 
 package guillotine
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
+import rudiments.*
 
-import language.experimental.pureFunctions
-
-given Realm = realm"guillotine"
-
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+case class PidError(pid: Pid) extends Error(msg"the process with PID ${pid.value} is not running")

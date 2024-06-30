@@ -19,9 +19,5 @@ package guillotine
 import fulminate.*
 import anticipation.*
 
-import language.experimental.pureFunctions
-
-given Realm = realm"guillotine"
-
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
+extends Error(msg"execution of the command $command failed")

@@ -16,12 +16,15 @@
 
 package guillotine
 
-import fulminate.*
+import rudiments.*
 import anticipation.*
+import vacuous.*
 
-import language.experimental.pureFunctions
-
-given Realm = realm"guillotine"
-
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+trait ProcessRef:
+  def pid: Pid
+  def kill(): Unit logs ExecEvent
+  def abort(): Unit logs ExecEvent
+  def alive: Boolean
+  def attend(): Unit
+  def startTime[InstantType: SpecificInstant]: Optional[InstantType]
+  def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType]

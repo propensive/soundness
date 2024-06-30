@@ -16,12 +16,26 @@
 
 package guillotine
 
+import contextual.*
+import rudiments.*
 import fulminate.*
+import gossamer.*
+import spectacular.*
 import anticipation.*
+
+import scala.compiletime.*
 
 import language.experimental.pureFunctions
 
-given Realm = realm"guillotine"
+object ExecEvent:
+  given ExecEvent is Communicable =
+    case AbortProcess(pid)       => msg"The process with PID $pid was aborted"
+    case PipelineStart(commands) => msg"Started pipeline ${commands.map(_.show).join(t" ")}"
+    case KillProcess(pid)        => msg"Killed process with PID $pid"
+    case ProcessStart(command)   => msg"Starting process $command"
 
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+enum ExecEvent:
+  case ProcessStart(command: Command)
+  case AbortProcess(pid: Pid)
+  case PipelineStart(commands: Seq[Command])
+  case KillProcess(pid: Pid)

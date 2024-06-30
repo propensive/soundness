@@ -16,12 +16,19 @@
 
 package guillotine
 
-import fulminate.*
-import anticipation.*
+import rudiments.*
+
+import scala.quoted.*
 
 import language.experimental.pureFunctions
 
-given Realm = realm"guillotine"
+object Guillotine:
+  def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =
+    import quotes.reflect.*
 
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+    val execType = ConstantType(StringConstant(context.value.get.parts.head.split(" ").nn.head.nn))
+    val bounds = TypeBounds(execType, execType)
+
+    (Refinement(TypeRepr.of[Command], "Exec", bounds).asType: @unchecked) match
+      case '[type commandType <: Command; commandType] =>
+        '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}

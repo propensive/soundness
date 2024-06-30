@@ -16,12 +16,20 @@
 
 package guillotine
 
-import fulminate.*
+import spectacular.*
 import anticipation.*
 
 import language.experimental.pureFunctions
 
-given Realm = realm"guillotine"
+object Parameterizable:
+  given [PathType: GenericPath] => PathType is Parameterizable = _.pathText
 
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+  given Int is Parameterizable = _.show
+
+  given [ValueType](using encoder: Encoder[ValueType]) => ValueType is Parameterizable:
+    type Self = ValueType
+    def show(value: ValueType): Text = encoder.encode(value)
+
+trait Parameterizable:
+  type Self
+  def show(value: Self): Text

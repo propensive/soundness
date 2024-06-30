@@ -16,12 +16,10 @@
 
 package guillotine
 
-import fulminate.*
-import anticipation.*
+import rudiments.*
 
-import language.experimental.pureFunctions
+object Intelligible extends PosixCommands
 
-given Realm = realm"guillotine"
-
-extension (inline context: StringContext)
-  transparent inline def sh(inline parts: Any*): Any = ${Guillotine.sh('context, 'parts)}
+erased trait Intelligible:
+  type Self <: Label
+  type Result
