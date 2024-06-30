@@ -243,7 +243,6 @@ object Http:
           : HttpResponse logs HttpEvent =
 
     Log.info(HttpEvent.Send(method, url, headers))
-
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
@@ -391,3 +390,9 @@ enum HttpEvent:
   case Response(status: HttpStatus)
   case Request(preview: Text)
   case Send(method: HttpMethod, url: HttpUrl, headers: Seq[RequestHeader.Value])
+
+object HttpEvent:
+  given HttpEvent is Communicable =
+    case Response(status)           => msg"Received response with status $status"
+    case Request(preview)           => msg"Request [$preview]"
+    case Send(method, url, headers) => msg"Send $method request to $url"
