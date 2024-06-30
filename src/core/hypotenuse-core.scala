@@ -181,6 +181,9 @@ extension (byte: Byte)
   @tailrec @targetName("gcdByte")
   def gcd(right: Byte): Byte = if right == 0 then byte else right.gcd((byte%right).toByte)
 
+  @targetName("lcmByte")
+  def lcm(right: Byte): Byte = (byte*right/byte.gcd(right)).toByte
+
 extension (short: Short)
   @targetName("bitsShort")
   inline def bits: B16 = short.asInstanceOf[B16]
@@ -214,6 +217,9 @@ extension (short: Short)
 
   @tailrec @targetName("gcdShort")
   def gcd(right: Short): Short = if right == 0 then short else right.gcd((short%right).toShort)
+
+  @targetName("lcmShort")
+  def lcm(right: Short): Short = (short*right/short.gcd(right)).toShort
 
 extension (int: Int)
   @targetName("bitsInt")
@@ -249,6 +255,9 @@ extension (int: Int)
   @tailrec @targetName("gcdInt")
   def gcd(right: Int): Int = if right == 0 then int else right.gcd(int%right)
 
+  @targetName("lcmInt")
+  def lcm(right: Int): Int = int*right/int.gcd(right)
+
 extension (long: Long)
   @targetName("absLong")
   inline def abs: Long = math.abs(long)
@@ -279,6 +288,9 @@ extension (long: Long)
 
   @tailrec @targetName("gcdLong")
   def gcd(right: Long): Long = if right == 0 then long else right.gcd(long%right)
+
+  @targetName("lcmLong")
+  def lcm(right: Long): Long = long*right/long.gcd(right)
 
 extension (doubleObject: Double.type)
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)

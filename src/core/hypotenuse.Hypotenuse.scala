@@ -446,7 +446,6 @@ object Hypotenuse:
 
       recur(s64, right)
 
-
   extension (s32: S32)
     @targetName("plusS32")
     inline infix def + (right: into S32)(using overflow: CheckOverflow): overflow.Wrap[S32] =
