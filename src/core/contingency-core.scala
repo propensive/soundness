@@ -24,6 +24,7 @@ import scala.compiletime.*
 import fulminate.*
 import vacuous.*
 import rudiments.*
+import symbolism.*
 import anticipation.*
 
 given realm: Realm = realm"contingency"
@@ -127,4 +128,5 @@ package errorHandlers:
           : ThrowStrategy[ErrorType, SuccessType] =
     ThrowStrategy()
 
-infix type mitigates [ErrorType <: Error, ErrorType2 <: Error] = Mitigator[ErrorType2, ErrorType]
+infix type mitigates [ErrorType <: Error, ErrorType2 <: Error] =
+  ErrorType2 is Mitigable into ErrorType

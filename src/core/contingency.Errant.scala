@@ -18,14 +18,14 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import symbolism.*
 import fulminate.*
 import rudiments.*
 
 object Errant:
-  given [ErrorType <: Error, ErrorType2 <: Error]
-      (using mitigator: Mitigator[ErrorType2, ErrorType], errant: Errant[ErrorType])
+  given [ErrorType <: Error: Errant, ErrorType2 <: Error: Mitigable into ErrorType]
       => Errant[ErrorType2] =
-    errant.contramap(mitigator.mitigate(_))
+    ErrorType.contramap(ErrorType2.mitigate(_))
 
 @capability
 trait Errant[-ErrorType <: Error]:
