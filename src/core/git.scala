@@ -25,7 +25,6 @@ import guillotine.*
 import nettlesome.*
 import enigmatic.*
 import kaleidoscope.*
-import symbolism.*
 import rudiments.*
 import vacuous.*
 import serpentine.{append as _, *}, hierarchies.unixOrWindows
@@ -515,6 +514,8 @@ case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
 
 object GitEvent:
   given GitEvent transcribes ExecEvent = GitEvent.Exec(_)
+  given GitEvent is Communicable =
+    case Exec(reason) => msg"The Git operation did not execute successfully: $reason"
 
 enum GitEvent:
   case Exec(event: ExecEvent)
