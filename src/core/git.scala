@@ -514,6 +514,7 @@ case class SshUrl(user: Optional[Text], hostname: Hostname, path: Text):
 
 object GitEvent:
   given GitEvent transcribes ExecEvent = GitEvent.Exec(_)
+
   given GitEvent is Communicable =
     case Exec(reason) => msg"The Git operation did not execute successfully: $reason"
 
