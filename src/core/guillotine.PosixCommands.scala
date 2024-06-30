@@ -16,11 +16,11 @@
 
 package guillotine
 
+import language.experimental.captureChecking
+
+import anticipation.*
 import rudiments.*
 import symbolism.*
-import anticipation.*
-
-import language.experimental.captureChecking
 
 trait PosixCommands:
   erased given ("alias" is Intelligible into Text) as alias = ###

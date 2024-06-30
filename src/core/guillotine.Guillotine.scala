@@ -16,11 +16,11 @@
 
 package guillotine
 
-import rudiments.*
+import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import language.experimental.pureFunctions
+import rudiments.*
 
 object Guillotine:
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =

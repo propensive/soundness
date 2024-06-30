@@ -16,8 +16,8 @@
 
 package guillotine
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 import vacuous.*
 
 trait ProcessRef:

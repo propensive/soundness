@@ -16,18 +16,18 @@
 
 package guillotine
 
-import rudiments.*
-import contingency.*
-import turbulence.*
-import gossamer.*
-import spectacular.*
-import anticipation.*
-
-import scala.jdk.StreamConverters.StreamHasToScala
+import language.experimental.pureFunctions
 
 import java.io as ji
 
-import language.experimental.pureFunctions
+import scala.jdk.StreamConverters.StreamHasToScala
+
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
 
 object Computable:
   given LazyList[Text] is Computable as lazyList = proc =>

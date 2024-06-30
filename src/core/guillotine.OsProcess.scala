@@ -16,12 +16,12 @@
 
 package guillotine
 
+import language.experimental.pureFunctions
+
+import anticipation.*
+import contingency.*
 import rudiments.*
 import vacuous.*
-import contingency.*
-import anticipation.*
-
-import language.experimental.pureFunctions
 
 object OsProcess:
   private def allHandles = ProcessHandle.allProcesses.nn.iterator.nn.asScala.to(List)

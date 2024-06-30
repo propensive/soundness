@@ -16,19 +16,19 @@
 
 package guillotine
 
-import rudiments.*
-import vacuous.*
-import contingency.*
-import turbulence.*
-import gossamer.*
-import anticipation.*
-import symbolism.*
-
-import scala.compiletime.*
+import language.experimental.pureFunctions
 
 import java.io as ji
 
-import language.experimental.pureFunctions
+import scala.compiletime.*
+
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import symbolism.*
+import turbulence.*
+import vacuous.*
 
 object Process:
   given [ChunkType, CommandType <: Label, ResultType](using writable: ji.OutputStream is Writable by ChunkType)

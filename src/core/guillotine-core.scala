@@ -16,10 +16,10 @@
 
 package guillotine
 
-import fulminate.*
-import anticipation.*
-
 import language.experimental.pureFunctions
+
+import anticipation.*
+import fulminate.*
 
 given Realm = realm"guillotine"
 

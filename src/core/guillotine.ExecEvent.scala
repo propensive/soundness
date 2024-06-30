@@ -16,16 +16,14 @@
 
 package guillotine
 
-import contextual.*
-import rudiments.*
-import fulminate.*
-import gossamer.*
-import spectacular.*
-import anticipation.*
-
 import scala.compiletime.*
 
-import language.experimental.pureFunctions
+import anticipation.*
+import contextual.*
+import fulminate.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
 
 object ExecEvent:
   given ExecEvent is Communicable =

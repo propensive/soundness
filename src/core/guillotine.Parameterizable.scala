@@ -16,10 +16,10 @@
 
 package guillotine
 
-import spectacular.*
-import anticipation.*
-
 import language.experimental.pureFunctions
+
+import anticipation.*
+import spectacular.*
 
 object Parameterizable:
   given [PathType: GenericPath] => PathType is Parameterizable = _.pathText

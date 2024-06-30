@@ -16,20 +16,20 @@
 
 package guillotine
 
+import language.experimental.pureFunctions
+
+import java.io as ji
+
+import scala.annotation.targetName
+import scala.compiletime.*
+
+import anticipation.*
 import contextual.*
-import rudiments.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
-import anticipation.*
-
-import scala.compiletime.*
-
-import annotation.targetName
-import java.io as ji
-
-import language.experimental.pureFunctions
 
 sealed trait Executable:
   type Exec <: Label
