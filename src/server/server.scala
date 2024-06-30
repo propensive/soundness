@@ -27,6 +27,7 @@ import gossamer.{at as _, slice as _, *}
 import nettlesome.*
 import monotonous.*, alphabets.base64.standard
 import gesticulate.*
+import hieroglyph.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
@@ -99,6 +100,9 @@ object Servable:
       responder.sendBody(500, ResponseType.stream(notFound.content))
 
   given Bytes is Servable = Servable(media"application/octet-stream")(HttpBody.Data(_))
+
+  given (using CharEncoder) => Text is Servable = Servable(media"text/plain"): text =>
+    HttpBody.Data(text.bytes)
 
 object Redirect:
   def apply[LocationType: Locatable](location: LocationType): Redirect =
@@ -223,10 +227,10 @@ case class Request
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
 trait RequestServable:
-  def listen(handle: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs Text
+  def listen(handle: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (request: Request) ?=> Response[?])(using RequestServable, Monitor, Codicil): HttpService logs Text =
+  def listen(handle: (request: Request) ?=> Response[?])(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
 inline def request(using inline request: Request): Request = request
@@ -263,7 +267,7 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs Text =
+  def listen(handler: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs HttpServerEvent =
     def handle(exchange: csnh.HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
@@ -285,7 +289,6 @@ case class HttpServer(port: Int) extends RequestServable:
 
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
-
   private def streamBody(exchange: csnh.HttpExchange): HttpBody.Chunked =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
@@ -296,7 +299,7 @@ case class HttpServer(port: Int) extends RequestServable:
 
     HttpBody.Chunked(recur())
 
-  private def makeRequest(exchange: csnh.HttpExchange): Request logs Text =
+  private def makeRequest(exchange: csnh.HttpExchange): Request logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
 
@@ -308,20 +311,19 @@ case class HttpServer(port: Int) extends RequestServable:
     val headers =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
 
-    val request = Request(
-      method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
-      body = streamBody(exchange),
-      query = Text(query.getOrElse("").nn),
-      ssl = false,
-      Text(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn
-          .getCanonicalHostName).nn),
-      Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
-      Text(uri.getPath.nn),
-      headers.map { case (k, v) => Text(k) -> v.map(Text(_)) },
-      queryParams
-    )
+    val request =
+      Request
+       (method      = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
+        body        = streamBody(exchange),
+        query       = Text(query.getOrElse("").nn),
+        ssl         = false,
+        hostname    = Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName).nn.tt,
+        port        = Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
+        pathText    = Text(uri.getPath.nn),
+        rawHeaders  = headers.map { case (k, v) => Text(k) -> v.map(Text(_)) },
+        queryParams = queryParams)
 
-    Log.fine(t"Received HTTP request $request")
+    Log.fine(HttpServerEvent.Received(request))
 
     request
 
@@ -371,3 +373,12 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
       Response(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
 
 given realm: Realm = realm"scintillate"
+
+enum HttpServerEvent:
+  case Received(request: Request)
+  case Processed(request: Request, duration: Long)
+
+object HttpServerEvent:
+  given HttpServerEvent is Communicable =
+    case Received(request)            => msg"Received request ${request.show}"
+    case Processed(request, duration) => msg"Processed request ${request.show} in ${duration}ms"
