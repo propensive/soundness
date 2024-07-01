@@ -163,7 +163,7 @@ case class Response[ContentType: Servable]
 object Request:
   given Request is Showable = request =>
     val bodySample: Text =
-      try request.body.stream.readAs[Bytes].utf8 catch
+      try request.body.stream.read[Bytes].utf8 catch
         case err: StreamError  => t"[-/-]"
 
     val headers: Text =
@@ -210,7 +210,7 @@ case class Request
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
             (contentType == Some(media"application/x-www-form-urlencoded") || contentType.absent)
         then
-          Map[Text, Text](body.stream.readAs[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+          Map[Text, Text](body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
             case _                         => throw Panic(m"key/value pair does not match")
