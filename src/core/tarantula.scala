@@ -42,7 +42,7 @@ import unsafeExceptions.canThrowAny
 
 trait Browser(name: Text):
   transparent inline def browser = this
-  
+
   case class Server(port: Int, value: Process[Label, Text]):
     def stop()(using Log[Text]): Unit = browser.stop(this)
 
@@ -75,14 +75,14 @@ object Chrome extends Browser(t"chrome"):
 def browser(using WebDriver#Session): WebDriver#Session = summon[WebDriver#Session]
 
 case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: IArray[Text])
-extends Error(msg"the action caused the error $error in the browser, with the message: $wdMsg")
+extends Error(m"the action caused the error $error in the browser, with the message: $wdm")
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this
- 
+
   case class Session(sessionId: Text):
     def webDriver: WebDriver = wd
-    
+
     private def safe[ResultType](block: => ResultType): ResultType =
       try block catch case e: HttpError => e match
         case HttpError(status, body) =>
@@ -90,24 +90,24 @@ case class WebDriver(server: Browser#Server):
             case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).utf8).value
             case HttpBody.Empty           => throw e
             case HttpBody.Data(data)      => Json.parse(data.utf8).value
-          
+
           throw WebDriverError(json.error.as[Text], json.message.as[Text],
               json.stacktrace.as[Text].cut(t"\n"))
-            
+
     final private val Wei: Text = t"element-6066-11e4-a52e-4f735466cecf"
 
     case class Element(elementId: Text):
-      
+
       private def get(address: Text)(using Log[Text]): Json = safe:
         given Online = Online
         val url: HttpUrl = url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
         url.get(RequestHeader.ContentType(media"application/json")).as[Json]
-      
+
       private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
         given Online = Online
         url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
           .post(content).as[Json]
-      
+
       def click()(using Log[Text]): Unit = post(t"click", Json.parse(t"{}"))
       def clear()(using Log[Text]): Unit = post(t"clear", Json.parse(t"{}"))
       def screenshot()(using Log[Text]): Image[Png] = Png.read(get(t"screenshot").value.as[Text].decode[Base64])
@@ -115,37 +115,37 @@ case class WebDriver(server: Browser#Server):
       def value(text: Text)(using Log[Text]): Unit =
         case class Data(text: Text)
         post(t"value", Data(text).json)
-    
+
       @targetName("at")
       infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text])
               : List[Element] =
         case class Data(`using`: Text, value: Text)
-        
+
         post(t"elements", Data(locator.strategy, locator.value(value)).json)
           .value
           .as[List[Json]]
           .map(_(Wei).as[Text])
           .map(Element(_))
-      
+
       def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
               : Element =
         case class Data(`using`: Text, value: Text)
         val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
         Element(e.value.selectDynamic(Wei.s).as[Text])
-      
+
     private def get(address: Text)(using Log[Text]): Json = safe:
       given Online = Online
       url"http://localhost:${server.port}/session/$sessionId/$address"
         .get(RequestHeader.ContentType(media"application/json")).as[Json]
-  
+
     private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
       given Online = Online
       url"http://localhost:${server.port}/session/$sessionId/$address".post(content).as[Json]
-    
+
     def navigateTo[UrlType: GenericUrl](url: UrlType)(using Log[Text]): Json =
       case class Data(url: Text)
       post(t"url", Data(url.text).json)
-    
+
     def refresh()(using Log[Text]): Unit = post(t"refresh", Json.parse(t"{}")).as[Json]
     def forward()(using Log[Text]): Unit = post(t"forward", Json.parse(t"{}")).as[Json]
     def back()(using Log[Text]): Unit = post(t"back", Json.parse(t"{}")).as[Json]
@@ -162,15 +162,15 @@ case class WebDriver(server: Browser#Server):
         .as[List[Json]]
         .map(_(Wei).as[Text])
         .map(Element(_))
-    
+
     def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
             : Element =
 
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
-      
+
       Element(e.value.selectDynamic(Wei.s).as[Text])
-    
+
     def activeElement()(using Log[Text]): Element =
       Element(get(t"element/active").value.selectDynamic(Wei.s).as[Text])
 
@@ -178,7 +178,7 @@ case class WebDriver(server: Browser#Server):
     given Online = Online
     val url = url"http://localhost:${server.port}/session"
     val json = url.post(Json.parse(t"""{"capabilities":{}}""")).as[Json]
-    
+
     Session(json.value.sessionId.as[Text])
 
 case class ElementLocator[-T](strategy: Text, value: T => Text)
