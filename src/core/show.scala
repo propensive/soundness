@@ -35,8 +35,8 @@ trait TextConversion:
 trait Showable extends TextConversion:
   type Self
 
-trait Debug[ValueType] extends TextConversion:
-  type Self = ValueType
+trait Inspectable extends TextConversion:
+  type Self
 
 object Showable:
   given Specializable is Showable as specializable = value =>
@@ -67,40 +67,40 @@ object Showable:
     stack.cause.lay(root): cause =>
       s"$root\ncaused by:\n$cause".tt
 
-object Debug:
-  inline given derived[ValueType]: Debug[ValueType] = compiletime.summonFrom:
+object Inspectable:
+  inline given [ValueType] => ValueType is Inspectable as derived = compiletime.summonFrom:
     case encoder: Encoder[ValueType]   => encoder.encode(_)
-    case given Reflection[ValueType]   => DebugDerivation.derived[ValueType].text(_)
+    case given Reflection[ValueType]   => InspectableDerivation.derived[ValueType].text(_)
     case given (ValueType is Showable) => _.show
     case _                             => value => s"⸉${value.toString.tt}⸊".tt
 
-  given char: Debug[Char] = char => ("'"+escape(char).s+"'").tt
-  given long: Debug[Long] = long => (long.toString+"L").tt
-  given string: Debug[String] = string => text.text(string.tt).s.substring(1).nn.tt
-  given byte: Debug[Byte] = byte => (byte.toString+".toByte").tt
-  given short: Debug[Short] = short => (short.toString+".toShort").tt
+  given Char is Inspectable as char = char => ("'"+escape(char).s+"'").tt
+  given Long is Inspectable as long = long => (long.toString+"L").tt
+  given String is Inspectable as string = string => text.text(string.tt).s.substring(1).nn.tt
+  given Byte is Inspectable as byte = byte => (byte.toString+".toByte").tt
+  given Short is Inspectable as short = short => (short.toString+".toShort").tt
 
-  given text: Debug[Text] = text =>
+  given Text is Inspectable as text = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.map(escape(_, true)).each(builder.append)
 
     ("t\""+builder.toString+"\"").tt
 
-  given float: Debug[Float] =
+  given Float is Inspectable as float =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
 
-  given double: Debug[Double] =
+  given Double is Inspectable as double =
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
     case double                  => double.toString.tt
 
-  given boolean: Debug[Boolean] = boolean => if boolean then "true".tt else "false".tt
-  given reflectEnum: Debug[reflect.Enum] = _.toString.show
-  given pid: Debug[Pid] = pid => s"[PID:${pid.value}]".tt
+  given Boolean is Inspectable as boolean = boolean => if boolean then "true".tt else "false".tt
+  given reflect.Enum is Inspectable as reflectEnum = _.toString.show
+  given Pid is Inspectable as pid = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -116,19 +116,28 @@ object Debug:
     case char =>
       if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
-  given set[ElemType: Debug]: Debug[Set[ElemType]] = _.map(_.inspect).mkString("{", ", ", "}").tt
-  given vector[ElemType: Debug]: Debug[Vector[ElemType]] = _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
-  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
-  given iterable[ElemType: Debug]: Debug[Iterable[ElemType]] = _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
-  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.inspect).mkString("[", ", ", "]").tt
+  given [ElemType: Inspectable] => Set[ElemType] is Inspectable as set =
+    _.map(_.inspect).mkString("{", ", ", "}").tt
 
-  given array[ElemType: Debug]: Debug[Array[ElemType]] = array =>
+  given [ElemType: Inspectable] => Vector[ElemType] is Inspectable as vector =
+    _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
+
+  given [ElemType: Inspectable] => IndexedSeq[ElemType] is Inspectable as indexedSeq =
+    _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
+
+  given [ElemType: Inspectable] => Iterable[ElemType] is Inspectable as iterable =
+    _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
+
+  given [ElemType: Inspectable] => List[ElemType] is Inspectable as list =
+    _.map(_.inspect).mkString("[", ", ", "]").tt
+
+  given [ElemType: Inspectable] => Array[ElemType] is Inspectable as array = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.inspect.s).tt
     .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
-  given lazyList[ElemType: Debug]: Debug[LazyList[ElemType]] = lazyList =>
+  given [ElemType: Inspectable] => LazyList[ElemType] is Inspectable as lazyList = lazyList =>
     def recur(lazyList: LazyList[ElemType], todo: Int): Text =
       if todo <= 0 then "..?".tt
       else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
@@ -137,7 +146,7 @@ object Debug:
 
     recur(lazyList, 3)
 
-  given iarray[ElemType: Debug]: Debug[IArray[ElemType]] = iarray =>
+  given [ElemType: Inspectable] => IArray[ElemType] is Inspectable as iarray = iarray =>
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.inspect.s.tt
@@ -162,24 +171,24 @@ object Debug:
 
     arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
 
-  given option[ValueType: Debug]: Debug[Option[ValueType]] =
+  given [ValueType: Inspectable] => Option[ValueType] is Inspectable as option =
     case None        => "None".tt
     case Some(value) => s"Some(${value.inspect.s})".tt
 
-  given none: Debug[None.type] = none => "None".tt
+  given None.type is Inspectable = none => "None".tt
 
-  given optional[ValueType](using debug: Debug[ValueType]): Debug[Optional[ValueType]] =
-    _.let { value => s"⸂${debug.text(value)}⸃".tt }.or("⸄⸅".tt)
+  given [ValueType: Inspectable] => Optional[ValueType] is Inspectable as optional =
+    _.let { value => s"⸂${ValueType.text(value)}⸃".tt }.or("⸄⸅".tt)
 
-object DebugDerivation extends Derivation[Debug]:
-  inline def join[DerivationType <: Product: ProductReflection]: Debug[DerivationType] = value =>
+object InspectableDerivation extends Derivable[Inspectable]:
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable = value =>
     fields(value):
       [FieldType] => field =>
         val text = context.text(field)
         if tuple then text else s"$label:$text"
     .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
-  inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
+  inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
         context.let(_.give(variant.inspect)).or(variant.inspect)
@@ -213,14 +222,13 @@ object TextConversion:
 extension [ValueType: Showable](value: ValueType)
   def show: Text = ValueType.text(value)
 
-extension [ValueType](value: ValueType)
-  def inspect(using debug: Debug[ValueType]): Text = debug.text(value)
+extension [ValueType: Inspectable](value: ValueType) def inspect: Text = ValueType.text(value)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
 
 package booleanStyles:
-  given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)
-  given onOff: BooleanStyle = BooleanStyle("on".tt, "off".tt)
-  given trueFalse: BooleanStyle = BooleanStyle("true".tt, "false".tt)
-  given oneZero: BooleanStyle = BooleanStyle("1".tt, "0".tt)
+  given BooleanStyle as yesNo = BooleanStyle("yes".tt, "no".tt)
+  given BooleanStyle as onOff = BooleanStyle("on".tt, "off".tt)
+  given BooleanStyle as trueFalse = BooleanStyle("true".tt, "false".tt)
+  given BooleanStyle as oneZero = BooleanStyle("1".tt, "0".tt)
