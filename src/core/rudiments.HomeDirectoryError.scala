@@ -20,4 +20,4 @@ import language.experimental.captureChecking
 
 import fulminate.*
 
-case class HomeDirectoryError() extends Error(msg"there is no home directory")
+case class HomeDirectoryError() extends Error(m"there is no home directory")

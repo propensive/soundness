@@ -20,4 +20,4 @@ import language.experimental.captureChecking
 
 import fulminate.*
 
-case class WorkingDirectoryError() extends Error(msg"there is no working directory")
+case class WorkingDirectoryError() extends Error(m"there is no working directory")
