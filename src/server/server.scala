@@ -27,7 +27,6 @@ import gossamer.{at as _, slice as _, *}
 import nettlesome.*
 import monotonous.*, alphabets.base64.standard
 import gesticulate.*
-import hieroglyph.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
