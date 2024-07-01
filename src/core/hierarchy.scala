@@ -41,15 +41,15 @@ object PathError:
     case NotRooted
 
   given Reason is Communicable =
-    case Reason.InvalidChar(char)     => msg"the character $char may not appear in its name"
-    case Reason.InvalidPrefix(prefix) => msg"its name cannot begin with $prefix"
-    case Reason.InvalidSuffix(suffix) => msg"its name cannot end with $suffix"
-    case Reason.InvalidName(name)     => msg"the name $name is not valid"
-    case Reason.ParentOfRoot          => msg"it has no parent"
-    case Reason.NotRooted             => msg"it is not rooted"
+    case Reason.InvalidChar(char)     => m"the character $char may not appear in its name"
+    case Reason.InvalidPrefix(prefix) => m"its name cannot begin with $prefix"
+    case Reason.InvalidSuffix(suffix) => m"its name cannot end with $suffix"
+    case Reason.InvalidName(name)     => m"the name $name is not valid"
+    case Reason.ParentOfRoot          => m"it has no parent"
+    case Reason.NotRooted             => m"it is not rooted"
 
 case class PathError(path: Text, reason: PathError.Reason)
-extends Error(msg"the path $path is invalid because $reason")
+extends Error(m"the path $path is invalid because $reason")
 
 @targetName("relative")
 def ? [PathType <: Matchable, LinkType <: Matchable, NameType <: Label]

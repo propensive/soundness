@@ -40,19 +40,19 @@ object SerpentineMacro:
     patterns(TypeRepr.of[NameType]).each: pattern =>
       if element.matches(pattern) then pattern match
         case r"\.\*\\?$char(.)\.\*" =>
-          abandon(msg"a path element may not contain the character $char", pos)
+          abandon(m"a path element may not contain the character $char", pos)
 
         case r"$start([a-zA-Z0-9]*)\.\*" =>
-          abandon(msg"a path element may not start with $start", pos)
+          abandon(m"a path element may not start with $start", pos)
 
         case r"\.\*$end([a-zA-Z0-9]*)" =>
-          abandon(msg"a path element may not end with $end", pos)
+          abandon(m"a path element may not end with $end", pos)
 
         case pattern@r"[a-zA-Z0-9]*" =>
-          abandon(msg"a path element may not be $pattern", pos)
+          abandon(m"a path element may not be $pattern", pos)
 
         case other =>
-          abandon(msg"a path element may not match the pattern $other")
+          abandon(m"a path element may not match the pattern $other")
 
     '{
       new PExtractor[NameType]():
