@@ -48,26 +48,26 @@ enum DaemonLogEvent:
 
 object DaemonLogEvent:
   given DaemonLogEvent is Communicable =
-    case WriteExecutable(location) => msg"Writing executable to $location"
-    case Shutdown                  => msg"Shutting down"
-    case Termination               => msg"Terminating client connection"
-    case Failure                   => msg"A failure occurred"
-    case NewCli                    => msg"Instantiating a new CLI"
-    case UnrecognizedMessage       => msg"Unrecognized message"
-    case ReceivedSignal(signal)    => msg"Received signal $signal"
-    case ExitStatusRequest(pid)    => msg"Exit status requested from $pid"
-    case CloseConnection(pid)      => msg"Connection closed from $pid"
-    case StderrRequest(pid)        => msg"STDERR requested from $pid"
-    case Init(pid)                 => msg"Initializing $pid"
+    case WriteExecutable(location) => m"Writing executable to $location"
+    case Shutdown                  => m"Shutting down"
+    case Termination               => m"Terminating client connection"
+    case Failure                   => m"A failure occurred"
+    case NewCli                    => m"Instantiating a new CLI"
+    case UnrecognizedMessage       => m"Unrecognized message"
+    case ReceivedSignal(signal)    => m"Received signal $signal"
+    case ExitStatusRequest(pid)    => m"Exit status requested from $pid"
+    case CloseConnection(pid)      => m"Connection closed from $pid"
+    case StderrRequest(pid)        => m"STDERR requested from $pid"
+    case Init(pid)                 => m"Initializing $pid"
 
 object Installer:
   given Realm = realm"ethereal"
 
   object Result:
     given Result is Communicable =
-      case AlreadyOnPath(script, path) => msg"The $script command is already installed at $path."
-      case Installed(script, path)     => msg"The $script command was installed to $path."
-      case PathNotWritable             => msg"No directory on the PATH environment variable was writable"
+      case AlreadyOnPath(script, path) => m"The $script command is already installed at $path."
+      case Installed(script, path)     => m"The $script command was installed to $path."
+      case PathNotWritable             => m"No directory on the PATH environment variable was writable"
 
   enum Result:
     case AlreadyOnPath(script: Text, path: Text)
