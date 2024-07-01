@@ -34,7 +34,7 @@ object Media:
   given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
 
   object Group:
-    given Debug[Group] = _.name
+    given Group is Inspectable = _.name
     given Group is Showable = _.name.lower
 
   enum Group:
@@ -195,7 +195,7 @@ extends Dynamic:
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
 object MediaType:
-  given Debug[MediaType] = mt => t"""media"${mt}""""
+  given MediaType is Inspectable = mt => t"""media"${mt}""""
   given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = showable.text(_)
 
   given MediaType is Showable as showable =
