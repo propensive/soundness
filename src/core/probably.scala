@@ -45,7 +45,7 @@ class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
 
   def capture[ValueType: Debug](name: Text, value: ValueType): ValueType =
-    captured.append(name -> value.debug)
+    captured.append(name -> value.inspect)
     value
 
 object TestId:
