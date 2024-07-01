@@ -42,7 +42,7 @@ trait Executive:
        environment:      Environment,
        workingDirectory: WorkingDirectory,
        stdio:            Stdio,
-       signals:          Funnel[Signal])
+       signals:          Spool[Signal])
       (using interpreter: CliInterpreter)
           : CliType
 
@@ -98,7 +98,7 @@ package executives:
          environment:      Environment,
          workingDirectory: WorkingDirectory,
          stdio:            Stdio,
-         signals:          Funnel[Signal])
+         signals:          Spool[Signal])
         (using interpreter: CliInterpreter)
             : CliInvocation =
 
@@ -112,11 +112,11 @@ def application(using executive: Executive, interpreter: CliInterpreter)
     (block: Cli ?=> executive.Return)
         : Unit =
 
-  val funnel: Funnel[Signal] = Funnel()
-  signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => funnel.put(signal)) }
+  val spool: Spool[Signal] = Spool()
+  signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal)) }
 
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
-  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, funnel)
+  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, spool)
 
   System.exit(executive.process(cli)(block)())
 
@@ -125,7 +125,7 @@ case class CliInvocation
      environment:      Environment,
      workingDirectory: WorkingDirectory,
      stdio:            Stdio,
-     signals:          Funnel[Signal])
+     signals:          Spool[Signal])
     (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 
