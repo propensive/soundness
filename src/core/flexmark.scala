@@ -41,13 +41,13 @@ object MarkdownError:
 
   object Reason:
     given Reason is Communicable =
-      case BlockInsideInline => msg"the markdown contains block-level elements"
-      case BrokenImageRef    => msg"the image reference could not be resolved"
-      case BadHeadingLevel   => msg"the heading level is not in the range 1-6"
-      case UnexpectedNode    => msg"a node with an unexpected type was found"
+      case BlockInsideInline => m"the markdown contains block-level elements"
+      case BrokenImageRef    => m"the image reference could not be resolved"
+      case BadHeadingLevel   => m"the heading level is not in the range 1-6"
+      case UnexpectedNode    => m"a node with an unexpected type was found"
 
 case class MarkdownError(reason: MarkdownError.Reason)
-extends Error(msg"the markdown could not be read because $reason")
+extends Error(m"the markdown could not be read because $reason")
 
 case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =

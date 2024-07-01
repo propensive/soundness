@@ -38,11 +38,11 @@ object Md:
     def complete(state: Input): Markdown[Markdown.Ast.Node] = state match
       case Input.Inline(state) =>
         safely(Markdown.parseInline(state)).or:
-          throw InterpolationError(msg"the markdown could not be parsed")
+          throw InterpolationError(m"the markdown could not be parsed")
 
       case Input.Block(state)  =>
         safely(Markdown.parse(state)).or:
-          throw InterpolationError(msg"the markdown could not be parsed")
+          throw InterpolationError(m"the markdown could not be parsed")
 
     def initial: Input = Input.Inline(t"")
     def skip(state: Input): Input = state
@@ -67,11 +67,11 @@ object Md:
     def parse(state: Input, next: Text): Input = state match
       case Input.Inline(state) =>
         parseInline(t"$state$next").or(parseBlock(t"$state$next")).or:
-          throw InterpolationError(msg"the markdown could not be parsed")
+          throw InterpolationError(m"the markdown could not be parsed")
 
       case Input.Block(state) =>
         safely:
           Markdown.parse(t"$state$next")
           Input.Block(t"$state$next")
         .or:
-          throw InterpolationError(msg"the markdown could not be parsed")
+          throw InterpolationError(m"the markdown could not be parsed")
