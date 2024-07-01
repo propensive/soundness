@@ -36,7 +36,7 @@ enum Importance:
 case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
 case class Notice(importance: Importance, file: Text, message: Text, codeRange: Optional[CodeRange])
 
-case class CompileError() extends Error(msg"there was a problem with the compiler configuration")
+case class CompileError() extends Error(m"there was a problem with the compiler configuration")
 
 enum CompileResult:
   case Failure
@@ -92,7 +92,7 @@ enum CompileEvent:
 
 object CompileEvent:
   given CompileEvent is Communicable =
-    case Start              => msg"Starting compilation"
-    case CompilerCrash      => msg"Compiler crashed"
-    case Notice(diagnostic) => msg"The compiler emitted a diagnostic message: $diagnostic"
-    case Running(args)      => msg"Running compiler with arguments ${args.join(t" ")}"
+    case Start              => m"Starting compilation"
+    case CompilerCrash      => m"Compiler crashed"
+    case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
+    case Running(args)      => m"Running compiler with arguments ${args.join(t" ")}"

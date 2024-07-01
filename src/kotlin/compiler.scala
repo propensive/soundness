@@ -32,7 +32,7 @@ import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
 
-case class KotlinError() extends Error(msg"there was a compilation error")
+case class KotlinError() extends Error(m"there was a compilation error")
 
 type KotlinVersions = 1.0
 
@@ -45,4 +45,3 @@ case class Kotlinc
       put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
 
     compiler.exec(MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code))
-
