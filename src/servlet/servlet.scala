@@ -30,11 +30,11 @@ import javax.servlet.*, http.*
 trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
   protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
-    
+
     def sendBody(status: Int, body: HttpBody): Unit =
       response.setStatus(status)
       val out = response.getOutputStream.nn
-      
+
       body match
         case HttpBody.Empty         => addHeader(ResponseHeader.ContentLength.header, t"0")
         case HttpBody.Data(body)    => addHeader(ResponseHeader.ContentLength.header, body.length.show)
@@ -46,20 +46,20 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
-    HttpBody.Chunked(Readable.inputStream.read(request.getInputStream.nn))
-    
+    HttpBody.Chunked(Readable.inputStream.stream(request.getInputStream.nn))
+
   protected def makeRequest(request: HttpServletRequest): Request raises StreamError =
     val query = Option(request.getQueryString)
-    
+
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
       val paramStrings = query.nn.show.cut(t"&")
-      
+
       paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
         elem.cut(t"=", 2).to(Seq) match
           case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
           case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
           case _                           => map
-    
+
     val headers = request.getHeaderNames.nn.asScala.to(List).map: key =>
       key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
     .to(Map)
