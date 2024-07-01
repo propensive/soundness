@@ -49,9 +49,9 @@ object CaseField:
   def apply[TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
       (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
           : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
-    
+
     inline def annotation0 = annotation
-    
+
     new CaseField[TargetType, AnnotationType](name):
       type FieldType = InitFieldType
       def apply(value: TargetType) = access(value)
@@ -70,12 +70,12 @@ trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val n
 object Adversaria:
   def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
           : Expr[CaseField[TargetType, AnnotationType]] =
-    
+
     import quotes.reflect.*
-    
+
     val targetType = TypeRepr.of[TargetType]
     val fields = targetType.typeSymbol.caseFields
-    
+
     fields.flatMap: field =>
       field.annotations.map(_.asExpr).collect:
         case '{$annotation: AnnotationType} => annotation
@@ -89,10 +89,10 @@ object Adversaria:
           : Expr[List[CaseField[TargetType, AnnotationType]]] =
 
     import quotes.reflect.*
-    
+
     val targetType = TypeRepr.of[TargetType]
     val fields = targetType.typeSymbol.caseFields
-    
+
     val elements: List[Expr[CaseField[TargetType, AnnotationType]]] = fields.flatMap: field =>
       val name = Expr(field.name)
       field.annotations.map(_.asExpr).collect:
@@ -108,16 +108,16 @@ object Adversaria:
           : Expr[List[StaticAnnotation]] =
 
     import quotes.reflect.*
-    
+
     val targetType = TypeRepr.of[TargetType]
 
     val field = lambda.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          fail(msg"the member $term is not a case class field")
-      
+          fail(m"the member $term is not a case class field")
+
       case _ =>
-        fail(msg"the lambda must be a simple reference to a case class field")
+        fail(m"the lambda must be a simple reference to a case class field")
 
     Expr.ofList:
       field.annotations.map(_.asExpr).collect:
@@ -131,9 +131,9 @@ object Adversaria:
     val targetType = TypeRepr.of[TargetType]
     val annotations = targetType.typeSymbol.annotations.map(_.asExpr).collect:
       case '{$annotation: AnnotationType} => annotation
-    
+
     if annotations.isEmpty
     then
       val typeName = TypeRepr.of[AnnotationType].show
-      fail(msg"the type ${targetType.show} did not have the annotation $typeName")
+      fail(m"the type ${targetType.show} did not have the annotation $typeName")
     else '{Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*)}
