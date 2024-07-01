@@ -27,7 +27,7 @@ import gossamer.*
 open class HtmlConverter():
   def outline(node: Markdown[Markdown.Ast.Node])(using Errant[MarkdownError]): Seq[Html[Flow]] =
     convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
-  
+
   def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
 
   def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
@@ -36,15 +36,15 @@ open class HtmlConverter():
         case Markdown.Ast.Block.Heading(level, children*) =>
           val string = text(children)
           List(t"${t" "*(2*level - 1)}- [$string](#${slug(string)})")
-        
+
         case Markdown.Ast.Inline.Copy(str) =>
           List(str)
-        
+
         case _ =>
           Nil
 
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
-  
+
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]) =
     headings(level - 1)(id = slug(text(children)))(children.flatMap(phrasing))
 
@@ -52,7 +52,7 @@ open class HtmlConverter():
     val acc = nodes.foldLeft((true, List[Markdown.Ast.Block]())):
       case ((fresh, acc), next) => next match
         case node: Markdown.Ast.Block  => (true, node :: acc)
-        
+
         case node: Markdown.Ast.Inline =>
           if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc) else
             val content = (acc.head: @unchecked) match
@@ -60,7 +60,7 @@ open class HtmlConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
 
             (false, content)
-    
+
     acc(1).reverse
 
   def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
@@ -74,10 +74,10 @@ open class HtmlConverter():
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(honeycomb.Code(escape(value))))
     case Markdown.Ast.Block.Reference(_, _)                 => Seq()
     case Markdown.Ast.Block.Table(parts*)                   => Seq(Table(parts.flatMap(tableParts)))
-    
+
     case Markdown.Ast.Block.BulletList(num, _, _, items*) =>
       Seq((if num.absent then Ul else Ol)(items.flatMap(listItem)*))
-    
+
     case other =>
       Seq()
 
@@ -127,14 +127,14 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
       def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = (node: @unchecked) match
-        case node: Node[?] => node.refine[NonInteractive]
-        case text: Text    => Some(text)
-        case int: Int      => Some(int)
+        case node: Node[NonInteractive] => Some(node)
+        case text: Text                 => Some(text)
+        case int: Int                   => Some(int)
 
       val children: Seq[Html[NonInteractive]] = nonInteractive(content).flatMap(interactive(_))
 
       List(A(href = location)(children))
-    
+
     case other =>
       nonInteractive(other)
 
