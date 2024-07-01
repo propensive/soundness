@@ -166,7 +166,7 @@ object HtmlAttribute:
   given autoplay[T]: HtmlAttribute["autoplay", Boolean, T] = _ => Unset
   given autofocus[T]: HtmlAttribute["autofocus", Boolean, T] = _ => Unset
   given border[T]: HtmlAttribute["border", Boolean, T] = if _ then t"1" else t""
-  given charset[T]: HtmlAttribute["acceptCharset", Encoding, T] = _.name
+  given charset[T]: HtmlAttribute["charset", Encoding, T] = _.name
   given checkedBoolean[T]: HtmlAttribute["checked", Boolean, T] = _ => Unset
   given cite[T]: HtmlAttribute["cite", Text, T] = identity(_)
 

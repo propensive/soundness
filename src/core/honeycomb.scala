@@ -67,7 +67,7 @@ extends Node[NameType], Dynamic:
   def children: Seq[Html[?]] = Nil
   def label: Text = labelString.tt
 
-  type ChildElements = ChildType
+  type Content = ChildType
 
   inline def applyDynamicNamed(method: "apply")(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
