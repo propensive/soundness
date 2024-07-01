@@ -26,9 +26,9 @@ import digression.*
 import language.experimental.pureFunctions
 
 case class NumberError(text: Text, specializable: Specializable)
-extends Error(msg"$text is not a valid ${specializable.show}")
+extends Error(m"$text is not a valid ${specializable.show}")
 
-case class EnumCaseError(text: Text) extends Error(msg"$text is not a valid enumeration case")
+case class EnumCaseError(text: Text) extends Error(m"$text is not a valid enumeration case")
 
 object Decoder:
   given int(using number: Errant[NumberError]): Decoder[Int] = text =>
