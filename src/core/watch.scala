@@ -31,7 +31,7 @@ import scala.collection.mutable as scm
 import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 case class WatchError()
-extends Error(msg"""
+extends Error(m"""
     the operating system's limit on the number of paths that can be watched has been exceeded
   """)
 
@@ -44,7 +44,7 @@ extension [PathType: GenericPath](path: PathType)
 extension [PathType: GenericPath](paths: Iterable[PathType])
   def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
     val watchSet = Watch(paths)
-    
+
     lambda(watchSet).also:
       watchSet.unregister()
 
@@ -74,7 +74,7 @@ object Watch:
           watches.use: ref =>
             ref()(key)
           .each(_.put(event))
-  
+
         key.reset()
 
   def apply[PathType: GenericPath](paths: Iterable[PathType]): Watch =
@@ -84,7 +84,7 @@ object Watch:
           if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
           else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
         .groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
-      
+
       pathGroups.view.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
       .to(Map)
@@ -92,7 +92,7 @@ object Watch:
 class Watch():
   private val funnel: Funnel[WatchEvent] = Funnel()
   private val watches: scm.HashSet[PathWatch] = scm.HashSet[PathWatch]()
-  
+
   private class PathWatch
       (private[Watch] val key: jnf.WatchKey,
        private[Watch] val base: jnf.Path,
@@ -108,40 +108,40 @@ class Watch():
               if base.resolve(path).nn.toFile.nn.isDirectory
               then funnel.put(WatchEvent.NewDirectory(base.toString.show, name))
               else funnel.put(WatchEvent.NewFile(base.toString.show, name))
-            
+
             case ENTRY_MODIFY =>
               funnel.put(WatchEvent.Modify(base.toString.show, name))
-            
+
             case ENTRY_DELETE =>
               funnel.put(WatchEvent.Delete(base.toString.show, name))
-            
-            case _ => 
+
+            case _ =>
               ()
-          
+
           catch case err: Exception => ()
 
   def stream: LazyList[WatchEvent] = funnel.stream
-  
+
   def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
     val watches2 = paths.map:
       case (path, filter) =>
         val key = path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
-        
+
         new PathWatch(key, path, funnel, filter).tap: watch =>
           Watch.watches.isolate: map =>
             map(key) = map.at(key).or(Set()) + watch
-    
+
     synchronized(watches ++= watches2)
 
   def unregister(): Unit =
     Watch.watches.isolate: map =>
       watches.each: watch =>
         map(watch.key) = map.at(watch.key).or(Set()) - watch
-      
+
         if map(watch.key).isEmpty then
           watch.key.cancel()
           map.remove(watch.key)
-        
+
         if map.isEmpty then synchronized:
           Watch.serviceValue.let: service =>
             service.stop()
