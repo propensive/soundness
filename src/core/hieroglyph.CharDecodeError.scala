@@ -21,4 +21,4 @@ import language.experimental.captureChecking
 import fulminate.*
 
 case class CharDecodeError(pos: Int, encoding: Encoding)
-extends Error(msg"The byte sequence at position $pos could not be decoded with the encoding $encoding")
+extends Error(m"The byte sequence at position $pos could not be decoded with the encoding $encoding")

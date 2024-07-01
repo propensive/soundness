@@ -79,7 +79,7 @@ object Unicode:
 
     val in: ji.InputStream =
       Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
-        throw Panic(msg"could not find hieroglyph/EastAsianWidth.txt on the classpath")
+        throw Panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
 
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
 
