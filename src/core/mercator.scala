@@ -39,7 +39,7 @@ object Functor:
 
 trait Functor[FunctorType[_]]:
   def point[ValueType](value: ValueType): FunctorType[ValueType]
-  
+
   def map[ValueType, ValueType2](value: FunctorType[ValueType])(lambda: ValueType => ValueType2)
           : FunctorType[ValueType2]
 
@@ -56,7 +56,7 @@ object Mercator:
 
     val pointType = TypeRepr.of[TypeConstructorType].typeSymbol
     val companion = Ref(pointType.companionModule)
-    
+
     val applyMethods = companion.symbol.typeRef.typeSymbol.methodMembers.filter: method =>
       method.tree match
         case DefDef("apply", List(TypeParamClause(List(tpe)), terms), _, _) =>
@@ -64,13 +64,13 @@ object Mercator:
             case TermParamClause(List(ValDef(_, tRef, _))) => tRef.tpe.asMatchable match
               case AppliedType(ap, List(tRef)) =>
                 ap.typeSymbol == defn.RepeatedParamClass && tRef.typeSymbol == tpe.symbol
-              
+
               case _ =>
                 tRef.tpe.typeSymbol == tpe.symbol
-            
+
             case _ => false
         case _ => false
-      
+
     if applyMethods.length == 1
     then '{
       new Point[TypeConstructorType]:
@@ -84,21 +84,21 @@ object Mercator:
           }
     }
     else if applyMethods.length == 0
-    then fail(msg"the companion object ${pointType.name} has no candidate apply methods")
-    else fail(msg"the companion object ${pointType.name} has more than one candidate apply method")
+    then fail(m"the companion object ${pointType.name} has no candidate apply methods")
+    else fail(m"the companion object ${pointType.name} has more than one candidate apply method")
 
   def functor[FunctorType[_]](using Type[FunctorType], Quotes): Expr[Functor[FunctorType]] =
     import quotes.reflect.*
 
     val functorType = TypeRepr.of[FunctorType].typeSymbol
-    
+
     val mapMethods = functorType.methodMembers.filter: method =>
       method.tree match
         case DefDef("map", _, _, _) => true
         case _                      => false
-    
+
     val pointExpr: Expr[Point[FunctorType]] = Expr.summon[Point[FunctorType]].getOrElse:
-      fail(msg"could not find Point value for ${functorType.name}")
+      fail(m"could not find Point value for ${functorType.name}")
 
     lazy val makeFunctor = '{
       new Functor[FunctorType]:
@@ -112,20 +112,20 @@ object Mercator:
     }
 
     if mapMethods.length == 1 then makeFunctor
-    else if mapMethods.length == 0 then fail(msg"the type ${functorType.name} has no map methods")
-    else fail(msg"the type ${functorType.name} has more than one possible map method")
-    
+    else if mapMethods.length == 0 then fail(m"the type ${functorType.name} has no map methods")
+    else fail(m"the type ${functorType.name} has more than one possible map method")
+
   def monad[MonadType[_]](using Type[MonadType], Quotes): Expr[Monad[MonadType]] =
     import quotes.reflect.*
     val monadType = TypeRepr.of[MonadType].typeSymbol
-    
+
     val flatMapMethods = monadType.methodMembers.filter: method =>
       method.tree match
         case DefDef("flatMap", _, _, _) => true
         case _                      => false
-    
+
     val functorExpr: Expr[Functor[MonadType]] = Expr.summon[Functor[MonadType]].getOrElse:
-      fail(msg"could not find Functor value for ${monadType.name}")
+      fail(m"could not find Functor value for ${monadType.name}")
 
     lazy val makeMonad = '{
       new Monad[MonadType]:
@@ -135,7 +135,7 @@ object Mercator:
             [ValueType, ValueType2]
             (value: MonadType[ValueType])(lambda: ValueType => ValueType2): MonadType[ValueType2] =
           ${functorExpr}.map(value)(lambda)
-        
+
         def flatMap
             [ValueType, ValueType2]
             (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
@@ -149,8 +149,8 @@ object Mercator:
 
     if flatMapMethods.length == 1 then makeMonad
     else if flatMapMethods.length == 0
-    then fail(msg"the type ${monadType.name} has no flatMap methods")
-    else fail(msg"the type ${monadType.name} has more than one possible flatMap method")
+    then fail(m"the type ${monadType.name} has no flatMap methods")
+    else fail(m"the type ${monadType.name} has more than one possible flatMap method")
 
 extension [ValueType, FunctorType[_]](using functor: Functor[FunctorType])(value: FunctorType[ValueType])
   def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] = functor.map(value)(lambda)
@@ -165,24 +165,23 @@ extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemTyp
 
   def sequence(using buildFrom: BuildFrom[List[ElemType], ElemType, CollectionType[ElemType]])
           : MonadType[CollectionType[ElemType]] =
-    
+
     def recur(todo: Iterable[MonadType[ElemType]], accumulator: MonadType[List[ElemType]])
             : MonadType[List[ElemType]] =
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => todo.head.map(_ :: xs) })
-        
+
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
-    
+
 extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType](elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
       (using monad:     Monad[MonadType],
              buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
           : MonadType[CollectionType[ElemType2]] =
-    
+
     def recur(todo: Iterable[ElemType], accumulator: MonadType[List[ElemType2]]): MonadType[List[ElemType2]] =
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
-        
+
     recur(elems, monad.point(List())).map(_.reverse.to(buildFrom.toFactory(Nil)))
-    
