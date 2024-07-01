@@ -28,10 +28,10 @@ object Tap:
 
 class Tap(initial: Boolean = true):
   private val flowing: juca.AtomicBoolean = juca.AtomicBoolean(initial)
-  private val funnel: Funnel[Tap.Regulation] = Funnel()
+  private val spool: Spool[Tap.Regulation] = Spool()
 
-  def resume(): Unit = if !flowing.getAndSet(true) then funnel.put(Tap.Regulation.Start)
-  def pause(): Unit = if flowing.getAndSet(false) then funnel.put(Tap.Regulation.Stop)
-  def stop(): Unit = funnel.stop()
+  def resume(): Unit = if !flowing.getAndSet(true) then spool.put(Tap.Regulation.Start)
+  def pause(): Unit = if flowing.getAndSet(false) then spool.put(Tap.Regulation.Stop)
+  def stop(): Unit = spool.stop()
   def state(): Boolean = flowing.get
-  def stream: LazyList[Tap.Regulation] = funnel.stream
+  def stream: LazyList[Tap.Regulation] = spool.stream

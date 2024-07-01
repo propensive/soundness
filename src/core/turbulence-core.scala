@@ -39,7 +39,7 @@ extension [ValueType](value: ValueType)
       case aggregable: (ResultType is Aggregable by Bytes) =>
         compiletime.summonInline[ValueType is Readable by Bytes].give:
           aggregable.aggregate(value.stream[Bytes])
-      
+
       case aggregable: (ResultType is Aggregable by Text) =>
         compiletime.summonInline[ValueType is Readable by Text].give:
           aggregable.aggregate(value.stream[Text])
@@ -153,7 +153,7 @@ extension [ElementType](stream: LazyList[ElementType])
   def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor)
           : LazyList[ElementType2] =
 
-    val out: Funnel[ElementType2] = Funnel()
+    val out: Spool[ElementType2] = Spool()
 
     async:
       stream.map: elem =>
@@ -316,7 +316,7 @@ extension (lazyList: LazyList[Bytes])
 
     recur(lazyList, byteSize)
 
-def funnel[ItemType](using DummyImplicit)[ResultType](lambda: Funnel[ItemType] => ResultType)
+def spool[ItemType](using DummyImplicit)[ResultType](lambda: Spool[ItemType] => ResultType)
         : ResultType =
-  val funnel: Funnel[ItemType] = Funnel()
-  try lambda(funnel) finally funnel.stop()
+  val spool: Spool[ItemType] = Spool()
+  try lambda(spool) finally spool.stop()
