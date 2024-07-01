@@ -263,9 +263,6 @@ object Markdown:
       case node: PhrasingInput      => phrasing(root, node)
       case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode))(Copy(t"?"))
 
-      case node: cvfa.Text =>
-        Copy(if noFormat then node.getChars.toString.show else format(node.getChars.toString.show))
-
   def table(root: cvfua.Document, node: tables.TableBlock)
           : List[Markdown.Ast.TablePart] raises MarkdownError =
 
