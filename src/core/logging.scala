@@ -98,13 +98,13 @@ extension (logObject: Log.type)
     new:
       type Self = EntryType
 
-      private lazy val funnel: Funnel[TargetType.Operand] =
-        Funnel().tap: funnel =>
-          val task = async(funnel.stream.appendTo(target))
+      private lazy val spool: Spool[TargetType.Operand] =
+        Spool().tap: spool =>
+          val task = async(spool.stream.appendTo(target))
 
           Hook.onShutdown:
-            funnel.stop()
+            spool.stop()
             unsafely(task.await())
 
       def log(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
-        funnel.put(event.format(level, realm, timestamp))
+        spool.put(event.format(level, realm, timestamp))
