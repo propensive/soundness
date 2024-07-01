@@ -49,7 +49,7 @@ object Tests extends Suite(t"Monotonous tests"):
         import alphabets.base32.lowerCase
         val text: Text = allNumbers.serialize[Base32]
         val result = shred(text).deserialize[Base32].toList
-        println(result.debug)
+        println(result.inspect)
       .assert()
 
     test(t"Serialize to Binary"):
