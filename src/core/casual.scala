@@ -22,7 +22,7 @@ import anticipation.*
 import contingency.*
 
 case class CasualDiffError(reason: CasualDiffError.Reason, line: Int)
-extends Error(msg"the diff could not be read because $reason at line $line")
+extends Error(m"the diff could not be read because $reason at line $line")
 
 object CasualDiffError:
   enum Reason:
@@ -31,10 +31,10 @@ object CasualDiffError:
 
   given Reason is Communicable =
     case Reason.BadLineStart(content) =>
-      msg"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
+      m"the line $content did not begin with either ${"'+ '".tt}, ${"'- '".tt} or ${"'  '".tt}"
 
     case Reason.DoesNotMatch(content) =>
-      msg"the line $content could not be found in the document"
+      m"the line $content could not be found in the document"
 
 case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
 

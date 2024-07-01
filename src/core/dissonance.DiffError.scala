@@ -22,4 +22,4 @@ import anticipation.*
 import fulminate.*
 
 case class DiffError(lineNo: Int, line: Text)
-extends Error(msg"could not read the diff at line $lineNo: $line")
+extends Error(m"could not read the diff at line $lineNo: $line")
