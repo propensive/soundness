@@ -18,4 +18,4 @@ package vacuous
 
 import fulminate.*
 
-case class UnsetError() extends Error(msg"the value was not set")
+case class UnsetError() extends Error(m"the value was not set")
