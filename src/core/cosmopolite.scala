@@ -27,12 +27,12 @@ import scala.compiletime.*
 case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[String, ValueType]):
   def apply[LocalizationType <: LocalizationType & Singleton] =
     ${Cosmopolite.access}
-  
+
   def map[ValueType2](lambda: ValueType => ValueType2): Polyglot[ValueType2, LocalizationType] =
     Polyglot(value.mapValues(lambda))
-  
+
   def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
-  
+
   infix def & [ValueType2 >: ValueType, LocalizationType2](other: Polyglot[ValueType2, LocalizationType2])
           : Polyglot[ValueType2, LocalizationType2]
 
@@ -53,7 +53,7 @@ object Cosmopolite:
 // object Language:
 //   @targetName("make")
 //   def apply[L <: String: ValueOf]: Language[L] = Language(summon[ValueOf[L]].value)
-  
+
 //   inline def parse[L <: String](str: String): Option[Language[L]] =
 //     Option.when(reifyToSet[L].contains(str))(Language(str))
 
@@ -65,7 +65,7 @@ object Cosmopolite:
 //     def langs(t: TypeRepr): Set[String] = t.dealias.asMatchable match
 //       case OrType(left, right)                => langs(left) ++ langs(right)
 //       case ConstantType(StringConstant(lang)) => Set(lang)
-//       case _                                  => fail(msg"expected a union or constant type")
+//       case _                                  => fail(m"expected a union or constant type")
 
 //     Expr(langs(TypeRepr.of[L]))
 
@@ -76,12 +76,12 @@ object Cosmopolite:
 //     .join(seq.head, t"", t"")
 
 //     Messages[L](Map(summon[ValueOf[L]].value.show -> string))
-   
+
 // case class Messages[-L <: String](text: Map[Text, Text]):
-//   @targetName("and") 
+//   @targetName("and")
 //   infix def &[L2 <: String & Singleton](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
 //     Messages(text ++ messages.text)
-   
+
 //   def apply[L2 <: L: ValueOf]: Text = text(summon[ValueOf[L2]].value.show)
 //   def apply[L2 <: L]()(using ctx: Language[L2]): Text = text(ctx.value.show)
 
