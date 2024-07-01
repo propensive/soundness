@@ -33,6 +33,9 @@ import language.dynamics
 object Media:
   given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
 
+  given [ValueType: Nominable] => ValueType is Media = value =>
+    Extensions.guess(ValueType.name(value).cut(t".").last)
+
   object Group:
     given Group is Inspectable = _.name
     given Group is Showable = _.name.lower
