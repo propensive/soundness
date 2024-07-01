@@ -98,7 +98,7 @@ case class Command(arguments: Text*) extends Executable:
 
 object Pipeline:
   given Pipeline is Communicable =
-    pipeline => msg"${pipeline.commands.map(_.show).join(t" | ")}"
+    pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
 
   given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
   given Pipeline is Showable = _.commands.map(_.show).join(t" | ")

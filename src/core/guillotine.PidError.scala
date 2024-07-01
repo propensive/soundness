@@ -20,4 +20,4 @@ import anticipation.*
 import fulminate.*
 import rudiments.*
 
-case class PidError(pid: Pid) extends Error(msg"the process with PID ${pid.value} is not running")
+case class PidError(pid: Pid) extends Error(m"the process with PID ${pid.value} is not running")

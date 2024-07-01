@@ -40,13 +40,13 @@ object Sh:
     def complete(state: State): Command =
       val arguments = state.current match
         case Quotes2 =>
-          throw InterpolationError(msg"the double quotes have not been closed")
+          throw InterpolationError(m"the double quotes have not been closed")
 
         case Quotes1 =>
-          throw InterpolationError(msg"the single quotes have not been closed")
+          throw InterpolationError(m"the single quotes have not been closed")
 
         case _ if state.escape =>
-          throw InterpolationError(msg"cannot terminate with an escape character")
+          throw InterpolationError(m"cannot terminate with an escape character")
 
         case _ =>
           state.arguments
@@ -59,7 +59,7 @@ object Sh:
     def insert(state: State, value: Parameters): State =
       value.params.to(List) match
         case h :: t =>
-          if state.escape then throw InterpolationError(msg"""
+          if state.escape then throw InterpolationError(m"""
             escaping with '\\' is not allowed immediately before a substitution
           """)
 

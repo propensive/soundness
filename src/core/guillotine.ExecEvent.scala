@@ -27,10 +27,10 @@ import spectacular.*
 
 object ExecEvent:
   given ExecEvent is Communicable =
-    case AbortProcess(pid)       => msg"The process with PID $pid was aborted"
-    case PipelineStart(commands) => msg"Started pipeline ${commands.map(_.show).join(t" ")}"
-    case KillProcess(pid)        => msg"Killed process with PID $pid"
-    case ProcessStart(command)   => msg"Starting process $command"
+    case AbortProcess(pid)       => m"The process with PID $pid was aborted"
+    case PipelineStart(commands) => m"Started pipeline ${commands.map(_.show).join(t" ")}"
+    case KillProcess(pid)        => m"Killed process with PID $pid"
+    case ProcessStart(command)   => m"Starting process $command"
 
 enum ExecEvent:
   case ProcessStart(command: Command)
