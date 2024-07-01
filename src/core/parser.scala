@@ -175,7 +175,7 @@ object JsonAst:
       (using jsonParse: Errant[JsonParseError])
           : JsonAst/*^{readable, jsonParse}*/ =
 
-    val stream = SourceType.read(source)
+    val stream = SourceType.stream(source)
     var line: Int = 0
     var colStart: Int = 0
 
