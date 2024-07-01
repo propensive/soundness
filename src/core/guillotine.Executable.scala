@@ -78,7 +78,7 @@ object Command:
       else argument
     .join(t" ")
 
-  given Debug[Command] = command =>
+  given Command is Inspectable = command =>
     val commandText: Text = formattedArguments(command.arguments)
     if commandText.contains(t"\"") then t"sh\"\"\"$commandText\"\"\"" else t"sh\"$commandText\""
 
@@ -100,7 +100,7 @@ object Pipeline:
   given Pipeline is Communicable =
     pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
 
-  given Debug[Pipeline] = _.commands.map(_.inspect).join(t" | ")
+  given Pipeline is Inspectable = _.commands.map(_.inspect).join(t" | ")
   given Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:
