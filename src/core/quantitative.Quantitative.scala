@@ -110,8 +110,9 @@ object Quantitative extends Quantitative2:
         type Self = Quantity[UnitsType]
         def text(value: Quantity[UnitsType]): Text = value.render
 
-    inline given [UnitsType <: Measure](using Decimalizer) => Debug[Quantity[UnitsType]] =
-      new Debug[Quantity[UnitsType]]:
+    inline given [UnitsType <: Measure](using Decimalizer) => Quantity[UnitsType] is Inspectable =
+      new Inspectable:
+        type Self = Quantity[UnitsType]
         def text(value: Quantity[UnitsType]): Text = value.render
 
     def renderUnits(units: Map[Text, Int]): Text =
