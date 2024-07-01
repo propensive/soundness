@@ -51,6 +51,8 @@ object Serpentine:
 
     def unsafe[NameType <: Label](text: Text): Name[NameType] = text.s: Name[NameType]
 
+    def unapply[NameType <: Label](name: Name[NameType]): Some[Text] = Some(name.render)
+
   extension [NameType <: Label](name: Name[NameType])
     def render: Text = name.tt
     def widen[NameType2 <: NameType]: Name[NameType2] = name
