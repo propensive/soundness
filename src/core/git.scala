@@ -46,24 +46,24 @@ object GitError:
         AddFailed, NoWorkTree
 
   given Detail is Communicable =
-    case CannotExecuteGit   => msg"the `git` command could not be executed"
-    case CloneFailed        => msg"the repository could not be cloned"
-    case InvalidRepoPath    => msg"the repository path was not valid"
-    case RepoDoesNotExist   => msg"the repository does not exist"
-    case BranchDoesNotExist => msg"the branch does not exist"
-    case CommitDoesNotExist => msg"the commit does not exist"
-    case CommitFailed       => msg"the commit could not be created"
-    case AddFailed          => msg"the path could not be added"
-    case PullFailed         => msg"the pull operation did not complete"
-    case BranchFailed       => msg"the new branch could not be created"
-    case TagFailed          => msg"the new tag could not be created"
-    case NoWorkTree         => msg"this bare repository does not have a work tree"
-    case CannotSwitchBranch => msg"the branch could not be changed"
+    case CannotExecuteGit   => m"the `git` command could not be executed"
+    case CloneFailed        => m"the repository could not be cloned"
+    case InvalidRepoPath    => m"the repository path was not valid"
+    case RepoDoesNotExist   => m"the repository does not exist"
+    case BranchDoesNotExist => m"the branch does not exist"
+    case CommitDoesNotExist => m"the commit does not exist"
+    case CommitFailed       => m"the commit could not be created"
+    case AddFailed          => m"the path could not be added"
+    case PullFailed         => m"the pull operation did not complete"
+    case BranchFailed       => m"the new branch could not be created"
+    case TagFailed          => m"the new tag could not be created"
+    case NoWorkTree         => m"this bare repository does not have a work tree"
+    case CannotSwitchBranch => m"the branch could not be changed"
 
 case class GitError(detail: GitError.Detail)
-extends Error(msg"the Git operation could not be completed because $detail")
+extends Error(m"the Git operation could not be completed because $detail")
 
-case class GitRefError(value: Text) extends Error(msg"$value is not a valid Git reference")
+case class GitRefError(value: Text) extends Error(m"$value is not a valid Git reference")
 
 class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType):
   lazy val result: ResultType/*^{closure*}*/ = closure
@@ -516,7 +516,7 @@ object GitEvent:
   given GitEvent transcribes ExecEvent = GitEvent.Exec(_)
 
   given GitEvent is Communicable =
-    case Exec(reason) => msg"The Git operation did not execute successfully: $reason"
+    case Exec(reason) => m"The Git operation did not execute successfully: $reason"
 
 enum GitEvent:
   case Exec(event: ExecEvent)
