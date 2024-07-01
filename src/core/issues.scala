@@ -26,47 +26,47 @@ import language.experimental.captureChecking
 object CodlError:
   given Reason is Communicable =
     case UnexpectedCarriageReturn =>
-      msg"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
+      m"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
 
     case CarriageReturnMismatch(true) =>
-      msg"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which does not
+      m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which does not
             match the document's prior newline convention"""
 
     case CarriageReturnMismatch(false) =>
-      msg"a carriage return ('\\r') was encountered, which does not match the document's prior newline convention"
+      m"a carriage return ('\\r') was encountered, which does not match the document's prior newline convention"
 
     case UnevenIndent(initial, indent) =>
-      msg"the indentation level of ${indent - initial} (with a margin of $initial) is not an exact multiple of 2"
+      m"the indentation level of ${indent - initial} (with a margin of $initial) is not an exact multiple of 2"
 
     case IndentAfterComment =>
-      msg"indentation was given after a comment; the comment should be aligned with its next key"
+      m"indentation was given after a comment; the comment should be aligned with its next key"
 
     case BadSubstitution =>
-      msg"a substitution cannot be made at this point"
+      m"a substitution cannot be made at this point"
 
     case BadTermination =>
-      msg"two # symbols terminates the document and must appear alone on a line"
+      m"two # symbols terminates the document and must appear alone on a line"
 
     case SurplusIndent =>
-      msg"too much indentation was given"
+      m"too much indentation was given"
 
     case InsufficientIndent =>
-      msg"insufficient indentation was specified"
+      m"insufficient indentation was specified"
 
     case MissingKey(point, key) =>
-      msg"the value $key was missing at $point"
+      m"the value $key was missing at $point"
 
     case DuplicateKey(point, key) =>
-      msg"the unique key $key has already been used at $point"
+      m"the unique key $key has already been used at $point"
 
     case SurplusParams(point, key) =>
-      msg"too many parameters were given to the key $key at $point"
+      m"too many parameters were given to the key $key at $point"
 
     case InvalidKey(point, key) =>
-      msg"the key $key was invalid at $point"
+      m"the key $key was invalid at $point"
 
     case DuplicateId(point, line, col) =>
-      msg"the unique ID has been used before at $line:$col, $point"
+      m"the unique ID has been used before at $line:$col, $point"
 
   enum Reason:
     case UnexpectedCarriageReturn
@@ -83,16 +83,16 @@ object CodlError:
     case DuplicateId(point: Text, line: Int, col: Int)
 
 case class CodlError(line: Int, col: Int, length: Int, reason: CodlError.Reason)
-extends Error(msg"could not read the CoDL document at $line:$col: $reason")
+extends Error(m"could not read the CoDL document at $line:$col: $reason")
 
 case class BcodlError(expectation: Text, pos: Int)
-extends Error(msg"expected $expectation at position $pos")
+extends Error(m"expected $expectation at position $pos")
 
 case class MultipleIdentifiersError(key: Text)
-extends Error(msg"multiple parameters of $key have been marked as identifiers")
+extends Error(m"multiple parameters of $key have been marked as identifiers")
 
 case class MissingValueError(key: Text)
-extends Error(msg"the key $key does not exist in the CoDL document")
+extends Error(m"the key $key does not exist in the CoDL document")
 
 case class MissingIndexValueError(index: Int)
-extends Error(msg"the index $index does not exist in the CoDL document")
+extends Error(m"the index $index does not exist in the CoDL document")
