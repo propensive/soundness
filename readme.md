@@ -40,6 +40,10 @@ All Gastronomy terms and types are defined in the `gastronomy` package:
 ```scala
 import gastronomy.*
 ```
+and exported to the `soundness` package:
+```scala
+import soundness.*
+```
 
 __Gastronomy__ provides representations of public, private and symmetric keys which offer a number
 of cryptographic methods:
@@ -231,9 +235,6 @@ privateKey.pem(RevealSecretKey)
 Gastronomy may be easily extended to support other cryptographic algorithms. The existing
 implementations of `Rsa`, `Dsa`, `Aes`, `Sha1`, `Sha2` and `Md5` should be studied to investigate
 this possibility.
-
-
-
 
 
 ## Status
