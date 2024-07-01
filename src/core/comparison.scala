@@ -99,7 +99,7 @@ extension [ValueType](left: ValueType)
 
 object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable]:
   def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
-    Semblance.Identical(left.debug)
+    Semblance.Identical(left.inspect)
 
   given Int is Contrastable as int = (left, right) =>
     if left == right then Semblance.Identical(left.show)
@@ -114,12 +114,12 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       Semblance.Different(left.show, right.show, sizeText)
 
   inline def general[ValueType]: ValueType is Contrastable = (left, right) =>
-    if left == right then Semblance.Identical(left.debug) else Semblance.Different(left.debug, right.debug)
+    if left == right then Semblance.Identical(left.inspect) else Semblance.Different(left.inspect, right.inspect)
 
   inline given Exception is Contrastable:
     def apply(left: Exception, right: Exception): Semblance =
-      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.debug)
-      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.debug)
+      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.inspect)
+      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.inspect)
 
       if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
       else Semblance.Different(leftMsg, rightMsg)
@@ -140,13 +140,13 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
 
-            label -> Semblance.Identical(value.debug)
+            label -> Semblance.Identical(value.inspect)
 
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscript}" -> Semblance.Different(t"—", value.debug)
+            t" ⧸${rightIndex.show.subscript}" -> Semblance.Different(t"—", value.inspect)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscript}⧸" -> Semblance.Different(value.debug, t"—")
+            t"${leftIndex.show.superscript}⧸" -> Semblance.Different(value.inspect, t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
@@ -158,24 +158,24 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
 
   inline given [ValueType: Contrastable: Similarity] => IArray[ValueType] is Contrastable as iarray:
     def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   inline given [ValueType: Contrastable: Similarity] => List[ValueType] is Contrastable as list:
     def apply(left: List[ValueType], right: List[ValueType]): Semblance =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   inline given [ValueType: Contrastable: Similarity] => Vector[ValueType] is Contrastable as vector:
     def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.debug, right.debug)
+      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable = (left, right) =>
     val elements = fields(left, true): [FieldType] =>
       leftParam =>
-        if leftParam == complement(right) then (label, Semblance.Identical(leftParam.debug))
+        if leftParam == complement(right) then (label, Semblance.Identical(leftParam.inspect))
         else (label, context(leftParam, complement(right)))
 
-    Semblance.Breakdown(elements, left.debug, right.debug)
+    Semblance.Breakdown(elements, left.inspect, right.inspect)
 
   inline def split[DerivationType: SumReflection]: DerivationType is Contrastable = (left, right) =>
     variant(left): [VariantType <: DerivationType] =>
-      left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.debug, right.debug))
+      left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.inspect, right.inspect))
