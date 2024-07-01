@@ -6,10 +6,18 @@
 
 __Efficient permutation representations__
 
-
+A permutation is a rearrangement of the elements in an ordered collection. It
+is a one-to-one mapping—a bijection—and therefore reversible.
+[Lehmer codes](https://en.wikipedia.org/wiki/Lehmer_code) provide a mapping
+between positive integers and permutations, which make it possible to describe
+a permutation of _n_ elements in _O(nlog(n))_ space. _Metamorphose_ provides
+an implementation of this encoding.
 
 ## Features
 
+- efficient representation of permutations of collection elements
+- bijection between positive integers and permutations
+- provides a binary serialization of permutations
 
 
 ## Availability
@@ -18,11 +26,59 @@ __Efficient permutation representations__
 
 ## Getting Started
 
+Metamorphose primarily provides the `Permutation` class, which is in the
+`metamorphose` package and exported to the `soundness` package. You can import
+it with,
+```scala
+import metamorphose.*
+```
+or,
+```scala
+import soundness.*
+```
+
+There are two ways to construct a new `Permutation`. Firstly, from an ordered
+sequence of distinct indexes, for example,
+```scala
+val permutation = Permutation(Vector(1, 4, 2, 3, 0))
+```
+which interprets the ordering of the indexes to yield the permutation with
+factoradic number 45, i.e. `Permutation(Factoradic(45))`.
+
+Or, if we already know the factoradic number of the permutation, we can pass
+that in directly, using the `Factoradic` costructor, like so:
+```scala
+val permutation = Permutation(Factoradic(45))
+```
+
+To check that this is the same permutation, we can expand it with,
+```scala
+val order: List[Int] = permutation.expansion
+```
+which gives the original sequence back: `List(1, 4, 2, 3, 0)`.
+
+It's also possible to see the Lehmer code derived from this permutation with,
+```scala
+permutation.lehmer
+```
+which produces, `List(1, 3, 1, 1, 0)`.
+
+We can apply this permutation to a sufficiently long sequence just by applying
+it to the sequence, i.e. `permutation(list)`.
+
+Permutations are always reversible, and `Permutation#inverse` will construct a
+new permutation which will permute a sequence permuted by the original
+permutation back to the original list.
+
+That is, for all lists and permutations of the right size it is true that,
+```scala
+permutation.inverse(permutation(list)) == list
+```
 
 
 ## Status
 
-Metamorphose is classified as ____. For reference, Soundness projects are
+Metamorphose is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -103,7 +159,8 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-
+When an insect metamorphoses, it permutes the elements of its body from one
+form into another.
 
 In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -118,7 +175,8 @@ language.
 
 ## Logo
 
-
+The logo shows a butterfly, which has undergone metamorphosis from a
+caterpillar.
 
 ## License
 
