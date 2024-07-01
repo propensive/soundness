@@ -42,7 +42,7 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
 
   def read[InputType: Readable by Bytes](inputType: InputType): Image[ImageFormatType] =
     reader.synchronized:
-      reader.setInput(ji.ImageIO.createImageInputStream(inputType.readAs[Bytes].javaInputStream).nn)
+      reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
       Image(reader.read(0).nn).also(reader.dispose())
 
 erased trait ImageFormat
@@ -83,4 +83,4 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
 
 object Image:
   def apply[InputType: Readable by Bytes](inputType: InputType): Image[?] =
-    Image(ji.ImageIO.read(inputType.readAs[Bytes].javaInputStream).nn)
+    Image(ji.ImageIO.read(inputType.read[Bytes].javaInputStream).nn)
