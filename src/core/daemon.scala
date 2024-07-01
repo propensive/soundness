@@ -67,8 +67,8 @@ trait StderrSupport:
 
 case class ClientConnection[BusType <: Matchable](pid: Pid):
   val stderr: Promise[ji.OutputStream] = Promise()
-  val signals: Funnel[Signal] = Funnel()
-  val bus: Funnel[BusType] = Funnel()
+  val signals: Spool[Signal] = Spool()
+  val bus: Spool[BusType] = Spool()
   val terminatePid: Promise[Pid] = Promise()
   val exitPromise: Promise[ExitStatus] = Promise()
   def receive(message: BusType): Unit = bus.put(message)
