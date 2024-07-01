@@ -80,7 +80,7 @@ class Classloader(val java: ClassLoader):
 
 object Classpath:
   @targetName("child")
-  infix def / (child: PathName[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
+  infix def / (child: Name[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
@@ -136,14 +136,14 @@ object ClasspathRef:
   given ClasspathRef is Navigable[Forbidden, Classpath.type] with
     def root(ref: ClasspathRef): Classpath.type = Classpath
     def prefix(classpathCompanion: Classpath.type): Text = t""
-    def descent(ref: ClasspathRef): List[PathName[Forbidden]] = ref.descent
+    def descent(ref: ClasspathRef): List[Name[Forbidden]] = ref.descent
     def separator(ref: ClasspathRef): Text = t"/"
 
   given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
   given ClasspathRef is Showable = _.text
 
-case class ClasspathRef(descent: List[PathName[ClasspathRef.Forbidden]]):
+case class ClasspathRef(descent: List[Name[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
 
