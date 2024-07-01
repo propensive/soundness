@@ -109,7 +109,7 @@ object Path:
 
   given Path is Showable as showable = _.render
   given encoder: Encoder[Path] = _.render
-  given debug: Debug[Path] = _.render
+  given Path is Inspectable = _.render
 
   inline def apply[PathType: GenericPath](path: PathType): Path raises PathError =
     Navigable.decode(path.pathText)
@@ -182,7 +182,7 @@ object Link:
     case link: SafeLink     => link.render
 
   given encoder: Encoder[Link] = showable.text(_)
-  given debug: Debug[Link] = showable.text(_)
+  given Link is Inspectable = showable.text(_)
 
 sealed trait Link
 
@@ -207,7 +207,7 @@ object Windows:
 
     given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
-    given debug: Debug[Path] = _.render
+    given Path is Inspectable = _.render
 
   case class Path(drive: Drive, descent: List[Name[Forbidden]]) extends galilei.Path:
     def root: Drive = drive
@@ -229,10 +229,10 @@ object Windows:
     inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
     given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
-    given debug: Debug[Link] = _.render
+    given Link is Inspectable = _.render
 
   object Drive:
-    given debug: Debug[Drive] = drive => t"drive:${drive.letter}"
+    given Drive is Inspectable = drive => t"drive:${drive.letter}"
     given Drive is Showable as showable = drive => t"${drive.letter}"
     given default: Default[Drive] = () => Drive('C')
 
@@ -278,7 +278,7 @@ object Unix:
 
     given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
-    given debug: Debug[Path] = _.render
+    given Path is Inspectable = _.render
 
   case class Path(descent: List[Name[Forbidden]]) extends galilei.Path:
     def root: Unset.type = Unset
@@ -300,14 +300,14 @@ object Unix:
     inline given (using Errant[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
     given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
-    given debug: Debug[Link] = _.render
+    given Link is Inspectable = _.render
 
   case class Link(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Link
 
   sealed trait Entry extends galilei.Entry
 
 object Volume:
-  given debug: Debug[Volume] = volume => t"volume[${volume.name}:${volume.volumeType}]"
+  given Volume is Inspectable = volume => t"volume[${volume.name}:${volume.volumeType}]"
 
 case class Volume(name: Text, volumeType: Text)
 
@@ -506,7 +506,7 @@ trait EntryMaker[+EntryType <: Entry, -PathType <: Path]:
   def apply(value: PathType): EntryType
 
 object Directory:
-  given debug: Debug[Directory] = directory => t"directory:${directory.path.render}"
+  given Directory is Inspectable = directory => t"directory:${directory.path.render}"
 
   given GenericWatchService:
     def apply(): java.nio.file.WatchService = jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
@@ -531,7 +531,7 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   inline infix def / (name: Text)(using Errant[PathError]): Path = path / Name(name)
 
 object File:
-  given Debug[File] as debug = file => t"file:${file.path.render}"
+  given File is Inspectable as inspectable = file => t"file:${file.path.render}"
 
   given [FileType <: File](using Errant[StreamError], Errant[IoError])
       => FileType is Readable by Bytes as readableBytes =
@@ -569,27 +569,27 @@ case class File(path: Path) extends Unix.Entry, Windows.Entry:
     destination
 
 object Socket:
-  given debug: Debug[Socket] = socket => t"socket:${socket.path.render}"
+  given Socket is Inspectable = socket => t"socket:${socket.path.render}"
 
 case class Socket(path: Unix.Path, channel: jnc.ServerSocketChannel) extends Unix.Entry
 
 object Fifo:
-  given debug: Debug[Fifo] = fifo => t"fifo:${fifo.path.render}"
+  given Fifo is Inspectable = fifo => t"fifo:${fifo.path.render}"
 
 case class Fifo(path: Unix.Path) extends Unix.Entry
 
 object Symlink:
-  given debug: Debug[Symlink] = symlink => t"symlink:${symlink.path.render}"
+  given Symlink is Inspectable = symlink => t"symlink:${symlink.path.render}"
 
 case class Symlink(path: Unix.Path) extends Unix.Entry
 
 object BlockDevice:
-  given debug: Debug[BlockDevice] = device => t"block-device:${device.path.render}"
+  given BlockDevice is Inspectable = device => t"block-device:${device.path.render}"
 
 case class BlockDevice(path: Unix.Path) extends Unix.Entry
 
 object CharDevice:
-  given debug: Debug[CharDevice] = device => t"char-device:${device.path.render}"
+  given CharDevice is Inspectable = device => t"char-device:${device.path.render}"
 
 case class CharDevice(path: Unix.Path) extends Unix.Entry
 
@@ -758,7 +758,7 @@ object SafeLink:
   given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
   given SafeLink is Showable as show = _.render
   given encoder: Encoder[SafeLink] = _.render
-  given debug: Debug[SafeLink] = _.render
+  given SafeLink is Inspectable = _.render
 
   given (using PathCreator[SafeLink, GeneralForbidden, Int], ValueOf["."]) => SafeLink is Followable[GeneralForbidden, "..", "."] =
     new Followable[GeneralForbidden, "..", "."]:
