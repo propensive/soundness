@@ -42,7 +42,7 @@ enum CodlToken:
 object CodlToken:
   //given Similar[CodlToken] = _.productPrefix == _.productPrefix
 
-  given Debug[CodlToken] =
+  given CodlToken is Inspectable =
     case Indent                       => t"Indent"
     case Peer                         => t"Peer"
     case Blank                        => t"Blank"

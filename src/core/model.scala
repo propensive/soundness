@@ -32,13 +32,13 @@ import language.dynamics
 //import language.experimental.captureChecking
 
 object CodlNode:
-  given debug: Debug[CodlNode] = _.data.option.fold(t"!"): data =>
+  given CodlNode is Inspectable = _.data.option.fold(t"!"): data =>
     t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
 
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
 
-  given (using Debug[CodlNode]) => CodlNode is Contrastable as contrast = (left, right) =>
+  given (using CodlNode is Inspectable) => CodlNode is Contrastable as contrast = (left, right) =>
     if left == right then Semblance.Identical(left.inspect) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
@@ -87,7 +87,7 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
 object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
-  given debug: Debug[CodlDoc] = _.write
+  given CodlDoc is Inspectable = _.write
   given (using printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
@@ -168,7 +168,7 @@ object Data:
   given insertion[T: CodlEncoder]: Insertion[List[Data], T] =
     value => summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect { case data: Data => data }
 
-  given debug: Debug[Data] = data => t"Data(${data.key}, ${data.children.length})"
+  given Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
 
 case class Data(key: Text, children: IArray[CodlNode] = IArray(), layout: Layout = Layout.empty,
                     schema: CodlSchema = CodlSchema.Free)
@@ -206,7 +206,6 @@ object Layout:
   final val empty = Layout(0, false, 0)
 
 case class Layout(params: Int, multiline: Boolean, col: Int)
-derives Debug//, Contrastable
 
 trait Indexed extends Dynamic:
   def children: IArray[CodlNode]

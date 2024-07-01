@@ -32,5 +32,5 @@ case class Network(address: MacAddress)
   """
 
   val network = Codl.read[Network](data)
-  summon[Debug[Network]]
+  summon[Network is Inspectable]
   Out.println(t"${network.inspect}")
