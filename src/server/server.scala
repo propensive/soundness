@@ -21,6 +21,7 @@ import fulminate.*
 import digression.*
 import vacuous.*
 import parasite.*
+import symbolism.*
 import turbulence.*
 import contingency.*
 import gossamer.{at as _, slice as _, *}
@@ -100,14 +101,17 @@ object Servable:
 
   given Bytes is Servable = Servable(media"application/octet-stream")(HttpBody.Data(_))
 
-  // given (using CharEncoder) => Text is Servable = Servable(media"text/plain"): text =>
-  //   HttpBody.Data(text.bytes)
-
   given [ValueType: {Encodable in Bytes as encodable, Media as media}] => ValueType is Servable =
     (value, status, headers, responder) =>
       responder.addHeader(ResponseHeader.ContentType.header, media.mediaType(value).show)
       headers.each(responder.addHeader)
       responder.sendBody(200, HttpBody.Data(encodable.encode(value)))
+
+  given [ValueType: {Readable by Bytes as readable, Media as media}] => ValueType is Servable =
+    (value, status, headers, responder) =>
+      responder.addHeader(ResponseHeader.ContentType.header, media.mediaType(value).show)
+      headers.each(responder.addHeader)
+      responder.sendBody(200, HttpBody.Chunked(value.stream[Bytes]))
 
 object Redirect:
   def apply[LocationType: Locatable](location: LocationType): Redirect =
