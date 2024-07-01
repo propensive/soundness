@@ -138,11 +138,11 @@ sealed trait Path:
         case 32768 => PathStatus.File
         case 40960 => PathStatus.Symlink
         case 49152 => PathStatus.Socket
-        case _     => throw Panic(msg"an unexpected POSIX mode value was returned")
+        case _     => throw Panic(m"an unexpected POSIX mode value was returned")
 
     catch
       case error: UnsupportedOperationException =>
-        throw Panic(msg"the file attribute unix:mode could not be accessed")
+        throw Panic(m"the file attribute unix:mode could not be accessed")
 
       case error: ji.FileNotFoundException =>
         raise(IoError(this))(PathStatus.File)
@@ -738,19 +738,19 @@ package filesystemOptions:
   given doNotWriteSynchronously: WriteSynchronously with
     def options(): List[jnf.StandardOpenOption] = Nil
 
-case class IoError(path: Path) extends Error(msg"an I/O error occurred involving $path")
+case class IoError(path: Path) extends Error(m"an I/O error occurred involving $path")
 
 case class OverwriteError(path: Path)
-extends Error(msg"cannot overwrite a pre-existing filesystem node $path")
+extends Error(m"cannot overwrite a pre-existing filesystem node $path")
 
 case class UnemptyDirectoryError(path: Path)
-extends Error(msg"the directory is not empty")
+extends Error(m"the directory is not empty")
 
 case class ForbiddenOperationError(path: Path)
-extends Error(msg"insufficient permissions to modify $path")
+extends Error(m"insufficient permissions to modify $path")
 
 case class PathStatusError(path: Path)
-extends Error(msg"the filesystem node at $path was expected to be a different type")
+extends Error(m"the filesystem node at $path was expected to be a different type")
 
 case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) extends Link
 
