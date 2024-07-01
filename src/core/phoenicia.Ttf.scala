@@ -30,7 +30,7 @@ import vacuous.*
 
 object Ttf:
   def apply[SourceType: Readable by Bytes](source: SourceType): Ttf =
-    val data = source.readAs[Bytes]
+    val data = source.read[Bytes]
     Ttf(data)
 
   enum PlatformId:
