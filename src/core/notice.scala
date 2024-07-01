@@ -54,35 +54,35 @@ trait Compiler:
 class CompileProcess():
   private[anthology] var continue: Boolean = true
   private val completion: Promise[CompileResult] = Promise()
-  private val noticesFunnel: Funnel[Notice] = Funnel()
-  private val progressFunnel: Funnel[CompileProgress] = Funnel()
+  private val noticesSpool: Spool[Notice] = Spool()
+  private val progressSpool: Spool[CompileProgress] = Spool()
   private var compilation: Optional[Task[Unit]] = Unset
   private var errorCount: Int = 0
   private var warningCount: Int = 0
 
   def put(notice: Notice): Unit =
-    noticesFunnel.put(notice)
+    noticesSpool.put(notice)
 
     notice.importance match
       case Importance.Error   => errorCount += 1
       case Importance.Warning => warningCount += 1
       case _                  => ()
 
-  def put(progress: CompileProgress): Unit = progressFunnel.put(progress)
+  def put(progress: CompileProgress): Unit = progressSpool.put(progress)
   def put(result: CompileResult): Unit = completion.offer(result)
   def put(task: Task[Unit]): Unit = compilation = task
 
   def complete()(using Monitor): CompileResult logs CompileEvent raises ConcurrencyError =
     try completion.await() finally
       safely(compilation.let(_.await()))
-      safely(noticesFunnel.stop())
-      safely(progressFunnel.stop())
+      safely(noticesSpool.stop())
+      safely(progressSpool.stop())
 
   def abort(): Unit = continue = false
   def cancelled: Boolean = !continue
 
-  lazy val progress: LazyList[CompileProgress] = progressFunnel.stream
-  lazy val notices: LazyList[Notice] = noticesFunnel.stream
+  lazy val progress: LazyList[CompileProgress] = progressSpool.stream
+  lazy val notices: LazyList[Notice] = noticesSpool.stream
 
 enum CompileEvent:
   case Start
