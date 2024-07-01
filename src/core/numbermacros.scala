@@ -24,12 +24,12 @@ import scala.compiletime.*
 
 object Cardinality:
   given Realm = realm"cardinality"
-  
+
   def apply[LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type](digits: Expr[String])(using Quotes)
           : Expr[LeftDoubleType ~ RightDoubleType] =
 
     import quotes.reflect.*
-    
+
     digits.value match
       case Some(string) =>
         TypeRepr.of[LeftDoubleType].asMatchable match
@@ -37,20 +37,20 @@ object Cardinality:
             TypeRepr.of[RightDoubleType].asMatchable match
               case ConstantType(DoubleConstant(upperBound)) =>
                 val value = string.toDouble
-            
+
                 if value < lowerBound
-                then abandon(msg"""the value $string is less than the lower bound for this value,
+                then abandon(m"""the value $string is less than the lower bound for this value,
                     ${lowerBound.toString}""")
-            
+
                 if value > upperBound
-                then abandon(msg"""the value $string is greater than the upper bound for this value,
+                then abandon(m"""the value $string is greater than the upper bound for this value,
                     ${upperBound.toString}""")
-  
+
                 '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
-          
+
               case _ =>
-                abandon(msg"the upper bound must be a Double singleton literal types")
+                abandon(m"the upper bound must be a Double singleton literal types")
           case _ =>
-            abandon(msg"the lower bound must be a Double singleton literal types")
+            abandon(m"the lower bound must be a Double singleton literal types")
       case None =>
         '{NumericRange($digits.toDouble)}
