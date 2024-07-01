@@ -34,6 +34,7 @@ import scala.collection.mutable as scm
 
 import java.io as ji
 import java.nio.file as jnf
+import java.net as jn
 import java.util.zip as juz
 
 //import scala.language.experimental.captureChecking
@@ -121,7 +122,7 @@ object ZipFile:
 case class ZipFile(private val filename: Text):
   private lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(filename.s)).nn
 
-  private val filesystemUri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
+  private val filesystemUri: jn.URI = jn.URI.create(t"jar:file:$filename".s).nn
 
   @targetName("child")
   infix def / (name: Name[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
