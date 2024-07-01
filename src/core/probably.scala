@@ -37,14 +37,14 @@ package testContexts:
   given threadLocal: TestContext = new TestContext():
     private val delegate: Option[TestContext] = Option(Runner.testContextThreadLocal.get()).map(_.nn).flatten
 
-    override def capture[ValueType: Debug](name: Text, value: ValueType): ValueType =
+    override def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
       delegate.map(_.capture[ValueType](name, value)).getOrElse(value)
 
 @annotation.capability
 class TestContext():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
 
-  def capture[ValueType: Debug](name: Text, value: ValueType): ValueType =
+  def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
     captured.append(name -> value.inspect)
     value
 

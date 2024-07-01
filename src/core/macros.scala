@@ -51,8 +51,8 @@ object Probably:
 
     exp match
       case Some('{type testType >: TestType; $expr: testType}) =>
-        val debug: Expr[Debug[testType]] =
-          Expr.summon[Debug[testType]].getOrElse('{ _.toString.tt })
+        val inspectable: Expr[testType is Inspectable] =
+          Expr.summon[testType is Inspectable].getOrElse('{ _.toString.tt })
 
         //val contrast: Expr[testType is Contrastable] = '{Contrastable.general[testType]}
 
@@ -60,7 +60,7 @@ object Probably:
 
         '{
           assertion[testType, TestType, ReportType, ResultType]
-              ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $debug)
+              ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $inspectable)
         }
 
       case _ =>
@@ -112,7 +112,7 @@ object Probably:
        exp: Option[TestType],
        inc: Inclusion[ReportType, Outcome],
        inc2: Inclusion[ReportType, DebugInfo],
-       display: Debug[TestType])
+       display: TestType is Inspectable)
           : ResultType =
 
     runner.run(test).pipe: run =>
@@ -146,7 +146,7 @@ object Probably:
       case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
       case _                        => t"<unknown>"
 
-    val debug: Expr[Debug[TestType]] =
-      Expr.summon[Debug[TestType]].getOrElse('{ _.toString.tt })
+    val inspectable: Expr[TestType is Inspectable] =
+      Expr.summon[TestType is Inspectable].getOrElse('{ _.toString.tt })
 
-    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $debug) }
+    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $inspectable) }
