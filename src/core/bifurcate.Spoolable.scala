@@ -16,9 +16,6 @@
 
 package bifurcate
 
-import anticipation.*
-import hypotenuse.*
-import rudiments.*
 import wisteria.*
 
 object Bufferable extends ProductDerivable[Bufferable]:
