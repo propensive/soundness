@@ -96,7 +96,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
   import errorHandlers.throwUnsafely
 
   val name: Text = Properties.ethereal.name[Text]()
-  val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / PathName(name)).as[Directory]
+  val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / Name(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val pidFile: Path = baseDir / p"pid"
   val clients: Mutex[Map[Pid, ClientConnection[BusType]]] = Mutex(Map())

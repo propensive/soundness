@@ -122,7 +122,7 @@ object Installer:
         val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
 
         val installFile = installDirectory.let: directory =>
-          (directory / PathName(command)).make[File]()
+          (directory / Name(command)).make[File]()
 
         installFile.let: file =>
           val filename: Text = file.debug
