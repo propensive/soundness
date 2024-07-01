@@ -47,20 +47,20 @@ object Pty:
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
-    
+
     case _ => LazyList()
 
 object PtyEscapeError:
   object Reason:
     given communicable: Communicable[Reason] =
-      case BadSgrParameters(ns)         => msg"${ns} is not a valid SGR parameter sequence"
-      case BadCsiParameter(n, command)  => msg"$n is not a valid CSI parameter for the $command command"
-      case NonintegerSgrParameter(text) => msg"$text is not a numerical SGR parameter"
-      case BadColor(n)                  => msg"$n is not a valid color number"
-      case BadOscParameter(parameter)   => msg"$parameter is not a recognized OSC parameter"
-      case BadCsiCommand(param, char)   => msg"$char (with parameter $param) is not a valid CSI command"
-      case BadCsiEscape(char)           => msg"$char is not valid in a CSI escape sequence"
-      case BadFeEscape(char)            => msg"$char is not a valid Fe escape"
+      case BadSgrParameters(ns)         => m"${ns} is not a valid SGR parameter sequence"
+      case BadCsiParameter(n, command)  => m"$n is not a valid CSI parameter for the $command command"
+      case NonintegerSgrParameter(text) => m"$text is not a numerical SGR parameter"
+      case BadColor(n)                  => m"$n is not a valid color number"
+      case BadOscParameter(parameter)   => m"$parameter is not a recognized OSC parameter"
+      case BadCsiCommand(param, char)   => m"$char (with parameter $param) is not a valid CSI command"
+      case BadCsiEscape(char)           => m"$char is not valid in a CSI escape sequence"
+      case BadFeEscape(char)            => m"$char is not a valid Fe escape"
 
   enum Reason:
     case BadSgrParameters(n: Text)
@@ -75,7 +75,7 @@ object PtyEscapeError:
 import PtyEscapeError.Reason, Reason.*
 
 case class PtyEscapeError(reason: Reason)
-extends Error(msg"an ANSI escape code could not be handled because $reason")
+extends Error(m"an ANSI escape code could not be handled because $reason")
 
 case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def stream: LazyList[Text] = output.stream
@@ -83,7 +83,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
   def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
     val buffer2: ScreenBuffer = buffer.copy()
-    
+
     object cursor:
       private var index: Int = state0.cursor
       def apply(): Int = index
@@ -92,7 +92,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       def y: Int = index/buffer2.width
       def x_=(x2: Int): Unit = index = y*buffer2.width + x2.min(buffer2.width - 1).max(0)
       def y_=(y2: Int): Unit = index = y2.min(buffer2.height - 1).max(0)*buffer2.width + x
-      
+
     var style = state0.style
     var state = state0
     var link = state0.link
@@ -112,40 +112,40 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       def unapplySeq(params: Text): Some[List[Int]] = Some(params.cut(t";").flatMap(SgrParam.unapply[0](_)))
 
     def wipe(cursor: Int): Unit = buffer2.set(cursor, ' ', style, link)
-    
+
     def set(x: Int, y: Int, char: Char, style: Style = style, link: Text = link): Unit =
       buffer2.set(x, y, char, style, link)
-    
+
     def cuu(n: Int): Unit = cursor.x = cursor.y - n
     def cud(n: Int): Unit = cursor.x = cursor.y + n
     def cuf(n: Int): Unit = cursor() = (cursor() + n).min(buffer2.width*buffer2.height - 1)
     def cub(n: Int): Unit = cursor() = (cursor() - n).max(0)
-    
+
     def cnl(n: Int): Unit =
       cursor.x = 0
       cursor.y = cursor.y + n
-    
+
     def cpl(n: Int): Unit =
       cursor.x = 0
       cursor.y = cursor.y - n
-    
+
     def cha(n: Int): Unit = cursor.x = n - 1
-    
+
     def cup(n: Int, m: Int): Unit =
       cursor.x = n - 1
       cursor.y = m - 1
-    
+
     def ed(n: Int): Unit = n match
       case 0 => for i <- cursor() until buffer2.capacity do wipe(i)
       case 1 => for i <- 0 until cursor() do wipe(i)
-      
+
       case 2 | 3 =>
         for i <- 0 until buffer2.capacity do wipe(i)
         cursor() = 0
-      
+
       case n =>
         raise(PtyEscapeError(BadCsiParameter(n, t"ED")))(())
-    
+
     def el(n: Int): Unit = n match
       case 0 => for x <- cursor.x until buffer2.width do set(x, cursor.y, ' ')
       case 1 => for x <- 0 to cursor.x do set(x, cursor.y, ' ')
@@ -164,7 +164,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
     def detectFocus(boolean: Boolean): Unit = state.copy(focusDetectionMode = boolean)
     def focus(boolean: Boolean): Unit = state.copy(focus = boolean)
     def bcp(boolean: Boolean): Unit = state.copy(bracketedPasteMode = boolean)
-    
+
     def osc(command: Text): Unit = command match
       case r"8;;$text(.*)" => setLink(text)
       case r"0;$text(.*)"  => title(text)
@@ -207,12 +207,12 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case 49                            => Background(style) = Rgb24(0, 0, 0)
           case n if 90 <= n <= 97            => Foreground(style) = palette(n - 82)
           case n if 100 <= n <= 107          => Background(style) = palette(n - 92)
-          
+
           case _ =>
             raise(PtyEscapeError(BadSgrParameters(params.map(_.show).join(t";"))))(style)
-        
+
         sgr(tail)
-    
+
     def csi(params: Text, char: Char): Unit = (params, char) match
       case (SgrParams(params*), 'm') => sgr(params.to(List))
       case (SgrParam[1](n),     'A') => cuu(n)
@@ -258,11 +258,11 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       case 13 => Rgb24(255,   0, 255)
       case 14 => Rgb24(  0, 255, 255)
       case 15 => Rgb24(255, 255, 255)
-      case _  => throw Panic(msg"tried to access non-existent palette color")
+      case _  => throw Panic(m"tried to access non-existent palette color")
 
     def color8(n: Int): Rgb24 = n match
       case n if 0 <= n <= 15 => palette(n)
-      
+
       case n if 232 <= n <= 255 =>
         val gray = n - 232
         val gray2 = 7 + gray*10 + gray/2
@@ -273,32 +273,32 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
         val g = (n - 16 - 36*r)/6
         val b = n - 16 - 36*r - 6*g
         Rgb24(r*42 + r/2, g*42 + g/2, b*42 + b/2)
-      
+
       case n =>
         raise(PtyEscapeError(BadColor(n)))(Rgb24(127, 127, 127))
 
     def recur(index: Int, context: Context): Pty =
       inline def proceed(context: Context): Pty =
         recur(index + 1, context)
-      
+
       inline def bs(): Pty =
         set(cursor.x, cursor.y, ' ', buffer2.style(cursor.x, cursor.y))
         cursor() -= 1
         if cursor() < 0 then cursor() = 0
         proceed(Normal)
-      
+
       inline def lf(): Pty =
         cursor.x = 0
         ff()
-      
+
       inline def ff(): Pty =
         if cursor.y < buffer2.height - 1 then cursor.y = cursor.y + 1 else su(1)
         proceed(Normal)
-      
+
       inline def cr(): Pty =
         cursor.x = 0
         proceed(Normal)
-      
+
       inline def put(char: Char): Pty =
         set(cursor.x, cursor.y, char)
         cursor() += 1
@@ -312,7 +312,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
       then Pty(buffer2, state.copy(cursor = cursor(), style = style, link = link), output = output)
       else
        val current: Char = unsafely(input(index))
-       
+
        context match
         case Normal => (current: @switch) match
           case '\u0000' => proceed(Normal) // nul()
@@ -348,37 +348,37 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case '\u001e' => proceed(Normal) // rs()
           case '\u001f' => proceed(Normal) // us()
           case ch       => put(ch)
-        
+
         case Escape => current match
           case '['                                      => recur(index + 1, Csi)
           case ']'                                      => recur(index + 1, Osc)
           case 'N' | 'O' | 'P' | '\\' | 'X' | '^' | '_' => proceed(Normal)
-          
+
           case char =>
             raise(PtyEscapeError(BadFeEscape(char)))(())
             proceed(Normal)
-        
+
         case Osc => current match
           case '\u0007' =>
             osc(escBuffer.text.also(escBuffer.clear()))
             proceed(Normal)
-          
+
           case '\u0027' =>
             proceed(Osc2)
-          
+
           case char =>
             escBuffer.append(char)
             proceed(Osc)
-        
+
         case Osc2 => current match
           case '\\' =>
             osc(escBuffer.text.also(escBuffer.clear()))
             proceed(Normal)
-          
+
           case char =>
             escBuffer.append(char)
             proceed(Normal)
-        
+
         case Csi => current match
           case char if '\u0000' <= char <= '\u001f' =>
             raise(PtyEscapeError(BadCsiEscape(char)))(())
@@ -387,15 +387,15 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case char if '\u0020' <= char <= '\u002f' =>
             escBuffer.append(char)
             proceed(Csi2)
-          
+
           case char if '\u0030' <= char <= '\u003f' =>
             escBuffer.append(char)
             proceed(Csi)
-          
+
           case char if '\u0040' <= char <= '\u007e' =>
             csi(escBuffer.text.also(escBuffer.clear()), char)
             proceed(Normal)
-          
+
           case char =>
             raise(PtyEscapeError(BadCsiEscape(char)))(())
             proceed(Normal)
@@ -404,11 +404,11 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
           case char if '\u0020' <= char <= '\u002f' =>
             escBuffer.append(char)
             proceed(Csi2)
-          
+
           case char if '\u0040' <= char <= '\u007e' =>
             csi(escBuffer.text.also(escBuffer.clear()), char)
             proceed(Normal)
-          
+
           case char =>
             raise(PtyEscapeError(BadCsiEscape(char)))(())
             proceed(Normal)
