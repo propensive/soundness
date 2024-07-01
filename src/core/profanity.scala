@@ -134,8 +134,8 @@ class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
     case other #:: rest                 => Keypress.CharKey(other) #:: process(rest)
     case _                              => LazyList()
 
-case class TerminalError(ttyMsg: Text)
-extends Error(msg"STDIN is not attached to a TTY: $ttyMsg")
+case class TerminalError(reason: Text)
+extends Error(m"STDIN is not attached to a TTY: $reason")
 
 object Terminal:
   def reportBackground: Text = t"\e]11;?\e\\"

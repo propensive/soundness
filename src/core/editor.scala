@@ -27,7 +27,7 @@ import fulminate.*
 
 //import language.experimental.captureChecking
 
-case class DismissError() extends Error(msg"the user dismissed an interaction")
+case class DismissError() extends Error(m"the user dismissed an interaction")
 
 trait Question[AnswerType]:
   def apply(keypress: TerminalEvent): Question[AnswerType]
