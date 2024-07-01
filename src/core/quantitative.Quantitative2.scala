@@ -177,7 +177,7 @@ trait Quantitative2:
                 .getOrElse("the same quantity")
 
               abandon:
-                msg"""the operands both represent ${dimensionName}, but there is no principal unit
+                m"""the operands both represent ${dimensionName}, but there is no principal unit
                       specified for this dimension"""
 
             case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
@@ -188,7 +188,7 @@ trait Quantitative2:
                       case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
 
                   case other =>
-                    abandon(msg"principal units had an unexpected type: ${other.show}")
+                    abandon(m"principal units had an unexpected type: ${other.show}")
 
 
     override def equals(that: Any): Boolean = that.asMatchable match
@@ -222,7 +222,7 @@ trait Quantitative2:
                   "the same physical quantity"
 
               abandon:
-                msg"""both operands represent $dimensionName, but the coversion ratio between them
+                m"""both operands represent $dimensionName, but the coversion ratio between them
                       is not known
 
                       To provide the conversion ratio, please provide a contextual instance in
@@ -301,11 +301,11 @@ trait Quantitative2:
     (left.dimensionality.quantityName, right.dimensionality.quantityName) match
       case (Some(leftName), Some(rightName)) =>
         abandon:
-          msg"""the left operand represents $leftName, but the right operand represents $rightName;
+          m"""the left operand represents $leftName, but the right operand represents $rightName;
                 these are incompatible physical quantities"""
 
       case _ =>
-        abandon(msg"the operands represent different physical quantities")
+        abandon(m"the operands represent different physical quantities")
 
   def mulTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
           : Expr[Quantity[LeftType] is Multiplicable by Quantity[RightType]] =
@@ -350,7 +350,7 @@ trait Quantitative2:
     val units = UnitsMap[ValueType]
 
     if !units.map.values.all(_.power%2 == 0)
-    then abandon(msg"only quantities with units in even powers can have square roots calculated")
+    then abandon(m"only quantities with units in even powers can have square roots calculated")
     else
       val unitsType =
         UnitsMap:
@@ -371,7 +371,7 @@ trait Quantitative2:
 
     if !units.map.values.all(_.power%3 == 0)
     then abandon:
-      msg"only quantities with units whose powers are multiples of 3 can have cube roots calculated"
+      m"only quantities with units whose powers are multiples of 3 can have cube roots calculated"
     else
       val unitsType =
         UnitsMap:
@@ -463,4 +463,4 @@ trait Quantitative2:
   def describe[UnitsType <: Measure: Type](using Quotes): Expr[Text] =
     UnitsMap[UnitsType].dimensionality.quantityName match
       case Some(name) => '{${Expr(name)}.tt}
-      case None       => abandon(msg"there is no descriptive name for this physical quantity")
+      case None       => abandon(m"there is no descriptive name for this physical quantity")
