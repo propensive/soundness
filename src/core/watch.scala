@@ -90,13 +90,13 @@ object Watch:
       .to(Map)
 
 class Watch():
-  private val funnel: Funnel[WatchEvent] = Funnel()
+  private val spool: Spool[WatchEvent] = Spool()
   private val watches: scm.HashSet[PathWatch] = scm.HashSet[PathWatch]()
 
   private class PathWatch
       (private[Watch] val key: jnf.WatchKey,
        private[Watch] val base: jnf.Path,
-                      val funnel: Funnel[WatchEvent],
+                      val spool: Spool[WatchEvent],
                       val filter: Text => Boolean):
 
     def put(event: jnf.WatchEvent[?]): Unit =
@@ -106,28 +106,28 @@ class Watch():
           if filter(name) then try event.kind match
             case ENTRY_CREATE =>
               if base.resolve(path).nn.toFile.nn.isDirectory
-              then funnel.put(WatchEvent.NewDirectory(base.toString.show, name))
-              else funnel.put(WatchEvent.NewFile(base.toString.show, name))
+              then spool.put(WatchEvent.NewDirectory(base.toString.show, name))
+              else spool.put(WatchEvent.NewFile(base.toString.show, name))
 
             case ENTRY_MODIFY =>
-              funnel.put(WatchEvent.Modify(base.toString.show, name))
+              spool.put(WatchEvent.Modify(base.toString.show, name))
 
             case ENTRY_DELETE =>
-              funnel.put(WatchEvent.Delete(base.toString.show, name))
+              spool.put(WatchEvent.Delete(base.toString.show, name))
 
             case _ =>
               ()
 
           catch case err: Exception => ()
 
-  def stream: LazyList[WatchEvent] = funnel.stream
+  def stream: LazyList[WatchEvent] = spool.stream
 
   def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
     val watches2 = paths.map:
       case (path, filter) =>
         val key = path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
 
-        new PathWatch(key, path, funnel, filter).tap: watch =>
+        new PathWatch(key, path, spool, filter).tap: watch =>
           Watch.watches.isolate: map =>
             map(key) = map.at(key).or(Set()) + watch
 
