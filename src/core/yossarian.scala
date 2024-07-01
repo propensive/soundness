@@ -43,7 +43,7 @@ object Yossarian:
 
     def find(text: Text): Optional[ScreenBuffer] = line.render.s.indexOf(text.s) match
       case -1 => Unset
-      
+
       case index =>
         (text.length, styleBuffer.slice(index, index + text.length),
          charBuffer.slice(index, index + text.length),
@@ -56,18 +56,18 @@ object Yossarian:
       val length = capacity - offset
       val source = if n < 0 then 0 else offset
       val destination = if n < 0 then offset else 0
-      
+
       System.arraycopy(styleBuffer, source, styleBuffer, destination, length)
       System.arraycopy(charBuffer, source, charBuffer, destination, length)
       System.arraycopy(linkBuffer, source, linkBuffer, destination, length)
-      
+
       val start = if n < 0 then 0 else length
-      
+
       for i <- 0 until offset do
         styleBuffer(start + i) = Style()
         charBuffer(start + i) = ' '
         linkBuffer(start + i) = t""
-    
+
     def set(x: Int, y: Int, char: Char, style: Style, link: Text): Unit =
       styleBuffer(offset(x, y)) = style
       charBuffer(offset(x, y)) = char
@@ -77,7 +77,7 @@ object Yossarian:
       styleBuffer(cursor) = style
       charBuffer(cursor) = char
       linkBuffer(cursor) = link
-    
+
     def copy(): ScreenBuffer =
       val styles = new Array[Style](capacity)
       System.arraycopy(styleBuffer, 0, styles, 0, styles.length)
@@ -86,7 +86,7 @@ object Yossarian:
       val links = new Array[Text](capacity)
       System.arraycopy(linkBuffer, 0, links, 0, links.length)
       (width, styles, chars, links)
-    
+
   object ScreenBuffer:
     def apply(width: Int, height: Int): ScreenBuffer =
       val chars = Array.fill[Char](width*height)(' ')
@@ -112,7 +112,7 @@ object Yossarian:
     class Bits(offset: Int, mask: Long):
       def apply(style: Style): Rgb24 = Rgb24(((style >>> offset) & 0xffffff).toInt)
       def update(style: Style, color: Rgb24): Style = (color.asRgb24Int.toLong << offset) + (style & mask)
-    
+
     val Foreground = Bits(40, 0x000000ffffffffffL)
     val Background = Bits(16, 0xffffff000000ffffL)
 
@@ -127,14 +127,14 @@ object Yossarian:
          t"C"  -> Bit.Conceal(style),
          t"R"  -> Bit.Reverse(style))
       .map { (key, value) => if value then key else t"!$key" }
-      .join(t"[", t" ", t" ${Foreground(style).debug} ${Background(style).debug}]")
+      .join(t"[", t" ", t" ${Foreground(style).inspect} ${Background(style).inspect}]")
 
     enum Bit:
       case Bold, Faint, Italic, Strike, Blink, Underline, Conceal, Reverse
-  
+
       def bit: Int = 15 - ordinal
       def apply(style: Style): Boolean = ((style >>> bit) & 1L) == 1L
-      
+
       def update(style: Style, boolean: Boolean): Style =
         if boolean then (style | (1L << bit)) else (style & ~(1L << bit))
 
