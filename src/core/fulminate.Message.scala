@@ -25,6 +25,7 @@ import anticipation.*
 object Message:
   def apply(value: Text): Message = Message(List(value))
   given Message is Printable = (message, termcap) => message.text
+  given [EventType: Communicable] => Message transcribes EventType = _.communicate
 
   transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
     inline erasedValue[TupleType] match
