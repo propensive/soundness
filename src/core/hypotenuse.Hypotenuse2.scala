@@ -49,8 +49,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then abandon(msg"a U16 may not be less than ${0}")
-      if int > 0xffff then abandon(msg"a U16 may not be greater than ${0xffff}")
+      if int < 0 then abandon(m"a U16 may not be less than ${0}")
+      if int > 0xffff then abandon(m"a U16 may not be greater than ${0xffff}")
 
       Expr(int.toShort)
 
@@ -59,8 +59,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Short.MinValue then abandon(msg"an S16 may not be less than ${Short.MinValue.toInt}")
-      if int > Short.MaxValue then abandon(msg"an S16 may not be greater than ${Short.MaxValue.toInt}")
+      if int < Short.MinValue then abandon(m"an S16 may not be less than ${Short.MinValue.toInt}")
+      if int > Short.MaxValue then abandon(m"an S16 may not be greater than ${Short.MaxValue.toInt}")
 
       Expr(int.toShort)
 
@@ -69,8 +69,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then abandon(msg"a U8 may not be less than ${0}")
-      if int > 0xffff then abandon(msg"a U8 may not be greater than ${0xffff}")
+      if int < 0 then abandon(m"a U8 may not be less than ${0}")
+      if int > 0xffff then abandon(m"a U8 may not be greater than ${0xffff}")
 
       Expr(int.toByte)
 
@@ -79,8 +79,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Byte.MinValue then abandon(msg"an S8 may not be less than ${Byte.MinValue.toInt}")
-      if int > Byte.MaxValue then abandon(msg"an S8 may not be greater than ${Byte.MaxValue.toInt}")
+      if int < Byte.MinValue then abandon(m"an S8 may not be less than ${Byte.MinValue.toInt}")
+      if int > Byte.MaxValue then abandon(m"an S8 may not be greater than ${Byte.MaxValue.toInt}")
 
       Expr(int.toByte)
 
@@ -92,7 +92,7 @@ object Hypotenuse2:
       (using Quotes)
           : Expr[Boolean] =
 
-    val errorMessage = msg"this cannot be written as a range expression"
+    val errorMessage = m"this cannot be written as a range expression"
 
     val value =
       if greaterThan.valueOrAbort then expr match

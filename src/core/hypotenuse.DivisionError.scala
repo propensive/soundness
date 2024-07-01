@@ -20,4 +20,4 @@ import language.experimental.into
 
 import fulminate.*
 
-case class DivisionError() extends Error(msg"the result is unrepresentable")
+case class DivisionError() extends Error(m"the result is unrepresentable")
