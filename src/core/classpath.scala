@@ -177,4 +177,4 @@ trait Hellenism2:
     '{ClassRef(Class.forName(${Expr(TypeRepr.of[ClassType].classSymbol.get.fullName)}).nn)}
 
 case class ClasspathError(resource: Text)
-extends Error(msg"the resource $resource was not on the classpath")
+extends Error(m"the resource $resource was not on the classpath")
