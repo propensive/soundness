@@ -138,12 +138,12 @@ object HttpReadable:
   given Text is HttpReadable as text = (status, body) => body match
     case HttpBody.Empty         => t""
     case HttpBody.Data(body)    => body.utf8
-    case HttpBody.Chunked(body) => body.readAs[Bytes].utf8
+    case HttpBody.Chunked(body) => body.read[Bytes].utf8
 
   given Bytes is HttpReadable as bytes = (status, body) => body match
     case HttpBody.Empty         => IArray()
     case HttpBody.Data(body)    => body
-    case HttpBody.Chunked(body) => body.readAs[Bytes]
+    case HttpBody.Chunked(body) => body.read[Bytes]
 
   given LazyList[Bytes] is HttpReadable as byteStream = (status, body) => body match
     case HttpBody.Empty         => LazyList()
@@ -154,7 +154,7 @@ object HttpReadable:
     (status, body) => body match
       case HttpBody.Empty         => ContentType.read(t"")
       case HttpBody.Data(data)    => ContentType.read(data.utf8)
-      case HttpBody.Chunked(data) => ContentType.read(data.readAs[Bytes].utf8)
+      case HttpBody.Chunked(data) => ContentType.read(data.read[Bytes].utf8)
 
   given HttpStatus is HttpReadable as httpStatus:
     def read(status: HttpStatus, body: HttpBody) = status
