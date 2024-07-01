@@ -80,7 +80,7 @@ object Panopticon:
             getPath[tupleType]() :: getPaths[tail]()
 
       case _ =>
-        abandon(msg"unexpectedly did not match")
+        abandon(m"unexpectedly did not match")
 
   def get[FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])(using Quotes)
           : Expr[ToType] =
@@ -126,7 +126,7 @@ object Panopticon:
               Apply(Select(New(TypeIdent(classSymbol)), term.tpe.typeSymbol.primaryConstructor), newParams)
 
             case None =>
-              abandon(msg"the type ${fromTypeRepr.show} does not have a primary constructor")
+              abandon(m"the type ${fromTypeRepr.show} does not have a primary constructor")
 
     rewrite(getPath[PathType](), value.asTerm).asExprOf[FromType]
 
@@ -147,7 +147,7 @@ object Panopticon:
           case _ =>
             targetType.typeSymbol.caseFields.find(_.name == fieldName) match
               case None =>
-                abandon(msg"the field $fieldName is not a member of ${targetType.show}")
+                abandon(m"the field $fieldName is not a member of ${targetType.show}")
 
               case Some(symbol) => (symbol.info.asType: @unchecked) match
                 case '[returnType] => '{Target[returnType, fieldNameType *: TupleType]()}
