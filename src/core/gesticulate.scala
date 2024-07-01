@@ -72,7 +72,7 @@ object Media:
   lazy val systemMediaTypes: Set[Text] =
     try
       val stream = Optional(getClass.getResourceAsStream("/gesticulate/media.types")).or:
-        throw InterpolationError(msg"could not find 'gesticulate/media.types' on the classpath")
+        throw InterpolationError(m"could not find 'gesticulate/media.types' on the classpath")
 
       val lines: Iterator[Text] =
         scala.io.Source.fromInputStream(stream).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
@@ -85,7 +85,7 @@ object Media:
     def parse(state: Text, next: Text): Text = next
 
     def insert(state: Text, value: Unit): Text =
-      throw InterpolationError(msg"a media type literal cannot have substitutions")
+      throw InterpolationError(m"a media type literal cannot have substitutions")
 
     def skip(value: Text): Text = value
     def initial: Text = t""
@@ -93,14 +93,14 @@ object Media:
     def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
         case err: MediaTypeError =>
-          throw InterpolationError(msg"${err.value} is not a valid media type; ${err.nature.message}")
+          throw InterpolationError(m"${err.value} is not a valid media type; ${err.nature.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
           if !systemMediaTypes.contains(parsed.basic)
           then
             val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
-            throw InterpolationError(msg"""
+            throw InterpolationError(m"""
               ${parsed.basic} is not a registered media type; did you mean $suggestion or
               ${parsed.basic.sub(t"/", t"/x-")}?
             """)
@@ -179,7 +179,7 @@ object MediaTypeError:
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
 case class MediaTypeError(value: Text, nature: MediaTypeError.Nature)
-extends Error(msg"the value $value is not a valid media type; ${nature.message}")
+extends Error(m"the value $value is not a valid media type; ${nature.message}")
 
 case class MediaType
     (group:      Media.Group,
