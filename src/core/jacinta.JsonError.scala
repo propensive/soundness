@@ -30,9 +30,9 @@ object JsonError:
 
   object Reason:
     given Reason is Communicable =
-      case Index(value)       => msg"the index $value out of range"
-      case Label(label)       => msg"the JSON object does not contain the label $label"
-      case NotType(primitive) => msg"the JSON value did not have the type $primitive"
+      case Index(value)       => m"the index $value out of range"
+      case Label(label)       => m"the JSON object does not contain the label $label"
+      case NotType(primitive) => m"the JSON value did not have the type $primitive"
 
 case class JsonError(reason: JsonError.Reason)
-extends Error(msg"could not access the value because $reason")
+extends Error(m"could not access the value because $reason")
