@@ -37,7 +37,7 @@ import java.net.InetSocketAddress
 import java.text as jt
 import com.sun.net.httpserver as csnh
 
-case class MissingParamError(key: Text) extends Error(msg"the parameter $key was not sent in the request")
+case class MissingParamError(key: Text) extends Error(m"the parameter $key was not sent in the request")
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
@@ -213,7 +213,7 @@ case class Request
           Map[Text, Text](body.stream.readAs[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                         => throw Panic(msg"key/value pair does not match")
+            case _                         => throw Panic(m"key/value pair does not match")
           )*)
         else Map[Text, Text]()
       }
@@ -386,5 +386,5 @@ enum HttpServerEvent:
 
 object HttpServerEvent:
   given HttpServerEvent is Communicable =
-    case Received(request)            => msg"Received request ${request.show}"
-    case Processed(request, duration) => msg"Processed request ${request.show} in ${duration}ms"
+    case Received(request)            => m"Received request ${request.show}"
+    case Processed(request, duration) => m"Processed request ${request.show} in ${duration}ms"
