@@ -124,7 +124,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given term: EnvironmentVariable["term", Text] = identity(_)
 
 case class EnvironmentError(variable: Text)
-extends Error(msg"the environment variable ${variable} was not defined")
+extends Error(m"the environment variable ${variable} was not defined")
 
 package environments:
   given empty: Environment with

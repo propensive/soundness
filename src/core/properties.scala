@@ -35,7 +35,7 @@ trait SystemProperties:
 
 object Properties extends Dynamic:
   given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
-  
+
   def apply[PropertyType](property: Text)
       (using properties:     SystemProperties,
              reader:         SystemProperty[String, PropertyType],
@@ -43,7 +43,7 @@ object Properties extends Dynamic:
           : PropertyType^{properties, reader, systemProperty} =
 
     properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
-    
+
   def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
 
 @capability
@@ -53,9 +53,9 @@ trait SystemProperty[NameType <: String, PropertyType]:
 object SystemProperty:
   given generic[UnknownType <: String & Singleton](using DummyImplicit): SystemProperty[UnknownType, Text] =
     identity(_)
-  
+
   given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] = SpecificPath(_)
-  
+
   given javaLibraryPath[PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Errant[SystemPropertyError])
           : SystemProperty["java.library.path", List[PathType]] =
@@ -70,7 +70,7 @@ object SystemProperty:
 
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
-  
+
   given javaExtDirs[PathType: SpecificPath]
       (using systemProperties: SystemProperties, systemProperty: Errant[SystemPropertyError])
           : SystemProperty["java.ext.dirs", List[PathType]] =
@@ -97,7 +97,7 @@ object SystemProperty:
 case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
   def selectDynamic(key: String): PropertyAccess[NameType+"."+key.type] =
     PropertyAccess[NameType+"."+key.type](property+"."+key)
-  
+
   def applyDynamic[PropertyType](key: String)()
       (using properties:     SystemProperties,
              reader:         SystemProperty[NameType+"."+key.type, PropertyType],
@@ -106,7 +106,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
 
     properties((property+"."+key).tt).let(reader.read(_)).or:
       abort(SystemPropertyError((property+"."+key).tt))
-  
+
   inline def apply[PropertyType]()
       (using properties: SystemProperties,
              reader: SystemProperty[NameType, PropertyType],
@@ -117,7 +117,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
       abort(SystemPropertyError(valueOf[NameType].tt))
 
 case class SystemPropertyError(property: Text)
-extends Error(msg"the system property $property was not defined")
+extends Error(m"the system property $property was not defined")
 
 package systemProperties:
   given empty: SystemProperties with
