@@ -64,7 +64,7 @@ type NonInteractive = "abbr" | "address" | "area" | "article" | "aside" | "audio
     "table" | "template" | "time" | "title" | "u" | "ul" | "var" | "wbr"
 
 type Global = "accesskey" | "autocapitalize" | "autofocus" | "contenteditable" | "dir" |
-    "draggable" | "enterkeyhint" | "hclass" | "hidden" | "id" | "inputmode" | "is" | "itemid" |
+    "draggable" | "enterkeyhint" | "class" | "hidden" | "id" | "inputmode" | "is" | "itemid" |
     "itemprop" | "itemref" | "itemscope" | "itemtype" | "lang" | "nonce" | "spellcheck" | "style" |
     "tabindex" | "title" | "translate" | EventHandlers
 

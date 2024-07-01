@@ -69,13 +69,18 @@ extends Node[NameType], Dynamic:
 
   type Content = ChildType
 
-  inline def applyDynamicNamed(method: "apply")(inline attributes: (AttributeType, Any)*)
+  inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
 
-    ${Honeycomb.read[NameType, ChildType, ChildType]('labelString, 'unclosed, 'block, 'verbatim, 'attributes)}
+    ${Honeycomb.read[NameType, ChildType, ChildType]('method, 'labelString, 'unclosed, 'block, 'verbatim, 'attributes)}
 
-  def applyDynamic(method: "apply")(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
-    Element(labelString, unclosed, block, verbatim, Map(), children)
+  def applyDynamic(method: String)(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
+    method match
+      case "apply" =>
+        Element(labelString, unclosed, block, verbatim, Map(), children)
+      
+      case className =>
+        Element(labelString, unclosed, block, verbatim, Map("class" -> className.tt), children)
 
 object ClearTagType:
   given ClearTagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
@@ -88,10 +93,10 @@ extends Node[NameType], Dynamic:
   def children: Seq[Html[?]] = Nil
   def label: Text = labelString.tt
 
-  inline def applyDynamicNamed(method: "apply")(inline attributes: (AttributeType, Any)*)
+  inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
 
-    ${Honeycomb.read[NameType, ChildType, ChildType]('labelString, 'unclosed, 'block, 'verbatim, 'attributes)}
+    ${Honeycomb.read[NameType, ChildType, ChildType]('method, 'labelString, 'unclosed, 'block, 'verbatim, 'attributes)}
 
   def applyDynamic[Return <: Label](method: "apply")(children: (Html[Return] | Seq[Html[Return]])*)
           : Element[Return] =

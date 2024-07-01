@@ -170,11 +170,11 @@ object HtmlAttribute:
   given checkedBoolean[T]: HtmlAttribute["checked", Boolean, T] = _ => Unset
   given cite[T]: HtmlAttribute["cite", Text, T] = identity(_)
 
-  given hclass[T]: HtmlAttribute["hclass", List[CssClass], T] with
+  given `class`[T]: HtmlAttribute["class", List[CssClass], T] with
     override def rename: Option[Text] = Some(t"class")
     def convert(value: List[CssClass]): Text = value.map(_.name).join(t" ")
 
-  given hclass2[T]: HtmlAttribute["hclass", CssClass, T] with
+  given class2[T]: HtmlAttribute["class", CssClass, T] with
     override def rename: Option[Text] = Some(t"class")
     def convert(value: CssClass): Text = value.name
 

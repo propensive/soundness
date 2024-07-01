@@ -90,7 +90,8 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-      (name:       Expr[NameType],
+      (className:  Expr[String],
+       name:       Expr[NameType],
        unclosed:   Expr[Boolean],
        block:      Expr[Boolean],
        verbatim:   Expr[Boolean],
@@ -111,7 +112,8 @@ object Honeycomb:
         '{($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))} :: recur(tail)
 
       case _ =>
-        Nil
+        if className.value == Some("apply") then Nil
+        else List('{("class", $className.tt)})
 
     (attributes: @unchecked) match
       case Varargs(exprs) =>
