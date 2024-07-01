@@ -104,7 +104,7 @@ accordingly.
 
 ## Status
 
-Yossarian is classified as __embryotic__. For reference, Scala One projects are
+Yossarian is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -187,7 +187,7 @@ O&Uuml;](https://propensive.com/).
 
 _Yossarian_ was the protagonist in Joseph Heller's _Catch 22_, in which he desires to be declared _insane_ in order to be excused from flying combat missions. But in doing so, he must request an evaluation, which only a _sane_ person would do, and would thus be considered proof of sanity. This library makes it possible to evaluate the sanity of terminal output.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
