@@ -48,7 +48,7 @@ object Cataclysm:
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
         val exp: Expr[keyType is PropertyDef[valueType]] = Expr.summon[keyType is PropertyDef[valueType]].getOrElse:
           val typeName = TypeRepr.of[valueType].show
-          abandon(msg"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
+          abandon(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
         '{CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[valueType]].show($value))} :: recur(tail)
 
