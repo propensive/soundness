@@ -46,7 +46,7 @@ type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
 object ZipPath:
   given ZipPath is Navigable[InvalidZipNames, ZipFile]:
     def root(path: ZipPath): ZipFile = path.zipFile
-    def descent(path: ZipPath): List[PathName[InvalidZipNames]] = path.descent
+    def descent(path: ZipPath): List[Name[InvalidZipNames]] = path.descent
     def prefix(path: ZipFile): Text = t"/"
     def separator(path: ZipPath): Text = t"/"
 
@@ -70,11 +70,11 @@ object ZipRef:
     Navigable.decode[ZipRef](text)
 
   @targetName("child")
-  infix def / (name: PathName[InvalidZipNames]): ZipRef = ZipRef(List(name))
+  infix def / (name: Name[InvalidZipNames]): ZipRef = ZipRef(List(name))
 
   given ZipRef is Navigable[InvalidZipNames, Unset.type]:
     def root(path: ZipRef): Unset.type = Unset
-    def descent(path: ZipRef): List[PathName[InvalidZipNames]] = path.descent
+    def descent(path: ZipRef): List[Name[InvalidZipNames]] = path.descent
     def prefix(ref: Unset.type): Text = t""
     def separator(path: ZipRef): Text = t"/"
 
@@ -85,7 +85,7 @@ object ZipRef:
   given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
   given ZipRef is Showable = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
 
-case class ZipRef(descent: List[PathName[InvalidZipNames]]):
+case class ZipRef(descent: List[Name[InvalidZipNames]]):
   def parent: Optional[ZipRef] = descent match
     case Nil       => Unset
     case _ :: tail => ZipRef(tail)
@@ -103,18 +103,18 @@ case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
   def apply[FileType: GenericFile](file: FileType)(using stream: Errant[StreamError]): ZipFile =
-    val pathname: Text = file.fileText
-    new ZipFile(pathname)
+    val name: Text = file.fileText
+    new ZipFile(name)
 
   def create[PathType: GenericPath](path: PathType): ZipFile raises StreamError =
-    val pathname: Text = path.pathText
-    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(pathname.s)))
+    val name: Text = path.pathText
+    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(name.s)))
 
     out.putNextEntry(juz.ZipEntry("/"))
     out.closeEntry()
     out.close()
 
-    ZipFile(pathname.show)
+    ZipFile(name.show)
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
 
@@ -124,7 +124,7 @@ case class ZipFile(private val filename: Text):
   private val filesystemUri: java.net.URI = java.net.URI.create(t"jar:file:$filename".s).nn
 
   @targetName("child")
-  infix def / (name: PathName[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
+  infix def / (name: Name[InvalidZipNames]): ZipPath = ZipPath(this, ZipRef(List(name)))
 
   private def semaphore: Semaphore = ZipFile.cache.getOrElseUpdate(filename, Semaphore())
 
