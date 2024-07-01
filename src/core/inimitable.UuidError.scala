@@ -21,4 +21,4 @@ import fulminate.*
 
 import language.experimental.captureChecking
 
-case class UuidError(badUuid: Text) extends Error(msg"$badUuid is not a valid UUID")
+case class UuidError(badUuid: Text) extends Error(m"$badUuid is not a valid UUID")
