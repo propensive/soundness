@@ -113,10 +113,10 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
     case Initializing    => ()
     case Active(_)       => ()
     case Suspended(_, _) => synchronized(wait())
-    case Completed(_, _) => throw Panic(msg"should not be relenting after completion")
-    case Delivered(_, _) => throw Panic(msg"should not be relenting after completion")
-    case Failed(_)       => throw Panic(msg"should not be relenting after failure")
-    case Cancelled       => throw Panic(msg"should not be relenting after cancellation")
+    case Completed(_, _) => throw Panic(m"should not be relenting after completion")
+    case Delivered(_, _) => throw Panic(m"should not be relenting after completion")
+    case Failed(_)       => throw Panic(m"should not be relenting after failure")
+    case Cancelled       => throw Panic(m"should not be relenting after cancellation")
 
   def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
           : Task[ResultType2] raises ConcurrencyError =
@@ -154,7 +154,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
 
     .match
       case Delivered(_, result) => result
-      case other                => throw Panic(msg"impossible state")
+      case other                => throw Panic(m"impossible state")
 
 
   def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =

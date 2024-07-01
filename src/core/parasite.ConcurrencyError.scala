@@ -23,10 +23,10 @@ import fulminate.*
 object ConcurrencyError:
   object Reason:
     given Reason is Communicable =
-      case Cancelled       => msg"the operation was cancelled"
-      case Incomplete      => msg"the task was not completed"
-      case AlreadyComplete => msg"the promise was already completed"
-      case Timeout         => msg"the operation timed out"
+      case Cancelled       => m"the operation was cancelled"
+      case Incomplete      => m"the task was not completed"
+      case AlreadyComplete => m"the promise was already completed"
+      case Timeout         => m"the operation timed out"
 
   enum Reason:
     case Cancelled, Incomplete, AlreadyComplete, Timeout
