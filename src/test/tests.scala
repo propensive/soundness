@@ -31,7 +31,7 @@ object Tests extends Suite(t"Turbulence tests"):
   def run(): Unit =
     suite(t"Streaming Unicode tests"):
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
-      
+
       val strings = for
         asc0 <- Array(t"", t"a", t"ab", t"abc") // 4 combinations
         cp2  <- Array(t"", t"£")                // 8
@@ -48,13 +48,13 @@ object Tests extends Suite(t"Turbulence tests"):
       do
         test(t"length tests"):
           val stream = string.bytes.grouped(bs).to(LazyList)
-          val result = stream.readAs[Text]
+          val result = stream.read[Text]
           result.bytes.length
         .assert(_ == string.bytes.length)
 
         test(t"roundtrip tests"):
           val stream = string.bytes.grouped(bs).to(LazyList)
-          val result = stream.readAs[Text]
+          val result = stream.read[Text]
 
           result
         .assert(_ == string)
@@ -67,7 +67,7 @@ object Tests extends Suite(t"Turbulence tests"):
       given Readable[Ref, Bytes] = ref => LazyList(t"abc".bytes, t"def".bytes)
 
     case class Ref()
-    
+
     object Ref2:
       given Readable[Ref2, Text] = ref => LazyList(t"abc", t"def")
 
@@ -82,75 +82,75 @@ object Tests extends Suite(t"Turbulence tests"):
       test(t"Stream Text"):
         qbf.stream[Text].join
       .assert(_ == qbf)
-      
+
       test(t"Stream Bytes"):
         qbf.stream[Bytes].reduce(_ ++ _).to(List)
       .assert(_ == qbfBytes.to(List))
-      
+
       test(t"Read Text as Text"):
-        qbf.readAs[Text]
+        qbf.read[Text]
       .assert(_ == qbf)
-      
+
       test(t"Read some type as Text with Text and Byte Readable instance"):
-        Ref().readAs[Text]
+        Ref().read[Text]
       .assert(_ == t"abcdef")
-      
+
       test(t"Read some type as Bytes with Text and Byte Readable instance"):
-        Ref().readAs[Bytes].to(List)
+        Ref().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
-      
+
       test(t"Read some type as Text with only Text Readable instance"):
-        Ref2().readAs[Text]
+        Ref2().read[Text]
       .assert(_ == t"abcdef")
-      
+
       test(t"Read some type as Bytes with only Text Readable instance"):
-        Ref2().readAs[Bytes].to(List)
+        Ref2().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
-      
+
       test(t"Read some type as Text with only Bytes Readable instance"):
-        Ref3().readAs[Text]
+        Ref3().read[Text]
       .assert(_ == t"abcdef")
-      
+
       test(t"Read some type as Bytes with only Bytes Readable instance"):
-        Ref3().readAs[Bytes].to(List)
+        Ref3().read[Bytes].to(List)
       .assert(_ == t"abcdef".bytes.to(List))
-      
+
       test(t"Read Text as LazyList[Text]"):
-        qbf.readAs[LazyList[Text]].join
+        qbf.read[LazyList[Text]].join
       .assert(_ == qbf)
-      
+
       test(t"Read Text as Bytes"):
-        qbf.readAs[Bytes]
+        qbf.read[Bytes]
       .assert(_.to(List) == qbfBytes.to(List))
-      
+
       test(t"Read Text as LazyList[Bytes]"):
-        qbf.readAs[LazyList[Bytes]]
+        qbf.read[LazyList[Bytes]]
       .assert(_.reduce(_ ++ _).to(List) == qbfBytes.to(List))
-      
+
       test(t"Read Bytes as Text"):
-        qbfBytes.readAs[Text]
+        qbfBytes.read[Text]
       .assert(_ == qbf)
-      
+
       test(t"Read Bytes as LazyList[Text]"):
-        qbfBytes.readAs[LazyList[Text]].join
+        qbfBytes.read[LazyList[Text]].join
       .assert(_ == qbf)
-      
+
       test(t"Read Bytes as Bytes"):
-        qbfBytes.readAs[Bytes]
+        qbfBytes.read[Bytes]
       .assert(_.to(List) == qbfBytes.to(List))
-      
+
       test(t"Read Bytes as LazyList[Bytes]"):
-        qbfBytes.readAs[LazyList[Bytes]]
+        qbfBytes.read[LazyList[Bytes]]
       .assert(_.reduce(_ ++ _).to(List) == qbfBytes.to(List))
-      
+
       // test(t"Read Text as Lines"):
-      //   qbf.readAs[LazyList[Line]]
+      //   qbf.read[LazyList[Line]]
       // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
-      
+
       // test(t"Read Bytes as Lines"):
-      //   qbfBytes.readAs[LazyList[Line]]
+      //   qbfBytes.read[LazyList[Line]]
       // .assert(_ == LazyList(Line(t"The quick brown fox"), Line(t"jumps over the lazy dog")))
-    
+
     suite(t"Writing tests"):
 
       class GeneralStore():
@@ -161,11 +161,11 @@ object Tests extends Suite(t"Turbulence tests"):
         given Writable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
-        
+
         given Writable[GeneralStore, Text] = (store, texts) => texts.each: text =>
           text.bytes.each: byte =>
             store.arrayBuffer.append(byte)
-      
+
       class ByteStore():
         val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
@@ -174,11 +174,11 @@ object Tests extends Suite(t"Turbulence tests"):
         given Writable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
-      
+
       class TextStore():
         var text: Text = t""
         def apply(): Text = text
-      
+
       object TextStore:
         given Writable[TextStore, Text] = (store, texts) => texts.each: text =>
           store.text = store.text + text
@@ -188,73 +188,73 @@ object Tests extends Suite(t"Turbulence tests"):
         qbf.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write Bytes to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         qbfBytes.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Text] to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         LazyList(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Bytes] to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         LazyList(qbfBytes).writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write Text to some reference with only a Bytes instance"):
         val store = ByteStore()
         qbf.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write Bytes to some reference with only a Bytes instance"):
         val store = ByteStore()
         qbfBytes.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Text] to some reference with only a Bytes instance"):
         val store = ByteStore()
         LazyList(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Bytes] to some reference with only a Bytes instance"):
         val store = ByteStore()
         LazyList(qbfBytes).writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write Text to some reference with only a Text instance"):
         val store = TextStore()
         qbf.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write Bytes to some reference with only a Text instance"):
         val store = TextStore()
         qbfBytes.writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Text] to some reference with only a Text instance"):
         val store = TextStore()
         LazyList(qbf).writeTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Write LazyList[Bytes] to some reference with only a Text instance"):
         val store = TextStore()
         LazyList(qbfBytes).writeTo(store)
         store()
       .assert(_ == qbf)
-    
+
     suite(t"Appending tests"):
 
       class GeneralStore():
@@ -265,11 +265,11 @@ object Tests extends Suite(t"Turbulence tests"):
         given Appendable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
-        
+
         given Appendable[GeneralStore, Text] = (store, texts) => texts.each: text =>
           text.bytes.each: byte =>
             store.arrayBuffer.append(byte)
-      
+
       class ByteStore():
         val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
@@ -278,11 +278,11 @@ object Tests extends Suite(t"Turbulence tests"):
         given Appendable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
-      
+
       class TextStore():
         var text: Text = t""
         def apply(): Text = text
-      
+
       object TextStore:
         given Appendable[TextStore, Text] = (store, texts) => texts.each: text =>
           store.text = store.text + text
@@ -292,85 +292,85 @@ object Tests extends Suite(t"Turbulence tests"):
         qbf.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append Bytes to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         qbfBytes.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Text] to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         LazyList(qbf).appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Bytes] to some reference with Text and Bytes instances"):
         val store = GeneralStore()
         LazyList(qbfBytes).appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append Text to some reference with only a Bytes instance"):
         val store = ByteStore()
         qbf.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append Bytes to some reference with only a Bytes instance"):
         val store = ByteStore()
         qbfBytes.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Text] to some reference with only a Bytes instance"):
         val store = ByteStore()
         LazyList(qbf).appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Bytes] to some reference with only a Bytes instance"):
         val store = ByteStore()
         LazyList(qbfBytes).appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append Text to some reference with only a Text instance"):
         val store = TextStore()
         qbf.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append Bytes to some reference with only a Text instance"):
         val store = TextStore()
         qbfBytes.appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Text] to some reference with only a Text instance"):
         val store = TextStore()
         LazyList(qbf).appendTo(store)
         store()
       .assert(_ == qbf)
-      
+
       test(t"Append LazyList[Bytes] to some reference with only a Text instance"):
         val store = TextStore()
         LazyList(qbfBytes).appendTo(store)
         store()
       .assert(_ == qbf)
-    
+
     suite(t"Multiplexer tests"):
       val l1 = LazyList(2, 4, 6, 8, 10)
       val l2 = LazyList(1, 3, 5, 7, 9)
-      
+
       test(t"Check that two multiplexed streams contain all elements"):
         supervise(l1.multiplexWith(l2).to(Set))
       .assert(_ == Set.range(1, 11))
-      
+
       test(t"Check that two multiplexed streams contain elements from the first stream in order"):
         supervise(l1.multiplexWith(l2).filter(_%2 == 0))
       .assert(_ == l1)
-      
+
       test(t"Check that two multiplexed streams contain elements from the second stream in order"):
         supervise(l1.multiplexWith(l2).filter(_%2 == 1))
       .assert(_ == l2)

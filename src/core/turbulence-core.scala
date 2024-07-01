@@ -34,7 +34,7 @@ extension [ValueType](value: ValueType)
   def stream[ElementType](using readable: ValueType is Readable by ElementType): LazyList[ElementType] =
     readable.read(value)
 
-  inline def readAs[ResultType]: ResultType =
+  inline def read[ResultType]: ResultType =
     compiletime.summonFrom:
       case aggregable: (ResultType is Aggregable by Bytes) =>
         compiletime.summonInline[ValueType is Readable by Bytes].give:
