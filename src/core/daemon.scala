@@ -270,7 +270,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath / p"build.id")().readAs[Text].trim.decodeAs[Int]).or(0)
+      val buildId = safely((Classpath / p"build.id")().read[Text].trim.decodeAs[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       t"$port $buildId $stderr".writeTo(portFile.as[File])
       OsProcess().pid.value.show.writeTo(pidFile.as[File])
