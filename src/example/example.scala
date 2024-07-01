@@ -33,4 +33,4 @@ case class Network(address: MacAddress)
 
   val network = Codl.read[Network](data)
   summon[Debug[Network]]
-  Out.println(t"${network.debug}")
+  Out.println(t"${network.inspect}")

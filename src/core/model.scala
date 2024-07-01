@@ -33,18 +33,18 @@ import language.dynamics
 
 object CodlNode:
   given debug: Debug[CodlNode] = _.data.option.fold(t"!"): data =>
-    t"${data.key}[${data.children.map(_.debug).join(t",")}]"
+    t"${data.key}[${data.children.map(_.inspect).join(t",")}]"
 
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
 
   given (using Debug[CodlNode]) => CodlNode is Contrastable as contrast = (left, right) =>
-    if left == right then Semblance.Identical(left.debug) else
+    if left == right then Semblance.Identical(left.inspect) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
-          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
+          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.inspect).toString.tt)
+          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.inspect)
+          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.inspect).toString.tt, t"—")
 
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
@@ -96,14 +96,14 @@ object CodlDoc:
     new Contrastable:
       type Self = CodlDoc
       def apply(left: CodlDoc, right: CodlDoc) =
-        if left == right then Semblance.Identical(left.debug) else
+        if left == right then Semblance.Identical(left.inspect) else
           val comparison = IArray.from:
             (t"[schema]", left.schema.contrastWith(right.schema)) +:
             (t"[margin]", left.margin.contrastWith(right.margin)) +:
             diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-              case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.debug).toString.tt)
-              case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.debug)
-              case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.debug).toString.tt, t"—")
+              case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.inspect).toString.tt)
+              case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.inspect)
+              case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.inspect).toString.tt, t"—")
               case Sub(_, v, lv, rv) =>
                 val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
                 key -> lv.contrastWith(rv)
