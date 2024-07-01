@@ -57,15 +57,6 @@ trait Node[+NameType <: Label]:
   def unclosed: Boolean
   def verbatim: Boolean
 
-  inline def refine[NameType2 <: Label]: Option[Node[NameType2]] = label.s match
-    case labelValue: NameType => Some:
-      new Node[NameType2]:
-        def label: Text = labelValue.tt
-        export node.{attributes, children, block, unclosed, verbatim}
-
-    case _ =>
-      None
-
 object StartTag:
   given StartTag[?, ?] is GenericCssSelection = elem =>
     val tail = elem.attributes.map: (key, value) =>
@@ -75,7 +66,6 @@ object StartTag:
     .join
 
     t"${elem.label}$tail"
-
 
 case class StartTag[+NameType <: Label, ChildType <: Label]
     (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean, attributes: Attributes)
