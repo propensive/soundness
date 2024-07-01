@@ -82,18 +82,18 @@ object TabCompletions:
           else
             val dirNames = sh"zsh -c 'source ~/.zshrc 2> /dev/null; printf %s, $$fpath'".exec[Text]().cut(t",").to(List)
             val dirs = dirNames.filter(_.trim != t"").map { dir => safely(dir.decodeAs[Path]) }.compact
-            install(Shell.Zsh, command, PathName(t"_$command"), dirs)
+            install(Shell.Zsh, command, Name(t"_$command"), dirs)
 
         val bash: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Bash)
-          else install(Shell.Bash, command, PathName(command), List(Xdg.dataDirs.last / p"bash-completion" /
+          else install(Shell.Bash, command, Name(command), List(Xdg.dataDirs.last / p"bash-completion" /
               p"completions", Xdg.dataHome / p"bash-completion" / p"completions"))
 
         val fish: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v fish'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
-          else install(Shell.Fish, command, PathName(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
+          else install(Shell.Fish, command, Name(t"$command.fish"), List(Xdg.dataDirs.last / p"fish" /
               p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
 
         TabCompletionsInstallation.Shells(zsh, bash, fish)
@@ -101,7 +101,7 @@ object TabCompletions:
       case PathError(_, _)    => abort(InstallError(InstallError.Reason.Environment))
       case ExecError(_, _, _) => abort(InstallError(InstallError.Reason.Environment))
 
-  def install(shell: Shell, command: Text, scriptName: PathName[GeneralForbidden], dirs: List[Path])
+  def install(shell: Shell, command: Text, scriptName: Name[GeneralForbidden], dirs: List[Path])
       (using Effectful)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
