@@ -22,4 +22,4 @@ import fulminate.*
 import anticipation.*
 
 case class ExpectationError[ResultType](result: ResultType)
-extends Error(msg"the expression was expected to fail, but succeeded")
+extends Error(m"the expression was expected to fail, but succeeded")

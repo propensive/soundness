@@ -34,7 +34,7 @@ object Contingency:
         action.asExprOf[Errant[ErrorType] ?=> ResultType]
 
       case _ =>
-        throw Panic(msg"the tended action was not in the expected form")
+        throw Panic(m"the tended action was not in the expected form")
 
   private def caseDefs[ErrorType <: Error: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
@@ -48,7 +48,7 @@ object Contingency:
           case _                                   => Nil
 
       case _ =>
-        abandon(msg"unexpected lambda")
+        abandon(m"unexpected lambda")
 
 
 
@@ -65,15 +65,15 @@ object Contingency:
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
+        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(msg"bad pattern")
+        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
 
       case other =>
-        abandon(msg"bad pattern")
+        abandon(m"bad pattern")
 
     def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
@@ -85,17 +85,17 @@ object Contingency:
       case Typed(_, matchType)   => List(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => abandon(msg"wildcard")
+      case Wildcard()            => abandon(m"wildcard")
 
       case Unapply(select, _, _) =>
         if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
-        else abandon(msg"Unapply ${select.symbol.declaredType.toString}")
+        else abandon(m"Unapply ${select.symbol.declaredType.toString}")
 
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
 
       case other =>
-        abandon(msg"this pattern could not be recognized as a distinct `Error` type")
+        abandon(m"this pattern could not be recognized as a distinct `Error` type")
 
     val handledTypes: List[Symbol] =
       caseDefs(handler).flatMap:
@@ -150,7 +150,7 @@ object Contingency:
                 }
 
           case _ =>
-            abandon(msg"Match error ${errorType.show} type was not a subtype of ErrorType")
+            abandon(m"Match error ${errorType.show} type was not a subtype of ErrorType")
 
     wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
       '{$function(PartialFunction.empty[ErrorType, Nothing])}

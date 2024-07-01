@@ -25,12 +25,12 @@ import errorHandlers.throwUnsafely
 
 def unsafe(): Unit raises UnsetError = ()
 
-case class FooError() extends Error(msg"foo")
-case class BarError() extends Error(msg"bar")
+case class FooError() extends Error(m"foo")
+case class BarError() extends Error(m"bar")
 
 @main def run(): Unit =
   val x = mitigate:
     case RegexError(_) => FooError()
     case _: UnsetError => BarError()
-  
+
   x: Int

@@ -47,14 +47,14 @@ def maybe(): Unit raises BazError1 =
 
   given BazError1 mitigates FooError1 =
     case FooError1() => BazError1(s"foo")
-    
+
   println("Hello 3")
   println(foo()+bar()+quux())
   println("Hello 4")
-  
+
   println("Hello 5")
 
-case class FooError1() extends Error(msg"Foo")
-case class BarError1(num: Int, str: String) extends Error(msg"Bar: $num $str")
-case class BazError1(m: String) extends Error(msg"Baz: $m")
-case class QuuxError1(barError: BarError1) extends Error(msg"Quux")
+case class FooError1() extends Error(m"Foo")
+case class BarError1(num: Int, str: String) extends Error(m"Bar: $num $str")
+case class BazError1(m: String) extends Error(m"Baz: $m")
+case class QuuxError1(barError: BarError1) extends Error(m"Quux")
