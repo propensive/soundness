@@ -43,6 +43,9 @@ enum Token:
 enum Accent:
   case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
 
+object Accent:
+  given Accent is Showable = _.toString.tt.lower
+
 extension (range: CodeRange)
   def of(source: ScalaSource): ScalaSource =
     val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
