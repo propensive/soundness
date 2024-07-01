@@ -29,10 +29,10 @@ object FqcnError:
     case JavaKeyword(keyword: Text)
 
   given Reason is Communicable =
-    case Reason.InvalidChar(char)    => msg"a package name may not contain the character $char"
-    case Reason.InvalidStart(char)   => msg"a package name may not start with the character $char"
-    case Reason.EmptyName            => msg"a package name cannot be empty"
-    case Reason.JavaKeyword(keyword) => msg"a package name cannot be the Java keyword, $keyword"
+    case Reason.InvalidChar(char)    => m"a package name may not contain the character $char"
+    case Reason.InvalidStart(char)   => m"a package name may not start with the character $char"
+    case Reason.EmptyName            => m"a package name cannot be empty"
+    case Reason.JavaKeyword(keyword) => m"a package name cannot be the Java keyword, $keyword"
 
 case class FqcnError(name: Text, reason: FqcnError.Reason)
-extends Error(msg"the class name $name is not valid because $reason")
+extends Error(m"the class name $name is not valid because $reason")
