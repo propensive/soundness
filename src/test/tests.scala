@@ -192,7 +192,7 @@ object Tests extends Suite(t"Guillotine tests"):
       .assert(_ == List("Hello world"))
 
       test(t"read stream of bytes"):
-        sh"echo 'Hello world'".exec[LazyList[Bytes]]().readAs[Bytes].to(List)
+        sh"echo 'Hello world'".exec[LazyList[Bytes]]().read[Bytes].to(List)
       .assert(_ == Bytes(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
       test(t"fork sleeping process"):
