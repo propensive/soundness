@@ -18,16 +18,16 @@ package turbulence
 
 import java.util.concurrent as juc
 
-object Funnel:
+object Spool:
   private object Termination
 
-class Funnel[ItemType]():
-  private val queue: juc.LinkedBlockingQueue[ItemType | Funnel.Termination.type] =
+class Spool[ItemType]():
+  private val queue: juc.LinkedBlockingQueue[ItemType | Spool.Termination.type] =
     juc.LinkedBlockingQueue()
 
   def put(item: ItemType): Unit = queue.put(item)
-  def stop(): Unit = queue.put(Funnel.Termination)
+  def stop(): Unit = queue.put(Spool.Termination)
 
   def stream: LazyList[ItemType] =
-    LazyList.continually(queue.take().nn).takeWhile(_ != Funnel.Termination)
+    LazyList.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
      .asInstanceOf[LazyList[ItemType]]

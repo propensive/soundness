@@ -28,7 +28,7 @@ import vacuous.*
 
 class LazyListOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-  private val chunks: Funnel[Bytes] = Funnel()
+  private val chunks: Spool[Bytes] = Spool()
 
   def stream: LazyList[Bytes] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)

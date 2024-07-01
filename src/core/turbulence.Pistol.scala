@@ -18,5 +18,5 @@ package turbulence
 
 import language.adhocExtensions
 
-class Pistol() extends Funnel[Unit]():
+class Pistol() extends Spool[Unit]():
   def fire(): Unit = put(())
