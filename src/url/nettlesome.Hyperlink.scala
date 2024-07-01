@@ -25,11 +25,11 @@ import contextual.*
 object Hyperlink:
   given (using ValueOf[""]) => Hyperlink is Followable["", "..", "."]:
     def separators: Set[Char] = Set('/')
-    def descent(hyperlink: Hyperlink): List[PathName[""]] = hyperlink.descent
+    def descent(hyperlink: Hyperlink): List[Name[""]] = hyperlink.descent
     def separator(hyperlink: Hyperlink): Text = t"/"
     def ascent(hyperlink: Hyperlink): Int = hyperlink.ascent
 
   given PathCreator[Hyperlink, "", Int]:
-    def path(ascent: Int, descent: List[PathName[""]]): Hyperlink = Hyperlink(ascent, descent)
+    def path(ascent: Int, descent: List[Name[""]]): Hyperlink = Hyperlink(ascent, descent)
 
-case class Hyperlink(ascent: Int, descent: List[PathName[""]])
+case class Hyperlink(ascent: Int, descent: List[Name[""]])

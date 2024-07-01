@@ -34,10 +34,10 @@ case class Url[+SchemeType <: Label]
      query:     Optional[Text]      = Unset,
      fragment:  Optional[Text]      = Unset):
 
-  lazy val path: List[PathName[""]] =
+  lazy val path: List[Name[""]] =
     // FIXME: This needs to be handled better
     import errorHandlers.throwUnsafely
-    pathText.drop(1).cut(t"/").to(List).reverse.map(_.urlDecode).map(PathName(_))
+    pathText.drop(1).cut(t"/").to(List).reverse.map(_.urlDecode).map(Name(_))
 
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
 
@@ -61,7 +61,7 @@ object Url:
   given [SchemeType <: Label]
       => Url[SchemeType] is Navigable["", (Scheme[SchemeType], Optional[Authority])]:
     def separator(url: Url[SchemeType]): Text = t"/"
-    def descent(url: Url[SchemeType]): List[PathName[""]] = url.path
+    def descent(url: Url[SchemeType]): List[Name[""]] = url.path
 
     def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) =
       (url.scheme, url.authority)
@@ -72,7 +72,7 @@ object Url:
   given [SchemeType <: Label]
       => PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])]:
 
-    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[PathName[""]])
+    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[Name[""]])
             : Url[SchemeType] =
 
       Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
