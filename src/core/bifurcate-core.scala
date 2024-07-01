@@ -20,11 +20,11 @@ import anticipation.*
 
 extension (bytes: Bytes)
   def unpackFrom[DataType: Unpackable](offset: Int): DataType.Result =
-    DataType.unpack(Spool(bytes, offset))
+    DataType.unpack(Buffer(bytes, offset))
 
-  def spool[ResultType](lambda: Spool ?=> ResultType): ResultType = lambda(using Spool(bytes))
+  def buffer[ResultType](lambda: Buffer ?=> ResultType): ResultType = lambda(using Buffer(bytes))
 
-def unpack[ValueType: Unpackable](using spool: Spool): ValueType.Result =
-  ValueType.unpack(spool)
+def unpack[ValueType: Unpackable](using buffer: Buffer): ValueType.Result =
+  ValueType.unpack(buffer)
 
-def byteWidth[DataType: Unspoolable]: Int = DataType.width
+def byteWidth[DataType: Debufferable]: Int = DataType.width

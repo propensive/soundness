@@ -19,19 +19,19 @@ package bifurcate
 import rudiments.*
 
 object Unpackable:
-  given [PackType: Unspoolable](using ClassTag[PackType]) => IArray[PackType] is Unpackable:
+  given [PackType: Debufferable](using ClassTag[PackType]) => IArray[PackType] is Unpackable:
     type Wrap[Type] = Int => Type
-    def unpack(spool: Spool): Int => IArray[PackType] = count =>
+    def unpack(buffer: Buffer): Int => IArray[PackType] = count =>
       IArray.create[PackType](count): array =>
         array.indices.each: index =>
-          array(index) = PackType.unspool(spool)
+          array(index) = PackType.debuffer(buffer)
 
-  given [PackType: Unspoolable] => PackType is Unpackable:
+  given [PackType: Debufferable] => PackType is Unpackable:
     type Wrap[Type] = Type
-    def unpack(spool: Spool): PackType = PackType.unspool(spool)
+    def unpack(buffer: Buffer): PackType = PackType.debuffer(buffer)
 
 trait Unpackable:
   type Self
   type Wrap[_]
   type Result = Wrap[Self]
-  def unpack(spool: Spool): Wrap[Self]
+  def unpack(buffer: Buffer): Wrap[Self]

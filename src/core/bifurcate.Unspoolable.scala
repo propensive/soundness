@@ -21,42 +21,42 @@ import hypotenuse.*
 import rudiments.*
 import wisteria.*
 
-object Unspoolable extends ProductDerivable[Unspoolable]:
-  def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): DataType is Unspoolable =
+object Debufferable extends ProductDerivable[Debufferable]:
+  def apply[DataType](byteWidth: Int)(lambda: (Bytes, Int) => DataType): DataType is Debufferable =
     new:
       def width: Int = byteWidth
 
-      def unspool(spool: Spool): DataType =
-        lambda(spool.bytes, spool.offset).also(spool.advance(width))
+      def debuffer(buffer: Buffer): DataType =
+        lambda(buffer.bytes, buffer.offset).also(buffer.advance(width))
 
-  given B8 is Unspoolable = Unspoolable(1)(_(_).bits)
-  given B16 is Unspoolable = Unspoolable(2)(B16(_, _))
-  given B32 is Unspoolable = Unspoolable(4)(B32(_, _))
-  given B64 is Unspoolable = Unspoolable(8)(B64(_, _))
+  given B8 is Debufferable = Debufferable(1)(_(_).bits)
+  given B16 is Debufferable = Debufferable(2)(B16(_, _))
+  given B32 is Debufferable = Debufferable(4)(B32(_, _))
+  given B64 is Debufferable = Debufferable(8)(B64(_, _))
 
-  given S8 is Unspoolable = Unspoolable(1)(_(_).bits.s8)
-  given S16 is Unspoolable = Unspoolable(2)(B16(_, _).s16)
-  given S32 is Unspoolable = Unspoolable(4)(B32(_, _).s32)
-  given S64 is Unspoolable = Unspoolable(8)(B64(_, _).s64)
+  given S8 is Debufferable = Debufferable(1)(_(_).bits.s8)
+  given S16 is Debufferable = Debufferable(2)(B16(_, _).s16)
+  given S32 is Debufferable = Debufferable(4)(B32(_, _).s32)
+  given S64 is Debufferable = Debufferable(8)(B64(_, _).s64)
 
-  given U8 is Unspoolable = Unspoolable(1)(_(_).bits.u8)
-  given U16 is Unspoolable = Unspoolable(2)(B16(_, _).u16)
-  given U32 is Unspoolable = Unspoolable(4)(B32(_, _).u32)
-  given U64 is Unspoolable = Unspoolable(8)(B64(_, _).u64)
+  given U8 is Debufferable = Debufferable(1)(_(_).bits.u8)
+  given U16 is Debufferable = Debufferable(2)(B16(_, _).u16)
+  given U32 is Debufferable = Debufferable(4)(B32(_, _).u32)
+  given U64 is Debufferable = Debufferable(8)(B64(_, _).u64)
 
-  given Byte is Unspoolable = Unspoolable(1)(_(_))
-  given Short is Unspoolable = Unspoolable(2)(B16(_, _).s16.short)
-  given Int is Unspoolable = Unspoolable(4)(B32(_, _).s32.int)
-  given Long is Unspoolable = Unspoolable(8)(B64(_, _).s64.long)
+  given Byte is Debufferable = Debufferable(1)(_(_))
+  given Short is Debufferable = Debufferable(2)(B16(_, _).s16.short)
+  given Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
+  given Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Unspoolable =
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Debufferable =
     new:
-      def unspool(spool: Spool): DerivationType =
-        construct { [FieldType] => context => context.unspool(spool) }
+      def debuffer(buffer: Buffer): DerivationType =
+        construct { [FieldType] => context => context.debuffer(buffer) }
 
       def width = contexts { [FieldType] => _.width }.sum
 
-trait Unspoolable:
+trait Debufferable:
   type Self
   def width: Int
-  def unspool(spool: Spool): Self
+  def debuffer(buffer: Buffer): Self

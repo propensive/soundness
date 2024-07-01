@@ -21,36 +21,36 @@ import hypotenuse.*
 import rudiments.*
 import wisteria.*
 
-object Spoolable extends ProductDerivable[Spoolable]:
+object Bufferable extends ProductDerivable[Bufferable]:
 
-  // given B8 is Spoolable = Spoolable(1)(_(_).bits)
-  // given B16 is Spoolable = Spoolable(2)(B16(_, _))
-  // given B32 is Spoolable = Spoolable(4)(B32(_, _))
-  //given B64 is Spoolable = Spoolable(8)(B64(_, _))
+  // given B8 is Bufferable = Bufferable(1)(_(_).bits)
+  // given B16 is Bufferable = Bufferable(2)(B16(_, _))
+  // given B32 is Bufferable = Bufferable(4)(B32(_, _))
+  //given B64 is Bufferable = Bufferable(8)(B64(_, _))
 
-  // given I8 is Spoolable = Spoolable(1)(_(_).bits.i8)
-  // given I16 is Spoolable = Spoolable(2)(B16(_, _).i16)
-  // given I32 is Spoolable = Spoolable(4)(B32(_, _).i32)
-  // given I64 is Spoolable = Spoolable(8)(B64(_, _).i64)
+  // given I8 is Bufferable = Bufferable(1)(_(_).bits.i8)
+  // given I16 is Bufferable = Bufferable(2)(B16(_, _).i16)
+  // given I32 is Bufferable = Bufferable(4)(B32(_, _).i32)
+  // given I64 is Bufferable = Bufferable(8)(B64(_, _).i64)
 
-  // given U8 is Spoolable = Spoolable(1)(_(_).bits.u8)
-  // given U16 is Spoolable = Spoolable(2)(B16(_, _).u16)
-  // given U32 is Spoolable = Spoolable(4)(B32(_, _).u32)
-  // given U64 is Spoolable = Spoolable(8)(B64(_, _).u64)
+  // given U8 is Bufferable = Bufferable(1)(_(_).bits.u8)
+  // given U16 is Bufferable = Bufferable(2)(B16(_, _).u16)
+  // given U32 is Bufferable = Bufferable(4)(B32(_, _).u32)
+  // given U64 is Bufferable = Bufferable(8)(B64(_, _).u64)
 
-  // given Byte is Spoolable = Spoolable(1)(_(_))
-  // given Short is Spoolable = Spoolable(2)(B16(_, _).i16.short)
-  // given Int is Spoolable = Spoolable(4)(B32(_, _).i32.int)
-  // given Long is Spoolable = Spoolable(8)(B64(_, _).i64.long)
+  // given Byte is Bufferable = Bufferable(1)(_(_))
+  // given Short is Bufferable = Bufferable(2)(B16(_, _).i16.short)
+  // given Int is Bufferable = Bufferable(4)(B32(_, _).i32.int)
+  // given Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Spoolable = new:
-    def spool(spool: Spool, value: DerivationType): Unit = fields(value):
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Bufferable = new:
+    def buffer(buffer: Buffer, value: DerivationType): Unit = fields(value):
       [FieldType] => field =>
-        context.spool(spool, field)
+        context.buffer(buffer, field)
 
     def width = contexts { [FieldType] => _.width }.sum
 
-trait Spoolable:
+trait Bufferable:
   type Self
   def width: Int
-  def spool(spool: Spool, value: Self): Unit
+  def buffer(buffer: Buffer, value: Self): Unit

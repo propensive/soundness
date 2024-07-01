@@ -18,7 +18,7 @@ package bifurcate
 
 import anticipation.*
 
-class Spool(private[bifurcate] val bytes: Bytes, initialPosition: Int = 0):
+class Buffer(private[bifurcate] val bytes: Bytes, initialPosition: Int = 0):
   private[bifurcate] var position: Int = initialPosition
   def offset: Int = position
   def advance(count: Int): Unit = position += count
