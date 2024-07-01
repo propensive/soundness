@@ -40,24 +40,24 @@ enum TabCompletionsInstallation:
 object TabCompletionsInstallation:
   given TabCompletionsInstallation is Communicable =
     case CommandNotOnPath(script) =>
-      msg"The ${script} command is not on the PATH, so completions scripts cannot be installed."
+      m"The ${script} command is not on the PATH, so completions scripts cannot be installed."
 
     case Shells(zsh, bash, fish) =>
-      msg"$zsh\n\n$bash\n\n$fish"
+      m"$zsh\n\n$bash\n\n$fish"
 
   object InstallResult:
     given InstallResult is Communicable =
       case Installed(shell, path) =>
-        msg"The $shell completion script installed to $path."
+        m"The $shell completion script installed to $path."
 
       case AlreadyInstalled(shell, path) =>
-        msg"A $shell completion script already exists at $path."
+        m"A $shell completion script already exists at $path."
 
       case NoWritableLocation(shell) =>
-        msg"No writable install location could be found for $shell completions"
+        m"No writable install location could be found for $shell completions"
 
       case ShellNotInstalled(shell) =>
-        msg"The $shell shell is not installed"
+        m"The $shell shell is not installed"
 
   enum InstallResult:
     case Installed(shell: Shell, path: Text)
@@ -122,7 +122,7 @@ object TabCompletions:
 
   // def messages(shell: Shell, global: Boolean): List[Message] =
   //   if shell == Shell.Zsh && !global
-  //   then List(msg"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
+  //   then List(m"""Make sure that your ${t"~/.zshrc"} file contains the following lines:
 
   //     fpath=(~/.zsh/completion $$fpath)
   //     autoload -U compinit
@@ -167,8 +167,8 @@ object CliEvent:
   given CliEvent transcribes ExecEvent = CliEvent.Exec(_)
 
   given CliEvent is Communicable =
-    case Exec(event)          => msg"exeution error: $event"
-    case Installing(location) => msg"installing to $location"
+    case Exec(event)          => m"exeution error: $event"
+    case Installing(location) => m"installing to $location"
 
 enum CliEvent:
   case Exec(event: ExecEvent)
