@@ -287,7 +287,7 @@ object Http:
         HttpResponse(status, responseHeaders, body)
 
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
-extends Error(msg"HTTP error $status"):
+extends Error(m"HTTP error $status"):
   def as[BodyType: HttpReadable]: BodyType = BodyType.read(status, body)
 
 trait FailureCase
@@ -296,7 +296,7 @@ object HttpStatus:
   private lazy val all: Map[Int, HttpStatus] = values.immutable(using Unsafe).bi.map(_.code -> _).to(Map)
   def unapply(code: Int): Option[HttpStatus] = all.get(code)
 
-  given HttpStatus is Communicable = status => msg"${status.code} (${status.description})"
+  given HttpStatus is Communicable = status => m"${status.code} (${status.description})"
 
 enum HttpStatus(val code: Int, val description: Text):
   case Continue extends HttpStatus(100, t"Continue"), FailureCase
@@ -393,6 +393,6 @@ enum HttpEvent:
 
 object HttpEvent:
   given HttpEvent is Communicable =
-    case Response(status)           => msg"Received response with status $status"
-    case Request(preview)           => msg"Request [$preview]"
-    case Send(method, url, headers) => msg"Send $method request to $url"
+    case Response(status)           => m"Received response with status $status"
+    case Request(preview)           => m"Request [$preview]"
+    case Send(method, url, headers) => m"Send $method request to $url"
