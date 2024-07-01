@@ -99,64 +99,64 @@ object JsonParseError:
 
   given Reason is Communicable =
     case Reason.EmptyInput =>
-      msg"the input was empty"
+      m"the input was empty"
 
     case Reason.UnexpectedChar(found) =>
-      msg"the character $found was not expected"
+      m"the character $found was not expected"
 
     case Reason.ExpectedTrue =>
-      msg"true was expected"
+      m"true was expected"
 
     case Reason.ExpectedFalse =>
-      msg"false was expected"
+      m"false was expected"
 
     case Reason.ExpectedNull =>
-      msg"null was expected"
+      m"null was expected"
 
     case Reason.ExpectedSomeValue(char) =>
-      msg"a value was expected but instead found $char"
+      m"a value was expected but instead found $char"
 
     case Reason.ExpectedColon(found) =>
-      msg"a colon was expected but instead found $found"
+      m"a colon was expected but instead found $found"
 
     case Reason.InvalidWhitespace =>
-      msg"invalid whitespace was found"
+      m"invalid whitespace was found"
 
     case Reason.ExpectedString(found) =>
-      msg"expected a string but instead found $found"
+      m"expected a string but instead found $found"
 
     case Reason.ExpectedHexDigit(found) =>
-      msg"expected a hexadecimal digit"
+      m"expected a hexadecimal digit"
 
     case Reason.PrematureEnd =>
-      msg"the stream was ended prematurely"
+      m"the stream was ended prematurely"
 
     case Reason.NumberHasLeadingZero =>
-      msg"a number cannot start with a zero except when followed by a decimal point"
+      m"a number cannot start with a zero except when followed by a decimal point"
 
     case Reason.SpuriousContent(found) =>
-      msg"$found was found after the full JSON value was read"
+      m"$found was found after the full JSON value was read"
 
     case Reason.LeadingDecimalPoint =>
-      msg"a number cannot start with a decimal point"
+      m"a number cannot start with a decimal point"
 
     case Reason.NotEscaped(char) =>
-      msg"the character $char must be escaped with a backslash"
+      m"the character $char must be escaped with a backslash"
 
     case Reason.IncorrectEscape(char) =>
-      msg"the character $char was escaped with a backslash unnecessarily"
+      m"the character $char was escaped with a backslash unnecessarily"
 
     case Reason.MultipleDecimalPoints =>
-      msg"the number cannot contain more than one decimal point"
+      m"the number cannot contain more than one decimal point"
 
     case Reason.ExpectedDigit(found) =>
-      msg"expected a digit but instead found $found"
+      m"expected a digit but instead found $found"
 
 
 import JsonParseError.Reason
 
 case class JsonParseError(line: Int, col: Int, reason: Reason)
-extends Error(msg"Could not parse JSON because $reason at ${line + 1}:${col + 1}")
+extends Error(m"Could not parse JSON because $reason at ${line + 1}:${col + 1}")
 
 export JsonAst.RawJson as JsonAst
 
