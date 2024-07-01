@@ -22,7 +22,7 @@ import anticipation.*
 
 object Panic:
   def apply(error: Exception): Panic =
-    Panic(msg"""
+    Panic(m"""
       an ${error.getClass.getName.nn.tt} exception was unexpectedly thrown;
       the error was: ${Option(error.getMessage).getOrElse("[null]").nn.tt}
     """)
