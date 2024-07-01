@@ -85,7 +85,7 @@ package manifestAttributes:
 
 object Manifest:
   protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =
-    val java = juj.Manifest(LazyListInputStream(source.readAs[LazyList[Bytes]]))
+    val java = juj.Manifest(LazyListInputStream(source.read[LazyList[Bytes]]))
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
