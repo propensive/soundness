@@ -135,7 +135,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType](inputLabel))(Unset)(using summonInline[Errant[VariantError]])
-        else throw Panic(msg"Should be unreachable")
+        else throw Panic(m"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
       (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
@@ -175,6 +175,6 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType]("".tt))(Unset)(using summonInline[Errant[VariantError]])
-        else throw Panic(msg"Should be unreachable")
+        else throw Panic(m"Should be unreachable")
 
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]
