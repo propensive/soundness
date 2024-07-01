@@ -35,13 +35,13 @@ object Tests extends Suite(t"Merino tests"):
   def run(): Unit =
     val tests = ji.File(ji.File(workingDirectory, "tests"), "test_parsing")
     val tests2 = ji.File(ji.File(workingDirectory, "tests"), "test_transform")
-    
+
     suite(t"Positive tests"):
       (tests.listFiles.nn.map(_.nn).to(List).filter(_.getName.nn.startsWith("y_")) ++ tests2.listFiles.nn.map(_.nn).to(List)).each: file =>
         test(Text(file.getName.nn.dropRight(5))):
           JsonAst.parse(ji.BufferedInputStream(ji.FileInputStream(file)))
         .check()
-    
+
     suite(t"Negative tests"):
       tests.listFiles.nn.map(_.nn).filter(_.getName.nn.startsWith("n_")).each: file =>
         test(Text(file.getName.nn.dropRight(5))):
@@ -52,27 +52,27 @@ object Tests extends Suite(t"Merino tests"):
 
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge.json"))).readAs[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge.json"))).read[Bytes]
       .check()
-      
+
       val file2: Bytes = test(t"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge2.json"))).readAs[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge2.json"))).read[Bytes]
       .check()
-      
+
       // test(t"Parse huge file with Jawn"):
       //   import org.typelevel.jawn.*, ast.*
       //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file.mutable(using Unsafe)).nn)
       // .benchmark()
-      
+
       // test(t"Parse huge file with Merino"):
       //   JsonAst.parse(file)
       // .benchmark()
-      
+
       // test(t"Parse big file with Jawn"):
       //   import org.typelevel.jawn.*, ast.*
       //   JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(file2.mutable(using Unsafe)).nn)
       // .benchmark()
-    
+
       test(t"Parse big file with Merino"):
         JsonAst.parse(file2)
       .benchmark()
@@ -81,79 +81,79 @@ object Tests extends Suite(t"Merino tests"):
       test(t"Parse 0e+1"):
         JsonAst.parse(t"0e+1")
       .assert(_ == JsonAst(0L))
-      
+
       test(t"Parse 0e1"):
         JsonAst.parse(t"0e1")
       .assert(_ == JsonAst(0L))
-      
+
       test(t"Parse ' 4'"):
         JsonAst.parse(t" 4")
       .assert(_ == JsonAst(4L))
-      
+
       test(t"Parse small negative number"):
         JsonAst.parse(t"-0.000000000000000000000000000000000000000000000000000000000000000000000000000001")
       .assert(_ == JsonAst(-1.0e-78))
-      
+
       test(t"Parse 20e1"):
         JsonAst.parse(t"20e1")
       .assert(_ == JsonAst(200L))
-      
+
       test(t"Parse 123e65"):
         JsonAst.parse(t"123e65")
       .assert(_ == JsonAst(1.23e67))
-      
+
       test(t"Parse -0"):
         JsonAst.parse(t"-0")
       .assert(_ == JsonAst(-0.0))
-      
+
       test(t"Parse -123"):
         JsonAst.parse(t"-123")
       .assert(_ == JsonAst(-123L))
-      
+
       test(t"Parse -1"):
         JsonAst.parse(t"-1")
       .assert(_ == JsonAst(-1L))
-      
+
       test(t"Parse 1E22"):
         JsonAst.parse(t"1E22")
       .assert(_ == JsonAst(1.0E22))
-      
+
       test(t"Parse 1E-2"):
         JsonAst.parse(t"1E-2")
       .assert(_ == JsonAst(1.0E-2))
-      
+
       test(t"Parse 1E+2"):
         JsonAst.parse(t"1E+2")
       .assert(_ == JsonAst(1.0E2))
-      
+
       test(t"Parse 123e45"):
         JsonAst.parse(t"123e45")
       .assert(_ == JsonAst(1.23E47))
-      
+
       test(t"Parse 123.456e78"):
         JsonAst.parse(t"123.456e78")
       .assert(_ == JsonAst(1.23456E80))
-      
+
       test(t"Parse 1e-2"):
         JsonAst.parse(t"1e-2")
       .assert(_ == JsonAst(1.0E-2))
-      
+
       test(t"Parse 1e+2"):
         JsonAst.parse(t"1e+2")
       .assert(_ == JsonAst(1.0E2))
-      
+
       test(t"Parse 123"):
         JsonAst.parse(t"123")
       .assert(_ == JsonAst(123L))
-      
+
       test(t"Parse 123.456789"):
         JsonAst.parse(t"123.456789")
       .assert(_ == JsonAst(123.456789))
-      
+
       test(t"Parse \"Hello World\""):
         JsonAst.parse(t"\"Hello World\"")
       .assert(_ == JsonAst("Hello World"))
-      
+
       test(t"Parse \"\""):
         JsonAst.parse(t"\"\"")
       .assert(_ == JsonAst(""))
