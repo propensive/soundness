@@ -60,7 +60,7 @@ object Clock:
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
-case class DateError(text: Text) extends Error(msg"the value $text is not a valid date")
+case class DateError(text: Text) extends Error(m"the value $text is not a valid date")
 
 object Dates:
   opaque type Date = Int
@@ -547,27 +547,27 @@ object Aviation:
         val hour = d.toInt
         val minutes = ((d - hour) * 100 + 0.5).toInt
 
-        if minutes >= 60 then abandon(msg"a time cannot have a minute value above 59", lit.pos)
-        if hour < 0 then abandon(msg"a time cannot be negative", lit.pos)
-        if hour > 12 then abandon(msg"a time cannot have an hour value above 12", lit.pos)
+        if minutes >= 60 then abandon(m"a time cannot have a minute value above 59", lit.pos)
+        if hour < 0 then abandon(m"a time cannot be negative", lit.pos)
+        if hour > 12 then abandon(m"a time cannot have an hour value above 12", lit.pos)
 
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
 
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then abandon(msg"the time should have exactly two minutes digits", lit.pos)
+        then abandon(m"the time should have exactly two minutes digits", lit.pos)
 
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Time(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
 
       case _ =>
-        abandon(msg"expected a literal double value")
+        abandon(m"expected a literal double value")
 
 @capability
 case class Timezone private(name: Text)
 
 case class TimezoneError(name: Text)
-extends Error(msg"the name $name does not refer to a known timezone")
+extends Error(m"the name $name does not refer to a known timezone")
 
 object LocalTime:
   given (using RomanCalendar) => LocalTime is GenericInstant as generic =
