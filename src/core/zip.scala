@@ -38,7 +38,7 @@ import java.util.zip as juz
 
 //import scala.language.experimental.captureChecking
 
-case class ZipError(filename: Text) extends Error(msg"could not create ZIP file ${filename}")
+case class ZipError(filename: Text) extends Error(m"could not create ZIP file ${filename}")
 
 // FIXME: Check this
 type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
