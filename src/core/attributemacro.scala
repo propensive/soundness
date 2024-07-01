@@ -26,7 +26,7 @@ import spectacular.*
 import scala.quoted.*
 
 type Attributes = Map[String, Unset.type | Text]
-type Html[ChildType <: Label] = Node[ChildType] | Text | Int
+type Html[+ChildType <: Label] = Node[ChildType] | Text | Int
 
 object Node:
   given [HtmlType <: Html[?]] => HtmlType is Showable as html = html => (html: @unchecked) match
