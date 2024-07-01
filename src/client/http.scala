@@ -43,7 +43,7 @@ enum HttpBody:
   case Chunked(stream: LazyList[IArray[Byte]])
   case Data(data: IArray[Byte])
 
-  def as[ResultType: HttpReadable]: ResultType = ResultType.read(HttpStatus.Ok, this)
+  def as[ResultType: HttpReadable as readable]: ResultType = readable.read(HttpStatus.Ok, this)
 
 object QueryEncoder extends ProductDerivation[QueryEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: QueryEncoder[DerivationType] =
@@ -150,11 +150,11 @@ object HttpReadable:
     case HttpBody.Data(body)    => LazyList(body)
     case HttpBody.Chunked(body) => body
 
-  given [ContentType: GenericHttpReader] => ContentType is HttpReadable as genericHttpReader =
+  given [ContentType: GenericHttpReader as readable] => ContentType is HttpReadable as genericHttpReader =
     (status, body) => body match
-      case HttpBody.Empty         => ContentType.read(t"")
-      case HttpBody.Data(data)    => ContentType.read(data.utf8)
-      case HttpBody.Chunked(data) => ContentType.read(data.read[Bytes].utf8)
+      case HttpBody.Empty         => readable.read(t"")
+      case HttpBody.Data(data)    => readable.read(data.utf8)
+      case HttpBody.Chunked(data) => readable.read(data.read[Bytes].utf8)
 
   given HttpStatus is HttpReadable as httpStatus:
     def read(status: HttpStatus, body: HttpBody) = status
@@ -166,9 +166,9 @@ trait HttpReadable:
 case class HttpResponse
     (status: HttpStatus, headers: Map[ResponseHeader[?], List[Text]], body: HttpBody):
 
-  def as[BodyType: HttpReadable]: BodyType raises HttpError = (status: @unchecked) match
+  def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
     case status: FailureCase => abort(HttpError(status, body))
-    case status              => BodyType.read(status, body)
+    case status              => readable.read(status, body)
 
   def apply[ValueType](header: ResponseHeader[ValueType])(using decoder: HttpHeaderDecoder[ValueType])
           : List[ValueType] =
@@ -288,7 +288,7 @@ object Http:
 
 case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)
 extends Error(m"HTTP error $status"):
-  def as[BodyType: HttpReadable]: BodyType = BodyType.read(status, body)
+  def as[BodyType: HttpReadable as readable]: BodyType = readable.read(status, body)
 
 trait FailureCase
 
