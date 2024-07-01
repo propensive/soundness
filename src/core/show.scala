@@ -116,16 +116,16 @@ object Debug:
     case char =>
       if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
-  given set[ElemType: Debug]: Debug[Set[ElemType]] = _.map(_.debug).mkString("{", ", ", "}").tt
-  given vector[ElemType: Debug]: Debug[Vector[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩").tt
-  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.debug).mkString("⟨ ", " ", " ⟩ᵢ").tt
-  given iterable[ElemType: Debug]: Debug[Iterable[ElemType]] = _.map(_.debug).mkString("⦗", ", ", "⦘").tt
-  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.debug).mkString("[", ", ", "]").tt
+  given set[ElemType: Debug]: Debug[Set[ElemType]] = _.map(_.inspect).mkString("{", ", ", "}").tt
+  given vector[ElemType: Debug]: Debug[Vector[ElemType]] = _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
+  given indexedSeq[ElemType: Debug]: Debug[IndexedSeq[ElemType]] = _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
+  given iterable[ElemType: Debug]: Debug[Iterable[ElemType]] = _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
+  given list[ElemType: Debug]: Debug[List[ElemType]] = _.map(_.inspect).mkString("[", ", ", "]").tt
 
   given array[ElemType: Debug]: Debug[Array[ElemType]] = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-      (subscript+value.debug.s).tt
+      (subscript+value.inspect.s).tt
     .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given lazyList[ElemType: Debug]: Debug[LazyList[ElemType]] = lazyList =>
@@ -133,14 +133,14 @@ object Debug:
       if todo <= 0 then "..?".tt
       else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
       else if lazyList.isEmpty then "⯁ ".tt
-      else (lazyList.head.debug.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
+      else (lazyList.head.inspect.s+" ⋰ "+recur(lazyList.tail, todo - 1)).tt
 
     recur(lazyList, 3)
 
   given iarray[ElemType: Debug]: Debug[IArray[ElemType]] = iarray =>
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
-      subscript+value.debug.s.tt
+      subscript+value.inspect.s.tt
     .mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
 
   private def arrayPrefix(str: String): String =
@@ -164,7 +164,7 @@ object Debug:
 
   given option[ValueType: Debug]: Debug[Option[ValueType]] =
     case None        => "None".tt
-    case Some(value) => s"Some(${value.debug.s})".tt
+    case Some(value) => s"Some(${value.inspect.s})".tt
 
   given none: Debug[None.type] = none => "None".tt
 
@@ -182,7 +182,7 @@ object DebugDerivation extends Derivation[Debug]:
   inline def split[DerivationType: SumReflection]: Debug[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        context.let(_.give(variant.debug)).or(variant.debug)
+        context.let(_.give(variant.inspect)).or(variant.inspect)
 
 object TextConversion:
   given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
@@ -214,7 +214,7 @@ extension [ValueType: Showable](value: ValueType)
   def show: Text = ValueType.text(value)
 
 extension [ValueType](value: ValueType)
-  def debug(using debug: Debug[ValueType]): Text = debug.text(value)
+  def inspect(using debug: Debug[ValueType]): Text = debug.text(value)
 
 case class BooleanStyle(yes: Text, no: Text):
   def apply(boolean: Boolean): Text = if boolean then yes else no
