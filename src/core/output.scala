@@ -195,7 +195,7 @@ object Ansi extends Ansi2:
 
     def complete(state: State): Teletype =
       if !state.stack.isEmpty
-      then throw InterpolationError(msg"the closing brace does not match an opening brace")
+      then throw InterpolationError(m"the closing brace does not match an opening brace")
 
       Teletype(state.text, state.spans, state.insertions)
 
