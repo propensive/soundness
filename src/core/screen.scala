@@ -41,7 +41,7 @@ case class PtyState
      link:               Text    = t"")
 
 object Pty:
-  def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Funnel())
+  def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Spool())
 
   def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
@@ -77,7 +77,7 @@ import PtyEscapeError.Reason, Reason.*
 case class PtyEscapeError(reason: Reason)
 extends Error(m"an ANSI escape code could not be handled because $reason")
 
-case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Funnel[Text]):
+case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Spool[Text]):
   def stream: LazyList[Text] = output.stream
 
   def consume(input: Text): Pty raises PtyEscapeError =
