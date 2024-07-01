@@ -156,7 +156,7 @@ extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
 trait Directional[NameType <: Label, AscentType]:
   type Self <: Matchable
   def separator(path: Self): Text
-  def descent(path: Self): List[PathName[NameType]]
+  def descent(path: Self): List[Name[NameType]]
   def render(path: Self): Text
   def ascent(path: Self): AscentType
 
@@ -169,7 +169,7 @@ trait Directional[NameType <: Label, AscentType]:
           : Optional[Self2] =
     ancestor(path, 1)
 
-  def child[Self2 <: Self](path: Self, name: PathName[NameType])
+  def child[Self2 <: Self](path: Self, name: Name[NameType])
       (using creator: PathCreator[Self2, NameType, AscentType])
           : Self2 =
     creator.path(ascent(path), name :: descent(path))
@@ -183,7 +183,7 @@ trait RootParser[PathType <: Matchable, +RootType]:
 
 @capability
 trait PathCreator[+PathType <: Matchable, NameType <: Label, AscentType]:
-  def path(ascent: AscentType, descent: List[PathName[NameType]]): PathType
+  def path(ascent: AscentType, descent: List[Name[NameType]]): PathType
 
 object Navigable:
   inline def decode[PathType <: Matchable](text: Text)[NameType <: Label, RootType]
@@ -205,7 +205,7 @@ object Navigable:
         case t"" :: tail => tail
         case names       => names
 
-      creator.path(root, names.map(PathName(_)))
+      creator.path(root, names.map(Name(_)))
 
 
 @capability
@@ -267,7 +267,7 @@ object Followable:
               case t"" :: tail => tail
               case names       => names
 
-            creator.path(ascent, names.map(PathName(_)))
+            creator.path(ascent, names.map(Name(_)))
 
         if text == selfRef then creator.path(0, Nil) else recur(text)
 
@@ -305,7 +305,7 @@ extends Directional[NameType, Int]:
 implicit class Slash[PathType <: Matchable](path: PathType):
   @targetName("child")
   infix def / [NameType <: Label, AscentType](using directional: PathType is Directional[NameType, AscentType])
-      (name: PathName[NameType])
+      (name: Name[NameType])
       (using creator: PathCreator[PathType, NameType, AscentType])
           : PathType =
     directional.child(path, name)
@@ -315,17 +315,17 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
            creator:     PathCreator[PathType, NameType, AscentType])
 
   // @targetName("child")
-  // infix def /[PathType2 <: PathType](name: PathName[NameType]): PathType =
+  // infix def /[PathType2 <: PathType](name: Name[NameType]): PathType =
   //   directional.child(path, name)
 
   // FIXME: This should be called `/`, but it causes an error because there's already an object called
   // `/` exported from `Serpentine`.
   @targetName("child2")
   inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Errant[PathError]): PathType =
-    directional.child(path, PathName(name))
+    directional.child(path, Name(name))
 
   def render: Text = directional.render(path)
-  def descent: List[PathName[NameType]] = directional.descent(path)
+  def descent: List[Name[NameType]] = directional.descent(path)
   def depth: Int = directional.descent(path).length
 
   transparent inline def parent: Optional[PathType] = directional.parent(path)
@@ -344,8 +344,8 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
       creator.path(directional.ascent(path), followable.descent(link) ::: descent)
 
 trait PExtractor[NameType <: Label]():
-  def apply(): PathName[NameType]
-  def unapply(name: PathName[NameType]): Boolean
+  def apply(): Name[NameType]
+  def unapply(name: Name[NameType]): Boolean
 
 extension (inline context: StringContext)
   inline def p[NameType <: Label]: PExtractor[NameType] =

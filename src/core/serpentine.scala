@@ -27,7 +27,7 @@ import scala.quoted.*
 //import language.experimental.captureChecking
 
 object Serpentine:
-  opaque type PathName[NameType <: Label] = String
+  opaque type Name[NameType <: Label] = String
 
   @targetName("Slash")
   object `/`:
@@ -36,26 +36,26 @@ object Serpentine:
                navigable: PathType is Navigable[NameType, RootType],
                creator:   PathCreator[PathType, NameType, RootType])
         (path: PathType)
-            : Option[(PathType | RootType | %.type, PathName[NameType])] =
+            : Option[(PathType | RootType | %.type, Name[NameType])] =
 
       navigable.descent(path) match
         case Nil          => None
         case head :: Nil  => Some((navigable.root(path), head))
         case head :: tail => Some((creator.path(navigable.root(path), tail), head))
 
-  object PathName:
-    given [NameType <: Label] => PathName[NameType] is Showable = _.tt
+  object Name:
+    given [NameType <: Label] => Name[NameType] is Showable = _.tt
 
-    inline def apply[NameType <: Label](text: Text)(using errant: Errant[PathError]): PathName[NameType] =
+    inline def apply[NameType <: Label](text: Text)(using errant: Errant[PathError]): Name[NameType] =
       ${SerpentineMacro.runtimeParse[NameType]('text, 'errant)}
 
-    def unsafe[NameType <: Label](text: Text): PathName[NameType] = text.s: PathName[NameType]
+    def unsafe[NameType <: Label](text: Text): Name[NameType] = text.s: Name[NameType]
 
-  extension [NameType <: Label](pathName: PathName[NameType])
-    def render: Text = Text(pathName)
-    def widen[NameType2 <: NameType]: PathName[NameType2] = pathName
-    inline def narrow[NameType2 >: NameType <: Label]: PathName[NameType2] raises PathError =
-      PathName(render)
+  extension [NameType <: Label](name: Name[NameType])
+    def render: Text = name.tt
+    def widen[NameType2 <: NameType]: Name[NameType2] = name
+    inline def narrow[NameType2 >: NameType <: Label]: Name[NameType2] raises PathError =
+      Name(render)
 
   @targetName("Root")
   object `%`:
@@ -84,7 +84,7 @@ object Serpentine:
       def separator(path: %.type): Text = navigable.separator(PathType.empty())
       def prefix(root: RootType): Text = navigable.prefix(navigable.root(PathType.empty()))
       def root(path: %.type): RootType = navigable.root(PathType.empty())
-      def descent(path: %.type): List[PathName[NameType]] = Nil
+      def descent(path: %.type): List[Name[NameType]] = Nil
 
     given [PathType <: Matchable: {Radical as radical, Showable as showable}]
         (using hierarchy: Hierarchy[PathType, ?]) => %.type is Showable =
@@ -94,7 +94,7 @@ object Serpentine:
     @targetName("child")
     infix def / [PathType <: Matchable: Radical, NameType <: Label, AscentType]
         (using Hierarchy[PathType, ?], PathType is Directional[NameType, AscentType])
-        (name: PathName[NameType])
+        (name: Name[NameType])
         (using creator: PathCreator[PathType, NameType, AscentType])
             : PathType =
 
@@ -108,8 +108,8 @@ object Serpentine:
         (using creator: PathCreator[PathType, NameType, AscentType])
             : PathType raises PathError =
 
-      PathType.empty() / PathName(name)
+      PathType.empty() / Name(name)
 
 export Serpentine.%
 export Serpentine./
-export Serpentine.PathName
+export Serpentine.Name

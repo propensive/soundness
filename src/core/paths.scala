@@ -26,7 +26,7 @@ import gossamer.*
 
 //import language.experimental.captureChecking
 
-object Root
+val Root = %
 
 object SimplePath:
   inline given decoder(using Errant[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
@@ -51,14 +51,15 @@ object SimplePath:
     def separator(path: SimplePath): Text = t"/"
     def root(path: SimplePath): Root.type = serpentine.Root
     def prefix(root: Root.type): Text = t"/"
-    def descent(path: SimplePath): List[PathName[".*\\/.*"]] = path.descent
+    def descent(path: SimplePath): List[Name[".*\\/.*"]] = path.descent
 
   val nav: SimplePath is Directional[".*\\/.*", Root.type] = navigable
 
   given pathCreator: PathCreator[SimplePath, ".*\\/.*", Root.type] with
-    def path(root: Root.type, descent: List[PathName[".*\\/.*"]]): SimplePath = SimplePath(descent)
+    def path(root: Root.type, descent: List[Name[".*\\/.*"]]): SimplePath = SimplePath(descent)
 
-case class SimplePath(descent: List[PathName[".*\\/.*"]]) extends PathEquality[SimplePath](using SimplePath.navigable)
+case class SimplePath(descent: List[Name[".*\\/.*"]])
+extends PathEquality[SimplePath](using SimplePath.navigable)
 
 object SimpleLink:
   inline given decoder(using Errant[PathError]): Decoder[SimpleLink] =
@@ -76,9 +77,9 @@ object SimpleLink:
     def separator(link: SimpleLink): Text = t"/"
     val separators: Set[Char] = Set('/')
     def ascent(path: SimpleLink): Int = path.ascent
-    def descent(path: SimpleLink): List[PathName[".*\\/.*"]] = path.descent
+    def descent(path: SimpleLink): List[Name[".*\\/.*"]] = path.descent
 
-case class SimpleLink(ascent: Int, descent: List[PathName[".*\\/.*"]])
+case class SimpleLink(ascent: Int, descent: List[Name[".*\\/.*"]])
 
 package hierarchies:
   erased given simple: Hierarchy[SimplePath, SimpleLink] = ###

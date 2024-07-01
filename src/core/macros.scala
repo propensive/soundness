@@ -56,8 +56,8 @@ object SerpentineMacro:
 
     '{
       new PExtractor[NameType]():
-        def apply(): PathName[NameType] = ${Expr(element)}.asInstanceOf[PathName[NameType]]
-        def unapply(name: PathName[NameType]): Boolean = name.render.s == ${Expr(element)}
+        def apply(): Name[NameType] = ${Expr(element)}.asInstanceOf[Name[NameType]]
+        def unapply(name: Name[NameType]): Boolean = name.render.s == ${Expr(element)}
     }
 
   private[serpentine] def patterns
@@ -72,7 +72,7 @@ object SerpentineMacro:
   def runtimeParse
       [NameType <: Label: Type]
       (text: Expr[Text], errorHandler: Expr[Errant[PathError]])(using Quotes)
-      : Expr[PathName[NameType]] =
+      : Expr[Name[NameType]] =
     import quotes.reflect.*
 
     val checks: List[String] = patterns(TypeRepr.of[NameType])
@@ -91,7 +91,7 @@ object SerpentineMacro:
           $statements
 
           if $text.s.matches(${Expr(pattern)})
-          then raise(PathError($text, $reasonExpr))($text.asInstanceOf[PathName[NameType]])(using $errorHandler)
+          then raise(PathError($text, $reasonExpr))($text.asInstanceOf[Name[NameType]])(using $errorHandler)
         })
 
       case _ =>
@@ -99,5 +99,5 @@ object SerpentineMacro:
 
     '{
       ${recur(checks, '{()})}
-      $text.asInstanceOf[PathName[NameType]]
+      $text.asInstanceOf[Name[NameType]]
     }
