@@ -32,12 +32,12 @@ object Readable:
 
   given [SourceType: Readable by Text](using encoder: CharEncoder)
       => SourceType is Readable by Bytes as encodingAdapter =
-    source => encoder.encode(SourceType.read(source))
+    source => encoder.encode(SourceType.stream(source))
 
   given [SourceType: Readable by Bytes](using decoder: CharDecoder)
       => SourceType is Readable by Text as decodingAdapter =
 
-    source => decoder.decode(SourceType.read(source))
+    source => decoder.decode(SourceType.stream(source))
 
   given [ElementType] => LazyList[ElementType] is Readable by ElementType as lazyList = identity(_)
 
@@ -128,7 +128,7 @@ object Readable:
 trait Readable:
   type Self
   type Operand
-  def read(value: Self): LazyList[Operand]
+  def stream(value: Self): LazyList[Operand]
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Operand =
-    source => read(lambda(source))
+    source => stream(lambda(source))

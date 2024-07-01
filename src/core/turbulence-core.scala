@@ -32,7 +32,7 @@ import vacuous.*
 
 extension [ValueType](value: ValueType)
   def stream[ElementType](using readable: ValueType is Readable by ElementType): LazyList[ElementType] =
-    readable.read(value)
+    readable.stream(value)
 
   inline def read[ResultType]: ResultType =
     compiletime.summonFrom:
@@ -48,14 +48,14 @@ extension [ValueType](value: ValueType)
       (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
           : Unit =
 
-    writable.write(target, readable.read(value))
+    writable.write(target, readable.stream(value))
 
   def appendTo[TargetType](target: TargetType)[ElementType]
       (using readable:   ValueType is Readable by ElementType,
              appendable: TargetType is Appendable by ElementType)
           : Unit =
 
-    appendable.append(target, readable.read(value))
+    appendable.append(target, readable.stream(value))
 
 package stdioSources:
   package virtualMachine:
