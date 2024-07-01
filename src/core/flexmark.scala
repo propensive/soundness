@@ -153,7 +153,7 @@ object Markdown:
   private val parser = Parser.builder(options).nn.build().nn
 
   def parse[ValueType: Readable by Text](value: ValueType)(using Errant[MarkdownError]): Md =
-    val text = value.stream[Text].readAs[Text]
+    val text = value.stream[Text].read[Text]
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
 
