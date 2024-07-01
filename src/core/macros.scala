@@ -139,7 +139,7 @@ object Probably:
       inc.include(runner.report, test.id, outcome)
       result(run)
 
-  def inspect[TestType: Type](expr: Expr[TestType], test: Expr[TestContext])(using Quotes): Expr[TestType] =
+  def debug[TestType: Type](expr: Expr[TestType], test: Expr[TestContext])(using Quotes): Expr[TestType] =
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match

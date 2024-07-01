@@ -31,7 +31,7 @@ import scala.collection.mutable as scm
 given realm: Realm = realm"probably"
 
 extension [ValueType](inline value: ValueType)(using inline test: TestContext)
-  inline def inspect: ValueType = ${Probably.inspect('value, 'test)}
+  inline def debug: ValueType = ${Probably.debug('value, 'test)}
 
 package testContexts:
   given threadLocal: TestContext = new TestContext():
