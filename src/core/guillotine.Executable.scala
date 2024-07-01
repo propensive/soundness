@@ -100,7 +100,7 @@ object Pipeline:
   given Pipeline is Communicable =
     pipeline => m"${pipeline.commands.map(_.show).join(t" | ")}"
 
-  given Debug[Pipeline] = _.commands.map(_.debug).join(t" | ")
+  given Debug[Pipeline] = _.commands.map(_.inspect).join(t" | ")
   given Pipeline is Showable = _.commands.map(_.show).join(t" | ")
 
 case class Pipeline(commands: Command*) extends Executable:

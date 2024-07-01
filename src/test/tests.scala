@@ -141,24 +141,24 @@ object Tests extends Suite(t"Guillotine tests"):
 
     suite(t"rendering Debug")
       test(t"simple command"):
-        sh"echo Hello World".debug
+        sh"echo Hello World".inspect
       .check(_ == t"""sh"echo Hello World"""")
 
-      println(sh"echo 'Hello World'".debug)
+      println(sh"echo 'Hello World'".inspect)
       test(t"simple command with space"):
-        sh"echo 'Hello World'".debug
+        sh"echo 'Hello World'".inspect
       .check(_ == t"""sh"echo 'Hello World'"""")
 
       test(t"simple command with quote and space"):
-        Command(t"echo", t"Don't stop").debug
+        Command(t"echo", t"Don't stop").inspect
       .check(_ == t"sh\"\"\"echo \"Don't stop\"\"\"\"")
 
       test(t"simple command with single and double quote"):
-        Command(t"echo", t"single ' and double \" quotes").debug
+        Command(t"echo", t"single ' and double \" quotes").inspect
       .check(_ == t"sh\"\"\"echo \"single ' and double \\\" quotes\"\"\"\"")
 
       test(t"render pipeline of commands"):
-        (sh"echo Hello" | sh"sed s/e/a/g").debug
+        (sh"echo Hello" | sh"sed s/e/a/g").inspect
       .check(_ == t"""sh"echo Hello" | sh"sed s/e/a/g"""")
 
     suite(t"equality tests"):
