@@ -20,7 +20,7 @@ import fulminate.*
 import anticipation.*
 
 case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
-extends Error(msg"the URL $text is not valid: expected $expected at $offset")
+extends Error(m"the URL $text is not valid: expected $expected at $offset")
 
 object UrlError:
   enum Expectation:
@@ -28,8 +28,8 @@ object UrlError:
 
   object Expectation:
     given Expectation is Communicable =
-      case Colon           => msg"a colon"
-      case More            => msg"more characters"
-      case LowerCaseLetter => msg"a lowercase letter"
-      case PortRange       => msg"a port range"
-      case Number          => msg"a number"
+      case Colon           => m"a colon"
+      case More            => m"more characters"
+      case LowerCaseLetter => m"a lowercase letter"
+      case PortRange       => m"a port range"
+      case Number          => m"a number"

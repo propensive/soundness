@@ -28,14 +28,14 @@ object MacAddressError:
   object Reason:
     given Reason is Communicable =
       case WrongGroupCount(count) =>
-        msg"there should be six colon-separated groups, but there were $count"
+        m"there should be six colon-separated groups, but there were $count"
 
       case WrongGroupLength(group, length) =>
-        msg"group $group should be two hex digits, but its length is $length"
+        m"group $group should be two hex digits, but its length is $length"
 
       case NotHex(group, content) =>
-        msg"group $group should be a two-digit hex number, but it is $content"
+        m"group $group should be a two-digit hex number, but it is $content"
 
 
 case class MacAddressError(reason: MacAddressError.Reason)
-extends Error(msg"the MAC address is not valid because $reason")
+extends Error(m"the MAC address is not valid because $reason")

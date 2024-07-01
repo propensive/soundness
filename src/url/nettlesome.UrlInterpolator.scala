@@ -48,7 +48,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
   def insert(state: Text, value: UrlInput): Text = value match
     case UrlInput.Integral(port) =>
       if !state.ends(t":")
-      then throw InterpolationError(msg"a port number must be specified after a colon")
+      then throw InterpolationError(m"a port number must be specified after a colon")
 
       try throwErrors(Url.parse(state+port.show)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -58,7 +58,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
     case UrlInput.Textual(text) =>
       if !state.ends(t"/")
-      then throw InterpolationError(msg"a substitution may only be made after a slash")
+      then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -68,7 +68,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
     case UrlInput.RawTextual(text) =>
       if !state.ends(t"/")
-      then throw InterpolationError(msg"a substitution may only be made after a slash")
+      then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -80,7 +80,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
   def parse(state: Text, next: Text): Text =
     if !state.empty && !(next.starts(t"/") || next.empty)
-    then throw InterpolationError(msg"a substitution must be followed by a slash")
+    then throw InterpolationError(m"a substitution must be followed by a slash")
 
     state+next
 

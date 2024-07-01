@@ -20,4 +20,4 @@ import fulminate.*
 
 import language.experimental.captureChecking
 
-case class OfflineError() extends Error(msg"an Internet connection is not available")
+case class OfflineError() extends Error(m"an Internet connection is not available")

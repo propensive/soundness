@@ -32,20 +32,20 @@ object IpAddressError:
 
   object Reason:
     given Reason is Communicable =
-      case Ipv4ByteOutOfRange(byte)       => msg"the number $byte is not in the range 0-255"
-      case Ipv4ByteNotNumeric(byte)       => msg"the part $byte is not a number"
-      case Ipv6GroupNotHex(group)         => msg"the group '$group' is not a hexadecimal number"
-      case Ipv6WrongNumberOfGroups(count) => msg"the address has $count groups, but should have 8"
-      case Ipv6MultipleDoubleColons       => msg":: appears more than once"
+      case Ipv4ByteOutOfRange(byte)       => m"the number $byte is not in the range 0-255"
+      case Ipv4ByteNotNumeric(byte)       => m"the part $byte is not a number"
+      case Ipv6GroupNotHex(group)         => m"the group '$group' is not a hexadecimal number"
+      case Ipv6WrongNumberOfGroups(count) => m"the address has $count groups, but should have 8"
+      case Ipv6MultipleDoubleColons       => m":: appears more than once"
 
       case Ipv4WrongNumberOfGroups(count) =>
-        msg"the address contains $count period-separated groups instead of 4"
+        m"the address contains $count period-separated groups instead of 4"
 
       case Ipv6TooManyNonzeroGroups(count) =>
-        msg"the address has $count non-zero groups, which is more than is permitted"
+        m"the address has $count non-zero groups, which is more than is permitted"
 
       case Ipv6GroupWrongLength(group) =>
-        msg"the group is more than 4 hexadecimal characters long"
+        m"the group is more than 4 hexadecimal characters long"
 
 case class IpAddressError(reason: IpAddressError.Reason)
-extends Error(msg"the IP address is not valid because $reason")
+extends Error(m"the IP address is not valid because $reason")

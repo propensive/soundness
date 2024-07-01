@@ -68,7 +68,7 @@ object Nettlesome:
         if bytes.length == 4 then
           given IpAddressError mitigates NumberError =
             case NumberError(text, _) => IpAddressError(Ipv4ByteNotNumeric(text))
-          
+
           bytes.map(Decoder.int.decode(_)).pipe: bytes =>
             for byte <- bytes
             do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
@@ -180,13 +180,13 @@ object Nettlesome:
     val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-    else abandon(msg"the TCP port number ${portNumber} is not in the range 1-65535")
+    else abandon(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
     val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
-    else abandon(msg"the UDP port number ${portNumber} is not in the range 1-65535")
+    else abandon(m"the UDP port number ${portNumber} is not in the range 1-65535")
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)

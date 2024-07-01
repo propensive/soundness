@@ -29,11 +29,11 @@ object HostnameError:
 
   object Reason:
     given Reason is Communicable =
-      case LongDnsLabel(label) => msg"the DNS label $label is longer than 63 characters"
-      case LongHostname        => msg"the hostname is longer than 253 characters"
-      case InvalidChar(char)   => msg"the character $char is not allowed in a hostname"
-      case EmptyDnsLabel(n)    => msg"a DNS label cannot be empty"
-      case InitialDash(label)  => msg"the DNS label $label begins with a dash which is not allowed"
+      case LongDnsLabel(label) => m"the DNS label $label is longer than 63 characters"
+      case LongHostname        => m"the hostname is longer than 253 characters"
+      case InvalidChar(char)   => m"the character $char is not allowed in a hostname"
+      case EmptyDnsLabel(n)    => m"a DNS label cannot be empty"
+      case InitialDash(label)  => m"the DNS label $label begins with a dash which is not allowed"
 
 case class HostnameError(text: Text, reason: HostnameError.Reason)
-extends Error(msg"the hostname is not valid because $reason")
+extends Error(m"the hostname is not valid because $reason")
