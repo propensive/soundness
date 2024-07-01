@@ -133,7 +133,9 @@ object ClasspathRef:
   inline given (using Errant[PathError]) => Decoder[ClasspathRef] as decoder:
     def decode(text: Text): ClasspathRef = Navigable.decode[ClasspathRef](text)
 
-  given ClasspathRef is Navigable[Forbidden, Classpath.type] with
+  given ClasspathRef is Nominable = _.text
+
+  given ClasspathRef is Navigable[Forbidden, Classpath.type]:
     def root(ref: ClasspathRef): Classpath.type = Classpath
     def prefix(classpathCompanion: Classpath.type): Text = t""
     def descent(ref: ClasspathRef): List[Name[Forbidden]] = ref.descent
@@ -142,6 +144,9 @@ object ClasspathRef:
   given creator: PathCreator[ClasspathRef, Forbidden, Classpath.type] = (_, descent) => ClasspathRef(descent)
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
   given ClasspathRef is Showable = _.text
+
+  given (using Classloader, Errant[ClasspathError]) => ClasspathRef is Readable by Bytes =
+    _().stream[Bytes]
 
 case class ClasspathRef(descent: List[Name[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
