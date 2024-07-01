@@ -166,7 +166,7 @@ object Interactivity:
 trait Interactivity[EventType]:
   def eventStream(): LazyList[EventType]
 
-case class Terminal(signals: Funnel[Signal])
+case class Terminal(signals: Spool[Signal])
     (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
 extends Interactivity[TerminalEvent]:
 
@@ -193,7 +193,7 @@ extends Interactivity[TerminalEvent]:
     val err = context.stdio.err
     val in = context.stdio.in
 
-  val events: Funnel[TerminalEvent] = Funnel()
+  val events: Spool[TerminalEvent] = Spool()
   def eventStream(): LazyList[TerminalEvent] = events.stream
 
   val pumpSignals: Daemon = daemon:
@@ -231,17 +231,17 @@ package terminalOptions:
   given terminalSizeDetection: TerminalSizeDetection = () => true
 
 object ProcessContext:
-  def apply(stdio: Stdio, signals: Funnel[Signal] = Funnel()): ProcessContext^{stdio} =
+  def apply(stdio: Stdio, signals: Spool[Signal] = Spool()): ProcessContext^{stdio} =
     inline def stdio0: Stdio = stdio
-    inline def signals0: Funnel[Signal] = signals
+    inline def signals0: Spool[Signal] = signals
 
     new ProcessContext:
       val stdio: Stdio = stdio0
-      def signals: Funnel[Signal] = signals0
+      def signals: Spool[Signal] = signals0
 
 trait ProcessContext:
   val stdio: Stdio
-  def signals: Funnel[Signal]
+  def signals: Spool[Signal]
 
 object BracketedPasteMode:
   given default: BracketedPasteMode = () => false
