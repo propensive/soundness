@@ -30,7 +30,7 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 case class TableError(minimumWidth: Int, availableWidth: Int)
-extends Error(msg"The table required a minimum width of $minimumWidth, but only $availableWidth was available")
+extends Error(m"The table required a minimum width of $minimumWidth, but only $availableWidth was available")
 
 trait Attenuation:
   def apply(minimumWidth: Int, availableWidth: Int): Unit
