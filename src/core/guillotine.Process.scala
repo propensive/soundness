@@ -45,10 +45,10 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def attend(): Unit = process.waitFor()
 
   def stdout(): LazyList[Bytes] raises StreamError =
-    Readable.inputStream.read(process.getInputStream.nn)
+    Readable.inputStream.stream(process.getInputStream.nn)
 
   def stderr(): LazyList[Bytes] raises StreamError =
-    Readable.inputStream.read(process.getErrorStream.nn)
+    Readable.inputStream.stream(process.getErrorStream.nn)
 
   def stdin[ChunkType](stream: LazyList[ChunkType])(using writable: ji.OutputStream is Writable by ChunkType)
           : Unit =

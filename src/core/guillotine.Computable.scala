@@ -45,7 +45,7 @@ object Computable:
     Text.construct(lazyList.compute(proc).map(_.s).each(append(_))).s
 
   given (using streamCut: Errant[StreamError]) => LazyList[Bytes] is Computable as dataStream =
-    proc => Readable.inputStream.read(proc.getInputStream.nn)
+    proc => Readable.inputStream.stream(proc.getInputStream.nn)
 
   given ExitStatus is Computable as exitStatus = _.waitFor() match
     case 0     => ExitStatus.Ok
