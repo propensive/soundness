@@ -37,7 +37,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
 
   override def hashCode: Int = scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
 
-  override def toString(): String = t"[${elements.debug}]".s
+  override def toString(): String = t"[${elements.inspect}]".s
 
   @targetName("scalarMul")
   def * [RightType](right: RightType)(using multiplication: ElementType is Multiplicable[RightType])
