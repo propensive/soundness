@@ -32,14 +32,14 @@ given Realm = realm"example"
 @main def run(): Unit =
   import logFormats.untimestamped
   given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.silent)
-  val message1 = msg"yes!"
-  val message2 = msg"world $message1"
+  val message1 = m"yes!"
+  val message2 = m"world $message1"
   given Message transcribes ExecEvent = Log.skip
 
-  Log.fine(msg"hello")
-  Log.info(msg"world")
-  Log.info(msg"hello $message2")
+  Log.fine(m"hello")
+  Log.info(m"world")
+  Log.info(m"hello $message2")
   tend(sh"sleep 1"()).remedy:
-    case ExecError(cmd, _, _) => Log.fail(msg"failed to execute")
-  Log.warn(msg"!")
-  Log.fail(msg"!!!")
+    case ExecError(cmd, _, _) => Log.fail(m"failed to execute")
+  Log.warn(m"!")
+  Log.fail(m"!!!")
