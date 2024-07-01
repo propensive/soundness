@@ -37,4 +37,4 @@ package logFormats:
     e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
   given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
-    e"$SlateGray(${dateFormat.format(timestamp)}) $level $CadetBlue(${realm.name.fit(10)}) > $event\n"
+    e"$SlateGray(${dateFormat.format(timestamp).nn.tt}) $level $CadetBlue(${realm.name.fit(10)}) > $event\n"

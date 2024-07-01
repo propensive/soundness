@@ -37,19 +37,19 @@ infix type onto [Type <: { type Target }, TargetType] = Type { type Target = Tar
 
 package logFormats:
   given Level is Showable as textLevel =
-    case Level.Fine => t"[FINE]"
-    case Level.Info => t"[INFO]"
-    case Level.Warn => t"[WARN]"
-    case Level.Fail => t"[FAIL]"
+    case Level.Fine => t"FINE"
+    case Level.Info => t"INFO"
+    case Level.Warn => t"WARN"
+    case Level.Fail => t"FAIL"
 
   given Message is Inscribable in Text as standard = (event, level, realm, timestamp) =>
-    t"${dateFormat.format(timestamp).nn} $level ${realm.name.fit(10)} > $event\n"
+    t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > $event\n"
 
   given Message is Inscribable in Text as untimestamped = (event, level, realm, timestamp) =>
-    t"$level ${realm.name.fit(10)} > $event\n"
+    t"[$level] ${realm.name.fit(10)} > $event\n"
 
   given Message is Inscribable in Text as lightweight = (event, level, realm, timestamp) =>
-    t"$level $event\n"
+    t"[$level] $event\n"
 
 trait Inscribable:
   type Self
