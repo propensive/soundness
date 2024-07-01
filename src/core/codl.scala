@@ -64,7 +64,7 @@ object Codl:
              codlRead:  Errant[CodlReadError])
         : ValueType/*^{readable, aggregate}*/ =
 
-    summon[CodlDecoder[ValueType]].schema.parse(readable.read(source)).as[ValueType]
+    summon[CodlDecoder[ValueType]].schema.parse(readable.stream(source)).as[ValueType]
 
   def parse[SourceType]
       (source:    SourceType,
@@ -74,7 +74,7 @@ object Codl:
       (using readable: SourceType is Readable by Text, aggregate: Errant[AggregateError[CodlError]])
           : CodlDoc/*^{readable, aggregate}*/ =
 
-    val (margin, stream) = tokenize(readable.read(source), fromStart)
+    val (margin, stream) = tokenize(readable.stream(source), fromStart)
     val baseSchema: CodlSchema = schema
 
     case class Proto(key: Optional[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
