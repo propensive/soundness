@@ -69,7 +69,7 @@ type InvalidTarNames = ".*[\u0000-\u0019].*" | ".*\u007f-\uffff.*" | ".*\\/.*" |
 case class TarPath(tarFile: Tar, ref: TarRef):
   def entry: TarEntry = ???
 
-case class TarRef(descent: List[PathName[InvalidTarNames]]):
+case class TarRef(descent: List[Name[InvalidTarNames]]):
   def parent: Optional[TarRef] = descent match
     case Nil       => Unset
     case _ :: tail => TarRef(tail)
@@ -84,11 +84,11 @@ object TarRef:
     Navigable.decode[TarRef](text)
 
   @targetName("child")
-  infix def / (name: PathName[InvalidTarNames]): TarRef = TarRef(List(name))
+  infix def / (name: Name[InvalidTarNames]): TarRef = TarRef(List(name))
 
   given TarRef is Navigable[InvalidTarNames, Unset.type] as navigable:
     def root(path: TarRef): Unset.type = Unset
-    def descent(path: TarRef): List[PathName[InvalidTarNames]] = path.descent
+    def descent(path: TarRef): List[Name[InvalidTarNames]] = path.descent
     def prefix(ref: Unset.type): Text = t""
     def separator(path: TarRef): Text = t"/"
 
