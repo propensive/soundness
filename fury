@@ -26,7 +26,7 @@ project punctuation
 
   module core
     sources  src/core
-    include  gossamer/core
+    include  gossamer/core turbulence/core
     lib      flexmark             https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark/0.42.12/flexmark-0.42.12.jar
     lib      flexmark-ext-tables  https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-ext-tables/0.42.12/flexmark-ext-tables-0.42.12.jar
     lib      flexmark-util        https://repo1.maven.org/maven2/com/vladsch/flexmark/flexmark-util/0.42.12/flexmark-util-0.42.12.jar

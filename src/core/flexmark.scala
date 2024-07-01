@@ -23,6 +23,8 @@ import gossamer.*
 import vacuous.*
 import contingency.*
 import spectacular.*
+import symbolism.*
+import turbulence.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua
@@ -67,8 +69,8 @@ type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
-  given decoder(using Errant[MarkdownError]): Decoder[InlineMd] = parseInline(_)
-  given encoder: Encoder[InlineMd] = _.serialize
+  given (using Errant[MarkdownError]) => Decoder[InlineMd] as decoder = parseInline(_)
+  given Encoder[InlineMd] as encoder = _.serialize
   given InlineMd is Showable = _.serialize
 
   object Ast:
@@ -150,7 +152,8 @@ object Markdown:
 
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse(text: Text)(using Errant[MarkdownError]): Md =
+  def parse[ValueType: Readable by Text](value: ValueType)(using Errant[MarkdownError]): Md =
+    val text = value.stream[Text].readAs[Text]
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
 
@@ -173,6 +176,7 @@ object Markdown:
       case Copy(str) :: Copy(str2) :: tail => coalesce(Copy(t"$str$str2") :: tail, done)
       case Copy(str) :: tail               => coalesce(tail, Copy(format(str)) :: done)
       case head :: tail                    => coalesce(tail, head :: done)
+
 
   def format(str: Text): Text =
     str.s
