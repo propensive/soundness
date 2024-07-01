@@ -79,7 +79,7 @@ object Path:
     def prefix(root: Optional[Windows.Drive]): Text =
       root.let(Windows.Path.navigable.prefix(_)).or(Unix.Path.navigable.prefix(Unset))
 
-    def descent(path: Path): List[PathName[GeneralForbidden]] =
+    def descent(path: Path): List[Name[GeneralForbidden]] =
       // FIXME: This is a bit of a hack
       import errorHandlers.throwUnsafely
       path match
@@ -98,7 +98,7 @@ object Path:
     Windows.Path.rootParser.parse(text).or(Unix.Path.rootParser.parse(text))
 
   given PathCreator[Path, GeneralForbidden, Optional[Windows.Drive]] with
-    def path(root: Optional[Windows.Drive], descent: List[PathName[GeneralForbidden]]) = root match
+    def path(root: Optional[Windows.Drive], descent: List[Name[GeneralForbidden]]) = root match
       case drive@Windows.Drive(_) => Windows.SafePath(drive, descent)
       case _                      => Unix.SafePath(descent)
 
@@ -170,7 +170,7 @@ sealed trait Path:
 
 object Link:
   given creator: PathCreator[Link, GeneralForbidden, Int] with
-    def path(ascent: Int, descent: List[PathName[GeneralForbidden]]): SafeLink = SafeLink(ascent, descent)
+    def path(ascent: Int, descent: List[Name[GeneralForbidden]]): SafeLink = SafeLink(ascent, descent)
 
   inline given (using Errant[PathError]) => Decoder[Link] as decoder:
     def decode(text: Text): Link =
@@ -197,7 +197,7 @@ object Windows:
     given Path is Navigable[Forbidden, Drive] as navigable:
       def root(path: Path): Drive = path.drive
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
-      def descent(path: Path): List[PathName[Forbidden]] = path.descent
+      def descent(path: Path): List[Name[Forbidden]] = path.descent
       def separator(path: Path): Text = t"\\"
 
     given creator: PathCreator[Path, Forbidden, Drive] = Path(_, _)
@@ -209,12 +209,12 @@ object Windows:
     given encoder: Encoder[Path] = _.render
     given debug: Debug[Path] = _.render
 
-  case class Path(drive: Drive, descent: List[PathName[Forbidden]]) extends galilei.Path:
+  case class Path(drive: Drive, descent: List[Name[Forbidden]]) extends galilei.Path:
     def root: Drive = drive
     def name: Text = if descent.isEmpty then drive.name else descent.head.show
     def fullname: Text = t"${Path.navigable.prefix(drive)}${descent.reverse.map(_.render).join(t"\\")}"
 
-  class SafePath(drive0: Drive, val safeDescent: List[PathName[GeneralForbidden]])
+  class SafePath(drive0: Drive, val safeDescent: List[Name[GeneralForbidden]])
   extends Path(drive0, safeDescent.map(_.widen[Forbidden]))
 
   object Link:
@@ -224,7 +224,7 @@ object Windows:
       val separators: Set[Char] = Set('\\')
       def separator(path: Link): Text = t"\\"
       def ascent(path: Link): Int = path.ascent
-      def descent(path: Link): List[PathName[Forbidden]] = path.descent
+      def descent(path: Link): List[Name[Forbidden]] = path.descent
 
     inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
     given Link is Showable as showable = _.render
@@ -240,12 +240,12 @@ object Windows:
     def name: Text = t"$letter:"
 
     @targetName("child")
-    infix def / (name: PathName[Forbidden]): Path = Path(this, List(name))
+    infix def / (name: Name[Forbidden]): Path = Path(this, List(name))
 
     @targetName("child2")
-    inline infix def / (name: Text)(using Errant[PathError]): Path = Path(this, List(PathName(name)))
+    inline infix def / (name: Text)(using Errant[PathError]): Path = Path(this, List(Name(name)))
 
-  case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
+  case class Link(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Link
 
   sealed trait Entry extends galilei.Entry
 
@@ -254,10 +254,10 @@ object Unix:
   type Forbidden = ".*\\/.*" | ".*[\\cA-\\cZ].*" | "\\.\\." | "\\."
 
   @targetName("child")
-  infix def / (name: PathName[Forbidden]): Path = Path(List(name))
+  infix def / (name: Name[Forbidden]): Path = Path(List(name))
 
   @targetName("child2")
-  inline infix def / (name: Text)(using Errant[PathError]): Path = Path(List(PathName(name)))
+  inline infix def / (name: Text)(using Errant[PathError]): Path = Path(List(Name(name)))
 
   object Path:
     given Path is Radical as radical = () => Path(Nil)
@@ -274,18 +274,18 @@ object Unix:
       def separator(path: Path): Text = t"/"
       def root(path: Path): Unset.type = Unset
       def prefix(root: Unset.type): Text = t"/"
-      def descent(path: Path): List[PathName[Forbidden]] = path.descent
+      def descent(path: Path): List[Name[Forbidden]] = path.descent
 
     given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
     given debug: Debug[Path] = _.render
 
-  case class Path(descent: List[PathName[Forbidden]]) extends galilei.Path:
+  case class Path(descent: List[Name[Forbidden]]) extends galilei.Path:
     def root: Unset.type = Unset
     def name: Text = if descent.isEmpty then Path.navigable.prefix(Unset) else descent.head.show
     def fullname: Text = t"${Path.navigable.prefix(Unset)}${descent.reverse.map(_.render).join(t"/")}"
 
-  class SafePath(val safeDescent: List[PathName[GeneralForbidden]])
+  class SafePath(val safeDescent: List[Name[GeneralForbidden]])
   extends Path(safeDescent.map(_.widen[Forbidden]))
 
   object Link:
@@ -295,14 +295,14 @@ object Unix:
       val separators: Set[Char] = Set('/')
       def separator(path: Link): Text = t"/"
       def ascent(path: Link): Int = path.ascent
-      def descent(path: Link): List[PathName[Forbidden]] = path.descent
+      def descent(path: Link): List[Name[Forbidden]] = path.descent
 
     inline given (using Errant[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
     given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
     given debug: Debug[Link] = _.render
 
-  case class Link(ascent: Int, descent: List[PathName[Forbidden]]) extends galilei.Link
+  case class Link(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Link
 
   sealed trait Entry extends galilei.Entry
 
@@ -515,7 +515,7 @@ object Directory:
 
 case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
-    path / PathName.unsafe(child.getFileName.nn.toString.nn.tt)
+    path / Name.unsafe(child.getFileName.nn.toString.nn.tt)
 
   def descendants(using DereferenceSymlinks, Errant[IoError], PathResolver[Directory, Path]): LazyList[Path] =
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
@@ -525,10 +525,10 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
     descendants.map(_.at[File].let(_.size()).or(0.b)).foldLeft(0.b)(_ + _)
 
   @targetName("child")
-  infix def / (name: PathName[GeneralForbidden]): Path = path / name
+  infix def / (name: Name[GeneralForbidden]): Path = path / name
 
   @targetName("child2")
-  inline infix def / (name: Text)(using Errant[PathError]): Path = path / PathName(name)
+  inline infix def / (name: Text)(using Errant[PathError]): Path = path / Name(name)
 
 object File:
   given Debug[File] as debug = file => t"file:${file.path.render}"
@@ -752,7 +752,7 @@ extends Error(m"insufficient permissions to modify $path")
 case class PathStatusError(path: Path)
 extends Error(m"the filesystem node at $path was expected to be a different type")
 
-case class SafeLink(ascent: Int, descent: List[PathName[GeneralForbidden]]) extends Link
+case class SafeLink(ascent: Int, descent: List[Name[GeneralForbidden]]) extends Link
 
 object SafeLink:
   given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
@@ -766,7 +766,7 @@ object SafeLink:
       val separators: Set[Char] = Set('/', '\\')
       def separator(link: SafeLink): Text = t"/"
       def ascent(link: SafeLink): Int = link.ascent
-      def descent(link: SafeLink): List[PathName[GeneralForbidden]] = link.descent
+      def descent(link: SafeLink): List[Name[GeneralForbidden]] = link.descent
 
   inline given decoder(using Errant[PathError]): Decoder[SafeLink] = Followable.decoder[SafeLink]
 
