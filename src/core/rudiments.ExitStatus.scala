@@ -28,3 +28,7 @@ enum ExitStatus:
   def apply(): Int = this match
     case Ok           => 0
     case Fail(status) => status
+
+  def terminate(): Nothing =
+    System.exit(apply())
+    ???
