@@ -23,12 +23,12 @@ import anticipation.*
 import turbulence.*
 import spectacular.*
 import gossamer.*
-import telekinesis.*
+import telekinesis.{HttpRequest as _, HttpResponse as _, *}
 
-import javax.servlet.*, http.*
+import javax.servlet as js, js.http as jsh
 
-trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
-  protected case class ServletResponseWriter(response: HttpServletResponse) extends Responder:
+trait Servlet(handle: HttpRequest ?=> HttpResponse[?]) extends jsh.HttpServlet:
+  protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
 
     def sendBody(status: Int, body: HttpBody): Unit =
@@ -42,13 +42,13 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
         case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
                                        unsafely(body.map(_.mutable(using Unsafe)).each(out.write(_)))
 
-  protected def streamBody(request: HttpServletRequest): HttpBody.Chunked raises StreamError =
+  protected def streamBody(request: jsh.HttpServletRequest): HttpBody.Chunked raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
     HttpBody.Chunked(Readable.inputStream.stream(request.getInputStream.nn))
 
-  protected def makeRequest(request: HttpServletRequest): Request raises StreamError =
+  protected def makeRequest(request: jsh.HttpServletRequest): HttpRequest raises StreamError =
     val query = Option(request.getQueryString)
 
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -64,7 +64,7 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
       key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
     .to(Map)
 
-    Request(
+    HttpRequest(
       method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
       body = streamBody(request),
       query = query.getOrElse("").nn.tt,
@@ -76,11 +76,11 @@ trait Servlet(handle: Request ?=> Response[?]) extends HttpServlet:
       params
     )
 
-  def handle(servletRequest: HttpServletRequest, servletResponse: HttpServletResponse): Unit =
+  def handle(servletRequest: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse): Unit =
     try throwErrors(handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse)))
     catch case error: StreamError =>
       () // FIXME
 
 
-  override def service(request: HttpServletRequest, response: HttpServletResponse): Unit =
+  override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)

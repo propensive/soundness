@@ -152,7 +152,7 @@ case class Cookie
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-case class Response[ContentType: Servable]
+case class HttpResponse[ContentType: Servable]
     (content: ContentType,
      status: HttpStatus = HttpStatus.Ok,
      headers: Map[ResponseHeader[?], Text] = Map(),
@@ -163,8 +163,8 @@ case class Response[ContentType: Servable]
 
     ContentType.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
-object Request:
-  given Request is Showable = request =>
+object HttpRequest:
+  given HttpRequest is Showable = request =>
     val bodySample: Text =
       try request.body.stream.read[Bytes].utf8 catch
         case err: StreamError  => t"[-/-]"
@@ -191,7 +191,7 @@ object Request:
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-case class Request
+case class HttpRequest
     (method: HttpMethod,
      body: HttpBody.Chunked,
      query: Text,
@@ -236,27 +236,27 @@ case class Request
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
 trait RequestServable:
-  def listen(handle: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs HttpServerEvent
+  def listen(handle: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil): HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (request: Request) ?=> Response[?])(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handle: (request: HttpRequest) ?=> HttpResponse[?])(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
-inline def request(using inline request: Request): Request = request
+inline def request(using inline request: HttpRequest): HttpRequest = request
 
-inline def param(using Request)(key: Text): Text raises MissingParamError =
+inline def param(using HttpRequest)(key: Text): Text raises MissingParamError =
   request.params.get(key).getOrElse:
     abort(MissingParamError(key))
 
-def header(using Request)(header: RequestHeader[?]): Optional[List[Text]] =
-  summon[Request].headers.get(header).getOrElse(Unset)
+def header(using HttpRequest)(header: RequestHeader[?]): Optional[List[Text]] =
+  summon[HttpRequest].headers.get(header).getOrElse(Unset)
 
 object ParamReader:
   given [ParamType](using ext: Unapply[Text, ParamType]): ParamReader[ParamType] = ext.unapply(_)
   given ParamReader[Text] = Some(_)
 
 object UrlPath:
-  def unapply(request: Request): Some[Text] = Some(request.pathText)
+  def unapply(request: HttpRequest): Some[Text] = Some(request.pathText)
 
 trait ParamReader[ParamType]:
   def read(value: Text): Option[ParamType]
@@ -267,16 +267,16 @@ object RequestParam:
     def serialize(value: RequestParam[?]): Text = value.key
 
 case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
-  def opt(using Request): Option[ParamType] =
-    summon[Request].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
+  def opt(using HttpRequest): Option[ParamType] =
+    summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
 
-  def unapply(req: Request): Option[ParamType] = opt(using req)
-  def apply()(using Request): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
+  def unapply(req: HttpRequest): Option[ParamType] = opt(using req)
+  def apply()(using HttpRequest): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
 
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: Request) ?=> Response[?])(using Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handler: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil): HttpService logs HttpServerEvent =
     def handle(exchange: csnh.HttpExchange | Null) =
       try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
       catch case NonFatal(exception) => exception.printStackTrace()
@@ -308,7 +308,7 @@ case class HttpServer(port: Int) extends RequestServable:
 
     HttpBody.Chunked(recur())
 
-  private def makeRequest(exchange: csnh.HttpExchange): Request logs HttpServerEvent =
+  private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
 
@@ -321,7 +321,7 @@ case class HttpServer(port: Int) extends RequestServable:
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
 
     val request =
-      Request
+      HttpRequest
        (method      = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
         body        = streamBody(exchange),
         query       = Text(query.getOrElse("").nn),
@@ -366,8 +366,9 @@ object Ttf:
   given Ttf is Servable = Servable(media"application/octet-stream"): ttf =>
     HttpBody.Data(ttf.content)
 
-def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Response[?])
-             (using Request): Response[?] =
+def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse[?])
+    (using HttpRequest)
+        : HttpResponse[?] =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
@@ -375,19 +376,31 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Respo
           response
 
         case _ =>
-          Response(Bytes(), HttpStatus.Forbidden)
+          HttpResponse(Bytes(), HttpStatus.Forbidden)
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
-      Response(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
+      HttpResponse(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
 
 given realm: Realm = realm"scintillate"
 
 enum HttpServerEvent:
-  case Received(request: Request)
-  case Processed(request: Request, duration: Long)
+  case Received(request: HttpRequest)
+  case Processed(request: HttpRequest, duration: Long)
 
 object HttpServerEvent:
   given HttpServerEvent is Communicable =
     case Received(request)            => m"Received request ${request.show}"
     case Processed(request, duration) => m"Processed request ${request.show} in ${duration}ms"
+
+erased trait Http
+
+object Http:
+  given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
+    type On = TcpPort
+    type Request = HttpRequest
+    type Response = HttpResponse[?]
+    type Server = HttpService
+
+    def server(port: TcpPort)(handler: HttpRequest ?=> HttpResponse[?]): HttpService =
+      HttpServer(port.number).listen(handler)
