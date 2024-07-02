@@ -33,7 +33,15 @@ extension [RemoteType: Connectable](value: RemoteType)
   infix def on [PortType](port: PortType): Endpoint[PortType] =
     Endpoint(RemoteType.remote(value), port)
 
+extension [PortType](port: PortType)
+  def serve[ProtocolType: Protocolic on PortType]
+      (handler: ProtocolType.Request ?=> ProtocolType.Response)
+          : ProtocolType.Server =
+    ProtocolType.server(port)(handler)
+
 def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): ResultType =
   block(using Internet(online))
 
 def online(using internet: Internet): Boolean = internet.online
+
+infix type on [Type <: { type On }, PortType] = Type { type On = PortType }
