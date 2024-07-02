@@ -41,7 +41,7 @@ enum Token:
     case Code(text, _)  => text.length
 
 enum Accent:
-  case Error, Number, String, Ident, Term, Type, Keyword, Symbol, Parens, Modifier
+  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier
 
 object Accent:
   given Accent is Showable = _.toString.tt.lower
@@ -74,34 +74,34 @@ object ScalaSource:
     else if token >= 20 && token <= 62 then Accent.Keyword
     else if token >= 63 && token <= 84 then Accent.Symbol
     else Accent.Parens
-  
+
   def highlight(text: Text): ScalaSource =
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
     val source = SourceFile.virtual("<highlighting>", text.s)
     val ctx = ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
     val trees = Trees()
     val parser = Parsers.Parser(source)(using ctx)
-    
+
     trees.traverse(parser.compilationUnit())(using ctx)
-    
+
     val scanner = Scanners.Scanner(source)(using ctx)
-    
+
     def markup(text: Text): LazyList[Token] = text match
       case r"$before(.*)\/\*!$inside([^*]*)\*\/$after(.*)" =>
         LazyList(Token.Unparsed(before.show), Token.Markup(inside.show)) #::: markup(after.show)
-      
+
       case unparsed =>
         LazyList(Token.Unparsed(unparsed.sub(t"\t", t"  ")), Token.Newline)
-        
+
     def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
         markup(text.slice(lastEnd, text.length)).filter(_.length > 0)
-      
+
       case token =>
         import gossamer.slice
         val start = scanner.offset max lastEnd
-        
+
         val unparsed: LazyList[Token] =
           if lastEnd != start
           then text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
@@ -109,14 +109,14 @@ object ScalaSource:
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
-        
+
         val content: LazyList[Token] =
           if start == end then LazyList()
           else
             text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
             .init
-        
+
         unparsed #::: content #::: stream(end)
 
     def lines(seq: List[Token], acc: List[List[Token]] = Nil): List[List[Token]] = seq match
@@ -124,39 +124,41 @@ object ScalaSource:
       case xs  => xs.indexOf(Token.Newline) match
         case -1  => xs :: acc
         case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
-        
+
     ScalaSource(1, IArray(lines(stream().to(List)).reverse*))
 
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
-    
+
     private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
-    
+
     def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
-    
+
     def ignored(tree: NameTree): Boolean =
       val name = tree.name.toTermName
       name == StdNames.nme.ERROR || name == StdNames.nme.CONSTRUCTOR
-    
+
     def traverse(tree: Tree)(using Contexts.Context): Unit =
       tree match
         case tree: NameTree if ignored(tree) =>
           ()
-        
+
         case tree: ValOrDefDef =>
-          if tree.nameSpan.exists then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
-        
+          if tree.nameSpan.exists
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
+
         case tree: MemberDef =>
-          if tree.nameSpan.exists then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Type
-        
+          if tree.nameSpan.exists
+          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Typed
+
         case tree: Ident if tree.isType =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
-        
+          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
+
         case _: TypTree =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Type
-        
+          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
+
         case other =>
           ()
-      
+
       traverseChildren(tree)

@@ -36,7 +36,7 @@ package syntaxHighlighting:
     case Token.Code(text, Keyword)  => e"${rgb"#ff6633"}($text)"
     case Token.Code(text, Ident)    => e"${rgb"#ffcc99"}($text)"
     case Token.Code(text, Term)     => e"${rgb"#ffcc33"}($text)"
-    case Token.Code(text, Type)     => e"${rgb"#00cc99"}($text)"
+    case Token.Code(text, Typed)    => e"${rgb"#00cc99"}($text)"
     case Token.Code(text, String)   => e"${rgb"#99ffff"}($text)"
     case Token.Code(text, Parens)   => e"${rgb"#cc6699"}($text)"
     case Token.Code(text, Symbol)   => e"${rgb"#cc3366"}($text)"
