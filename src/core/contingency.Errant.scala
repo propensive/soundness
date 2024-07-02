@@ -27,6 +27,10 @@ object Errant:
       => Errant[ErrorType2] =
     ErrorType.contramap(ErrorType2.mitigate(_))
 
+  given [ErrorType <: Error: Fatal] => Errant[ErrorType]:
+    def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
+    def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
+
 @capability
 trait Errant[-ErrorType <: Error]:
   private inline def errant: this.type = this
