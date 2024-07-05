@@ -21,7 +21,7 @@ import rudiments.*
 import anticipation.*
 import gossamer.*
 import monotonous.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import spectacular.*
 import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, encodingMitigation.skip
 
@@ -76,4 +76,3 @@ object Tests extends Suite(t"Gastronomy tests"):
     test(t"Encode to Binary"):
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     .assert(_ == t"00000001000000100000001100000100")
-
