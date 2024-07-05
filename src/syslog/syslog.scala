@@ -34,6 +34,8 @@ object Syslog:
   given (using Monitor) => Syslog is Appendable by Text = (syslog, stream) =>
     import workingDirectories.default
 
-    tend(mute[ExecEvent](stream.appendTo(sh"logger -t $syslog".fork[Unit]()))).remedy:
+    quash:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
+    .within:
+      mute[ExecEvent](stream.appendTo(sh"logger -t $syslog".fork[Unit]()))

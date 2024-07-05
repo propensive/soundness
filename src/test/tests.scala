@@ -23,7 +23,7 @@ import spectacular.*
 import escapade.*
 import parasite.*
 import fulminate.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine
 
 object Tests extends Suite(t"Eucalyptus tests"):
@@ -31,13 +31,13 @@ object Tests extends Suite(t"Eucalyptus tests"):
     import Level.*
     given LogFormat[Out.type, Display] = logFormats.standardColor[Out.type]
     given LogFormat[Err.type, Display] = logFormats.standardColor[Err.type]
-    
+
     supervise:
       given Log[Display] = Log.route[Display]:
         case Warn() => Out
         case Fail() => Out
         case _      => Out//Syslog(t"tab")
-    
+
       test(t"Log something"):
         given realm: Realm = realm"test"
         Log.fine(t"Fine message")
