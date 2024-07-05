@@ -75,7 +75,7 @@ object Postable extends FallbackPostable:
   given bytes: Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
   given byteStream: Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
 
-  given [ResponseType: GenericHttpResponseStream](using mediaType: Errant[MediaTypeError])
+  given [ResponseType: GenericHttpResponseStream](using mediaType: Tactic[MediaTypeError])
       => Postable[ResponseType] as dataStream =
 
     // FIXME: Check if mapping `identity` is necessary

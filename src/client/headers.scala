@@ -186,7 +186,7 @@ enum ResponseHeader[ValueType](val header: Text):
 object HttpHeaderDecoder:
   given text: HttpHeaderDecoder[Text] = identity(_)
 
-  given byteSize(using Errant[NumberError]): HttpHeaderDecoder[ByteSize] =
+  given byteSize(using Tactic[NumberError]): HttpHeaderDecoder[ByteSize] =
     value => ByteSize(value.decodeAs[Int])
 
 trait HttpHeaderDecoder[ValueType]:
