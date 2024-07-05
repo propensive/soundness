@@ -28,32 +28,32 @@ import symbolism.*
 import anticipation.*
 
 package errorHandlers:
-  given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
+  given throwUnsafely[SuccessType]: ThrowStrategy[Exception, SuccessType] =
     ThrowStrategy()(using unsafeExceptions.canThrowAny)
 
-  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
+  given throwSafely[ErrorType <: Exception: CanThrow, SuccessType]
           : ThrowStrategy[ErrorType, SuccessType] =
     ThrowStrategy()
 
 given realm: Realm = realm"contingency"
 
-def raise[SuccessType, ErrorType <: Error](error: ErrorType)
+def raise[SuccessType, ErrorType <: Exception](error: ErrorType)
     (using handler: Errant[ErrorType], recovery: Recovery[ErrorType, SuccessType])
         : SuccessType =
   handler.record(error)
   recovery.recover(error)
 
-def raise[SuccessType, ErrorType <: Error](error: ErrorType)(ersatz: => SuccessType)
+def raise[SuccessType, ErrorType <: Exception](error: ErrorType)(ersatz: => SuccessType)
     (using handler: Errant[ErrorType])
         : SuccessType =
   handler.record(error)
   ersatz
 
-def abort[SuccessType, ErrorType <: Error](error: ErrorType)(using handler: Errant[ErrorType])
+def abort[SuccessType, ErrorType <: Exception](error: ErrorType)(using handler: Errant[ErrorType])
         : Nothing =
   handler.abort(error)
 
-def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
+def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: OptionalStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
         : Optional[SuccessType] =
 
@@ -61,7 +61,7 @@ def safely[ErrorType <: Error](using DummyImplicit)[SuccessType]
     block(using OptionalStrategy(label))
   catch case error: Exception => Unset
 
-def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
+def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
               SuccessType)
         : SuccessType =
@@ -70,13 +70,13 @@ def unsafely[ErrorType <: Error](using DummyImplicit)[SuccessType]
     import unsafeExceptions.canThrowAny
     block(using Unsafe)(using ThrowStrategy())
 
-def throwErrors[ErrorType <: Error](using CanThrow[ErrorType])[SuccessType]
+def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
     (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
   block(using ThrowStrategy())
 
-def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
+def validate[ErrorType <: Exception](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
     (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
@@ -89,7 +89,7 @@ def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
     case Right(value) => value
 
-def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
+def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
     (using Errant[ExpectationError[SuccessType]])
         : ErrorType =
@@ -100,7 +100,7 @@ def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
     case Left(error)  => error
     case Right(value) => abort(ExpectationError(value))
 
-def attempt[ErrorType <: Error](using DummyImplicit)[SuccessType]
+def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
         : Attempt[SuccessType, ErrorType] =
 
@@ -114,19 +114,19 @@ def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
   given FailStrategy[ErrorType, SuccessType]()
   block
 
-infix type raises [SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
+infix type raises [SuccessType, ErrorType <: Exception] = Errant[ErrorType] ?=> SuccessType
 
-infix type mitigates [ErrorType <: Error, ErrorType2 <: Error] =
+infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
 
-transparent inline def quell(inline block: PartialFunction[Error, Error]): Any =
+transparent inline def quell(inline block: PartialFunction[Exception, Exception]): Any =
   ${Contingency.quell('block)}
 
 extension [LambdaType[_]](inline quell: Quell[LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType]): Any =
     ${Contingency.quellWithin[LambdaType, ResultType]('quell, 'lambda)}
 
-transparent inline def quash[ResultType](inline block: PartialFunction[Error, ResultType]): Any =
+transparent inline def quash[ResultType](inline block: PartialFunction[Exception, ResultType]): Any =
   ${Contingency.quash[ResultType]('block)}
 
 extension [ResultType, LambdaType[_]](inline quash: Quash[ResultType, LambdaType])

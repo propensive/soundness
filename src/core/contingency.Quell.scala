@@ -27,4 +27,4 @@ import rudiments.*
 import symbolism.*
 import anticipation.*
 
-class Quell[LambdaType[_]](val lambda: PartialFunction[Error, Error])
+class Quell[LambdaType[_]](val lambda: PartialFunction[Exception, Exception])

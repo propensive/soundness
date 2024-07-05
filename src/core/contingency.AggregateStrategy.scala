@@ -25,7 +25,7 @@ import rudiments.*
 
 @capability
 class AggregateStrategy
-    [ErrorType <: Error, SuccessType]
+    [ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
 extends Errant[ErrorType]:
 

@@ -20,7 +20,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-enum Attempt[+SuccessType, +ErrorType <: Error]:
+enum Attempt[+SuccessType, +ErrorType <: Exception]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)
 
@@ -35,9 +35,10 @@ enum Attempt[+SuccessType, +ErrorType <: Error]:
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
 
-  def handle(block: PartialFunction[ErrorType, Error]): Attempt[SuccessType, Error] = this match
-    case Success(value) => Success(value)
-    case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
+  def handle(block: PartialFunction[ErrorType, Exception]): Attempt[SuccessType, Exception] =
+    this match
+      case Success(value) => Success(value)
+      case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
   def acknowledge(block: PartialFunction[ErrorType, Unit]): Attempt[SuccessType, ErrorType] =
     this match

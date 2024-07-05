@@ -19,6 +19,6 @@ package contingency
 import fulminate.*
 
 trait Mitigable:
-  type Self <: Error
-  type Result <: Error
+  type Self <: Exception
+  type Result <: Exception
   def mitigate(errant: Self): Result

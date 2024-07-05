@@ -20,5 +20,5 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-trait Recovery[-ErrorType <: Error, +SuccessType]:
+trait Recovery[-ErrorType <: Exception, +SuccessType]:
   def recover(error: ErrorType): SuccessType

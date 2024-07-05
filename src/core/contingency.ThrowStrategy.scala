@@ -22,7 +22,7 @@ import fulminate.*
 import rudiments.*
 
 @capability
-class ThrowStrategy[ErrorType <: Error, SuccessType]()
+class ThrowStrategy[ErrorType <: Exception, SuccessType]()
     (using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Errant[ErrorType]:
 

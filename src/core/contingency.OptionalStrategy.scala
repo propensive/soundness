@@ -23,7 +23,7 @@ import vacuous.*
 import rudiments.*
 
 @capability
-class OptionalStrategy[ErrorType <: Error, SuccessType]
+class OptionalStrategy[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Optional[SuccessType]])
 extends Errant[ErrorType]:
   type Result = Optional[SuccessType]

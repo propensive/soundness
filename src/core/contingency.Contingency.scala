@@ -24,7 +24,7 @@ import fulminate.*
 import rudiments.*
 
 object Contingency:
-  private def caseDefs[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+  private def caseDefs[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : List[quotes.reflect.CaseDef] =
     import quotes.reflect.*
@@ -38,7 +38,7 @@ object Contingency:
       case other =>
         abandon(m"unexpected AST: ${other.toString}")
 
-  private def mapping[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+  private def mapping[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
@@ -94,7 +94,7 @@ object Contingency:
       case quotes.reflect.OrType(left, right) => unpack(left) ++ unpack(right)
       case other                              => List(other)
 
-  private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+  private def unhandledErrorTypes[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : List[quotes.reflect.Symbol] =
 
@@ -142,7 +142,7 @@ object Contingency:
 
     (requiredHandlers.to(Set) -- handledTypes).to(List)
 
-  def quell[ErrorTypes <: Error: Type](handler: Expr[PartialFunction[Error, ErrorTypes]])
+  def quell[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
       (using Quotes)
           : Expr[Any] =
 
@@ -169,11 +169,11 @@ object Contingency:
 
     val errants = quell.asTerm match
       case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
-        val partialFunction = matches.asExprOf[PartialFunction[Error, Error]]
+        val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
 
         mapping(partialFunction).map: (from, to) =>
           (from.typeRef.asType, to.typeRef.asType) match
-            case ('[type fromType <: Error; fromType], '[type toType <: Error; toType]) =>
+            case ('[type fromType <: Exception; fromType], '[type toType <: Exception; toType]) =>
               Expr.summon[Errant[toType]] match
                 case Some(toErrant) =>
                   '{  $toErrant.contramap($partialFunction(_).asInstanceOf[toType])  }.asTerm
@@ -184,7 +184,7 @@ object Contingency:
     val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
     lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]
 
-  def quash[ResultType: Type](handler: Expr[PartialFunction[Error, ResultType]])(using Quotes)
+  def quash[ResultType: Type](handler: Expr[PartialFunction[Exception, ResultType]])(using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -212,7 +212,7 @@ object Contingency:
 
     val partialFunction = quash.asTerm match
       case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
-        matches.asExprOf[PartialFunction[Error, ResultType]]
+        matches.asExprOf[PartialFunction[Exception, ResultType]]
 
     '{
         boundary[ResultType]: label ?=>

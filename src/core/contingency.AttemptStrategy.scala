@@ -22,7 +22,7 @@ import fulminate.*
 import rudiments.*
 
 @capability
-class AttemptStrategy[ErrorType <: Error, SuccessType]
+class AttemptStrategy[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Attempt[SuccessType, ErrorType]])
 extends Errant[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]

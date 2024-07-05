@@ -21,11 +21,11 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
-case class AggregateError[+ErrorType <: Error](errors: List[ErrorType])
-extends Error(Communicable.listMessage.message(errors.map(_.message))):
+case class AggregateError[+ErrorType <: Exception](errors: List[ErrorType])
+extends Error(m"An aggregation of errors occurred"):
 
   @targetName("add")
-  def + [ErrorType2 <: Error](error: AggregateError[ErrorType2])
+  def + [ErrorType2 <: Exception](error: AggregateError[ErrorType2])
           : AggregateError[ErrorType | ErrorType2] =
 
     AggregateError(errors ++ error.errors)

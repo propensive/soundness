@@ -23,22 +23,22 @@ import fulminate.*
 import rudiments.*
 
 object Errant:
-  given [ErrorType <: Error: Errant, ErrorType2 <: Error: Mitigable into ErrorType]
+  given [ErrorType <: Exception: Errant, ErrorType2 <: Exception: Mitigable into ErrorType]
       => Errant[ErrorType2] =
     ErrorType.contramap(ErrorType2.mitigate(_))
 
-  given [ErrorType <: Error: Fatal] => Errant[ErrorType]:
+  given [ErrorType <: Exception: Fatal] => Errant[ErrorType]:
     def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
     def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
 
 @capability
-trait Errant[-ErrorType <: Error]:
+trait Errant[-ErrorType <: Exception]:
   private inline def errant: this.type = this
 
   def record(error: ErrorType): Unit
   def abort(error: ErrorType): Nothing
 
-  def contramap[ErrorType2 <: Error](lambda: ErrorType2 => ErrorType): Errant[ErrorType2] =
+  def contramap[ErrorType2 <: Exception](lambda: ErrorType2 => ErrorType): Errant[ErrorType2] =
     new Errant[ErrorType2]:
       def record(error: ErrorType2): Unit = errant.record(lambda(error))
       def abort(error: ErrorType2): Nothing = errant.abort(lambda(error))

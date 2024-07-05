@@ -22,7 +22,7 @@ import fulminate.*
 import rudiments.*
 
 @capability
-class EitherStrategy[ErrorType <: Error, SuccessType]
+class EitherStrategy[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Either[ErrorType, SuccessType]])
 extends Errant[ErrorType]:
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)

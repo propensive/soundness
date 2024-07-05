@@ -27,4 +27,4 @@ import rudiments.*
 import symbolism.*
 import anticipation.*
 
-class Quash[ResultType, LambdaType[_]](val lambda: PartialFunction[Error, ResultType])
+class Quash[ResultType, LambdaType[_]](val lambda: PartialFunction[Exception, ResultType])
