@@ -53,9 +53,9 @@ package charEncoders:
   given CharEncoder as iso88591 = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package encodingMitigation:
-  given strict(using charDecode: Errant[CharDecodeError]): (EncodingMitigation^{charDecode}) =
+  given strict(using charDecode: Tactic[CharDecodeError]): (EncodingMitigation^{charDecode}) =
     new EncodingMitigation:
-      def handle(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding))('?')
+      def handle(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding), '?')
       def complete(): Unit = ()
 
   given EncodingMitigation as skip:
@@ -66,12 +66,12 @@ package encodingMitigation:
     def handle(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
 
-  given (using aggregate: Errant[AggregateError[CharDecodeError]])
+  given (using aggregate: Tactic[AggregateError[CharDecodeError]])
       => (EncodingMitigation^{aggregate}) as collect =
     new EncodingMitigation:
       private val mistakes: scm.ArrayBuffer[CharDecodeError] = scm.ArrayBuffer()
       def handle(pos: Int, encoding: Encoding): Optional[Char] = Unset
-      def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)))(())
+      def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)), ())
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
