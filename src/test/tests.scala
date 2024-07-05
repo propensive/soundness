@@ -22,7 +22,7 @@ import gossamer.*
 import anticipation.*, filesystemInterfaces.javaIo
 import eucalyptus.*
 import rudiments.*, workingDirectories.virtualMachine
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import hieroglyph.*, charEncoders.utf8
 import turbulence.*
 import ambience.*, systemProperties.virtualMachine

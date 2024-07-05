@@ -172,7 +172,7 @@ object JsonAst:
     value
 
   def parse[SourceType: Readable by Bytes](source: SourceType)
-      (using jsonParse: Errant[JsonParseError])
+      (using jsonParse: Tactic[JsonParseError])
           : JsonAst/*^{readable, jsonParse}*/ =
 
     val stream = SourceType.stream(source)
