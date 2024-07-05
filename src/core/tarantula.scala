@@ -36,7 +36,7 @@ import gesticulate.*
 import parasite.*
 import anticipation.*, durationApi.javaLong
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 import unsafeExceptions.canThrowAny
 
