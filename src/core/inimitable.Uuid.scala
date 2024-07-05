@@ -26,7 +26,7 @@ import rudiments.*
 import contingency.*
 
 object Uuid extends Extractor[Text, Uuid]:
-  def parse(text: Text)(using Errant[UuidError]): Uuid = extract(text).or(raise(UuidError(text))(Uuid(0L, 0L)))
+  def parse(text: Text): Uuid raises UuidError = extract(text).or(raise(UuidError(text), Uuid(0L, 0L)))
 
   def extract(text: Text): Optional[Uuid] = safely:
     ju.UUID.fromString(text.s).nn.pipe: uuid =>
