@@ -77,7 +77,11 @@ object Installer:
   def candidateTargets()(using service: DaemonService[?])
       (using Environment, HomeDirectory, SystemProperties)
           : List[Directory] logs DaemonLogEvent raises InstallError =
-    tend:
+    quell:
+      case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
+      case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
+      case IoError(_)          => InstallError(InstallError.Reason.Io)
+    .within:
       val paths: List[Unix.Path] = Environment.path
 
       val preferences: List[Unix.Path] = List
@@ -94,10 +98,6 @@ object Installer:
           case -1    => Int.MaxValue
           case index => index
 
-    .remedy:
-      case PathError(_, _)     => abort(InstallError(InstallError.Reason.Environment))
-      case EnvironmentError(_) => abort(InstallError(InstallError.Reason.Environment))
-      case IoError(_)          => abort(InstallError(InstallError.Reason.Io))
 
   def install(force: Boolean = false, target: Optional[Unix.Path] = Unset)
       (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
@@ -106,7 +106,14 @@ object Installer:
     import workingDirectories.default
     import systemProperties.virtualMachine
 
-    tend:
+    quell:
+      case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
+      case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
+      case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
+      case IoError(_)             => InstallError(InstallError.Reason.Io)
+      case ExecError(_, _, _)     => InstallError(InstallError.Reason.Io)
+      case StreamError(_)         => InstallError(InstallError.Reason.Io)
+    .within:
       val command: Text = service.scriptName
       val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
@@ -133,10 +140,3 @@ object Installer:
           Result.Installed(command, file.path.show)
         .or:
           Result.PathNotWritable
-    .remedy:
-      case PathError(_, _)        => abort(InstallError(InstallError.Reason.Environment))
-      case SystemPropertyError(_) => abort(InstallError(InstallError.Reason.Environment))
-      case NumberError(_, _)      => abort(InstallError(InstallError.Reason.Environment))
-      case IoError(_)             => abort(InstallError(InstallError.Reason.Io))
-      case ExecError(_, _, _)     => abort(InstallError(InstallError.Reason.Io))
-      case StreamError(_)         => abort(InstallError(InstallError.Reason.Io))

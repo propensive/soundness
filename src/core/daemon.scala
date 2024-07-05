@@ -93,7 +93,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
   given Realm: Realm = realm"ethereal"
 
   import environments.virtualMachine
-  import errorHandlers.throwUnsafely
+  import strategies.throwUnsafely
 
   val name: Text = Properties.ethereal.name[Text]()
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / Name(name)).as[Directory]
