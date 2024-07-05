@@ -44,7 +44,7 @@ case class Promise[ValueType]():
     notifyAll()
 
   def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError = synchronized:
-    if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))(())
+    if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete), ())
     else set(supplied)
 
   def offer(supplied: -> ValueType): Unit = synchronized { if !ready then set(supplied) }

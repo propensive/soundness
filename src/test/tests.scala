@@ -24,7 +24,7 @@ import turbulence.*
 import contingency.*
 import anticipation.*, timeInterfaces.long
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 import threadModels.platform
 import asyncOptions.cancelOrphans

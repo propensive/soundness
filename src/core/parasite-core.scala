@@ -35,8 +35,8 @@ package asyncOptions:
   given Codicil as waitForOrphans = _.delegate(_.attend())
   given Codicil as cancelOrphans = _.delegate(_.cancel())
 
-  given (using Errant[ConcurrencyError]) => Codicil as failIfOrphansExist = _.delegate: child =>
-    if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete))(())
+  given (using Tactic[ConcurrencyError]) => Codicil as failIfOrphansExist = _.delegate: child =>
+    if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete), ())
 
 transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 

@@ -142,7 +142,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
     if state2 == Cancelled then thread.join()
 
 
-  def result()(using cancel: Errant[ConcurrencyError]): Result =
+  def result()(using cancel: Tactic[ConcurrencyError]): Result =
     state.replace:
       case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
       case Active(_)                   => abort(ConcurrencyError(Reason.Incomplete))
