@@ -38,19 +38,19 @@ object Environment extends Dynamic:
   def apply[VariableType](variable: Text)
       (using environment:      Environment,
              reader:           EnvironmentVariable[Label, VariableType],
-             environmentError: Errant[EnvironmentError])
+             environmentError: Tactic[EnvironmentError])
           : VariableType^{environment, reader, environmentError} =
 
-    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable))(reader.read(Text(""))))
+    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable), reader.read(Text(""))))
 
   inline def selectDynamic[VariableType](key: String)
       (using environment:      Environment,
              reader:           EnvironmentVariable[key.type, VariableType],
-             environmentError: Errant[EnvironmentError])
+             environmentError: Tactic[EnvironmentError])
           : VariableType^{environment, reader, environmentError} =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
-      raise(EnvironmentError(reader.defaultName))(reader.read(Text("")))
+      raise(EnvironmentError(reader.defaultName), reader.read(Text("")))
 
 @capability
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
@@ -113,7 +113,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] as editor = SpecificPath(_)
   given [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] as pager = SpecificPath(_)
 
-  given (using Errant[NumberError]) => EnvironmentVariable["sshAgentPid", Pid] as sshAgentPid =
+  given (using Tactic[NumberError]) => EnvironmentVariable["sshAgentPid", Pid] as sshAgentPid =
     text => Pid(text.decodeAs[Int])
 
   given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
