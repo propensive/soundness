@@ -24,7 +24,7 @@ import probably.*
 import rudiments.*
 import vacuous.*
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 given Environment =
   case t"HOME" => t"/home/work"
