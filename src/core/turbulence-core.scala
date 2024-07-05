@@ -77,7 +77,7 @@ extension [ElementType](stream: LazyList[ElementType])
       case _             => LazyList()
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-      (using Monitor, Errant[ConcurrencyError])
+      (using Monitor, Tactic[ConcurrencyError])
           : LazyList[ElementType] =
 
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match

@@ -45,7 +45,7 @@ object Appendable extends FallbackAppendable:
     Err.print(line.content)
     Err.println()
 
-  given [OutType <: ji.OutputStream](using Errant[StreamError])
+  given [OutType <: ji.OutputStream](using Tactic[StreamError])
       => OutType is Appendable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>

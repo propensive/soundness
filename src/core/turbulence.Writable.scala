@@ -26,7 +26,7 @@ import symbolism.*
 import vacuous.*
 
 object Writable:
-  given [OutType <: ji.OutputStream](using streamCut: Errant[StreamError]) => OutType is Writable by Bytes as outputStreamBytes =
+  given [OutType <: ji.OutputStream](using streamCut: Tactic[StreamError]) => OutType is Writable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -34,7 +34,7 @@ object Writable:
 
       outputStream.close()
 
-  given (using streamCut: Errant[StreamError], encoder: CharEncoder)
+  given (using streamCut: Tactic[StreamError], encoder: CharEncoder)
           => ji.OutputStream is Writable by Text as outputStreamText =
 
     (outputStream, stream) =>

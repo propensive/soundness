@@ -57,18 +57,19 @@ object Readable:
 
     LazyList.defer(recur(0L.b))
 
-  given [InType <: ji.Reader](using Errant[StreamError]) => InType is Readable by Char as reader = reader =>
+  given [InType <: ji.Reader](using Tactic[StreamError]) => InType is Readable by Char as reader = reader =>
     def recur(count: ByteSize): LazyList[Char] =
       try reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
       catch case err: ji.IOException =>
         reader.close()
-        raise(StreamError(count))(LazyList())
+        raise(StreamError(count), LazyList())
 
     LazyList.defer(recur(0L.b))
 
-  given [InType <: ji.BufferedReader](using Errant[StreamError]) => InType is Readable by Line as bufferedReader =
+  given [InType <: ji.BufferedReader](using Tactic[StreamError])
+      => InType is Readable by Line as bufferedReader =
     reader =>
       def recur(count: ByteSize): LazyList[Line] =
         try reader.readLine() match
@@ -76,7 +77,7 @@ object Readable:
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException =>
           reader.close()
-          raise(StreamError(count))(LazyList())
+          raise(StreamError(count), LazyList())
 
       LazyList.defer(recur(0L.b))
 
@@ -102,7 +103,8 @@ object Readable:
 
     LazyList.defer(recur())
 
-  given [InType <: ji.InputStream](using Errant[StreamError]) => InType is Readable by Bytes as inputStream = in =>
+  given [InType <: ji.InputStream](using Tactic[StreamError])
+      => InType is Readable by Bytes as inputStream = in =>
     val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
@@ -120,7 +122,7 @@ object Readable:
 
           array.immutable(using Unsafe) #:: recur(total + count)
 
-      catch case e: Exception => LazyList(raise(StreamError(total.b))(Bytes()))
+      catch case e: Exception => LazyList(raise(StreamError(total.b), Bytes()))
 
     LazyList.defer(recur(0))
 
