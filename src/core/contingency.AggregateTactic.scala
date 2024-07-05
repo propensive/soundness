@@ -26,7 +26,7 @@ import rudiments.*
 class AggregateTactic
     [ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
-extends Errant[ErrorType]:
+extends Tactic[ErrorType]:
 
   private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
   def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)

@@ -23,7 +23,7 @@ import rudiments.*
 @capability
 class AttemptTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Attempt[SuccessType, ErrorType]])
-extends Errant[ErrorType]:
+extends Tactic[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
 

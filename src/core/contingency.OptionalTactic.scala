@@ -24,7 +24,7 @@ import rudiments.*
 @capability
 class OptionalTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Optional[SuccessType]])
-extends Errant[ErrorType]:
+extends Tactic[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
 

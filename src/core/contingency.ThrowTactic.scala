@@ -23,7 +23,7 @@ import rudiments.*
 @capability
 class ThrowTactic[ErrorType <: Exception, SuccessType]()
     (using @annotation.constructorOnly error: CanThrow[ErrorType])
-extends Errant[ErrorType]:
+extends Tactic[ErrorType]:
 
   def record(error: ErrorType): Unit = throw error
   def abort(error: ErrorType): Nothing = throw error

@@ -27,7 +27,7 @@ import rudiments.*
 import symbolism.*
 import anticipation.*
 
-package errorHandlers:
+package strategies:
   given throwUnsafely[SuccessType]: ThrowTactic[Exception, SuccessType] =
     ThrowTactic()(using unsafeExceptions.canThrowAny)
 
@@ -37,21 +37,19 @@ package errorHandlers:
 
 given realm: Realm = realm"contingency"
 
-def raise[SuccessType, ErrorType <: Exception](error: ErrorType)
-    (using handler: Errant[ErrorType], recovery: Recovery[ErrorType, SuccessType])
+def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType](error: ErrorType)
+    (using handler: Tactic[ErrorType])
         : SuccessType =
   handler.record(error)
-  recovery.recover(error)
+  ErrorType.recover(error)
 
-def raise[SuccessType, ErrorType <: Exception](error: ErrorType)(ersatz: => SuccessType)
-    (using handler: Errant[ErrorType])
+def raise[SuccessType, ErrorType <: Exception: Tactic](error: ErrorType, ersatz: => SuccessType)
         : SuccessType =
-  handler.record(error)
+  ErrorType.record(error)
   ersatz
 
-def abort[SuccessType, ErrorType <: Exception](error: ErrorType)(using handler: Errant[ErrorType])
-        : Nothing =
-  handler.abort(error)
+def abort[SuccessType, ErrorType <: Exception: Tactic](error: ErrorType): Nothing =
+  ErrorType.abort(error)
 
 def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: OptionalTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
@@ -76,7 +74,7 @@ def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
 
   block(using ThrowTactic())
 
-def validate[ErrorType <: Exception](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
+def validate[ErrorType <: Exception](using tactic: Tactic[AggregateError[ErrorType]])[SuccessType]
     (block: AggregateTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
@@ -91,7 +89,7 @@ def validate[ErrorType <: Exception](using raise: Errant[AggregateError[ErrorTyp
 
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
-    (using Errant[ExpectationError[SuccessType]])
+    (using Tactic[ExpectationError[SuccessType]])
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherTactic(label)))
@@ -114,7 +112,7 @@ def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
   given AbandonTactic[ErrorType, SuccessType]()
   block
 
-infix type raises [SuccessType, ErrorType <: Exception] = Errant[ErrorType] ?=> SuccessType
+infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> SuccessType
 
 infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
@@ -123,7 +121,7 @@ transparent inline def quell(inline block: PartialFunction[Exception, Exception]
   ${Contingency.quell('block)}
 
 extension [LambdaType[_]](inline quell: Quell[LambdaType])
-  inline def within[ResultType](inline lambda: LambdaType[ResultType]): Any =
+  inline def within[ResultType](inline lambda: LambdaType[ResultType]): ResultType =
     ${Contingency.quellWithin[LambdaType, ResultType]('quell, 'lambda)}
 
 transparent inline def quash[ResultType](inline block: PartialFunction[Exception, ResultType]): Any =

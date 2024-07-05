@@ -23,6 +23,6 @@ import rudiments.*
 @capability
 class EitherTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Either[ErrorType, SuccessType]])
-extends Errant[ErrorType]:
+extends Tactic[ErrorType]:
   def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
   def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)

@@ -19,6 +19,6 @@ package contingency
 import rudiments.*
 
 class EscapeTactic[ResultType](label: boundary.Label[ResultType])
-extends Errant[Break[ResultType]]:
+extends Tactic[Break[ResultType]]:
   def abort(escape: Break[ResultType]): Nothing = boundary.break(escape.value)(using label)
   def record(escape: Break[ResultType]): Unit = abort(escape)

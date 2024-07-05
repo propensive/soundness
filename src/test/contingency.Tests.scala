@@ -37,7 +37,7 @@ object Tests extends Suite(t"Contingency tests"):
 
     test(t"exceptions can be thrown unsafely"):
       demilitarize:
-        import errorHandlers.throwUnsafely
+        import strategies.throwUnsafely
         abort(AlphaError())
     .assert(_.length == 0)
 
@@ -104,17 +104,17 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == GammaError(2))
 
     test(t"quelled block can transform to different types"):
-      import errorHandlers.throwUnsafely
+      import strategies.throwUnsafely
       given ExpectationError[Any] is Fatal = error => ExitStatus.Ok
 
       capture[ZetaError]:
         quell:
           case AlphaError()  => DeltaError()
           case BetaError()   => EpsilonError()
-          case GammaError(n) => ZetaError()
+          case GammaError(n) => ZetaError("gamma")
         .within:
           abort(GammaError(1))
-    .assert(_ == ZetaError())
+    .assert(_ == ZetaError("gamma"))
 
     test(t"quashed block can transform to different values"):
       quash:

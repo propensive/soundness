@@ -16,5 +16,12 @@
 
 package contingency
 
-trait Recovery[-ErrorType <: Exception, +SuccessType]:
-  def recover(error: ErrorType): SuccessType
+import symbolism.*
+
+object Recoverable:
+  given [ErrorType <: Exception] => ErrorType is Recoverable into Unit = error => ()
+
+trait Recoverable:
+  type Self <: Exception
+  type Result
+  def recover(error: Self): Result

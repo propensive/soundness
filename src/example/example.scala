@@ -21,7 +21,7 @@ import rudiments.*
 import anticipation.*
 import fulminate.*
 
-//import errorHandlers.throwUnsafely
+//import strategies.throwUnsafely
 
 def unsafe(): Unit raises UnsetError = ()
 

@@ -19,4 +19,4 @@ package contingency
 trait Mitigable:
   type Self <: Exception
   type Result <: Exception
-  def mitigate(errant: Self): Result
+  def mitigate(tactic: Self): Result
