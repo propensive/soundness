@@ -71,10 +71,8 @@ object Servable:
       headers.each(responder.addHeader)
       responder.sendBody(200, HttpBody.Chunked(content.stream))
 
-
-  given [ResponseType: GenericHttpResponseStream](using Errant[MediaTypeError])
-          => ResponseType is Servable as bytes =
-    Servable(Media.parse(ResponseType.mediaType.show)): value =>
+  given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
+    Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
       HttpBody.Chunked(ResponseType.content(value).map(identity))
 
   given Redirect is Servable:
