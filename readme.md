@@ -353,7 +353,7 @@ it is encountered, and subsequent invocations will reuse the cached version.
 
 ## Status
 
-Superlunary is classified as __embryotic__. For reference, Scala One projects are
+Superlunary is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -436,7 +436,7 @@ O&Uuml;](https://propensive.com/).
 
 That which is _superlunary_ (by contrast to _sublunary_), is literally "beyond the moon", and hence "otherworldly", and describes the code in quotes which Superlunary enables to run elsewhere.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
