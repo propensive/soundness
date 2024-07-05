@@ -116,7 +116,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
   inline def general[ValueType]: ValueType is Contrastable = (left, right) =>
     if left == right then Semblance.Identical(left.inspect) else Semblance.Different(left.inspect, right.inspect)
 
-  inline given Exception is Contrastable:
+  given Exception is Contrastable:
     def apply(left: Exception, right: Exception): Semblance =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.inspect)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.inspect)
@@ -129,7 +129,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
 
   given Text is Contrastable = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
-  inline def compareSeq[ValueType: Contrastable: Similarity]
+  def compareSeq[ValueType: Contrastable: Similarity]
       (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
           : Semblance =
     if left == right then Semblance.Identical(leftDebug) else
@@ -156,26 +156,30 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       Semblance.Breakdown(comparison, leftDebug, rightDebug)
 
 
-  inline given [ValueType: Contrastable: Similarity] => IArray[ValueType] is Contrastable as iarray:
+  given [ValueType: {Contrastable, Similarity}] => IArray[ValueType] is Contrastable as iarray:
     def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  inline given [ValueType: Contrastable: Similarity] => List[ValueType] is Contrastable as list:
+  given [ValueType: {Contrastable, Similarity}] => List[ValueType] is Contrastable as list:
     def apply(left: List[ValueType], right: List[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  inline given [ValueType: Contrastable: Similarity] => Vector[ValueType] is Contrastable as vector:
+  given [ValueType: {Contrastable, Similarity}] => Vector[ValueType] is Contrastable as vector:
     def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable = (left, right) =>
-    val elements = fields(left, true): [FieldType] =>
-      leftParam =>
-        if leftParam == complement(right) then (label, Semblance.Identical(leftParam.inspect))
-        else (label, context(leftParam, complement(right)))
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable =
+    (left, right) =>
+      val elements = fields(left, true): [FieldType] =>
+        leftParam =>
+          if leftParam == complement(right) then (label, Semblance.Identical(leftParam.inspect))
+          else (label, context(leftParam, complement(right)))
 
-    Semblance.Breakdown(elements, left.inspect, right.inspect)
+      Semblance.Breakdown(elements, left.inspect, right.inspect)
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Contrastable = (left, right) =>
-    variant(left): [VariantType <: DerivationType] =>
-      left => complement(right).let(left.contrastWith(_)).or(Semblance.Different(left.inspect, right.inspect))
+  inline def split[DerivationType: SumReflection]: DerivationType is Contrastable =
+    (left, right) =>
+      variant(left):
+        [VariantType <: DerivationType] => left =>
+          complement(right).let(left.contrastWith(_)).or:
+            Semblance.Different(left.inspect, right.inspect)

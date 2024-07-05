@@ -24,7 +24,7 @@ import anticipation.*
 import contingency.*
 
 import unsafeExceptions.canThrowAny
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
