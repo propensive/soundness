@@ -75,7 +75,7 @@ class Classloader(val java: ClassLoader):
 
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
 
-  private[hellenism] def inputStream(path: Text)(using notFound: Errant[ClasspathError]): ji.InputStream =
+  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError]): ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
 
 object Classpath:
@@ -130,7 +130,7 @@ extends Classpath:
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"
 
-  inline given (using Errant[PathError]) => Decoder[ClasspathRef] as decoder:
+  inline given (using Tactic[PathError]) => Decoder[ClasspathRef] as decoder:
     def decode(text: Text): ClasspathRef = Navigable.decode[ClasspathRef](text)
 
   given ClasspathRef is Nominable = _.text
@@ -145,7 +145,7 @@ object ClasspathRef:
   given rootParser: RootParser[ClasspathRef, Classpath.type] = (Classpath, _)
   given ClasspathRef is Showable = _.text
 
-  given (using Classloader, Errant[ClasspathError]) => ClasspathRef is Readable by Bytes =
+  given (using Classloader, Tactic[ClasspathError]) => ClasspathRef is Readable by Bytes =
     _().stream[Bytes]
 
 case class ClasspathRef(descent: List[Name[ClasspathRef.Forbidden]]):
@@ -153,7 +153,7 @@ case class ClasspathRef(descent: List[Name[ClasspathRef.Forbidden]]):
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
 
 object Resource:
-  given (using Errant[ClasspathError]) => Resource is Readable by Bytes as readableBytes =
+  given (using Tactic[ClasspathError]) => Resource is Readable by Bytes as readableBytes =
     Readable.reliableInputStream.contramap: resource =>
       resource.classloader.inputStream(resource.ref.text)
 
