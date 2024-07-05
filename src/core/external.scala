@@ -42,7 +42,7 @@ object DispatchRunner:
     val callable = instance.asInstanceOf[{ def apply(): String => String }]
 
     callable()(input)
-    
+
   def main(args: Array[String]): Unit =
     val out = System.out.nn
     System.setErr(null)
@@ -57,15 +57,15 @@ class References():
   def setRef(expr: Expr[List[Json]]): Unit = ref = expr
   def array: Expr[List[Json]] = ref.vouch(using Unsafe)
   def current: Int = allocations.length
-  
+
   def allocate[ValueType](value: => ValueType)(using JsonEncoder[ValueType]): Int =
     allocations.length.also { allocations ::= value.json }
-  
+
   def apply(): Text = allocations.reverse.json.encode
 
 extension [ValueType](value: ValueType)(using Quotes)
   inline def put(using references: References): Expr[ValueType] = '{
-    import errorHandlers.throwUnsafely
+    import strategies.throwUnsafely
     ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))}).as[ValueType]
   }
 
@@ -76,24 +76,24 @@ trait Dispatcher:
   type Result[OutputType]
   protected def scalac: Scalac[?]
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
-  
+
   inline def dispatch[OutputType: JsonDecoder](body: References ?=> Quotes ?=> Expr[OutputType])
       [ScalacVersionType <: ScalacVersions]
       (using codepoint: Codepoint, classloader: Classloader)
           : Result[OutputType] raises CompileError =
 
-    import errorHandlers.throwUnsafely
+    import strategies.throwUnsafely
     val uuid = Uuid()
-    
+
     val references = new References()
-  
+
     val (out, fn): (Path, Text => Text) =
       if Dispatcher.cache.contains(codepoint) then
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
-        
+
         given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
-    
+
         staging.withQuotes:
           '{ (array: List[Json]) =>
             ${
@@ -102,13 +102,13 @@ trait Dispatcher:
             }
           }
         Dispatcher.cache(codepoint)
-      else 
+      else
         val out: Unix.Path = % / p"home" / p"propensive" / p"tmp" / p"staging" / PathName(uuid.show)
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
-        
+
         given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
-    
+
         val fn: Text => Text = staging.run:
           val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
             ${
@@ -121,10 +121,10 @@ trait Dispatcher:
 
         Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
-    
+
     val classpath = (classloaders.threadContext.classpath: @unchecked) match
       case classpath: LocalClasspath => LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
-    
+
     invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
         (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
 
