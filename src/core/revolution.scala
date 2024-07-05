@@ -32,7 +32,7 @@ import java.util.jar as juj
 infix type of [Type, ValueType] = Type { type Value = ValueType }
 
 object DecodableManifest:
-  given (using Errant[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
+  given (using Tactic[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
   given ("Created-By" is DecodableManifest of Text) as createdBy = identity(_)
 
 trait DecodableManifest:
