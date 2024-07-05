@@ -21,7 +21,7 @@ import gossamer.*
 import rudiments.*
 import anticipation.*
 import spectacular.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 
 given decimalizer: Decimalizer = Decimalizer(1)
 
