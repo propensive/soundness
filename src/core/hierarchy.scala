@@ -89,7 +89,7 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label](left
              PathType is Directional[NameType, RootType],
              PathType is SpecificPath,
              PathCreator[PathType, NameType, RootType],
-             Errant[PathError])
+             Tactic[PathError])
           : PathType =
     workingDirectory + left
 
@@ -103,7 +103,7 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, Root
       (using PathType is Directional[NameType, RootType],
              PathCreator[PathType, NameType, RootType],
              LinkType is Followable[NameType, ?, ?],
-             Errant[PathError])
+             Tactic[PathError])
           : PathType =
 
     left.append(link)
@@ -190,12 +190,13 @@ object Navigable:
       (using navigable:  PathType is Navigable[NameType, RootType],
              rootParser: RootParser[PathType, RootType],
              creator:    PathCreator[PathType, NameType, RootType])
-      (using path: Errant[PathError])
+      (using path: Tactic[PathError])
       : PathType =
     val rootRest: Optional[(RootType, Text)] = rootParser.parse(text)
     if rootRest.absent
-    then raise(PathError(text, PathError.Reason.NotRooted)):
-      creator.path(summonInline[Default[RootType]](), Nil)
+    then raise
+     (PathError(text, PathError.Reason.NotRooted),
+      creator.path(summonInline[Default[RootType]](), Nil))
     else
       // FIXME: The casts below avoid an error in the compiler which just prints an AST without explanation
       val root: RootType = rootRest.asInstanceOf[(RootType, Text)](0)
@@ -246,7 +247,7 @@ object Followable:
 
         creator.path(ascent2, descent2)
 
-  inline def decoder[LinkType <: Matchable](using path: Errant[PathError])
+  inline def decoder[LinkType <: Matchable](using path: Tactic[PathError])
       [NameType <: Label, ParentRefType <: Label, SelfRefType <: Label]
       (using followable: LinkType is Followable[NameType, ParentRefType, SelfRefType],
              creator: PathCreator[LinkType, NameType, Int])
@@ -321,7 +322,7 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
   // FIXME: This should be called `/`, but it causes an error because there's already an object called
   // `/` exported from `Serpentine`.
   @targetName("child2")
-  inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Errant[PathError]): PathType =
+  inline infix def /- [PathType2 <: PathType](name: Text)(using pathError: Tactic[PathError]): PathType =
     directional.child(path, Name(name))
 
   def render: Text = directional.render(path)
@@ -332,11 +333,11 @@ extension [PathType <: Matchable, NameType <: Label, AscentType](path: PathType)
   transparent inline def ancestor(n: Int): Optional[PathType] = directional.ancestor(path, n)
 
   inline def append[LinkType <: Matchable](inline link: LinkType)
-      (using followable: LinkType is Followable[NameType, ?, ?], pathHandler: Errant[PathError])
+      (using followable: LinkType is Followable[NameType, ?, ?], pathHandler: Tactic[PathError])
           : PathType =
 
     if followable.ascent(link) > directional.descent(path).length
-    then raise(PathError(path.render, PathError.Reason.ParentOfRoot))(path)
+    then raise(PathError(path.render, PathError.Reason.ParentOfRoot), path)
     else
       val common: PathType = directional.ancestor(path, followable.ascent(link)).vouch(using Unsafe)
       val descent = directional.descent(common)

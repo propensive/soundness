@@ -29,15 +29,15 @@ import gossamer.*
 val Root = %
 
 object SimplePath:
-  inline given decoder(using Errant[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
+  inline given decoder(using Tactic[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
     def decode(text: Text): SimplePath = Navigable.decode[SimplePath](text)
 
-  inline given (using path: Errant[PathError]) => SimplePath is Addable as addable:
+  inline given (using path: Tactic[PathError]) => SimplePath is Addable as addable:
     type Result = SimplePath
     type Operand = SimpleLink
     def add(left: SimplePath, right: SimpleLink): SimplePath = left.append(right)
 
-  inline def parse(text: Text)(using path: Errant[PathError]): SimplePath/*^{path}*/ =
+  inline def parse(text: Text)(using path: Tactic[PathError]): SimplePath/*^{path}*/ =
     text.decodeAs[SimplePath]
 
   given SimplePath is Showable as show = _.render
@@ -62,12 +62,12 @@ case class SimplePath(descent: List[Name[".*\\/.*"]])
 extends PathEquality[SimplePath](using SimplePath.navigable)
 
 object SimpleLink:
-  inline given decoder(using Errant[PathError]): Decoder[SimpleLink] =
+  inline given decoder(using Tactic[PathError]): Decoder[SimpleLink] =
     Followable.decoder[SimpleLink]
 
   given SimpleLink is Showable = _.render
 
-  inline def parse(text: Text)(using path: Errant[PathError]): SimpleLink/*^{path}*/ =
+  inline def parse(text: Text)(using path: Tactic[PathError]): SimpleLink/*^{path}*/ =
     text.decodeAs[SimpleLink]
 
   given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)

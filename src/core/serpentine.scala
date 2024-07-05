@@ -46,8 +46,8 @@ object Serpentine:
   object Name:
     given [NameType <: Label] => Name[NameType] is Showable = _.tt
 
-    inline def apply[NameType <: Label](text: Text)(using errant: Errant[PathError]): Name[NameType] =
-      ${SerpentineMacro.runtimeParse[NameType]('text, 'errant)}
+    inline def apply[NameType <: Label](text: Text)(using Tactic: Tactic[PathError]): Name[NameType] =
+      ${SerpentineMacro.runtimeParse[NameType]('text, 'Tactic)}
 
     def unsafe[NameType <: Label](text: Text): Name[NameType] = text.s: Name[NameType]
 
