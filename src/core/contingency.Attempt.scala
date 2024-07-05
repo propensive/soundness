@@ -18,8 +18,6 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import fulminate.*
-
 enum Attempt[+SuccessType, +ErrorType <: Exception]:
   case Success(value: SuccessType)
   case Failure(value: ErrorType)

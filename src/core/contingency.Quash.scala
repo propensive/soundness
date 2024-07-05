@@ -16,15 +16,4 @@
 
 package contingency
 
-import language.experimental.pureFunctions
-
-import scala.quoted.*
-import scala.compiletime.*
-
-import fulminate.*
-import vacuous.*
-import rudiments.*
-import symbolism.*
-import anticipation.*
-
 class Quash[ResultType, LambdaType[_]](val lambda: PartialFunction[Exception, ResultType])

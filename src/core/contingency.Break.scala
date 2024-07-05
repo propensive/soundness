@@ -16,15 +16,7 @@
 
 package contingency
 
-import language.experimental.pureFunctions
-
+import anticipation.*
 import fulminate.*
-import rudiments.*
 
-@capability
-class ThrowStrategy[ErrorType <: Exception, SuccessType]()
-    (using @annotation.constructorOnly error: CanThrow[ErrorType])
-extends Errant[ErrorType]:
-
-  def record(error: ErrorType): Unit = throw error
-  def abort(error: ErrorType): Nothing = throw error
+case class Break[ResultType](value: ResultType) extends Error(m"Escaping")

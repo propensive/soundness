@@ -16,17 +16,9 @@
 
 package contingency
 
-import language.experimental.pureFunctions
-
-import fulminate.*
 import rudiments.*
 
-@capability
-class AttemptStrategy[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[Attempt[SuccessType, ErrorType]])
-extends Errant[ErrorType]:
-  type Result = Attempt[SuccessType, ErrorType]
-  type Return = Attempt[SuccessType, ErrorType]
-
-  def record(error: ErrorType): Unit = boundary.break(Attempt.Failure(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Attempt.Failure(error))(using label)
+class EscapeTactic[ResultType](label: boundary.Label[ResultType])
+extends Errant[Break[ResultType]]:
+  def abort(escape: Break[ResultType]): Nothing = boundary.break(escape.value)(using label)
+  def record(escape: Break[ResultType]): Unit = abort(escape)

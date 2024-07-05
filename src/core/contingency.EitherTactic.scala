@@ -1,5 +1,5 @@
 /*
-    Contingency, version [unreleased]. Copyright 2023 Jon Pretty, Propensive OÜ.
+    Contingency, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,9 +16,13 @@
 
 package contingency
 
-import probably.*
-import gossamer.*
+import language.experimental.pureFunctions
 
-object Tests extends Suite(t"Contingency tests"):
-  def run(): Unit =
-    ()
+import rudiments.*
+
+@capability
+class EitherTactic[ErrorType <: Exception, SuccessType]
+    (label: boundary.Label[Either[ErrorType, SuccessType]])
+extends Errant[ErrorType]:
+  def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
+  def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)

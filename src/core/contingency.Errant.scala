@@ -19,7 +19,6 @@ package contingency
 import language.experimental.pureFunctions
 
 import symbolism.*
-import fulminate.*
 import rudiments.*
 
 object Errant:

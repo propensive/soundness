@@ -16,8 +16,6 @@
 
 package contingency
 
-import fulminate.*
-
 trait Mitigable:
   type Self <: Exception
   type Result <: Exception

@@ -18,12 +18,14 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import scala.quoted.*
+
 import fulminate.*
 import rudiments.*
+import anticipation.*
 
 @capability
-class EitherStrategy[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[Either[ErrorType, SuccessType]])
+open class AbandonTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Errant[ErrorType]:
-  def record(error: ErrorType): Unit = boundary.break(Left(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Left(error))(using label)
+  def record(error: ErrorType): Unit = abandon(error.message)
+  def abort(error: ErrorType): Nothing = abandon(error.message)

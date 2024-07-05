@@ -16,5 +16,24 @@
 
 package contingency
 
-trait Recovery[-ErrorType <: Exception, +SuccessType]:
-  def recover(error: ErrorType): SuccessType
+import language.experimental.pureFunctions
+
+import java.util.concurrent.atomic as juca
+
+import rudiments.*
+
+@capability
+class AggregateTactic
+    [ErrorType <: Exception, SuccessType]
+    (label: boundary.Label[Either[AggregateError[ErrorType], SuccessType]])
+extends Errant[ErrorType]:
+
+  private val collected: juca.AtomicReference[List[ErrorType]] = juca.AtomicReference(Nil)
+  def record(error: ErrorType): Unit = collected.getAndUpdate(error :: _.nn)
+
+  def abort(error: ErrorType): Nothing =
+    boundary.break(Left(AggregateError(error :: collected.get().nn)))(using label)
+
+  def finish(): Unit =
+    if !collected.get().nn.isEmpty
+    then boundary.break(Left(AggregateError(collected.get().nn)))(using label)

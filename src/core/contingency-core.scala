@@ -28,12 +28,12 @@ import symbolism.*
 import anticipation.*
 
 package errorHandlers:
-  given throwUnsafely[SuccessType]: ThrowStrategy[Exception, SuccessType] =
-    ThrowStrategy()(using unsafeExceptions.canThrowAny)
+  given throwUnsafely[SuccessType]: ThrowTactic[Exception, SuccessType] =
+    ThrowTactic()(using unsafeExceptions.canThrowAny)
 
   given throwSafely[ErrorType <: Exception: CanThrow, SuccessType]
-          : ThrowStrategy[ErrorType, SuccessType] =
-    ThrowStrategy()
+          : ThrowTactic[ErrorType, SuccessType] =
+    ThrowTactic()
 
 given realm: Realm = realm"contingency"
 
@@ -54,64 +54,64 @@ def abort[SuccessType, ErrorType <: Exception](error: ErrorType)(using handler: 
   handler.abort(error)
 
 def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: OptionalStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: OptionalTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
         : Optional[SuccessType] =
 
   try boundary: label ?=>
-    block(using OptionalStrategy(label))
+    block(using OptionalTactic(label))
   catch case error: Exception => Unset
 
 def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: Unsafe ?=> ThrowStrategy[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
+    (block: Unsafe ?=> ThrowTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
               SuccessType)
         : SuccessType =
 
   boundary: label ?=>
     import unsafeExceptions.canThrowAny
-    block(using Unsafe)(using ThrowStrategy())
+    block(using Unsafe)(using ThrowTactic())
 
 def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
-    (block: ThrowStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    (block: ThrowTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
-  block(using ThrowStrategy())
+  block(using ThrowTactic())
 
 def validate[ErrorType <: Exception](using raise: Errant[AggregateError[ErrorType]])[SuccessType]
-    (block: AggregateStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    (block: AggregateTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
   val value: Either[AggregateError[ErrorType], SuccessType] =
     boundary: label ?=>
-      val raiser = AggregateStrategy(label)
-      Right(block(using raiser)).also(raiser.finish())
+      val tactic = AggregateTactic(label)
+      Right(block(using tactic)).also(tactic.finish())
 
   value match
     case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
     case Right(value) => value
 
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
     (using Errant[ExpectationError[SuccessType]])
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
-    Right(block(using EitherStrategy(label)))
+    Right(block(using EitherTactic(label)))
 
   value match
     case Left(error)  => error
     case Right(value) => abort(ExpectationError(value))
 
 def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: AttemptStrategy[ErrorType, SuccessType] ?=> SuccessType)
+    (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
         : Attempt[SuccessType, ErrorType] =
 
   boundary: label ?=>
-    Attempt.Success(block(using AttemptStrategy[ErrorType, SuccessType](label)))
+    Attempt.Success(block(using AttemptTactic[ErrorType, SuccessType](label)))
 
-def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
-    (block: FailStrategy[ErrorType, SuccessType] ?=> SuccessType)
+def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
+    (block: AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
-  given FailStrategy[ErrorType, SuccessType]()
+  given AbandonTactic[ErrorType, SuccessType]()
   block
 
 infix type raises [SuccessType, ErrorType <: Exception] = Errant[ErrorType] ?=> SuccessType

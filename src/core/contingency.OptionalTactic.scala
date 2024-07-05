@@ -18,12 +18,11 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import fulminate.*
 import vacuous.*
 import rudiments.*
 
 @capability
-class OptionalStrategy[ErrorType <: Exception, SuccessType]
+class OptionalTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Optional[SuccessType]])
 extends Errant[ErrorType]:
   type Result = Optional[SuccessType]

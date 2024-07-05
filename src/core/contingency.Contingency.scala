@@ -84,9 +84,10 @@ object Contingency:
         abandon(m"this pattern could not be recognized as a distinct `Error` type")
 
     caseDefs(handler).flatMap:
-      case CaseDef(pattern, _, rhs) => rhs.asExpr match
+      case CaseDef(pattern, _, rhs) => (rhs.asExpr: @unchecked) match
         case '{$rhs: rhsType} =>
           patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
+
     .to(Map)
 
   def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
@@ -158,7 +159,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(errants :+ typeLambda.param(0)))
 
-    typeLambda.asType match
+    (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Quell[typeLambda]($handler)}
 
   def quellWithin[ContextType[_]: Type, ResultType: Type]
@@ -171,15 +172,17 @@ object Contingency:
       case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
         val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
 
-        mapping(partialFunction).map: (from, to) =>
-          (from.typeRef.asType, to.typeRef.asType) match
-            case ('[type fromType <: Exception; fromType], '[type toType <: Exception; toType]) =>
-              Expr.summon[Errant[toType]] match
-                case Some(toErrant) =>
-                  '{  $toErrant.contramap($partialFunction(_).asInstanceOf[toType])  }.asTerm
+        mapping(partialFunction).values.map: errorType =>
+          (errorType.typeRef.asType: @unchecked) match
+            case '[type errorType <: Exception; errorType] =>
+              Expr.summon[Errant[errorType]] match
+                case Some(errorErrant) =>
+                  '{  $errorErrant.contramap($partialFunction(_).asInstanceOf[errorType])  }.asTerm
 
                 case None =>
-                  abandon(m"There is no available handler for ${TypeRepr.of[toType].show}")
+                  abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
+      case _ =>
+        abandon(m"argument to `quell` should be a partial function implemented as match cases")
 
     val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
     lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]
@@ -199,7 +202,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(errants :+ typeLambda.param(0)))
 
-    typeLambda.asType match
+    (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Quash[ResultType, typeLambda]($handler)}
 
   def quashWithin[ContextType[_]: Type, ResultType: Type]
@@ -214,24 +217,19 @@ object Contingency:
       case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
         matches.asExprOf[PartialFunction[Exception, ResultType]]
 
+      case _ =>
+        abandon(m"argument to `quash` should be a partial function implemented as match cases")
+
     '{
         boundary[ResultType]: label ?=>
-          val strategy: Errant[Escape[ResultType]] = EscapeStrategy(label)
+          val tactic: Errant[Break[ResultType]] = EscapeTactic(label)
           ${
               val errants = mapping(partialFunction).map: (_, _) =>
                 '{
-                    strategy.contramap: error =>
-                      Escape[ResultType]($partialFunction(error))
+                    tactic.contramap: error =>
+                      Break[ResultType]($partialFunction(error))
                 }.asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]
-
-          }
+              lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]  }
     }
-
-case class Escape[ResultType](value: ResultType) extends Error(m"escaping")
-
-class EscapeStrategy[ResultType](label: boundary.Label[ResultType]) extends Errant[Escape[ResultType]]:
-  def abort(escape: Escape[ResultType]): Nothing = boundary.break(escape.value)(using label)
-  def record(escape: Escape[ResultType]): Unit = abort(escape)

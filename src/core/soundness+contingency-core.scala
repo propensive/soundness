@@ -16,7 +16,10 @@
 
 package soundness
 
-export contingency.{Errant, ThrowStrategy, FailStrategy, AggregateStrategy, EitherStrategy, OptionalStrategy, AttemptStrategy, Recovery, raise, abort, safely, unsafely, throwErrors, validate, capture, attempt, failCompilation, AggregateError, ExpectationError, raises, Attempt, quell, within}
+export contingency.{Errant, ThrowTactic, AbandonTactic, AggregateTactic, EitherTactic,
+    OptionalTactic, AttemptTactic, Recovery, raise, abort, safely, unsafely, throwErrors,
+    validate, capture, attempt, abandonment, AggregateError, ExpectationError, raises,
+    Attempt, quell, quash, within}
 
 package errorHandlers:
   export contingency.errorHandlers.{throwUnsafely, throwSafely}
