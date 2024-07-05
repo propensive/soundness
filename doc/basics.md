@@ -10,7 +10,7 @@ differences.
 
 We can create one inside a `supervise` block with:
 ```scala
-import contingency.errorHandlers.throwUnsafely
+import contingency.strategies.throwUnsafely
 
 def slowTask(): Unit = ???
 
@@ -70,6 +70,3 @@ produced. Any `await()` calls on the task will throw a `CancelError`.
 However, this happens _only_ when `acquiesce()` is called, so if no such calls
 are run as the task is executing, that task cannot be cancelled, and it must
 execute to completion.
-
-
-
