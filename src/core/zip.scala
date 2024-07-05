@@ -54,15 +54,15 @@ object ZipPath:
   given PathCreator[ZipPath, InvalidZipNames, ZipFile] as creator = (root, descent) =>
     ZipPath(root, ZipRef(descent))
 
-  given (using Errant[StreamError]) => ZipPath is Readable by Bytes as readable =
+  given (using Tactic[StreamError]) => ZipPath is Readable by Bytes as readable =
     Readable.lazyList[Bytes].contramap(_.entry().content())
 
 case class ZipPath(zipFile: ZipFile, ref: ZipRef):
-  def entry()(using streamCut: Errant[StreamError]): ZipEntry = zipFile.entry(ref)
+  def entry()(using streamCut: Tactic[StreamError]): ZipEntry = zipFile.entry(ref)
 
 object ZipRef:
   def apply(text: Text)
-      (using pathError:  Errant[PathError],
+      (using pathError:  Tactic[PathError],
              navigable:  ZipRef is Navigable[InvalidZipNames, Unset.type],
              rootParser: RootParser[ZipRef, Unset.type],
              creator:    PathCreator[ZipRef, InvalidZipNames, Unset.type])
@@ -103,7 +103,7 @@ object ZipEntry:
 case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
 
 object ZipFile:
-  def apply[FileType: GenericFile](file: FileType)(using stream: Errant[StreamError]): ZipFile =
+  def apply[FileType: GenericFile](file: FileType)(using stream: Tactic[StreamError]): ZipFile =
     val name: Text = file.fileText
     new ZipFile(name)
 
@@ -137,7 +137,7 @@ case class ZipFile(private val filename: Text):
 
       lambda(filesystem).also(filesystem.close())
 
-  def entry(ref: ZipRef)(using streamCut: Errant[StreamError]): ZipEntry =
+  def entry(ref: ZipRef)(using streamCut: Tactic[StreamError]): ZipEntry =
     semaphore.access(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)

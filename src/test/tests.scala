@@ -19,7 +19,7 @@ package zeppelin
 import serpentine.*
 import gossamer.*
 import probably.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import imperial.*
 import anticipation.*, filesystemInterfaces.javaIo
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
