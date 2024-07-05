@@ -76,7 +76,7 @@ object Dates:
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
-    given (using Errant[DateError]) => Decoder[Date] as decoder = parse(_)
+    given (using Tactic[DateError]) => Decoder[Date] as decoder = parse(_)
 
     given (using RomanCalendar) => Encoder[Date] as encoder = date =>
       import hieroglyph.textMetrics.uniform
@@ -93,7 +93,7 @@ object Dates:
       type Operand = Period
       def add(date: Date, period: Period): Date = calendar.add(date, period)
 
-    def parse(value: Text)(using Errant[DateError]): Date = value.cut(t"-").to(List) match
+    def parse(value: Text)(using Tactic[DateError]): Date = value.cut(t"-").to(List) match
       // FIXME: This compiles successfully, but never seems to match
       //case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil =>
       case y :: m :: d :: Nil =>
@@ -102,13 +102,13 @@ object Dates:
           Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
         catch
           case error: NumberFormatException =>
-            raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
           case error: ju.NoSuchElementException =>
-            raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
       case cnt =>
-        raise(DateError(value))(Date(using calendars.gregorian)(2000, MonthName(1), 1))
+        raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Day = calendar.getDay(date)
@@ -194,8 +194,9 @@ abstract class RomanCalendar() extends Calendar:
 
   def julianDay(year: Int, month: MonthName, day: Int): Date raises DateError =
     if day < 1 || day > daysInMonth(month, year)
-    then raise(DateError(t"$year-${month.numerical}-$day")):
-      Date(using calendars.julian)(2000, MonthName(1), 1)
+    then raise
+     (DateError(t"$year-${month.numerical}-$day"),
+      Date(using calendars.julian)(2000, MonthName(1), 1))
 
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)
 
@@ -583,11 +584,11 @@ case class LocalTime(date: Date, time: Time, timezone: Timezone):
 object Timezone:
   private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text)(using Errant[TimezoneError]): Timezone = parse(name)
+  def apply(name: Text)(using Tactic[TimezoneError]): Timezone = parse(name)
 
-  def parse(name: Text)(using Errant[TimezoneError]): Timezone =
+  def parse(name: Text)(using Tactic[TimezoneError]): Timezone =
     if ids.contains(name) then new Timezone(name)
-    else raise(TimezoneError(name))(new Timezone(ids.head))
+    else raise(TimezoneError(name), new Timezone(ids.head))
 
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
