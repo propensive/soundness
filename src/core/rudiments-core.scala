@@ -303,11 +303,11 @@ def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPa
 
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
-  //given none(using Errant[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
+  //given none(using Tactic[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
 
 package homeDirectories:
   given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
-  //given none(using Errant[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
+  //given none(using Tactic[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
 
 package quickstart:
   erased given defaults: Quickstart = ###
