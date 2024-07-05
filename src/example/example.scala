@@ -21,16 +21,32 @@ import rudiments.*
 import anticipation.*
 import fulminate.*
 
-import errorHandlers.throwUnsafely
+//import errorHandlers.throwUnsafely
 
 def unsafe(): Unit raises UnsetError = ()
 
-case class FooError() extends Error(m"foo")
-case class BarError() extends Error(m"bar")
 
-@main def run(): Unit =
-  val x = mitigate:
-    case RegexError(_) => FooError()
-    case _: UnsetError => BarError()
+object FooError:
+  given FooError is Fatal as fooError = error =>
+    println(error)
+    ExitStatus.Fail(1)
 
-  x: Int
+case class FooError(msg: String) extends Error(m"foo $msg")
+
+object BarError:
+  given BarError is Fatal as barError = error =>
+    println(error)
+    ExitStatus.Ok
+
+case class BarError(msg: String) extends Error(m"bar $msg")
+case class UnsetError(n: Int) extends Error(m"bar: $n")
+case class ValueError(n: Int) extends Error(m"there was a value error with $n")
+
+def run(): Unit =
+ println:
+  quash:
+    case UnsetError(n) => "foo"+n
+    case ValueError(_) => "bar"
+  .within:
+    raise(UnsetError(99))(1)
+    "yes"

@@ -24,18 +24,6 @@ import fulminate.*
 import rudiments.*
 
 object Contingency:
-  private def action[ErrorType <: Error: Type, ResultType: Type](using Quotes)
-      (context: Expr[Tended[ErrorType, ResultType]])
-          : Expr[Errant[ErrorType] ?=> ResultType] =
-    import quotes.reflect.*
-
-    context.asTerm match
-      case Inlined(None, Nil, Apply(_, List(action))) =>
-        action.asExprOf[Errant[ErrorType] ?=> ResultType]
-
-      case _ =>
-        throw Panic(m"the tended action was not in the expected form")
-
   private def caseDefs[ErrorType <: Error: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
           : List[quotes.reflect.CaseDef] =
@@ -47,14 +35,12 @@ object Contingency:
           case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
           case _                                   => Nil
 
-      case _ =>
-        abandon(m"unexpected lambda")
+      case other =>
+        abandon(m"unexpected AST: ${other.toString}")
 
-
-
-  private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+  private def mapping[ErrorType <: Error: Type, ResultType: Type](using Quotes)
       (handler: Expr[PartialFunction[ErrorType, ResultType]])
-          : List[quotes.reflect.Symbol] =
+          : Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
     import quotes.reflect.*
 
@@ -97,61 +83,155 @@ object Contingency:
       case other =>
         abandon(m"this pattern could not be recognized as a distinct `Error` type")
 
+    caseDefs(handler).flatMap:
+      case CaseDef(pattern, _, rhs) => rhs.asExpr match
+        case '{$rhs: rhsType} =>
+          patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
+    .to(Map)
+
+  def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
+    repr.asMatchable match
+      case quotes.reflect.OrType(left, right) => unpack(left) ++ unpack(right)
+      case other                              => List(other)
+
+  private def unhandledErrorTypes[ErrorType <: Error: Type, ResultType: Type](using Quotes)
+      (handler: Expr[PartialFunction[ErrorType, ResultType]])
+          : List[quotes.reflect.Symbol] =
+
+    import quotes.reflect.*
+
+    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
+      case Wildcard()          => true
+      case Typed(_, matchType) => patternType <:< matchType.tpe
+      case Bind(_, pattern)    => exhaustive(pattern, patternType)
+
+      case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
+        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
+        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
+
+      case Unapply(Select(target, method), _, params) =>
+        // TODO: Check that extractor is exhaustive
+        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
+        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
+
+      case other =>
+        abandon(m"bad pattern")
+
+    val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
+
+    def patternType(pattern: Tree): List[TypeRepr] = pattern match
+      case Typed(_, matchType)   => List(matchType.tpe)
+      case Bind(_, pattern)      => patternType(pattern)
+      case Alternatives(patters) => patters.flatMap(patternType)
+      case Wildcard()            => abandon(m"wildcard")
+
+      case Unapply(select, _, _) =>
+        if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
+        else abandon(m"Unapply ${select.symbol.declaredType.toString}")
+
+      case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
+        if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
+
+      case other =>
+        abandon(m"this pattern could not be recognized as a distinct `Error` type")
+
     val handledTypes: List[Symbol] =
       caseDefs(handler).flatMap:
         case CaseDef(pattern, _, _) => patternType(pattern)
       .map(_.typeSymbol)
 
-    (requiredHandlers -- handledTypes).to(List)
+    (requiredHandlers.to(Set) -- handledTypes).to(List)
 
-
-  def mitigate[ErrorType <: Error: Type, ResultType: Type, ErrorType2 <: Error: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ErrorType2]])
+  def quell[ErrorTypes <: Error: Type](handler: Expr[PartialFunction[Error, ErrorTypes]])
       (using Quotes)
-           : Expr[Any] =
-
-    '{???}
-
-
-  def remedy[ErrorType <: Error: Type, ResultType: Type]
-      (context: Expr[Tended[ErrorType, ResultType]],
-       handler: Expr[PartialFunction[ErrorType, ResultType]])
-      (using Quotes)
-           : Expr[Any] =
+          : Expr[Any] =
 
     import quotes.reflect.*
 
-    def wrap[InsideType[_]: Type](errorTypes: List[TypeRepr])
-        (makeExpr: Expr[PartialFunction[ErrorType, Nothing] => ResultType] =>
-                     Expr[InsideType[ResultType]])
-            : Term =
+    val errors = mapping(handler)
+    val errants = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Errant].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
 
-      errorTypes match
-        case Nil =>
-          makeExpr
-           ('{(partialFunction0: PartialFunction[ErrorType, Nothing]) =>
-                boundary: label ?=>
-                  val partialFunction = $handler.andThen(boundary.break(_)).orElse(partialFunction0)
-                  val errant = new RemedyErrant[ResultType, ErrorType](partialFunction)
-                  ${action(context)}(using errant)
-            }).asTerm
+    val typeLambda =
+      TypeLambda
+       (List("ResultType"),
+        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        typeLambda => functionType.appliedTo(errants :+ typeLambda.param(0)))
 
-        case errorType :: more => errorType.asType match
-          case '[type errorType <: ErrorType; errorType] =>
-            wrap[[ParamType] =>> Errant[errorType] ?=> InsideType[ParamType]](more):
-              (makeResult: Expr[PartialFunction[ErrorType, Nothing] => ResultType]) =>
-                '{ (errant: Errant[errorType]) ?=>
-                  val makeResult2: PartialFunction[ErrorType, Nothing] => ResultType =
-                    partialFunction =>
-                      $makeResult:
-                        partialFunction.orElse { case error: `errorType` => errant.abort(error) }
-                  ${makeExpr('makeResult2)}
-                }
+    typeLambda.asType match
+      case '[type typeLambda[_]; typeLambda] => '{Quell[typeLambda]($handler)}
 
-          case _ =>
-            abandon(m"Match error ${errorType.show} type was not a subtype of ErrorType")
+  def quellWithin[ContextType[_]: Type, ResultType: Type]
+      (quell: Expr[Quell[ContextType]], lambda: Expr[ContextType[ResultType]])
+      (using Quotes)
+          : Expr[ResultType] =
+    import quotes.reflect.*
 
-    wrap[[ParamType] =>> ParamType](unhandledErrorTypes(handler).map(_.typeRef)): function =>
-      '{$function(PartialFunction.empty[ErrorType, Nothing])}
-    .asExpr
+    val errants = quell.asTerm match
+      case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
+        val partialFunction = matches.asExprOf[PartialFunction[Error, Error]]
+
+        mapping(partialFunction).map: (from, to) =>
+          (from.typeRef.asType, to.typeRef.asType) match
+            case ('[type fromType <: Error; fromType], '[type toType <: Error; toType]) =>
+              Expr.summon[Errant[toType]] match
+                case Some(toErrant) =>
+                  '{  $toErrant.contramap($partialFunction(_).asInstanceOf[toType])  }.asTerm
+
+                case None =>
+                  abandon(m"There is no available handler for ${TypeRepr.of[toType].show}")
+
+    val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
+    lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]
+
+  def quash[ResultType: Type](handler: Expr[PartialFunction[Error, ResultType]])(using Quotes)
+          : Expr[Any] =
+
+    import quotes.reflect.*
+
+    val errors = mapping(handler)
+    val errants = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Errant].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
+
+    val typeLambda =
+      TypeLambda
+       (List("ResultType"),
+        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        typeLambda => functionType.appliedTo(errants :+ typeLambda.param(0)))
+
+    typeLambda.asType match
+      case '[type typeLambda[_]; typeLambda] => '{Quash[ResultType, typeLambda]($handler)}
+
+  def quashWithin[ContextType[_]: Type, ResultType: Type]
+      (quash: Expr[Quash[?, ContextType]], lambda: Expr[ContextType[ResultType]])
+      (using Quotes)
+          : Expr[ResultType] =
+    import quotes.reflect.*
+
+    type ContextResult = ContextType[ResultType]
+
+    val partialFunction = quash.asTerm match
+      case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
+        matches.asExprOf[PartialFunction[Error, ResultType]]
+
+    '{
+        boundary[ResultType]: label ?=>
+          val strategy: Errant[Escape[ResultType]] = EscapeStrategy(label)
+          ${
+              val errants = mapping(partialFunction).map: (_, _) =>
+                '{
+                    strategy.contramap: error =>
+                      Escape[ResultType]($partialFunction(error))
+                }.asTerm
+
+              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
+              lambda.asTerm.select(method).appliedToArgs(errants.to(List)).asExprOf[ResultType]
+
+          }
+    }
+
+case class Escape[ResultType](value: ResultType) extends Error(m"escaping")
+
+class EscapeStrategy[ResultType](label: boundary.Label[ResultType]) extends Errant[Escape[ResultType]]:
+  def abort(escape: Escape[ResultType]): Nothing = boundary.break(escape.value)(using label)
+  def record(escape: Escape[ResultType]): Unit = abort(escape)

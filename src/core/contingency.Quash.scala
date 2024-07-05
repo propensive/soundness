@@ -18,6 +18,13 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import fulminate.*
+import scala.quoted.*
+import scala.compiletime.*
 
-case class Tended[ErrorType <: Error, ResultType](lambda: Errant[ErrorType] => ResultType)
+import fulminate.*
+import vacuous.*
+import rudiments.*
+import symbolism.*
+import anticipation.*
+
+class Quash[ResultType, LambdaType[_]](val lambda: PartialFunction[Error, ResultType])

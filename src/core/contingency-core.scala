@@ -27,6 +27,14 @@ import rudiments.*
 import symbolism.*
 import anticipation.*
 
+package errorHandlers:
+  given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
+    ThrowStrategy()(using unsafeExceptions.canThrowAny)
+
+  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
+          : ThrowStrategy[ErrorType, SuccessType] =
+    ThrowStrategy()
+
 given realm: Realm = realm"contingency"
 
 def raise[SuccessType, ErrorType <: Error](error: ErrorType)
@@ -83,7 +91,7 @@ def validate[ErrorType <: Error](using raise: Errant[AggregateError[ErrorType]])
 
 def capture[ErrorType <: Error](using DummyImplicit)[SuccessType]
     (block: EitherStrategy[ErrorType, SuccessType] ?=> SuccessType)
-    (using raise: Errant[ExpectationError[SuccessType]])
+    (using Errant[ExpectationError[SuccessType]])
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherStrategy(label)))
@@ -106,27 +114,22 @@ def failCompilation[ErrorType <: Error](using Quotes, Realm)[SuccessType]
   given FailStrategy[ErrorType, SuccessType]()
   block
 
-infix type raises[SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
-
-extension [ErrorType <: Error, ResultType](inline context: Tended[ErrorType, ResultType])
-  transparent inline def remedy(inline lambda: PartialFunction[ErrorType, ResultType]): Any =
-    ${Contingency.remedy('context, 'lambda)}
-
-  inline def mitigate[ErrorType2 <: Error](inline lambda: PartialFunction[ErrorType, ErrorType2])
-          : Any =
-    ${Contingency.mitigate('context, 'lambda)}
-
-inline def tend[ResultType, ErrorType <: Error](inline block: Errant[ErrorType] ?=> ResultType)
-        : Tended[ErrorType, ResultType] =
-  Tended[ErrorType, ResultType](block(using _))
-
-package errorHandlers:
-  given throwUnsafely[SuccessType]: ThrowStrategy[Error, SuccessType] =
-    ThrowStrategy()(using unsafeExceptions.canThrowAny)
-
-  given throwSafely[ErrorType <: Error: CanThrow, SuccessType]
-          : ThrowStrategy[ErrorType, SuccessType] =
-    ThrowStrategy()
+infix type raises [SuccessType, ErrorType <: Error] = Errant[ErrorType] ?=> SuccessType
 
 infix type mitigates [ErrorType <: Error, ErrorType2 <: Error] =
   ErrorType2 is Mitigable into ErrorType
+
+transparent inline def quell(inline block: PartialFunction[Error, Error]): Any =
+  ${Contingency.quell('block)}
+
+extension [LambdaType[_]](inline quell: Quell[LambdaType])
+  inline def within[ResultType](inline lambda: LambdaType[ResultType]): Any =
+    ${Contingency.quellWithin[LambdaType, ResultType]('quell, 'lambda)}
+
+transparent inline def quash[ResultType](inline block: PartialFunction[Error, ResultType]): Any =
+  ${Contingency.quash[ResultType]('block)}
+
+extension [ResultType, LambdaType[_]](inline quash: Quash[ResultType, LambdaType])
+  inline def within[ResultType2 >: ResultType](inline lambda: LambdaType[ResultType2])
+          : ResultType2 =
+    ${Contingency.quashWithin[LambdaType, ResultType2]('quash, 'lambda)}

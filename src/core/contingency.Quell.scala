@@ -16,10 +16,15 @@
 
 package contingency
 
-import fulminate.*
+import language.experimental.pureFunctions
 
-class RemedyErrant[ResultType, ErrorType <: Error]
-    (partialFunction: PartialFunction[ErrorType, Nothing])
-extends Errant[ErrorType]:
-  def record(error: ErrorType): Unit = abort(error)
-  def abort(error: ErrorType): Nothing = partialFunction(error)
+import scala.quoted.*
+import scala.compiletime.*
+
+import fulminate.*
+import vacuous.*
+import rudiments.*
+import symbolism.*
+import anticipation.*
+
+class Quell[LambdaType[_]](val lambda: PartialFunction[Error, Error])
