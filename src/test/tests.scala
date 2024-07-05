@@ -80,7 +80,7 @@ object Readable extends Derivation[Readable]:
         readable =>
           if index < array.length then readable.read(array(index).tt) else default().or:
             ???
-  
+
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
     text.s.split(":").to(List).map(_.tt) match
       case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
@@ -102,7 +102,7 @@ object Eq extends Derivation[Eq]:
   given iarray[ElementType](using eq: Eq[ElementType]): Eq[IArray[ElementType]] = (left, right) =>
     left.length == right.length && left.indices.all: index =>
       eq.equal(left(index), right(index))
-  
+
   given int: Eq[Int] = _ == _
   given text: Eq[Text] = _.s.toLowerCase == _.s.toLowerCase
   given boolean: Eq[Boolean] = _ & _
@@ -113,7 +113,7 @@ object Eq extends Derivation[Eq]:
       fields(left):
         [FieldType] => leftValue => leftValue === complement(right)
       .all { boolean => boolean }
-  
+
   inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
     (left, right) =>
       variant(left):
@@ -140,7 +140,7 @@ object Parser extends ProductDerivation[Parser] {
         [FieldType] => context =>
           if index < inputArr.length then
             context.parse(inputArr(index))
-          else 
+          else
             None
       )
 }
@@ -164,7 +164,7 @@ object Show extends Derivation[Show] {
     inline if allSingletons then
       variant(value): [VariantType <: DerivationType] =>
         variant => typeName.s+"."+variant.show
-    else 
+    else
       compiletime.error("cannot derive Show for adt")
 }
 
@@ -192,7 +192,7 @@ def main(): Unit =
   import Tree.*
   println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
 
-  given Errant[VariantError] = errorHandlers.throwUnsafely
+  given Tactic[VariantError] = strategies.throwUnsafely
 
   println("President:Richard Nixon,37".tt.read[Human].present)
 
