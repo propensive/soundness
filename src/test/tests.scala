@@ -26,7 +26,7 @@ import anticipation.*
 import larceny.*
 
 import unsafeExceptions.canThrowAny
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 case class Person(name: Text, age: Int)
 
@@ -36,23 +36,23 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"equal strings have zero edit distance"):
         t"Hello world".lev(t"Hello world")
       .assert(_ == 0)
-      
+
       test(t"missing character has edit distance of 1"):
         t"Hello world".lev(t"Hello orld")
       .assert(_ == 1)
-      
+
       test(t"missing character from end has edit distance of 1"):
         t"Hello world".lev(t"Hello worl")
       .assert(_ == 1)
-      
+
       test(t"missing character from start has edit distance of 1"):
         t"Hello world".lev(t"ello world")
       .assert(_ == 1)
-      
+
       test(t"changed character has edit distance of 1"):
         t"Hello world".lev(t"Hellq world")
       .assert(_ == 1)
-      
+
       test(t"switched characters has edit distance of 2"):
         t"Hello world".lev(t"Hello wrold")
       .assert(_ == 2)
@@ -69,7 +69,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"URL encoding of space"):
         t"hello world".urlEncode
       .assert(_ == t"hello+world")
-      
+
       test(t"URL encoding of multibyte UTF-8 character"):
         t"Café".urlEncode
       .assert(_ == t"Caf%C3%A9")
@@ -81,15 +81,15 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Lower-case"):
         t"InDeCiSiVe".lower
       .assert(_ == t"indecisive")
-      
+
       test(t"Upper-case"):
         t"InDeCiSiVe".upper
       .assert(_ == t"INDECISIVE")
-      
+
       test(t"Empty string not populated"):
         t"".populated
       .assert(_ == Unset)
-      
+
       test(t"Non-empty string populated"):
         t"Hello World".populated
       .assert(_ == t"Hello World")
@@ -98,15 +98,15 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"join with separator"):
         List(t"one", t"two", t"three").join(t", ")
       .assert(_ == t"one, two, three")
-      
+
       test(t"join with separator; different last"):
         List(t"one", t"two", t"three", t"four").join(t", ", t" and ")
       .assert(_ == t"one, two, three and four")
-      
+
       test(t"join with separator; different last; two elements"):
         List(t"three", t"four").join(t", ", t" and ")
       .assert(_ == t"three and four")
-      
+
       test(t"join with separator, prefix and suffix"):
         List(t"one", t"two").join(t"(", t", ", t")")
       .assert(_ == t"(one, two)")
@@ -116,17 +116,17 @@ object Tests extends Suite(t"Gossamer Tests"):
         txt"""Hello
               world"""
       .assert(_ == t"Hello world")
-      
+
       test(t"double newline becomes single newline"):
         txt"""Hello
-              
+
               world"""
       .assert(_ == t"Hello\nworld")
-      
+
       test(t"paragraphs"):
         txt"""Hello
               world
-              
+
               Bonjour
               le monde"""
       .assert(_ == t"Hello world\nBonjour le monde")
@@ -135,7 +135,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"get bytes from text"):
         t"hello".bytes.to(List)
       .assert(_ == List(104, 101, 108, 108, 111))
-      
+
       test(t"get bytes from empty Text"):
         t"".bytes.to(List)
       .assert(_ == List())
@@ -175,7 +175,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"URL encode a Text"):
         t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.".urlEncode
       .assert(_ == t"Nech%C5%A5+ji%C5%BE+h%C5%99%C3%AD%C5%A1n%C3%A9+saxofony+%C4%8F%C3%A1bl%C5%AF+rozezvu%C4%8D%C3%AD+s%C3%AD%C5%88+%C3%BAd%C4%9Bsn%C3%BDmi+t%C3%B3ny+waltzu%2C+tanga+a+quickstepu.")
-      
+
       test(t"URL decode a Text"):
         t"Nech%C5%A5%20ji%C5%BE%20h%C5%99%C3%AD%C5%A1n%C3%A9%20saxofony%20%C4%8F%C3%A1bl%C5%AF%20rozezvu%C4%8D%C3%AD%20s%C3%AD%C5%88%20%C3%BAd%C4%9Bsn%C3%BDmi%20t%C3%B3ny%20waltzu%2C%20tanga%20a%20quickstepu.".urlDecode
       .assert(_ == t"Nechť již hříšné saxofony ďáblů rozezvučí síň úděsnými tóny waltzu, tanga a quickstepu.")
@@ -271,7 +271,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Cut a Text with empty Text at end"):
         t"one,two,".cut(t",")
       .assert(_ == List(t"one", t"two", t""))
-      
+
       test(t"Cut a Text with empty parts at start and end"):
         t",one,two,".cut(t",")
       .assert(_ == List(t"", t"one", t"two", t""))
@@ -311,11 +311,11 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Get camel-case words"):
         t"oneTwoThree".uncamel
       .assert(_ == List(t"one", "two", "three"))
-      
+
       test(t"Camel-case to dashed words"):
         t"oneTwoThree".uncamel.kebab
       .assert(_ == t"one-two-three")
-    
+
       test(t"Fit short text into fixed width"):
         t"123".fit(5)
       .assert(_ == t"123  ")
@@ -335,7 +335,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Right-fit short text with different padding character"):
         t"123".fit(5, Rtl, '.')
       .assert(_ == t"..123")
-      
+
       test(t"Fit short text with different padding character"):
         t"123".fit(5, Ltr, '.')
       .assert(_ == t"123..")
@@ -387,7 +387,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Text contains empty text"):
         t"hello world".contains(t"")
       .assert(_ == true)
-    
+
       test(t"Empty text contains empty text"):
         t"".contains(t"")
       .assert(_ == true)
@@ -399,7 +399,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Index of character satisfying predicate with start point at result index"):
         t"oh, Hello World".where(_.isUpper, 4)
       .assert(_ == 4)
-      
+
       test(t"Index of character satisfying predicate with start point after first result"):
         t"oh, Hello World".where(_.isUpper, 5)
       .assert(_ == 10)
@@ -407,15 +407,15 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Take characters while predicate is true"):
         t"HELLOworld".whilst(_.isUpper)
       .assert(_ == t"HELLO")
-      
+
       test(t"Take characters when predicate is never true returns empty text"):
         t"hello world".whilst(_.isUpper)
       .assert(_ == t"")
-      
+
       test(t"Take characters when predicate isn't initially true returns empty text"):
         t"Helloworld".whilst(_.isLower)
       .assert(_ == t"")
-    
+
       test(t"Capitalize a lowercase word"):
         t"hello".capitalize
       .assert(_ == t"Hello")
@@ -438,235 +438,235 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Write negative pi"):
         Decimalizer(1).decimalize(-math.Pi)
       .assert(_ == t"-3")
-      
+
       test(t"Write negative pi to 2 s.f."):
         Decimalizer(2).decimalize(-math.Pi)
       .assert(_ == t"-3.1")
-      
+
       test(t"Write negative pi to 3 s.f."):
         Decimalizer(3).decimalize(-math.Pi)
       .assert(_ == t"-3.14")
-      
+
       test(t"Write 1 s.f. pi"):
         Decimalizer(1).decimalize(math.Pi)
       .assert(_ == t"3")
-      
+
       test(t"Write 2 s.f. pi"):
         Decimalizer(2).decimalize(math.Pi)
       .assert(_ == t"3.1")
-      
+
       test(t"Write 3 s.f. pi"):
         Decimalizer(3).decimalize(math.Pi)
       .assert(_ == t"3.14")
-      
+
       test(t"Write 4 s.f. pi"):
         Decimalizer(4).decimalize(math.Pi)
       .assert(_ == t"3.142")
-      
+
       test(t"Write 5 s.f. pi"):
         Decimalizer(5).decimalize(math.Pi)
       .assert(_ == t"3.1416")
-      
+
       test(t"Write 6 s.f. pi"):
         Decimalizer(6).decimalize(math.Pi)
       .assert(_ == t"3.14159")
-      
+
       test(t"Write 7 s.f. pi"):
         Decimalizer(7).decimalize(math.Pi)
       .assert(_ == t"3.141593")
-      
+
       test(t"Write 8 s.f. pi"):
         Decimalizer(8).decimalize(math.Pi)
       .assert(_ == t"3.1415927")
-      
+
       test(t"Write 1 s.f. 10*pi"):
         Decimalizer(1).decimalize(10*math.Pi)
       .assert(_ == t"30")
-      
+
       test(t"Write 2 s.f. 10*pi"):
         Decimalizer(2).decimalize(10*math.Pi)
       .assert(_ == t"31")
-      
+
       test(t"Write 3 s.f. 10*pi"):
         Decimalizer(3).decimalize(10*math.Pi)
       .assert(_ == t"31.4")
-      
+
       test(t"Write 4 s.f. 10*pi"):
         Decimalizer(4).decimalize(10*math.Pi)
       .assert(_ == t"31.42")
-      
+
       test(t"Write 5 s.f. 10*pi"):
         Decimalizer(5).decimalize(10*math.Pi)
       .assert(_ == t"31.416")
-      
+
       test(t"Write 6 s.f. 10*pi"):
         Decimalizer(6).decimalize(10*math.Pi)
       .assert(_ == t"31.4159")
-      
+
       test(t"Write 7 s.f. 10*pi"):
         Decimalizer(7).decimalize(10*math.Pi)
       .assert(_ == t"31.41593")
-      
+
       test(t"Write 8 s.f. 10*pi"):
         Decimalizer(8).decimalize(10*math.Pi)
       .assert(_ == t"31.415927")
-      
+
       test(t"Write 1 s.f. 100*pi"):
         Decimalizer(1).decimalize(100*math.Pi)
       .assert(_ == t"300")
-      
+
       test(t"Write 2 s.f. 100*pi"):
         Decimalizer(2).decimalize(100*math.Pi)
       .assert(_ == t"310")
-      
+
       test(t"Write 3 s.f. 100*pi"):
         Decimalizer(3).decimalize(100*math.Pi)
       .assert(_ == t"314")
-      
+
       test(t"Write 4 s.f. 100*pi"):
         Decimalizer(4).decimalize(100*math.Pi)
       .assert(_ == t"314.2")
-      
+
       test(t"Write 5 s.f. 100*pi"):
         Decimalizer(5).decimalize(100*math.Pi)
       .assert(_ == t"314.16")
-      
+
       test(t"Write 6 s.f. 100*pi"):
         Decimalizer(6).decimalize(100*math.Pi)
       .assert(_ == t"314.159")
-      
+
       test(t"Write 7 s.f. 100*pi"):
         Decimalizer(7).decimalize(100*math.Pi)
       .assert(_ == t"314.1593")
-      
+
       test(t"Write 8 s.f. 100*pi"):
         Decimalizer(8).decimalize(100*math.Pi)
       .assert(_ == t"314.15927")
-      
+
       test(t"Write 1 s.f. pi/10"):
         Decimalizer(1).decimalize(math.Pi/10)
       .assert(_ == t"0.3")
-      
+
       test(t"Write 2 s.f. pi/10"):
         Decimalizer(2).decimalize(math.Pi/10)
       .assert(_ == t"0.31")
-      
+
       test(t"Write 3 s.f. pi/10"):
         Decimalizer(3).decimalize(math.Pi/10)
       .assert(_ == t"0.314")
-      
+
       test(t"Write 4 s.f. pi/10"):
         Decimalizer(4).decimalize(math.Pi/10)
       .assert(_ == t"0.3142")
-      
+
       test(t"Write 5 s.f. pi/10"):
         Decimalizer(5).decimalize(math.Pi/10)
       .assert(_ == t"0.31416")
-      
+
       test(t"Write 6 s.f. pi/10"):
         Decimalizer(6).decimalize(math.Pi/10)
       .assert(_ == t"0.314159")
-      
+
       test(t"Write 7 s.f. pi/10"):
         Decimalizer(7).decimalize(math.Pi/10)
       .assert(_ == t"0.3141593")
-      
+
       test(t"Write 8 s.f. pi/10"):
         Decimalizer(8).decimalize(math.Pi/10)
       .assert(_ == t"0.31415927")
-      
+
       test(t"Write 1 s.f. pi/100"):
         Decimalizer(1).decimalize(math.Pi/100)
       .assert(_ == t"0.03")
-      
+
       test(t"Write 2 s.f. pi/100"):
         Decimalizer(2).decimalize(math.Pi/100)
       .assert(_ == t"0.031")
-      
+
       test(t"Write 3 s.f. pi/100"):
         Decimalizer(3).decimalize(math.Pi/100)
       .assert(_ == t"0.0314")
-      
+
       test(t"Write 4 s.f. pi/100"):
         Decimalizer(4).decimalize(math.Pi/100)
       .assert(_ == t"0.03142")
-      
+
       test(t"Write 5 s.f. pi/100"):
         Decimalizer(5).decimalize(math.Pi/100)
       .assert(_ == t"0.031416")
-      
+
       test(t"Write 6 s.f. pi/100"):
         Decimalizer(6).decimalize(math.Pi/100)
       .assert(_ == t"0.0314159")
-      
+
       test(t"Write 7 s.f. pi/100"):
         Decimalizer(7).decimalize(math.Pi/100)
       .assert(_ == t"0.03141593")
-      
+
       test(t"Write 8 s.f. pi/100"):
         Decimalizer(8).decimalize(math.Pi/100)
       .assert(_ == t"0.031415927")
-      
+
       test(t"Write 1 s.f. pi/1000"):
         Decimalizer(1).decimalize(math.Pi/1000)
       .assert(_ == t"3×10¯³")
-      
+
       test(t"Write 2 s.f. pi/1000"):
         Decimalizer(2).decimalize(math.Pi/1000)
       .assert(_ == t"3.1×10¯³")
-      
+
       test(t"Write 3 s.f. pi/1000"):
         Decimalizer(3).decimalize(math.Pi/1000)
       .assert(_ == t"3.14×10¯³")
-      
+
       test(t"Write 4 s.f. pi/1000"):
         Decimalizer(4).decimalize(math.Pi/1000)
       .assert(_ == t"3.142×10¯³")
-      
+
       test(t"Write 5 s.f. pi/1000"):
         Decimalizer(5).decimalize(math.Pi/1000)
       .assert(_ == t"3.1416×10¯³")
-      
+
       test(t"Write 6 s.f. pi/1000"):
         Decimalizer(6).decimalize(math.Pi/1000)
       .assert(_ == t"3.14159×10¯³")
-      
+
       test(t"Write 7 s.f. pi/1000"):
         Decimalizer(7).decimalize(math.Pi/1000)
       .assert(_ == t"3.141593×10¯³")
-      
+
       test(t"Show Avogadro's number"):
         Decimalizer(5).decimalize(6.0221408e23)
       .assert(_ == t"6.0221×10²³")
-      
+
       test(t"Write 8 s.f. pi/1000"):
         Decimalizer(8).decimalize(math.Pi/1000)
       .assert(_ == t"3.1415927×10¯³")
-    
+
       test(t"Show Avogadro's number to 7 s.f."):
         Decimalizer(7).decimalize(6.0221408e23)
       .assert(_ == t"6.022141×10²³")
-      
+
       test(t"Show Planck's constant to 7 s.f."):
         Decimalizer(7, decimalPoint = '·').decimalize(6.626070e-34)
       .assert(_ == t"6·626070×10¯³⁴")
-      
+
       test(t"Show Avogadro's numer with decimal multiplier"):
         Decimalizer(7, exponentMultiple = 3).decimalize(6.0221408e23)
       .assert(_ == t"602.2141×10²¹")
-      
+
       test(t"Show Planck's constant with decimal multiplier"):
         Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(6.626070e-34)
       .assert(_ == t"0·6626070×10¯³³")
-      
+
       test(t"Show positive infinity"):
         Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(1.0/0.0)
       .assert(_ == t"∞")
-      
+
       test(t"Show negative infinity"):
         Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(-1.0/0.0)
       .assert(_ == t"-∞")
-      
+
       test(t"Show not-a-number"):
         Decimalizer(7, decimalPoint = '·', exponentMultiple = 3).decimalize(0.0/0.0)
       .assert(_ == t"∉ℝ")
@@ -674,8 +674,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Show 100.0"):
         Decimalizer(decimalPlaces = 1).decimalize(100.0)
       .assert(_ == t"100.0")
-      
+
       test(t"Show 0.0"):
         Decimalizer(decimalPlaces = 1).decimalize(0.0)
       .assert(_ == t"0.0")
-
