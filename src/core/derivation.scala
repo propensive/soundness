@@ -44,7 +44,7 @@ trait CodlEncoder[ValueType]:
   def schema: CodlSchema
 
 trait CodlDecoder[ValueType]:
-  def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): ValueType
+  def decode(value: List[Indexed])(using codlRead: Tactic[CodlReadError]): ValueType
   def schema: CodlSchema
 
 trait CodlFieldWriter[ValueType] extends CodlEncoder[ValueType]:
@@ -57,7 +57,7 @@ class CodlFieldReader[ValueType](lambda: Text => ValueType)
 extends CodlDecoder[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def decode(nodes: List[Indexed])(using codlError: Errant[CodlReadError]): ValueType =
+  def decode(nodes: List[Indexed])(using codlError: Tactic[CodlReadError]): ValueType =
     nodes.prim.or(abort(CodlReadError())).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
       case _                                         => abort(CodlReadError())
@@ -147,7 +147,7 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
 
         Struct(elements.to(List), Arity.One)
 
-      def decode(values: List[Indexed])(using codlRead: Errant[CodlReadError]): DerivationType =
+      def decode(values: List[Indexed])(using codlRead: Tactic[CodlReadError]): DerivationType =
         construct:
           [FieldType] => context =>
             val label2 = summonFrom:
@@ -174,13 +174,13 @@ object CodlDecoder:
     new CodlDecoder[Optional[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
 
-      def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): Optional[ValueType] =
+      def decode(value: List[Indexed])(using codlRead: Tactic[CodlReadError]): Optional[ValueType] =
         if value.isEmpty then Unset else decoder.decode(value)
 
   given option[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Option[ValueType]] =
     new CodlDecoder[Option[ValueType]]:
       def schema: CodlSchema = decoder.schema.optional
-      def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): Option[ValueType] =
+      def decode(value: List[Indexed])(using codlRead: Tactic[CodlReadError]): Option[ValueType] =
         if value.isEmpty then None else Some(decoder.decode(value))
 
   given list[ElementType](using decoder: CodlDecoder[ElementType]): CodlDecoder[List[ElementType]] =
@@ -189,7 +189,7 @@ object CodlDecoder:
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-      def decode(value: List[Indexed])(using codlRead: Errant[CodlReadError]): List[ElementType] =
+      def decode(value: List[Indexed])(using codlRead: Tactic[CodlReadError]): List[ElementType] =
         decoder.schema match
           case Field(_, validator) => value.flatMap(_.children).map: node =>
             decoder.decode(List(CodlDoc(node)))
@@ -203,7 +203,7 @@ object CodlDecoder:
         case Field(_, validator) => Field(Arity.Many, validator)
         case struct: Struct      => struct.copy(structArity = Arity.Many)
 
-      def decode(value: List[Indexed])(using coldRead: Errant[CodlReadError]): Set[ElementType] =
+      def decode(value: List[Indexed])(using coldRead: Tactic[CodlReadError]): Set[ElementType] =
         decoder.schema match
           case Field(_, validator) =>
             value.flatMap(_.children).map: node =>

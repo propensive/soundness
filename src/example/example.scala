@@ -20,7 +20,7 @@ import nettlesome.*
 import anticipation.*
 import gossamer.*
 import spectacular.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine
 
 case class Network(address: MacAddress)

@@ -30,19 +30,19 @@ opaque type Character = Long
 
 object Character:
   val End: Character = Long.MaxValue
-  
+
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
 
   given Encoder[Character] with
     def encode(char: Character): Text =
       if char == End then t"[END]" else t"[${char.char}:${char.line}:${char.column}]"
-    
+
   given Decoder[Character] with
     def decode(text: Text): Character = text match
       case r"[$char(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" =>
         Character(char.at(0).vouch(using Unsafe).toInt, l, c)
-      
+
       case _ =>
         End
 
@@ -69,11 +69,11 @@ class PositionReader(private var in: LazyList[Text]):
   private var requireCr: Optional[Boolean] = Unset
   private var finished: Boolean = false
   private val buf: StringBuilder = StringBuilder()
-  
+
   private var current: Int = -1
 
   def charStream(): LazyList[Char] = LazyList.continually(read()).takeWhile(_ != -1).map(_.toChar)
-  
+
   private var text: Text =
     if in.isEmpty then t""
     else
@@ -84,7 +84,7 @@ class PositionReader(private var in: LazyList[Text]):
   @tailrec
   private def read(): Int =
     current += 1
-    
+
     text.at(current).let(_.toInt).or:
       if in.isEmpty then -1 else
         text = in.head
@@ -98,8 +98,8 @@ class PositionReader(private var in: LazyList[Text]):
       lastCol = 0
     case _ =>
       lastCol += 1
-  
-  def next()(using Errant[CodlError]): Character =
+
+  def next()(using Tactic[CodlError]): Character =
     if finished then throw IllegalStateException("Attempted to read past the end of the stream")
     read() match
       case -1 =>
@@ -108,27 +108,27 @@ class PositionReader(private var in: LazyList[Text]):
       case '\r' =>
         requireCr match
           case Unset => requireCr = true
-          case false => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false)))(())
+          case false => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false)))
           case true  => ()
-        
-        if read() != '\n' then raise(CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn))(())
-        
+
+        if read() != '\n' then raise(CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn))
+
         Character('\n', lastLine, lastCol).tap(advance)
-      
+
       case '\n' =>
         requireCr match
-          case true  => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(true)))(())
+          case true  => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(true)))
           case Unset => requireCr = false
           case false => ()
-        
+
         Character('\n', lastLine, lastCol).tap(advance)
-      
+
       case ch =>
         Character(ch, lastLine, lastCol).tap(advance)
-  
+
   def start(): (Int, Int) = (startLine, startCol)
   def get(): Text = buf.toString.show.also(buf.clear())
-  
+
   def put(char: Character): Unit =
     if buf.isEmpty then
       startLine = char.line

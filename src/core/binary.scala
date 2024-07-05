@@ -43,29 +43,29 @@ object Bcodl:
       case data: Data => data
 
     write(out, dataNodes.length)
-    
+
     dataNodes.each:
       case Data(key, children, _, _) =>
         schema match
           case Field(_, _) =>
             write(out, key)
-          
+
           case _ =>
             val idx: Int = schema.keyMap.get(key).fold(0)(_ + 1)
             write(out, idx)
             write(out, schema.entry(idx - 1).schema, children)
-      
-  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Errant[BcodlError]): CodlDoc =
+
+  def read(schema: CodlSchema, reader: ji.Reader)(using binary: Tactic[BcodlError]): CodlDoc =
     if reader.read() != '\u00b1' || reader.read() != '\u00c0' || reader.read() != '\u00d1'
     then abort(BcodlError(t"header 0xb1c0d1", 0))
-    
+
     def recur(schema: CodlSchema): List[CodlNode] =
       List.range(0, readNumber(reader)).map: _ =>
         schema match
           case Field(_, _) =>
             val key = readText(reader)
             CodlNode(Data(key, IArray(), Layout.empty, CodlSchema.Free))
-          
+
           case schema =>
             val subschema = readNumber(reader) match
               case 0  => (Unset, CodlSchema.Free)
@@ -74,9 +74,9 @@ object Bcodl:
             val key = subschema(0).option.getOrElse(abort(BcodlError(t"unexpected key", 0)))
 
             val children = IArray.from(recur(subschema(1)))
-            
+
             CodlNode(Data(key, children, Layout.empty, subschema(1)))
-    
+
     CodlDoc(IArray.from(recur(schema)), schema, 0)
 
   private def readNumber(in: ji.Reader): Int = in.read - 32
@@ -85,4 +85,3 @@ object Bcodl:
     val buf = new Array[Char](if length == -1 then readNumber(in) else length)
     in.read(buf)
     String(buf).show
-  
