@@ -34,7 +34,7 @@ extension method:
 ```scala
 import spectacular.decodeAs
 import gossamer.t
-import contingency.errorHandlers.throwUnsafely
+import contingency.strategies.throwUnsafely
 
 val text = t"e6388c03-3dd2-4044-bb38-e58dbf8368fd"
 val uuid3 = text.decodeAs[Uuid]
@@ -47,5 +47,3 @@ This will raise a `UuidError` if it is not in the correct format.
 Two convenience methods are provided on `Uuid`s:
 - the unary `~` operator, which will construct a new `Uuid` by inverting its bits, and
 - the binary `^` operator, which will combine two `Uuid`s by XORing their bits
-
-
