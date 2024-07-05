@@ -47,7 +47,7 @@ type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
 object Path:
   given Path is GenericPath = _.fullname
 
-  inline given add(using path: Errant[PathError], followable: Link is Followable[GeneralForbidden, ?, ?])
+  inline given add(using path: Tactic[PathError], followable: Link is Followable[GeneralForbidden, ?, ?])
           : Addable with
     type Self = Path
     type Operand = Link
@@ -55,7 +55,7 @@ object Path:
     type Result = Path
     inline def add(left: Path, right: Link): Path = left.append(right)
 
-  inline given add2(using path: Errant[PathError], followable: SafeLink is Followable[GeneralForbidden, ?, ?])
+  inline given add2(using path: Tactic[PathError], followable: SafeLink is Followable[GeneralForbidden, ?, ?])
           : Addable with
     type Self = Path
     type Operand = SafeLink
@@ -65,7 +65,7 @@ object Path:
 
   given Insertion[Sh.Parameters, Path] = path => Sh.Parameters(path.fullname)
 
-  given (using io: Errant[IoError], streamCut: Errant[StreamError]) => Path is Writable by Bytes as writableBytes =
+  given (using io: Tactic[IoError], streamCut: Tactic[StreamError]) => Path is Writable by Bytes as writableBytes =
     Writable.outputStreamBytes.contramap: path =>
       if !path.stdlib.toFile.nn.canWrite then abort(IoError(path))
       ji.BufferedOutputStream(ji.FileOutputStream(path.stdlib.toFile, false))
@@ -81,7 +81,7 @@ object Path:
 
     def descent(path: Path): List[Name[GeneralForbidden]] =
       // FIXME: This is a bit of a hack
-      import errorHandlers.throwUnsafely
+      import strategies.throwUnsafely
       path match
         case path: Unix.SafePath    => path.safeDescent
         case path: Windows.SafePath => path.safeDescent
@@ -104,7 +104,7 @@ object Path:
 
   given Path is Communicable = path => Message(path.render)
 
-  inline given (using Errant[PathError]) => Decoder[Path] as decoder:
+  inline given (using Tactic[PathError]) => Decoder[Path] as decoder:
     def decode(text: Text): Path = Navigable.decode(text)
 
   given Path is Showable as showable = _.render
@@ -121,12 +121,12 @@ sealed trait Path:
   def name: Text
   def stdlib: jnf.Path = jnf.Path.of(fullname.s).nn
   def exists(): Boolean = jnf.Files.exists(stdlib)
-  def touch()(using Errant[IoError]): Unit = jnf.Files.write(stdlib, Array[Byte]())
+  def touch()(using Tactic[IoError]): Unit = jnf.Files.write(stdlib, Array[Byte]())
 
-  def wipe()(using deleteRecursively: DeleteRecursively)(using io: Errant[IoError]): Path = this.also:
+  def wipe()(using deleteRecursively: DeleteRecursively)(using io: Tactic[IoError]): Path = this.also:
     deleteRecursively.conditionally(this)(jnf.Files.deleteIfExists(stdlib))
 
-  def entryType()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Errant[IoError])
+  def entryType()(using dereferenceSymlinks: DereferenceSymlinks)(using io: Tactic[IoError])
           : PathStatus =
 
     try (jnf.Files.getAttribute(stdlib, "unix:mode", dereferenceSymlinks.options()*): @unchecked) match
@@ -145,10 +145,10 @@ sealed trait Path:
         throw Panic(m"the file attribute unix:mode could not be accessed")
 
       case error: ji.FileNotFoundException =>
-        raise(IoError(this))(PathStatus.File)
+        raise(IoError(this), PathStatus.File)
 
       case error: ji.IOException =>
-        raise(IoError(this))(PathStatus.File)
+        raise(IoError(this), PathStatus.File)
 
   def as[EntryType <: Entry](using resolver: PathResolver[EntryType, this.type]): EntryType = resolver(this)
 
@@ -156,7 +156,7 @@ sealed trait Path:
           : Optional[EntryType] raises IoError =
     if is[EntryType] then as[EntryType] else Unset
 
-  inline def is[EntryType <: Entry](using DereferenceSymlinks, Errant[IoError]): Boolean =
+  inline def is[EntryType <: Entry](using DereferenceSymlinks, Tactic[IoError]): Boolean =
     inline erasedValue[EntryType] match
       case _: Directory   => entryType() == PathStatus.Directory
       case _: File        => entryType() == PathStatus.File
@@ -172,7 +172,7 @@ object Link:
   given creator: PathCreator[Link, GeneralForbidden, Int] with
     def path(ascent: Int, descent: List[Name[GeneralForbidden]]): SafeLink = SafeLink(ascent, descent)
 
-  inline given (using Errant[PathError]) => Decoder[Link] as decoder:
+  inline given (using Tactic[PathError]) => Decoder[Link] as decoder:
     def decode(text: Text): Link =
       if text.contains(t"\\") then text.decodeAs[Windows.Link] else text.decodeAs[Unix.Link]
 
@@ -191,7 +191,7 @@ object Windows:
       "\\.\\." | "\\." | ".*[:<>/\\\\|?\"*].*"
 
   object Path:
-    inline given (using Errant[PathError]) => Decoder[Path] as decoder:
+    inline given (using Tactic[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
 
     given Path is Navigable[Forbidden, Drive] as navigable:
@@ -226,7 +226,7 @@ object Windows:
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[Name[Forbidden]] = path.descent
 
-    inline given decoder(using Errant[PathError]): Decoder[Link] = Followable.decoder[Link]
+    inline given decoder(using Tactic[PathError]): Decoder[Link] = Followable.decoder[Link]
     given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
     given Link is Inspectable = _.render
@@ -243,7 +243,7 @@ object Windows:
     infix def / (name: Name[Forbidden]): Path = Path(this, List(name))
 
     @targetName("child2")
-    inline infix def / (name: Text)(using Errant[PathError]): Path = Path(this, List(Name(name)))
+    inline infix def / (name: Text)(using Tactic[PathError]): Path = Path(this, List(Name(name)))
 
   case class Link(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Link
 
@@ -257,12 +257,12 @@ object Unix:
   infix def / (name: Name[Forbidden]): Path = Path(List(name))
 
   @targetName("child2")
-  inline infix def / (name: Text)(using Errant[PathError]): Path = Path(List(Name(name)))
+  inline infix def / (name: Text)(using Tactic[PathError]): Path = Path(List(Name(name)))
 
   object Path:
     given Path is Radical as radical = () => Path(Nil)
 
-    inline given (using Errant[PathError]) => Decoder[Path] as decoder:
+    inline given (using Tactic[PathError]) => Decoder[Path] as decoder:
       def decode(text: Text): Path = Navigable.decode(text)
 
     given rootParser: RootParser[Path, Unset.type] = text =>
@@ -297,7 +297,7 @@ object Unix:
       def ascent(path: Link): Int = path.ascent
       def descent(path: Link): List[Name[Forbidden]] = path.descent
 
-    inline given (using Errant[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
+    inline given (using Tactic[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
     given Link is Showable as showable = _.render
     given encoder: Encoder[Link] = _.render
     given Link is Inspectable = _.render
@@ -316,12 +316,12 @@ sealed trait Entry:
   def fullname: Text = path.fullname
   def stillExists(): Boolean = path.exists()
 
-  def touch()(using Errant[IoError]): Unit =
+  def touch()(using Tactic[IoError]): Unit =
     try jnf.Files.setLastModifiedTime(path.stdlib, jnfa.FileTime.fromMillis(System.currentTimeMillis))
-    catch case error: ji.IOException => raise(IoError(path))(())
+    catch case error: ji.IOException => raise(IoError(path))
 
-  def hidden()(using Errant[IoError]): Boolean =
-    try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path))(false)
+  def hidden()(using Tactic[IoError]): Boolean =
+    try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path), false)
 
   object readable:
     def apply(): Boolean = jnf.Files.isReadable(path.stdlib)
@@ -335,28 +335,28 @@ sealed trait Entry:
     def apply(): Boolean = jnf.Files.isExecutable(path.stdlib)
     def update(status: Boolean): Unit = path.stdlib.toFile.nn.setExecutable(status)
 
-  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Errant[IoError]): Int =
+  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Tactic[IoError]): Int =
     try jnf.Files.getAttribute(path.stdlib, "unix:nlink", dereferenceSymlinks.options()*) match
       case count: Int => count
-      case _          => raise(IoError(path))(1)
-    catch case error: IllegalArgumentException => raise(IoError(path))(1)
+      case _          => raise(IoError(path), 1)
+    catch case error: IllegalArgumentException => raise(IoError(path), 1)
 
   def volume: Volume =
     val fileStore = jnf.Files.getFileStore(path.stdlib).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
 
-  def delete()(using deleteRecursively: DeleteRecursively, io: Errant[IoError]): Path =
+  def delete()(using deleteRecursively: DeleteRecursively, io: Tactic[IoError]): Path =
     try deleteRecursively.conditionally(path)(jnf.Files.delete(path.stdlib)) catch
-      case error: jnf.NoSuchFileException        => raise(IoError(path))(())
-      case error: ji.FileNotFoundException       => raise(IoError(path))(())
-      case error: ji.IOException                 => raise(IoError(path))(())
-      case error: SecurityException              => raise(IoError(path))(())
+      case error: jnf.NoSuchFileException        => raise(IoError(path))
+      case error: ji.FileNotFoundException       => raise(IoError(path))
+      case error: ji.IOException                 => raise(IoError(path))
+      case error: SecurityException              => raise(IoError(path))
 
     path
 
   def symlinkTo(destination: Path)
       (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
 
     createNonexistentParents(destination):
@@ -367,7 +367,7 @@ sealed trait Entry:
 
   def copyInto(destination: Directory)
       (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, dereferenceSymlinks}*/ =
 
     given CreateNonexistentParents = filesystemOptions.createNonexistentParents
@@ -377,7 +377,7 @@ sealed trait Entry:
       (using overwritePreexisting:     OverwritePreexisting,
              dereferenceSymlinks:      DereferenceSymlinks,
              createNonexistentParents: CreateNonexistentParents)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks}*/ =
 
     createNonexistentParents(destination):
@@ -391,7 +391,7 @@ sealed trait Entry:
       (using overwritePreexisting: OverwritePreexisting,
              moveAtomically:       MoveAtomically,
              dereferenceSymlinks:  DereferenceSymlinks)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks}*/ =
 
     given CreateNonexistentParents = filesystemOptions.createNonexistentParents
@@ -403,7 +403,7 @@ sealed trait Entry:
              moveAtomically:           MoveAtomically,
              dereferenceSymlinks:      DereferenceSymlinks,
              createNonexistentParents: CreateNonexistentParents)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents, moveAtomically, dereferenceSymlinks}*/ =
 
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
@@ -419,7 +419,7 @@ sealed trait Entry:
 
 object PathResolver:
   // given entry
-  //     (using dereferenceSymlinks: DereferenceSymlinks, io: Errant[IoError])
+  //     (using dereferenceSymlinks: DereferenceSymlinks, io: Tactic[IoError])
   //     : PathResolver[Entry, Path] =
   //   new PathResolver[Entry, Path]:
   //     def apply(path: Path): Entry =
@@ -431,7 +431,7 @@ object PathResolver:
   given file
       (using createNonexistent:   CreateNonexistent,
              dereferenceSymlinks: DereferenceSymlinks,
-             io:                  Errant[IoError])
+             io:                  Tactic[IoError])
           : PathResolver[File, Path] = path =>
 
     if path.exists() && path.entryType() == PathStatus.File then File(path)
@@ -442,7 +442,7 @@ object PathResolver:
   given directory
       (using createNonexistent: CreateNonexistent,
              dereferenceSymlinks: DereferenceSymlinks,
-             io: Errant[IoError])
+             io: Tactic[IoError])
           : PathResolver[Directory, Path] = path =>
     if path.exists() && path.entryType() == PathStatus.Directory then Directory(path)
     else createNonexistent(path):
@@ -457,7 +457,7 @@ trait PathResolver[+EntryType <: Entry, -PathType <: Path]:
 object EntryMaker:
   given directory
       (using createNonexistentParents: CreateNonexistentParents, overwritePreexisting: OverwritePreexisting)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : EntryMaker[Directory, Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
@@ -467,7 +467,7 @@ object EntryMaker:
 
   given socket
       (using createNonexistentParents: CreateNonexistentParents, overwritePreexisting: OverwritePreexisting)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : EntryMaker[Socket, Unix.Path] = path =>
     createNonexistentParents(path):
       overwritePreexisting(path):
@@ -489,15 +489,15 @@ object EntryMaker:
       (using createNonexistentParents: CreateNonexistentParents,
              overwritePreexisting:     OverwritePreexisting,
              working:                  WorkingDirectory,
-             io:                       Errant[IoError],
-             exec:                     Errant[ExecError])
+             io:                       Tactic[IoError],
+             exec:                     Tactic[ExecError])
           : (EntryMaker[Fifo, Unix.Path] logs IoEvent) =
 
     path => createNonexistentParents(path):
       overwritePreexisting(path):
         sh"mkfifo $path"() match
           case ExitStatus.Ok => ()
-          case _             => raise(IoError(path))(())
+          case _             => raise(IoError(path))
 
     Fifo(path)
 
@@ -517,7 +517,7 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
     path / Name.unsafe(child.getFileName.nn.toString.nn.tt)
 
-  def descendants(using DereferenceSymlinks, Errant[IoError], PathResolver[Directory, Path]): LazyList[Path] =
+  def descendants(using DereferenceSymlinks, Tactic[IoError], PathResolver[Directory, Path]): LazyList[Path] =
     children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
 
   def size()(using PathResolver[Directory, Path], PathResolver[File, Path]): ByteSize raises IoError =
@@ -528,25 +528,25 @@ case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
   infix def / (name: Name[GeneralForbidden]): Path = path / name
 
   @targetName("child2")
-  inline infix def / (name: Text)(using Errant[PathError]): Path = path / Name(name)
+  inline infix def / (name: Text)(using Tactic[PathError]): Path = path / Name(name)
 
 object File:
   given File is Inspectable as inspectable = file => t"file:${file.path.render}"
 
-  given [FileType <: File](using Errant[StreamError], Errant[IoError])
+  given [FileType <: File](using Tactic[StreamError], Tactic[IoError])
       => FileType is Readable by Bytes as readableBytes =
     Readable.inputStream.contramap: file =>
       try ji.BufferedInputStream(jnf.Files.newInputStream(file.path.stdlib))
       catch case _: jnf.NoSuchFileException => abort(IoError(file.path))
 
-  given (using io: Errant[IoError], streamCut: Errant[StreamError])
+  given (using io: Tactic[IoError], streamCut: Tactic[StreamError])
       => File is Writable by Bytes as writableBytes =
 
     Writable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, false))
 
-  given (using io: Errant[IoError], streamCut: Errant[StreamError])
+  given (using io: Tactic[IoError], streamCut: Tactic[StreamError])
       => File is Appendable by Bytes as appendableBytes =
     Appendable.outputStreamBytes.contramap: file =>
       if !file.writable() then abort(IoError(file.path))
@@ -559,7 +559,7 @@ case class File(path: Path) extends Unix.Entry, Windows.Entry:
 
   def hardLinkTo(destination: Path)
       (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
-      (using io: Errant[IoError])
+      (using io: Tactic[IoError])
           : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
 
     createNonexistentParents(destination):
@@ -618,7 +618,7 @@ trait CopyAttributes:
   def options(): List[jnf.CopyOption]
 
 object DeleteRecursively:
-  given default(using Quickstart, Errant[UnemptyDirectoryError]): DeleteRecursively =
+  given default(using Quickstart, Tactic[UnemptyDirectoryError]): DeleteRecursively =
     filesystemOptions.doNotDeleteRecursively
 
 @capability
@@ -626,7 +626,7 @@ trait DeleteRecursively:
   def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object OverwritePreexisting:
-  given default(using Quickstart, Errant[OverwriteError]): OverwritePreexisting =
+  given default(using Quickstart, Tactic[OverwriteError]): OverwritePreexisting =
     filesystemOptions.doNotOverwritePreexisting
 
 @capability
@@ -634,7 +634,7 @@ trait OverwritePreexisting:
   def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistentParents:
-  given default(using Quickstart, Errant[IoError]): CreateNonexistentParents =
+  given default(using Quickstart, Tactic[IoError]): CreateNonexistentParents =
     filesystemOptions.createNonexistentParents
 
 @capability
@@ -642,7 +642,7 @@ trait CreateNonexistentParents:
   def apply[ResultType](path: Path)(operation: => ResultType): ResultType
 
 object CreateNonexistent:
-  given default(using Quickstart, Errant[IoError]): CreateNonexistent =
+  given default(using Quickstart, Tactic[IoError]): CreateNonexistent =
     filesystemOptions.createNonexistent(using filesystemOptions.createNonexistentParents)
 
 @capability
@@ -675,7 +675,7 @@ package filesystemOptions:
   given doNotCopyAttributes: CopyAttributes with
     def options(): List[jnf.CopyOption] = Nil
 
-  given deleteRecursively(using io: Errant[IoError])
+  given deleteRecursively(using io: Tactic[IoError])
           : DeleteRecursively =
 
     new DeleteRecursively:
@@ -689,7 +689,7 @@ package filesystemOptions:
 
         operation
 
-  given doNotDeleteRecursively(using unemptyDirectory: Errant[UnemptyDirectoryError])
+  given doNotDeleteRecursively(using unemptyDirectory: Tactic[UnemptyDirectoryError])
           : DeleteRecursively =
     new DeleteRecursively:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
@@ -701,12 +701,12 @@ package filesystemOptions:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
 
-  given doNotOverwritePreexisting(using overwrite: Errant[OverwriteError]): OverwritePreexisting =
+  given doNotOverwritePreexisting(using overwrite: Tactic[OverwriteError]): OverwritePreexisting =
     new OverwritePreexisting:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
 
-  given createNonexistentParents(using Errant[IoError]): CreateNonexistentParents =
+  given createNonexistentParents(using Tactic[IoError]): CreateNonexistentParents =
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.let: parent =>
@@ -717,7 +717,7 @@ package filesystemOptions:
 
         operation
 
-  given doNotCreateNonexistentParents(using io: Errant[IoError]): CreateNonexistentParents =
+  given doNotCreateNonexistentParents(using io: Tactic[IoError]): CreateNonexistentParents =
 
     new CreateNonexistentParents:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
@@ -768,7 +768,7 @@ object SafeLink:
       def ascent(link: SafeLink): Int = link.ascent
       def descent(link: SafeLink): List[Name[GeneralForbidden]] = link.descent
 
-  inline given decoder(using Errant[PathError]): Decoder[SafeLink] = Followable.decoder[SafeLink]
+  inline given decoder(using Tactic[PathError]): Decoder[SafeLink] = Followable.decoder[SafeLink]
 
 given (using log: IoEvent is Loggable) => ExecEvent is Loggable = log.contramap(IoEvent.Exec(_))
 
