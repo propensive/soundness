@@ -36,14 +36,14 @@ case class Url[+SchemeType <: Label]
 
   lazy val path: List[Name[""]] =
     // FIXME: This needs to be handled better
-    import errorHandlers.throwUnsafely
+    import strategies.throwUnsafely
     pathText.drop(1).cut(t"/").to(List).reverse.map(_.urlDecode).map(Name(_))
 
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
 
 object Url:
   given HttpUrl is GenericUrl = _.show
-  given (using Errant[UrlError], Errant[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
+  given (using Tactic[UrlError], Tactic[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
 
   given [SchemeType <: Label] => Url[SchemeType] is Showable as showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
@@ -52,7 +52,7 @@ object Url:
 
   given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
 
-  given [SchemeType <: Label](using Errant[UrlError], Errant[HostnameError])
+  given [SchemeType <: Label](using Tactic[UrlError], Tactic[HostnameError])
       => Decoder[Url[SchemeType]] =
     parse(_)
 
@@ -120,7 +120,7 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  def parse[SchemeType <: Label](value: Text)(using Errant[UrlError], Errant[HostnameError])
+  def parse[SchemeType <: Label](value: Text)(using Tactic[UrlError], Tactic[HostnameError])
           : Url[SchemeType] =
     import UrlError.Expectation.*
 

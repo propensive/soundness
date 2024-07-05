@@ -33,7 +33,7 @@ import EmailAddressError.Reason.*
 object EmailAddress:
   given Realm = realm"nettlesome"
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = failCompilation:
+  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abandonment:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
 
@@ -69,19 +69,19 @@ object EmailAddress:
         quoted(index + 1, false)
 
       case Unset =>
-        raise(EmailAddressError(UnclosedQuote))((LocalPart.Quoted(buffer.text), index))
+        raise(EmailAddressError(UnclosedQuote), (LocalPart.Quoted(buffer.text), index))
 
     def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
       text.at(index) match
         case '@' =>
-          if dot then raise(EmailAddressError(TerminalPeriod))(())
-          if buffer.length > 64 then raise(EmailAddressError(LongLocalPart))(())
+          if dot then raise(EmailAddressError(TerminalPeriod))
+          if buffer.length > 64 then raise(EmailAddressError(LongLocalPart))
 
           (LocalPart.Unquoted(buffer.text), index + 1)
 
         case '.'  =>
-          if dot then raise(EmailAddressError(SuccessivePeriods))(())
-          if index == 0 then raise(EmailAddressError(InitialPeriod))(())
+          if dot then raise(EmailAddressError(SuccessivePeriods))
+          if index == 0 then raise(EmailAddressError(InitialPeriod))
           buffer.append('.')
           unquoted(index + 1, true)
 
@@ -90,11 +90,11 @@ object EmailAddress:
 
           if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || symbolic
           then buffer.append(char)
-          else raise(EmailAddressError(InvalidChar(char)))(())
+          else raise(EmailAddressError(InvalidChar(char)))
           unquoted(index + 1, false)
 
         case Unset =>
-          raise(EmailAddressError(MissingAtSymbol))((LocalPart.Unquoted(buffer.text), index))
+          raise(EmailAddressError(MissingAtSymbol), (LocalPart.Unquoted(buffer.text), index))
 
     val (localPart, index) =
       if text.starts(t"\"") then quoted(1, false) else unquoted(0, false)
@@ -104,7 +104,7 @@ object EmailAddress:
       else if text.at(index) == '[' then
         try
           if text.last != ']' then abort(EmailAddressError(UnclosedIpAddress))
-          import errorHandlers.throwUnsafely
+          import strategies.throwUnsafely
           val ipAddress = text.slice(index + 1, text.length - 1)
 
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5))
@@ -113,7 +113,7 @@ object EmailAddress:
 
       else
         try
-          import errorHandlers.throwUnsafely
+          import strategies.throwUnsafely
           Hostname.parse(text.drop(index))
         catch case error: HostnameError =>
           abort(EmailAddressError(InvalidDomain(error)))

@@ -35,7 +35,7 @@ object Hostname:
 
   given Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = failCompilation:
+  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = abandonment:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
   given ToExpr[Hostname] as toExpr:
@@ -52,22 +52,22 @@ object Hostname:
     def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
       case '.' | Unset =>
         val label = buffer()
-        if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))(())
-        if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))(())
-        if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))(())
+        if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
+        if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
+        if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         buffer.clear()
 
         if index < text.length then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254
-          then raise(HostnameError(text, LongHostname))(())
+          then raise(HostnameError(text, LongHostname))
 
           Hostname(dnsLabels2.reverse*)
 
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
         then buffer.append(char.toString.tt)
-        else raise(HostnameError(text, InvalidChar(char)))(())
+        else raise(HostnameError(text, InvalidChar(char)))
         recur(index + 1, dnsLabels)
 
     recur(0, Nil)

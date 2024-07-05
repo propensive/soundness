@@ -54,7 +54,7 @@ object Nettlesome:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given Encoder[Ipv4] as encoder = _.show
-      given (using Errant[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
+      given (using Tactic[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -63,7 +63,7 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
-      def parse(text: Text)(using Errant[IpAddressError]): Ipv4 =
+      def parse(text: Text)(using Tactic[IpAddressError]): Ipv4 =
         val bytes = text.cut(t".")
         if bytes.length == 4 then
           given IpAddressError mitigates NumberError =
@@ -71,18 +71,18 @@ object Nettlesome:
 
           bytes.map(Decoder.int.decode(_)).pipe: bytes =>
             for byte <- bytes
-            do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)))(0.toByte)
+            do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
 
             Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
-        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)))(0)
+        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)), 0)
 
     object MacAddress:
       import MacAddressError.Reason.*
       erased given Underlying[MacAddress, Long] as underlying = ###
       given MacAddress is Showable = _.text
       given Encoder[MacAddress] as encoder = _.text
-      given (using Errant[MacAddressError]) => Decoder[MacAddress] as decoder = parse(_)
+      given (using Tactic[MacAddressError]) => Decoder[MacAddress] as decoder = parse(_)
 
       def apply(value: Long): MacAddress = value
 
@@ -90,7 +90,7 @@ object Nettlesome:
         val groups = text.cut(t"-").to(List)
 
         if groups.length != 6
-        then raise(MacAddressError(WrongGroupCount(groups.length)))(())
+        then raise(MacAddressError(WrongGroupCount(groups.length)))
 
         @tailrec
         def recur(todo: List[Text], index: Int = 0, acc: Long = 0L): Long = todo match
@@ -98,10 +98,10 @@ object Nettlesome:
 
           case head :: tail =>
             if head.length != 2
-            then raise(MacAddressError(WrongGroupLength(index, head.length)))(())
+            then raise(MacAddressError(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              raise(MacAddressError(NotHex(index, head)))(0)
+              raise(MacAddressError(NotHex(index, head)), 0)
 
             recur(tail, index + 1, (acc << 8) + value)
 
@@ -121,26 +121,26 @@ object Nettlesome:
       given TcpPort is Showable = port => TextConversion.int.text(port.number)
       given Encoder[TcpPort] as encoder = port => TextConversion.int.text(port.number)
 
-      given (using Errant[NumberError], Errant[PortError]) => Decoder[TcpPort] as decoder =
+      given (using Tactic[NumberError], Tactic[PortError]) => Decoder[TcpPort] as decoder =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
       def apply(value: Int): TcpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError())(unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError(), unsafe(1))
 
     object UdpPort:
       erased given Underlying[UdpPort, Int] as underlying = ###
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
       given Encoder[UdpPort] as encoder = port => TextConversion.int.text(port.number)
 
-      given (using Errant[NumberError], Errant[PortError]) => Decoder[UdpPort] as decoder =
+      given (using Tactic[NumberError], Tactic[PortError]) => Decoder[UdpPort] as decoder =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
       def apply(value: Int): UdpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort] else raise(PortError())(unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort] else raise(PortError(), unsafe(1))
 
     extension (port: TcpPort | UdpPort)
       def number: Int = port
@@ -177,13 +177,13 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decodeAs[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
     else abandon(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int = failCompilation(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decodeAs[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
     else abandon(m"the UDP port number ${portNumber} is not in the range 1-65535")
@@ -191,7 +191,7 @@ object Nettlesome:
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
 
-    failCompilation:
+    abandonment:
       if text.contains(t".") then
         val ipv4 = Ipv4.parse(text)
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
@@ -200,7 +200,7 @@ object Nettlesome:
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
-  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = failCompilation:
+  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = abandonment:
     val macAddress = MacAddress.parse(context.valueOrAbort.parts.head.tt)
     '{MacAddress(${Expr(macAddress.long)})}
 
@@ -229,11 +229,11 @@ object Nettlesome:
       Ipv6(pack(List(group0, group1, group2, group3)), pack(List(group4, group5, group6, group7)))
 
     def parseGroup(text: Text): Int raises IpAddressError =
-      if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))(())
+      if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))
 
       text.lower.s.each: char =>
         if !('0' <= char <= '9' || 'a' <= char <= 'f')
-        then raise(IpAddressError(Ipv6GroupNotHex(text)))(())
+        then raise(IpAddressError(Ipv6GroupNotHex(text)))
 
       Integer.parseInt(text.s, 16)
 
@@ -250,7 +250,7 @@ object Nettlesome:
           val rightGroups = right.cut(t":").to(List).filter(_ != t"")
 
           if leftGroups.length + rightGroups.length > 7
-          then raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))(())
+          then raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
 
           leftGroups ++ List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++ rightGroups
 
@@ -258,9 +258,9 @@ object Nettlesome:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)))(zeroes) else groups.to(List)
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)), zeroes) else groups.to(List)
 
         case _ =>
-          raise(IpAddressError(Ipv6MultipleDoubleColons))(zeroes)
+          raise(IpAddressError(Ipv6MultipleDoubleColons), zeroes)
 
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))

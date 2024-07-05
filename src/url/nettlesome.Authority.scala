@@ -29,7 +29,7 @@ object Authority:
   given Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  def parse(value: Text)(using Errant[UrlError]): Authority raises HostnameError =
+  def parse(value: Text)(using Tactic[UrlError]): Authority raises HostnameError =
     import UrlError.Expectation.*
 
     safely(value.where(_ == '@')) match
@@ -42,10 +42,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange))(0)
+              raise(UrlError(value, colon + 1, PortRange), 0)
 
             case Unset =>
-              raise(UrlError(value, colon + 1, Number))(0)
+              raise(UrlError(value, colon + 1, Number), 0)
           .pipe(Authority(Hostname.parse(value.take(colon)), Unset, _))
 
       case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
@@ -57,10 +57,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange))(0)
+              raise(UrlError(value, colon + 1, PortRange), 0)
 
             case Unset =>
-              raise(UrlError(value, colon + 1, Number))(0)
+              raise(UrlError(value, colon + 1, Number), 0)
           .pipe(Authority(Hostname.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

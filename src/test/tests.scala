@@ -25,7 +25,7 @@ import spectacular.*
 import contingency.*
 import larceny.*
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 object Tests extends Suite(t"Nettlesome tests"):
   def run(): Unit =
