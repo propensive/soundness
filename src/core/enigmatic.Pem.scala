@@ -52,5 +52,6 @@ object Pem:
       case -1  => abort(PemError(PemError.Reason.EndMissing))
       case index =>
         val joined: Text = lines.tail.take(index).join
-        tend(Pem(label, joined.deserialize[Base64])).remedy:
-          case SerializationError(_, _) => abort(PemError(PemError.Reason.BadBase64))
+        quell:
+          case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+        .within(Pem(label, joined.deserialize[Base64]))
