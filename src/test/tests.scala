@@ -24,7 +24,7 @@ import rudiments.*
 import anticipation.*
 import vacuous.*
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 
 case class Example(str: Text, int: Int)

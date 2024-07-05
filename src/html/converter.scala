@@ -25,7 +25,7 @@ import anticipation.*
 import gossamer.*
 
 open class HtmlConverter():
-  def outline(node: Markdown[Markdown.Ast.Node])(using Errant[MarkdownError]): Seq[Html[Flow]] =
+  def outline(node: Markdown[Markdown.Ast.Node])(using Tactic[MarkdownError]): Seq[Html[Flow]] =
     convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
 
   def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
@@ -101,7 +101,7 @@ open class HtmlConverter():
     case Markdown.Ast.Inline.Image(text, _)         => text
     case Markdown.Ast.Inline.Weblink(text, _)       => text
     case Markdown.Ast.Block.Reference(_, _)         => t""
-    case Markdown.Ast.Inline.Break()                => t""
+    case Markdown.Ast.Inline.LineBreak              => t""
     case Markdown.Ast.Block.ThematicBreak()         => t""
     case Markdown.Ast.Inline.Emphasis(children*)    => text(children)
     case Markdown.Ast.Inline.Strong(children*)      => text(children)
@@ -116,7 +116,7 @@ open class HtmlConverter():
 
   def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Image(altText, location) => List(Img(src = location, alt = altText))
-    case Markdown.Ast.Inline.Break()                  => List(Br)
+    case Markdown.Ast.Inline.LineBreak                => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code))

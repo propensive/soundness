@@ -69,7 +69,7 @@ type InlineMd = Markdown[Markdown.Ast.Inline]
 type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
-  given (using Errant[MarkdownError]) => Decoder[InlineMd] as decoder = parseInline(_)
+  given (using Tactic[MarkdownError]) => Decoder[InlineMd] as decoder = parseInline(_)
   given Encoder[InlineMd] as encoder = _.serialize
   given InlineMd is Showable = _.serialize
 
@@ -98,7 +98,7 @@ object Markdown:
       case Body(rows: Row*)
 
     enum Inline:
-      case Break()
+      case LineBreak
       case Emphasis(children: Inline*)
       case HtmlNode(value: Text)
       case Image(alt: Text, src: Text)
@@ -108,7 +108,7 @@ object Markdown:
       case Weblink(location: Text, children: Inline*)
 
       def serialize(buf: StringBuilder): Unit = this match
-        case Break() =>
+        case LineBreak =>
           buf.add('\n')
 
         case Emphasis(children*) =>
@@ -152,19 +152,19 @@ object Markdown:
 
   private val parser = Parser.builder(options).nn.build().nn
 
-  def parse[ValueType: Readable by Text](value: ValueType)(using Errant[MarkdownError]): Md =
+  def parse[ValueType: Readable by Text](value: ValueType)(using Tactic[MarkdownError]): Md =
     val text = value.stream[Text].read[Text]
     val root = parser.parse(text.s).nn
     val nodes = root.getChildIterator.nn.asScala.to(List).map(convert(root, _))
 
     Markdown(nodes.collect { case child: Markdown.Ast.Block => child }*)
 
-  def parseInline(text: Text)(using Errant[MarkdownError]): InlineMd = parse(text) match
+  def parseInline(text: Text)(using Tactic[MarkdownError]): InlineMd = parse(text) match
     case Markdown(Paragraph(xs*)) =>
       Markdown[Markdown.Ast.Inline](xs*)
 
     case other =>
-      raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))(Markdown[Markdown.Ast.Inline]())
+      raise(MarkdownError(MarkdownError.Reason.BlockInsideInline), Markdown[Markdown.Ast.Inline]())
 
   @tailrec
   private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
@@ -191,7 +191,7 @@ object Markdown:
           : Text raises MarkdownError =
 
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
-      raise(MarkdownError(MarkdownError.Reason.BrokenImageRef))(t"https://example.com/")
+      raise(MarkdownError(MarkdownError.Reason.BrokenImageRef), t"https://example.com/")
 
   type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
       cvfa.Image | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
@@ -216,7 +216,7 @@ object Markdown:
     case node: cvfa.SoftLineBreak  => Copy(t"\n")
     case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
     case node: cvfa.Code           => SourceCode(node.getText.toString.show)
-    case node: cvfa.HardLineBreak  => Break()
+    case node: cvfa.HardLineBreak  => LineBreak
     case node: cvfa.Image          => Image(node.getText.toString.show, node.getUrl.toString.show)
     case node: cvfa.ImageRef       => Image(node.getText.toString.show, resolveReference(root, node))
     case node: cvfa.Link           => Weblink(node.getUrl.toString.show, phraseChildren(root, node)*)
@@ -227,7 +227,7 @@ object Markdown:
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
 
-  def flow(root: cvfua.Document, node: FlowInput)(using Errant[MarkdownError]): Markdown.Ast.Block = node match
+  def flow(root: cvfua.Document, node: FlowInput)(using Tactic[MarkdownError]): Markdown.Ast.Block = node match
     case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
 
     case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
@@ -248,20 +248,21 @@ object Markdown:
       case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
 
       case _ =>
-        raise(MarkdownError(MarkdownError.Reason.BadHeadingLevel)):
-          Heading(6, phraseChildren(root, node)*)
+        raise
+         (MarkdownError(MarkdownError.Reason.BadHeadingLevel),
+          Heading(6, phraseChildren(root, node)*))
 
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
           : Markdown.Ast.Node raises MarkdownError =
     node match
-      case node: cvfa.HardLineBreak => Break()
+      case node: cvfa.HardLineBreak => LineBreak
       case node: cvfa.SoftLineBreak => Copy(t"\n")
       case node: cvfa.Reference     => Reference(node.getReference.toString.show, node.getUrl.toString.show)
       case node: cvfa.ThematicBreak => ThematicBreak()
       case node: tables.TableBlock  => Table(table(root, node)*)
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
-      case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode))(Copy(t"?"))
+      case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode), Copy(t"?"))
 
   def table(root: cvfua.Document, node: tables.TableBlock)
           : List[Markdown.Ast.TablePart] raises MarkdownError =
