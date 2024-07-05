@@ -207,12 +207,19 @@ object TextConversion:
   given (using decimalizer: DecimalConverter) => Double is Showable as double = decimalizer.decimalize(_)
   given Pid is Showable as pid = pid => ("\u21af"+pid.value).tt
   given (using booleanStyle: BooleanStyle) => Boolean is Showable as boolean = booleanStyle(_)
-  given [ValueType: Showable] => Option[ValueType] is Showable as option = _.fold("none".tt)(ValueType.text(_))
+
+  given [ValueType: Showable] => Option[ValueType] is Showable as option =
+    _.fold("none".tt)(ValueType.text(_))
+
   given Uuid is Showable as uuid = _.text
   given ByteSize is Showable as byteSize = _.text
-  given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.show
-  given [ElemType: Showable] => Set[ElemType] is Showable as set = _.map(_.show).mkString("{", ", ", "}").tt
-  given [ElemType: Showable] => List[ElemType] is Showable as list = _.map(_.show).mkString("[", ", ", "]").tt
+  given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.tt
+
+  given [ElemType: Showable] => Set[ElemType] is Showable as set =
+    _.map(_.show).mkString("{", ", ", "}").tt
+
+  given [ElemType: Showable] => List[ElemType] is Showable as list =
+    _.map(_.show).mkString("[", ", ", "]").tt
 
   given [ElemType: Showable] => Vector[ElemType] is Showable as vector =
     _.map(_.show).mkString("[ ", " ", " ]").tt

@@ -31,45 +31,45 @@ extends Error(m"$text is not a valid ${specializable.show}")
 case class EnumCaseError(text: Text) extends Error(m"$text is not a valid enumeration case")
 
 object Decoder:
-  given int(using number: Errant[NumberError]): Decoder[Int] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Int] as int = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Int))(0)
+      raise(NumberError(text, Int), 0)
 
-  given fqcn(using fqcn: Errant[FqcnError]): Decoder[Fqcn] = Fqcn(_)
-  given uuid(using uuid: Errant[UuidError]): Decoder[Uuid] = Uuid.parse(_)
+  given (using fqcn: Tactic[FqcnError]) => Decoder[Fqcn] as fqcn = Fqcn(_)
+  given (using uuid: Tactic[UuidError]) => Decoder[Uuid] as uuid = Uuid.parse(_)
 
-  given byte(using number: Errant[NumberError]): Decoder[Byte] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Byte] as byte = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Byte))(0)
+      raise(NumberError(text, Byte), 0)
 
-    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte))(0.toByte)
+    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
     else int.toByte
 
-  given short(using number: Errant[NumberError]): Decoder[Short] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Short] as short = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Short))(0)
+      raise(NumberError(text, Short), 0)
 
-    if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short))(0.toShort)
+    if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
     else int.toShort
 
-  given long(using number: Errant[NumberError]): Decoder[Long] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Long] as long = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Long))(0L)
+      raise(NumberError(text, Long), 0L)
 
-  given double(using number: Errant[NumberError]): Decoder[Double] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Double] as double = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Double))(0.0)
+      raise(NumberError(text, Double), 0.0)
 
-  given float(using number: Errant[NumberError]): Decoder[Float] = text =>
+  given (using number: Tactic[NumberError]) => Decoder[Float] = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Float))(0.0F)
+      raise(NumberError(text, Float), 0.0F)
 
-  given char: Decoder[Char] = _.s(0)
-  given text: Decoder[Text] = identity(_)
-  given string: Decoder[String] = _.s
-  given pid(using number: Errant[NumberError]): Decoder[Pid] = long.map(Pid(_))
+  given Decoder[Char] as char = _.s(0)
+  given Decoder[Text] as text = identity(_)
+  given Decoder[String] as string = _.s
+  given (using number: Tactic[NumberError]) => Decoder[Pid] as pid = long.map(Pid(_))
 
-  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Errant[EnumCaseError]): Decoder[EnumType] = text =>
+  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Tactic[EnumCaseError]): Decoder[EnumType] = text =>
   //  Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
 @capability
@@ -79,17 +79,17 @@ trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
   def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] = text => lambda(decode(text))
 
 object Encoder:
-  given int: Encoder[Int] = _.toString.tt
-  given double: Encoder[Double] = _.toString.tt
-  given byte: Encoder[Byte] = _.toString.tt
-  given short: Encoder[Short] = _.toString.tt
-  given long: Encoder[Long] = _.toString.tt
-  given float: Encoder[Float] = _.toString.tt
-  given text: Encoder[Text] = identity(_)
-  given char: Encoder[Char] = _.toString.tt
-  given uuid: Encoder[Uuid] = _.text
-  given pid: Encoder[Pid] = long.contramap(_.value)
-  given fqcn: Encoder[Fqcn] = _.text
+  given Encoder[Int] as int = _.toString.tt
+  given Encoder[Double] as double = _.toString.tt
+  given Encoder[Byte] as byte = _.toString.tt
+  given Encoder[Short] as short = _.toString.tt
+  given Encoder[Long] as long = _.toString.tt
+  given Encoder[Float] as float = _.toString.tt
+  given Encoder[Text] as text = identity(_)
+  given Encoder[Char] as char = _.toString.tt
+  given Encoder[Uuid] as uuid = _.text
+  given Encoder[Pid] as pid = long.contramap(_.value)
+  given Encoder[Fqcn] as fqcn = _.text
 
 @capability
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
