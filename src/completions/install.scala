@@ -68,8 +68,10 @@ object TabCompletionsInstallation:
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Effectful)
           : TabCompletionsInstallation raises InstallError logs CliEvent =
-
-    tend:
+    quell:
+      case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
+    .within:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
       val command: Text = service.scriptName
 
@@ -97,15 +99,16 @@ object TabCompletions:
               p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
 
         TabCompletionsInstallation.Shells(zsh, bash, fish)
-    .remedy:
-      case PathError(_, _)    => abort(InstallError(InstallError.Reason.Environment))
-      case ExecError(_, _, _) => abort(InstallError(InstallError.Reason.Environment))
 
   def install(shell: Shell, command: Text, scriptName: Name[GeneralForbidden], dirs: List[Path])
       (using Effectful)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
-    tend:
+    quell:
+      case IoError(_)        => InstallError(InstallError.Reason.Io)
+      case OverwriteError(_) => InstallError(InstallError.Reason.Io)
+      case StreamError(_)    => InstallError(InstallError.Reason.Io)
+    .within:
       dirs.where { dir => dir.exists() && dir.as[Directory].writable() }.let: dir =>
         val path = dir / scriptName
         if path.exists()
@@ -114,11 +117,6 @@ object TabCompletions:
           script(shell, command).sysBytes.writeTo(path.make[File]())
           TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
       .or(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
-
-    .remedy:
-      case IoError(_)        => abort(InstallError(InstallError.Reason.Io))
-      case OverwriteError(_) => abort(InstallError(InstallError.Reason.Io))
-      case StreamError(_)    => abort(InstallError(InstallError.Reason.Io))
 
   // def messages(shell: Shell, global: Boolean): List[Message] =
   //   if shell == Shell.Zsh && !global
