@@ -13,7 +13,7 @@ it as a `Text` value, to the `Environment` object, like so:
 ```scala
 import gossamer.t
 import environments.jvm
-import contingency.errorHandlers.throwUnsafely
+import contingency.strategies.throwUnsafely
 
 val xdgDataDirs = Environment(t"XDG_DATA_DIRS")
 ```
@@ -147,6 +147,3 @@ val dir = Properties.db.user.cache.dir()
 where the empty parentheses are necessary to signal that the path representing
 the property name has been specified, and its value should be retrieved. The
 retrieval itself works in much the same way as for environment variables.
-
-
-
