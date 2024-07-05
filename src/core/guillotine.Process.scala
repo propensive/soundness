@@ -36,7 +36,7 @@ object Process:
 
     (process, stream) => process.stdin(stream)
 
-  given [CommandType <: Label, ResultType](using streamCut: Errant[StreamError]) => Process[CommandType, ResultType] is Appendable by Text as appendableText =
+  given [CommandType <: Label, ResultType](using streamCut: Tactic[StreamError]) => Process[CommandType, ResultType] is Appendable by Text as appendableText =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -69,16 +69,16 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def osProcess(using Errant[PidError]) = OsProcess(pid)
+  def osProcess(using Tactic[PidError]) = OsProcess(pid)
 
   def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
     try
-      import errorHandlers.throwUnsafely
+      import strategies.throwUnsafely
       osProcess.startTime[InstantType]
     catch case _: PidError => Unset
 
   def cpuUsage[InstantType: SpecificDuration]: Optional[InstantType] =
     try
-      import errorHandlers.throwUnsafely
+      import strategies.throwUnsafely
       osProcess.cpuUsage[InstantType]
     catch case _: PidError => Unset

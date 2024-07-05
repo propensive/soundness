@@ -27,7 +27,7 @@ import ambience.*, systemProperties.virtualMachine
 import spectacular.*
 import probably.*
 import eucalyptus.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 
 import unsafeExceptions.canThrowAny
 
