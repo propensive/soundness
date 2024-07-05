@@ -23,7 +23,7 @@ import rudiments.*
 import spectacular.*
 import parasite.*, threadModels.platform
 import superlunary.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import inimitable.*
 import nettlesome.*
 import jacinta.*, jsonPrinters.minimal
@@ -44,7 +44,7 @@ object Tests extends Suite(t"Coaxial tests"):
               val promise: Promise[Text] = Promise()
               val server = ${port.put}.listen[Text]: in =>
                 UdpResponse.Reply(jvmInstanceId.show.sysBytes).also(promise.fulfill(in.data.utf8))
-              
+
               promise.await()
         })
 
@@ -52,11 +52,11 @@ object Tests extends Suite(t"Coaxial tests"):
           udpServer(udp"3962")
         .assert()
 
-      
+
       test(t"Send UDP messages until port opens"):
         Thread.sleep(5000)
         println("transmitting")
         udp"3962".transmit(jvmInstanceId.show)
       .assert()
-      
+
       async.await()
