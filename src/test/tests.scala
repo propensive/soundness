@@ -21,14 +21,14 @@ import probably.*
 import rudiments.*
 import contingency.*
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 object Tests extends Suite(t"Gesticulate tests"):
   def run(): Unit =
     test(t"parse media type's type"):
       Media.parse(t"application/json").group
     .assert(_ == Media.Group.Application)
-    
+
     test(t"parse media type's subtype"):
       Media.parse(t"application/json").subtype
     .assert(_ == Media.Subtype.Standard(t"json"))
@@ -45,7 +45,7 @@ object Tests extends Suite(t"Gesticulate tests"):
       Media.parse(t"application/json; charset=UTF-8")
     .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
-    
+
     test(t"invalid media type"):
       capture(Media.parse(t"applicationjson"))
     .assert(_ == MediaTypeError(t"applicationjson",
