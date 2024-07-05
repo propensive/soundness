@@ -19,7 +19,7 @@ package metamorphose
 import probably.*
 import rudiments.*
 import gossamer.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import language.experimental.genericNumberLiterals
 
 object Tests extends Suite(t"Metamorphose tests"):
