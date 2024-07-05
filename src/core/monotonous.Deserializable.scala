@@ -54,7 +54,7 @@ object Deserializable:
       override protected val atomicity = 8.lcm(base)/base
 
       def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
-        println(s"deserialize(${previous.length}, ${text.length}, $index0, $last")
+        println(s"deserialize(previous.length=${previous.length}, text.length=${text.length}, index0=$index0, last=$last)")
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
         val length =
@@ -76,14 +76,15 @@ object Deserializable:
 
               if bits + base >= 8 then
                 array(count) = ((next >>> (bits + base - 8)) & 0xff).toByte
+                println(t"  array($count) = ${array(count)}")
                 recur(next, bits + base - 8, count + 1, index0 + 1)
               else recur(next, bits + base, count, index0 + 1)
 
           recur(index0 = index0)
 
-  given (using Alphabet[Base64], Errant[SerializationError]) => Deserializable in Base64 = base(6)
-  given (using Alphabet[Base32], Errant[SerializationError]) => Deserializable in Base32 = base(5)
-  given (using Alphabet[Hex], Errant[SerializationError]) => Deserializable in Hex = base(4)
-  given (using Alphabet[Octal], Errant[SerializationError]) => Deserializable in Octal = base(3)
-  given (using Alphabet[Quaternary], Errant[SerializationError]) => Deserializable in Quaternary = base(2)
-  given (using Alphabet[Binary], Errant[SerializationError]) => Deserializable in Binary = base(1)
+  given (using Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
+  given (using Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)
+  given (using Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)
+  given (using Alphabet[Octal], Tactic[SerializationError]) => Deserializable in Octal = base(3)
+  given (using Alphabet[Quaternary], Tactic[SerializationError]) => Deserializable in Quaternary = base(2)
+  given (using Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)

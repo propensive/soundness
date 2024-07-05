@@ -26,6 +26,6 @@ case class Alphabet[EncodingType <: Serialization]
   def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises SerializationError =
-    inverse.getOrElse(char, raise(SerializationError(position, char))(0))
+    inverse.getOrElse(char, raise(SerializationError(position, char), 0))
 
   lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to(Map)
