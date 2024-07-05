@@ -27,10 +27,10 @@ trait XmlDecoder[ValueType]:
   def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
-  given text(using Errant[XmlReadError]): XmlDecoder[Text] = list =>
+  given text(using Tactic[XmlReadError]): XmlDecoder[Text] = list =>
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
-    if elements.length == 0 then raise(XmlReadError())("".tt) else elements.head
-  
+    if elements.length == 0 then raise(XmlReadError(), "".tt) else elements.head
+
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
     (value: @unchecked) match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decodeAs[ValueType]
@@ -44,9 +44,9 @@ object XmlDecoder extends Derivation[XmlDecoder]:
           elements.collect { case element: XmlAst.Element => element }
             .find(_.name.name == label)
             .get
-          
+
         context.read(List(element))
-  
+
   inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
     (list.head: @unchecked) match
       case XmlAst.Element(_, children, attributes, _) =>

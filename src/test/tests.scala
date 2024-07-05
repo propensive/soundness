@@ -25,7 +25,7 @@ import contingency.*
 import printers.compact
 
 import unsafeExceptions.canThrowAny
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
@@ -44,7 +44,7 @@ object Tests extends Suite(t"Xylophone tests"):
     test(t"extract integer"):
       Xml.parse(t"""<message>1</message>""").as[Int]
     .assert(_ == 1)
-    
+
     test(t"extract string"):
       Xml.parse(t"""<message>Hello world</message>""").as[Text]
     .assert(_ == t"Hello world")
@@ -53,7 +53,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
       xml.info.as[Text]
     .assert(_ == t"Hello world")
-    
+
     test(t"extract string from node"):
       val xml = Xml.parse(t"""<message><info>Hello world</info></message>""")
       xml.info().as[Text]
@@ -63,7 +63,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val person = Worker(t"Jack", 50)
       person.xml.string
     .assert(_ == t"<Worker><name>Jack</name><age>50</age></Worker>")
-    
+
     test(t"serialize nested case class"):
       val person = Worker(t"Jack", 50)
       val company = Firm(t"Acme Inc", person)
@@ -74,13 +74,13 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(t"""<events><eventId>1</eventId><eventId>2</eventId></events>""")
       xml.eventId(1).as[Int]
     .assert(_ == 2)
-    
+
     test(t"extract to simple case class"):
       val string = t"<jack><name>Jack</name><age>50</age></jack>"
       val xml = Xml.parse(string)
       xml.as[Worker]
     .assert(_ == Worker(t"Jack", 50))
-    
+
     test(t"extract to nested case class"):
       val string = t"<Firm><name>Acme Inc</name><ceo><name>Jack</name><age>50</age></ceo></Firm>"
       val xml = Xml.parse(string)
@@ -91,7 +91,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val book = Book(t"Lord of the Flies", t"9780399529207")
       book.xml.string
     .assert(_ == t"<Book isbn=\"9780399529207\"><title>Lord of the Flies</title></Book>")
-    
+
     test(t"serialize nested type with attribute"):
       val bibliography = Bibliography(t"William Golding", Book(t"Lord of the Flies", t"9780399529207"))
       bibliography.xml.string
@@ -101,7 +101,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val color: ColorVal = ColorVal.Rgb(5, 10, 15)
       color.xml.string
     .assert(_ == t"""<ColorVal type="Rgb"><red>5</red><green>10</green><blue>15</blue></ColorVal>""")
-    
+
     test(t"serialize nested coproduct"):
       val pixel: Pixel = Pixel(100, 200, ColorVal.Cmyk(1, 2, 3, 4))
       pixel.xml.string
@@ -112,7 +112,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(string)
       xml.as[ColorVal]
     .assert(_ == ColorVal.Cmyk(1, 2, 3, 4))
-    
+
     test(t"read nested coproduct"):
       val string = t"""<Pixel><x>100</x><y>200</y><color type="Cmyk"><cyan>1</cyan><magenta>2</magenta><yellow>3</yellow><key>4</key></color></Pixel>"""
       val xml = Xml.parse(string)
@@ -124,7 +124,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(string)
       xml.content.attribute(t"key").as[Text]
     .assert(_ == t"value")
-    
+
     test(t"read attribute value from node"):
       val string = t"""<node><content key="value"/></node>"""
       val xml = Xml.parse(string)
@@ -150,7 +150,7 @@ object Tests extends Suite(t"Xylophone tests"):
       val xs = List(t"one", t"two", t"three")
       Xml.print(xs.xml)
     .assert(_ == t"<Seq><Text>one</Text><Text>two</Text><Text>three</Text></Seq>")
-    
+
     test(t"serialize list of complex objects"):
       val book1 = Book(t"Lord of the Flies", t"9780399529207")
       val book2 = Book(t"Brave New World", t"9781907704345")
@@ -184,21 +184,21 @@ object Tests extends Suite(t"Xylophone tests"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company().staff().cto().name().as[Text])
     .assert(_ == XmlAccessError(0, List(t"company", 0, t"staff", 0, t"cto")))
-    
+
     test(t"access error; taking all children"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company.staff.cto.name().as[Text])
     .assert(_ == XmlAccessError(0, List(t"company", t"staff", t"cto", t"name")))
-    
+
     test(t"access non-zero node"):
       val xml = Xml.parse(t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
       capture(xml.company(1).staff().cto.name().as[Text])
     .assert(_ == XmlAccessError(1, List(t"company")))
-    
-    // test(t"simple literal content is as expected"): 
+
+    // test(t"simple literal content is as expected"):
     //   x"""<root attribute=""/>""".show
     // .assert(_ == t"""<root attribute=""/>""")
 
-    // test(t"literal content is as expected"): 
+    // test(t"literal content is as expected"):
     //   x"<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>"
     // .assert(_ == t"""<root><company><staff><ceo><name>Xyz</name></ceo></staff></company></root>""")
