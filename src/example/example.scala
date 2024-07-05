@@ -19,7 +19,7 @@ package escritoire
 import gossamer.*
 import rudiments.*
 import spectacular.*
-import contingency.*, errorHandlers.throwUnsafely
+import contingency.*, strategies.throwUnsafely
 import turbulence.*, stdioSources.virtualMachine.textOnly
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform

@@ -36,8 +36,8 @@ trait Attenuation:
   def apply(minimumWidth: Int, availableWidth: Int): Unit
 
 package columnAttenuation:
-  given fail(using Errant[TableError]): Attenuation =
-    (minimum, available) => raise(TableError(minimum, available))(())
+  given fail(using Tactic[TableError]): Attenuation =
+    (minimum, available) => raise(TableError(minimum, available), ())
 
   given ignore: Attenuation = (minimum, available) => ()
 
