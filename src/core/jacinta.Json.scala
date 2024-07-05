@@ -48,7 +48,7 @@ trait Json2:
       def encode(value: Optional[ValueType]): Json =
         value.let(ValueType.encode(_)).or(Json.ast(JsonAst(0L)))
 
-  given [ValueType: Decodable in Json](using Errant[JsonError])
+  given [ValueType: Decodable in Json](using Tactic[JsonError])
       => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)
 
@@ -58,7 +58,7 @@ object Json extends Json2, Dynamic:
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
       (json, omit) =>
-        summonInline[Errant[JsonError]].give:
+        summonInline[Tactic[JsonError]].give:
           val keyValues = json.root.obj
           val values = keyValues(0).zip(keyValues(1)).to(Map)
 
@@ -69,8 +69,8 @@ object Json extends Json2, Dynamic:
               context.decode(new Json(value), omit)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json = (json, omit) =>
-      summonInline[Errant[JsonError]].give:
-        summonInline[Errant[VariantError]].give:
+      summonInline[Tactic[JsonError]].give:
+        summonInline[Tactic[VariantError]].give:
           val values = json.root.obj
 
           values(0).indexOf("_type") match
@@ -94,7 +94,7 @@ object Json extends Json2, Dynamic:
 
     inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
       variant(value): [VariantType <: DerivationType] =>
-        value => summonInline[Errant[JsonError]].give:
+        value => summonInline[Tactic[JsonError]].give:
           Json.ast:
             context.encode(value).root match
               case (labels: IArray[String], values: IArray[JsonAst]) =>
@@ -107,17 +107,17 @@ object Json extends Json2, Dynamic:
     EncodableDerivation.derived
 
   given Json is Decodable in Json as boolean = (value, omit) => value
-  given (using Errant[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
-  given (using Errant[JsonError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
-  given (using Errant[JsonError]) => Byte is Decodable in Json as byte = (value, omit) => value.root.long.toByte
-  given (using Errant[JsonError]) => Short is Decodable in Json as short = (value, omit) => value.root.long.toShort
-  given (using Errant[JsonError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
-  given (using Errant[JsonError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
-  given (using Errant[JsonError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
-  given (using Errant[JsonError]) => Text is Decodable in Json as text = (value, omit) => value.root.string
-  given (using Errant[JsonError]) => String is Decodable in Json as string = (value, omit) => value.root.string.s
+  given (using Tactic[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
+  given (using Tactic[JsonError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
+  given (using Tactic[JsonError]) => Byte is Decodable in Json as byte = (value, omit) => value.root.long.toByte
+  given (using Tactic[JsonError]) => Short is Decodable in Json as short = (value, omit) => value.root.long.toShort
+  given (using Tactic[JsonError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
+  given (using Tactic[JsonError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
+  given (using Tactic[JsonError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
+  given (using Tactic[JsonError]) => Text is Decodable in Json as text = (value, omit) => value.root.string
+  given (using Tactic[JsonError]) => String is Decodable in Json as string = (value, omit) => value.root.string.s
 
-  given [ValueType: Decodable in Json](using Errant[JsonError])
+  given [ValueType: Decodable in Json](using Tactic[JsonError])
       => Option[ValueType] is Decodable in Json as option = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
@@ -148,7 +148,7 @@ object Json extends Json2, Dynamic:
 
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
       (using factory:    Factory[ElementType, CollectionType[ElementType]],
-             jsonAccess: Errant[JsonError])
+             jsonAccess: Tactic[JsonError])
       => (CollectionType[ElementType] is Decodable in Json) as array =
     (value, omit) =>
       val builder = factory.newBuilder
@@ -157,7 +157,7 @@ object Json extends Json2, Dynamic:
 
       builder.result()
 
-  given [ElementType: Decodable in Json](using Errant[JsonError])
+  given [ElementType: Decodable in Json](using Tactic[JsonError])
       => (Map[String, ElementType] is Decodable in Json) as map =
 
     (value, omit) =>
@@ -179,13 +179,13 @@ object Json extends Json2, Dynamic:
     def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
     def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given (using Errant[JsonParseError]) => Decoder[Json] =
+  given (using Tactic[JsonParseError]) => Decoder[Json] =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given (using Errant[JsonParseError]) => ((Json is GenericHttpReader)) =
+  given (using Tactic[JsonParseError]) => ((Json is GenericHttpReader)) =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given [SourceType: Readable by Bytes](using Errant[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
+  given [SourceType: Readable by Bytes](using Tactic[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
     Json.parse(_)
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
@@ -206,7 +206,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
-      case -1    => raise(JsonError(Reason.Label(field)))(this)
+      case -1    => raise(JsonError(Reason.Label(field)), this)
       case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =

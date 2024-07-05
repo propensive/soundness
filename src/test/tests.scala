@@ -26,7 +26,7 @@ import vacuous.*
 import spectacular.*
 import hieroglyph.*, charEncoders.utf8
 
-import errorHandlers.throwUnsafely
+import strategies.throwUnsafely
 
 import jsonPrinters.minimal
 
