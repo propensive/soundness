@@ -16,6 +16,11 @@
 
 package larceny
 
-case class CompileError(ordinal: Int, message: String, code: String, start: Int, offset: Int):
-  def id: CompileErrorId = CompileErrorId.fromOrdinal(ordinal + 1)
+object CompileError:
+  def apply(ordinal: Int, message: String, code: String, start: Int, offset: Int): CompileError =
+    new CompileError(CompileErrorId.fromOrdinal(ordinal + 1), message, code, start, offset)
+
+case class CompileError
+    (id: CompileErrorId, message: String, code: String, start: Int, offset: Int):
+
   def point: Int = start + offset

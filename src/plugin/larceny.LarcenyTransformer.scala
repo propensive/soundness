@@ -73,7 +73,7 @@ class LarcenyTransformer() extends PluginPhase:
             Apply(
               Select(Select(Ident(nme.ROOTPKG), "larceny".toTermName), "CompileError".toTermName),
               List(
-                Literal(Constant(error.ordinal)),
+                Literal(Constant(error.id.ordinal)),
                 Literal(Constant(error.message)),
                 Literal(Constant(error.code)),
                 Literal(Constant(error.start)),
