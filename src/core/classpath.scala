@@ -151,6 +151,8 @@ object ClasspathRef:
 case class ClasspathRef(descent: List[Name[ClasspathRef.Forbidden]]):
   def text: Text = descent.reverse.map(_.render).join(t"/")
   def apply()(using classloader: Classloader): Resource = Resource(classloader, this)
+  def exists()(using classloader: Classloader): Boolean =
+    classloader.java.getResource(text.s) != null
 
 object Resource:
   given (using Tactic[ClasspathError]) => Resource is Readable by Bytes as readableBytes =
