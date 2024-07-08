@@ -43,184 +43,305 @@ All Contingency terms and types are defined in the `contingency` package:
 ```scala
 import contingency.*
 ```
+and are exported to `soundness`. So alternatively,
+```
+import soundness.*
+```
 
-_Contingency_ provides a number of different ways to work with errors in Scala,
-for libraries which opt in to its advanced error-handling capabilities.
+_Contingency_ provides a number of different strategies and tactics for
+handling errors in Scala, for libraries which opt into its advanced
+capabilities.
 
-Contingency builds upon Scala 3's _safer exceptions_ with its new
-`boundary`/`break` control flow syntax to abstract over exception handling.
+Contingency's approach builds upon the new `boundary`/`break` infrastructure in
+Scala 3 to provide comprehensive errors-handling functionality which is:
+ - composable: write in a direct-style, and compose expressions seamlessly
+ - typesafe: error handling is statically checked
+ - performant: avoid costly construction of stack traces
+ - versatile: choose different tactics for different circumstances, or global
+   strategies
 
-We will look at how this works at the call site first, and then from the
-implementor's perspective.
+## Examples
 
-### Partial methods
+Here is a quick tour of how error handling in Scala can be versatile,
+composable, typesafe and performant with Contingency.
+
+Let's start by declaring a partial method with a `raises` clause in its return
+type, and abort under certain conditions:
+```scala
+def convert(message: Text): Bytes raises AsciiError =
+  if message.exists(_.toInt > 127) then abort(AsciiError())
+  message.bytes
+```
+
+We cannot call that method unless its `AsciiError` is handled in some way. This
+code will _not_ compile:
+```scala
+val data = convert(t"Hello world")
+```
+
+One solution is to import a _strategy_ to handle any possible errors by
+throwing them. This works well for code that is still at the "prototype" stage
+of development:
+```scala
+import strategies.throwUnsafely
+val data = convert(t"Hello world")
+```
+
+But we can get the same effect more _locally_ by wrapping the invocation in
+`unsafely`,
+```scala
+val data: Bytes = unsafely(convert(t"Hello world"))
+```
+or `safely`,
+```scala
+val data: Optional[Bytes] = safely(convert(t"Hello world"))
+```
+which will return the optional `Unset` value in the event of an error—the
+error object itself will be discarded, though.
+
+In some circumstances, we might choose to handle an `AsciiError` (in
+particular) by declaring it "fatal", shutting down the entire JVM upon the
+first occurrence:
+```scala
+given AsciiError is Fatal = _ => ExitStatus.Fail(1)
+val data: Bytes = convert(t"Hello world")
+```
+
+Now imagine we want to combine three methods, `Json.parse`, `Json#as` and
+`convert`, with signatures,
+```scala
+object Json:
+  def parse(text: Text): Json raises ParseError
+
+class Json():
+  def as[ResultType]: ResultType raises AccessError
+
+// implementation details not shown
+```
+in a single method, `processEvent`. We would be required to handle
+`ParseError`s, `AccessError`s and `AsciiError`s. We could write,
+```scala
+def processEvent(event: Text)
+        : Bytes raises ParseError raises AccessError raises AsciiError =
+  convert(Json.parse(event).as[Event].message)
+```
+but multiple `raises` clauses are cumbersome: not only does the method need to
+declare each error type, any method which invokes it must also handle _all_ of
+these errors.
+
+Instead, we can _quell_ them into an `EventError`:
+
+```scala
+def eventData(event: Text): Bytes raises EventError =
+  quell:
+    case ParseError()  => EventError()
+    case AccessError() => EventError()
+    case AsciiError()  => EventError()
+  .within:
+    convert(Json.parse(event).as[Event].message)
+```
+
+This has the effect that any exception matching one of the `quell` cases will
+be transformed into the right-hand side of the case—in this case, a new
+`EventError`.
+
+This may be more typical for production code. But note how the main expression,
+`sendAscii(Json.parse(event).as[Event].message)`, remains the same as it would
+if we had used the `throwUnsafely` strategy. This is the beauty of direct-style
+Scala: the "happy path" can be written with the same elegance, concision and
+aesthetics, even after enhancing the safety of the code.
+
+Using alternative definitions of `ParseError`, `AccessError`, `AsciiError` and
+`EventError`s as immutable datatypes _with parameters_, we could channel details
+from one type to the other, like so:
+
+```scala
+def processEvent(event: Text): Unit raises EventError =
+  quell:
+    case ParseError(line) => EventError(m"invalid JSON at line $line")
+    case AccessError(key) => EventError(m"key $key was missing")
+    case AsciiError()     => EventError(m"the message contained invalid ASCII")
+  .within:
+    send(convert(Json.parse(event).as[Event].message))
+```
+
+In this example, every error on the right-hand side has the same type, and while
+that is a common use-case, it's not a requirement. The only constraint is that
+the type of each right-hand side case is (independent of the other cases) an
+`Exception` type that has a handler. In this example, the `raises EventError`
+in the return type ensures that handler.
+
+Sometimes, however, in the event of certain errors, we want to _return_ a
+value—some sort of "fallback" value—instead of continuing along an
+error-recovery path. For this, we can use `quash` instead of `quell`, and the
+right-hand side of each case will represent the return value:
+```scala
+def processEvent(event: Text): Unit raises EventError = send:
+  quash:
+    case ParseError(_)  => Bytes(0, 1)
+    case AccessError(_) => Bytes(0, 2)
+    case AsciiError(_)  => Bytes(0, 3)
+  .within:
+    convert(Json.parse(event).as[Event].message)
+```
+
+Here, we _quash_ the subexpression
+`convert(Json.parse(event).as[Event].message)` and produce a two-byte message
+(such as `Bytes(0, 1)`, which could be a representation of the failure). Either
+this, or the successful evaluation of the subexpression will be passed to the
+`send` method.
+
+## Core concepts
 
 A _partial method_ is a method which may not produce a result for certain
 inputs, i.e. it is not _total_. Partial methods are already familiar in Scala
-(and Java), but the way they handle the absence of a result is invariably to
-throw an exception, determined directly or indirectly by the code in the
-method's implementation. The method's signature _may_ also specify the types of
-exception it can throw, if it has been written with _safer exceptions_ in mind.
+(and Java), but the way they handle the _absence_ of a result is to
+throw a traditional exception, determined directly or indirectly by the code in
+the method's implementation.
 
-For Contingency's purposes, a partial method is one which declares a `raises`
-clause in its type, such as,
+Note that Functional Programming requires all functions to be _total_. (If they
+are not, then they're not even considered functions.) Partiality can be
+encoded in this strict definition of a function in a variety of ways, but
+invariably they return, in their _total_ encoding, values representing the
+absence of a return value in their unencoded _partial_ form.
+
+Without exceptions, if it's not possible to return a successful value from a
+method, we need to "abort" execution somehow, or return a "non-value". Here's a
+trivial example of a method where that's necessary,
 ```scala
-import fulminate.{msg, Error}
-import rudiments.Bytes
+def second[ElementType](list: List[ElementType]): ElementType =
+  if list.length >= 2 then list(1) else ???
+```
+where `???` indicates the code we are unable to implement.
 
-case class ReadError() extends Error(msg"the data could not be read")
+Contingency provides the `abort` method for indicating a failure, which can be
+thought of as similar to the `throw` keyword: it "escapes" from the current
+method with an error, instead of returning a value.
 
-def readFromDisk(): Bytes raises ReadError =
-  Bytes() // Needs implementation
+In the implementation above, we can replace `???` with `abort(TooShort(2))`,
+assuming a `TooShort` exception type such as:
+```scala
+case class TooShort(minimum: Int)
+extends Exception(s"A minimum length of $minimum is required")
 ```
 
-The `raises ReadError` clause is equivalent to taking an additional contextual
-type parameter of type `Raises[ReadError]`, like so,
+Note that the error type must be a subtype of `Exception` because some
+strategies may need to throw it.
+
+However, we can _only_ call `abort` with an error if we have a `Tactic` in
+scope for its error type. In this case, we _must_ have a contextual
+`Tactic[TooShort]` available.
+
+One way to provide it is to change the method signature to require it, like so,
 ```scala
-def readFromDisk2()(using Raises[ReadError]): Bytes =
-  Bytes() // Needs implementation
+def second[ElementType](list: List[ElementType])
+    (using Tactic[TooShort])
+        : ElementType =
+  if list.length >= 2 then list(1)
+  else abort(TooShortError(2))
 ```
-and this latter form is more typical for methods which may raise more than one
-different type of error.
-
-### Raising
-
-Contingency introduces the terminology of _raising_ as a generalization of
-_throwing_ which is dependent on callsite context. If the callsite context
-calls for throwing, then _raising an error_ will mean _throwing an error_. But
-there are alternative interpretations of raising which don't involve throwing.
-
-Raising is modeled as a _capability_, represented by a `Raises` value that is
-implicitly passed to the `readFromDisk` method. So the presence of a contextual
-`Raises[ReadError]` instance indicates the _capability_ of raising a
-`ReadError`.
-
-Code which calls a partial method without contextual `Raises` instances of the
-appropriate types to satisfy the `using` parameters of the method will be a
-type error. Thus, it is impossible to call a partial method which needs the
-capability to raise certain error types unless those capabilities exist in the
-callsite context.
-
-This principal is critical for robust and safe error handling, since it
-leverages the type system to oblige the programmer to handle the exceptional
-cases of partial methods.
-
-### Simple Error Handling
-
-If we just don't care about error handling, for example when building a
-prototype, we can effectively `turn off` error handling by providing a global
-contextual value which "handles" all errors by throwing them as exceptions,
+which may be more easily expressed using the infix `raises` type:
 ```scala
-import contingency.errorHandling.throwUnsafely
-```
-which is equivalent to Scala's default behavior: errors will be unchecked, and
-will be thrown like traditional exceptions, bubbling through the stack until
-caught in a `catch` block, or reaching the bottom of the stack.
-
-A similar, but more fine-grained use case applies if we know that (or at least
-make an informed judgement that) a call to a partial method will definitely
-return a value, and we decide that there is no point in handling an error case
-that will not happen in practice.
-
-Such an expression or block of statements can be wrapped in a call to
-`unsafely`, which will provide a general `Raises` instance necessary for
-compilation, like `errorHandling.throwUnsafely`, but expected to never be used,
-and constrained to just that expression or those statements.
-
-```scala
-@main
-def run(): Unit = unsafely:
-  val bytes = readFromDisk()
-  Out.println(bytes.length)
+def second[ElementType](list: List[ElementType])
+        : ElementType raises TooShortError =
+  if list.length >= 2 then list(1)
+  else abort(TooShortError(2))
 ```
 
-Similar to `unsafely` is `safely`, which can also wrap expressions or
-statements. But unlike `unsafely`, which can throw exceptions, `safely` will
-return an `Unset` value if an error is raised. This effectively turns any
-expression which would return some `ReturnType` into an expression which
-returns `Optional[ReturnType]`.
+The infix `raises` type is just a syntactic alias. The type
+`ElementType raises TooShortError` is equivalent to the context function type,
+`Tactic[TooShortError] ?=> ElementType`, which is equivalent to specifying the
+`using Tactic[TooShortError]` parameter.
 
-One happy benefit of this is that the relatively expensive performance cost of
-constructing and throwing an exception, only to discard it for an `Unset`
-value, is saved. The exception instance is never constructed because Contingency
-knows from the callsite context (i.e. inside the `safely` wrapper) that it can
-just return `Unset` instead.
+In practice, though, we can usually just append `raises ErrorType` to the
+return type. This just defers the problem, though; calling any method declared,
+`raises ErrorType`, needs an `ErrorType` in-scope at the callsite. We can
+continue adding more `raises ErrorType` declarations, but at some point it is
+necessary to _handle_ the error, which requires an instance of
+`Tactic[ErrorType]`.
 
-### Mitigation
+It is the `Tactic` instance which determines exactly how the error is handled:
+whether it is thrown, logged, aggregated, or something else. And by passing it
+in as a parameter to the method, we are delegating the handling choice back up
+to the methods that called it.
 
-It is good practice for methods which do different things to raise different
-types of error. It makes it much easier to diagnose a problem when the error's
-type gives a strong indication about what went wrong.
+In other words, we have just implemented the method for all error-handling
+strategies.
 
-It also encourages composition or sequencing of partial methods, confident that
-an error raised in the resultant expression or block will carry enough
-information to disambiguate it from other possible errors in the same code.
+### Non-terminal Errors
 
-This compositionality is helpful until we reach a method boundary where we need
-to declare every possible error that could be raised from that method call.
+In all cases, `abort` will stop execution and pass control up the stack to the
+point where the error is handled. (Safely-checked exceptions ensure that there
+must be such a place.) But sometimes, we want to _accommodate_ the possibility
+that, even though failure is inevitable, execution may continue for a while,
+with one purpose in mind: to accrue additional errors.
 
-Indeed, if we were defining a partial method called `publish` which writes to
-disk, invokes a shell command, and then sends an HTTP request, it would be
-frustrating for users of that method to have to handle `WriteError`s,
-`ShellError`s and `HttpError`s when they are interested primarily in knowing
-that _publishing_ failed, and only secondarily in the underlying cause.
+A typical use-case is validating a form containing several fields. Any one of
+the values provided for the field may yield an error, but if the form contains
+several errors, we would like to see all of them _together_; not just the first.
 
-So rather than defining it as,
+This becomes possible with certain implementations of `Tactic`, but it requires
+cooperation from the implementation. That is provided through an
+alternative to `abort`, called `raise`.
+
+When we call `abort`, it allows us to "exit" a method without returning a value.
+It is the absence of any value to return which requires this, and this is
+reflected in `abort`'s return type: `Nothing`. But `raise` _does_ return a
+value—an _ersatz_ or _substitute_ value—which can let execution continue
+(using that value) locally, while registering the error and asserting that
+an error will be produced, a little later.
+
+As execution continues, additional `raise` invocations may be encountered,
+corresponding to more errors. Each of these will be registered by the `Tactic`,
+and execution may complete all the way to return a final result for at the point
+where the errors are handled. But having registered at least one error during
+execution, that final result will be considered invalid and is discarded. And
+instead, a new error corresponding to the aggregation of each recorded error
+will be produced.
+
+So, by proceeding with execution within the bounds of error checking, it becomes
+possible to accrue several "trivial" errors before they manifest into an error
+that requires handling.
+
+But this only works under certain conditions. When we provide an ersatz value
+in place of an error, that value must be _inconsequential_. That means there
+should not be additional code which depends upon its value. We are somewhat
+protected from consequentiality by the knowledge that a single `raise`d error
+cannot affect the end result, because that value is guaranteed to be discarded.
+But this guarantee does not apply to side-effects, including additional errors
+which may be raised as a consequence of the ersatz value. Ideally, ersatz values should be innocuous and independent.
+
+### Performance
+
+One advantage of using Scala's `boundary` and `break` infrastructure instead of
+_throwing_ exceptions is that the costly construction of a stack trace can be
+avoided (optionally), and construction of an error is no more expensive than
+any other immutable datatype.
+
+### Strategies
+
+Each error must be handled by a `Tactic`, which will typically be constrained
+to a limited scope—often the `within` block of a `quash` or `quell`, or a
+`safely` or `unsafely` block. They are _tactics_ in the sense that they apply
+within a limited scope.
+
+Tactics contrast with a _strategy_, whose implied scope is wider or global. In
+terms of implementation, they are no different: instances of `Tactic`. But we
+can informally call them _strategies_ when used globally. For example, the
+`throwUnsafely` strategy which provides a universal `Tactic` instance that just
+throws any error that's raised.
+
+Other strategies might be `Fatal` instances defined in package-level scope, for
+example,
 ```scala
-def publish(): Unit raises WriteError raises ShellError raises HttpError =
-  write()
-  invoke()
-  sendRequest()
+package app
+
+given InitError is Fatal = error =>
+  Log.info(m"Error during initialization: $error")
+  ExitStatus(127)
 ```
-we would prefer to introdue a new error type, `PublishError`, containing the
-detail of the issue, like so:
-```scala
-enum PublishIssue:
-  case Disk, Shell, Internet
-
-case class PublishError(cause: PublishIssue)
-extends Error(msg"publishing failed because of $cause")
-
-def publish2(): Unit raises PublishError = ???
-```
-
-However, the calls to `write()`, `invoke()` and `sendRequest()` each raise
-different types of error, and the body of `publish2` only has the capability of
-raising `PublishError`s, by virtue of its `Unit raises PublishError` return
-type.
-
-The solution is to introduce _mitigations_.
-
-A mitigation is a given instance which transforms an error of one type into an error of a different type. In the example above, we need mitigations to transform `WriteError`s, `ShellError`s and `HttpError`s into `PublishError`s.
-
-We can write these as follows:
-```scala
-given (PublishError mitigates WriteError) = PublishError(PublishIssue.Disk).waive
-given (PublishError mitigates ShellError) = PublishError(PublishIssue.Shell).waive
-given (PublishError mitigates HttpError) = PublishError(PublishIssue.Internet).waive
-```
-
-Note that the `waive` method from
-[Rudiments](https://github.com/propensive/rudiments/) is used to transform the
-value into a lambda whose variable is discarded.
-
-Each given definition provides a new `Mitigation` instance, which will be used
-to construct a `Raises[WriteError]`, `Raises[ShellError]` or
-`Raises[HttpError]` as necessary, using a contextual `Raises[PublishError]`.
-These may be defined locally to the method, or in a more universal scope.
-
-A full example might look like this:
-```scala
-def publish3(): Unit raises PublishError =
-  given (PublishError mitigates WriteError) = PublishError(PublishIssue.Disk).waive
-  given (PublishError mitigates ShellError) = PublishError(PublishIssue.Shell).waive
-  given (PublishError mitigates HttpError) = PublishError(PublishIssue.Internet).waive
-  
-  write()
-  invoke()
-  sendRequest()
-```
-
+which specifies that any `InitError` should cause the JVM to exit, after
+logging the error.
 
 
 ## Status
