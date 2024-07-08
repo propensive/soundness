@@ -3,6 +3,7 @@
 target contingency/test
 
 repo propensive/probably
+repo propensive/larceny
 
 project contingency
   module core
@@ -10,15 +11,9 @@ project contingency
     include   rudiments/core
     sources   src/core
     main      contingency.run
-  
+
   module test
     compiler  scala
-    include   contingency/core
+    include   contingency/core probably/cli larceny/plugin
     sources   src/test
-    main      contingency.run
-  
-  module example
-    compiler  scala
-    include   kaleidoscope/core contingency/core
-    sources   src/example
-    main      contingency.run
+    main      contingency.Tests
