@@ -125,4 +125,14 @@ object Tests extends Suite(t"Contingency tests"):
         abort(BetaError())
         "success"
 
-    .assert(_ == "beta")
+    test(t"amalgamation failure"):
+      amalgamate:
+        abort(BetaError())
+        42
+    .assert(_ == BetaError())
+
+    test(t"amalgamation success"):
+      amalgamate:
+        if false then abort(BetaError())
+        42
+    .assert(_ == 42)

@@ -103,7 +103,13 @@ def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
         : Attempt[SuccessType, ErrorType] =
 
   boundary: label ?=>
-    Attempt.Success(block(using AttemptTactic[ErrorType, SuccessType](label)))
+    Attempt.Success(block(using AttemptTactic(label)))
+
+def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+    (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
+        : SuccessType | ErrorType =
+  boundary: label ?=>
+    block(using AmalgamateTactic(label))
 
 def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
     (block: AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
