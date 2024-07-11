@@ -7,7 +7,7 @@ repo propensive/inimitable
 repo propensive/digression
 repo propensive/wisteria
 
-target spectacular/test
+target spectacular/core
 
 project spectacular
   module core
