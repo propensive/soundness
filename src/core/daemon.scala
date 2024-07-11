@@ -28,7 +28,7 @@ import contingency.*
 import exoskeleton.*
 import feudalism.*
 import eucalyptus.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, encodingMitigation.strict
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, sanitization.strict
 import parasite.*
 import profanity.*
 import symbolism.*
