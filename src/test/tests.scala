@@ -48,7 +48,7 @@ object Tests extends Suite(t"Hieroglyph tests"):
     suite(t"Roundtrip decoding"):
 
       test(t"Decode Japanese from UTF-8"):
-        import badEncodingHandlers.skip
+        import sanitization.skip
         charDecoders.utf8.decode(japaneseBytes)
       .assert(_ == japanese)
 

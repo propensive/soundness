@@ -16,11 +16,11 @@
 
 package soundness
 
-export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, EncodingMitigation, CharDecodeError,
+export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, Sanitization, CharDecodeError,
     CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
 
-package encodingMitigation:
-  export hieroglyph.encodingMitigation.{strict, skip, substitute, collect}
+package sanitization:
+  export hieroglyph.sanitization.{strict, skip, substitute, collect}
 
 package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScripts, uniform}

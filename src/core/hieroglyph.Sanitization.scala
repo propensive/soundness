@@ -21,9 +21,9 @@ import language.experimental.captureChecking
 import rudiments.*
 import vacuous.*
 
-object EncodingMitigation:
-  given (using Quickstart) => EncodingMitigation as default = encodingMitigation.substitute
+object Sanitization:
+  given (using Quickstart) => Sanitization as default = sanitization.substitute
 
-trait EncodingMitigation:
-  def handle(pos: Int, encoding: Encoding): Optional[Char]
+trait Sanitization:
+  def sanitize(pos: Int, encoding: Encoding): Optional[Char]
   def complete(): Unit

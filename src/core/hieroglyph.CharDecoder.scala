@@ -30,13 +30,13 @@ import language.experimental.captureChecking
 object CharDecoder:
   given (using Quickstart) => CharDecoder as default = charDecoders.utf8
 
-  def system(using EncodingMitigation): CharDecoder =
+  def system(using Sanitization): CharDecoder =
     unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
-  def unapply(name: Text)(using EncodingMitigation): Option[CharDecoder] =
+  def unapply(name: Text)(using Sanitization): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
-class CharDecoder(val encoding: Encoding)(using handler: EncodingMitigation)
+class CharDecoder(val encoding: Encoding)(using sanitization: Sanitization)
 extends Decodable:
   type Self = Text
   type Format = Bytes
@@ -63,7 +63,7 @@ extends Decodable:
         val result = decoder.decode(in, out, todo.isEmpty).nn
 
         if !result.isMalformed then result else
-          handler.handle(total + in.position, encoding).let(out.put(_))
+          sanitization.sanitize(total + in.position, encoding).let(out.put(_))
           in.position(in.position + result.length)
           decode()
 
