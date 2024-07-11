@@ -19,29 +19,16 @@ package punctuation
 import honeycomb.*
 import rudiments.*
 import vacuous.*
-import contingency.*
-import symbolism.*
 import anticipation.*
 import gossamer.*
 
+package htmlRenderers:
+  given HtmlConverter as standard = HtmlConverter()
+  given HtmlConverter as outline = OutlineConverter
+
+
 open class HtmlConverter():
-  def outline(node: Markdown[Markdown.Ast.Node])(using Tactic[MarkdownError]): Seq[Html[Flow]] =
-    convert(Markdown.parse(headOutline(node).join(t"\n")).nodes)
-
   def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
-
-  def headOutline(node: Markdown[Markdown.Ast.Node]): Seq[Text] = node match
-    case Markdown(children*) =>
-      children.flatMap:
-        case Markdown.Ast.Block.Heading(level, children*) =>
-          val string = text(children)
-          List(t"${t" "*(2*level - 1)}- [$string](#${slug(string)})")
-
-        case Markdown.Ast.Inline.Copy(str) =>
-          List(str)
-
-        case _ =>
-          Nil
 
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
 
@@ -139,3 +126,76 @@ open class HtmlConverter():
       nonInteractive(other)
 
   def escape(str: Text): Text = str.sub(t"&", t"&amp;").sub(t"<", t"&lt;").sub(t">", t"&gt;")
+
+case class Entry(label: Text, children: List[Entry])
+
+object OutlineConverter extends HtmlConverter():
+  override def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
+    def recur(entries: List[Entry]): List[Html[Ul.Content]] = entries.map: entry =>
+      val link = A(href = t"#${slug(entry.label)}")(entry.label)
+      if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
+
+    List(Ul(recur(structure(nodes.to(List), Nil))*))
+
+  @tailrec
+  def structure(nodes: List[Markdown.Ast.Node], stack: List[List[Entry]]): List[Entry] =
+    nodes match
+      case Nil => stack match
+        case Nil =>
+          Nil
+
+        case last :: Nil =>
+          last.reverse
+
+        case head :: (Entry(label, something) :: tail) :: more =>
+          structure(Nil, (Entry(label, head.reverse) :: tail) :: more)
+
+        case head :: Nil :: tail =>
+          structure(Nil, List(Entry(t"", head.reverse)) :: tail)
+
+
+      case Markdown.Ast.Block.Heading(level, children*) :: more =>
+        val depth = stack.length
+        if level > depth
+        then
+          structure(nodes, Nil :: stack)
+        else stack match
+          case head :: next :: stack2 =>
+            if level < depth then next match
+              case Entry(label, Nil) :: tail =>
+                structure(nodes, (Entry(label, head.reverse) :: tail) :: stack2)
+
+              case _ =>
+                structure(nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
+
+            else
+              structure(more, (Entry(text(children), Nil) :: head) :: stack.tail)
+
+          case Nil :: Nil =>
+            structure(more, List(Entry(text(children), Nil)) :: Nil)
+
+      case _ :: more =>
+        structure(more, stack)
+
+
+  // def items(node: Markdown.Ast.Block): Seq[Html[Ul.Content]] = node match
+  //   case Markdown.Ast.Block.Heading(level, children*) => Seq(heading(level, children))
+  //   case _                                            => Seq()
+
+  // private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline])
+  //         : Node[NonInteractive] =
+  //   level match
+  //     case 1 => Li.level1(A(href = slug(text(children)))(children.flatMap(phrasing)))
+  //     case 2 => Li.level2(A(href = slug(text(children)))(children.flatMap(phrasing)))
+  //     case 3 => Li.level3(A(href = slug(text(children)))(children.flatMap(phrasing)))
+
+  // def phrasing(node: Markdown.Ast.Inline): Seq[Node[NonInteractive]] = node match
+  //   case Markdown.Ast.Inline.Weblink(location, content) => nonInteractive(content)
+  //   case other                                          => nonInteractive(other)
+
+  // def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[NonInteractive]] = node match
+  //   case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(nonInteractive)))
+  //   case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
+  //   case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code))
+  //   case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
+  //   case _                                            => Nil

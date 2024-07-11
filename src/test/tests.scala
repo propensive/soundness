@@ -120,7 +120,7 @@ object Tests extends Suite(t"Punctuation tests"):
 
     test(t"hard linebreak"):
       Markdown.parse(t"Line 1  \nLine 2\n")
-    .assert(_ == Markdown(Paragraph(Copy(t"Line 1"), Break(), Copy(t"Line 2"))))
+    .assert(_ == Markdown(Paragraph(Copy(t"Line 1"), LineBreak, Copy(t"Line 2"))))
 
     test(t"referenced images"):
       Markdown.parse(t"""![images reference][ref]
