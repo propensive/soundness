@@ -74,19 +74,6 @@ def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
 
   block(using ThrowTactic())
 
-def validate[ErrorType <: Exception](using tactic: Tactic[AggregateError[ErrorType]])[SuccessType]
-    (block: AggregateTactic[ErrorType, SuccessType] ?=> SuccessType)
-        : SuccessType =
-
-  val value: Either[AggregateError[ErrorType], SuccessType] =
-    boundary: label ?=>
-      val tactic = AggregateTactic(label)
-      Right(block(using tactic)).also(tactic.finish())
-
-  value match
-    case Left(error)  => abort[SuccessType, AggregateError[ErrorType]](error)
-    case Right(value) => value
-
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
     (using Tactic[ExpectationError[SuccessType]])
@@ -137,3 +124,15 @@ extension [ResultType, LambdaType[_]](inline quash: Quash[ResultType, LambdaType
   inline def within[ResultType2 >: ResultType](inline lambda: LambdaType[ResultType2])
           : ResultType2 =
     ${Contingency.quashWithin[LambdaType, ResultType2]('quash, 'lambda)}
+
+transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
+    (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+        : Any =
+  ${Contingency.accrue[AccrualType]('accrual, 'block)}
+
+extension [AccrualType <: Exception,  LambdaType[_]]
+    (inline accrue: Accrue[AccrualType, LambdaType])
+  inline def within[ResultType](inline lambda: LambdaType[ResultType])
+      (using tactic: Tactic[AccrualType])
+          : ResultType =
+    ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic)}

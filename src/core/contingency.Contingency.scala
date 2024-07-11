@@ -16,6 +16,8 @@
 
 package contingency
 
+import java.util.concurrent.atomic as juca
+
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -24,13 +26,20 @@ import fulminate.*
 import rudiments.*
 
 object Contingency:
-  private def caseDefs[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
-      (handler: Expr[PartialFunction[ErrorType, ResultType]])
+
+  def unwrap(using Quotes)(term: quotes.reflect.Term): quotes.reflect.Term =
+    import quotes.reflect.*
+    term match
+      case Inlined(_, _, ast)                                          => unwrap(ast)
+      case Block(List(DefDef(_, _, _, Some(Inlined(_, _, block)))), _) => unwrap(block)
+      case ast                                                         => ast
+
+  private def caseDefs[ErrorType <: Exception: Type](using Quotes)(handler: quotes.reflect.Term)
           : List[quotes.reflect.CaseDef] =
     import quotes.reflect.*
 
-    handler.asTerm match
-      case Inlined(None, Nil, Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _)) =>
+    unwrap(handler) match
+      case Block(List(DefDef(_, _, _, Some(Match(_, cases)))), _) =>
         cases.flatMap:
           case caseDef@CaseDef(pattern, None, rhs) => List(caseDef)
           case _                                   => Nil
@@ -38,8 +47,8 @@ object Contingency:
       case other =>
         abandon(m"unexpected AST: ${other.toString}")
 
-  private def mapping[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
-      (handler: Expr[PartialFunction[ErrorType, ResultType]])
+  private def mapping[ErrorType <: Exception: Type](using Quotes)
+      (handler: quotes.reflect.Term)
           : Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
     import quotes.reflect.*
@@ -95,53 +104,6 @@ object Contingency:
       case quotes.reflect.OrType(left, right) => unpack(left) ++ unpack(right)
       case other                              => List(other)
 
-  private def unhandledErrorTypes[ErrorType <: Exception: Type, ResultType: Type](using Quotes)
-      (handler: Expr[PartialFunction[ErrorType, ResultType]])
-          : List[quotes.reflect.Symbol] =
-
-    import quotes.reflect.*
-
-    def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
-      case Wildcard()          => true
-      case Typed(_, matchType) => patternType <:< matchType.tpe
-      case Bind(_, pattern)    => exhaustive(pattern, patternType)
-
-      case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
-        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
-
-      case Unapply(Select(target, method), _, params) =>
-        // TODO: Check that extractor is exhaustive
-        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
-
-      case other =>
-        abandon(m"bad pattern")
-
-    val requiredHandlers = unpack(TypeRepr.of[ErrorType]).map(_.typeSymbol)
-
-    def patternType(pattern: Tree): List[TypeRepr] = pattern match
-      case Typed(_, matchType)   => List(matchType.tpe)
-      case Bind(_, pattern)      => patternType(pattern)
-      case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => abandon(m"wildcard")
-
-      case Unapply(select, _, _) =>
-        if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
-        else abandon(m"Unapply ${select.symbol.declaredType.toString}")
-
-      case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
-        if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
-
-      case other =>
-        abandon(m"this pattern could not be recognized as a distinct `Error` type")
-
-    val handledTypes: List[Symbol] =
-      caseDefs(handler).flatMap:
-        case CaseDef(pattern, _, _) => patternType(pattern)
-      .map(_.typeSymbol)
-
-    (requiredHandlers.to(Set) -- handledTypes).to(List)
 
   def quell[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
       (using Quotes)
@@ -149,7 +111,7 @@ object Contingency:
 
     import quotes.reflect.*
 
-    val errors = mapping(handler)
+    val errors = mapping(handler.asTerm)
     val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
@@ -162,37 +124,32 @@ object Contingency:
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Quell[typeLambda]($handler)}
 
-  def quellWithin[ContextType[_]: Type, ResultType: Type]
-      (quell: Expr[Quell[ContextType]], lambda: Expr[ContextType[ResultType]])
-      (using Quotes)
-          : Expr[ResultType] =
+  def accrue[AccrualType <: Exception: Type]
+      (accrual: Expr[AccrualType], handler: Expr[AccrualType ?=> PartialFunction[Exception, AccrualType]])(using Quotes)
+          : Expr[Any] =
+
     import quotes.reflect.*
 
-    val tactics = quell.asTerm match
-      case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
-        val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
+    val errors = mapping(handler.asTerm)
+    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
 
-        mapping(partialFunction).values.map: errorType =>
-          (errorType.typeRef.asType: @unchecked) match
-            case '[type errorType <: Exception; errorType] =>
-              Expr.summon[Tactic[errorType]] match
-                case Some(errorTactic) =>
-                  '{  $errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])  }.asTerm
+    val typeLambda =
+      TypeLambda
+       (List("ResultType"),
+        _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+        typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
-                case None =>
-                  abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
-      case _ =>
-        abandon(m"argument to `quell` should be a partial function implemented as match cases")
-
-    val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
-    lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
+    (typeLambda.asType: @unchecked) match
+      case '[type typeLambda[_]; typeLambda] =>
+        '{Accrue[AccrualType, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
   def quash[ResultType: Type](handler: Expr[PartialFunction[Exception, ResultType]])(using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
 
-    val errors = mapping(handler)
+    val errors = mapping(handler.asTerm)
     val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
     val functionType = defn.FunctionClass(errors.size, true).typeRef
 
@@ -205,31 +162,98 @@ object Contingency:
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Quash[ResultType, typeLambda]($handler)}
 
+  def quellWithin[ContextType[_]: Type, ResultType: Type]
+        (quell: Expr[Quell[ContextType]], lambda: Expr[ContextType[ResultType]])
+        (using Quotes)
+            : Expr[ResultType] =
+      import quotes.reflect.*
+
+      val tactics = unwrap(quell.asTerm) match
+        case Apply(_, List(Inlined(_, _, matches))) =>
+          val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
+
+          mapping(partialFunction.asTerm).values.map: errorType =>
+            (errorType.typeRef.asType: @unchecked) match
+              case '[type errorType <: Exception; errorType] =>
+                Expr.summon[Tactic[errorType]] match
+                  case Some(errorTactic) =>
+                    '{  $errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])  }.asTerm
+
+                  case None =>
+                    abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
+        case _ =>
+          abandon(m"argument to `quell` should be a partial function implemented as match cases")
+
+      val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
+      lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
+
   def quashWithin[ContextType[_]: Type, ResultType: Type]
       (quash: Expr[Quash[?, ContextType]], lambda: Expr[ContextType[ResultType]])
       (using Quotes)
           : Expr[ResultType] =
-    import quotes.reflect.*
 
     type ContextResult = ContextType[ResultType]
-
-    val partialFunction = quash.asTerm match
-      case Inlined(_, _, Inlined(_, _, Inlined(_, _, Apply(_, List(Inlined(_, _, matches)))))) =>
-        matches.asExprOf[PartialFunction[Exception, ResultType]]
-
-      case _ =>
-        abandon(m"argument to `quash` should be a partial function implemented as match cases")
 
     '{
         boundary[ResultType]: label ?=>
           val tactic: Tactic[Break[ResultType]] = EscapeTactic(label)
           ${
+              import quotes.reflect.*
+              val partialFunction = unwrap(quash.asTerm) match
+                case Apply(_, List(Inlined(_, _, matches))) => matches
+
+                case _ =>
+                  abandon(m"argument to `quash` should be a partial function implemented as match cases")
+
+              val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, ResultType]]
+
               val tactics = mapping(partialFunction).map: (_, _) =>
                 '{
                     tactic.contramap: error =>
-                      Break[ResultType]($partialFunction(error))
+                      Break[ResultType]($pfExpr(error))
                 }.asTerm
 
               val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
               lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]  }
+    }
+
+  def accrueWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type]
+      (accrue: Expr[Accrue[AccrualType, ContextType]],
+       lambda: Expr[ContextType[ResultType]],
+       tactic: Expr[Tactic[AccrualType]])
+      (using Quotes)
+          : Expr[ResultType] =
+
+    type ContextResult = ContextType[ResultType]
+
+    '{
+        val ref: juca.AtomicReference[AccrualType] = juca.AtomicReference(null)
+        val result = boundary[Option[ResultType]]: label ?=>
+          ${
+              import quotes.reflect.*
+
+              val cases = unwrap(accrue.asTerm) match
+                case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
+                  mapping(unwrap(block))
+
+                case other =>
+                  abandon:
+                    m"argument to `accrue` should be a partial function implemented as match cases"
+
+              val tactics = cases.map: (from, to) =>
+                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)}.asTerm
+
+              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
+              '{Some(${lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]})}
+
+          }
+
+        result match
+          case None        => $tactic.abort:
+            ref.get() match
+              case null  => $accrue.initial
+              case error => error
+          case Some(value) => ref.get() match
+            case null        => value
+            case error       => $tactic.abort(error)
     }

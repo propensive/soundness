@@ -14,11 +14,8 @@
     and limitations under the License.
 */
 
-package soundness
+package contingency
 
-export contingency.{Tactic, Fatal, Recoverable, raise, abort, safely, unsafely, throwErrors,
-    capture, attempt, abandonment, ExpectationError, raises, Attempt, quell, quash,
-    accrue, within}
-
-package strategies:
-  export contingency.strategies.{throwUnsafely, throwSafely}
+class Accrue[AccrualType <: Exception, LambdaType[_]]
+    (val initial: AccrualType,
+     val lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])

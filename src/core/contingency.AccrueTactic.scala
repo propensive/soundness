@@ -14,11 +14,24 @@
     and limitations under the License.
 */
 
-package soundness
+package contingency
 
-export contingency.{Tactic, Fatal, Recoverable, raise, abort, safely, unsafely, throwErrors,
-    capture, attempt, abandonment, ExpectationError, raises, Attempt, quell, quash,
-    accrue, within}
+import language.experimental.pureFunctions
 
-package strategies:
-  export contingency.strategies.{throwUnsafely, throwSafely}
+import java.util.concurrent.atomic as juca
+
+import rudiments.*
+
+@capability
+class AccrueTactic
+    [ErrorType <: Exception, AccrualType, ResultType]
+    (label: boundary.Label[Option[ResultType]],
+     ref: juca.AtomicReference[AccrualType],
+     initial: AccrualType)
+    (lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+extends Tactic[ErrorType]:
+  def record(error: ErrorType): Unit = ref.getAndUpdate: accrual =>
+    lambda(using if accrual == null then initial else accrual.nn)(error)
+
+  def abort(error: ErrorType): Nothing = boundary.break(None)(using label)
+  def finish(): Unit = ()

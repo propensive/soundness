@@ -29,6 +29,14 @@ case class DeltaError() extends Error(m"Delta")
 case class EpsilonError() extends Error(m"Epsilon")
 case class ZetaError(string: String) extends Error(m"Zeta $string")
 
+case class MiscErrors(errors: List[String] = Nil)
+extends Error(m"There was at least one GammaError"):
+  infix def + (error: String): MiscErrors = MiscErrors(error :: errors)
+
+case class GammaErrors(errors: List[GammaError] = Nil)
+extends Error(m"There was at least one GammaError"):
+  infix def + (error: GammaError): GammaErrors = GammaErrors(error :: errors)
+
 object Tests extends Suite(t"Contingency tests"):
   def run(): Unit =
     test(t"an exception can't just be thrown"):
@@ -136,3 +144,61 @@ object Tests extends Suite(t"Contingency tests"):
         if false then abort(BetaError())
         42
     .assert(_ == 42)
+
+    test(t"accrual with two raises"):
+      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      capture[GammaErrors]:
+        accrue(GammaErrors()):
+          case error: GammaError => accrual + error
+        .within:
+          raise(GammaError(1))
+          raise(GammaError(2))
+          "string"
+
+    .assert(_ == GammaErrors(GammaError(2) :: GammaError(1) :: Nil))
+
+    test(t"accrual with no raises"):
+      given GammaErrors is Fatal = error => ExitStatus.Fail(1)
+
+      accrue(GammaErrors()):
+        case error: GammaError => accrual + error
+      .within:
+        "string"
+
+    .assert(_ == "string")
+
+    test(t"accrual with a raise and an abort"):
+      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      capture[GammaErrors]:
+        accrue(GammaErrors()):
+          case error: GammaError => accrual + error
+        .within:
+          raise(GammaError(1))
+          abort(GammaError(2))
+          "string"
+    .assert(_ == GammaErrors(GammaError(1) :: Nil))
+
+    test(t"accrual with just an abort"):
+      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      capture[GammaErrors]:
+        accrue(GammaErrors()):
+          case error: GammaError => accrual + error
+        .within:
+          abort(GammaError(2))
+          "string"
+    .assert(_ == GammaErrors())
+
+    test(t"accrual with multiple error types"):
+      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+
+      capture[MiscErrors]:
+        accrue(MiscErrors()):
+          case GammaError(n) => accrual + s"gamma $n"
+          case BetaError()   => accrual + "beta"
+        .within:
+          raise(GammaError(1))
+          raise(BetaError())
+          raise(GammaError(2))
+          "string"
+
+    .assert(_ == MiscErrors("gamma 2" :: "beta" :: "gamma 1" :: Nil))
