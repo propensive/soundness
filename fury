@@ -12,8 +12,8 @@ project scintillate
   module servlet
     sources  src/servlet
     include  scintillate/server
-    lib      servlet-api https://repo1.maven.org/maven2/javax/servlet/javax.servlet-api/3.0.1/javax.servlet-api-3.0.1.jar
-  
+    lib      servlet-api https://repo1.maven.org/maven2/jakarta/servlet/jakarta.servlet-api/6.0.0/jakarta.servlet-api-6.0.0.jar
+ 
   module test
     compiler  scala
     sources   src/test

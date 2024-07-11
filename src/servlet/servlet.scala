@@ -25,7 +25,7 @@ import spectacular.*
 import gossamer.*
 import telekinesis.{HttpRequest as _, HttpResponse as _, *}
 
-import javax.servlet as js, js.http as jsh
+import jakarta.servlet as js, js.http as jsh
 
 trait Servlet(handle: HttpRequest ?=> HttpResponse[?]) extends jsh.HttpServlet:
   protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
@@ -84,3 +84,5 @@ trait Servlet(handle: HttpRequest ?=> HttpResponse[?]) extends jsh.HttpServlet:
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)
+
+

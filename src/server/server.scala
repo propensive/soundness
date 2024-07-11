@@ -81,13 +81,10 @@ object Servable:
       headers.each(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
-  given [ResponseType: Servable.Simple] => NotFound[ResponseType] is Servable:
+  given [ResponseType] => NotFound[ResponseType] is Servable:
     def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
-
-      responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
-      headers.each(responder.addHeader)
-      responder.sendBody(404, ResponseType.stream(notFound.content))
+      notFound.serve(headers, responder)
 
   given [ResponseType: Servable.Simple] => ServerError[ResponseType] is Servable:
     def process
@@ -121,7 +118,10 @@ trait Servable:
   type Self
   def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder): Unit
 
-case class NotFound[ContentType: Servable](content: ContentType)
+case class NotFound[ContentType: Servable](content: ContentType):
+  def serve(headers: Map[Text, Text], responder: Responder) =
+    ContentType.process(content, 404, headers, responder)
+
 case class ServerError[ContentType: Servable](content: ContentType)
 
 object Cookie:
