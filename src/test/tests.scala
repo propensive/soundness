@@ -23,7 +23,7 @@ import gossamer.*
 import monotonous.*
 import contingency.*, strategies.throwUnsafely
 import spectacular.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, encodingMitigation.skip
+import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, sanitization.skip
 
 import alphabets.hex.upperCase
 
