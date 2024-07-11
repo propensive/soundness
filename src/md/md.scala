@@ -1,10 +1,10 @@
-package harlequin
+package punctuation
 
 import honeycomb.*
-import punctuation.*
+import harlequin.*
 import gossamer.*
 
-package htmlRendering:
+package htmlRenderers:
   given HtmlConverter as scalaSyntax:
     override def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
       case Markdown.Ast.Block.FencedCode(t"scala", meta, value) =>
