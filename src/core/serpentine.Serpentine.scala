@@ -20,6 +20,9 @@ import rudiments.*
 import spectacular.*
 import anticipation.*
 import contingency.*
+import gossamer.*
+import fulminate.*
+import kaleidoscope.*
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -47,7 +50,7 @@ object Serpentine:
     given [NameType <: Label] => Name[NameType] is Showable = _.tt
 
     inline def apply[NameType <: Label](text: Text)(using Tactic: Tactic[PathError]): Name[NameType] =
-      ${SerpentineMacro.runtimeParse[NameType]('text, 'Tactic)}
+      ${Serpentine.runtimeParse[NameType]('text, 'Tactic)}
 
     def unsafe[NameType <: Label](text: Text): Name[NameType] = text.s: Name[NameType]
 
@@ -89,7 +92,7 @@ object Serpentine:
       def descent(path: %.type): List[Name[NameType]] = Nil
 
     given [PathType <: Matchable: {Radical as radical, Showable as showable}]
-        (using hierarchy: Hierarchy[PathType, ?]) => %.type is Showable =
+        (using hierarchy: Hierarchy[PathType, ?]) => %.type is Showable as rootShowable =
 
       root => PathType.empty().show
 
@@ -111,6 +114,81 @@ object Serpentine:
             : PathType raises PathError =
 
       PathType.empty() / Name(name)
+
+  given Realm = realm"serpentine"
+
+  def parse
+      [NameType <: Label: Type](context: Expr[StringContext])(using Quotes)
+          : Expr[PExtractor[NameType]] =
+    import quotes.reflect.*
+
+    val (element: String, pos: Position) = (context: @unchecked) match
+      case '{StringContext(${Varargs(Seq(str))}*)} => (str.value.get, str.asTerm.pos)
+
+    patterns(TypeRepr.of[NameType]).each: pattern =>
+      if element.matches(pattern) then pattern match
+        case r"\.\*\\?$char(.)\.\*" =>
+          abandon(m"a path element may not contain the character $char", pos)
+
+        case r"$start([a-zA-Z0-9]*)\.\*" =>
+          abandon(m"a path element may not start with $start", pos)
+
+        case r"\.\*$end([a-zA-Z0-9]*)" =>
+          abandon(m"a path element may not end with $end", pos)
+
+        case pattern@r"[a-zA-Z0-9]*" =>
+          abandon(m"a path element may not be $pattern", pos)
+
+        case other =>
+          abandon(m"a path element may not match the pattern $other")
+
+    '{
+      new PExtractor[NameType]():
+        def apply(): Name[NameType] = ${Expr(element)}.asInstanceOf[Name[NameType]]
+        def unapply(name: Name[NameType]): Boolean = name.render.s == ${Expr(element)}
+    }
+
+  private[serpentine] def patterns
+      (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+      : List[String] =
+    import quotes.reflect.*
+
+    (repr.dealias.asMatchable: @unchecked) match
+      case OrType(left, right)                   => patterns(left) ++ patterns(right)
+      case ConstantType(StringConstant(pattern)) => List(pattern)
+
+  def runtimeParse
+      [NameType <: Label: Type]
+      (text: Expr[Text], errorHandler: Expr[Tactic[PathError]])(using Quotes)
+      : Expr[Name[NameType]] =
+    import quotes.reflect.*
+
+    val checks: List[String] = patterns(TypeRepr.of[NameType])
+
+    def recur(patterns: List[String], statements: Expr[Unit]): Expr[Unit] = patterns match
+      case pattern :: tail =>
+        import PathError.Reason.*
+
+        def reasonExpr: Expr[PathError.Reason] = pattern match
+          case r"\.\*\\?$char(.)\.\*"       => '{InvalidChar(${Expr(char.head)})}
+          case r"$prefix([a-zA-Z0-9]*)\.\*" => '{InvalidPrefix(Text(${Expr(prefix.toString)}))}
+          case r"\.\*$suffix([a-zA-Z0-9]*)" => '{InvalidSuffix(Text(${Expr(suffix.toString)}))}
+          case other                        => '{InvalidName(Text(${Expr(pattern)}))}
+
+        recur(tail, '{
+          $statements
+
+          if $text.s.matches(${Expr(pattern)})
+          then raise(PathError($text, $reasonExpr), $text.asInstanceOf[Name[NameType]])(using $errorHandler)
+        })
+
+      case _ =>
+        statements
+
+    '{
+      ${recur(checks, '{()})}
+      $text.asInstanceOf[Name[NameType]]
+    }
 
 export Serpentine.%
 export Serpentine./

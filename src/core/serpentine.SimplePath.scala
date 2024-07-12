@@ -24,10 +24,6 @@ import contingency.*
 import symbolism.*
 import gossamer.*
 
-//import language.experimental.captureChecking
-
-val Root = %
-
 object SimplePath:
   inline given decoder(using Tactic[PathError]): Decoder[SimplePath] = new Decoder[SimplePath]:
     def decode(text: Text): SimplePath = Navigable.decode[SimplePath](text)
@@ -60,26 +56,3 @@ object SimplePath:
 
 case class SimplePath(descent: List[Name[".*\\/.*"]])
 extends PathEquality[SimplePath](using SimplePath.navigable)
-
-object SimpleLink:
-  inline given decoder(using Tactic[PathError]): Decoder[SimpleLink] =
-    Followable.decoder[SimpleLink]
-
-  given SimpleLink is Showable = _.render
-
-  inline def parse(text: Text)(using path: Tactic[PathError]): SimpleLink/*^{path}*/ =
-    text.decodeAs[SimpleLink]
-
-  given pathCreator: PathCreator[SimpleLink, ".*\\/.*", Int] = SimpleLink(_, _)
-
-  given followable: Followable[".*\\/.*", "..", "."] with
-    type Self = SimpleLink
-    def separator(link: SimpleLink): Text = t"/"
-    val separators: Set[Char] = Set('/')
-    def ascent(path: SimpleLink): Int = path.ascent
-    def descent(path: SimpleLink): List[Name[".*\\/.*"]] = path.descent
-
-case class SimpleLink(ascent: Int, descent: List[Name[".*\\/.*"]])
-
-package hierarchies:
-  erased given simple: Hierarchy[SimplePath, SimpleLink] = ###
