@@ -16,7 +16,11 @@
 
 package escapade
 
+import contextual.*
+
 import language.experimental.pureFunctions
+
+type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
 object Stylize:
   def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)

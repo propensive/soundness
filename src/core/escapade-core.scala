@@ -16,8 +16,6 @@
 
 package escapade
 
-import contextual.*
-
 import language.experimental.pureFunctions
 
 export Escapade.CharSpan
@@ -28,8 +26,6 @@ object Underline
 object Strike
 object Reverse
 object Conceal
-
-type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
 
 extension (inline ctx: StringContext)
   transparent inline def e(inline parts: Any*): Teletype =
