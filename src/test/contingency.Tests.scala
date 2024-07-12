@@ -176,7 +176,7 @@ object Tests extends Suite(t"Contingency tests"):
           raise(GammaError(1))
           abort(GammaError(2))
           "string"
-    .assert(_ == GammaErrors(GammaError(1) :: Nil))
+    .assert(_ == GammaErrors(List(GammaError(2), GammaError(1))))
 
     test(t"accrual with just an abort"):
       given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
@@ -186,7 +186,7 @@ object Tests extends Suite(t"Contingency tests"):
         .within:
           abort(GammaError(2))
           "string"
-    .assert(_ == GammaErrors())
+    .assert(_ == GammaErrors(GammaError(2) :: Nil))
 
     test(t"accrual with multiple error types"):
       given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)

@@ -33,5 +33,8 @@ extends Tactic[ErrorType]:
   def record(error: ErrorType): Unit = ref.getAndUpdate: accrual =>
     lambda(using if accrual == null then initial else accrual.nn)(error)
 
-  def abort(error: ErrorType): Nothing = boundary.break(None)(using label)
+  def abort(error: ErrorType): Nothing =
+    record(error)
+    boundary.break(None)(using label)
+
   def finish(): Unit = ()

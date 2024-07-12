@@ -224,29 +224,26 @@ object Contingency:
       (using Quotes)
           : Expr[ResultType] =
 
-    type ContextResult = ContextType[ResultType]
-
-    '{
-        val ref: juca.AtomicReference[AccrualType] = juca.AtomicReference(null)
+    '{  val ref: juca.AtomicReference[AccrualType] = juca.AtomicReference(null)
         val result = boundary[Option[ResultType]]: label ?=>
-          ${
-              import quotes.reflect.*
+          ${  import quotes.reflect.*
 
               val cases = unwrap(accrue.asTerm) match
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other =>
-                  abandon:
-                    m"argument to `accrue` should be a partial function implemented as match cases"
+                case other => abandon:
+                  m"argument to `accrue` should be a partial function implemented as match cases"
 
-              val tactics = cases.map: (from, to) =>
+              val tactics = cases.map: (_, _) =>
                 '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)}.asTerm
 
-              val method = TypeRepr.of[ContextResult].typeSymbol.declaredMethod("apply").head
-              '{Some(${lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]})}
+              val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
+              val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+              val term = lambda.asTerm.select(method).appliedToArgs(tactics.to(List))
+              val expr = term.asExprOf[ResultType]
 
-          }
+              '{Some($expr)}  }
 
         result match
           case None        => $tactic.abort:
