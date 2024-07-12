@@ -25,7 +25,7 @@ import anticipation.*
 import capricious.*
 import contingency.*
 import hypotenuse.*
-import parasite.*, asyncOptions.waitForOrphans
+import parasite.*, orphanDisposal.await
 import rudiments.*
 import symbolism.*
 import vacuous.*

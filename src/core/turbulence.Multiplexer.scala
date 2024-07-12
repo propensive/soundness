@@ -21,7 +21,7 @@ import language.experimental.pureFunctions
 import java.util.concurrent as juc
 
 import anticipation.*
-import parasite.*, asyncOptions.waitForOrphans
+import parasite.*, orphanDisposal.await
 import rudiments.*
 
 object Multiplexer:
