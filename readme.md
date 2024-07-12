@@ -99,13 +99,23 @@ val data: Optional[Bytes] = safely(convert(t"Hello world"))
 which will return the optional `Unset` value in the event of an error—the
 error object itself will be discarded, though.
 
-In some circumstances, we might choose to handle an `AsciiError` (in
-particular) by declaring it "fatal", shutting down the entire JVM upon the
-first occurrence:
+In some circumstances, we might decide that it is acceptable to _throw_ an
+`AsciiError` (without saying anything about other error types), and we can do
+so by by declaring an `Unchecked` instance for it, like so:
+```scala
+erased given AsciiError is Unchecked
+```
+
+(This is only a "marker" typeclass, so it can be `erased`.)
+
+We could go further and declare `AsciiError`s as "fatal", shutting down the
+entire JVM upon the first occurrence,
 ```scala
 given AsciiError is Fatal = _ => ExitStatus.Fail(1)
 val data: Bytes = convert(t"Hello world")
 ```
+though this might be more typical for errors that are raised during
+initialization.
 
 Now imagine we want to combine three methods, `Json.parse`, `Json#as` and
 `convert`, with signatures,
