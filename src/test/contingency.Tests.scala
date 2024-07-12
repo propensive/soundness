@@ -31,10 +31,12 @@ case class ZetaError(string: String) extends Error(m"Zeta $string")
 
 case class MiscErrors(errors: List[String] = Nil)
 extends Error(m"There was at least one GammaError"):
+  @targetName("add")
   infix def + (error: String): MiscErrors = MiscErrors(error :: errors)
 
 case class GammaErrors(errors: List[GammaError] = Nil)
 extends Error(m"There was at least one GammaError"):
+  @targetName("add")
   infix def + (error: GammaError): GammaErrors = GammaErrors(error :: errors)
 
 object Tests extends Suite(t"Contingency tests"):
@@ -168,7 +170,8 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == "string")
 
     test(t"accrual with a raise and an abort"):
-      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      erased given ExpectationError[?] is Unchecked = ###
+
       capture[GammaErrors]:
         accrue(GammaErrors()):
           case error: GammaError => accrual + error
@@ -179,7 +182,8 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == GammaErrors(List(GammaError(2), GammaError(1))))
 
     test(t"accrual with just an abort"):
-      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      erased given ExpectationError[?] is Unchecked = ###
+
       capture[GammaErrors]:
         accrue(GammaErrors()):
           case error: GammaError => accrual + error

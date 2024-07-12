@@ -30,7 +30,8 @@ object Tactic:
     def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
     def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
 
-  given [ErrorType <: Exception: Thrown] => Tactic[ErrorType] as thrownErrors:
+  given [ErrorType <: Exception](using erased ErrorType is Unchecked)
+      => Tactic[ErrorType] as uncheckedErrors:
     import unsafeExceptions.canThrowAny
     def record(error: ErrorType): Unit = throw error
     def abort(error: ErrorType): Nothing = throw error

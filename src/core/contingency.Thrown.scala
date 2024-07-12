@@ -16,5 +16,5 @@
 
 package contingency
 
-trait Thrown:
+erased trait Unchecked:
   type Self
