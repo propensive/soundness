@@ -16,10 +16,7 @@
 
 package escapade
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
-extension (inline ctx: StringContext)
-  transparent inline def e(inline parts: Any*): Teletype =
-    ${Ansi.Interpolator.expand('ctx, 'parts)}
-
-extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype = ValueType.teletype(value)
+object Stylize:
+  def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)

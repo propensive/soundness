@@ -14,9 +14,25 @@
     and limitations under the License.
 */
 
-package gossamer
+package escapade
 
-import language.experimental.captureChecking
+import contextual.*
 
-// package defaultTextTypes:
-//   given output: (DefaultTextType { type TextType = Display }) = ###
+import language.experimental.pureFunctions
+
+export Escapade.CharSpan
+
+object Bold
+object Italic
+object Underline
+object Strike
+object Reverse
+object Conceal
+
+type Stylize[T] = Substitution[Ansi.Input, T, "esc"]
+
+extension (inline ctx: StringContext)
+  transparent inline def e(inline parts: Any*): Teletype =
+    ${Ansi.Interpolator.expand('ctx, 'parts)}
+
+extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype = ValueType.teletype(value)
