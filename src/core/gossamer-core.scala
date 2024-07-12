@@ -54,6 +54,7 @@ extension (inline ctx: StringContext)
 
 extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.show)
+
 extension (value: Bytes)
   def utf8: Text = Text(String(value.to(Array), "UTF-8"))
   def utf16: Text = Text(String(value.to(Array), "UTF-16"))
@@ -289,6 +290,6 @@ extension (buf: StringBuilder)
   def add(char: Char): Unit = buf.append(char)
   def text: Text = Text(buf.toString)
 
-package decimalFormatting:
-  given DecimalConverter as javaDouble:
+package decimalFormatters:
+  given DecimalConverter as java:
     def decimalize(double: Double): Text = double.toString.tt
