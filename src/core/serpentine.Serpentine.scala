@@ -142,11 +142,7 @@ object Serpentine:
         case other =>
           abandon(m"a path element may not match the pattern $other")
 
-    '{
-      new PExtractor[NameType]():
-        def apply(): Name[NameType] = ${Expr(element)}.asInstanceOf[Name[NameType]]
-        def unapply(name: Name[NameType]): Boolean = name.render.s == ${Expr(element)}
-    }
+    '{  PExtractor[NameType](${Expr(element)})  }
 
   private[serpentine] def patterns
       (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)

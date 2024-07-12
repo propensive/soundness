@@ -18,6 +18,6 @@ package serpentine
 
 import rudiments.*
 
-trait PExtractor[NameType <: Label]():
-  def apply(): Name[NameType]
-  def unapply(name: Name[NameType]): Boolean
+class PExtractor[NameType <: Label](element: String):
+  def apply(): Name[NameType] = element.asInstanceOf[Name[NameType]]
+  def unapply(name: Name[NameType]): Boolean = name.asInstanceOf[String] == element
