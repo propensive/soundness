@@ -96,7 +96,7 @@ object Media:
     def complete(value: Text): MediaType =
       val parsed = try throwErrors(Media.parse(value)) catch
         case err: MediaTypeError =>
-          throw InterpolationError(m"${err.value} is not a valid media type; ${err.nature.message}")
+          throw InterpolationError(m"${err.value} is not a valid media type; ${err.reason.message}")
 
       parsed.subtype match
         case Subtype.Standard(_) =>
@@ -116,12 +116,12 @@ object Media:
   def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
-      then raise(MediaTypeError(string, MediaTypeError.Nature.MissingParam))
+      then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
 
     def parseSuffixes(suffixes: List[Text]): List[Suffix] = suffixes.map(_.lower.capitalize).flatMap: suffix =>
       try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-        raise(MediaTypeError(string, MediaTypeError.Nature.InvalidSuffix(suffix)), Nil)
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)), Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
@@ -134,19 +134,19 @@ object Media:
 
       case _ =>
         raise
-         (MediaTypeError(string, MediaTypeError.Nature.NotOneSlash),
+         (MediaTypeError(string, MediaTypeError.Reason.NotOneSlash),
           Group.Text *: parseInit(string))
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s) catch IllegalArgumentException =>
-        raise(MediaTypeError(string, MediaTypeError.Nature.InvalidGroup), Group.Text)
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup), Group.Text)
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
 
       str.chars.find(notAllowed(_)).map: char =>
         raise
-         (MediaTypeError(string, MediaTypeError.Nature.InvalidChar(char)),
+         (MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)),
           Subtype.X(str.chars.filter(!notAllowed(_)).text))
 
       .getOrElse:
@@ -168,58 +168,3 @@ object Media:
 trait Media:
   type Self
   extension (value: Self) def mediaType: MediaType
-
-object MediaTypeError:
-  enum Nature:
-    case NotOneSlash, MissingParam, InvalidGroup
-    case InvalidChar(char: Char)
-    case InvalidSuffix(suffix: Text)
-
-    def message: Text = this match
-      case NotOneSlash      => txt"a media type should always contain exactly one '/' character"
-      case MissingParam     => txt"a terminal ';' suggests that a parameter is missing"
-      case InvalidGroup     => val list = Media.Group.values.immutable(using Unsafe).map(_.name)
-                               txt"the type must be one of: ${list.join(t", ", t" or ")}"
-      case InvalidChar(c)   => txt"the character '$c' is not allowed"
-      case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
-
-case class MediaTypeError(value: Text, nature: MediaTypeError.Nature)
-extends Error(m"the value $value is not a valid media type; ${nature.message}")
-
-case class MediaType
-    (group:      Media.Group,
-     subtype:    Media.Subtype,
-     suffixes:   List[Media.Suffix] = Nil,
-     parameters: List[(Text, Text)] = Nil)
-extends Dynamic:
-
-  private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
-  def basic: Text = t"${group.name}/${subtype.name}$suffixString"
-
-  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
-    copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
-
-object MediaType:
-  given MediaType is Inspectable = mt => t"""media"${mt}""""
-  given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = showable.text(_)
-
-  given MediaType is Showable as showable =
-    mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
-
-  given ("formenctype" is GenericHtmlAttribute[MediaType]) as formenctype:
-    def name: Text = t"formenctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given ("media" is GenericHtmlAttribute[MediaType]) as media:
-    def name: Text = t"media"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given ("enctype" is GenericHtmlAttribute[MediaType]) as enctype:
-    def name: Text = t"enctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  given ("htype" is GenericHtmlAttribute[MediaType]) as htype:
-    def name: Text = t"type"
-    def serialize(mediaType: MediaType): Text = mediaType.show
-
-  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
