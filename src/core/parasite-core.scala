@@ -35,7 +35,7 @@ package orphanDisposal:
   given Codicil as await = _.delegate(_.attend())
   given Codicil as cancel = _.delegate(_.cancel())
 
-  given (using Tactic[ConcurrencyError]) => Codicil as failIfOrphansExist = _.delegate: child =>
+  given (using Tactic[ConcurrencyError]) => Codicil as fail = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete), ())
 
 transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
@@ -66,7 +66,7 @@ def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 def sleep[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
   monitor.sleep(duration.milliseconds)
 
-def sleepUntil[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
+def snooze[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
   monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
