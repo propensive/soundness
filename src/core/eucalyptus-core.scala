@@ -73,7 +73,7 @@ extension (logObject: Log.type)
     type Self = FormatType
     def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
-  def apply[FormatType](using DummyImplicit)
+  def route[FormatType](using DummyImplicit)
       [EntryType: Inscribable in FormatType, TargetType: Appendable by FormatType]
       (target: TargetType)
       (using Monitor)
