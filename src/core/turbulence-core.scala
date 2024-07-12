@@ -199,7 +199,7 @@ extension (obj: LazyList.type)
 
     def recur(iteration: Int): LazyList[Unit] =
       try
-        sleepUntil(startTime + duration.milliseconds*iteration)
+        snooze(startTime + duration.milliseconds*iteration)
         () #:: pulsar(duration)
       catch case err: ConcurrencyError => LazyList()
 
