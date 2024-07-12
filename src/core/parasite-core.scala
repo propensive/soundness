@@ -31,9 +31,9 @@ package threadModels:
   given ThreadModel as platform = () => PlatformSupervisor
   given ThreadModel as virtual = () => VirtualSupervisor
 
-package asyncOptions:
-  given Codicil as waitForOrphans = _.delegate(_.attend())
-  given Codicil as cancelOrphans = _.delegate(_.cancel())
+package orphanDisposal:
+  given Codicil as await = _.delegate(_.attend())
+  given Codicil as cancel = _.delegate(_.cancel())
 
   given (using Tactic[ConcurrencyError]) => Codicil as failIfOrphansExist = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete), ())
