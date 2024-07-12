@@ -23,7 +23,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-import parasite.*, asyncOptions.cancelOrphans
+import parasite.*, orphanDisposal.cancel
 import rudiments.*
 import spectacular.*
 import symbolism.*
