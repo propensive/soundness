@@ -26,9 +26,14 @@ object Tactic:
       => Tactic[ErrorType2] =
     ErrorType.contramap(ErrorType2.mitigate(_))
 
-  given [ErrorType <: Exception: Fatal] => Tactic[ErrorType]:
+  given [ErrorType <: Exception: Fatal] => Tactic[ErrorType] as fatalErrors:
     def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
     def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
+
+  given [ErrorType <: Exception: Thrown] => Tactic[ErrorType] as thrownErrors:
+    import unsafeExceptions.canThrowAny
+    def record(error: ErrorType): Unit = throw error
+    def abort(error: ErrorType): Nothing = throw error
 
 @capability
 trait Tactic[-ErrorType <: Exception]:
