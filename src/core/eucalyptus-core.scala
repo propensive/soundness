@@ -31,10 +31,6 @@ import turbulence.*
 
 import language.experimental.pureFunctions
 
-val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
-
-infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
-
 package logFormats:
   given Level is Showable as textLevel =
     case Level.Fine => t"FINE"
@@ -51,25 +47,13 @@ package logFormats:
   given Message is Inscribable in Text as lightweight = (event, level, realm, timestamp) =>
     t"[$level] $event\n"
 
-trait Inscribable:
-  type Self
-  type Format
-
-  def formatter(message: Self, level: Level, realm: Realm, timestamp: Long): Format
-
-  extension (message: Self) def format(level: Level, realm: Realm, timestamp: Long): Format =
-    formatter(message, level, realm, timestamp)
+val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
+infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
 
 def mute[FormatType](using erased DummyImplicit)[ResultType]
     (lambda: (FormatType is Loggable) ?=> ResultType)
         : ResultType =
   lambda(using Log.silent[FormatType])
-
-trait Taggable:
-  type Self
-  type Operand
-
-  extension (value: Self) def tag(tag: Operand): Self
 
 extension (logObject: Log.type)
   def envelop[TagType, EventType: {Taggable by TagType, Loggable as loggable}](value: TagType)

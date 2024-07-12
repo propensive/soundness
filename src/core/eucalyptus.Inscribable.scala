@@ -14,32 +14,17 @@
     and limitations under the License.
 */
 
-package example
+package eucalyptus
 
-import eucalyptus.*
 import anticipation.*
-import parasite.*, threadModels.virtual
-import fulminate.*
-import symbolism.*
-import contingency.*
-import gossamer.*
-import guillotine.*
-import rudiments.workingDirectories.default
-import vacuous.*
 
-given Realm = realm"example"
+import language.experimental.pureFunctions
 
-@main def run(): Unit =
-  import logFormats.untimestamped
-  given Message is Loggable = safely(supervise(Log(Syslog(t"foo")))).or(Log.silent)
-  val message1 = m"yes!"
-  val message2 = m"world $message1"
-  given Message transcribes ExecEvent = Log.skip
+trait Inscribable:
+  type Self
+  type Format
 
-  Log.fine(m"hello")
-  Log.info(m"world")
-  Log.info(m"hello $message2")
-  tend(sh"sleep 1"()).remedy:
-    case ExecError(cmd, _, _) => Log.fail(m"failed to execute")
-  Log.warn(m"!")
-  Log.fail(m"!!!")
+  def formatter(message: Self, level: Level, realm: Realm, timestamp: Long): Format
+
+  extension (message: Self) def format(level: Level, realm: Realm, timestamp: Long): Format =
+    formatter(message, level, realm, timestamp)
