@@ -17,55 +17,14 @@
 package spectacular
 
 import rudiments.*
-import inimitable.*
 import vacuous.*
 import wisteria.*
 import anticipation.*
-import digression.*
 import fulminate.*
 
 import scala.deriving.*
 
 import language.experimental.captureChecking
-
-trait TextConversion:
-  type Self
-  def text(value: Self): Text
-
-trait Showable extends TextConversion:
-  type Self
-
-trait Inspectable extends TextConversion:
-  type Self
-
-object Showable:
-  given Specializable is Showable as specializable = value =>
-    value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
-
-  given StackTrace is Showable = stack =>
-    val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
-    val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
-    val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
-
-    val fullClass = s"${stack.component}.${stack.className}".tt
-    val init = s"$fullClass: ${stack.message}".tt
-
-    val root = stack.frames.foldLeft(init):
-      case (msg, frame) =>
-        val obj = frame.method.className.s.endsWith("#")
-        val drop = if obj then 1 else 0
-        val file = (" "*(fileWidth - frame.file.s.length))+frame.file
-        val dot = if obj then ".".tt else "#".tt
-        val className = frame.method.className.s.dropRight(drop)
-        val classPad = (" "*(classWidth - className.length)).tt
-        val method = frame.method.method
-        val methodPad = (" "*(methodWidth - method.s.length)).tt
-        val line = frame.line.let(_.show).or("?".tt)
-
-        s"$msg\n  at $classPad$className$dot$method$methodPad $file:$line".tt
-
-    stack.cause.lay(root): cause =>
-      s"$root\ncaused by:\n$cause".tt
 
 object Inspectable:
   inline given [ValueType] => ValueType is Inspectable as derived = compiletime.summonFrom:
@@ -180,62 +139,5 @@ object Inspectable:
   given [ValueType: Inspectable] => Optional[ValueType] is Inspectable as optional =
     _.let { value => s"⸂${ValueType.text(value)}⸃".tt }.or("⸄⸅".tt)
 
-object InspectableDerivation extends Derivable[Inspectable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable = value =>
-    fields(value):
-      [FieldType] => field =>
-        val text = context.text(field)
-        if tuple then text else s"$label:$text"
-    .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
-
-  inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
-    variant(value):
-      [VariantType <: DerivationType] => variant =>
-        context.let(_.give(variant.inspect)).or(variant.inspect)
-
-object TextConversion:
-  given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
-
-  given Text is Showable as text = identity(_)
-  given String is Showable as string = _.tt
-  given Char is Showable as char = char => char.toString.tt
-  given Long is Showable as long = long => long.toString.tt
-  given Int is Showable as int = int => int.toString.tt
-  given Short is Showable as short = short => short.toString.tt
-  given Byte is Showable as byte = byte => byte.toString.tt
-  given Message is Showable as message = _.text
-  given (using decimalizer: DecimalConverter) => Double is Showable as double = decimalizer.decimalize(_)
-  given Pid is Showable as pid = pid => ("\u21af"+pid.value).tt
-  given (using booleanStyle: BooleanStyle) => Boolean is Showable as boolean = booleanStyle(_)
-
-  given [ValueType: Showable] => Option[ValueType] is Showable as option =
-    _.fold("none".tt)(ValueType.text(_))
-
-  given Uuid is Showable as uuid = _.text
-  given ByteSize is Showable as byteSize = _.text
-  given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.tt
-
-  given [ElemType: Showable] => Set[ElemType] is Showable as set =
-    _.map(_.show).mkString("{", ", ", "}").tt
-
-  given [ElemType: Showable] => List[ElemType] is Showable as list =
-    _.map(_.show).mkString("[", ", ", "]").tt
-
-  given [ElemType: Showable] => Vector[ElemType] is Showable as vector =
-    _.map(_.show).mkString("[ ", " ", " ]").tt
-
-  given None.type is Showable as none = none => "none".tt
-
-extension [ValueType: Showable](value: ValueType)
-  def show: Text = ValueType.text(value)
-
-extension [ValueType: Inspectable](value: ValueType) def inspect: Text = ValueType.text(value)
-
-case class BooleanStyle(yes: Text, no: Text):
-  def apply(boolean: Boolean): Text = if boolean then yes else no
-
-package booleanStyles:
-  given BooleanStyle as yesNo = BooleanStyle("yes".tt, "no".tt)
-  given BooleanStyle as onOff = BooleanStyle("on".tt, "off".tt)
-  given BooleanStyle as trueFalse = BooleanStyle("true".tt, "false".tt)
-  given BooleanStyle as oneZero = BooleanStyle("1".tt, "0".tt)
+trait Inspectable extends TextConversion:
+  type Self
