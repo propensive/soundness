@@ -3,7 +3,7 @@ All Contingency terms and types are defined in the `contingency` package:
 import contingency.*
 ```
 and are exported to `soundness`. So alternatively,
-```
+```scala
 import soundness.*
 ```
 
