@@ -105,7 +105,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def quell[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
+  def tend[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
       (using Quotes)
           : Expr[Any] =
 
@@ -122,7 +122,7 @@ object Contingency:
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     (typeLambda.asType: @unchecked) match
-      case '[type typeLambda[_]; typeLambda] => '{Quell[typeLambda]($handler)}
+      case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
   def accrue[AccrualType <: Exception: Type]
       (accrual: Expr[AccrualType], handler: Expr[AccrualType ?=> PartialFunction[Exception, AccrualType]])(using Quotes)
@@ -144,7 +144,7 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] =>
         '{Accrue[AccrualType, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
-  def quash[ResultType: Type](handler: Expr[PartialFunction[Exception, ResultType]])(using Quotes)
+  def mend[ResultType: Type](handler: Expr[PartialFunction[Exception, ResultType]])(using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -160,15 +160,15 @@ object Contingency:
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
     (typeLambda.asType: @unchecked) match
-      case '[type typeLambda[_]; typeLambda] => '{Quash[ResultType, typeLambda]($handler)}
+      case '[type typeLambda[_]; typeLambda] => '{Mend[ResultType, typeLambda]($handler)}
 
-  def quellWithin[ContextType[_]: Type, ResultType: Type]
-        (quell: Expr[Quell[ContextType]], lambda: Expr[ContextType[ResultType]])
+  def tendWithin[ContextType[_]: Type, ResultType: Type]
+        (tend: Expr[Tend[ContextType]], lambda: Expr[ContextType[ResultType]])
         (using Quotes)
             : Expr[ResultType] =
       import quotes.reflect.*
 
-      val tactics = unwrap(quell.asTerm) match
+      val tactics = unwrap(tend.asTerm) match
         case Apply(_, List(Inlined(_, _, matches))) =>
           val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
 
@@ -182,13 +182,13 @@ object Contingency:
                   case None =>
                     abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
         case _ =>
-          abandon(m"argument to `quell` should be a partial function implemented as match cases")
+          abandon(m"argument to `tend` should be a partial function implemented as match cases")
 
       val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
       lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
 
-  def quashWithin[ContextType[_]: Type, ResultType: Type]
-      (quash: Expr[Quash[?, ContextType]], lambda: Expr[ContextType[ResultType]])
+  def mendWithin[ContextType[_]: Type, ResultType: Type]
+      (mend: Expr[Mend[?, ContextType]], lambda: Expr[ContextType[ResultType]])
       (using Quotes)
           : Expr[ResultType] =
 
@@ -199,11 +199,11 @@ object Contingency:
           val tactic: Tactic[Break[ResultType]] = EscapeTactic(label)
           ${
               import quotes.reflect.*
-              val partialFunction = unwrap(quash.asTerm) match
+              val partialFunction = unwrap(mend.asTerm) match
                 case Apply(_, List(Inlined(_, _, matches))) => matches
 
                 case _ =>
-                  abandon(m"argument to `quash` should be a partial function implemented as match cases")
+                  abandon(m"argument to `mend` should be a partial function implemented as match cases")
 
               val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, ResultType]]
 

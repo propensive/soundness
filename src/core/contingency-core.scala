@@ -110,20 +110,20 @@ infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> 
 infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
 
-transparent inline def quell(inline block: PartialFunction[Exception, Exception]): Any =
-  ${Contingency.quell('block)}
+transparent inline def tend(inline block: PartialFunction[Exception, Exception]): Any =
+  ${Contingency.tend('block)}
 
-extension [LambdaType[_]](inline quell: Quell[LambdaType])
+extension [LambdaType[_]](inline tend: Tend[LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType]): ResultType =
-    ${Contingency.quellWithin[LambdaType, ResultType]('quell, 'lambda)}
+    ${Contingency.tendWithin[LambdaType, ResultType]('tend, 'lambda)}
 
-transparent inline def quash[ResultType](inline block: PartialFunction[Exception, ResultType]): Any =
-  ${Contingency.quash[ResultType]('block)}
+transparent inline def mend[ResultType](inline block: PartialFunction[Exception, ResultType]): Any =
+  ${Contingency.mend[ResultType]('block)}
 
-extension [ResultType, LambdaType[_]](inline quash: Quash[ResultType, LambdaType])
+extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
   inline def within[ResultType2 >: ResultType](inline lambda: LambdaType[ResultType2])
           : ResultType2 =
-    ${Contingency.quashWithin[LambdaType, ResultType2]('quash, 'lambda)}
+    ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
     (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])

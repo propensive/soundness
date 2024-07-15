@@ -16,4 +16,4 @@
 
 package contingency
 
-class Quash[ResultType, LambdaType[_]](val lambda: PartialFunction[Exception, ResultType])
+class Tend[LambdaType[_]](val lambda: PartialFunction[Exception, Exception])

@@ -16,4 +16,4 @@
 
 package contingency
 
-class Quell[LambdaType[_]](val lambda: PartialFunction[Exception, Exception])
+class Mend[ResultType, LambdaType[_]](val lambda: PartialFunction[Exception, ResultType])

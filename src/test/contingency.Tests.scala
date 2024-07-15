@@ -71,54 +71,54 @@ object Tests extends Suite(t"Contingency tests"):
         abort(AlphaError())
     .assert(_ == AlphaError())
 
-    test(t"one exception can be quelled into another"):
+    test(t"one exception can be tended into another"):
       given ExpectationError[Any] is Fatal = _ => ExitStatus.Ok
       capture[BetaError]:
-        quell:
+        tend:
           case AlphaError() => BetaError()
         .within:
           abort(AlphaError())
     .assert(_ == BetaError())
 
-    test(t"one exception can be quashed into a value"):
-      quash:
+    test(t"one exception can be mended into a value"):
+      mend:
         case AlphaError() => 17
       .within:
         abort(AlphaError())
         7
     .assert(_ == 17)
 
-    test(t"a quashed block returns its value"):
-      quash:
+    test(t"a mended block returns its value"):
+      mend:
         case AlphaError() => 1
       .within:
         17
     .assert(_ == 17)
 
-    test(t"a quelled block returns its value"):
+    test(t"a tended block returns its value"):
       given BetaError is Fatal = error => ExitStatus.Ok
 
-      quell:
+      tend:
         case AlphaError() => BetaError()
       .within:
         17
     .assert(_ == 17)
 
-    test(t"quelled block can transform to same type"):
+    test(t"tended block can transform to same type"):
       given ExpectationError[Any] is Fatal = error => ExitStatus.Ok
       capture[GammaError]:
-        quell:
+        tend:
           case GammaError(n) => GammaError(n + 1)
         .within:
           abort(GammaError(1))
     .assert(_ == GammaError(2))
 
-    test(t"quelled block can transform to different types"):
+    test(t"tended block can transform to different types"):
       import strategies.throwUnsafely
       given ExpectationError[Any] is Fatal = error => ExitStatus.Ok
 
       capture[ZetaError]:
-        quell:
+        tend:
           case AlphaError()  => DeltaError()
           case BetaError()   => EpsilonError()
           case GammaError(n) => ZetaError("gamma")
@@ -126,8 +126,8 @@ object Tests extends Suite(t"Contingency tests"):
           abort(GammaError(1))
     .assert(_ == ZetaError("gamma"))
 
-    test(t"quashed block can transform to different values"):
-      quash:
+    test(t"mended block can transform to different values"):
+      mend:
         case AlphaError()  => "alpha"
         case BetaError()   => "beta"
         case GammaError(n) => "gamma"
