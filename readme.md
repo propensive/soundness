@@ -139,11 +139,11 @@ but multiple `raises` clauses are cumbersome: not only does the method need to
 declare each error type, any method which invokes it must also handle _all_ of
 these errors.
 
-Instead, we can _quell_ them into an `EventError`:
+Instead, we can _tend_ them into an `EventError`:
 
 ```scala
 def eventData(event: Text): Bytes raises EventError =
-  quell:
+  tend:
     case ParseError()  => EventError()
     case AccessError() => EventError()
     case AsciiError()  => EventError()
@@ -151,7 +151,7 @@ def eventData(event: Text): Bytes raises EventError =
     convert(Json.parse(event).as[Event].message)
 ```
 
-This has the effect that any exception matching one of the `quell` cases will
+This has the effect that any exception matching one of the `tend` cases will
 be transformed into the right-hand side of the case—in this case, a new
 `EventError`.
 
@@ -167,7 +167,7 @@ from one type to the other, like so:
 
 ```scala
 def processEvent(event: Text): Unit raises EventError =
-  quell:
+  tend:
     case ParseError(line) => EventError(m"invalid JSON at line $line")
     case AccessError(key) => EventError(m"key $key was missing")
     case AsciiError()     => EventError(m"the message contained invalid ASCII")
@@ -183,11 +183,11 @@ in the return type ensures that handler.
 
 Sometimes, however, in the event of certain errors, we want to _return_ a
 value—some sort of "fallback" value—instead of continuing along an
-error-recovery path. For this, we can use `quash` instead of `quell`, and the
+error-recovery path. For this, we can use `mend` instead of `tend`, and the
 right-hand side of each case will represent the return value:
 ```scala
 def processEvent(event: Text): Unit raises EventError = send:
-  quash:
+  mend:
     case ParseError(_)  => Bytes(0, 1)
     case AccessError(_) => Bytes(0, 2)
     case AsciiError(_)  => Bytes(0, 3)
@@ -195,7 +195,7 @@ def processEvent(event: Text): Unit raises EventError = send:
     convert(Json.parse(event).as[Event].message)
 ```
 
-Here, we _quash_ the subexpression
+Here, we _mend_ the subexpression
 `convert(Json.parse(event).as[Event].message)` and produce a two-byte message
 (such as `Bytes(0, 1)`, which could be a representation of the failure). Either
 this, or the successful evaluation of the subexpression will be passed to the
@@ -331,7 +331,7 @@ any other immutable datatype.
 ### Strategies
 
 Each error must be handled by a `Tactic`, which will typically be constrained
-to a limited scope—often the `within` block of a `quash` or `quell`, or a
+to a limited scope—often the `within` block of a `mend` or `tend`, or a
 `safely` or `unsafely` block. They are _tactics_ in the sense that they apply
 within a limited scope.
 
@@ -381,7 +381,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Contingency?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Contingency's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -398,7 +398,7 @@ answer to the question, "how can I try Contingency?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -459,4 +459,3 @@ The logo shows three tickets, each of which has been _validated_.
 
 Contingency is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-
