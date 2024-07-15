@@ -21,9 +21,9 @@ import language.experimental.captureChecking
 import rudiments.*
 import vacuous.*
 
-object Sanitization:
-  given (using Quickstart) => Sanitization as default = sanitization.substitute
+object TextSanitizer:
+  given (using Quickstart) => TextSanitizer as default = textSanitizers.substitute
 
-trait Sanitization:
+trait TextSanitizer:
   def sanitize(pos: Int, encoding: Encoding): Optional[Char]
   def complete(): Unit

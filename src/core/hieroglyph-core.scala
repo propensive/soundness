@@ -30,19 +30,19 @@ extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncode
   CharEncoder(encoding)
 
 package charDecoders:
-  given (using Sanitization) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
-  given (using Sanitization) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
+  given (using TextSanitizer) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
+  given (using TextSanitizer) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
 
-  given (using Sanitization) => CharDecoder as utf16Le =
+  given (using TextSanitizer) => CharDecoder as utf16Le =
     CharDecoder.unapply("UTF-16LE".tt).get
 
-  given (using Sanitization) => CharDecoder as utf16Be =
+  given (using TextSanitizer) => CharDecoder as utf16Be =
     CharDecoder.unapply("UTF-16BE".tt).get
 
-  given (using Sanitization) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
+  given (using TextSanitizer) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
 
   given CharDecoder as iso88591 =
-    CharDecoder.unapply("ISO-8859-1".tt)(using sanitization.skip).get
+    CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skip).get
 
 package charEncoders:
   given CharEncoder as utf8 = CharEncoder.unapply("UTF-8".tt).get
@@ -52,23 +52,23 @@ package charEncoders:
   given CharEncoder as ascii = CharEncoder.unapply("ASCII".tt).get
   given CharEncoder as iso88591 = CharEncoder.unapply("ISO-8859-1".tt).get
 
-package sanitization:
-  given strict(using charDecode: Tactic[CharDecodeError]): (Sanitization^{charDecode}) =
-    new Sanitization:
+package textSanitizers:
+  given strict(using charDecode: Tactic[CharDecodeError]): (TextSanitizer^{charDecode}) =
+    new TextSanitizer:
       def sanitize(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding), '?')
       def complete(): Unit = ()
 
-  given Sanitization as skip:
+  given TextSanitizer as skip:
     def sanitize(pos: Int, encoding: Encoding): Optional[Char] = Unset
     def complete(): Unit = ()
 
-  given Sanitization as substitute:
+  given TextSanitizer as substitute:
     def sanitize(pos: Int, encoding: Encoding): Optional[Char] = '?'
     def complete(): Unit = ()
 
   given (using aggregate: Tactic[AggregateError[CharDecodeError]])
-      => (Sanitization^{aggregate}) as collect =
-    new Sanitization:
+      => (TextSanitizer^{aggregate}) as collect =
+    new TextSanitizer:
       private val mistakes: scm.ArrayBuffer[CharDecodeError] = scm.ArrayBuffer()
       def sanitize(pos: Int, encoding: Encoding): Optional[Char] = Unset
       def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)), ())

@@ -48,37 +48,37 @@ object Tests extends Suite(t"Hieroglyph tests"):
     suite(t"Roundtrip decoding"):
 
       test(t"Decode Japanese from UTF-8"):
-        import sanitization.skip
+        import textSanitizers.skip
         charDecoders.utf8.decode(japaneseBytes)
       .assert(_ == japanese)
 
       for chunk <- 1 to 25 do
         test(t"Decode Japanese text in chunks of size $chunk"):
-          import sanitization.skip
+          import textSanitizers.skip
           charDecoders.utf8.decode(japaneseBytes.grouped(chunk).to(LazyList)).join
         .assert(_ == japanese)
 
       val badUtf8 = Bytes(45, -62, 49, 48)
 
       test(t"Decode invalid UTF-8 sequence, skipping errors"):
-        import sanitization.skip
+        import textSanitizers.skip
         charDecoders.utf8.decode(badUtf8)
       .assert(_ == t"-10")
 
       test(t"Decode invalid UTF-8 sequence, substituting for a question mark"):
-        import sanitization.substitute
+        import textSanitizers.substitute
         charDecoders.utf8.decode(badUtf8)
       .assert(_ == t"-?10")
 
       test(t"Decode invalid UTF-8 sequence, throwing exception"):
         import unsafeExceptions.canThrowAny
-        import sanitization.strict
+        import textSanitizers.strict
         capture[UndecodableCharError](charDecoders.utf8.decode(badUtf8))
       .assert(_ == UndecodableCharError(1, enc"UTF-8"))
 
       test(t"Ensure that decoding is finished"):
         import unsafeExceptions.canThrowAny
-        import sanitization.strict
+        import textSanitizers.strict
         given CharEncoder = enc"UTF-8".encoder
         capture[UndecodableCharError](charDecoders.utf8.decode(t"café".bytes.dropRight(1)))
       .assert(_ == UndecodableCharError(4, enc"UTF-8"))
@@ -89,7 +89,7 @@ object Tests extends Suite(t"Hieroglyph tests"):
       .assert(_ == List(t"hieroglyph: the encoding ABCDEF was not available"))
 
       test(t"Check that a non-encoding encoding does have a `decoder` method"):
-        import sanitization.skip
+        import textSanitizers.skip
         demilitarize(enc"ISO-2022-CN".decoder)
       .assert(_ == List())
 
