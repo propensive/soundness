@@ -6,7 +6,7 @@ repo propensive/fulminate
 repo propensive/contingency
 repo propensive/gossamer
 
-target wisteria/test
+target wisteria/core
 
 project wisteria
   module core
