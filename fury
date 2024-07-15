@@ -5,7 +5,7 @@ repo propensive/kaleidoscope
 repo propensive/contingency
 repo propensive/larceny
 
-target hieroglyph/test
+target hieroglyph/core
 
 project hieroglyph
   module core
