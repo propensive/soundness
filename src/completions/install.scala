@@ -21,7 +21,7 @@ import gossamer.{where as _, *}
 import anticipation.*, filesystemApi.galileiPath
 import rudiments.*, homeDirectories.default
 import vacuous.*
-import serpentine.*, hierarchies.unix
+import serpentine.*, pathHierarchies.unix
 import contingency.*
 import guillotine.*
 import fulminate.*
@@ -68,7 +68,7 @@ object TabCompletionsInstallation:
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)(using WorkingDirectory, Effectful)
           : TabCompletionsInstallation raises InstallError logs CliEvent =
-    quell:
+    tend:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
     .within:
@@ -104,7 +104,7 @@ object TabCompletions:
       (using Effectful)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
-    quell:
+    tend:
       case IoError(_)        => InstallError(InstallError.Reason.Io)
       case OverwriteError(_) => InstallError(InstallError.Reason.Io)
       case StreamError(_)    => InstallError(InstallError.Reason.Io)
