@@ -20,7 +20,7 @@ import probably.*
 import anticipation.*
 import nettlesome.*
 import contingency.*, strategies.throwUnsafely
-import serpentine.*, hierarchies.urls
+import serpentine.*, pathHierarchies.urls
 import spectacular.*
 import gossamer.*
 
