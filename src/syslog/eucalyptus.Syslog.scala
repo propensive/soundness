@@ -34,7 +34,7 @@ object Syslog:
   given (using Monitor) => Syslog is Appendable by Text = (syslog, stream) =>
     import workingDirectories.default
 
-    quash:
+    mend:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
     .within:
