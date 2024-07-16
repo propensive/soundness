@@ -36,14 +36,14 @@ object Tests extends Suite(t"Galilei tests"):
   def run(): Unit =
     suite(t"Link tests"):
       suite(t"UNIX tests"):
-        import hierarchies.unix
+        import pathHierarchies.unix
 
         test(t"Parse a relative Unix link"):
           t"../docs/data.txt".decodeAs[Unix.Link]
         .assert(_ == ?^ / p"docs" / p"data.txt")
 
       suite(t"Windows tests"):
-        import hierarchies.windows
+        import pathHierarchies.windows
 
         test(t"Parse a relative Unix link"):
           t"..\\Docs\\Data.txt".decodeAs[Windows.Link]
@@ -51,7 +51,7 @@ object Tests extends Suite(t"Galilei tests"):
 
     suite(t"Path tests"):
       suite(t"UNIX tests"):
-        import hierarchies.unix
+        import pathHierarchies.unix
 
         test(t"Get volume in UNIX"):
           import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
@@ -86,7 +86,7 @@ object Tests extends Suite(t"Galilei tests"):
         .assert(_ == Windows.Drive('C') / p"Windows" / p"System32")
 
     suite(t"Adaptive hierarchy tests"):
-      import hierarchies.unixOrWindows
+      import pathHierarchies.unixOrWindows
       import filesystemOptions.dereferenceSymlinks
       import filesystemOptions.doNotCreateNonexistent
 
@@ -136,7 +136,7 @@ object Tests extends Suite(t"Galilei tests"):
         .assert(!_.exists())
 
     suite(t"Unix hierarchy tests"):
-      import hierarchies.unix
+      import pathHierarchies.unix
       import filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
 
       val tmpPath = test(t"Get /var/tmp"):

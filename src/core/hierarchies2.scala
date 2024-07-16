@@ -19,7 +19,7 @@ package serpentine
 import rudiments.*
 import galilei.*
 
-package hierarchies:
+package pathHierarchies:
   erased given windows: Hierarchy[Windows.Path, Windows.Link] = ###
   erased given unix: Hierarchy[Unix.Path, Unix.Link] = ###
   erased given unixOrWindows: Hierarchy[Path, SafeLink] = ###
