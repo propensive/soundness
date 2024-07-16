@@ -20,7 +20,7 @@ import probably.*
 import rudiments.*
 import gossamer.*
 import anticipation.*
-import serpentine.*, hierarchies.urls
+import serpentine.*, pathHierarchies.urls
 import spectacular.*
 import contingency.*
 import larceny.*

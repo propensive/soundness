@@ -18,5 +18,5 @@ package soundness
 
 export nettlesome.{url, email, host, Authority, Hyperlink, Raw, Scheme, Url, UrlError, HttpUrl}
 
-package hierarchies:
-  export serpentine.hierarchies.urls
+package pathHierarchies:
+  export serpentine.pathHierarchies.urls

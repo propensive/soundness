@@ -19,5 +19,5 @@ package serpentine
 import rudiments.*
 import nettlesome.*
 
-package hierarchies:
+package pathHierarchies:
   erased given Hierarchy[Url["http" | "https"], Hyperlink] as urls = ###
