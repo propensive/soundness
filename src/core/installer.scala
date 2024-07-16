@@ -18,7 +18,7 @@ package ethereal
 
 import anticipation.*, filesystemApi.galileiPath
 import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
-import serpentine.*, hierarchies.unix
+import serpentine.*, pathHierarchies.unix
 import rudiments.*
 import vacuous.*
 import guillotine.*
@@ -77,7 +77,7 @@ object Installer:
   def candidateTargets()(using service: DaemonService[?])
       (using Environment, HomeDirectory, SystemProperties)
           : List[Directory] logs DaemonLogEvent raises InstallError =
-    quell:
+    tend:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
       case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
       case IoError(_)          => InstallError(InstallError.Reason.Io)
@@ -106,7 +106,7 @@ object Installer:
     import workingDirectories.default
     import systemProperties.virtualMachine
 
-    quell:
+    tend:
       case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
       case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)

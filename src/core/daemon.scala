@@ -16,7 +16,7 @@
 
 package ethereal
 
-import serpentine.*, hierarchies.unix
+import serpentine.*, pathHierarchies.unix
 
 import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
     deleteRecursively}
