@@ -27,7 +27,7 @@ import scala.reflect.*
 
 import language.experimental.pureFunctions
 
-package hierarchies:
+package pathHierarchies:
   erased given Hierarchy[SimplePath, SimpleLink] as simple = ###
 
 val Root = %

@@ -20,3 +20,6 @@ export serpentine.{Directional, Followable, Hierarchy, Navigable, PathCreator, P
     PathError, PExtractor, Radical, RootParser, Serpentine, SimpleLink, SimplePath, `%`, `?`,
     `?^`, `?^^`, `?^^^`, ascent, inWorkingDirectory, root, +, relativeTo, keep, conjunction,
     precedes, Slash, /-, render, descent, depth, parent, ancestor, append, p, `/`}
+
+package pathHierarchies:
+  export serpentine.pathHierarchies.simple

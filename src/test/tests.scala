@@ -45,9 +45,9 @@ object Example:
       def separator(path: TestPath): Text = t"\\"
       def root(path: TestPath): Drive = path.root
       def prefix(drive: Drive): Text = t"${drive.letter}:\\"
-      def descent(path: TestPath): List[PathName[Forbidden]] = path.descent
+      def descent(path: TestPath): List[Name[Forbidden]] = path.descent
 
-  case class TestPath(root: Drive, descent: List[PathName[Forbidden]])
+  case class TestPath(root: Drive, descent: List[Name[Forbidden]])
 
   object TestLink:
     inline given (using Tactic[PathError]): Decoder[TestLink] = Followable.decoder[TestLink]
@@ -61,16 +61,16 @@ object Example:
       def separator(path: TestLink): Text = t"\\"
       val separators: Set[Char] = Set('/')
       def ascent(path: TestLink): Int = path.ascent
-      def descent(path: TestLink): List[PathName[Forbidden]] = path.descent
+      def descent(path: TestLink): List[Name[Forbidden]] = path.descent
 
-  case class TestLink(ascent: Int, descent: List[PathName[Forbidden]])
+  case class TestLink(ascent: Int, descent: List[Name[Forbidden]])
 
   object Drive:
     given Default[Drive] = () => Drive('C')
 
   case class Drive(letter: Char):
     @targetName("child")
-    def /(name: PathName[Forbidden]): TestPath = TestPath(this, List(name))
+    def /(name: Name[Forbidden]): TestPath = TestPath(this, List(name))
 
   given hierarchy: Hierarchy[TestPath, TestLink] = new Hierarchy[TestPath, TestLink] {}
 
@@ -85,26 +85,26 @@ object Tests extends Suite(t"Serpentine Tests"):
     suite(t"Absolute parsing"):
       test(t"parse simple absolute path"):
         unsafely(SimplePath.parse(t"/home"))
-      .assert(_ == SimplePath(List(PathName(t"home"))))
+      .assert(_ == SimplePath(List(Name(t"home"))))
 
       test(t"parse deeper absolute path"):
         unsafely(SimplePath.parse(t"/home/work"))
-      .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
+      .assert(_ == SimplePath(List(Name(t"work"), Name(t"home"))))
 
       test(t"parse even deeper absolute path"):
         unsafely(SimplePath.parse(t"/home/work/data"))
-      .assert(_ == SimplePath(List(PathName(t"data"), PathName(t"work"), PathName(t"home"))))
+      .assert(_ == SimplePath(List(Name(t"data"), Name(t"work"), Name(t"home"))))
 
       test(t"parse even absolute directory-style path"):
         unsafely(SimplePath.parse(t"/home/work/"))
-      .assert(_ == SimplePath(List(PathName(t"work"), PathName(t"home"))))
+      .assert(_ == SimplePath(List(Name(t"work"), Name(t"home"))))
 
       test(t"try to parse path without prefix"):
         unsafely(capture[PathError](SimplePath.parse(t"home/work/")))
       .assert(_ == PathError(t"home/work/", PathError.Reason.NotRooted))
 
       test(t"Show a simple path"):
-        val path: PathName[".*/.*"] = p"abc"
+        val path: Name[".*/.*"] = p"abc"
         path.show
       .assert(_ == t"abc")
 
@@ -112,28 +112,28 @@ object Tests extends Suite(t"Serpentine Tests"):
     suite(t"Parsing absolute paths with root"):
       test(t"parse simple rooted absolute path"):
         unsafely(TestPath.parse(t"C:\\Windows"))
-      .assert(_ == TestPath(Drive('C'), List(PathName(t"Windows"))))
+      .assert(_ == TestPath(Drive('C'), List(Name(t"Windows"))))
 
       test(t"parse deeper rooted absolute path"):
         unsafely(TestPath.parse(t"D:\\Windows\\System"))
-      .assert(_ == TestPath(Drive('D'), List(PathName(t"System"), PathName(t"Windows"))))
+      .assert(_ == TestPath(Drive('D'), List(Name(t"System"), Name(t"Windows"))))
 
       test(t"parse even deeper rooted absolute path"):
         unsafely(TestPath.parse(t"e:\\Windows\\System\\Data"))
-      .assert(_ == TestPath(Drive('E'), List(PathName(t"Data"), PathName(t"System"), PathName(t"Windows"))))
+      .assert(_ == TestPath(Drive('E'), List(Name(t"Data"), Name(t"System"), Name(t"Windows"))))
 
       test(t"parse even absolute rooted directory-style path"):
         unsafely(TestPath.parse(t"f:\\Windows\\System\\"))
-      .assert(_ == TestPath(Drive('F'), List(PathName(t"System"), PathName(t"Windows"))))
+      .assert(_ == TestPath(Drive('F'), List(Name(t"System"), Name(t"Windows"))))
 
     suite(t"Relative parsing"):
       test(t"parse simple relative path"):
         unsafely(SimpleLink.parse(t"peer"))
-      .assert(_ == SimpleLink(0, List(PathName(t"peer"))))
+      .assert(_ == SimpleLink(0, List(Name(t"peer"))))
 
       test(t"parse three-part relative subpath"):
         unsafely(SimpleLink.parse(t"path/to/child"))
-      .assert(_ == SimpleLink(0, List(t"child", t"to", t"path").map(PathName(_))))
+      .assert(_ == SimpleLink(0, List(t"child", t"to", t"path").map(Name(_))))
 
       test(t"parse parent relative path"):
         unsafely(SimpleLink.parse(t".."))
@@ -149,14 +149,14 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"parse relative link to uncle path"):
         unsafely(SimpleLink.parse(t"../path"))
-      .assert(_ == SimpleLink(1, List(PathName(t"path"))))
+      .assert(_ == SimpleLink(1, List(Name(t"path"))))
 
       test(t"parse relative link to cousin path"):
         unsafely(SimpleLink.parse(t"../path/child"))
-      .assert(_ == SimpleLink(1, List(t"child", t"path").map(PathName(_))))
+      .assert(_ == SimpleLink(1, List(t"child", t"path").map(Name(_))))
 
     suite(t"Show paths"):
-      import hierarchies.simple
+      import pathHierarchies.simple
 
       test(t"show simple relative path"):
         (? / p"hello").show
@@ -203,7 +203,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"/")
 
     suite(t"Path tests"):
-      import hierarchies.simple
+      import pathHierarchies.simple
 
       test(t"Check keeping part of a path"):
         (% / p"home" / p"user" / p"work" / p"data").keep(2)
@@ -219,50 +219,50 @@ object Tests extends Suite(t"Serpentine Tests"):
 
       test(t"simple path from forbidden string does not compile"):
         demilitarize:
-          val elem: PathName["bad"] = p"bad"
+          val elem: Name["bad"] = p"bad"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not be bad"))
 
       test(t"simple path from forbidden set of strings does not compile"):
         demilitarize:
-          val elem: PathName["bad" | "awful"] = p"bad"
+          val elem: Name["bad" | "awful"] = p"bad"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not be bad"))
 
       test(t"simple path not in forbidden set of strings does compile"):
-        val elem: PathName["bad" | "awful"] = p"safe"
+        val elem: Name["bad" | "awful"] = p"safe"
       .assert()
 
       test(t"path with forbidden character does not compile"):
         demilitarize:
-          val elem: PathName["bad" | ".*n.*"] = p"unsafe"
+          val elem: Name["bad" | ".*n.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character n"))
 
       test(t"path with forbidden character does not compile"):
         demilitarize:
-          val elem: PathName[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
+          val elem: Name[".*a.*" | ".*e.*" | ".*i.*" | ".*o.*" | ".*u.*"] = p"unsafe"
         .map(_.message)
       .assert(_ == List(t"serpentine: a path element may not contain the character a"))
 
       test(t"Parse a path name with an invalid character"):
-        unsafely(capture[PathError](PathName[".*x.*"](t"excluded")))
+        unsafely(capture[PathError](Name[".*x.*"](t"excluded")))
       .assert(_ == PathError(t"excluded", PathError.Reason.InvalidChar('x')))
 
       test(t"Parse a path name with an invalid suffix"):
-        unsafely(capture[PathError](PathName[".*txt"](t"bad.txt")))
+        unsafely(capture[PathError](Name[".*txt"](t"bad.txt")))
       .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidSuffix(t"txt")))
 
       test(t"Parse a path name with an invalid prefix"):
-        unsafely(capture[PathError](PathName["bad.*"](t"bad.txt")))
+        unsafely(capture[PathError](Name["bad.*"](t"bad.txt")))
       .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidPrefix(t"bad")))
 
       test(t"Parse a path name with an invalid name"):
-        unsafely(capture[PathError](PathName["bad\\.txt"](t"bad.txt")))
+        unsafely(capture[PathError](Name["bad\\.txt"](t"bad.txt")))
       .assert(_ == PathError(t"bad.txt", PathError.Reason.InvalidName(t"bad\\.txt")))
 
     suite(t"Pattern matching"):
-      import hierarchies.simple
+      import pathHierarchies.simple
       val root = %
       val path = % / p"home"
       val path2 = path / p"work"
@@ -312,7 +312,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == t"work")
 
     suite(t"Relative path tests"):
-      import hierarchies.simple
+      import pathHierarchies.simple
 
       test(t"Relative path has correct parent"):
         (? / p"foo" / p"bar").parent
@@ -347,7 +347,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       .assert(_ == 3)
 
     suite(t"Relative path tests"):
-      import hierarchies.simple
+      import pathHierarchies.simple
 
       test(t"Find conjunction of distinct paths"):
         val p1 = % / p"foo" / p"bar"
