@@ -17,7 +17,7 @@
 package superlunary
 
 import jacinta.*
-import serpentine.*, hierarchies.unix
+import serpentine.*, pathHierarchies.unix
 import anticipation.*
 import spectacular.*
 import digression.*
