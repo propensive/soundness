@@ -27,7 +27,7 @@ import enigmatic.*
 import kaleidoscope.*
 import rudiments.*
 import vacuous.*
-import serpentine.{append as _, *}, hierarchies.unixOrWindows
+import serpentine.{append as _, *}, pathHierarchies.unixOrWindows
 import spectacular.*
 import turbulence.*
 
