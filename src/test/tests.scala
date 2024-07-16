@@ -20,7 +20,7 @@ import contextual.*
 import rudiments.*, workingDirectories.virtualMachine
 import gossamer.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
-import serpentine.*, hierarchies.unix
+import serpentine.*, pathHierarchies.unix
 import anticipation.*
 import turbulence.*
 import ambience.*, systemProperties.virtualMachine
