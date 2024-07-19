@@ -6,7 +6,7 @@
 
 __Rendering of trees and DAGs in the console__
 
-_Dendrology_ provides methods for rendering data in a tree or directed acyclic graph
+__Dendrology__ provides methods for rendering data in a tree or directed acyclic graph
 structure as lines, for rendering in a monospaced font, typically in a terminal.
 
 ## Features
