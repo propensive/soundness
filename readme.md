@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/symbolism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/symbolism/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Symbolism
@@ -10,7 +10,7 @@ Many different types support, in some way, the concept of arithmetic
 operations: they can be added, subtracted, multiplied and divided. Or perhaps
 just some of these. We want to use the familiar binary arithmetic operators
 (`+`, `-`, `*` and `/`) to work with these types, so that is the first thing
-Symbolism provides, though typeclass definitions for the four main arithmetic
+__Symbolism__ provides, though typeclass definitions for the four main arithmetic
 operations, plus negation and square and cube root methods.
 
 ## Features
