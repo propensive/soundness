@@ -18,6 +18,9 @@ package anticipation
 
 import language.experimental.captureChecking
 
+object GenericHttpRequestParam:
+  given [NameType <: String & Singleton] => NameType is GenericHttpRequestParam[Text] = identity(_)
+
 trait GenericHttpRequestParam[-ParamType]:
   type Self <: String & Singleton
   def apply(value: ParamType): Text
