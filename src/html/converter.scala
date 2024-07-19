@@ -135,10 +135,12 @@ object OutlineConverter extends HtmlConverter():
       val link = A(href = t"#${slug(entry.label)}")(entry.label)
       if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
 
-    List(Ul(recur(structure(nodes.to(List), Nil))*))
+    List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
 
   @tailrec
-  def structure(nodes: List[Markdown.Ast.Node], stack: List[List[Entry]]): List[Entry] =
+  def structure
+      (minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
+          : List[Entry] =
     nodes match
       case Nil => stack match
         case Nil =>
@@ -148,54 +150,30 @@ object OutlineConverter extends HtmlConverter():
           last.reverse
 
         case head :: (Entry(label, something) :: tail) :: more =>
-          structure(Nil, (Entry(label, head.reverse) :: tail) :: more)
+          structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
 
         case head :: Nil :: tail =>
-          structure(Nil, List(Entry(t"", head.reverse)) :: tail)
+          structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
 
 
-      case Markdown.Ast.Block.Heading(level, children*) :: more =>
-        val depth = stack.length
-        if level > depth
-        then
-          structure(nodes, Nil :: stack)
-        else stack match
+      case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
+        val minimum2 = minimum.or(level)
+        val depth = stack.length + minimum2 - 1
+
+        if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
           case head :: next :: stack2 =>
             if level < depth then next match
               case Entry(label, Nil) :: tail =>
-                structure(nodes, (Entry(label, head.reverse) :: tail) :: stack2)
+                structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
 
               case _ =>
-                structure(nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
+                structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
 
             else
-              structure(more, (Entry(text(children), Nil) :: head) :: stack.tail)
+              structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
 
-          case Nil :: Nil =>
-            structure(more, List(Entry(text(children), Nil)) :: Nil)
+          case other :: Nil =>
+            structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
 
       case _ :: more =>
-        structure(more, stack)
-
-
-  // def items(node: Markdown.Ast.Block): Seq[Html[Ul.Content]] = node match
-  //   case Markdown.Ast.Block.Heading(level, children*) => Seq(heading(level, children))
-  //   case _                                            => Seq()
-
-  // private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline])
-  //         : Node[NonInteractive] =
-  //   level match
-  //     case 1 => Li.level1(A(href = slug(text(children)))(children.flatMap(phrasing)))
-  //     case 2 => Li.level2(A(href = slug(text(children)))(children.flatMap(phrasing)))
-  //     case 3 => Li.level3(A(href = slug(text(children)))(children.flatMap(phrasing)))
-
-  // def phrasing(node: Markdown.Ast.Inline): Seq[Node[NonInteractive]] = node match
-  //   case Markdown.Ast.Inline.Weblink(location, content) => nonInteractive(content)
-  //   case other                                          => nonInteractive(other)
-
-  // def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[NonInteractive]] = node match
-  //   case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(nonInteractive)))
-  //   case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
-  //   case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code))
-  //   case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
-  //   case _                                            => Nil
+        structure(minimum, more, stack)
