@@ -43,6 +43,7 @@ extends Dynamic:
 object MediaType:
   given MediaType is Inspectable = mt => t"""media"${mt}""""
   given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = showable.text(_)
+  given ("accept" is GenericHttpRequestParam[MediaType]) as accept = showable.text(_)
 
   given MediaType is Showable as showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
