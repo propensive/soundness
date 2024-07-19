@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/vacuous/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/vacuous/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Vacuous
@@ -9,7 +9,7 @@ __A simple representation of optional values__
 Scala's `Option` is the traditional way to represent values which may be either
 _present_ (in which case a value is specified) or _absent_. `Option` is a
 simple ADT, but union types, along with some helper methods, can provide much
-better ergonomics in most circumstances. _Vacuous_ offers an `Optional` type
+better ergonomics in most circumstances. __Vacuous__ offers an `Optional` type
 which provides this functionality.
 
 ## Features
