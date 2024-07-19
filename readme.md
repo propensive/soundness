@@ -160,6 +160,7 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Charisma](https://github.com/propensive/charisma/raw/main/doc/images/128x128.png)](https://github.com/propensive/charisma/)&nbsp;
 [![Chiaroscuro](https://github.com/propensive/chiaroscuro/raw/main/doc/images/128x128.png)](https://github.com/propensive/chiaroscuro/)&nbsp;
 [![Contextual](https://github.com/propensive/contextual/raw/main/doc/images/128x128.png)](https://github.com/propensive/contextual/)&nbsp;
+[![Contingency](https://github.com/propensive/contingency/raw/main/doc/images/128x128.png)](https://github.com/propensive/contingency/)&nbsp;
 [![Cosmopolite](https://github.com/propensive/cosmopolite/raw/main/doc/images/128x128.png)](https://github.com/propensive/cosmopolite/)&nbsp;
 [![Dendrology](https://github.com/propensive/dendrology/raw/main/doc/images/128x128.png)](https://github.com/propensive/dendrology/)&nbsp;
 [![Digression](https://github.com/propensive/digression/raw/main/doc/images/128x128.png)](https://github.com/propensive/digression/)&nbsp;
@@ -194,7 +195,6 @@ expected to be introduced in Scala 3 soon to provide better safety.
 [![Oubliette](https://github.com/propensive/oubliette/raw/main/doc/images/128x128.png)](https://github.com/propensive/oubliette/)&nbsp;
 [![Panopticon](https://github.com/propensive/panopticon/raw/main/doc/images/128x128.png)](https://github.com/propensive/panopticon/)&nbsp;
 [![Parasite](https://github.com/propensive/parasite/raw/main/doc/images/128x128.png)](https://github.com/propensive/parasite/)&nbsp;
-[![Contingency](https://github.com/propensive/contingency/raw/main/doc/images/128x128.png)](https://github.com/propensive/contingency/)&nbsp;
 [![Polyvinyl](https://github.com/propensive/polyvinyl/raw/main/doc/images/128x128.png)](https://github.com/propensive/polyvinyl/)&nbsp;
 [![Probably](https://github.com/propensive/probably/raw/main/doc/images/128x128.png)](https://github.com/propensive/probably/)&nbsp;
 [![Profanity](https://github.com/propensive/profanity/raw/main/doc/images/128x128.png)](https://github.com/propensive/profanity/)&nbsp;
