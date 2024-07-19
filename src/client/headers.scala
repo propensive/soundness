@@ -194,6 +194,7 @@ trait HttpHeaderDecoder[ValueType]:
 
 object Auth:
   import alphabets.base64.standard
+
   given Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".bytes.serialize[Base64]}"
     case Bearer(token)             => t"Bearer $token"
@@ -205,6 +206,8 @@ object Auth:
     case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
+
+  given ("authorization" is GenericHttpRequestParam[Auth]) = _.show
 
 enum Auth:
   case Basic(username: Text, password: Text)
