@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/larceny/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/larceny/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Larceny
@@ -10,7 +10,7 @@ Unlike runtime errors, compilation errors prevent successful compilation, which
 makes them harder to test, since we can't even compile the units tests we want
 to write and run to test them!
 
-_Larceny_ makes it possible to write those tests. Code which would normally
+__Larceny__ makes it possible to write those tests. Code which would normally
 fail compilation, for any reason (provided it parses as well-formed Scala) is
 permitted inside certain blocks of code, but instead of being compiled and run,
 instead returns a list of compilation errors, as runtime values, which are
@@ -24,17 +24,9 @@ perfect for testing.
 - unit tests on compilation errors can be written in the most natural way
 
 
-## Availability Plan
+## Availability
 
-Larceny has not yet been published. The medium-term plan is to build Larceny
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Larceny.
 
-Subsequently, Larceny will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
