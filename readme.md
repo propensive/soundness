@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/metamorphose/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/metamorphose/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Metamorphose
@@ -10,7 +10,7 @@ A permutation is a rearrangement of the elements in an ordered collection. It
 is a one-to-one mapping—a bijection—and therefore reversible.
 [Lehmer codes](https://en.wikipedia.org/wiki/Lehmer_code) provide a mapping
 between positive integers and permutations, which make it possible to describe
-a permutation of _n_ elements in _O(nlog(n))_ space. _Metamorphose_ provides
+a permutation of _n_ elements in _O(nlog(n))_ space. __Metamorphose__  provides
 an implementation of this encoding.
 
 ## Features
