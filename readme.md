@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/capricious/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/capricious/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Capricious
@@ -7,7 +7,7 @@
 __Generation of random values__
 
 Being able to calculate random values is useful for a variety of tasks, not least as test data.
-Capricious provides a more convenient interface to the standard pseudorandom number generators 
+__Capricious__ provides a more convenient interface to the standard pseudorandom number generators 
 available on the JVM.
 
 ## Features
@@ -18,17 +18,9 @@ available on the JVM.
 - offers a choice of random sources: "default", secure and strongly secure, with optional seed values
 - generic derivation of product and sum types
 
-## Availability Plan
+## Availability
 
-Capricious has not yet been published. The medium-term plan is to build Capricious
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Capricious.
 
-Subsequently, Capricious will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
