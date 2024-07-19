@@ -1,12 +1,12 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/contingency/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/contingency/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/MBUrkTgMnA)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Contingency
 
 __Versatile error handling for every scenario.__
 
-Contingency is an experimental library for abstracting over error handling
+__Contingency__ is an experimental library for abstracting over error handling
 strategies. In particular, it gives developers a choice between throwing
 exceptions, returning errors in a variety of datatypes, and accumulating
 several validation-style errors. Code must be written to accomodate
