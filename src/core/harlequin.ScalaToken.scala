@@ -19,7 +19,7 @@ package harlequin
 import anticipation.*
 import gossamer.{slice as _, *}
 
-enum Token:
+enum ScalaToken:
   case Unparsed(text: Text)
   case Markup(text: Text)
   case Newline

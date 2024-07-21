@@ -29,13 +29,15 @@ import scala.collection.mutable as scm
 
 case class ScalaSource
     (offset: Int,
-     lines:  IArray[Seq[Token]],
+     lines:  IArray[Seq[ScalaToken]],
      focus:  Optional[((Int, Int), (Int, Int))] = Unset):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): Seq[Token] = lines(line - offset)
+  def apply(line: Int): Seq[ScalaToken] = lines(line - offset)
 
-  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset): ScalaSource =
+  def fragment
+      (startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
+          : ScalaSource =
     ScalaSource(startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
 
 object ScalaSource:
@@ -60,14 +62,15 @@ object ScalaSource:
 
     val scanner = Scanners.Scanner(source)(using ctx)
 
-    def markup(text: Text): LazyList[Token] = text match
+    def markup(text: Text): LazyList[ScalaToken] = text match
       case r"$before(.*)\/\*!$inside([^*]*)\*\/$after(.*)" =>
-        LazyList(Token.Unparsed(before.show), Token.Markup(inside.show)) #::: markup(after.show)
+        LazyList
+         (ScalaToken.Unparsed(before.show), ScalaToken.Markup(inside.show)) #::: markup(after.show)
 
       case unparsed =>
-        LazyList(Token.Unparsed(unparsed.sub(t"\t", t"  ")), Token.Newline)
+        LazyList(ScalaToken.Unparsed(unparsed.sub(t"\t", t"  ")), ScalaToken.Newline)
 
-    def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
+    def stream(lastEnd: Int = 0): LazyList[ScalaToken] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
         markup(text.slice(lastEnd, text.length)).filter(_.length > 0)
@@ -76,7 +79,7 @@ object ScalaSource:
         import gossamer.slice
         val start = scanner.offset max lastEnd
 
-        val unparsed: LazyList[Token] =
+        val unparsed: LazyList[ScalaToken] =
           if lastEnd != start
           then text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
           else LazyList()
@@ -84,20 +87,22 @@ object ScalaSource:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val content: LazyList[Token] =
+        val content: LazyList[ScalaToken] =
           if start == end then LazyList()
           else
             text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
-              LazyList(Token.Code(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
+              LazyList
+               (ScalaToken.Code(line, trees(start, end).getOrElse(accent(token))), ScalaToken.Newline)
             .init
 
         unparsed #::: content #::: stream(end)
 
-    def lines(seq: List[Token], acc: List[List[Token]] = Nil): List[List[Token]] = seq match
-      case Nil => acc
-      case xs  => xs.indexOf(Token.Newline) match
-        case -1  => xs :: acc
-        case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
+    def lines(seq: List[ScalaToken], acc: List[List[ScalaToken]] = Nil): List[List[ScalaToken]] =
+      seq match
+        case Nil => acc
+        case xs  => xs.indexOf(ScalaToken.Newline) match
+          case -1  => xs :: acc
+          case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
 
     ScalaSource(1, IArray(lines(stream().to(List)).reverse*))
 
