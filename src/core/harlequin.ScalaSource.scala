@@ -41,9 +41,10 @@ case class ScalaSource
 object ScalaSource:
   def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
-    else if token == 3 || token == 10 || token == 13 then Accent.String
-    else if token >= 4 && token <= 9 then Accent.Number
-    else if token == 14 || token == 15 then Accent.Ident
+    else if token == 3 || token == 10 || token == 11 then Accent.String
+    else if token >= 4 && token <= 9 || token == 23 || token == 24 || token == 42 || token == 43
+    then Accent.Number
+    else if token == 14 then Accent.Ident
     else if token >= 20 && token <= 62 && Tokens.modifierTokens.contains(token) then Accent.Modifier
     else if token >= 20 && token <= 62 then Accent.Keyword
     else if token >= 63 && token <= 84 then Accent.Symbol
@@ -52,7 +53,10 @@ object ScalaSource:
   def highlight(text: Text): ScalaSource =
     val source = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
-    given Contexts.Context = ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
+
+    given Contexts.Context =
+      ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
+
     val trees = Trees()
     val parser = Parsers.Parser(source)
 
