@@ -40,6 +40,7 @@ package syntaxHighlighting:
     case Token.Code(text, String)   => e"${rgb"#99ffff"}($text)"
     case Token.Code(text, Parens)   => e"${rgb"#cc6699"}($text)"
     case Token.Code(text, Symbol)   => e"${rgb"#cc3366"}($text)"
+    case Token.Code(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
 
   given ScalaSource is Teletypeable as numbered = source =>
     val indent = source.lastLine.show.length

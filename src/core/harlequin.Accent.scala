@@ -21,7 +21,7 @@ import gossamer.{slice as _, *}
 import spectacular.*
 
 enum Accent:
-  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier
+  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier, Unparsed
 
 object Accent:
   given Accent is Showable = _.toString.tt.lower

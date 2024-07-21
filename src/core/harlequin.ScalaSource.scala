@@ -19,9 +19,7 @@ package harlequin
 import rudiments.*
 import anticipation.*
 import gossamer.{slice as _, *}
-import spectacular.*
 import vacuous.*
-import kaleidoscope.*
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
@@ -62,18 +60,13 @@ object ScalaSource:
 
     val scanner = Scanners.Scanner(source)(using ctx)
 
-    def markup(text: Text): LazyList[ScalaToken] = text match
-      case r"$before(.*)\/\*!$inside([^*]*)\*\/$after(.*)" =>
-        LazyList
-         (ScalaToken.Unparsed(before.show), ScalaToken.Markup(inside.show)) #::: markup(after.show)
-
-      case unparsed =>
-        LazyList(ScalaToken.Unparsed(unparsed.sub(t"\t", t"  ")), ScalaToken.Newline)
+    def untab(text: Text): LazyList[ScalaToken] =
+      LazyList(ScalaToken.Code(text.sub(t"\t", t"  "), Accent.Unparsed), ScalaToken.Newline)
 
     def stream(lastEnd: Int = 0): LazyList[ScalaToken] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
-        markup(text.slice(lastEnd, text.length)).filter(_.length > 0)
+        untab(text.slice(lastEnd, text.length)).filter(_.length > 0)
 
       case token =>
         import gossamer.slice
@@ -81,7 +74,13 @@ object ScalaSource:
 
         val unparsed: LazyList[ScalaToken] =
           if lastEnd != start
-          then text.slice(lastEnd, start).cut(t"\n").to(LazyList).flatMap(markup(_).filter(_.length > 0)).init
+          then
+            text.slice(lastEnd, start)
+             .cut(t"\n")
+             .to(LazyList)
+             .flatMap(untab(_).filter(_.length > 0))
+             .init
+
           else LazyList()
 
         scanner.nextToken()

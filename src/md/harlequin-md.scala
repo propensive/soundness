@@ -32,7 +32,6 @@ package htmlRenderers:
       case Markdown.Ast.Block.FencedCode(t"scala", meta, value) =>
         val code = ScalaSource.highlight(value).lines.flatMap: line =>
           (line :+ Token.Newline).map:
-            case Token.Unparsed(text)     => Code(text)
             case Token.Markup(text)       => Code(text)
             case Token.Newline            => Code(Br)
             case Token.Code(text, accent) => accent match
@@ -46,6 +45,7 @@ package htmlRenderers:
               case Accent.Symbol            => Code.symbol(text)
               case Accent.Parens            => Code.parens(text)
               case Accent.Modifier          => Code.modifier(text)
+              case Accent.Unparsed          => Code.unparsed(text)
 
         Seq(Pre(code.init*))
 

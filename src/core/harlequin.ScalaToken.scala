@@ -20,13 +20,9 @@ import anticipation.*
 import gossamer.{slice as _, *}
 
 enum ScalaToken:
-  case Unparsed(text: Text)
-  case Markup(text: Text)
   case Newline
   case Code(text: Text, accent: Accent)
 
   def length: Int = this match
-    case Unparsed(text) => text.length
-    case Markup(text)   => text.length
     case Newline        => 1
     case Code(text, _)  => text.length

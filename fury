@@ -10,8 +10,8 @@ repo propensive/anthology
 project harlequin
   module core
     sources  src/core
-    include  gossamer/core kaleidoscope/core anthology/scala
-  
+    include  gossamer/core anthology/scala
+
   module ansi
     sources  src/ansi
     include  harlequin/core escapade/core
@@ -22,10 +22,9 @@ project harlequin
 
   module all
     include  harlequin/md harlequin/ansi
-  
+
   module test
     compiler  scala
     sources   src/test
     include   probably/cli harlequin/core
     main      harlequin.Tests
-
