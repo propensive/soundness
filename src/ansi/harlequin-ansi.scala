@@ -26,20 +26,20 @@ import hieroglyph.*, textMetrics.uniform
 package syntaxHighlighting:
   import Accent.*
 
-  given ScalaCode is Teletypeable =
-    case ScalaCode(text, Error)    => e"${rgb"#cc0033"}($text)"
-    case ScalaCode(text, Number)   => e"${rgb"#cc3366"}($text)"
-    case ScalaCode(text, Modifier) => e"${rgb"#ff9966"}($text)"
-    case ScalaCode(text, Keyword)  => e"${rgb"#ff6633"}($text)"
-    case ScalaCode(text, Ident)    => e"${rgb"#ffcc99"}($text)"
-    case ScalaCode(text, Term)     => e"${rgb"#ffcc33"}($text)"
-    case ScalaCode(text, Typed)    => e"${rgb"#00cc99"}($text)"
-    case ScalaCode(text, String)   => e"${rgb"#99ffff"}($text)"
-    case ScalaCode(text, Parens)   => e"${rgb"#cc6699"}($text)"
-    case ScalaCode(text, Symbol)   => e"${rgb"#cc3366"}($text)"
-    case ScalaCode(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
+  given SourceToken is Teletypeable =
+    case SourceToken(text, Error)    => e"${rgb"#cc0033"}($text)"
+    case SourceToken(text, Number)   => e"${rgb"#cc3366"}($text)"
+    case SourceToken(text, Modifier) => e"${rgb"#ff9966"}($text)"
+    case SourceToken(text, Keyword)  => e"${rgb"#ff6633"}($text)"
+    case SourceToken(text, Ident)    => e"${rgb"#ffcc99"}($text)"
+    case SourceToken(text, Term)     => e"${rgb"#ffcc33"}($text)"
+    case SourceToken(text, Typed)    => e"${rgb"#00cc99"}($text)"
+    case SourceToken(text, String)   => e"${rgb"#99ffff"}($text)"
+    case SourceToken(text, Parens)   => e"${rgb"#cc6699"}($text)"
+    case SourceToken(text, Symbol)   => e"${rgb"#cc3366"}($text)"
+    case SourceToken(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
 
-  given ScalaSource is Teletypeable as numbered = source =>
+  given SourceCode is Teletypeable as numbered = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${rgb"#cc0033"}(║)"
 
@@ -60,7 +60,7 @@ package syntaxHighlighting:
 
     .join(e"", e"\n", markup)
 
-  given ScalaSource is Teletypeable as unnumbered = source =>
+  given SourceCode is Teletypeable as unnumbered = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
     .join(e"\n")

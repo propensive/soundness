@@ -19,8 +19,8 @@ package harlequin
 import anticipation.*
 import gossamer.{slice as _, *}
 
-object ScalaCode:
-  val Newline: ScalaCode = ScalaCode(t"\n", Accent.Unparsed)
+object SourceToken:
+  val Newline: SourceToken = SourceToken(t"\n", Accent.Unparsed)
 
-case class ScalaCode(text: Text, accent: Accent):
+case class SourceToken(text: Text, accent: Accent):
   def length: Int = text.length

@@ -25,21 +25,21 @@ import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
 
-case class ScalaSource
-    (offset: Int,
-     lines:  IArray[Seq[ScalaCode]],
-     focus:  Optional[((Int, Int), (Int, Int))] = Unset):
+case class SourceCode
+    (language: ProgrammingLanguage,
+     offset:   Int,
+     lines:    IArray[Seq[SourceToken]],
+     focus:    Optional[((Int, Int), (Int, Int))] = Unset):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): Seq[ScalaCode] = lines(line - offset)
+  def apply(line: Int): Seq[SourceToken] = lines(line - offset)
 
-  def fragment
-      (startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-          : ScalaSource =
-    ScalaSource(startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
+  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
+          : SourceCode =
+    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
 
-object ScalaSource:
-  def accent(token: Int): Accent =
+object SourceCode:
+  private def accent(token: Int): Accent =
     if token <= 2 then Accent.Error
     else if token == 3 || token == 10 || token == 11 then Accent.String
     else if token >= 4 && token <= 9 || token == 23 || token == 24 || token == 42 || token == 43
@@ -50,8 +50,8 @@ object ScalaSource:
     else if token >= 63 && token <= 84 then Accent.Symbol
     else Accent.Parens
 
-  def highlight(text: Text): ScalaSource =
-    val source = SourceFile.virtual("<highlighting>", text.s)
+  def apply(language: ProgrammingLanguage, text: Text): SourceCode =
+    val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
     given Contexts.Context =
@@ -61,12 +61,13 @@ object ScalaSource:
     val parser = Parsers.Parser(source)
 
     trees.traverse(parser.compilationUnit())
-    val scanner = Scanners.Scanner(source)
+    val scanner =
+      if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): LazyList[ScalaCode] =
-      LazyList(ScalaCode(text.sub(t"\t", t"  "), Accent.Unparsed), ScalaCode.Newline)
+    def untab(text: Text): LazyList[SourceToken] =
+      LazyList(SourceToken(text.sub(t"\t", t"  "), Accent.Unparsed), SourceToken.Newline)
 
-    def stream(lastEnd: Int = 0): LazyList[ScalaCode] = scanner.token match
+    def stream(lastEnd: Int = 0): LazyList[SourceToken] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
         untab(text.slice(lastEnd, text.length)).filter(_.length > 0)
@@ -75,7 +76,7 @@ object ScalaSource:
         import gossamer.slice
         val start = scanner.offset max lastEnd
 
-        val unparsed: LazyList[ScalaCode] =
+        val unparsed: LazyList[SourceToken] =
           if lastEnd != start
           then
             text.slice(lastEnd, start)
@@ -89,31 +90,30 @@ object ScalaSource:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val content: LazyList[ScalaCode] =
+        val content: LazyList[SourceToken] =
           if start == end then LazyList()
           else
             text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
-               (ScalaCode(line, trees(start, end).getOrElse(accent(token))), ScalaCode.Newline)
+               (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             .init
 
         unparsed #::: content #::: stream(end)
 
-    def lines(seq: List[ScalaCode], acc: List[List[ScalaCode]] = Nil): List[List[ScalaCode]] =
+    def lines(seq: List[SourceToken], acc: List[List[SourceToken]] = Nil): List[List[SourceToken]] =
       seq match
         case Nil => acc
-        case xs  => xs.indexOf(ScalaCode.Newline) match
+        case xs  => xs.indexOf(SourceToken.Newline) match
           case -1  => xs :: acc
           case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
 
-    ScalaSource(1, IArray(lines(stream().to(List)).reverse*))
+    SourceCode(language, 1, IArray(lines(stream().to(List)).reverse*))
 
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
 
     private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
-
     def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
 
     def ignored(tree: NameTree): Boolean =

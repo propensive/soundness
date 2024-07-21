@@ -23,27 +23,36 @@ import honeycomb.*
 
 package htmlRenderers:
   given HtmlConverter as scalaSyntax:
+    private def element(accent: Accent, text: Text): Element["code"] = accent match
+      case Accent.Error    => Code.error(text)
+      case Accent.Number   => Code.number(text)
+      case Accent.String   => Code.string(text)
+      case Accent.Ident    => Code.ident(text)
+      case Accent.Term     => Code.term(text)
+      case Accent.Typed    => Code.typed(text)
+      case Accent.Keyword  => Code.keyword(text)
+      case Accent.Symbol   => Code.symbol(text)
+      case Accent.Parens   => Code.parens(text)
+      case Accent.Modifier => Code.modifier(text)
+      case Accent.Unparsed => Code.unparsed(text)
+
     override def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
       case Markdown.Ast.Block.FencedCode(t"amok", meta, value) =>
         val lines: List[Text] = value.cut(t"\n").to(List)
         val rewritten = lines.dropWhile(_ != t"##").tail.join(t"\n")
         convertNode(Markdown.Ast.Block.FencedCode(t"scala", meta, rewritten))
 
+      case Markdown.Ast.Block.FencedCode(t"java", meta, value) =>
+        val code = Java.highlight(value).lines.flatMap: line =>
+          (line :+ SourceToken.Newline).map:
+            case SourceToken(text, accent) => element(accent, text)
+
+        Seq(Pre(code.init*))
+
       case Markdown.Ast.Block.FencedCode(t"scala", meta, value) =>
-        val code = ScalaSource.highlight(value).lines.flatMap: line =>
-          (line :+ ScalaCode.Newline).map:
-            case ScalaCode(text, accent) => accent match
-              case Accent.Error             => Code.error(text)
-              case Accent.Number            => Code.number(text)
-              case Accent.String            => Code.string(text)
-              case Accent.Ident             => Code.ident(text)
-              case Accent.Term              => Code.term(text)
-              case Accent.Typed             => Code.typed(text)
-              case Accent.Keyword           => Code.keyword(text)
-              case Accent.Symbol            => Code.symbol(text)
-              case Accent.Parens            => Code.parens(text)
-              case Accent.Modifier          => Code.modifier(text)
-              case Accent.Unparsed          => Code.unparsed(text)
+        val code = Scala.highlight(value).lines.flatMap: line =>
+          (line :+ SourceToken.Newline).map:
+            case SourceToken(text, accent) => element(accent, text)
 
         Seq(Pre(code.init*))
 

@@ -20,7 +20,7 @@ import rudiments.*
 import anthology.*
 
 extension (range: CodeRange)
-  def of(source: ScalaSource): ScalaSource =
+  def of(source: SourceCode): SourceCode =
     val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
     if range.startLine != range.endLine
     then source.fragment(range.startLine, (range.endLine + 2).min(source.lastLine), focus)
