@@ -1,12 +1,18 @@
 package punctuation
 
-import honeycomb.*
-import harlequin.*
+import anticipation.*
 import gossamer.*
+import harlequin.*
+import honeycomb.*
 
 package htmlRenderers:
   given HtmlConverter as scalaSyntax:
     override def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
+      case Markdown.Ast.Block.FencedCode(t"amok", meta, value) =>
+        val lines: List[Text] = value.cut(t"\n").to(List)
+        val rewritten = lines.dropWhile(_ != t"##").tail.join(t"\n")
+        convertNode(Markdown.Ast.Block.FencedCode(t"scala", meta, rewritten))
+
       case Markdown.Ast.Block.FencedCode(t"scala", meta, value) =>
         val code = ScalaSource.highlight(value).lines.flatMap: line =>
           (line :+ Token.Newline).map:

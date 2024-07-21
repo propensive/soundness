@@ -18,7 +18,6 @@ package harlequin
 
 import rudiments.*
 import anticipation.*
-import anthology.*
 import gossamer.{slice as _, *}
 import spectacular.*
 import vacuous.*
@@ -27,31 +26,6 @@ import kaleidoscope.*
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
 import scala.collection.mutable as scm
-
-enum Token:
-  case Unparsed(text: Text)
-  case Markup(text: Text)
-  case Newline
-  case Code(text: Text, accent: Accent)
-
-  def length: Int = this match
-    case Unparsed(text) => text.length
-    case Markup(text)   => text.length
-    case Newline        => 1
-    case Code(text, _)  => text.length
-
-enum Accent:
-  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier
-
-object Accent:
-  given Accent is Showable = _.toString.tt.lower
-
-extension (range: CodeRange)
-  def of(source: ScalaSource): ScalaSource =
-    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
-    if range.startLine != range.endLine
-    then source.fragment(range.startLine, (range.endLine + 2).min(source.lastLine), focus)
-    else source.fragment(range.startLine, (range.endLine + 1).min(source.lastLine), focus)
 
 case class ScalaSource
     (offset: Int,
