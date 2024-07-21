@@ -26,21 +26,18 @@ import hieroglyph.*, textMetrics.uniform
 package syntaxHighlighting:
   import Accent.*
 
-  given Token is Teletypeable =
-    case Token.Unparsed(text)       => text.teletype
-    case Token.Markup(text)         => text.teletype
-    case Token.Newline              => e"\n"
-    case Token.Code(text, Error)    => e"${rgb"#cc0033"}($text)"
-    case Token.Code(text, Number)   => e"${rgb"#cc3366"}($text)"
-    case Token.Code(text, Modifier) => e"${rgb"#ff9966"}($text)"
-    case Token.Code(text, Keyword)  => e"${rgb"#ff6633"}($text)"
-    case Token.Code(text, Ident)    => e"${rgb"#ffcc99"}($text)"
-    case Token.Code(text, Term)     => e"${rgb"#ffcc33"}($text)"
-    case Token.Code(text, Typed)    => e"${rgb"#00cc99"}($text)"
-    case Token.Code(text, String)   => e"${rgb"#99ffff"}($text)"
-    case Token.Code(text, Parens)   => e"${rgb"#cc6699"}($text)"
-    case Token.Code(text, Symbol)   => e"${rgb"#cc3366"}($text)"
-    case Token.Code(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
+  given ScalaCode is Teletypeable =
+    case ScalaCode(text, Error)    => e"${rgb"#cc0033"}($text)"
+    case ScalaCode(text, Number)   => e"${rgb"#cc3366"}($text)"
+    case ScalaCode(text, Modifier) => e"${rgb"#ff9966"}($text)"
+    case ScalaCode(text, Keyword)  => e"${rgb"#ff6633"}($text)"
+    case ScalaCode(text, Ident)    => e"${rgb"#ffcc99"}($text)"
+    case ScalaCode(text, Term)     => e"${rgb"#ffcc33"}($text)"
+    case ScalaCode(text, Typed)    => e"${rgb"#00cc99"}($text)"
+    case ScalaCode(text, String)   => e"${rgb"#99ffff"}($text)"
+    case ScalaCode(text, Parens)   => e"${rgb"#cc6699"}($text)"
+    case ScalaCode(text, Symbol)   => e"${rgb"#cc3366"}($text)"
+    case ScalaCode(text, Unparsed) => e"${rgb"#2288aa"}($Italic($text))"
 
   given ScalaSource is Teletypeable as numbered = source =>
     val indent = source.lastLine.show.length

@@ -27,11 +27,11 @@ import scala.collection.mutable as scm
 
 case class ScalaSource
     (offset: Int,
-     lines:  IArray[Seq[ScalaToken]],
+     lines:  IArray[Seq[ScalaCode]],
      focus:  Optional[((Int, Int), (Int, Int))] = Unset):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): Seq[ScalaToken] = lines(line - offset)
+  def apply(line: Int): Seq[ScalaCode] = lines(line - offset)
 
   def fragment
       (startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
@@ -50,20 +50,19 @@ object ScalaSource:
     else Accent.Parens
 
   def highlight(text: Text): ScalaSource =
-    val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
     val source = SourceFile.virtual("<highlighting>", text.s)
-    val ctx = ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
+    val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
+    given Contexts.Context = ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
     val trees = Trees()
-    val parser = Parsers.Parser(source)(using ctx)
+    val parser = Parsers.Parser(source)
 
-    trees.traverse(parser.compilationUnit())(using ctx)
+    trees.traverse(parser.compilationUnit())
+    val scanner = Scanners.Scanner(source)
 
-    val scanner = Scanners.Scanner(source)(using ctx)
+    def untab(text: Text): LazyList[ScalaCode] =
+      LazyList(ScalaCode(text.sub(t"\t", t"  "), Accent.Unparsed), ScalaCode.Newline)
 
-    def untab(text: Text): LazyList[ScalaToken] =
-      LazyList(ScalaToken.Code(text.sub(t"\t", t"  "), Accent.Unparsed), ScalaToken.Newline)
-
-    def stream(lastEnd: Int = 0): LazyList[ScalaToken] = scanner.token match
+    def stream(lastEnd: Int = 0): LazyList[ScalaCode] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
         untab(text.slice(lastEnd, text.length)).filter(_.length > 0)
@@ -72,7 +71,7 @@ object ScalaSource:
         import gossamer.slice
         val start = scanner.offset max lastEnd
 
-        val unparsed: LazyList[ScalaToken] =
+        val unparsed: LazyList[ScalaCode] =
           if lastEnd != start
           then
             text.slice(lastEnd, start)
@@ -86,20 +85,20 @@ object ScalaSource:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val content: LazyList[ScalaToken] =
+        val content: LazyList[ScalaCode] =
           if start == end then LazyList()
           else
             text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
-               (ScalaToken.Code(line, trees(start, end).getOrElse(accent(token))), ScalaToken.Newline)
+               (ScalaCode(line, trees(start, end).getOrElse(accent(token))), ScalaCode.Newline)
             .init
 
         unparsed #::: content #::: stream(end)
 
-    def lines(seq: List[ScalaToken], acc: List[List[ScalaToken]] = Nil): List[List[ScalaToken]] =
+    def lines(seq: List[ScalaCode], acc: List[List[ScalaCode]] = Nil): List[List[ScalaCode]] =
       seq match
         case Nil => acc
-        case xs  => xs.indexOf(ScalaToken.Newline) match
+        case xs  => xs.indexOf(ScalaCode.Newline) match
           case -1  => xs :: acc
           case idx => lines(xs.drop(idx + 1), xs.take(idx) :: acc)
 
