@@ -161,7 +161,7 @@ val length = 1*Inch + 1*Metre
 but we can't subtract a second from a litre:
 ```amok
 syntax  scala
-error  lit..ond
+error  Lit..ond
 ##
 val nonsense = Litre - Second // will not compile
 ```
@@ -224,7 +224,8 @@ literal `Double` as the second parameter. The `given` may be `erased`, if using 
 
 For example,
 ```amok
-syntax  scala
+syntax     scala
+highlight  erased
 ##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
 ```
@@ -251,6 +252,8 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
 syntax  scala
+highlight  in..Miles]
+highlight  in..Hours]
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
@@ -387,7 +390,8 @@ By default, Quantitative will use the latter form, but it is possible to define 
 representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
 ```amok
-syntax  scala
+syntax     scala
+highlight  Kilo..Seconds[-2]
 ##
 import gossamer.t
 
