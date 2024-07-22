@@ -110,7 +110,7 @@ pounds, as units of mass.
 
 Each type representing units, such as `Metres` or `Kilograms`, must be a subtype of the `Units` type,
 which is parameterized with its power (with a singleton literal integer) and a _dimension_, i.e. another type
-representing the nature of the measurement. For `Metres` the dimension is `Length`; for `Kilograms`'s it is
+representing the nature of the measurement. For `Metres` the dimension is `Length`; for `Kilograms` it is
 `Mass`; `Candela`'s is `Luminosity`.
 
 `Metres[PowerType]` is a subtype of `Units[PowerType, Length]`, where `PowerType` must be a singleton
