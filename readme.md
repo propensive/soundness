@@ -81,7 +81,9 @@ Note that the sequence of random values generated within a stochastic block
 will be deterministic, so long as the code is deterministic. This is generally
 true for single-threaded code, but concurrency can introduce nondeterminism,
 since multiple threads could cause random values to be generated in a different
-order across threads each time the code is run. Therefore, it is important to
+order across threads, each time the code is run.
+
+Therefore, it is important to
 initiate a new `stochastic` block for each thread, using a seed generated from
 the parent thread, like so:
 ```scala
@@ -92,15 +94,15 @@ import randomNumberGenerators.seeded
 
 def main(): Unit =
   stochastic:
-    val seed1 = arbitrary[Seed]()
-    val seed2 = arbitrary[Seed]()
+    val seed1: Seed = arbitrary()
+    val seed2: Seed = arbitrary()
 
     val async1 = Async:
-      stochastic(using seed1):
+      seed1.stochastic:
         println(arbitrary[Int])
 
     val async2 = Async:
-      stochastic(using seed2):
+      seed2.stochastic:
         println(arbitrary[Int])
 
     async1.await()
@@ -163,16 +165,47 @@ trait Randomizable:
   def from(random: Random): Self
 ```
 
-An implementation of `from` should call `random`'s methods as many times as
-necessary to construct a new, random instance of `ValueType`. Although random,
-the instance of `Self` should depend deterministically on the values
-produced by `random`.
+We can define a new instance for a type, say `Color`, with a simple `given`
+definition such as:
+```scala
+given Color is Randomizable = rnd =>
+  Color(rnd[Byte](), rnd[Byte](), rnd[Byte]())
+```
+
+In this example we generate three `Byte` values from the `Random` instance,
+`rnd`, supplied.
+
+An implementation of `Randomizable`'s `from` method should call its `rnd`
+parameter's methods as many times as necessary to construct a new, arbitrary
+instance of `Self`. Although random, the instance of `Self` should depend
+deterministically on the values produced by `random` (and should not take
+randomness from any other source).
+
+### Random sequences
+
+If a type `ValueType` is `Randomizable`, then `List[ValueType]` and
+`IArray[ValueType]` are also `Randomizable`, provided a `RandomSize` instance
+is in scope, for example by importing,
+```scala
+import randomization.sizes.uniformUpto1000
+```
+
+Instances of `RandomSize` exist for other powers of 10, up to `100000`.
+
+It's also possible to construct random `Set[ValueType]`s in the same way, but
+their sizes may be smaller due to deduplication. For example, whatever the
+range of `RandomSize`, a `Set[Boolean]` would never have more than two elements,
+`true` and `false`.
 
 ### Product and Sum types
 
-Capricious can construct random instances of product types such as case classes and enumeration cases, and
-sum types like `enum`s and sealed traits, as long as each field of the product and variant of the sum has
-a valid `Randomizable` instance.
+Capricious can construct random instances of product types such as case classes
+and enumeration cases, and sum types like `enum`s and sealed traits, as long as
+each field of the product and variant of the sum has a valid `Randomizable`
+instance.
+
+This generic-derivation functionality works thanks to
+[Wisteria](https://soundness.dev/wisteria/).
 
 
 ## Status
