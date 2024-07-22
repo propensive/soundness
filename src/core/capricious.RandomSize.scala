@@ -18,5 +18,5 @@ package capricious
 
 import language.experimental.genericNumberLiterals
 
-trait RandomLength:
+trait RandomSize:
   def generate(random: Random): Int

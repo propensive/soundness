@@ -35,12 +35,12 @@ package randomization:
 
       def from(random: Random) = blns(random.long().toInt.abs%blns.length)
 
-  package lengths:
-    given RandomLength as uniformUpto10 = _.long().toInt.abs%10
-    given RandomLength as uniformUpto100 = _.long().toInt.abs%100
-    given RandomLength as uniformUpto1000 = _.long().toInt.abs%1000
-    given RandomLength as uniformUpto10000 = _.long().toInt.abs%10000
-    given RandomLength as uniformUpto100000 = _.long().toInt.abs%100000
+  package sizes:
+    given RandomSize as uniformUpto10 = _.long().toInt.abs%10
+    given RandomSize as uniformUpto100 = _.long().toInt.abs%100
+    given RandomSize as uniformUpto1000 = _.long().toInt.abs%1000
+    given RandomSize as uniformUpto10000 = _.long().toInt.abs%10000
+    given RandomSize as uniformUpto100000 = _.long().toInt.abs%100000
 
   given Randomization as unseeded = () => su.Random(java.util.Random())
   given Randomization as secureUnseeded = () => su.Random(js.SecureRandom())

@@ -33,17 +33,23 @@ object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Ra
   given Seed is Randomizable as seed = _.long().pipe(Seed(_))
   given Boolean is Randomizable as boolean = _.long() < 0L
 
-  given [ElementType: Randomizable](using length: RandomLength)
+  given [ElementType: Randomizable](using size: RandomSize)
       => List[ElementType] is Randomizable =
     random =>
       given Random = random
-      List.fill(length.generate(random))(arbitrary[ElementType]())
+      List.fill(size.generate(random))(arbitrary[ElementType]())
 
-  given [ElementType: {Randomizable, ClassTag}](using length: RandomLength)
+  given [ElementType: Randomizable](using size: RandomSize)
+      => Set[ElementType] is Randomizable =
+    random =>
+      given Random = random
+      Set.fill(size.generate(random))(arbitrary[ElementType]())
+
+  given [ElementType: {Randomizable, ClassTag}](using size: RandomSize)
       => IArray[ElementType] is Randomizable =
     random =>
       given Random = random
-      IArray.fill(length.generate(random))(arbitrary[ElementType]())
+      IArray.fill(size.generate(random))(arbitrary[ElementType]())
 
   given (using Distribution) => Double is Randomizable = summon[Distribution].transform(_)
 
