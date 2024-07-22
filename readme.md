@@ -216,7 +216,7 @@ what their types are, so we cannot rely on any of these details in our generic
 derivation definition.
 
 To use Wisteria, we need to import the `wisteria` package,
-```
+```scala
 import wisteria.*
 ```
 and add the `ProductDerivation` trait to the companion object of the type we
