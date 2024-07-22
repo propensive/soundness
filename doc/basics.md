@@ -153,6 +153,7 @@ val length = 1*Inch + 1*Metre
 ```
 but we can't subtract a second from a litre:
 ```amok
+error  lit..ond
 ##
 val nonsense = Litre - Second // will not compile
 ```
