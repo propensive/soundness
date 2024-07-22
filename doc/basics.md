@@ -10,6 +10,7 @@ the value's units. We can create a quantity by multiplying an existing `Double` 
 unit value, such as `Metre` or `Joule`, which are just `Quantity` values equal to `1.0` of the appropriate unit.
 For example:
 ```amok
+syntax  scala
 ##
 val distance = 58.3*Metre
 ```
@@ -24,6 +25,7 @@ the singular.
 
 We can compute an `area` value by squaring the distance,
 ```amok
+syntax  scala
 ##
 val area = distance*distance
 ```
@@ -51,6 +53,7 @@ human-readable `Text` values, so calling `show` on a `Quantity` will produce muc
 
 We can also define:
 ```amok
+syntax  scala
 ##
 val energy = Joule*28000
 ```
@@ -77,6 +80,7 @@ units.
 Just as we could construct an area by multiplying two lengths, we can compute a new value with appropriate units
 by combining, say, `area` and `energy`,
 ```amok
+syntax  scala
 ##
 val volume = distance*distance*distance
 val energyDensity = energy/volume
@@ -91,6 +95,7 @@ their dimensionality will be checked at compiletime. For example, the equation, 
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
 implemented using Quantitative `Quantity`s with:
 ```amok
+syntax  scala
 ##
 def s(u: Quantity[Metres[1] & Seconds[-1]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
@@ -129,6 +134,7 @@ available.
 Quantitative defines a variety of imperial measurements, and will automatically convert units of the same
 dimension to the same units in multiplications and divisions. For example,
 ```amok
+syntax  scala
 ##
 val width = 0.3*Metre
 val height = 5*Inch
@@ -148,11 +154,13 @@ Addition and subtraction are possible between quantities which share the same di
 
 We can safely add an inch and a metre,
 ```amok
+syntax  scala
 ##
 val length = 1*Inch + 1*Metre
 ```
 but we can't subtract a second from a litre:
 ```amok
+syntax  scala
 error  lit..ond
 ##
 val nonsense = Litre - Second // will not compile
@@ -176,6 +184,7 @@ Likewise, we can compare units in like or mixed values with the four standard in
 (`<`, `>`, `<=`, `>=`). These will return `true` or `false` if the operands have the same dimension,
 even if they have different units, for example,
 ```amok
+syntax  scala
 ##
 8*Foot < 4*Metre // returns true
 ```
@@ -189,6 +198,7 @@ account. So, by default, `3*Foot == 3*Metre` will yield `true`, since `3.0 == 3.
 
 This is highly undesirable, but luckily there's a solution:
 ```amok
+syntax  scala
 ##
 import language.strictEquality
 ```
@@ -214,6 +224,7 @@ literal `Double` as the second parameter. The `given` may be `erased`, if using 
 
 For example,
 ```amok
+syntax  scala
 ##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
 ```
@@ -239,6 +250,7 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
+syntax  scala
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
@@ -287,6 +299,7 @@ CPU: floating-point instructions per second.
 
 Trivially, we could create a value,
 ```amok
+syntax  scala
 ##
 val SimpleFlop = 1.0/Second
 ```
@@ -296,6 +309,7 @@ a one-megaFLOP CPU.
 
 But this definition is just a value, not a unit. We can tweak the definition slightly to,
 ```amok
+syntax  scala
 ##
 val Flop = MetricUnit(1.0/Second)
 ```
@@ -309,11 +323,13 @@ something more specific: a number of instructions. To do better, we need to intr
 `Dimension`, distinct from length, mass and other dimensions, and representing a CPU's
 performance,
 ```amok
+syntax  scala
 ##
 trait CpuPerformance extends Dimension
 ```
 and create a `Flops` type corresponding to this dimension:
 ```amok
+syntax  scala
 ##
 import rudiments.*
 trait Flops[PowerType <: Nat] extends Units[PowerType, CpuPerformance]
@@ -331,6 +347,7 @@ With these definitions, we can now write `Mega(Flop) * Minute` to get a result w
 If we want to show the FLOPS value as `Text`, a symbolic name is required. This can be specified
 with a contextual instance of `UnitName[Flops[1]]`,
 ```amok
+syntax  scala
 ##
 given UnitName[Flops[1]] = () => t"FLOPS"
 ```
@@ -352,6 +369,7 @@ these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
 ```amok
+syntax  scala
 ##
 erased given DimensionName[Units[1, Mass] & Units[1, Length] & Units[-2, Time], "force"] = erasedValue
 ```
@@ -369,6 +387,7 @@ By default, Quantitative will use the latter form, but it is possible to define 
 representations of units where these exist, and Quantitative will use these whenever a quantity is
 displayed. A contextual value can be defined, such as the following,
 ```amok
+syntax  scala
 ##
 import gossamer.t
 
