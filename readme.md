@@ -42,7 +42,7 @@ val randomChar: Char = random()
 ```
 
 Random values can only be generated for certain types, but this includes most
-primitive types, and any type for which an `Arbitrary` typeclass instance
+primitive types, and any type for which an `Randomizable` typeclass instance
 exists.
 
 A value generated with `random` should be unpredictable, since it will be
@@ -94,7 +94,7 @@ def main(): Unit =
   stochastic:
     val seed1 = arbitrary[Seed]()
     val seed2 = arbitrary[Seed]()
-  
+
     val async1 = Async:
       stochastic(using seed1):
         println(arbitrary[Int])
@@ -153,25 +153,26 @@ given Seed = Seed(Bytes(78, 124, 19, 3, 52, 99, 112, 89, 8, 7, 12))
 ```
 though different random number generators may only use as much of the seed value as they need.
 
-### The `Arbitrary` Typeclass
+### The `Randomizable` Typeclass
 
-The typeclass, `Arbitrary`, will produce random instances of its type parameter. Given instances are
+The typeclass, `Randomizable`, will produce random instances of its type parameter. Given instances are
 predefined for a few basic types, but custom instances can be constructed by implementing the trait:
 ```scala
-trait Arbitrary[ValueType]:
-  def from(random: Random): ValueType
+trait Randomizable:
+  type Self
+  def from(random: Random): Self
 ```
 
 An implementation of `from` should call `random`'s methods as many times as
 necessary to construct a new, random instance of `ValueType`. Although random,
-the instance of `ValueType` should depend deterministically on the values
+the instance of `Self` should depend deterministically on the values
 produced by `random`.
 
 ### Product and Sum types
 
 Capricious can construct random instances of product types such as case classes and enumeration cases, and
 sum types like `enum`s and sealed traits, as long as each field of the product and variant of the sum has
-a valid `Arbitrary` instance.
+a valid `Randomizable` instance.
 
 
 ## Status
