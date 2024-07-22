@@ -16,10 +16,12 @@
 
 package capricious
 
-import hypotenuse.*
-import anticipation.*
-
 import language.experimental.genericNumberLiterals
+
+import scala.compiletime.*
+
+import anticipation.*
+import hypotenuse.*
 
 object Seed:
   def apply(long: Long): Seed = Seed(long.bits.bytes)
@@ -27,3 +29,8 @@ object Seed:
 case class Seed(value: Bytes):
   def entropy: Int = value.length*8
   def long: Long = Long(value)
+
+  inline def stochastic[ResultType](block: Random ?=> ResultType): ResultType =
+    given seed: Seed = this
+    val randomization = summonInline[Randomization]
+    block(using new Random(randomization.make()))

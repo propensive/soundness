@@ -28,7 +28,6 @@ import java.security as js
 import language.experimental.genericNumberLiterals
 
 package randomization:
-
   package text:
     given Text is Randomizable as bigListOfNaughtyStrings:
       val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
