@@ -428,7 +428,9 @@ and create a `Flops` type corresponding to this dimension:
 syntax  scala
 ##
 import rudiments.*
-trait Flops[PowerType <: Nat] extends Units[PowerType, CpuPerformance]
+trait Flops[PowerType <: Nat]
+extends Units[PowerType, CpuPerformance]
+
 val Flop: MetricUnit[Flops[1]] = MetricUnit(1)
 ```
 
@@ -461,7 +463,7 @@ error messages when a mismatch occurs.
 syntax  scala
 error   M..)  
   caption
-      quantitative: the left operand represents velocity, but the right operand represents acceleration; these are incompatible physical quantities
+      the left operand represents velocity, but the right operand represents acceleration
 ##
 Metre/Second + Metre/(Second*Second)
 
