@@ -441,12 +441,16 @@ producer typeclass results.
 
 Here is an example usage:
 
-```scala
+```amok
+syntax  scala
+highlight  [InputType..flatMap  This is a polymorphic `bind` function
+highlight  [Monadic..(_)  This is a polymorphic `pure` function
+##
 object Parser extends ProductDerivation[Parser]:
   inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
     constructWith[DerivationType, Either]
-     ([InputType, OutputType] => _.flatMap,           // bind
-      [MonadicType] => Right(_),                      // pure
+     ([InputType, OutputType] => _.flatMap,
+      [MonadicType] => Right(_),
       [FieldType] => context => context.parse(input))
 ```
 
