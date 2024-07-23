@@ -97,13 +97,28 @@ If we had instead calculated `energy/area`, whose units do not include metres, t
 We can go further. For example, the "SUVAT" equations of motion can be safely implemented as methods, and
 their dimensionality will be checked at compiletime. For example, the equation, `s = ut + ½at²` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
-implemented using Quantitative `Quantity`s with:
+implemented using Quantitative `Quantity`s with,
 ```amok
 syntax  scala
 ##
-def s(u: Quantity[Metres[1] & Seconds[-1]], t: Quantity[Seconds[1]], a: Quantity[Metres[1] & Seconds[-2]])
+def s
+    (u: Quantity[Metres[1] & Seconds[-1]],
+     t: Quantity[Seconds[1]],
+     a: Quantity[Metres[1] & Seconds[-2]])
     : Quantity[Metres[1]] =
   u*t + 0.5*a*t*t
+```
+or more verbosely,
+```amok
+syntax  scala
+##
+def distance
+    (velocity0: Quantity[Metres[1] & Seconds[-1]],
+     time: Quantity[Seconds[1]],
+     acceleration: Quantity[Metres[1] & Seconds[-2]])
+        : Quantity[Metres[1]] =
+
+  velocity0*time + 0.5*acceleration*time*time
 ```
 
 While the method arguments have more complex types, the expression, `u*t + 0.5*a*t*t`, is checked for
@@ -191,9 +206,10 @@ Likewise, we can compare units in like or mixed values with the four standard in
 even if they have different units, for example,
 ```amok
 syntax  scala
-caution  8..Metre  Beware: this returns true!
+highlight  8..Metre  This returns true.
 ##
 8*Foot < 4*Metre
+
 ```
 while incompatible units will result in a compile error.
 
@@ -232,8 +248,7 @@ literal `Double` as the second parameter. The `given` may be `erased`, if using 
 For example,
 ```amok
 syntax     scala
-highlight  erased
-  caption  We can make the value erased
+highlight  erased  We can make the value erased.
 ##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = ###
 
@@ -261,10 +276,8 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
 syntax  scala
-highlight  Mi..es
-  caption  First convert into miles per second
-highlight  Ho..rs
-  caption  Then convert the seconds into hours
+highlight  Mi..es  First convert into miles per second...
+highlight  Ho..rs  ...and then convert the seconds into hours.
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
@@ -376,11 +389,15 @@ _acceleration_ and _electrical resistance_.
 
 Definitions of names for many of these physical quantities are already defined, and will appear in
 error messages when a mismatch occurs.
-```
-scala> Metre/Second + Metre/(Second*Second)
+```amok
+syntax  scala
+error   M..)  
+  caption
+      quantitative: the left operand represents velocity, but the right operand
+      represents acceleration; these are incompatible physical quantities
+##
+Metre/Second + Metre/(Second*Second)
 
-quantitative: the left operand represents velocity, but the right operand represents acceleration;
-these are incompatible physical quantities
 ```
 It is also possible to define your own, for example, here is the definition for "force":
 ```amok
@@ -403,7 +420,6 @@ representations of units where these exist, and Quantitative will use these when
 displayed. A contextual value can be defined, such as the following,
 ```amok
 syntax     scala
-highlight  Kilo..Seconds[-2]
 ##
 import gossamer.t
 
