@@ -459,8 +459,7 @@ error messages when a mismatch occurs.
 syntax  scala
 error   M..)  
   caption
-      quantitative: the left operand represents velocity, but the right operand
-      represents acceleration; these are incompatible physical quantities
+      quantitative: the left operand represents velocity, but the right operand represents acceleration; these are incompatible physical quantities
 ##
 Metre/Second + Metre/(Second*Second)
 
