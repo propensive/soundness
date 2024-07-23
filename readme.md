@@ -228,8 +228,10 @@ but we can't subtract a second from a litre:
 ```amok
 syntax  scala
 error  Lit..ond
+  caption  This will not compile because litres and seconds are incompatible
 ##
-val nonsense = Litre - Second // will not compile
+val nonsense = Litre - Second
+
 ```
 
 For the addition and subtraction of values with mixed units, the question arises of which units the result
