@@ -302,6 +302,7 @@ highlight  erased
   caption  We can make the value erased
 ##
 erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = ###
+
 ```
 which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
 to convert between kilograms and tons.
@@ -326,13 +327,16 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
 syntax  scala
-highlight  in..Miles]
+highlight  Mi..es
   caption  First convert into miles per second
+highlight  Ho..rs
+  caption  Then convert the seconds into hours
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
 val speed = distance2/time
 val mph = speed.in[Miles].in[Hours]
+
 ```
 
 ### SI definitions
@@ -475,6 +479,7 @@ highlight  Kilo..Seconds[-2]
 import gossamer.t
 
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
+
 ```
 and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead of `2800 kg⋅m
 �⋅s
