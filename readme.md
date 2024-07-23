@@ -160,9 +160,10 @@ If we had instead calculated `energy/area`, whose units do not include metres, t
 
 We can go further. For example, the ["SUVAT" equations of motion](https://en.wikipedia.org/wiki/Equations_of_motion)
 can be safely implemented as methods, and
-their dimensionality will be checked at compiletime. For example, the equation, `s = ut + 
-½at
-²` for
+their dimensionality will be checked at compiletime. For example, the equation,
+```mathml
+<math xmlns="http://www.w3.org/1998/Math/MathML"><mi>s</mi><mo>=</mo><mi>u</mi><mi>t</mi><mo>+</mo><mfrac><mn>1</mn><mn>2</mn></mfrac><mi>a</mi><msup><mi>t</mi><mn>2</mn></msup></math>
+```
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
 implemented using Quantitative `Quantity`s with,
 ```amok
