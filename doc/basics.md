@@ -1,6 +1,10 @@
-All Quantitative terms and types are defined in the `quantitative` package:
+All Quantitative terms and types are defined in the `quantitative` package,
 ```scala
 import quantitative.*
+```
+and exported to the `soundness` package:
+```scala
+import soundness.*
 ```
 
 ### `Quantity` types
@@ -187,8 +191,9 @@ Likewise, we can compare units in like or mixed values with the four standard in
 even if they have different units, for example,
 ```amok
 syntax  scala
+caution  8..Metre  Beware: this returns true!
 ##
-8*Foot < 4*Metre // returns true
+8*Foot < 4*Metre
 ```
 while incompatible units will result in a compile error.
 
@@ -228,8 +233,9 @@ For example,
 ```amok
 syntax     scala
 highlight  erased
+  caption  We can make the value erased
 ##
-erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088]
+erased given Ratio[Kilograms[1] & Tons[-1], 1016.0469088] = ###
 ```
 which specifies that there are about 1016 kilograms in a ton, and will be used if Quantitative ever needs
 to convert between kilograms and tons.
@@ -254,8 +260,8 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
 syntax  scala
-highlight  in..Miles]
 highlight  in..Hours]
+highlight  in..Miles]
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
