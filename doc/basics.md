@@ -260,8 +260,8 @@ So, `(10*Metre).in[Yards]`, would create a value representing approximately 10.9
 If a quantity includes units in multiple dimensions, these can be converted in steps, for example,
 ```amok
 syntax  scala
-highlight  in..Hours]
 highlight  in..Miles]
+  caption  First convert into miles per second
 ##
 val distance2 = 100*Metre
 val time = 9.8*Second
