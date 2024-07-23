@@ -94,18 +94,20 @@ and its type will be inferred with the parameter `Kilogram[1] & Metres[-1] & Sec
 If we had instead calculated `energy/area`, whose units do not include metres, the type parameter would be just
 `Kilogram[1] & Second[-2]`; the redundant `Metres[0]` would be automatically removed from the conjunction.
 
-We can go further. For example, the "SUVAT" equations of motion can be safely implemented as methods, and
+We can go further. For example, the ["SUVAT" equations of motion](https://en.wikipedia.org/wiki/Equations_of_motion)
+can be safely implemented as methods, and
 their dimensionality will be checked at compiletime. For example, the equation, `s = ut + ½at²` for
 calculating a distance (`s`) from an initial velocity (`u`), acceleration (`a`) and time (`t`) can be
 implemented using Quantitative `Quantity`s with,
 ```amok
 syntax  scala
 ##
-def s
-    (u: Quantity[Metres[1] & Seconds[-1]],
-     t: Quantity[Seconds[1]],
-     a: Quantity[Metres[1] & Seconds[-2]])
-    : Quantity[Metres[1]] =
+type Velocity = Quantity[Metres[1] & Seconds[-1]]
+type Time = Quantity[Seconds[1]]
+type Acceleration = Quantity[Metres[1] & Seconds[-2]]
+type Distance = Quantity[Metres[1]]
+
+def s(u: Velocity, t: Time, a: Acceleration): Distance =
   u*t + 0.5*a*t*t
 ```
 or more verbosely,
@@ -423,7 +425,6 @@ syntax     scala
 import gossamer.t
 
 given SubstituteUnits[Kilograms[1] & Metres[2] & Seconds[-2]](t"J")
-
 ```
 and then a value such as, `2.8*Kilo(Joule)` will be rendered as `2800 J` instead of `2800 kg⋅m²⋅s¯²`.
 
