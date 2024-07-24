@@ -215,7 +215,8 @@ can provide the actual field value from the product inside the lambda.
 Here's what a call to `fields` looks like:
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
         val array: IArray[Nothing] = fields(value):
@@ -273,7 +274,8 @@ This gives us enough to construct an array of `Text` values corresponding to
 each field in a product, which we can join together to surround the :
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] =
     new Show[DerivationType]:
       def show(value: DerivationType): Text =
         val array: IArray[Text] = fields(value):
@@ -327,11 +329,13 @@ the implementation of `join` as a lambda. A full implementation would look like
 this:
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
-    if singleton then typeName else
-      fields(value):
-        [FieldType] => field => if tuple then field.show else t"$label=$field"
-      .join(if tuple then t"[" else t"$typeName[", t", ", t"]")
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] =
+    value =>
+      if singleton then typeName else
+        fields(value):
+          [FieldType] => field => if tuple then field.show else t"$label=$field"
+        .join(if tuple then t"[" else t"$typeName[", t", ", t"]")
 ```
 
 #### Complementary Values
@@ -464,8 +468,11 @@ extend `Derivation` instead of `ProductDerivation`, and define an additional `sp
 Here are the adjusted stub implementations for the `Show` typeclass:
 ```scala
 object Show extends Derivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = ???
-  inline def split[DerivationType: SumReflection]: Show[DerivationType] = ???
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] = ???
+
+  inline def split[DerivationType: SumReflection]
+          : Show[DerivationType] = ???
 ```
 
 Note that `split`'s signature is similar to `join`'s, but lacks the subtype constraint on `DerivationType` and
@@ -485,10 +492,12 @@ have one more piece of useful information about `VariantType` which we didn't kn
 `VariantType` must be a subtype of the derivation type. Therefore, we specify the lambda type variable as
 `[VariantType <: DerivationType]`:
 ```scala
-inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-  variant(value):
-    [VariantType <: DerivationType] => variant =>
-      ???
+inline def split[DerivationType: SumReflection]
+        : Show[DerivationType] =
+  value =>
+    variant(value):
+      [VariantType <: DerivationType] => variant =>
+        ???
 ```
 
 So, in the body of the `variant` lambda, we now have an instance of `VariantType`, which we know to be a subtype
@@ -502,9 +511,11 @@ A trivial implementation of this lambda would just call `variant.show`, since th
 value is available.
 
 ```scala
-inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-  variant(value):
-    [VariantType <: DerivationType] => variant => variant.show
+inline def split[DerivationType: SumReflection]
+        : Show[DerivationType] =
+  value =>
+    variant(value):
+      [VariantType <: DerivationType] => variant => variant.show
 ```
 
 #### Complementary Variants
@@ -520,10 +531,12 @@ type.
 
 Here is an implementation of `split` for `Eq`:
 ```scala
-inline def split[DerivationType: SumReflection]: Eq[DerivationType] = (left, right) =>
-  variant(left):
-    [VariantType <: DerivationType] => leftValue =>
-      complement(right).let(context.equal(leftValue, _)).or(false)
+inline def split[DerivationType: SumReflection]
+        : Eq[DerivationType] =
+  (left, right) =>
+    variant(left):
+      [VariantType <: DerivationType] => leftValue =>
+        complement(right).let(context.equal(leftValue, _)).or(false)
 ```
 
 The interpretation of this implementation is that if the left and right sum types represent the same variant,
@@ -560,52 +573,64 @@ second parameter is another polymorphic lambda. As with `construct` which had no
 For our `Decoder` example, we have:
 ```scala
 object Decoder extends Derivation[Decoder]:
-  inline def split[DerivationType: SumReflection]: Decoder[DerivationType] = text =>
-    val prefix = text.cut(t":").head
-    delegate(prefix):
-      [VariantType <: DerivationType] => decoder =>
-        ???
+  inline def split[DerivationType: SumReflection]
+          : Decoder[DerivationType] =
+    text =>
+      val prefix = text.cut(t":").head
+      delegate(prefix):
+        [VariantType <: DerivationType] => decoder =>
+          ???
 ```
 
 Having discerned which variant's decoder should be used, we can then use this to decode the text following the
 `:`, like so:
 ```scala
 object Decoder extends Derivation[Decoder]:
-  inline def split[DerivationType: SumReflection]: Decoder[DerivationType] = text =>
-    text.cut(t":") match
-      case List(prefix, content) => delegate(prefix):
-        [VariantType <: DerivationType] => decoder => decoder.decode(content)
+  inline def split[DerivationType: SumReflection]
+          : Decoder[DerivationType] =
+    text =>
+      text.cut(t":") match
+        case List(prefix, content) => delegate(prefix):
+          [VariantType <: DerivationType] => decoder =>
+            decoder.decode(content)
 ```
 
 #### Derivation for Sum with all `Singleton` variants
 
 Sometimes it is useful to derive a typeclass _only_ for enums of singleton variants, such as,
-```
+```scala
 enum Country:
   case De, Fr, Gb
 ```
 but not for enumerations with one or more structural cases such as:
-```
+```amok
+syntax  scala
+highlight  En..ct)  English has multiple dialects
+highlight  Eo       Esperato has no dialects; it is a singleton
+##
 enum Language:
-  case En(dialect: Dialect) // English; multiple dialects
-  case Eo                   // Esperanto; no dialects
+  case En(dialect: Dialect)
+  case Eo
 ```
 The `allSingletons` method returns `true` if every case in a sum type is a
 singleton. This also applies to sealed traits of case objects.
 
 Here is an example of its use deriving `Show`:
-```
+```scala
 trait Show[ValueType]:
   def show(value: ValueType): String
 
 object Show extends Derivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] =
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] =
     value => ???
 
-  inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-    inline if !allSingletons then compiletime.error("cannot derive") else
-      variant(value): [VariantType <: DerivationType] =>
-        variant => typeName.s+"."+variant.show
+  inline def split[DerivationType: SumReflection]
+          : Show[DerivationType] =
+    value =>
+      inline if !allSingletons then compiletime.error("cannot derive") else
+        variant(value): [VariantType <: DerivationType] =>
+          variant => typeName.s+"."+variant.show
 ```
 
 Note that `inline if` is used to ensure that `allSingletons` is evaluated at
@@ -632,10 +657,12 @@ We could take the `Show` example from earlier and adjust it to fall back to a fi
 `Show` typeclass does not exist for that type:
 ```scala
 object Show extends ProductDerivation[Show]:
-  inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
-    fields(value):
-      [FieldType] => field => context.layGiven(field.toString.tt)(field.show)
-    .join(t"[", t", ", t"]")
+  inline def join[DerivationType <: Product: ProductReflection]
+          : Show[DerivationType] =
+    value =>
+      fields(value):
+        [FieldType] => field => context.layGiven(field.toString.tt)(field.show)
+      .join(t"[", t", ", t"]")
 ```
 
 This adjusted version refers to the contextual `Show[FieldType]` value, which is available as `context` inside
@@ -697,10 +724,12 @@ Another solution is to define `join` and `split` in an unrelated (non-companion)
 given called `derived` directly in the companion object, like so:
 ```scala
 object Unrelated extends ProductDerivation[Typeclass]:
-  def join[DerivationType <: Product: ProductReflection]: Typeclass[DerivationType] = ???
+  def join[DerivationType <: Product: ProductReflection]
+          : Typeclass[DerivationType] = ???
 
 object Typeclass:
-  inline given derived[DerivationType]: Typeclass[DerivationType] = Unrelated.derived
+  inline given derived[DerivationType]: Typeclass[DerivationType] =
+    Unrelated.derived
 ```
 
 * How can I resolve a derived contextual instance conflicting with another, with an ambiguity error?
