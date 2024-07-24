@@ -26,8 +26,13 @@ composable, typesafe and performant with Contingency.
 
 Let's start by declaring a partial method with a `raises` clause in its return
 type, and abort under certain conditions:
-```scala
-def convert(message: Text): Bytes raises AsciiError =
+```amok
+syntax  scala
+transform
+  match    Bytes
+  replace  Bytes raises AsciiError
+##
+def convert(message: Text): Bytes =
   if message.exists(_.toInt > 127) then abort(AsciiError())
   message.bytes
 ```
