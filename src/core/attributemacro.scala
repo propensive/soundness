@@ -22,11 +22,14 @@ import fulminate.*
 import gossamer.*
 import anticipation.*
 import spectacular.*
+import xylophone.*
 
 import scala.quoted.*
 
 type Attributes = Map[String, Unset.type | Text]
-type Html[+ChildType <: Label] = Node[ChildType] | Text | Int
+type Html[+ChildType <: Label] = Node[ChildType] | Text | Int | HtmlXml
+
+case class HtmlXml(xml: XmlDoc)
 
 object Node:
   given [HtmlType <: Html[?]] => HtmlType is Showable as html = html => (html: @unchecked) match
@@ -68,7 +71,11 @@ object StartTag:
     t"${elem.label}$tail"
 
 case class StartTag[+NameType <: Label, ChildType <: Label]
-    (labelString: NameType, unclosed: Boolean, block: Boolean, verbatim: Boolean, attributes: Attributes)
+    (labelString: NameType,
+     unclosed:    Boolean,
+     block:       Boolean,
+     verbatim:    Boolean,
+     attributes:  Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.tt

@@ -88,12 +88,12 @@ object HttpEquiv:
 enum HttpEquiv:
   case ContentSecurityPolicy, ContentType, DefaultStyle, Refresh
 
-object HType:
-  given HType is Showable =
+object Type:
+  given Type is Showable =
     case DatetimeLocal => t"datetime-local"
     case other         => other.toString.show.lower
 
-enum HType:
+enum Type:
   case Button, Checkbox, Color, Date, DatetimeLocal, Email, File, Hidden, Image, Month, Number,
       Password, Radio, Range, Reset, Search, Submit, Tel, Text, Time, Url, Week
 
@@ -291,9 +291,9 @@ object HtmlAttribute:
   given title[T]: HtmlAttribute["title", Text, T] = identity(_)
   given translate[T]: HtmlAttribute["translate", Boolean, T] = _ => Unset
 
-  given htype[T]: HtmlAttribute["htype", HType, T] with
+  given htype[T]: HtmlAttribute["type", Type, T] with
     override def rename: Option[Text] = Some(t"type")
-    def convert(value: HType): Text = value.show
+    def convert(value: Type): Text = value.show
 
   given usemap[T]: HtmlAttribute["usemap", Text, T] = identity(_) // This needs a representation of HTML names
   given value[T]: HtmlAttribute["value", Double, T] = _.toString.show

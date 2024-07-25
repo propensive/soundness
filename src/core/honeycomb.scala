@@ -78,7 +78,7 @@ extends Node[NameType], Dynamic:
     method match
       case "apply" =>
         Element(labelString, unclosed, block, verbatim, Map(), children)
-      
+
       case className =>
         Element(labelString, unclosed, block, verbatim, Map("class" -> className.tt), children)
 

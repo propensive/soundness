@@ -21,7 +21,7 @@ import rudiments.*
 import language.dynamics
 
 val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
-    "hreflang" | "htype" | "referrerpolicy"]("a", block = false)
+    "hreflang" | "type" | "referrerpolicy"]("a", block = false)
 
 val Abbr = TagType["abbr", Phrasing, Global]("abbr", block = false)
 val Address = TagType["address", Flow | Palpable, Global]("address")
@@ -49,7 +49,7 @@ val Body = TagType["body", Flow, Global | "onafterprint" | "onbeforeprint" | "on
 val Br = TagType["br", Nothing, Global]("br", block = false, unclosed = true)
 
 val Button = TagType["button", Phrasing, Global | "disabled" | "form" | "formaction" |
-    "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" | "htype" | "value"]
+    "formenctype" | "formmethod" | "formnovalidate" | "formtarget" | "name" | "type" | "value"]
     ("button", block = false)
 
 val Canvas = ClearTagType["canvas", NonInteractive, Global | "width" | "height"]("canvas", block =
@@ -75,7 +75,7 @@ val Dl = TagType["dl", "dt" | "dl" | "div", Global]("dl")
 val Dt = TagType["dt", Flow, Global]("dt") // further constraints
 val Em = TagType["em", Phrasing, Global]("em", block = false)
 
-val Embed = TagType["embed", Nothing, Global | "src" | "htype" | "width" | "height"]("embed",
+val Embed = TagType["embed", Nothing, Global | "src" | "type" | "width" | "height"]("embed",
     block = false)
 
 val Fieldset = TagType["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]
@@ -112,20 +112,20 @@ val Img = TagType["img", Nothing, Global | "alt" | "src" | "srcset" | "sizes" | 
     "usemap" | "ismap" | "width" | "height" | "referrerpolicy" | "decoding" | "loading"]("img",
     block = false, unclosed = true)
 
-val Input = TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete" | "checked" |
-    "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
+object Input extends TagType["input", Nothing, Global | "accept" | "alt" | "autocomplete" |
+    "checked" | "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
     "formnovalidate" | "formtarget" | "height" | "list" | "max" | "maxlength" | "min" |
     "minlength" | "multiple" | "name" | "pattern" | "placeholder" | "readonly" | "required" |
-    "size" | "src" | "step" | "htype" | "value" | "width"]("input", block = false, unclosed = true)
+    "size" | "src" | "step" | "type" | "value" | "width"]("input", block = false, unclosed = true)
 
 val Ins = ClearTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", block = false)
-val Label = TagType["label", Phrasing, Global | "hfor" | "for"]("label", block = false)
+val Label = TagType["label", Phrasing, Global | "for" | "for"]("label", block = false)
 val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
 val Li = TagType["li", Flow, Global | "value"]("li")
 
 val Link = TagType["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" |
-    "integrity" | "hreflang" | "htype" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" |
+    "integrity" | "hreflang" | "type" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" |
     "as" | "color" | "disabled"]("link", block = false, unclosed = true)
 
 val Main = TagType["main", Flow, Global]("main")
@@ -142,10 +142,10 @@ val Nav = TagType["nav", Flow, Global]("nav")
 
 val Noscript = TagType["noscript", Label, Global]("noscript", block = false)
 
-val HObject = TagType["object", Label, Global | "data" | "htype" | "name" | "form" | "width" |
+val HObject = TagType["object", Label, Global | "data" | "type" | "name" | "form" | "width" |
     "height"]("object", block = false)
 
-val Ol = TagType["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "htype"]("ol")
+val Ol = TagType["ol", "li" | ScriptSupporting, Global | "reversed" | "start" | "type"]("ol")
 
 val Optgroup = TagType["optgroup", "option" | ScriptSupporting, Global | "disabled" | "label"]
     ("optgroup")
@@ -153,7 +153,7 @@ val Optgroup = TagType["optgroup", "option" | ScriptSupporting, Global | "disabl
 val Option = TagType["option", Nothing, Global | "disabled" | "label" | "selected" | "value"]
     ("option", unclosed = true)
 
-val Output = TagType["output", Phrasing, Global | "hfor" | "form" | "name"]("output", block = false)
+val Output = TagType["output", Phrasing, Global | "for" | "form" | "name"]("output", block = false)
 val P = TagType["p", Phrasing, Global]("p")
 val Param = TagType["param", Nothing, Global | "name" | "value"]("param", unclosed = true)
 
@@ -170,7 +170,7 @@ val Ruby = TagType["ruby", Phrasing | "rp" | "rt", Global]("ruby", block = false
 val S = TagType["s", Phrasing, Global]("s", block = false)
 val Samp = TagType["samp", Phrasing, Global]("samp", block = false)
 
-val Script = TagType["script", Nothing, Global | "src" | "htype" | "nomodule" | "async" | "defer" |
+val Script = TagType["script", Nothing, Global | "src" | "type" | "nomodule" | "async" | "defer" |
     "crossorigin" | "integrity" | "referrerpolicy"]("script", block = false, verbatim = true)
 
 val Section = TagType["section", Flow, Global]("section")
@@ -181,7 +181,7 @@ val Select = TagType["select", "option" | "optgroup" | ScriptSupporting, Global 
 val Slot = ClearTagType["slot", Label, Global | "name"]("slot", block = false)
 val Small = TagType["small", Phrasing, Global]("small", block = false)
 
-val Source = TagType["source", Nothing, Global | "htype" | "src" | "srcset" | "sizes" | "media" |
+val Source = TagType["source", Nothing, Global | "type" | "src" | "srcset" | "sizes" | "media" |
     "width" | "height"]("source")
 
 val Span = TagType["span", Phrasing, Global]("span", block = false)

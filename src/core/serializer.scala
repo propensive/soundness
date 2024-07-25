@@ -19,6 +19,7 @@ package honeycomb
 import rudiments.*
 import vacuous.*
 import gossamer.*
+import xylophone.*
 import anticipation.*
 import spectacular.*
 
@@ -32,7 +33,7 @@ object HtmlSerializer:
     val buf: StringBuilder = StringBuilder()
     var emptyLine: Boolean = true
     var pos: Int = 0
-    
+
     def newline(n: Int = 0): Unit =
       indent += n
       linebreak = true
@@ -52,17 +53,20 @@ object HtmlSerializer:
       emptyLine = true
 
     def next(node: Html[?], verbatim: Boolean): Unit = (node: @unchecked) match
+      case HtmlXml(xml) =>
+        append(Xml.print(xml))
+
       case node: Node[?] =>
         whitespace()
         append(t"<", node.label)
-        
+
         for attribute <- node.attributes do (attribute: @unchecked) match
           case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
           case (key: Text, Unset)       => append(t" ", key)
-        
+
         append(t">")
         if node.block then newline(1)
-        
+
         for child <- node.children do
           val splitLine = child match
             case element: Element[?] => element.block
@@ -70,9 +74,9 @@ object HtmlSerializer:
           if splitLine then newline()
           next(child, node.verbatim)
           if splitLine then newline()
-        
+
         if node.block then newline(-1)
-        
+
         if !node.unclosed then
           whitespace()
           append(t"</", node.label, t">")
@@ -88,15 +92,15 @@ object HtmlSerializer:
                 linebreak = true
                 whitespace()
                 append(t" ")
-              
+
               append(if !emptyLine then t" " else t"", word.nn)
-            
+
             if text.chars.last.isWhitespace then append(t" ")
-      
+
       case int: Int =>
         next(int.show, verbatim)
-        
-    
+
+
     append(t"<!DOCTYPE html>\n")
     next(doc.root, false)
 
