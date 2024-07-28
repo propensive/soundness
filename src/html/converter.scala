@@ -26,9 +26,13 @@ package htmlRenderers:
   given HtmlConverter as standard = HtmlConverter()
   given HtmlConverter as outline = OutlineConverter
 
+abstract class Renderer(val language: Optional[Text]):
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]
 
-open class HtmlConverter():
+open class HtmlConverter(renderers: Renderer*):
   def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
+
+  lazy val renderersMap: Map[Optional[Text], Renderer] = renderers.indexBy(_.language)
 
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
 
@@ -54,15 +58,18 @@ open class HtmlConverter():
     blockify(nodes).foldLeft(List[Html[Flow]]())(_ ++ convertNode(_))
 
   def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
-    case Markdown.Ast.Block.Paragraph(children*)            => Seq(P(children.flatMap(phrasing)*))
-    case Markdown.Ast.Block.Heading(level, children*)       => Seq(heading(level, children))
-    case Markdown.Ast.Block.Blockquote(children*)           => Seq(Blockquote(convert(children)*))
-    case Markdown.Ast.Block.ThematicBreak()                 => Seq(Hr)
-    case Markdown.Ast.Block.FencedCode(syntax, meta, value) => Seq(Pre(honeycomb.Code(escape(value))))
-    case Markdown.Ast.Block.Reference(_, _)                 => Seq()
-    case Markdown.Ast.Block.Table(parts*)                   => Seq(Table(parts.flatMap(tableParts)))
+    case Markdown.Ast.Block.Paragraph(children*)      => Seq(P(children.flatMap(phrasing)*))
+    case Markdown.Ast.Block.Heading(level, children*) => Seq(heading(level, children))
+    case Markdown.Ast.Block.Blockquote(children*)     => Seq(Blockquote(convert(children)*))
+    case Markdown.Ast.Block.ThematicBreak()           => Seq(Hr)
+    case Markdown.Ast.Block.Reference(_, _)           => Seq()
+    case Markdown.Ast.Block.Table(parts*)             => Seq(Table(parts.flatMap(tableParts)))
 
-    case Markdown.Ast.Block.BulletList(num, _, _, items*) =>
+    case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
+      renderersMap.get(syntax).optional.lay(Seq(Div.code(Pre(honeycomb.Code(escape(value)))))): renderer =>
+        renderer.render(meta, value)
+
+    case Markdown.Ast.Block.BulletList(num, _, items*) =>
       Seq((if num.absent then Ul else Ol)(items.flatMap(listItem)*))
 
     case other =>
