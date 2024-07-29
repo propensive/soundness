@@ -63,6 +63,10 @@ object Diff:
     recur(lines, 1, Nil, 0, 0, 0)
 
 case class Diff[ElemType](edits: Edit[ElemType]*):
+  def size: Int = edits.count:
+    case Par(_, _, _) => false
+    case _            => true
+
   def flip: Diff[Optional[ElemType]] =
     val edits2: Seq[Edit[Optional[ElemType]]] = edits.map:
       case Par(left, right, value) => Par(right, left, value)
