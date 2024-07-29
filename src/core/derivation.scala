@@ -169,6 +169,10 @@ object CodlDecoder:
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
+  given unit: CodlDecoder[Unit] with
+    val schema: CodlSchema = Field(Arity.One)
+    def decode(nodes: List[Indexed])(using tactic: Tactic[CodlReadError]): Unit = ()
+
   given optional[ValueType](using decoder: CodlDecoder[ValueType]): CodlDecoder[Optional[ValueType]] =
 
     new CodlDecoder[Optional[ValueType]]:
