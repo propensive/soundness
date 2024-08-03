@@ -3,7 +3,7 @@ _Iridescence_ provides seven different ways of representing colors:
 - `Xyz`: [CIE 1931 XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space)
 - `Cielab`: [L*a*b*](https://en.wikipedia.org/wiki/CIELAB_color_space) or CIELAB
 - `Cmy`: [CMY](https://en.wikipedia.org/wiki/CMY_color_model)
-- `Cmyk`: [CMKY](https://en.wikipedia.org/wiki/CMYK_color_model)
+- `Cmyk`: [CMYK](https://en.wikipedia.org/wiki/CMYK_color_model)
 - `Hsl`: [HSL](https://en.wikipedia.org/wiki/HSL_and_HSV)
 - `Hsv`: [HSV](https://en.wikipedia.org/wiki/HSL_and_HSV)
 
