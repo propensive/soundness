@@ -1,12 +1,12 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/iridescence/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/iridescence/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Iridescence
 
 __Sophisticated representation of color__
 
-_Iridescence_ implements several algorithms for working with colors represented in different forms.
+__Iridescence__ implements several algorithms for working with colors represented in different forms.
 
 ## Features
 
@@ -20,17 +20,9 @@ _Iridescence_ implements several algorithms for working with colors represented 
 - calculate perceptual deltas between colors
 
 
-## Availability Plan
+## Availability
 
-Iridescence has not yet been published. The medium-term plan is to build Iridescence
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Iridescence.
 
-Subsequently, Iridescence will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
