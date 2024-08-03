@@ -1,12 +1,12 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/turbulence/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/turbulence/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Turbulence
 
 __Simple tools for working with data streams in `LazyList`s__
 
-_Turbulence_ provides a few useful methods for working with `LazyList`s for streaming
+__Turbulence__ provides a few useful methods for working with `LazyList`s for streaming.
 
 ## Features
 
@@ -15,17 +15,9 @@ _Turbulence_ provides a few useful methods for working with `LazyList`s for stre
 - can cluster together short sequences of events which happen within a predefined period of time
 
 
-## Availability Plan
+## Availability
 
-Turbulence has not yet been published. The medium-term plan is to build Turbulence
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Turbulence.
 
-Subsequently, Turbulence will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
