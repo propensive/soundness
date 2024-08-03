@@ -24,7 +24,8 @@ import rudiments.*
 object LineSeparation:
   given (using Quickstart) => LineSeparation as default = lineSeparation.adaptiveLinefeed
 
-  inline def readByte(inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
+  inline def readByte
+      (inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
       (lineSeparators: LineSeparation)
           : Unit =
 
@@ -70,7 +71,6 @@ object LineSeparation:
   enum Action:
     case Nl, NlCr, NlLf, LfNl, CrNl, NlNl, Cr, Lf, Skip
 
-@capability
 case class LineSeparation
     (newline: LineSeparation.NewlineSeq,
      cr:      LineSeparation.Action,
