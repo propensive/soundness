@@ -103,6 +103,17 @@ extension [TextType: Textual](text: TextType)
 
     recur()
 
+  def justify(width: Int): TextType =
+    val words = text.words
+    val extra = width - text.length
+
+    def recur(word: Int, spaces: Int, result: TextType): TextType =
+      if word == 0 then result+words.last else
+        val gap = spaces/word
+        recur(word - 1, spaces - gap, result+TextType(t" "*gap)+words(words.length - word))
+
+    recur(words.length - 1, extra, TextType.empty)
+
   def drop(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
     bidi match
@@ -219,6 +230,7 @@ extension [TextType: Textual](text: TextType)
 
     IArray.from(recur(text))(using TextType.classTag)
 
+  def words: IArray[TextType] = text.cut(Text(" "))
   def unkebab: IArray[TextType] = text.cut(Text("-"))
   def unsnake: IArray[TextType] = text.cut(Text("_"))
 
