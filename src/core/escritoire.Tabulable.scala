@@ -22,22 +22,11 @@ import anticipation.*
 import vacuous.*
 import spectacular.*
 
-extension [RowType](data: Seq[RowType])
-  def table[TextType: Textual](using tabulable: RowType is Tabulable[TextType])
-        : Tabulation[TextType] =
-
-    tabulable.tabulate(data)
-
 trait Tabulable[TextType]:
   type Self
   def table(): Table[Self, TextType]
   private lazy val tableValue: Table[Self, TextType] = table()
   def tabulate(data: Seq[Self]): Tabulation[TextType] = tableValue.tabulate(data)
-
-trait TableRelabelling[+TargetType]:
-  def relabelling(): Map[Text, Text]
-  private lazy val labels: Map[Text, Text] = relabelling()
-  def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
 
 object Tabulable extends ProductDerivation[[RowType] =>> RowType is Tabulable[Text]]:
 

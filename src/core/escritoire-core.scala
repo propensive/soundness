@@ -16,16 +16,31 @@
 
 package escritoire
 
-import rudiments.*
+import anticipation.*
+import contingency.*
 import gossamer.*
 import vacuous.*
-import anticipation.*
 
-trait Columnar:
-  def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
+package columnAttenuation:
+  given fail(using Tactic[TableError]): Attenuation =
+    (minimum, available) => raise(TableError(minimum, available), ())
 
-  def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-          : IndexedSeq[TextType]
+  given ignore: Attenuation = (minimum, available) => ()
+
+extension [RowType](data: Seq[RowType])
+  def table[TextType: Textual](using tabulable: RowType is Tabulable[TextType])
+        : Tabulation[TextType] =
+
+    tabulable.tabulate(data)
+
+package tableStyles:
+  import BoxLine.*
+  given default: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, LineCharset.Default)
+  given thinRounded: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, LineCharset.Rounded)
+  given horizontal: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, LineCharset.Default)
+  given midOnly: TableStyle = TableStyle(1, Blank, Blank, Thin, Blank, Blank, LineCharset.Default)
+  given vertical: TableStyle = TableStyle(1, Blank, Blank, Blank, Thin, Thin, LineCharset.Default)
+  given minimal: TableStyle = TableStyle(1, Unset, Unset, Thin, Blank, Blank, LineCharset.Default)
 
 package columnar:
   object Prose extends Columnar:

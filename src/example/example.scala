@@ -31,10 +31,13 @@ import columnAttenuation.fail
 
 @main
 def run(): Unit =
-  val table = Table[Person](Column(t"Name of the person", sizing = columnar.Prose)(_.name),
-                            Column(t"Age", sizing = columnar.Collapsible(0.6))(_.age.show),
-                            Column(t"Size", sizing = columnar.Collapsible(0.4))(_.size.show),
-                            Column(t"Description", textAlign = TextAlignment.Justify, sizing = columnar.Prose)(_.description))
+  val table =
+    Table[Person]
+     (Column(t"Name of the person", sizing = columnar.Prose)(_.name),
+      Column(t"Age", sizing = columnar.Collapsible(0.6))(_.age.show),
+      Column(t"Size", sizing = columnar.Collapsible(0.4))(_.size.show),
+      Column(t"Description", textAlign = TextAlignment.Justify, sizing = columnar.Prose)
+       (_.description))
 
   val data =
     List(Person(t"Jon Prety", 41, 3.14159, t"The quick brown fox jumps over the lazy dog."),
