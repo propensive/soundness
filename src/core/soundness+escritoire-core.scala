@@ -1,6 +1,6 @@
 package soundness
 
-export escritoire.{Attenuation, BoxDrawing, BoxLine, Breaks, Column, ColumnAlignment, Columnar,
+export escritoire.{Attenuation, BoxDrawing, BoxLine, Column, ColumnAlignment, Columnar,
     Grid, LineCharset, Table, TableCell, TableError, TableRelabelling, TableRow, TableSection,
     TableStyle, Tabulable, Tabulation, TextAlignment, VerticalAlignment, table}
 
