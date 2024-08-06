@@ -84,10 +84,24 @@ extension (words: Iterable[Text])
 
 extension [TextType: Textual](text: TextType)
   inline def length: Int = TextType.length(text)
-  inline def populated: Optional[TextType] = if TextType.text(text).length == 0 then Unset else text
+
+  inline def populated: Optional[TextType] =
+    if TextType.text(text).length == 0 then Unset else text
+
   inline def lower: TextType = TextType.map(text, _.toLower)
   inline def upper: TextType = TextType.map(text, _.toUpper)
   def plain: Text = TextType.text(text)
+
+  def breakable(predicate: (Char, Char) => Boolean, break: Char = '\u200b')
+          : TextType =
+    val breakText = TextType(break.toString.tt)
+    def recur(from: Int = 0, index: Int = 1, current: TextType = TextType("".tt)): TextType =
+      if index == length then current+text.drop(from) else
+        if predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
+        then recur(index, index + 1, current+text.slice(from, index)+breakText)
+        else recur(from, index + 1, current)
+
+    recur()
 
   def drop(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
@@ -109,6 +123,7 @@ extension [TextType: Textual](text: TextType)
   inline def tail: TextType = text.drop(1, Ltr)
   inline def init: TextType = text.drop(1, Rtl)
   inline def empty: Boolean = text.length == 0
+
   def chars: IArray[Char] = TextType.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def slice(start: Int, end: Int): TextType =

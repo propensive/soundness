@@ -261,31 +261,31 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == false)
 
       test(t"Cut a Text"):
-        t"one,two,three".cut(t",")
+        t"one,two,three".cut(t",").to(List)
       .assert(_ == List(t"one", t"two", t"three"))
 
       test(t"Cut a Text with empty Text at start"):
-        t",one,two".cut(t",")
+        t",one,two".cut(t",").to(List)
       .assert(_ == List(t"", t"one", t"two"))
 
       test(t"Cut a Text with empty Text at end"):
-        t"one,two,".cut(t",")
+        t"one,two,".cut(t",").to(List)
       .assert(_ == List(t"one", t"two", t""))
 
       test(t"Cut a Text with empty parts at start and end"):
-        t",one,two,".cut(t",")
+        t",one,two,".cut(t",").to(List)
       .assert(_ == List(t"", t"one", t"two", t""))
 
       test(t"Cut a series of empty Texts"):
-        t",,,".cut(t",")
+        t",,,".cut(t",").to(List)
       .assert(_ == List(t"", t"", t"", t""))
 
       test(t"Cut a Text which doesn't contain the separator"):
-        t"one,two,three".cut(t"x")
+        t"one,two,three".cut(t"x").to(List)
       .assert(_ == List(t"one,two,three"))
 
       test(t"Cut a Text on an escaped character"):
-        t"one\ntwo\nthree".cut(t"\n")
+        t"one\ntwo\nthree".cut(t"\n").to(List)
       .assert(_ == List(t"one", t"two", t"three"))
 
       test(t"Substitute characters"):
@@ -353,8 +353,8 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == '1')
 
       test(t"Random access of out-of-range character"):
-        capture[OutOfRangeError](t"123"(5))
-      .assert(_ == OutOfRangeError(5, 0, 3))
+        capture[RangeError](t"123"(5))
+      .assert(_ == RangeError(5, 0, 3))
 
       test(t"Pad-right with space"):
         t"123".pad(5, Rtl)
