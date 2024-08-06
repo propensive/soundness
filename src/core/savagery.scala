@@ -81,13 +81,23 @@ enum Coords:
 
 export Coords.{Rel, Abs}
 
+enum Sweep:
+  case Clockwise, Counterclockwise
+
 enum PathOp:
   case Move(coords: Coords)
   case Line(coords: Coords)
   case Close
   case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], ctrl2: CoordsType, point: CoordsType)
   case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], point: CoordsType)
-  case Arc(rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Boolean, coords: Coords)
+  case Arc(rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Coords)
+
+case class LineSegment(symbol: Char, parameters: (Double | Boolean)*):
+  def text: Text =
+    parameters.map:
+      case double: Double   => double.toString.tt
+      case boolean: Boolean => if boolean then t"1" else t"0"
+    .join(t"$symbol ", t" ", t"")
 
 object PathOp:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
@@ -104,7 +114,7 @@ object PathOp:
     case Quadratic(ctrl1, coords)    => t"${coords.key('q')} ${ctrl1.option.get}, $coords"
 
     case Arc(rx, ry, angle, largeArc, sweep, coords) =>
-      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep)} ${coords.encode}"
+      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep == Sweep.Clockwise)} ${coords.encode}"
 
 case class Path
     (ops:       List[PathOp]       = Nil,
