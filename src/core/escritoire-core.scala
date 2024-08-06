@@ -21,17 +21,17 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 
-package columnAttenuation:
-  given fail(using Tactic[TableError]): Attenuation =
-    (minimum, available) => raise(TableError(minimum, available), ())
-
-  given ignore: Attenuation = (minimum, available) => ()
-
 extension [RowType](data: Seq[RowType])
   def table[TextType: Textual](using tabulable: RowType is Tabulable[TextType])
         : Tabulation[TextType] =
 
     tabulable.tabulate(data)
+
+package columnAttenuation:
+  given fail(using Tactic[TableError]): Attenuation =
+    (minimum, available) => raise(TableError(minimum, available), ())
+
+  given ignore: Attenuation = (minimum, available) => ()
 
 package tableStyles:
   import BoxLine.*
