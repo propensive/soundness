@@ -108,11 +108,11 @@ extension [TextType: Textual](text: TextType)
     val extra = width - text.length
 
     def recur(word: Int, spaces: Int, result: TextType): TextType =
-      if word == 0 then result+words.last else
-        val gap = spaces/word
-        recur(word - 1, spaces - gap, result+TextType(t" "*gap)+words(words.length - word))
+      if word == 0 then result else
+        val gap = ((spaces.toDouble/word) + 0.5).toInt
+        recur(word - 1, spaces - gap, result+TextType(t" "*(gap + 1))+words(words.length - word))
 
-    recur(words.length - 1, extra, TextType.empty)
+    recur(words.length - 1, extra, words(0))
 
   def drop(n: Int, bidi: Bidi = Ltr): TextType =
     val length = text.length
