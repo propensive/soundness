@@ -24,33 +24,43 @@ import turbulence.*, stdioSources.virtualMachine.textOnly
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
 
-case class Person(name: Text, age: Int, size: Double, description: Text)
 given Decimalizer = Decimalizer(3)
+
+case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
+
+val libraries: List[Library] = List
+ (Library(t"wisteria", t"Wisteria", 581, 2017, t"Simple, fast and transparant generic derivation for typeclasses"),
+  Library(t"quantitative", t"Quantitative", 1271, 2023, t"Statically-checked physical units with seamless syntax"),
+  Library(t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams"),
+  Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables"))
 
 import columnAttenuation.fail
 
 @main
 def run(): Unit =
   val table =
-    Table[Person]
-     (Column(t"Name of the person", sizing = columnar.Prose)(_.name),
-      Column(t"Age", sizing = columnar.Collapsible(0.6))(_.age.show),
-      Column(t"Size", sizing = columnar.Collapsible(0.4))(_.size.show),
+    Table[Library]
+     (Column(t"Name", sizing = columnar.Prose)(_.name),
+      Column(t"Identifier", sizing = columnar.Collapsible(0.9))(_.id),
+      Column(t"LoC", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
+      Column(t"Year", sizing = columnar.Collapsible(0.5))(_.year),
       Column(t"Description", textAlign = TextAlignment.Justify, sizing = columnar.Prose)
        (_.description))
 
-  val data =
-    List(Person(t"Jon Prety", 41, 3.14159, t"The quick brown fox jumps over the lazy dog."),
-         Person(t"Kyle Murray", 28, 2.718, t"Peter piper picked a peck of pickled pepper."),
-         Person(t"Jimmy O'Dougherty", 59, 1.0, t"She sells seashells on the sea-shore."))
+  // given TableRelabelling[Person] = () => Map(
+  //   t"name" -> t"Addressee",
+  //   t"age"  -> t"Years old"
+  // )
 
-  given TableRelabelling[Person] = () => Map(
-    t"name" -> t"Addressee",
-    t"age"  -> t"Years old"
-  )
+  locally:
+    import tableStyles.default
+    Out.println(libraries.table.grid(100))
+    Out.println(List[Foo.User](Foo.User(t"Jon", 12.4)).table.grid(100))
+    Out.println(table.tabulate(libraries).grid(37))
 
-  val tabulation = table.tabulate(data)
+  // for style <- List(tableStyles.default, tableStyles.thinRounded, tableStyles.horizontal, tableStyles.midOnly, tableStyles.vertical, tableStyles.minimal)
+  // do style.give(Out.println(table.tabulate(libraries.take(2)).grid(50)))
 
-  import tableStyles.thinRounded
-
-  Out.println(data.table)
+enum Foo:
+  case User(name: Text, size: Double)
+  case Organization(name: Text, founded: Int)

@@ -44,7 +44,7 @@ object Tabulable extends ProductDerivation[[RowType] =>> RowType is Tabulable[Te
       contexts:
         [FieldType] => tabulable =>
           tabulable.table().columns.map(_.contramap(dereference).retitle:
-            labels.get(label).getOrElse(label.capitalize))
+            labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize))
       .flatten
 
     new JoinTabulable[DerivationType](columns)
