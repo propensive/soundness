@@ -1,5 +1,5 @@
 Dendrology can render tree-like structures as text, such as the following,
-```
+```mono
 ├─● Plantae
 ├─● Fungi
 │ ├─● Rozellomyceta
@@ -17,7 +17,7 @@ Dendrology can render tree-like structures as text, such as the following,
         └─● Ursidae
 ```
 and DAGs such as this:
-```
+```mono
 ▪ Any
 └─▪ Matchable
   ├─▪ AnyRef
