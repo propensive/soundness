@@ -8,7 +8,7 @@ target escritoire/example
 project escritoire
   module core
     compiler  scala
-    include   gossamer/core contingency/core
+    include   gossamer/core
     sources   src/core
   
   module example
