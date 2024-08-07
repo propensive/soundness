@@ -231,6 +231,7 @@ extension [TextType: Textual](text: TextType)
     IArray.from(recur(text))(using TextType.classTag)
 
   def words: IArray[TextType] = text.cut(Text(" "))
+  def lines: IArray[TextType] = text.cut(Text("\n"))
   def unkebab: IArray[TextType] = text.cut(Text("-"))
   def unsnake: IArray[TextType] = text.cut(Text("_"))
 
