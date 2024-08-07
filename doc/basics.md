@@ -1,9 +1,13 @@
 All Escritoire terms and types are defined in the `escritoire` package,
-```scala
+```amok
+syntax scala
+##
 import escritoire.*
 ```
 and are exported to the `soundness` package, so alternatively:
-```scala
+```amok
+syntax scala
+##
 import soundness.*
 ```
 
@@ -32,7 +36,7 @@ val data = List(Digit(1, t"one"), Digit(2, t"two"), Digit(3, t"three"))
 Out.println(data.table)
 ```
 and will look like this:
-```
+```mono
 ┏━━━┯━━━━━━━━━━━━┓
 ┃ N │ Digit name ┃
 ┠───┼────────────┨
@@ -213,7 +217,7 @@ val table =
 At a width of `120` characters, each row takes a single line, and all columns
 are included:
 
-```
+```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │ Identifier   │  LoC │ Year │ Description                                                     ┃
 ┠──────────────┼──────────────┼──────┼──────┼─────────────────────────────────────────────────────────────────┨
@@ -228,7 +232,7 @@ Reducing the maximum width to `100`, the _Identifier_ column is hidden. This
 column is hidden first because its sizing is `Collapsible`, and it has the
 `threshold` value of `0.9`, which is closer to `1` than any other column.
 
-```
+```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Year │ Description                                                     ┃
 ┠──────────────┼──────┼──────┼─────────────────────────────────────────────────────────────────┨
@@ -241,7 +245,7 @@ column is hidden first because its sizing is `Collapsible`, and it has the
 
 With the maximum width reduced to `80`, some cells in the _Description_ column
 are forced to use two lines:
-```
+```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Year │ Description                                     ┃
 ┠──────────────┼──────┼──────┼─────────────────────────────────────────────────┨
@@ -256,7 +260,7 @@ are forced to use two lines:
 
 The _Year_ column is the `Collapsible` column with the next-highest `threshold`
 value, so it is hidden when the width is constrained to `60` or less.
-```
+```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │  LoC │ Description                        ┃
 ┠──────────────┼──────┼────────────────────────────────────┨
@@ -273,7 +277,7 @@ value, so it is hidden when the width is constrained to `60` or less.
 At a maximum width of `40` characters, only two columns remain visible, and
 the cells in the _Description_ column take as many as four lines.
 
-```
+```mono
 ┏━━━━━━━━━━━━━━┯━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃ Name         │ Description           ┃
 ┠──────────────┼───────────────────────┨
@@ -351,7 +355,7 @@ Below are samples of each table style.
 
 #### `tableStyles.thinRounded`
 
-```
+```mono
 ╭──────────────┬──────┬──────────────────────────╮
 │ Name         │  LoC │ Description              │
 ├──────────────┼──────┼──────────────────────────┤
@@ -367,7 +371,7 @@ Below are samples of each table style.
 
 #### `tableStyles.horizontal`
 
-```
+```mono
 ╶────────────────────────────────────────────────╴
   Name            LoC   Description
 ╶────────────────────────────────────────────────╴
@@ -383,7 +387,7 @@ Below are samples of each table style.
 
 #### `tableStyles.midOnly`
 
-```
+```mono
   Name            LoC   Description
 ╶────────────────────────────────────────────────╴
   Wisteria        581   Simple,     fast     and
@@ -397,7 +401,7 @@ Below are samples of each table style.
 
 #### `tableStyles.vertical`
 
-```
+```mono
 ╷              ╷      ╷                          ╷
 │ Name         │  LoC │ Description              │
 │              │      │                          │
@@ -413,7 +417,7 @@ Below are samples of each table style.
 
 #### `tableStyles.minimal`
 
-```
+```mono
   Name            LoC   Description
 ╶────────────────────────────────────────────────╴
   Wisteria        581   Simple,     fast     and
