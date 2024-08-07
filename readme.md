@@ -40,11 +40,15 @@ For the overeager, curious and impatient, see [building](#building).
 ## Getting Started
 
 All Contingency terms and types are defined in the `contingency` package:
-```scala
+```amok
+syntax  scala
+##
 import contingency.*
 ```
 and are exported to `soundness`. So alternatively,
-```scala
+```amok
+syntax  scala
+##
 import soundness.*
 ```
 
@@ -70,8 +74,7 @@ type, and abort under certain conditions:
 ```amok
 syntax  scala
 transform
-  match    Bytes
-  replace  Bytes raises AsciiError
+  replace   Bytes  Bytes raises AsciiError
 ##
 def convert(message: Text): Bytes =
   if message.exists(_.toInt > 127) then abort(AsciiError())
@@ -80,25 +83,33 @@ def convert(message: Text): Bytes =
 
 We cannot call that method unless its `AsciiError` is handled in some way. This
 code will _not_ compile:
-```scala
+```amok
+syntax  scala
+##
 val data = convert(t"Hello world")
 ```
 
 One solution is to import a _strategy_ to handle any possible errors by
 throwing them. This works well for code that is still at the "prototype" stage
 of development:
-```scala
+```amok
+syntax  scala
+##
 import strategies.throwUnsafely
 val data = convert(t"Hello world")
 ```
 
 But we can get the same effect more _locally_ by wrapping the invocation in
 `unsafely`,
-```scala
+```amok
+syntax  scala
+##
 val data: Bytes = unsafely(convert(t"Hello world"))
 ```
 or `safely`,
-```scala
+```amok
+syntax  scala
+##
 val data: Optional[Bytes] = safely(convert(t"Hello world"))
 ```
 which will return the optional `Unset` value in the event of an error—the
@@ -107,7 +118,9 @@ error object itself will be discarded, though.
 In some circumstances, we might decide that it is acceptable to _throw_ an
 `AsciiError` (without saying anything about other error types), and we can do
 so by by declaring an `Unchecked` instance for it, like so:
-```scala
+```amok
+syntax  scala
+##
 erased given AsciiError is Unchecked
 ```
 
@@ -115,7 +128,9 @@ erased given AsciiError is Unchecked
 
 We could go further and declare `AsciiError`s as "fatal", shutting down the
 entire JVM upon the first occurrence,
-```scala
+```amok
+syntax  scala
+##
 given AsciiError is Fatal = _ => ExitStatus.Fail(1)
 val data: Bytes = convert(t"Hello world")
 ```
@@ -124,7 +139,9 @@ initialization.
 
 Now imagine we want to combine three methods, `Json.parse`, `Json#as` and
 `convert`, with signatures,
-```scala
+```amok
+syntax  scala
+##
 object Json:
   def parse(text: Text): Json raises ParseError
 
@@ -135,7 +152,9 @@ class Json():
 ```
 in a single method, `processEvent`. We would be required to handle
 `ParseError`s, `AccessError`s and `AsciiError`s. We could write,
-```scala
+```amok
+syntax  scala
+##
 def processEvent(event: Text)
         : Bytes raises ParseError raises AccessError raises AsciiError =
   convert(Json.parse(event).as[Event].message)
@@ -146,7 +165,9 @@ these errors.
 
 Instead, we can _tend_ them into an `EventError`:
 
-```scala
+```amok
+syntax  scala
+##
 def eventData(event: Text): Bytes raises EventError =
   tend:
     case ParseError()  => EventError()
@@ -170,7 +191,9 @@ Using alternative definitions of `ParseError`, `AccessError`, `AsciiError` and
 `EventError`s as immutable datatypes _with parameters_, we could channel details
 from one type to the other, like so:
 
-```scala
+```amok
+syntax  scala
+##
 def processEvent(event: Text): Unit raises EventError =
   tend:
     case ParseError(line) => EventError(m"invalid JSON at line $line")
@@ -190,7 +213,9 @@ Sometimes, however, in the event of certain errors, we want to _return_ a
 value—some sort of "fallback" value—instead of continuing along an
 error-recovery path. For this, we can use `mend` instead of `tend`, and the
 right-hand side of each case will represent the return value:
-```scala
+```amok
+syntax  scala
+##
 def processEvent(event: Text): Unit raises EventError = send:
   mend:
     case ParseError(_)  => Bytes(0, 1)
@@ -223,7 +248,9 @@ absence of a return value in their unencoded _partial_ form.
 Without exceptions, if it's not possible to return a successful value from a
 method, we need to "abort" execution somehow, or return a "non-value". Here's a
 trivial example of a method where that's necessary,
-```scala
+```amok
+syntax  scala
+##
 def second[ElementType](list: List[ElementType]): ElementType =
   if list.length >= 2 then list(1) else ???
 ```
@@ -235,7 +262,9 @@ method with an error, instead of returning a value.
 
 In the implementation above, we can replace `???` with `abort(TooShort(2))`,
 assuming a `TooShort` exception type such as:
-```scala
+```amok
+syntax  scala
+##
 case class TooShort(minimum: Int)
 extends Exception(s"A minimum length of $minimum is required")
 ```
@@ -248,7 +277,9 @@ scope for its error type. In this case, we _must_ have a contextual
 `Tactic[TooShort]` available.
 
 One way to provide it is to change the method signature to require it, like so,
-```scala
+```amok
+syntax  scala
+##
 def second[ElementType](list: List[ElementType])
     (using Tactic[TooShort])
         : ElementType =
@@ -256,7 +287,9 @@ def second[ElementType](list: List[ElementType])
   else abort(TooShortError(2))
 ```
 which may be more easily expressed using the infix `raises` type:
-```scala
+```amok
+syntax  scala
+##
 def second[ElementType](list: List[ElementType])
         : ElementType raises TooShortError =
   if list.length >= 2 then list(1)
@@ -348,7 +381,9 @@ throws any error that's raised.
 
 Other strategies might be `Fatal` instances defined in package-level scope, for
 example,
-```scala
+```amok
+syntax  scala
+##
 package app
 
 given InitError is Fatal = error =>
