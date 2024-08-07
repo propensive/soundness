@@ -210,6 +210,9 @@ extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
   def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
     map.updated(key, map.get(key).fold(List(value))(value :: _))
 
+extension [ValueType](list: List[ValueType])
+  def unwind(tail: List[ValueType]): List[ValueType] = tail.reverse_:::(list)
+
 extension [ElemType](seq: Seq[ElemType])
   def runs: List[List[ElemType]] = runsBy(identity)
 
