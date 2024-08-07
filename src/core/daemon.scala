@@ -266,7 +266,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.standard
-      given Message is Loggable = Log(Syslog(t"ethereal"))
+      given Message is Loggable = Log.route(Syslog(t"ethereal"))
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
