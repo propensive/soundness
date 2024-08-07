@@ -60,7 +60,8 @@ package columnar:
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
             : IndexedSeq[TextType] =
 
-      def format(text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
+      def format
+          (text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
               : List[TextType] =
 
         if position < text.length then
@@ -68,14 +69,21 @@ package columnar:
           then format(text, position + 1, lineStart, position, lines)
           else
             if position - lineStart >= width
-            then format(text, position + 1, lastSpace + 1, lastSpace, text.slice(lineStart, lastSpace) :: lines)
+            then format
+             (text,
+              position + 1,
+              lastSpace + 1,
+              lastSpace,
+              text.slice(lineStart, lastSpace) :: lines)
+
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines else text.slice(lineStart, position) :: lines
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
+            : Optional[Int] =
       fixedWidth
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
@@ -85,7 +93,8 @@ package columnar:
         if line.length > width then line.take(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
+            : Optional[Int] =
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
