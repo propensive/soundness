@@ -33,7 +33,7 @@ perfect for testing.
 Larceny is a compiler plugin, and can be included in a compilation with the
 `-Xplugin:larceny.jar` parameter to `scalac`:
 ```sh
-scalac -d bin -Xplugin:larceny.jar -classpath larceny.jar *.scala`
+scalac -d bin -Xplugin:larceny.jar -classpath larceny.jar *.scala
 ```
 
 The compiler plugin identifies code blocks whose compilation errors should be
