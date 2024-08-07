@@ -164,26 +164,26 @@ algorithm can find a suitable width for each column.
 #### The Algorithm
 
 The `Table` delegates rendering of the cells to each `Column`, and passes in a
-parameter (a `Double` between `0` and `1`) which expresses the pressure on that
-column to shrink. A column may decide not to render at all if the pressure is
-high enough.
+parameter (a `Double` between `0` and `1`) which expresses the slack on that
+column to shrink. _Slack_ can be thought of as the opposite of _pressure_.
+A column may decide not to render at all if the slack is too low.
 
-Some columns can render to a narrower width if the pressure is increased, while
+Some columns can render to a narrower width if the slack is decreased, while
 others will not be able to shrink past a minimum width. In any case, their
 calculated render-width is returned back to the table-rendering algorithm.
 
-Based on the total width of all the columns at a particular pressure, the
-algorithm will decide whether to decrease or increase the pressure on all
-columns simultaneously, so that they fit within the available space.
+Based on the total width of all the columns at a particular slack, the
+algorithm will decide whether to decrease or increase the slack on all
+columns simultaneously, to force them to fit within the available space.
 
-Through several trials, the algorithm can find the lowest pressure value which
-allows the table to render within the width available.
+Through several trials, the algorithm can find the highest slack value which
+allows the table to still render within the width available.
 
-Often, this minimum pressure value is found at a trigger point _just after_
+Often, this maximum slack value is found at a trigger point _just after_
 one or more columns are hidden, and besides allowing the remaining columns to
 fit, this can leave additional unused space.
 
-So the algorithm, in a second step, decreases the pressure on the remaining
+So the algorithm, in a second step, increases the slack on the remaining
 columns (without reintroducing the removed columns) to allow them to fill up
 more of the unused space.
 
@@ -196,10 +196,10 @@ Each `Column` instance can be configured with its own sizing criteria.
 ```amok
 syntax scala
 transform
-  replace  t"Identifier"  t"Identifier", sizing = columnar.Collapsible(0.9)
-  replace  t"LoC"  t"LoC", sizing = columnar.Collapsible(0.3)
-  replace  t"Year"  t"Year", sizing = columnar.Collapsible(0.5)
-  replace  t"Description"  t"Description", textAlign = TextAlignment.Justify, sizing = columnar.Prose
+  replace  t"Identifier"  t"Identifier", sizing = Collapsible(0.9)
+  replace  t"LoC"  t"LoC", sizing = Collapsible(0.3)
+  replace  t"Year"  t"Year", sizing = Collapsible(0.5)
+  replace  t"Description"  t"Description", textAlign = TextAlignment.Justify, sizing = Prose
 ##
 case class Library
     (id: Text, name: Text, linesOfCode: Int, year: Int, about: Text)
@@ -212,6 +212,41 @@ val table =
     Column(t"Year")(_.year),
     Column(t"Description")(_.about))
 ```
+
+Of these columns, we have specified that the _LoC_ column and the _Year_
+column have the sizing, `Collapsible`, with thresholds of `0.3` and `0.5`
+respectively.
+
+Those threshold values determine how those columns respond to the slack
+imposed upon them when calculating how to render them. The numbers are
+arbitrary in an absolute sense, because the algorithm will hunt
+(logarithmically) for a suitable value for the width. But the values relative
+to each other are significant.
+
+If the slack value tried is `0.6`, then both columns will be shown. If the
+value is `0.4`, then only `LoC` will be shown. And if it is `0.2`, then neither
+column will be visible.
+
+The `Description` column is sized as `Prose`. That was chosen because it
+contains words which can be split on spaces, so long lines can be split into
+multiple lines. A _prose_ column usually responds well to changes in slack, and
+its width grows or shrinks as the text is reflowed onto multiple lines.
+
+The alignment is also specified as `Justify`, which means that additional
+spaces are added to ensure each line (apart from the last in each paragraph)
+fills all the space available on each line.
+
+In addition to `Prose` and `Collapsible`, columns may be sized as `Fixed`,
+specifying an unchanging width in characters, or `Shortened` which will crop
+the content of a column down to a certain size, if there is not enough slack.
+
+The concept is fully extensible, and other specifications may be designed to
+control the widths of columns in response to different slack values.
+
+There is a requirement that a column should respond monotonically to changes in
+slack. That is to say, a decrease in slack should _never_ result in a column
+that is wider, though it may be the same width.
+
 #### Renderings at Different Widths
 
 At a width of `120` characters, each row takes a single line, and all columns
@@ -353,7 +388,8 @@ in the `escritoire.tableStyles` (or `soundness.tableStyles`) package.
 
 Below are samples of each table style.
 
-#### `tableStyles.thinRounded`
+Aside from `tableStyles.default', `tableStyles.thinRounded` provides tables
+with rounded corners:
 
 ```mono
 ╭──────────────┬──────┬──────────────────────────╮
@@ -369,7 +405,8 @@ Below are samples of each table style.
 ╰──────────────┴──────┴──────────────────────────╯
 ```
 
-#### `tableStyles.horizontal`
+Tables can be rendered with only horizontal lines using,
+`tableStyles.horizontal`:
 
 ```mono
 ╶────────────────────────────────────────────────╴
@@ -385,21 +422,7 @@ Below are samples of each table style.
 ╶────────────────────────────────────────────────╴
 ```
 
-#### `tableStyles.midOnly`
-
-```mono
-  Name            LoC   Description
-╶────────────────────────────────────────────────╴
-  Wisteria        581   Simple,     fast     and
-                        transparant      generic
-                        derivation           for
-                        typeclasses
-  Quantitative   1271   Statically-checked
-                        physical   units    with
-                        seamless syntax
-```
-
-#### `tableStyles.vertical`
+Or with only vertical lines with `tableStyles.vertical`:
 
 ```mono
 ╷              ╷      ╷                          ╷
@@ -415,7 +438,8 @@ Below are samples of each table style.
 ╵              ╵      ╵                          ╵
 ```
 
-#### `tableStyles.minimal`
+A "minimal" approach includes just a horizontal line under the title, with
+`tableStyles.minimal`:
 
 ```mono
   Name            LoC   Description
