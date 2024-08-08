@@ -97,9 +97,9 @@ transform
         import textMetrics.uniform
         import columnAttenuation.ignore
         import stdioSources.virtualMachine.ansi
-
 ##
 import soundness.*
+
 // more imports
 
 case class Digit(n: Int, digitName: Text)
