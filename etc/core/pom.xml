@@ -4,7 +4,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
-  <artifactId>larceny-plugin</artifactId>
+  <artifactId>larceny-core</artifactId>
   <version>0.11.0</version>
   <licenses>
     <license>
@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Larceny Plugin</name>
+  <name>Larceny Core</name>
   <description>Scala 3 compiler plugin for testing compiletime errors</description>
   <url>https://soundness.dev/larceny</url>
   <packaging>jar</packaging>
@@ -22,11 +22,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala3-compiler_3</artifactId>
-      <version>3.5.0-RC6</version>
-    </dependency>
   </dependencies>
   <organization>
     <name>Propensive</name>
