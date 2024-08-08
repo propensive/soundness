@@ -50,8 +50,8 @@ The table can be rendered to standard output with,
 ```amok
 syntax scala
 transform
-  before hide imports
-  after  show imports
+  before  hide imports
+  after   show imports
   replace  // more imports
       import tableStyles.default
       import textMetrics.uniform
