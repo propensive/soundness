@@ -52,11 +52,13 @@ syntax scala
 transform
   before  hide imports
   after   show imports
-  replace  // more imports
-      import tableStyles.default
-      import textMetrics.uniform
-      import columnAttenuation.ignore
-      import stdioSources.virtualMachine.ansi
+  replace
+    match  // more imports
+    replacement
+        import tableStyles.default
+        import textMetrics.uniform
+        import columnAttenuation.ignore
+        import stdioSources.virtualMachine.ansi
 
 ##
 import soundness.*
