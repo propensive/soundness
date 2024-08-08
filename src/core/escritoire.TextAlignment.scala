@@ -19,31 +19,36 @@ package escritoire
 import rudiments.*
 import gossamer.*
 import anticipation.*
+import hieroglyph.*
 
 object TextAlignment:
   object Right extends TextAlignment:
-    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
-      Textual(t" "*(width - text.length))+text
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
+            : TextType =
+      Textual(t" "*(width - text.metrics))+text
 
   object Left extends TextAlignment:
-    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
-      text+Textual(t" "*(width - text.length))
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
+            : TextType =
+      text+Textual(t" "*(width - text.metrics))
 
   object Center extends TextAlignment:
-    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
-      val space = width - text.length
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
+            : TextType =
+      val space = width - text.metrics
       val before = Textual(t" "*(space/2))
       val after = Textual(t" "*(space - space/2))
 
       before+text+after
 
   object Justify extends TextAlignment:
-    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType =
-      if last then text+Textual(t" "*(width - text.length))
+    def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
+            : TextType =
+      if last then text+Textual(t" "*(width - text.metrics))
       else
         val words = text.cut(t" ")
         val wordCount = words.length
-        val spare = width - words.sumBy(_.length)
+        val spare = width - words.sumBy(_.metrics)
 
         def recur(spare: Int, count: Int, done: TextType): TextType =
           if count == 0 then done+Textual(t" "*spare) else
@@ -53,4 +58,4 @@ object TextAlignment:
         recur(spare, wordCount - 1, words.head)
 
 trait TextAlignment:
-  def pad[TextType: Textual](text: TextType, width: Int, last: Boolean): TextType
+  def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics): TextType
