@@ -1,30 +1,49 @@
+Here is an example of a table rendered by Escritoire:
+
+```mono
+╭──────────────┬──────┬──────────────────────────╮
+│ Name         │  LoC │ Description              │
+├──────────────┼──────┼──────────────────────────┤
+│ Wisteria     │  581 │ Simple,     fast     and │
+│              │      │ transparant      generic │
+│              │      │ derivation           for │
+│              │      │ typeclasses              │
+│ Quantitative │ 1271 │ Statically-checked       │
+│              │      │ physical   units    with │
+│              │      │ seamless syntax          │
+╰──────────────┴──────┴──────────────────────────╯
+```
+
 All Escritoire terms and types are defined in the `escritoire` package,
 ```amok
 syntax scala
 ##
 import escritoire.*
 ```
-and are exported to the `soundness` package, so alternatively:
+and are exported to the `soundness` package, so alternatively we can import:
 ```amok
 syntax scala
 ##
 import soundness.*
 ```
 
-Often, the easiest way to create a table from a sequence of values is to call
-the extension method `table` on it. This will be possible if the elements have
+### A Simple Example
+
+For many datatypes, the easiest way to create a table from a sequence of values
+is to call
+the extension method `table` on it. This is possible if the elements have
 types which are _tabulable_. Tabulable types are simple fields (like `Text` or
 `Int`) or a product of tabulable values, such as a case class where every
 field is a tabulable type.
 
 This includes nested case classes, which will be automatically collapsed into a
-flat structure. But it excludes coproduct types like structured `enum`s—these
-would need a different set of columns for each row, so they don't make sense in
-a tabular form.
+flattened structure. But it excludes coproduct types like structured
+`enum`s—these would need a different set of columns for each row, so they don't
+make sense in a tabular form.
 
 This automatic tabulation uses generic derivation, which is provided by
 [Wisteria](https://soundness.dev/wisteria/), and in many cases it produces
-reasonable output. Titles are converted from "camel case" into normal words,
+good output. Titles are converted from "camel case" into normal words,
 and capitalized.
 
 The table can be rendered to standard output with,
@@ -47,7 +66,8 @@ and will look like this:
 ```
 
 Although this hides some of the complexity of constructing and rendering a
-table—which will be explained in the next section—
+table, which will be explained below, for many cases it is remarkably easy to
+render a table for display in a terminal.
 
 ### `Table`s, `Tabulation`s and `Grid`s
 
