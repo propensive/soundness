@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/nettlesome/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/nettlesome/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Nettlesome
@@ -9,7 +9,7 @@ __Typesafe representations of network concepts__
 We need to work with a variety of different types of entity when working with
 networking technologies. These include URLs, IP addresses, email address and
 MAC addresses. Parsing and serializing these entities without loss of
-generality is typically nontrivial, and it is for this reason that _Nettlesome_
+generality is typically nontrivial, and it is for this reason that __Nettlesome__
 exists.
 
 ## Features
@@ -20,17 +20,9 @@ exists.
 - Runtime parsing and serialization, with parsing errors handled using capabilities
 
 
-## Availability Plan
+## Availability
 
-Nettlesome has not yet been published. The medium-term plan is to build Nettlesome
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Nettlesome.
 
-Subsequently, Nettlesome will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
