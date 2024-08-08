@@ -87,7 +87,19 @@ and capitalized.
 The table can be rendered to standard output with,
 ```amok
 syntax scala
+transform
+  before hide imports
+  after  show imports
+  replace  // more imports
+      import tableStyles.default
+      import textMetrics.uniform
+      import columnAttenuation.ignore
+      import stdioSources.virtualMachine.ansi
+
 ##
+import soundness.*
+// more imports
+
 case class Digit(n: Int, digitName: Text)
 val data = List(Digit(1, t"one"), Digit(2, t"two"), Digit(3, t"three"))
 Out.println(data.table)
