@@ -72,11 +72,11 @@ object Semblance:
         Column(e"Difference")(_.difference.or(e""))
       )
 
-      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).layout(200).render.join(e"\n")
+      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).grid(200).render.join(e"\n")
 
     case Different(left, right, difference) =>
-      val whitespace = if right.has('\n') then e"\n" else e" "
-      val whitespace2 = if left.has('\n') then e"\n" else e" "
+      val whitespace = if right.contains('\n') then e"\n" else e" "
+      val whitespace2 = if left.contains('\n') then e"\n" else e" "
       e"The result$whitespace${webColors.Crimson}($right)${whitespace}did not equal$whitespace2${webColors.YellowGreen}($left)"
 
     case Identical(value) =>
