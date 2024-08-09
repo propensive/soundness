@@ -52,8 +52,6 @@ object Unicode:
   def eastAsianWidth(char: Char): Optional[EaWidth] =
     eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
 
-  var count = 0
-
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =
