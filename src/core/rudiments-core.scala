@@ -190,9 +190,6 @@ extension [ElemType](array: Array[ElemType])
 extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
   inline def has(key: KeyType): Boolean = map.contains(key)
 
-  transparent inline def at(key: KeyType): Optional[ValueType] = optimizable[ValueType]: default =>
-    if map.has(key) then map(key) else default
-
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
@@ -262,11 +259,7 @@ extension [ElemType](seq: IndexedSeq[ElemType])
     Cursor.curse(seq)(block)
 
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
-
-  transparent inline def at(index: Int): Optional[ElemType] = optimizable[ElemType]: default =>
-    if has(index) then seq(index) else default
-
-  inline def ult: Optional[ElemType] = at(seq.length - 1)
+  inline def ult: Optional[ElemType] = if seq.length > 0 then seq(seq.length - 1) else Unset
 
 extension (iarray: IArray.type)
   def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =

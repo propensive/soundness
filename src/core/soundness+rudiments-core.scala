@@ -18,7 +18,7 @@ package soundness
 
 export rudiments.{ByteSize, bin, hex, Hex, b, kb, mb, gb, tb, byteSize, sift, has, where,
     interleave, each, all, sumBy, bi, tri, indexBy, longestTrain, mutable, immutable, snapshot,
-    place, at, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
+    place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as, Irrefutable,
     Unapply, As, ClassTag, Typeable, Set, List, ListMap, Map, TreeSet, TreeMap, TrieMap, NonFatal,
     boundary, break, IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
