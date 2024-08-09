@@ -7,7 +7,7 @@ repo propensive/contextual
 repo propensive/hypotenuse
 repo propensive/probably
 
-target iridescence/test
+target iridescence/core
 
 project iridescence
   module core
