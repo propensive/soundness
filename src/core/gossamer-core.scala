@@ -157,7 +157,7 @@ extension [TextType: Textual](text: TextType)
     recur(0, TextType.empty)
 
   def contains(substring: into Text): Boolean = TextType.indexOf(text, substring) != -1
-  def has(char: Char): Boolean = TextType.indexOf(text, char.show) != -1
+  def contains(char: Char): Boolean = TextType.indexOf(text, char.show) != -1
 
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(text.length)
