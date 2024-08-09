@@ -22,7 +22,18 @@ import anticipation.*
 import symbolism.*
 
 object Indexable:
-  given [ElementType] => IndexedSeq[ElementType] is Indexable by Int into ElementType =
+  given [ElementType] => IArray[ElementType] is Indexable by Int into ElementType as iarray =
+    new Indexable:
+      type Self = IArray[ElementType]
+      type Operand = Int
+      type Result = ElementType
+
+      def contains(array: IArray[ElementType], index: Int): Boolean =
+        index >= 0 && index < array.length
+
+      def access(array: IArray[ElementType], index: Int): Result = array(index)
+
+  given [ElementType] => IndexedSeq[ElementType] is Indexable by Int into ElementType as indexedSeq =
     new Indexable:
       type Self = IndexedSeq[ElementType]
       type Operand = Int
