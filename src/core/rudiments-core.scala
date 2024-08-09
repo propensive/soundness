@@ -270,6 +270,13 @@ extension (iarray: IArray.type)
 extension (bytes: Bytes)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
+extension [ValueType: Indexable](value: ValueType)
+  inline def has(index: ValueType.Operand): Boolean = ValueType.contains(value, index)
+
+  inline def at(index: ValueType.Operand): Optional[ValueType.Result] =
+    optimizable[ValueType.Result]: default =>
+      if ValueType.contains(value, index) then ValueType.access(value, index) else default
+
 extension (bs: Int)
   def b: ByteSize = ByteSize(bs)
   def kb: ByteSize = ByteSize(bs*1024L)

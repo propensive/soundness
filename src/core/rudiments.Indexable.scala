@@ -20,7 +20,6 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import symbolism.*
-import vacuous.*
 
 object Indexable:
   given [ElementType] => IndexedSeq[ElementType] is Indexable by Int into ElementType =
@@ -29,37 +28,33 @@ object Indexable:
       type Operand = Int
       type Result = ElementType
 
-      inline def present(seq: IndexedSeq[ElementType], index: Int): Boolean =
+      def contains(seq: IndexedSeq[ElementType], index: Int): Boolean =
         index >= 0 && index < seq.length
 
-      inline def access(seq: IndexedSeq[ElementType], index: Int): Result = seq(index)
+      def access(seq: IndexedSeq[ElementType], index: Int): Result = seq(index)
 
-given [ElementType] => Text is Indexable by Int into Char =
-  new Indexable:
-    type Self = Text
-    type Operand = Int
-    type Result = Char
+  given [ElementType] => Text is Indexable by Int into Char =
+    new Indexable:
+      type Self = Text
+      type Operand = Int
+      type Result = Char
 
-    inline def present(text: Text, index: Int): Boolean = index >= 0 && index < text.s.length
-    inline def access(text: Text, index: Int): Result = text.s.charAt(index)
+      def contains(text: Text, index: Int): Boolean = index >= 0 && index < text.s.length
+      def access(text: Text, index: Int): Result = text.s.charAt(index)
 
-given [KeyType, ValueType] => Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
-  new Indexable:
-    type Self = Map[KeyType, ValueType]
-    type Operand = KeyType
-    type Result = ValueType
+  given [KeyType, ValueType] => Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
+    new Indexable:
+      type Self = Map[KeyType, ValueType]
+      type Operand = KeyType
+      type Result = ValueType
 
-    inline def present(value: Self, index: KeyType): Boolean = value.contains(index)
-    inline def access(value: Self, index: KeyType): ValueType = value(index)
+      def contains(value: Self, index: KeyType): Boolean = value.contains(index)
+      def access(value: Self, index: KeyType): ValueType = value(index)
 
 trait Indexable:
   type Self
   type Operand
   type Result
 
-  inline def present(value: Self, index: Operand): Boolean
-  inline def access(value: Self, index: Operand): Result
-
-  extension (value: Self) inline def at(index: Operand): Optional[Result] =
-    optimizable[Result]: default =>
-      if present(value, index) then access(value, index) else default
+  def contains(value: Self, index: Operand): Boolean
+  def access(value: Self, index: Operand): Result
