@@ -32,7 +32,7 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
-    (using show: TextType.Show[ValueType])
+    (using TextType.Show[ValueType])
         : Unit =
   buffer.append(TextType.show(value))
 
@@ -159,9 +159,6 @@ extension [TextType: Textual](text: TextType)
   def contains(substring: into Text): Boolean = TextType.indexOf(text, substring) != -1
   def has(char: Char): Boolean = TextType.indexOf(text, char.show) != -1
 
-  inline def at(index: Int): Optional[Char] = optimizable[Char]: default =>
-    if index < 0 || index >= length then default else TextType.unsafeChar(text, index)
-
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(text.length)
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(0)
@@ -225,8 +222,9 @@ extension [TextType: Textual](text: TextType)
     case Rtl => text.pad(length, bidi, char).take(length, Rtl)
 
   def uncamel: IArray[TextType] =
-    def recur(text: TextType): List[TextType] = text.where(_.isUpper, 1).lay(List(text.lower)): index =>
-      text.take(index).lower :: recur(text.drop(index))
+    def recur(text: TextType): List[TextType] =
+      text.where(_.isUpper, 1).lay(List(text.lower)): index =>
+        text.take(index).lower :: recur(text.drop(index))
 
     IArray.from(recur(text))(using TextType.classTag)
 
@@ -239,7 +237,8 @@ extension [TextType: Textual](text: TextType)
     val length: Int = prefix.s.length
 
     def recur(index: Int): Boolean =
-      index == length || TextType.unsafeChar(text, index) == prefix.s.charAt(index) && recur(index + 1)
+      index == length || TextType.unsafeChar(text, index) == prefix.s.charAt(index) &&
+          recur(index + 1)
 
     length <= text.length && recur(0)
 
