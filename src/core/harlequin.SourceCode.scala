@@ -28,11 +28,11 @@ import scala.collection.mutable as scm
 case class SourceCode
     (language: ProgrammingLanguage,
      offset:   Int,
-     lines:    IArray[Seq[SourceToken]],
+     lines:    IArray[List[SourceToken]],
      focus:    Optional[((Int, Int), (Int, Int))] = Unset):
 
   def lastLine: Int = offset + lines.length - 1
-  def apply(line: Int): Seq[SourceToken] = lines(line - offset)
+  def apply(line: Int): List[SourceToken] = lines(line - offset)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
           : SourceCode =
@@ -53,14 +53,28 @@ object SourceCode:
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
+    val languageSettings =
+      List
+       ("experimental.clauseInterleaving",
+        "experimental.genericNumberLiterals",
+        "experimental.fewerBraces",
+        "experimental.modularity",
+        "experimental.erasedDefinitions",
+        "experimental.saferExceptions",
+        "experimental.namedTypeArguments")
 
-    given Contexts.Context =
+    ctx0.setSetting(ctx0.settings.language, languageSettings)
+    ctx0.setSetting(ctx0.settings.source, "future")
+
+    given Contexts.Context as ctx =
       ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
+
 
     val trees = Trees()
     val parser = Parsers.Parser(source)
 
     trees.traverse(parser.compilationUnit())
+
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 

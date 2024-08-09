@@ -20,41 +20,27 @@ import anticipation.*
 import gossamer.*
 import harlequin.*
 import honeycomb.*
+import spectacular.*
+import vacuous.*
+
+trait CommonRenderer:
+  def className(accent: Accent): Text = accent.show.lower
+  def element(accent: Accent, text: Text): Element["code"] = Code(`class` = className(accent))(text)
+
+  protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
+    val code = source.lines.map: line =>
+      Span.line:
+        line.map { case SourceToken(text, accent) => element(accent, text) }
+
+    List(Div.amok(Pre(code)))
+
+object ScalaRenderer extends Renderer(t"scala"), CommonRenderer:
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
+    postprocess(Scala.highlight(content))
+
+object JavaRenderer extends Renderer(t"java"), CommonRenderer:
+  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
+    postprocess(Java.highlight(content))
 
 package htmlRenderers:
-  given HtmlConverter as scalaSyntax:
-    private def element(accent: Accent, text: Text): Element["code"] = accent match
-      case Accent.Error    => Code.error(text)
-      case Accent.Number   => Code.number(text)
-      case Accent.String   => Code.string(text)
-      case Accent.Ident    => Code.ident(text)
-      case Accent.Term     => Code.term(text)
-      case Accent.Typed    => Code.typed(text)
-      case Accent.Keyword  => Code.keyword(text)
-      case Accent.Symbol   => Code.symbol(text)
-      case Accent.Parens   => Code.parens(text)
-      case Accent.Modifier => Code.modifier(text)
-      case Accent.Unparsed => Code.unparsed(text)
-
-    override def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
-      case Markdown.Ast.Block.FencedCode(t"amok", meta, value) =>
-        val lines: List[Text] = value.cut(t"\n").to(List)
-        val rewritten = lines.dropWhile(_ != t"##").tail.join(t"\n")
-        convertNode(Markdown.Ast.Block.FencedCode(t"scala", meta, rewritten))
-
-      case Markdown.Ast.Block.FencedCode(t"java", meta, value) =>
-        val code = Java.highlight(value).lines.flatMap: line =>
-          (line :+ SourceToken.Newline).map:
-            case SourceToken(text, accent) => element(accent, text)
-
-        Seq(Pre(code.init*))
-
-      case Markdown.Ast.Block.FencedCode(t"scala", meta, value) =>
-        val code = Scala.highlight(value).lines.flatMap: line =>
-          (line :+ SourceToken.Newline).map:
-            case SourceToken(text, accent) => element(accent, text)
-
-        Seq(Pre(code.init*))
-
-      case other =>
-        super.convertNode(other)
+  given HtmlConverter as scalaSyntax = HtmlConverter(ScalaRenderer, JavaRenderer)
