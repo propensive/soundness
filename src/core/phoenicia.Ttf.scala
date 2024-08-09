@@ -20,7 +20,7 @@ import anticipation.*
 import bifurcate.*
 import contingency.*
 import fulminate.*
-import gossamer.{at as _, *}
+import gossamer.*
 import hypotenuse.*
 import quantitative.*
 import rudiments.*
@@ -79,7 +79,7 @@ case class Ttf(data: Bytes):
     tables.at(TtfTag.Head).let: ref =>
       data.unpackFrom[HeadTable](ref.offset).tap: table =>
         if table.magicNumber != 0x5f0f3cf5.bits
-        then raise(FontError(FontError.Reason.MagicNumber))(())
+        then raise(FontError(FontError.Reason.MagicNumber))
 
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
 

@@ -18,7 +18,7 @@ package phoenicia
 
 import anticipation.*
 import contingency.*
-import gossamer.{at as _, *}
+import gossamer.*
 import rudiments.*
 import vacuous.*
 

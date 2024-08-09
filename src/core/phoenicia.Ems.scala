@@ -17,7 +17,7 @@
 package phoenicia
 
 import anticipation.*
-import gossamer.{at as _, *}
+import gossamer.*
 import quantitative.*
 import rudiments.*
 
