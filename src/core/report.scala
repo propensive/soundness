@@ -333,7 +333,7 @@ class TestReport(using Environment):
         Column(e"Line"): row =>
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
         Column(e"Symbol")(_(0).juncture.symbolName)
-      ).tabulate(render(junctures2)).layout(columns)(using tableStyles.horizontal).render.each(Out.println(_))
+      ).tabulate(render(junctures2)).grid(columns)(using tableStyles.horizontal).render.each(Out.println(_))
 
       Out.println(e"")
 
@@ -356,7 +356,7 @@ class TestReport(using Environment):
               webColors.Brown -> notCovered)
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
-      ).tabulate(data).layout(columns).render.each(Out.println(_))
+      ).tabulate(data).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")
 
@@ -368,7 +368,7 @@ class TestReport(using Environment):
       Out.println(e"${escapes.Reset}")
       Out.println(e"$Bold($Underline(Test results))")
 
-      table.tabulate(summaryLines).layout(columns).render.each(Out.println(_))
+      table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
       Out.println(e" $Bold(${webColors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${webColors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${webColors.White}(${passed + failed})) total")
       Out.println(t"─"*72)
@@ -450,7 +450,7 @@ class TestReport(using Environment):
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput)).layout(columns).render.each(Out.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput)).grid(columns).render.each(Out.println(_))
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
@@ -491,7 +491,7 @@ class TestReport(using Environment):
             Table[(Text, Text), Teletype](
               Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)),
-            ).tabulate(map.to(List)).layout(140).render.each(Out.println(_))
+            ).tabulate(map.to(List)).grid(140).render.each(Out.println(_))
 
           case DebugInfo.Message(text) =>
             Out.println(text)
