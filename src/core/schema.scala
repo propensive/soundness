@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import vacuous.*
 import contingency.*
-import gossamer.{at as _, *}
+import gossamer.*
 import anticipation.*
 import symbolism.*
 import turbulence.*
