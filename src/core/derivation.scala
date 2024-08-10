@@ -23,7 +23,7 @@ import spectacular.*
 import contingency.*
 import wisteria.*
 import anticipation.*
-import gossamer.{at as _, *}
+import gossamer.*
 
 import scala.deriving.*
 import scala.compiletime.*

@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import vacuous.*
 import contingency.*
-import gossamer.{where as _, at as _, *}
+import gossamer.{where as _, *}
 import anticipation.*
 import contextual.*
 import spectacular.*

@@ -21,7 +21,7 @@ import anticipation.*
 import gossamer.*
 import spectacular.*
 import contingency.*, strategies.throwUnsafely
-import turbulence.*, stdioSources.virtualMachine
+import turbulence.*, stdioSources.virtualMachine.ansi
 
 case class Network(address: MacAddress)
 
