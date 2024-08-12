@@ -16,14 +16,16 @@
 
 package gossamer
 
+import rudiments.*
+
 import language.experimental.pureFunctions
 import language.experimental.into
 
 object Joinable:
   given [TextType: Textual] => TextType is Joinable = elements =>
-    var acc: TextType = TextType.empty
-    for element <- elements do acc = TextType.concat(acc, element)
-    acc
+    val buffer = TextType.buffer(elements.sumBy(_.length))
+    elements.each(buffer.append(_))
+    buffer()
 
 trait Joinable:
   type Self

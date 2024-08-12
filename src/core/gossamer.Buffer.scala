@@ -19,11 +19,16 @@ package gossamer
 import rudiments.*
 import vacuous.*
 
-abstract class Buffer[TextType](size: Optional[Int]):
+abstract class Buffer[TextType](size: Optional[Int] = Unset):
   protected def put(text: TextType): Unit
   protected def wipe(): Unit
   protected def result(): TextType
 
   def append(text: TextType): this.type = this.also(put(text))
+
+  def build(block: this.type ?=> Unit): TextType =
+    block(using this)
+    apply()
+
   def apply(): TextType = result()
   def clear(): this.type = this.also(wipe())
