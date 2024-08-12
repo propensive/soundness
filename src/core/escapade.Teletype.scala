@@ -22,6 +22,7 @@ import anticipation.*
 import symbolism.*
 import turbulence.*
 import contextual.*
+import vacuous.*
 import spectacular.*
 
 import scala.util.*
@@ -56,6 +57,7 @@ object Teletype:
     def unsafeChar(text: Teletype, index: Int): Char = text.plain.s.charAt(index)
     def indexOf(text: Teletype, sub: Text): Int = text.plain.s.indexOf(sub.s)
     def show[ValueType: Teletypeable](value: ValueType) = value.teletype
+    def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
 
   val empty: Teletype = Teletype(t"")
   given Teletype is Joinable as joinable = _.fold(empty)(_ + _)
