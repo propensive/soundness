@@ -33,7 +33,8 @@ final val Den: Ordinal  = Ordinal.fromOne(10)
 
 extension (inline cardinal: Int)
   @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal = Ordinal.fromZero(cardinal + ordinal.fromZero)
+  inline infix def + (inline ordinal: Ordinal): Ordinal =
+    Ordinal.fromZero(cardinal + ordinal.fromZero)
 
 object Denominative:
   opaque type Ordinal = Int
@@ -55,23 +56,30 @@ object Denominative:
     @targetName("lessThanOrEqualTo")
     inline infix def <= (inline right: Ordinal): Boolean = ordinal <= right
 
+    @targetName("lessThan")
+    inline infix def < (inline right: Ordinal): Boolean = ordinal < right
+
     @targetName("greaterThanOrEqualTo")
     inline infix def >= (inline right: Ordinal): Boolean = ordinal >= right
 
+    @targetName("greaterThan")
+    inline infix def > (inline right: Ordinal): Boolean = ordinal > right
+
     inline def next: Ordinal = ordinal + 1
-    inline def previous: Ordinal = ordinal - 1
+    inline def previous: Ordinal = (ordinal - 1).max(0)
 
     @targetName("to")
     inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
 
-    inline def fromZero: Int = ordinal - 1
-    inline def fromOne: Int = ordinal
-
-    inline def degenerate: Boolean = ordinal < 1
+    inline def fromZero: Int = ordinal
+    inline def fromOne: Int = ordinal + 1
+    inline def degenerate: Boolean = ordinal < 0
+    inline def subsequent(size: Int): Interval = (ordinal + 1) ~ (ordinal + size + 1)
+    inline def preceding(size: Int): Interval = (ordinal - size).max(0) ~ (ordinal - 1)
 
   object Ordinal:
-    inline def fromZero(inline cardinal: Int): Ordinal = cardinal + 1
-    inline def fromOne(inline cardinal: Int): Ordinal = cardinal
+    inline def fromZero(inline cardinal: Int): Ordinal = cardinal
+    inline def fromOne(inline cardinal: Int): Ordinal = cardinal - 1
 
     given Ordinal is Textualizer =
       case Prim    => "prim".tt
@@ -91,6 +99,10 @@ object Denominative:
     inline def end: Ordinal = (interval & 0xffffffff).toInt
     inline def contains(ordinal: Ordinal): Boolean = start <= ordinal && ordinal <= end
     inline def size: Int = (end - start) max 0
+    inline def next: Ordinal = end + 1
+    inline def previous: Ordinal = start - 1
+    inline def subsequent(size: Int): Interval = end.subsequent(size)
+    inline def preceding(size: Int): Interval = start.preceding(size)
 
     inline def each(inline lambda: Ordinal => Unit): Unit =
       var i: Ordinal = start
@@ -114,24 +126,21 @@ object Denominative:
     inline def empty: Boolean = end < start
 
   object Interval:
+    inline def initial(size: Int): Interval = size.toLong
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
-      (start & 0xffffffffL) << 32 | end & 0xffffffffL
+      (start & 0xffffffffL) << 32 | (end + 1) & 0xffffffffL
 
 object Countable:
-  given sequence[ElementType]: Countable[Seq[ElementType]] = new Countable[Seq[ElementType]]:
-    inline def zeroIndexed: true = true
-    inline def ult(inline sequence: Seq[ElementType]): Ordinal = Ordinal.fromOne(sequence.length)
+  given [ElementType] => Seq[ElementType] is Countable as sequence:
+    inline def ult(sequence: Seq[ElementType]): Ordinal = Ordinal.fromOne(sequence.length)
 
-trait Countable[-SequenceType]:
-  inline def zeroIndexed: Boolean
-  inline def ult(inline sequence: SequenceType): Ordinal
+trait Countable:
+  type Self
+  inline def ult(sequence: Self): Ordinal
 
-  inline def index(inline ordinal: Ordinal): Int =
-    inline if zeroIndexed then ordinal.fromZero else ordinal.fromOne
-
-extension [CountableType](inline value: CountableType)(using countable: Countable[CountableType])
-  inline def ult: Ordinal = countable.ult(value)
-  inline def pen: Ordinal = countable.ult(value).previous
-  inline def ante: Ordinal = countable.ult(value).previous.previous
+extension [ValueType: Countable](inline value: ValueType)
+  inline def ult: Ordinal = ValueType.ult(value)
+  inline def pen: Ordinal = ValueType.ult(value).previous
+  inline def ante: Ordinal = ValueType.ult(value).previous.previous
 
 export Denominative.{Ordinal, Interval}
