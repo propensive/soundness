@@ -17,9 +17,10 @@
 package gossamer
 
 import anticipation.*
+import vacuous.*
 
-class TextBuffer() extends Buffer[Text]():
-  private val buffer: StringBuilder = StringBuilder()
+class TextBuffer(size: Optional[Int] = Unset) extends Buffer[Text](size):
+  private val buffer: StringBuilder = size.lay(StringBuilder())(StringBuilder(_))
   protected def put(text: Text): Unit = buffer.append(text)
   protected def wipe(): Unit = buffer.clear()
   protected def result(): Text = buffer.toString().tt

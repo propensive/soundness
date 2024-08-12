@@ -18,6 +18,7 @@ package gossamer
 
 import rudiments.*
 import anticipation.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
@@ -32,6 +33,7 @@ trait Textual extends Presentational:
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Int): Char
   def indexOf(text: Self, sub: Text): Int
+  def buffer(size: Optional[Int]): Buffer[Self]
 
   extension (left: Self)
     @targetName("mul")

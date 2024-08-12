@@ -21,6 +21,6 @@ import anticipation.*
 import language.experimental.pureFunctions
 import language.experimental.into
 
-case class Numerous(word: Text, pluralEnd: Text = "s".tt, singularEnd: Text = Text("")):
+case class Numerous(word: Text, pluralEnd: Text = "s".tt, singularEnd: Text = "".tt):
   def apply(elements: Iterable[?]): Text = apply(elements.size)
   def apply(value: Int): Text = Text(word.s+(if value == 1 then singularEnd.s else pluralEnd.s))

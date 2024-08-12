@@ -17,8 +17,9 @@
 package gossamer
 
 import rudiments.*
+import vacuous.*
 
-abstract class Buffer[TextType]():
+abstract class Buffer[TextType](size: Optional[Int]):
   protected def put(text: TextType): Unit
   protected def wipe(): Unit
   protected def result(): TextType

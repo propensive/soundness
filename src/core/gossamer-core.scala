@@ -53,14 +53,14 @@ extension (inline ctx: StringContext)
   transparent inline def t(inline parts: Any*): Text = ${Interpolation.T.expand('ctx, 'parts)}
 
 extension (ctx: StringContext)
-  def t = SimpleTExtractor(ctx.parts.head.show)
+  def t = SimpleTExtractor(ctx.parts.head.tt)
 
 extension (value: Bytes)
-  def utf8: Text = Text(String(value.to(Array), "UTF-8"))
-  def utf16: Text = Text(String(value.to(Array), "UTF-16"))
-  def ascii: Text = Text(String(value.to(Array), "ASCII"))
-  def hex: Text = Text(value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString)
-  def text(using CharDecoder): Text = summon[CharDecoder].decode(value)
+  def utf8: Text = String(value.to(Array), "UTF-8").tt
+  def utf16: Text = String(value.to(Array), "UTF-16").tt
+  def ascii: Text = String(value.to(Array), "ASCII").tt
+  def hex: Text = value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString.tt
+  def text(using decoder: CharDecoder): Text = decoder.decode(value)
 
   // Printable Unicode Encoding
   def pue: Text =
@@ -79,8 +79,8 @@ extension [TextType](value: TextType)
 extension (words: Iterable[Text])
   def pascal: Text = words.map(_.lower.capitalize).join
   def camel: Text = pascal.uncapitalize
-  def snake: Text = words.join(Text("_"))
-  def kebab: Text = words.join(Text("-"))
+  def snake: Text = words.join("_".tt)
+  def kebab: Text = words.join("-".tt)
 
 extension [TextType: Textual](text: TextType)
   inline def length: Int = TextType.length(text)
@@ -204,7 +204,7 @@ extension [TextType: Textual](text: TextType)
 
     recur(0, 0)
 
-  def metrics(using TextMetrics) = summon[TextMetrics].width(TextType.text(text))
+  def metrics(using metrics: TextMetrics) = metrics.width(TextType.text(text))
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
     if text.metrics >= length then text else
@@ -228,10 +228,10 @@ extension [TextType: Textual](text: TextType)
 
     IArray.from(recur(text))(using TextType.classTag)
 
-  def words: IArray[TextType] = text.cut(Text(" "))
-  def lines: IArray[TextType] = text.cut(Text("\n"))
-  def unkebab: IArray[TextType] = text.cut(Text("-"))
-  def unsnake: IArray[TextType] = text.cut(Text("_"))
+  def words: IArray[TextType] = text.cut(" ".tt)
+  def lines: IArray[TextType] = text.cut("\n".tt)
+  def unkebab: IArray[TextType] = text.cut("-".tt)
+  def unsnake: IArray[TextType] = text.cut("_".tt)
 
   inline def starts(prefix: into Text): Boolean =
     val length: Int = prefix.s.length
@@ -260,7 +260,7 @@ extension [TextType: Textual](text: TextType)
   inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
 
 extension (text: into Text)
-  inline def rsub(from: into Text, to: into Text): Text = Text(text.s.replaceAll(from.s, to.s).nn)
+  inline def rsub(from: into Text, to: into Text): Text = text.s.replaceAll(from.s, to.s).nn.tt
 
   inline def sub(from: into Text, to: into Text): Text =
     text.s.replaceAll(Pattern.quote(from.s).nn, to.s).nn.tt
@@ -293,7 +293,7 @@ extension (text: into Text)
 
     dist(n)
 
-extension (iarray: IArray[Char]) def text: Text = Text(String(iarray.mutable(using Unsafe)))
+extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
 extension [TextType: Joinable](values: Iterable[TextType])
   def join: TextType = TextType.join(values)
@@ -315,7 +315,7 @@ extension [TextType: Joinable](values: Iterable[TextType])
 extension (buf: StringBuilder)
   def add(text: into Text): Unit = buf.append(text.s)
   def add(char: Char): Unit = buf.append(char)
-  def text: Text = Text(buf.toString)
+  def text: Text = buf.toString.tt
 
 package decimalFormatters:
   given DecimalConverter as java:

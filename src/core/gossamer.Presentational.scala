@@ -18,6 +18,7 @@ package gossamer
 
 import rudiments.*
 import anticipation.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
@@ -35,6 +36,7 @@ object Presentational:
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
     def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
     def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
+    def buffer(size: Optional[Int]): Buffer[Text] = TextBuffer(size)
 
 trait Presentational:
   type Self
