@@ -55,32 +55,32 @@ extension (inline ctx: StringContext)
 extension (ctx: StringContext)
   def t = SimpleTExtractor(ctx.parts.head.tt)
 
-extension (value: Bytes)
-  def utf8: Text = String(value.to(Array), "UTF-8").tt
-  def utf16: Text = String(value.to(Array), "UTF-16").tt
-  def ascii: Text = String(value.to(Array), "ASCII").tt
-  def hex: Text = value.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString.tt
-  def text(using decoder: CharDecoder): Text = decoder.decode(value)
+extension (bytes: Bytes)
+  def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
+  def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
+  def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
+  def hex: Text = bytes.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString.tt
+  def text(using decoder: CharDecoder): Text = decoder.decode(bytes)
 
   // Printable Unicode Encoding
   def pue: Text =
-    value.map: b =>
+    bytes.map: b =>
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
     .mkString.tt
 
-extension [TextType](value: TextType)
+extension [TextType](text: TextType)
   def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
       (using cuttable: Cuttable[TextType, DelimiterType])
           : IArray[TextType] =
 
-    cuttable.cut(value, delimiter, limit)
+    cuttable.cut(text, delimiter, limit)
 
-extension (words: Iterable[Text])
-  def pascal: Text = words.map(_.lower.capitalize).join
-  def camel: Text = pascal.uncapitalize
-  def snake: Text = words.join("_".tt)
-  def kebab: Text = words.join("-".tt)
+extension [TextType: Textual](words: Iterable[TextType])
+  def pascal: TextType = words.map(_.lower.capitalize).join
+  def camel: TextType = pascal.uncapitalize
+  def snake: TextType = words.join(TextType("_".tt))
+  def kebab: TextType = words.join(TextType("-".tt))
 
 extension [TextType: Textual](text: TextType)
   inline def length: Int = TextType.length(text)
