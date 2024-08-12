@@ -10,7 +10,7 @@ project denominative
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   anticipation/text
 
   module test
     compiler  scala
@@ -18,4 +18,3 @@ project denominative
     include   denominative/core probably/cli larceny/plugin
     main      denominative.Tests
     #coverage  denominative/core
-

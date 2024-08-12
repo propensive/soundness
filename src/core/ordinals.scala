@@ -16,19 +16,20 @@
 
 package denominative
 
-import rudiments.*
 import anticipation.*
 
-final val Prim = Ordinal.fromOne(1)
-final val Sec  = Ordinal.fromOne(2)
-final val Ter  = Ordinal.fromOne(3)
-final val Quat = Ordinal.fromOne(4)
-final val Quin = Ordinal.fromOne(5)
-final val Sen  = Ordinal.fromOne(6)
-final val Sept = Ordinal.fromOne(7)
-final val Oct  = Ordinal.fromOne(8)
-final val Non  = Ordinal.fromOne(9)
-final val Den  = Ordinal.fromOne(10)
+import annotation.targetName
+
+final val Prim: Ordinal = Ordinal.fromOne(1)
+final val Sec: Ordinal  = Ordinal.fromOne(2)
+final val Ter: Ordinal  = Ordinal.fromOne(3)
+final val Quat: Ordinal = Ordinal.fromOne(4)
+final val Quin: Ordinal = Ordinal.fromOne(5)
+final val Sen: Ordinal  = Ordinal.fromOne(6)
+final val Sept: Ordinal = Ordinal.fromOne(7)
+final val Oct: Ordinal  = Ordinal.fromOne(8)
+final val Non: Ordinal  = Ordinal.fromOne(9)
+final val Den: Ordinal  = Ordinal.fromOne(10)
 
 extension (inline cardinal: Int)
   @targetName("plus")
@@ -50,10 +51,10 @@ object Denominative:
 
     @targetName("minus")
     inline infix def - (inline cardinal: Int): Ordinal = ordinal - cardinal
-    
+
     @targetName("lessThanOrEqualTo")
     inline infix def <= (inline right: Ordinal): Boolean = ordinal <= right
-    
+
     @targetName("greaterThanOrEqualTo")
     inline infix def >= (inline right: Ordinal): Boolean = ordinal >= right
 
@@ -72,7 +73,7 @@ object Denominative:
     inline def fromZero(inline cardinal: Int): Ordinal = cardinal + 1
     inline def fromOne(inline cardinal: Int): Ordinal = cardinal
 
-    given show: Textualizer[Ordinal] =
+    given Ordinal is Textualizer =
       case Prim    => "prim".tt
       case Sec     => "sec".tt
       case Ter     => "ter".tt
@@ -93,24 +94,25 @@ object Denominative:
 
     inline def each(inline lambda: Ordinal => Unit): Unit =
       var i: Ordinal = start
-      
+
       while i <= end do
         lambda(i)
         i = i.next
 
-    inline def foldLeft[ValueType](inline initial: ValueType)(inline lambda: (ValueType, Ordinal) => ValueType)
+    inline def foldLeft[ValueType](inline initial: ValueType)
+        (inline lambda: (ValueType, Ordinal) => ValueType)
             : ValueType =
 
       var i: Ordinal = start
       var acc: ValueType = initial
-      
+
       while i <= end do
         acc = lambda(acc, i)
         i = i.next
       acc
 
     inline def empty: Boolean = end < start
-  
+
   object Interval:
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
       (start & 0xffffffffL) << 32 | end & 0xffffffffL
@@ -123,7 +125,7 @@ object Countable:
 trait Countable[-SequenceType]:
   inline def zeroIndexed: Boolean
   inline def ult(inline sequence: SequenceType): Ordinal
-  
+
   inline def index(inline ordinal: Ordinal): Int =
     inline if zeroIndexed then ordinal.fromZero else ordinal.fromOne
 
