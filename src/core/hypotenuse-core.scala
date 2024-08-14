@@ -25,6 +25,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
+import symbolism.*
 
 export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -376,31 +377,37 @@ inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline infix def < [RightType](inline right: RightType)
-      (using inline commensurable: Commensurable[LeftType, RightType])
+      (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [RightType](inline right: RightType)
-      (using inline commensurable: Commensurable[LeftType, RightType])
+      (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [RightType](inline right: RightType)
-      (using inline commensurable: Commensurable[LeftType, RightType])
+      (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, true, true)
 
   @targetName("gte")
   inline infix def >= [RightType](inline right: RightType)
-      (using inline commensurable: Commensurable[LeftType, RightType])
+      (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, false, true)
+
+  inline infix def min (inline right: LeftType)(using LeftType is Orderable): LeftType =
+    if left < right then left else right
+
+  inline infix def max (inline right: LeftType)(using LeftType is Orderable): LeftType =
+    if left >= right then left else right
 
 package arithmeticOptions:
   object division:

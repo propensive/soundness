@@ -23,7 +23,9 @@ import scala.annotation.*
 import rudiments.*
 
 object NumericallyComparable:
-  inline given Commensurable[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
+  inline given Boolean is Commensurable as numeric:
+    type Operand = Int | Double | Char | Byte | Short | Float | Long
+
     inline def compare
         (inline left:        Boolean,
          inline right:       Int | Double | Char | Byte | Short | Float | Long,
@@ -32,12 +34,5 @@ object NumericallyComparable:
             : Boolean =
 
       ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
-
-  given Commensurable[ByteSize, ByteSize] as commensurable:
-    inline def compare
-        (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
-            : Boolean =
-
-      !strict && left.long == right.long || (left.long < right.long) ^ greaterThan
 
 trait NumericallyComparable
