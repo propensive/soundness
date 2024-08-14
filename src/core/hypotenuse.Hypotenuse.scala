@@ -28,6 +28,7 @@ import scala.compiletime.*
 
 import anticipation.*
 import fulminate.*
+import denominative.*
 
 object Hypotenuse:
   given Realm = realm"hypotenuse"
@@ -354,6 +355,14 @@ object Hypotenuse:
 
   object B64:
     erased given Underlying[B64, Long] as underlying = erasedValue
+    inline def ones(n: Int): B64 = (1L << n) - 1
+    inline def one(ordinal: Ordinal): B64 = 1L << ordinal.n0
+
+    inline def apply(inline long: Long): B64 = long
+    inline def apply(inline int: Int): B64 = int.toLong
+    inline def apply(inline short: Short): B64 = short.toLong
+    inline def apply(inline byte: Byte): B64 = byte.toLong
+
     def apply(bytes: IArray[Byte], offset: Int = 0): B64 =
       var b64: Long = (bytes(offset) & 0xFF).toLong
       b64 <<= 8
@@ -375,6 +384,12 @@ object Hypotenuse:
 
   object B32:
     erased given Underlying[B32, Int] as underlying = erasedValue
+    inline def ones(n: Int): B32 = (1 << n) - 1
+    inline def one(ordinal: Ordinal): B32 = 1 << ordinal.n0
+
+    inline def apply(inline int: Int): B32 = int
+    inline def apply(inline short: Short): B32 = short.toInt
+    inline def apply(inline byte: Byte): B32 = byte.toInt
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B32 =
       var b32: Int = (bytes(offset) & 0xFF)
@@ -389,6 +404,11 @@ object Hypotenuse:
 
   object B16:
     erased given Underlying[B16, Short] as underlying = erasedValue
+    inline def ones(n: Int): B16 = ((1 << n) - 1).toShort
+    inline def one(ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
+
+    inline def apply(inline short: Short): B16 = short
+    inline def apply(inline byte: Byte): B16 = byte.toShort
 
     def apply(bytes: IArray[Byte], offset: Int = 0): B16 =
       var b16: Int = (bytes(offset) & 0xFF)
@@ -399,6 +419,10 @@ object Hypotenuse:
 
   object B8:
     erased given Underlying[B8, Byte] as underlying = erasedValue
+    inline def ones(n: Int): B8 = ((1 << n) - 1).toByte
+    inline def one(ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
+
+    inline def apply(inline byte: Byte): B8 = byte
 
   extension (s64: S64)
     @targetName("absS64")
@@ -616,6 +640,13 @@ object Hypotenuse:
       recur(s8, right)
 
   extension (bitmap: B8)
+    @targetName("bitsB8")
+    inline def bits(interval: Interval): B8 =
+      ((bitmap >> interval.start.n0) & B8.ones(interval.size)).toByte
+
+    @targetName("bitB8")
+    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+
     @targetName("rotateLeftB8")
     inline infix def <<< (count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
 
@@ -680,6 +711,13 @@ object Hypotenuse:
     def u8: U8 = bitmap
 
   extension (bitmap: B16)
+    @targetName("bitsB16")
+    inline def bits(interval: Interval): B16 =
+      ((bitmap >> interval.start.n0) & B16.ones(interval.size)).toShort
+
+    @targetName("bitB16")
+    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+
     @targetName("rotateLeftB16")
     inline infix def <<< (count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
 
@@ -751,6 +789,13 @@ object Hypotenuse:
     def u16: U16 = bitmap
 
   extension (bitmap: B32)
+    @targetName("bitsB32")
+    inline def bits(interval: Interval): B32 =
+      (bitmap >> interval.start.n0) & B32.ones(interval.size)
+
+    @targetName("bitB32")
+    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+
     @targetName("rotateLeftB32")
     inline infix def <<< (count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
 
@@ -824,6 +869,13 @@ object Hypotenuse:
     def u32: U32 = bitmap
 
   extension (bitmap: B64)
+    @targetName("bitsB64")
+    inline def bits(interval: Interval): B64 =
+      (bitmap >> interval.start.n0) & B64.ones(interval.size)
+
+    @targetName("bitB64")
+    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+
     @targetName("rotateLeftB64")
     inline infix def <<< (count: Int): B64 = JLong.rotateLeft(bitmap, count%%64)
 
