@@ -376,31 +376,31 @@ inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline infix def < [RightType](inline right: RightType)
-      (using inline orderable: Orderable[LeftType, RightType])
+      (using inline commensurable: Commensurable[LeftType, RightType])
           : Boolean =
 
-    orderable.compare(left, right, true, false)
+    commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [RightType](inline right: RightType)
-      (using inline orderable: Orderable[LeftType, RightType])
+      (using inline commensurable: Commensurable[LeftType, RightType])
           : Boolean =
 
-    orderable.compare(left, right, false, false)
+    commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [RightType](inline right: RightType)
-      (using inline orderable: Orderable[LeftType, RightType])
+      (using inline commensurable: Commensurable[LeftType, RightType])
           : Boolean =
 
-    orderable.compare(left, right, true, true)
+    commensurable.compare(left, right, true, true)
 
   @targetName("gte")
   inline infix def >= [RightType](inline right: RightType)
-      (using inline orderable: Orderable[LeftType, RightType])
+      (using inline commensurable: Commensurable[LeftType, RightType])
           : Boolean =
 
-    orderable.compare(left, right, false, true)
+    commensurable.compare(left, right, false, true)
 
 package arithmeticOptions:
   object division:

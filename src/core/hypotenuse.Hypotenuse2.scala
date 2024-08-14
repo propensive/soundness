@@ -84,7 +84,7 @@ object Hypotenuse2:
 
       Expr(int.toByte)
 
-  def orderable
+  def commensurable
       (expr: Expr[Boolean],
        bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
        strict: Expr[Boolean],

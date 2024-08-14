@@ -69,7 +69,7 @@ object Hypotenuse:
     inline def apply(bits: B64): F64 = JDouble.longBitsToDouble(bits)
     inline def apply(double: Double): F64 = double
 
-    inline given Orderable[F64, F64] as orderable:
+    inline given Orderable[F64] as orderable:
 
       inline def compare
           (inline left: F64, inline right: F64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -79,8 +79,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given Orderable[F64, Int] as orderableInt:
-
+    inline given Commensurable[F64, Int] as commensurableInt:
       inline def compare
           (inline left: F64, inline right: Int, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
@@ -89,7 +88,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given Orderable[F64, Double] as orderableDouble:
+    inline given Commensurable[F64, Double] as commensurable:
 
       inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
           inline greaterThan: Boolean): Boolean =
@@ -137,7 +136,7 @@ object Hypotenuse:
     inline given CanEqual[F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    inline given Orderable[F32, F32] as orderable:
+    inline given Orderable[F32] as orderable:
 
       inline def compare
           (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -185,7 +184,7 @@ object Hypotenuse:
     given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
     inline def apply(bits: B64): U64 = bits
 
-    inline given Orderable[U64, U64] as orderable:
+    inline given Orderable[U64] as orderable:
 
       inline def compare
           (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -209,7 +208,7 @@ object Hypotenuse:
     given S64 is Textualizer = _.toString.tt
     inline def apply(bits: B64): S64 = bits
 
-    inline given Orderable[S64, S64] as orderable:
+    inline given Orderable[S64] as orderable:
 
       inline def compare
           (inline left: S64, inline right: S64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -230,7 +229,7 @@ object Hypotenuse:
     given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
     inline def apply(bits: B32): U32 = bits
 
-    inline given Orderable[U32, U32] as orderable:
+    inline given Orderable[U32] as orderable:
       inline def compare
           (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
@@ -253,7 +252,7 @@ object Hypotenuse:
     given S32 is Textualizer = _.toString.tt
     inline def apply(bits: B32): S32 = bits
 
-    inline given Orderable[S32, S32] as orderable:
+    inline given Orderable[S32] as orderable:
 
       inline def compare
           (inline left: S32, inline right: S32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -273,7 +272,7 @@ object Hypotenuse:
     given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(bits: B16): U16 = bits
 
-    inline given Orderable[U16, U16] as orderable:
+    inline given Orderable[U16] as orderable:
 
       inline def compare
           (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -298,7 +297,7 @@ object Hypotenuse:
     given S16 is Textualizer = _.toString.tt
     inline def apply(bits: B16): S16 = bits
 
-    inline given Orderable[S16, S16] as orderable:
+    inline given Orderable[S16] as orderable:
 
       inline def compare
           (inline left: S16, inline right: S16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -318,7 +317,7 @@ object Hypotenuse:
     inline def apply(bits: B8): U8 = bits
 
 
-    inline given Orderable[U8, U8] as orderable:
+    inline given Orderable[U8] as orderable:
 
       inline def compare
           (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)
@@ -343,7 +342,7 @@ object Hypotenuse:
     given S8 is Textualizer = _.toString.tt
     inline def apply(bits: B8): S8 = bits
 
-    inline given Orderable[S8, S8] as inquality:
+    inline given Orderable[S8] as inquality:
 
       inline def compare
           (inline left: S8, inline right: S8, inline strict: Boolean, inline greaterThan: Boolean)

@@ -20,8 +20,9 @@ import language.experimental.captureChecking
 
 import scala.annotation.*
 
-trait Orderable[-LeftType, -RightType]:
-
+trait Commensurable[-LeftType, -RightType]:
   inline def compare
       (inline left: LeftType, inline right: RightType, inline strict: Boolean, inline greaterThan: Boolean)
           : Boolean
+
+trait Orderable[-ValueType] extends Commensurable[ValueType, ValueType]

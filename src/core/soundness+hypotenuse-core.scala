@@ -16,7 +16,7 @@
 
 package soundness
 
-export hypotenuse.{CheckOverflow, CompareGreater, CompareGreaterEqual, CompareLess, CompareLessEqual, DivisionByZero,
+export hypotenuse.{CheckOverflow, Commensurable, DivisionByZero,
     DivisionError, Orderable, NumericallyComparable, OverflowError, B8, B16, B32, B64, S8, S16, S32, S64, U8, U16,
     U32, U64, F32, F64, abs, sqrt, cbrt, ceiling, floor, exponent, increment, decrement, round, scalb, signum, ulp,
     bits, rawBits, finite, infinite, nan, **, mantissa, long, int, short, octal, hex, base32, binary, %%,

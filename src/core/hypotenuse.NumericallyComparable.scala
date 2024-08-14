@@ -23,7 +23,7 @@ import scala.annotation.*
 import rudiments.*
 
 object NumericallyComparable:
-  inline given Orderable[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
+  inline given Commensurable[Boolean, Int | Double | Char | Byte | Short | Float | Long] as numeric:
     inline def compare
         (inline left:        Boolean,
          inline right:       Int | Double | Char | Byte | Short | Float | Long,
@@ -31,9 +31,9 @@ object NumericallyComparable:
          inline greaterThan: Boolean)
             : Boolean =
 
-      ${Hypotenuse2.orderable('left, 'right, 'strict, 'greaterThan)}
+      ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
-  given Orderable[ByteSize, ByteSize] as orderable:
+  given Commensurable[ByteSize, ByteSize] as commensurable:
     inline def compare
         (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greaterThan: Boolean)
             : Boolean =
