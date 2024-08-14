@@ -375,32 +375,32 @@ inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
-  inline infix def < [RightType, ResultType](inline right: RightType)
-      (using inline compareLess: CompareLess[LeftType, RightType, ResultType])
-          : ResultType =
+  inline infix def < [RightType](inline right: RightType)
+      (using inline orderable: Orderable[LeftType, RightType])
+          : Boolean =
 
-    compareLess.lessThan(left, right)
+    orderable.compare(left, right, true, false)
 
   @targetName("lte")
-  inline infix def <= [RightType, ResultType](inline right: RightType)
-      (using inline compareLessEqual: CompareLessEqual[LeftType, RightType, ResultType])
-          : ResultType =
+  inline infix def <= [RightType](inline right: RightType)
+      (using inline orderable: Orderable[LeftType, RightType])
+          : Boolean =
 
-    compareLessEqual.lessThanOrEqual(left, right)
+    orderable.compare(left, right, false, false)
 
   @targetName("gt")
-  inline infix def > [RightType, ResultType](inline right: RightType)
-      (using inline compareGreater: CompareGreater[LeftType, RightType, ResultType])
-          : ResultType =
+  inline infix def > [RightType](inline right: RightType)
+      (using inline orderable: Orderable[LeftType, RightType])
+          : Boolean =
 
-    compareGreater.greaterThan(left, right)
+    orderable.compare(left, right, true, true)
 
   @targetName("gte")
-  inline infix def >= [RightType, ResultType](inline right: RightType)
-      (using inline compareGreaterEqual: CompareGreaterEqual[LeftType, RightType, ResultType])
-          : ResultType =
+  inline infix def >= [RightType](inline right: RightType)
+      (using inline orderable: Orderable[LeftType, RightType])
+          : Boolean =
 
-    compareGreaterEqual.greaterThanOrEqual(left, right)
+    orderable.compare(left, right, false, true)
 
 package arithmeticOptions:
   object division:

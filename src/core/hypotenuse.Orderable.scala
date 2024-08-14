@@ -20,25 +20,8 @@ import language.experimental.captureChecking
 
 import scala.annotation.*
 
-trait Orderable[-LeftType, -RightType]
-extends
-    CompareGreaterEqual[LeftType, RightType, Boolean],
-    CompareLess[LeftType, RightType, Boolean],
-    CompareLessEqual[LeftType, RightType, Boolean],
-    CompareGreater[LeftType, RightType, Boolean]:
+trait Orderable[-LeftType, -RightType]:
 
   inline def compare
       (inline left: LeftType, inline right: RightType, inline strict: Boolean, inline greaterThan: Boolean)
           : Boolean
-
-  inline def lessThan(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, true, false)
-
-  inline def lessThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, false, false)
-
-  inline def greaterThanOrEqual(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, false, true)
-
-  inline def greaterThan(inline left: LeftType, inline right: RightType): Boolean =
-    compare(left, right, true, true)
