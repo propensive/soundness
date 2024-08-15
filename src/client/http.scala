@@ -16,7 +16,7 @@
 
 package telekinesis
 
-import gossamer.{slice as _, take as _, at as _, *}
+import gossamer.{slice as _, *}
 import rudiments.*
 import hypotenuse.*
 import vacuous.*
