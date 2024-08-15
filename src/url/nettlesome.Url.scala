@@ -16,12 +16,13 @@
 
 package nettlesome
 
-import serpentine.*
+import serpentine.{keep as _, *}
 import gossamer.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
 import contingency.*
+import denominative.*
 import escapade.*
 import anticipation.*
 import contextual.*
@@ -37,7 +38,7 @@ case class Url[+SchemeType <: Label]
   lazy val path: List[Name[""]] =
     // FIXME: This needs to be handled better
     import strategies.throwUnsafely
-    pathText.drop(1).cut(t"/").to(List).reverse.map(_.urlDecode).map(Name(_))
+    pathText.tail.cut(t"/").reverse.map(_.urlDecode).map(Name(_))
 
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
 
@@ -126,35 +127,35 @@ object Url:
 
     safely(value.where(_ == ':')) match
       case Unset =>
-        abort(UrlError(value, value.length, Colon))
+        abort(UrlError(value, Ult.of(value), Colon))
 
-      case colon: Int =>
-        val text = value.take(colon)
+      case colon: Ordinal =>
+        val text = value.before(colon)
         val scheme = Scheme(text)
 
         val (pathStart, auth) =
-          if value.slice(colon + 1, colon + 3) == t"//" then
-            val authEnd = safely(value.where(_ == '/', colon + 3)).or(value.length)
-            (authEnd, Authority.parse(value.slice(colon + 3, authEnd)))
+          if value.after(colon).keep(2) == t"//" then
+            val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
+            (authEnd, Authority.parse(value.slice((colon + 3) ~ authEnd.previous)))
           else (colon + 1, Unset)
 
         safely(value.where(_ == '?', pathStart)) match
           case Unset => safely(value.where(_ == '#', pathStart)) match
             case Unset =>
-              Url(scheme, auth, value.drop(pathStart), Unset, Unset)
+              Url(scheme, auth, value.from(pathStart), Unset, Unset)
 
-            case hash: Int =>
-              Url(scheme, auth, value.slice(pathStart, hash), Unset, value.drop(hash + 1))
+            case hash: Ordinal =>
+              Url(scheme, auth, value.slice(pathStart ~ hash.previous), Unset, value.after(hash))
 
-          case qmark: Int =>
+          case qmark: Ordinal =>
             safely(value.where(_ == '#', qmark + 1)) match
               case Unset =>
-                Url(scheme, auth, value.slice(pathStart, qmark), value.drop(qmark + 1), Unset)
+                Url(scheme, auth, value.slice(pathStart ~ qmark.previous), value.after(qmark), Unset)
 
-              case hash: Int =>
+              case hash: Ordinal =>
                 Url
                  (scheme,
                   auth,
-                  value.slice(pathStart, qmark),
-                  value.slice(qmark + 1, hash),
-                  value.drop(hash + 1))
+                  value.slice(pathStart ~ qmark.previous),
+                  value.slice((qmark + 1) ~ hash.previous),
+                  value.after(hash))

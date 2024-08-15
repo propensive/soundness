@@ -19,6 +19,7 @@ package nettlesome
 import gossamer.*
 import rudiments.*
 import hypotenuse.*
+import denominative.*
 import vacuous.*
 import fulminate.*
 import contingency.*
@@ -50,7 +51,7 @@ object EmailAddress:
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
 
-    def quoted(index: Int, escape: Boolean): (LocalPart, Int) = text.at(index) match
+    def quoted(index: Ordinal, escape: Boolean): (LocalPart, Ordinal) = text.at(index) match
       case '\"' =>
         if escape then
           buffer.append('\"')
@@ -71,7 +72,7 @@ object EmailAddress:
       case Unset =>
         raise(EmailAddressError(UnclosedQuote), (LocalPart.Quoted(buffer.text), index))
 
-    def unquoted(index: Int, dot: Boolean): (LocalPart, Int) =
+    def unquoted(index: Ordinal, dot: Boolean): (LocalPart, Ordinal) =
       text.at(index) match
         case '@' =>
           if dot then raise(EmailAddressError(TerminalPeriod))
@@ -81,12 +82,12 @@ object EmailAddress:
 
         case '.'  =>
           if dot then raise(EmailAddressError(SuccessivePeriods))
-          if index == 0 then raise(EmailAddressError(InitialPeriod))
+          if index == Prim then raise(EmailAddressError(InitialPeriod))
           buffer.append('.')
           unquoted(index + 1, true)
 
         case char: Char =>
-          def symbolic: Boolean = t"!#$$%&'*+-/=?^_`{|}~".has(char)
+          def symbolic: Boolean = t"!#$$%&'*+-/=?^_`{|}~".contains(char)
 
           if 'A' <= char <= 'Z' || 'a' <= char <= 'z' || char.isDigit || symbolic
           then buffer.append(char)
@@ -97,24 +98,24 @@ object EmailAddress:
           raise(EmailAddressError(MissingAtSymbol), (LocalPart.Unquoted(buffer.text), index))
 
     val (localPart, index) =
-      if text.starts(t"\"") then quoted(1, false) else unquoted(0, false)
+      if text.starts(t"\"") then quoted(Sec, false) else unquoted(Prim, false)
 
     val domain =
-      if text.length < index + 1 then abort(EmailAddressError(MissingDomain))
+      if index > Ult.of(text.length) then abort(EmailAddressError(MissingDomain))
       else if text.at(index) == '[' then
         try
           if text.last != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import strategies.throwUnsafely
-          val ipAddress = text.slice(index + 1, text.length - 1)
+          val ipAddress = text.slice(index.next ~ Pen.of(text))
 
-          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.drop(5))
+          if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.skip(5))
           else Ipv4.parse(ipAddress)
         catch case error: IpAddressError => abort(EmailAddressError(InvalidDomain(error)))
 
       else
         try
           import strategies.throwUnsafely
-          Hostname.parse(text.drop(index))
+          Hostname.parse(text.skip(index.n0))
         catch case error: HostnameError =>
           abort(EmailAddressError(InvalidDomain(error)))
 

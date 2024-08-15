@@ -18,9 +18,10 @@ package nettlesome
 
 import fulminate.*
 import anticipation.*
+import denominative.*
 
-case class UrlError(text: Text, offset: Int, expected: UrlError.Expectation)
-extends Error(m"the URL $text is not valid: expected $expected at $offset")
+case class UrlError(text: Text, offset: Ordinal, expected: UrlError.Expectation)
+extends Error(m"the URL $text is not valid: expected $expected at ${offset.n0}")
 
 object UrlError:
   enum Expectation:

@@ -21,6 +21,7 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import contingency.*
+import denominative.*
 import anticipation.*
 import contextual.*
 import spectacular.*
@@ -33,12 +34,12 @@ object Authority:
     import UrlError.Expectation.*
 
     safely(value.where(_ == '@')) match
-      case Unset => safely(value.where(_ == ':')) match
+      case Unset => value.where(_ == ':') match
         case Unset =>
           Authority(Hostname.parse(value))
 
-        case colon: Int =>
-          safely(value.drop(colon + 1).s.toInt).match
+        case colon: Ordinal =>
+          safely(value.after(colon).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
@@ -46,14 +47,14 @@ object Authority:
 
             case Unset =>
               raise(UrlError(value, colon + 1, Number), 0)
-          .pipe(Authority(Hostname.parse(value.take(colon)), Unset, _))
+          .pipe(Authority(Hostname.parse(value.before(colon)), Unset, _))
 
-      case arobase: Int => safely(value.where(_ == ':', arobase + 1)) match
+      case arobase: Ordinal => safely(value.where(_ == ':', arobase + 1)) match
         case Unset =>
-          Authority(Hostname.parse(value.drop(arobase + 1)), value.take(arobase))
+          Authority(Hostname.parse(value.after(arobase)), value.before(arobase))
 
-        case colon: Int =>
-          safely(value.drop(colon + 1).s.toInt).match
+        case colon: Ordinal =>
+          safely(value.after(colon).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
@@ -61,6 +62,6 @@ object Authority:
 
             case Unset =>
               raise(UrlError(value, colon + 1, Number), 0)
-          .pipe(Authority(Hostname.parse(value.slice(arobase + 1, colon)), value.take(arobase), _))
+          .pipe(Authority(Hostname.parse(value.slice((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _))
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

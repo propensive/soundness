@@ -22,6 +22,7 @@ import gossamer.*
 import anticipation.*
 import serpentine.*, pathHierarchies.urls
 import spectacular.*
+import denominative.*
 import contingency.*
 import larceny.*
 
@@ -332,7 +333,8 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Authority with invalid port fails"):
         capture(Authority.parse(t"username@example.com:no"))
       .matches:
-        case UrlError(_, 21, UrlError.Expectation.Number) =>
+        case UrlError(_, position, UrlError.Expectation.Number) if position == Ordinal.zerary(21) =>
+
 
       test(t"Parse full URL"):
         Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")

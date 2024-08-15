@@ -24,6 +24,7 @@ import fulminate.*
 import contingency.*
 import anticipation.*
 import contextual.*
+import denominative.*
 import spectacular.*
 
 import scala.quoted.*
@@ -49,7 +50,7 @@ object Hostname:
   def parse(text: Text): Hostname raises HostnameError =
     val buffer: TextBuffer = TextBuffer()
 
-    def recur(index: Int, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
+    def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
       case '.' | Unset =>
         val label = buffer()
         if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
@@ -58,7 +59,7 @@ object Hostname:
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
         buffer.clear()
 
-        if index < text.length then recur(index + 1, dnsLabels2) else
+        if index <= Ult.of(text) then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254
           then raise(HostnameError(text, LongHostname))
 
@@ -70,6 +71,6 @@ object Hostname:
         else raise(HostnameError(text, InvalidChar(char)))
         recur(index + 1, dnsLabels)
 
-    recur(0, Nil)
+    recur(Prim, Nil)
 
 case class Hostname(dnsLabels: DnsLabel*)
