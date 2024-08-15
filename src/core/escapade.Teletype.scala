@@ -55,7 +55,6 @@ object Teletype:
 
     def range(text: Teletype, interval: Interval): Teletype =
       text.dropChars(interval.start.n0).takeChars(interval.size)
-      //text.s.substring(interval.start.n0.max(0), interval.end.n0.min(length(text))).nn.tt
 
     val empty: Teletype = Teletype.empty
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
