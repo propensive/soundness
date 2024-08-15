@@ -105,9 +105,9 @@ extension [TextType: Textual](text: TextType)
           if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
           then recur(from, index + 1)
           else
-            buffer.append(text.slice(from ~ index.previous.previous))
+            buffer.append(text.slice(from ~ index.previous))
             buffer.append(breakText)
-            recur(index - 1, index + 1)
+            recur(index, index + 1)
 
     recur()
 
