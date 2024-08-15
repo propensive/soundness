@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target hypotenuse/core
+target hypotenuse/test
 
 repo propensive/probably
 repo propensive/larceny
@@ -8,13 +8,14 @@ repo propensive/contingency
 repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
+repo propensive/denominative
 repo propensive/cardinality
 
 project hypotenuse
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core contingency/core anticipation/text anticipation/opaque
+    include   cardinality/core anticipation/opaque denominative/core contingency/core
 
   module test
     compiler  scala

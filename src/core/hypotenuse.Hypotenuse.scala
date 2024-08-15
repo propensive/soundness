@@ -63,11 +63,11 @@ object Hypotenuse:
     inline given CanEqual[F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] as canEqual =
       erasedValue
 
-    inline def apply(sign: Boolean, exponent: B16, mantissa: B64): F64 =
+    inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 =
       F64((if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) | (mantissa & 0xfffffffffffffL))
 
-    inline def apply(bits: B64): F64 = JDouble.longBitsToDouble(bits)
-    inline def apply(double: Double): F64 = double
+    inline def apply(inline bits: B64): F64 = JDouble.longBitsToDouble(bits)
+    inline def apply(inline double: Double): F64 = double
 
     inline given F64 is Orderable as orderable:
 
@@ -149,12 +149,12 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline def apply(sign: Boolean, exponent: B16, mantissa: B32): F32 =
+    inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B32): F32 =
       val signBit = if sign then 0 else 1 << 31
       F32(if sign then Int.MinValue else 0 | ((exponent & 0xff) << 22) | (mantissa & 0x3fffff))
 
-    inline def apply(bits: B32): F32 = JFloat.intBitsToFloat(bits)
-    inline def apply(float: Float): F32 = float
+    inline def apply(inline bits: B32): F32 = JFloat.intBitsToFloat(bits)
+    inline def apply(inline float: Float): F32 = float
 
     inline given Conversion[Float, F32] as floatConversion:
       def apply(value: Float): F32 = value
@@ -185,7 +185,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
 
     given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
-    inline def apply(bits: B64): U64 = bits
+    inline def apply(inline bits: B64): U64 = bits
 
     inline given U64 is Orderable as orderable:
 
@@ -209,7 +209,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): S64 = ${Hypotenuse2.parseS64('digits)}
 
     given S64 is Textualizer = _.toString.tt
-    inline def apply(bits: B64): S64 = bits
+    inline def apply(inline bits: B64): S64 = bits
 
     inline given S64 is Orderable as orderable:
 
@@ -230,7 +230,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
     given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
-    inline def apply(bits: B32): U32 = bits
+    inline def apply(inline bits: B32): U32 = bits
 
     inline given U32 is Orderable as orderable:
       inline def compare
@@ -253,7 +253,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): S32 = ${Hypotenuse2.parseS32('digits)}
 
     given S32 is Textualizer = _.toString.tt
-    inline def apply(bits: B32): S32 = bits
+    inline def apply(inline bits: B32): S32 = bits
 
     inline given S32 is Orderable as orderable:
 
@@ -273,7 +273,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
     given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
-    inline def apply(bits: B16): U16 = bits
+    inline def apply(inline bits: B16): U16 = bits
 
     inline given U16 is Orderable as orderable:
 
@@ -298,7 +298,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): S16 = ${Hypotenuse2.parseS16('digits)}
 
     given S16 is Textualizer = _.toString.tt
-    inline def apply(bits: B16): S16 = bits
+    inline def apply(inline bits: B16): S16 = bits
 
     inline given S16 is Orderable as orderable:
 
@@ -317,7 +317,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
     given U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
-    inline def apply(bits: B8): U8 = bits
+    inline def apply(inline bits: B8): U8 = bits
 
 
     inline given U8 is Orderable as orderable:
@@ -343,7 +343,7 @@ object Hypotenuse:
       inline def fromDigits(digits: String): S8 = ${Hypotenuse2.parseS8('digits)}
 
     given S8 is Textualizer = _.toString.tt
-    inline def apply(bits: B8): S8 = bits
+    inline def apply(inline bits: B8): S8 = bits
 
     inline given S8 is Orderable as inquality:
 
@@ -357,8 +357,15 @@ object Hypotenuse:
 
   object B64:
     erased given Underlying[B64, Long] as underlying = erasedValue
-    inline def ones(n: Int): B64 = (1L << n) - 1
-    inline def one(ordinal: Ordinal): B64 = 1L << ordinal.n0
+    inline def block(inline n: Int): B64 = (1L << n) - 1
+    inline def set(inline ordinal: Ordinal): B64 = 1L << ordinal.n0
+
+    inline def set(inline interval: Interval): B64 =
+      val b = block(interval.size)
+      (b: Long) << (interval.start.n0: Int)
+
+    @targetName("set2")
+    inline def set(inline confinement: Confinement): B64 = set(confinement.of(64))
 
     inline def apply(inline long: Long): B64 = long
     inline def apply(inline int: Int): B64 = int.toLong
@@ -386,8 +393,12 @@ object Hypotenuse:
 
   object B32:
     erased given Underlying[B32, Int] as underlying = erasedValue
-    inline def ones(n: Int): B32 = (1 << n) - 1
-    inline def one(ordinal: Ordinal): B32 = 1 << ordinal.n0
+    inline def block(inline n: Int): B32 = (1 << n) - 1
+    inline def set(inline ordinal: Ordinal): B32 = 1 << ordinal.n0
+    inline def set(inline interval: Interval): B32 = block(interval.size) << interval.start.n0
+
+    @targetName("set2")
+    inline def set(inline confinement: Confinement): B32 = set(confinement.of(32))
 
     inline def apply(inline int: Int): B32 = int
     inline def apply(inline short: Short): B32 = short.toInt
@@ -406,8 +417,14 @@ object Hypotenuse:
 
   object B16:
     erased given Underlying[B16, Short] as underlying = erasedValue
-    inline def ones(n: Int): B16 = ((1 << n) - 1).toShort
-    inline def one(ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
+    inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
+    inline def set(inline ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
+
+    inline def set(inline interval: Interval): B16 =
+      (block(interval.size) << interval.start.n0).toShort
+
+    @targetName("set2")
+    inline def set(inline confinement: Confinement): B16 = set(confinement.of(16))
 
     inline def apply(inline short: Short): B16 = short
     inline def apply(inline byte: Byte): B16 = byte.toShort
@@ -421,8 +438,14 @@ object Hypotenuse:
 
   object B8:
     erased given Underlying[B8, Byte] as underlying = erasedValue
-    inline def ones(n: Int): B8 = ((1 << n) - 1).toByte
-    inline def one(ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
+    inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
+    inline def set(inline ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
+
+    inline def set(inline interval: Interval): B8 =
+      (block(interval.size) << interval.start.n0).toByte
+
+    @targetName("set2")
+    inline def set(inline confinement: Confinement): B8 = set(confinement.of(8))
 
     inline def apply(inline byte: Byte): B8 = byte
 
@@ -643,26 +666,44 @@ object Hypotenuse:
 
   extension (bitmap: B8)
     @targetName("bitsB8")
-    inline def bits(interval: Interval): B8 =
-      ((bitmap >> interval.start.n0) & B8.ones(interval.size)).toByte
+    inline def apply(inline interval: Interval): B8 =
+      ((bitmap >> interval.start.n0) & B8.block(interval.size)).toByte
+
+    @targetName("setB8")
+    inline def set(inline index: Ordinal): B8 = (bitmap | B8.set(index)).toByte
+
+    @targetName("setIntervalB8")
+    inline def set(inline interval: Interval): B8 = (bitmap | B8.set(interval)).toByte
+
+    @targetName("clearB8")
+    inline def clear(inline index: Ordinal): B8 = (bitmap & ~B8.set(index)).toByte
+
+    @targetName("clearIntervalB8")
+    inline def clear(inline interval: Interval): B8 = (bitmap & ~B8.set(interval)).toByte
+
+    @targetName("flipB8")
+    inline def flip(inline index: Ordinal): B8 = (bitmap ^ B8.set(index)).toByte
+
+    @targetName("flipIntervalB8")
+    inline def flip(inline interval: Interval): B8 = (bitmap ^ B8.set(interval)).toByte
 
     @targetName("bitB8")
-    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB8")
-    inline infix def <<< (count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
+    inline infix def <<< (inline count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
 
     @targetName("rotateRightB8")
-    inline infix def >>> (count: Int): B8 = ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
+    inline infix def >>> (inline count: Int): B8 = ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
 
     @targetName("shiftLeftB8")
-    inline infix def << (count: Int): B8 = (bitmap << count).toByte
+    inline infix def << (inline count: Int): B8 = (bitmap << count).toByte
 
     @targetName("shiftRightB8")
-    inline infix def >> (count: Int): B8 = (bitmap >>> count).toByte
+    inline infix def >> (inline count: Int): B8 = (bitmap >>> count).toByte
 
     @targetName("andB8")
-    inline infix def & (right: into B8): B8 = (bitmap & right).toByte
+    inline infix def & (inline right: into B8): B8 = (bitmap & right).toByte
 
     @targetName("orB8")
     transparent inline infix def | (right: into B8): B8 = (bitmap | right).toByte
@@ -694,7 +735,7 @@ object Hypotenuse:
     @targetName("octalB8")
     inline def octal: Text = String.format("%03o", bitmap).nn.tt
 
-    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+    inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
     @targetName("binaryB8")
     def binary: Text =
@@ -714,11 +755,29 @@ object Hypotenuse:
 
   extension (bitmap: B16)
     @targetName("bitsB16")
-    inline def bits(interval: Interval): B16 =
-      ((bitmap >> interval.start.n0) & B16.ones(interval.size)).toShort
+    inline def apply(inline interval: Interval): B16 =
+      ((bitmap >> interval.start.n0) & B16.block(interval.size)).toShort
+
+    @targetName("setB16")
+    inline def set(inline index: Ordinal): B16 = (bitmap | B16.set(index)).toShort
+
+    @targetName("setIntervalB16")
+    inline def set(inline interval: Interval): B16 = (bitmap | B16.set(interval)).toShort
+
+    @targetName("clearB16")
+    inline def clear(inline index: Ordinal): B16 = (bitmap & ~B16.set(index)).toShort
+
+    @targetName("clearIntervalB16")
+    inline def clear(inline interval: Interval): B16 = (bitmap & ~B16.set(interval)).toShort
+
+    @targetName("flipB16")
+    inline def flip(inline index: Ordinal): B16 = (bitmap ^ B16.set(index)).toShort
+
+    @targetName("flipIntervalB16")
+    inline def flip(inline interval: Interval): B16 = (bitmap ^ B16.set(interval)).toShort
 
     @targetName("bitB16")
-    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB16")
     inline infix def <<< (count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
@@ -785,18 +844,36 @@ object Hypotenuse:
 
       new String(chars).tt
 
-    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+    inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
     def s16: S16 = bitmap
     def u16: U16 = bitmap
 
   extension (bitmap: B32)
     @targetName("bitsB32")
-    inline def bits(interval: Interval): B32 =
-      (bitmap >> interval.start.n0) & B32.ones(interval.size)
+    inline def apply(inline interval: Interval): B32 =
+      (bitmap >> interval.start.n0) & B32.block(interval.size)
+
+    @targetName("setB32")
+    inline def set(inline index: Ordinal): B32 = bitmap | B32.set(index)
+
+    @targetName("setIntervalB32")
+    inline def set(inline interval: Interval): B32 = bitmap | B32.set(interval)
+
+    @targetName("clearB32")
+    inline def clear(inline index: Ordinal): B32 = bitmap & ~B32.set(index)
+
+    @targetName("clearIntervalB32")
+    inline def clear(inline interval: Interval): B32 = bitmap & ~B32.set(interval)
+
+    @targetName("flipB32")
+    inline def flip(inline index: Ordinal): B32 = bitmap ^ B32.set(index)
+
+    @targetName("flipIntervalB32")
+    inline def flip(inline interval: Interval): B32 = bitmap ^ B32.set(interval)
 
     @targetName("bitB32")
-    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB32")
     inline infix def <<< (count: Int): B32 = JInt.rotateLeft(bitmap, count%%32)
@@ -865,18 +942,36 @@ object Hypotenuse:
 
       new String(chars).tt
 
-    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+    inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
     def s32: S32 = bitmap
     def u32: U32 = bitmap
 
   extension (bitmap: B64)
     @targetName("bitsB64")
-    inline def bits(interval: Interval): B64 =
-      (bitmap >> interval.start.n0) & B64.ones(interval.size)
+    inline def apply(inline interval: Interval): B64 =
+      (bitmap >> interval.start.n0) & B64.block(interval.size)
 
-    @targetName("bitB64")
-    inline def bit(index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
+    @targetName("setB64")
+    inline def set(inline index: Ordinal): B64 = bitmap | B64.set(index)
+
+    @targetName("setIntervalB64")
+    inline def set(inline interval: Interval): B64 = bitmap | B64.set(interval)
+
+    @targetName("clearB64")
+    inline def clear(inline index: Ordinal): B64 = bitmap & ~B64.set(index)
+
+    @targetName("clearIntervalB64")
+    inline def clear(inline interval: Interval): B64 = bitmap & ~B64.set(interval)
+
+    @targetName("flipB64")
+    inline def flip(inline index: Ordinal): B64 = bitmap ^ B64.set(index)
+
+    @targetName("flipIntervalB64")
+    inline def flip(inline interval: Interval): B64 = bitmap ^ B64.set(interval)
+
+    @targetName("bitB32")
+    inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB64")
     inline infix def <<< (count: Int): B64 = JLong.rotateLeft(bitmap, count%%64)
@@ -949,7 +1044,7 @@ object Hypotenuse:
 
       new String(chars).tt
 
-    inline def apply(bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
+    inline def apply(inline bit: Int): Boolean = ((bitmap >> bit) & 1) == 1
 
     def s64: S64 = bitmap
     def u64: U64 = bitmap
@@ -1007,7 +1102,7 @@ object Hypotenuse:
     inline def round: Long = math.round(double)
 
     @targetName("scalbF64")
-    inline def scalb(scale: Int): F64 = math.scalb(double, scale)
+    inline def scalb(inline scale: Int): F64 = math.scalb(double, scale)
 
     @targetName("signumF64")
     inline def signum: -1.0 | 0.0 | 1.0 = math.signum(double).asInstanceOf[-1.0 | 0.0 | 1.0]
@@ -1083,7 +1178,7 @@ object Hypotenuse:
     inline def round: Long = math.round(float)
 
     @targetName("scalbF32")
-    inline def scalb(scale: Int): F32 = math.scalb(float, scale)
+    inline def scalb(inline scale: Int): F32 = math.scalb(float, scale)
 
     @targetName("signumF32")
     inline def signum: -1.0F | 0.0F | 1.0F = math.signum(float).asInstanceOf[-1.0F | 0.0F | 1.0F]

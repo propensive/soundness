@@ -20,8 +20,6 @@ import language.experimental.captureChecking
 
 import scala.annotation.*
 
-import rudiments.*
-
 object NumericallyComparable:
   inline given Boolean is Commensurable as numeric:
     type Operand = Int | Double | Char | Byte | Short | Float | Long
