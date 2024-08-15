@@ -25,6 +25,7 @@ import gossamer.*
 import guillotine.*
 import kaleidoscope.*
 import rudiments.*
+import denominative.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
@@ -203,7 +204,7 @@ object Windows:
     given creator: PathCreator[Path, Forbidden, Drive] = Path(_, _)
 
     given rootParser: RootParser[Path, Drive] = text => text.only:
-      case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter.at(0).vouch).toUpper), text.drop(3))
+      case r"$letter([a-zA-Z]):\\.*" => (Drive(unsafely(letter.at(Prim).vouch).toUpper), text.skip(3))
 
     given Path is Showable as showable = _.render
     given encoder: Encoder[Path] = _.render
@@ -266,7 +267,7 @@ object Unix:
       def decode(text: Text): Path = Navigable.decode(text)
 
     given rootParser: RootParser[Path, Unset.type] = text =>
-      if text.starts(t"/") then (Unset, text.drop(1)) else Unset
+      if text.starts(t"/") then (Unset, text.skip(1)) else Unset
 
     given creator: PathCreator[Path, Forbidden, Unset.type] = (root, descent) => Path(descent)
 
