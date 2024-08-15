@@ -190,7 +190,7 @@ object XmlInterpolation:
             throw InterpolationError(m"attribute value has not been specified", state.offset, 1)
 
           case '=' =>
-            if state.current.starts(t"xmlns:") then state.addNamespace(state.current.drop(6))(AttributeEquals)
+            if state.current.starts(t"xmlns:") then state.addNamespace(state.current.skip(6))(AttributeEquals)
             else state(AttributeEquals)
 
           case ':' =>
