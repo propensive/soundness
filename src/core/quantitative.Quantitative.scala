@@ -93,7 +93,9 @@ object Quantitative extends Quantitative2:
       int => Quantity(int.toDouble)
 
     given [UnitsType <: Measure, UnitsType2 <: Measure]
-        => Orderable[Quantity[UnitsType], Quantity[UnitsType2]] as orderable:
+        => Quantity[UnitsType] is Commensurable as commensurable:
+
+      type Operand = Quantity[UnitsType2]
 
       inline def compare
           (inline left:        Quantity[UnitsType],
