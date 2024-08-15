@@ -54,11 +54,11 @@ object Deserializable:
       override protected val atomicity = 8.lcm(base)/base
 
       def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Bytes =
-        println(s"deserialize(previous.length=${previous.length}, text.length=${text.length}, index0=$index0, last=$last)")
+        //println(s"deserialize(previous.length=${previous.length}, text.length=${text.length}, index0=$index0, last=$last)")
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
         val length =
-          if last then text.where(_ != padding, bidi = Rtl).let(_ + 1).or(text.length)*base/8
+          if last then text.where(_ != padding, bidi = Rtl).let(_.n0 + 1).or(text.length)*base/8
           else ((text.length - index0)/atomicity)*atomicity*base/8
 
         println(s"   length = $length")
