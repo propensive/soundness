@@ -8,14 +8,13 @@ repo propensive/contingency
 repo propensive/fulminate
 repo propensive/symbolism
 repo propensive/vacuous
-repo propensive/denominative
 repo propensive/cardinality
 
 project hypotenuse
   module core
     compiler  scala
     sources   src/core
-    include   cardinality/core anticipation/opaque denominative/core contingency/core
+    include   cardinality/core anticipation/opaque contingency/core
 
   module test
     compiler  scala
