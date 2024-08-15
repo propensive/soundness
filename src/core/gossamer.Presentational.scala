@@ -34,7 +34,11 @@ object Presentational:
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
 
     def range(text: Text, interval: Interval): Text =
-      text.s.substring(interval.start.n0.max(0), interval.end.n0.min(length(text))).nn.tt
+      val limit = length(text)
+      val start = interval.start.n0.max(0).min(limit)
+      val end = interval.end.n0.max(start).min(limit)
+
+      text.s.substring(start, end).nn.tt
 
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
