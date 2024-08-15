@@ -92,21 +92,22 @@ extension [TextType: Textual](text: TextType)
   inline def upper: TextType = TextType.map(text, _.toUpper)
   def plain: Text = TextType.text(text)
 
-  // FIXME
-  def breakable(predicate: (Char, Char) => Boolean, break: Char = '\u200b')
-          : TextType =
+  def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): TextType =
     val breakText = TextType(break.toString.tt)
+    val buffer = TextType.buffer()
 
-    def recur
-        (from:  Ordinal    = Prim,
-         index: Ordinal    = Sec,
-         current: TextType = TextType("".tt))
-            : TextType =
-
-        if index == Ult.of(text) then current+text.before(from) else
-          if predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
-          then recur(index, index + 1, current+text.slice(from ~ index)+breakText)
-          else recur(from, index + 1, current)
+    @tailrec
+    def recur(from: Ordinal = Prim, index: Ordinal = Sec): TextType =
+        if index >= Ult.of(text) then
+          buffer.append(text.from(from))
+          buffer()
+        else
+          if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
+          then recur(from, index + 1)
+          else
+            buffer.append(text.slice(from ~ index.previous.previous))
+            buffer.append(breakText)
+            recur(index - 1, index + 1)
 
     recur()
 

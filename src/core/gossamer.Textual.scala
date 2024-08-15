@@ -34,7 +34,7 @@ trait Textual extends Presentational, Countable:
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Ordinal): Char
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
-  def buffer(size: Optional[Int]): Buffer[Self]
+  def buffer(size: Optional[Int] = Unset): Buffer[Self]
 
   extension (left: Self)
     @targetName("mul")

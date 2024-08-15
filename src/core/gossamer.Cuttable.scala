@@ -20,7 +20,6 @@ import rudiments.*
 import vacuous.*
 import symbolism.*
 import anticipation.*
-import spectacular.*
 import kaleidoscope.*
 import denominative.*
 
