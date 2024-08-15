@@ -34,17 +34,16 @@ object CountOpaques:
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
 
-    inline given [UnitsType <: Tuple] => Count[UnitsType] is Showable = count =>
-      val nonzeroComponents = count.components.filter(_(1) != 0)
+    inline given [UnitsType <: Tuple] => Count[UnitsType] is Showable = summonFrom:
+      case names: UnitsNames[UnitsType] => count =>
+        val nonzeroComponents = count.components.filter(_(1) != 0)
+        val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
+        val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
+        units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
 
-      summonFrom:
-        case names: UnitsNames[UnitsType] =>
-          val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
-          val units = nonzeroUnits.head :: nonzeroUnits.tail.map(names.separator+_)
-          units.interleave(names.units().takeRight(nonzeroUnits.length)).mkString.tt
-
-        case _ =>
-          nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
+      case _ => count =>
+        val nonzeroComponents = count.components.filter(_(1) != 0)
+        nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
   extension [UnitsType <: Tuple](count: Count[UnitsType])
     def longValue: Long = count
@@ -89,8 +88,3 @@ type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
 extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   inline def count[CountType <: Tuple]: Count[CountType] =
     ${Abacist.fromQuantity[UnitsType, CountType]('quantity)}
-
-trait UnitsNames[UnitsType <: Tuple]:
-  def prefix: Text = "".tt
-  def separator: Text = " ".tt
-  def units(): List[Text]

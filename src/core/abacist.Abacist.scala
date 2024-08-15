@@ -28,7 +28,6 @@ import scala.quoted.*
 given Realm = realm"abacist"
 
 object Abacist:
-
   import Quantitative.*
 
   def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
