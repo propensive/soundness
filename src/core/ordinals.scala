@@ -20,28 +20,75 @@ import anticipation.*
 
 import annotation.targetName
 
-final val Prim: Ordinal = Ordinal.fromOne(1)
-final val Sec: Ordinal  = Ordinal.fromOne(2)
-final val Ter: Ordinal  = Ordinal.fromOne(3)
-final val Quat: Ordinal = Ordinal.fromOne(4)
-final val Quin: Ordinal = Ordinal.fromOne(5)
-final val Sen: Ordinal  = Ordinal.fromOne(6)
-final val Sept: Ordinal = Ordinal.fromOne(7)
-final val Oct: Ordinal  = Ordinal.fromOne(8)
-final val Non: Ordinal  = Ordinal.fromOne(9)
-final val Den: Ordinal  = Ordinal.fromOne(10)
+final val Prim: Ordinal = Ordinal.natural(1)
+final val Sec: Ordinal  = Ordinal.natural(2)
+final val Ter: Ordinal  = Ordinal.natural(3)
+final val Quat: Ordinal = Ordinal.natural(4)
+final val Quin: Ordinal = Ordinal.natural(5)
+final val Sen: Ordinal  = Ordinal.natural(6)
+final val Sept: Ordinal = Ordinal.natural(7)
+final val Oct: Ordinal  = Ordinal.natural(8)
+final val Non: Ordinal  = Ordinal.natural(9)
+final val Den: Ordinal  = Ordinal.natural(10)
+
+inline def Ult: Countback = Countback(0)
+inline def Pen: Countback = Countback(1)
+inline def Ant: Countback = Countback(2)
+inline def Pre: Countback = Countback(3)
 
 extension (inline cardinal: Int)
   @targetName("plus")
   inline infix def + (inline ordinal: Ordinal): Ordinal =
-    Ordinal.fromZero(cardinal + ordinal.fromZero)
+    Ordinal.zerary(cardinal + ordinal.n0)
+
+object Denominative2:
+  opaque type Countback = Int
+  opaque type Confinement = Long
+
+  object Confinement:
+    inline def apply(inline start: Ordinal, inline end: Countback): Confinement =
+      (start.n0 & 0xffffffffL) << 32 | end & 0xffffffffL
+
+  extension (confinement: Confinement)
+    inline def start: Ordinal = Ordinal.zerary(((confinement >> 32) & 0xffffffff).toInt)
+    inline def end: Countback = (confinement & 0xffffffff).toInt
+    inline def next: Countback = end - 1
+    inline def previous: Ordinal = start - 1
+
+    inline def of[ValueType: Countable](value: ValueType): Interval =
+      Interval(confinement.start, Ult.of(value))
+
+  extension (countback: Countback)
+    @targetName("minus")
+    infix def - (right: Countback): Int = right - countback
+
+  object Countback:
+    inline def apply(n: Int): Countback = n
+
+  extension (inline countback: Countback)
+    @targetName("plus2")
+    inline infix def + (inline cardinal: Int): Countback = countback - cardinal
+
+    @targetName("invert")
+    inline def `unary_~`: Ordinal = Ordinal.zerary(countback)
+
+    @targetName("minus2")
+    inline infix def - (inline cardinal: Int): Countback = countback + cardinal
+
+    inline def le(inline right: Countback): Boolean = countback >= right
+    inline def lt(inline right: Countback): Boolean = countback > right
+    inline def ge(inline right: Countback): Boolean = countback <= right
+    inline def gt(inline right: Countback): Boolean = countback < right
+    inline def next: Countback = (countback - 1).max(0)
+    inline def previous: Countback = countback + 1
+
+    inline def of[ValueType: Countable](inline value: ValueType): Ordinal =
+      Ordinal.natural(ValueType.size(value) - countback)
 
 object Denominative:
   opaque type Ordinal = Int
   opaque type Interval = Long
 
-  // FIXME: This is implemented as a non-inlined method because it gets shadowed by the other minus method (with
-  // the same name) when it's inline.
   extension (ordinal: Ordinal)
     @targetName("minus2")
     infix def - (right: Ordinal): Int = ordinal - right
@@ -50,36 +97,33 @@ object Denominative:
     @targetName("plus")
     inline infix def + (inline cardinal: Int): Ordinal = ordinal + cardinal
 
+    @targetName("invert")
+    inline def `unary_~`: Countback = Countback(ordinal.n0)
+
     @targetName("minus")
     inline infix def - (inline cardinal: Int): Ordinal = ordinal - cardinal
 
-    @targetName("lessThanOrEqualTo")
-    inline infix def <= (inline right: Ordinal): Boolean = ordinal <= right
-
-    @targetName("lessThan")
-    inline infix def < (inline right: Ordinal): Boolean = ordinal < right
-
-    @targetName("greaterThanOrEqualTo")
-    inline infix def >= (inline right: Ordinal): Boolean = ordinal >= right
-
-    @targetName("greaterThan")
-    inline infix def > (inline right: Ordinal): Boolean = ordinal > right
-
+    inline def le(inline right: Ordinal): Boolean = (ordinal: Int) <= (right: Int)
+    inline def lt(inline right: Ordinal): Boolean = (ordinal: Int) < (right: Int)
+    inline def ge(inline right: Ordinal): Boolean = (ordinal: Int) >= (right: Int)
+    inline def gt(inline right: Ordinal): Boolean = (ordinal: Int) > (right: Int)
     inline def next: Ordinal = ordinal + 1
     inline def previous: Ordinal = (ordinal - 1).max(0)
 
     @targetName("to")
     inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
 
-    inline def fromZero: Int = ordinal
-    inline def fromOne: Int = ordinal + 1
-    inline def degenerate: Boolean = ordinal < 0
-    inline def subsequent(size: Int): Interval = (ordinal + 1) ~ (ordinal + size + 1)
-    inline def preceding(size: Int): Interval = (ordinal - size).max(0) ~ (ordinal - 1)
+    @targetName("to2")
+    inline infix def ~ (inline countback: Countback): Confinement = Confinement(ordinal, countback)
+
+    inline def n0: Int = ordinal
+    inline def n1: Int = ordinal + 1
+    inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size + 1)
+    inline def preceding(size: Int): Interval = Interval((ordinal - size).max(0), ordinal - 1)
 
   object Ordinal:
-    inline def fromZero(inline cardinal: Int): Ordinal = cardinal
-    inline def fromOne(inline cardinal: Int): Ordinal = cardinal - 1
+    inline def zerary(inline cardinal: Int): Ordinal = cardinal
+    inline def natural(inline cardinal: Int): Ordinal = cardinal - 1
 
     given Ordinal is Textualizer =
       case Prim    => "prim".tt
@@ -92,7 +136,7 @@ object Denominative:
       case Oct     => "oct".tt
       case Non     => "non".tt
       case Den     => "den".tt
-      case ordinal => if ordinal.degenerate then "degenerate".tt else ("Ordinal.fromOne("+ordinal+")").tt
+      case ordinal => ("Ordinal.natural("+ordinal+")").tt
 
   extension (interval: Interval)
     inline def start: Ordinal = ((interval >> 32) & 0xffffffff).toInt
@@ -127,20 +171,26 @@ object Denominative:
 
   object Interval:
     inline def initial(size: Int): Interval = size.toLong
+    inline def empty: Interval = 0L
+
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
       (start & 0xffffffffL) << 32 | (end + 1) & 0xffffffffL
 
 object Countable:
-  given [ElementType] => Seq[ElementType] is Countable as sequence:
-    inline def ult(sequence: Seq[ElementType]): Ordinal = Ordinal.fromOne(sequence.length)
+  given [ElementType] => Seq[ElementType] is Countable = _.length
+  given Text is Countable = _.s.length
+  given Int is Countable = identity(_)
 
 trait Countable:
   type Self
-  inline def ult(sequence: Self): Ordinal
+  def size(self: Self): Int
+  inline def ult(self: Self): Ordinal = Ordinal.natural(size(self))
 
 extension [ValueType: Countable](inline value: ValueType)
   inline def ult: Ordinal = ValueType.ult(value)
   inline def pen: Ordinal = ValueType.ult(value).previous
-  inline def ante: Ordinal = ValueType.ult(value).previous.previous
+  inline def ant: Ordinal = ValueType.ult(value).previous.previous
+  inline def full: Interval = Interval(Prim, ult)
 
 export Denominative.{Ordinal, Interval}
+export Denominative2.{Countback, Confinement}
