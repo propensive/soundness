@@ -99,7 +99,7 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Block.ThematicBreak()         => t""
     case Markdown.Ast.Inline.Emphasis(children*)    => text(children)
     case Markdown.Ast.Inline.Strong(children*)      => text(children)
-    case Markdown.Ast.Inline.SourceCode(code)       => code.breakable(_.isLetterOrDigit != _.isLetterOrDigit)
+    case Markdown.Ast.Inline.SourceCode(code)       => code.broken(_.isLetterOrDigit != _.isLetterOrDigit)
     case Markdown.Ast.Block.Paragraph(children*)    => text(children)
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
@@ -113,7 +113,7 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Inline.LineBreak                => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
-    case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code.breakable(_.isLetterOrDigit != _.isLetterOrDigit)))
+    case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
     case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
     case _                                            => Nil
 
