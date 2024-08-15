@@ -20,38 +20,41 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import symbolism.*
+import denominative.*
 
 object Indexable:
-  given [ElementType] => IArray[ElementType] is Indexable by Int into ElementType as iarray =
+  given [ElementType] => IArray[ElementType] is Indexable by Ordinal into ElementType as iarray =
     new Indexable:
       type Self = IArray[ElementType]
-      type Operand = Int
+      type Operand = Ordinal
       type Result = ElementType
 
-      def contains(array: IArray[ElementType], index: Int): Boolean =
-        index >= 0 && index < array.length
+      def contains(array: IArray[ElementType], index: Ordinal): Boolean =
+        index.n0 >= 0 && index.n0 <= Ult.of(array.length).n0
 
-      def access(array: IArray[ElementType], index: Int): Result = array(index)
+      def access(array: IArray[ElementType], index: Ordinal): Result = array(index.n0)
 
-  given [ElementType] => IndexedSeq[ElementType] is Indexable by Int into ElementType as indexedSeq =
+  given [ElementType] => IndexedSeq[ElementType] is Indexable by Ordinal into ElementType as seq =
     new Indexable:
       type Self = IndexedSeq[ElementType]
-      type Operand = Int
+      type Operand = Ordinal
       type Result = ElementType
 
-      def contains(seq: IndexedSeq[ElementType], index: Int): Boolean =
-        index >= 0 && index < seq.length
+      def contains(seq: IndexedSeq[ElementType], index: Ordinal): Boolean =
+        index.n0 >= 0 && index.n0 <= Ult.of(seq.length).n0
 
-      def access(seq: IndexedSeq[ElementType], index: Int): Result = seq(index)
+      def access(seq: IndexedSeq[ElementType], index: Ordinal): Result = seq(index.n0)
 
-  given [ElementType] => Text is Indexable by Int into Char =
+  given [ElementType] => Text is Indexable by Ordinal into Char =
     new Indexable:
       type Self = Text
-      type Operand = Int
+      type Operand = Ordinal
       type Result = Char
 
-      def contains(text: Text, index: Int): Boolean = index >= 0 && index < text.s.length
-      def access(text: Text, index: Int): Result = text.s.charAt(index)
+      def contains(text: Text, index: Ordinal): Boolean =
+        index.n0 >= 0 && index.n0 <= Ult.of(text).n0
+
+      def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
   given [KeyType, ValueType] => Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
