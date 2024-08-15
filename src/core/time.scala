@@ -82,7 +82,7 @@ object Dates:
       import hieroglyph.textMetrics.uniform
       t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
 
-    inline given Orderable[Date, Date] as orderable:
+    inline given Date is Orderable as orderable:
       inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
@@ -232,7 +232,7 @@ object Timing:
       def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
 
-    inline given Orderable[Instant, Instant] as orderable:
+    inline given Instant is Orderable as orderable:
       inline def compare
           (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =

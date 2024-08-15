@@ -104,11 +104,11 @@ object Tzdb:
 
     def parseDay(lineNo: Int, month: MonthName, str: Text): MonthDate =
       try throwErrors:
-        if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.drop(4).s))
-        else if str.drop(3).take(2) == t">="
-        then MonthDate.After(month, Weekday.valueOf(str.take(3).s), str.drop(5).decodeAs[Int])
-        else if str.drop(3).take(2) == t"<="
-        then MonthDate.Before(month, Weekday.valueOf(str.take(3).s), str.drop(5).decodeAs[Int])
+        if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.skip(4).s))
+        else if str.skip(3).keep(2) == t">="
+        then MonthDate.After(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decodeAs[Int])
+        else if str.skip(3).keep(2) == t"<="
+        then MonthDate.Before(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decodeAs[Int])
         else MonthDate.Exact(month, str.decodeAs[Int])
       catch case err: NumberError =>
         abort(TzdbError(TzdbError.Reason.UnparsableDate, lineNo))
