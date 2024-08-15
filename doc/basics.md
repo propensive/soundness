@@ -1,4 +1,116 @@
-### Operations on `LazyList`s
+## `LazyList`s
+
+### Abstract
+
+`LazyList`s are the core abstraction used by Turbulence for streaming data in
+various formats. A `LazyList` is a novel representation of data which makes it
+possible to start processing a stream of data as soon as the data starts
+arriving, but before the entire stream has been received.
+
+Remarkably, a `LazyList` can achieve this while remaining _immutable_.
+This is possible thanks to some nuance in the definition of immutability, and
+by constraining what information a `LazyList` makes available about the state
+of the stream.
+
+#### Immutability
+
+We might
+naturally assume that a stream, being a sequence of data which grows as time
+passes and
+data arrives, must be _mutable_. There is a time when that sequence represents
+a small amount of data, and a later time when the same sequence represents
+a larger amount of data. Something has _mutated_, surely?
+
+But no! And here lies the nuance: the `LazyList` _always_ represented the entire
+sequence of data—never a partial amount. Operations on the `LazyList` will
+always produce the same result, regardless of whether they are invoked at the
+moment the streaming data starts arriving, or after it has finished arriving.
+
+This is only possible by making the concession that operations may not
+return immediately, and may _block_ if
+they depend on data that has not yet arrived.
+
+For example, the sum of elements
+of a `LazyList[Int]`, called `xs`, may be calculated by calling `xs.sum`. The
+first time `xs.sum` is invoked, it may take a long time to return a result
+while the data is arriving. This could take seconds, or longer!
+
+But the second and third invocations of `xs.sum` would do the same calculation
+to add up all the numbers again. Yet they would run much faster, because all
+the data
+would already be accessible directly from memory without blocking. Each
+result would be the same, confirming the claim of the `LazyList`'s immutability.
+
+However, we suffer the limitation that we cannot "ask" the `LazyList` whether
+it is "ready" by calling a method like
+`xs.ready`. To expose such information would compromise its immutability if
+sometimes it could return `false` and sometimes `true`.
+
+This inability to query a `LazyList`'s readiness, and to know whether it will
+block or not might, at first, seem limiting.
+
+It's not, as it turns out. Though the reason might not be obvious.
+Firstly, analysis of a program's _correctness_ should not care
+about the passing of time during the evaluation of an expression; it is not
+a factor
+in determining whether the program produces the right or the wrong answer. And
+we would call it a _race condition_ if it were!
+
+Instead, we must work with `LazyList`s with no means to branch conditionally on
+the state of the stream. But instead of branching, we can _fork_ an
+asynchronous thread to
+perform the `LazyList` operations, and block the new thread.
+
+#### Blocking, Rehabilitated
+
+Blocking has earned itself a bad reputation in many programming languages. It
+started
+as a useful convenience: if a value is not ready, the runtime
+automatically waits until
+it is. The alternative would be to _fail_, or to write boilerplate code to
+handle the _ready_ and _unready_ cases.
+
+But traditional implementations
+require the CPU to do a lot of checking and a lot of waiting. It's acceptable
+for a few concurrent threads, but the overhead of several concurrent blocking
+operations can accumulate to the point where more CPU clock cycles are spent
+checking and waiting than doing any real work. For a production application
+running across multiple nodes, that might mean that 100 servers are required,
+while we know that half of them are doing nothing but checking and waiting.
+
+That changed with Java 21 which introduced lightweight virtual threads, and
+made it possible for many orders of magnitude more method calls to be in a
+blocking state
+concurrently, without significantly impacting the system overhead.
+
+And this plays into the hands of `LazyList`s and its various blocking
+operations as fine representations for streams. Blocking brings the convenience
+of programming with deterministic immutable values, but without the expense it
+once did.
+
+And it is for this reason that _Turbulence_ exists.
+
+### What is in Turbulence?
+
+The core of Turbulence includes key interfaces for reading and writing streams
+that are used extensively in other [Soundness](https://soundness.dev/) modules.
+
+Basic implementations for upstream types are provided for streams of bytes
+(`LazyList[Bytes]`) and streams of characters (`LazyList[Text]`).
+
+Interfaces for communicating with standard I/O are provided through the `In`,
+`Out` and `Err` objects, and capability-aware `print` and `println` methods.
+
+A few general stream-related tools are provided. `Spool`s collate events from
+multiple sources into `LazyList`s; `Multiplexer`s merge streams.
+
+Finally, Turbulence provides implementations of GZIP and Zlib compression
+algorithms on byte streams.
+
+### Reading, Writing and Appending
+
+Turbulence defines four key typeclass interfaces related to streaming:
+`Readable`, `Writable`, `Appendable` and `Aggregable`, and
 
 #### `Funnel`s
 
@@ -46,7 +158,7 @@ will effectively ignore all but the last event, but will not start processing an
 has passed without any new events.
 
 As a more complete example, consider the event stream, `stream`, which produces events `0`-`9` at
-the times shown in the "Time" column. 
+the times shown in the "Time" column.
 
 Event   | Time    | Gap      | `stream`    | `stream.cluster(10)`   | `stream.cluster(100)`     |
 -------:|--------:|---------:|------------:|-----------------------:|--------------------------:|
@@ -153,7 +265,3 @@ LazyList.pulsar(1000L).foreach:
   unit => println("Hello")
 ```
 will print `Hello` once per second, forever.
-
-
-
-
