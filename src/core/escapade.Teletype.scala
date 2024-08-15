@@ -18,6 +18,7 @@ package escapade
 
 import gossamer.*
 import rudiments.*
+import denominative.*
 import anticipation.*
 import symbolism.*
 import turbulence.*
@@ -44,6 +45,7 @@ object Teletype:
   given Teletype is Textual:
     type Show[ValueType] = ValueType is Teletypeable
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
+    def size(text: Teletype): Int = text.plain.s.length
     def text(teletype: Teletype): Text = teletype.plain
     def length(text: Teletype): Int = text.plain.s.length
     def apply(text: Text): Teletype = Teletype(text)
@@ -51,11 +53,16 @@ object Teletype:
     def map(text: Teletype, lambda: Char => Char): Teletype =
       Teletype(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-    def range(text: Teletype, start: Int, end: Int): Teletype = text.dropChars(start).takeChars(end - start)
+    def range(text: Teletype, interval: Interval): Teletype =
+      text.dropChars(interval.start.n0).takeChars(interval.size)
+      //text.s.substring(interval.start.n0.max(0), interval.end.n0.min(length(text))).nn.tt
+
     val empty: Teletype = Teletype.empty
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
-    def unsafeChar(text: Teletype, index: Int): Char = text.plain.s.charAt(index)
-    def indexOf(text: Teletype, sub: Text): Int = text.plain.s.indexOf(sub.s)
+    def unsafeChar(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
+    def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
+      text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
+
     def show[ValueType: Teletypeable](value: ValueType) = value.teletype
     def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
 
@@ -63,7 +70,7 @@ object Teletype:
   given Teletype is Joinable as joinable = _.fold(empty)(_ + _)
   given Teletype is Printable as printable = _.render(_)
 
-  given cuttable: Cuttable[Teletype, Text] = (text, delimiter, limit) =>
+  given Teletype is Cuttable by Text as cuttable = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
 
@@ -74,11 +81,11 @@ object Teletype:
         val matcher = pattern.matcher(source.plain.s).nn
         if matcher.matches
         then
-          val output = source.take(matcher.group(2).nn.length, Rtl)
-          recur(source.take(matcher.group(1).nn.length), limit - 1, output :: acc)
+          val output = source.keep(matcher.group(2).nn.length, Rtl)
+          recur(source.keep(matcher.group(1).nn.length), limit - 1, output :: acc)
         else source :: acc
 
-    IArray.from(recur(text, limit, Nil))
+    recur(text, limit, Nil)
 
   given Ordering[Teletype] = Ordering.by(_.plain)
 
@@ -115,7 +122,7 @@ case class Teletype
             charSpan -> transform
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
-      Teletype(plain.drop(n), newSpans)
+      Teletype(plain.skip(n), newSpans)
 
   def takeChars(n: Int, dir: Bidi = Ltr): Teletype = dir match
     case Rtl =>
@@ -129,7 +136,7 @@ case class Teletype
             charSpan -> tf
         .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
-      Teletype(plain.take(n), newSpans)
+      Teletype(plain.keep(n), newSpans)
 
   def render(termcap: Termcap): Text =
     val buf = StringBuilder()
@@ -153,14 +160,14 @@ case class Teletype
       @tailrec
       def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
         if insertions.isEmpty then
-          buf.add(plain.slice(from, to))
+          buf.add(plain.slice(Ordinal.zerary(from) ~ Ordinal.natural(to)))
           insertions
         else if insertions.head(0) < to then
-          buf.add(plain.slice(pos, insertions.head(0)))
+          buf.add(plain.slice(Ordinal.zerary(pos) ~ Ordinal.natural(insertions.head(0))))
           buf.add(insertions.head(1))
           addText(insertions.head(0), to, insertions.tail)
         else
-          buf.add(plain.slice(from, to))
+          buf.add(plain.slice(Ordinal.zerary(from) ~ Ordinal.natural(to)))
           insertions
 
       if stack.isEmpty then

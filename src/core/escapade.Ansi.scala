@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import denominative.*
 import anticipation.*
 import contingency.*
 import symbolism.*
@@ -88,12 +89,12 @@ object Ansi extends Ansi2:
 
     def parse(state: State, text: Text): State =
       state.last.fold(closures(state, text)): transform =>
-        text.at(0) match
+        text.at(Prim) match
           case '\\' =>
-            closures(state.copy(last = None), text.drop(1))
+            closures(state.copy(last = None), text.skip(1))
           case '[' | '(' | '<' | '«' | '{' =>
-            val frame = Frame(complement(text.at(0).vouch(using Unsafe)), state.text.length, transform)
-            closures(state.copy(stack = frame :: state.stack, last = None), text.drop(1))
+            val frame = Frame(complement(text.head.vouch(using Unsafe)), state.text.length, transform)
+            closures(state.copy(stack = frame :: state.stack, last = None), text.skip(1))
 
           case _ =>
             val state2 = state.add(CharSpan(state.text.length, state.text.length), transform)
@@ -106,11 +107,12 @@ object Ansi extends Ansi2:
             state.copy(text = state.text+text)
 
           case idx: Int =>
-            val text2 = state.text+text.take(idx)
+            val text2 = state.text+text.keep(idx)
             val span2: CharSpan = CharSpan(frame.start, state.text.length + idx)
             val state2: State = state.add(span2, frame.transform)
             val state3: State = state2.copy(text = text2, last = None, stack = state.stack.tail)
-            closures(state3, text.drop(idx + 1))
+            closures(state3, text.skip(idx + 1))
+
       catch case error: EscapeError => error match
         case EscapeError(message) => throw InterpolationError(message)
 

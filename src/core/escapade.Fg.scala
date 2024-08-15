@@ -25,6 +25,7 @@ import language.experimental.pureFunctions
 
 case class Fg(color: Int):
   def bg: Bg = Bg(color)
+
   def ansi(colorDepth: ColorDepth): Text =
     val red = (color >> 16)&255
     val green = (color >> 8)&255
