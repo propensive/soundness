@@ -20,20 +20,20 @@ import annotation.targetName
 
 object Denominative2:
   opaque type Countback = Int
-  opaque type Confinement = Long
+  opaque type Bounds = Long
 
-  object Confinement:
-    inline def apply(inline start: Ordinal, inline end: Countback): Confinement =
+  object Bounds:
+    inline def apply(inline start: Ordinal, inline end: Countback): Bounds =
       (start.n0 & 0xffffffffL) << 32 | end & 0xffffffffL
 
-  extension (confinement: Confinement)
-    inline def start: Ordinal = Ordinal.zerary(((confinement >> 32) & 0xffffffff).toInt)
-    inline def end: Countback = (confinement & 0xffffffff).toInt
+  extension (bounds: Bounds)
+    inline def start: Ordinal = Ordinal.zerary(((bounds >> 32) & 0xffffffff).toInt)
+    inline def end: Countback = (bounds & 0xffffffff).toInt
     inline def next: Countback = end - 1
     inline def previous: Ordinal = start - 1
 
     inline def of[ValueType: Countable](value: ValueType): Interval =
-      Interval(confinement.start, Ult.of(value))
+      Interval(bounds.start, Ult.of(value))
 
   extension (countback: Countback)
     @targetName("minus")

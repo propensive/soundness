@@ -49,7 +49,7 @@ object Denominative:
     inline infix def ~ (inline right: Ordinal): Interval = Interval(ordinal, right)
 
     @targetName("to2")
-    inline infix def ~ (inline countback: Countback): Confinement = Confinement(ordinal, countback)
+    inline infix def ~ (inline countback: Countback): Bounds = Bounds(ordinal, countback)
 
     inline def n0: Int = ordinal
     inline def n1: Int = ordinal + 1

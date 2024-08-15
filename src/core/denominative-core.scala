@@ -29,10 +29,9 @@ final val Oct: Ordinal  = Ordinal.natural(8)
 final val Non: Ordinal  = Ordinal.natural(9)
 final val Den: Ordinal  = Ordinal.natural(10)
 
-inline def Ult: Countback = Countback(0)
-inline def Pen: Countback = Countback(1)
-inline def Ant: Countback = Countback(2)
-inline def Pre: Countback = Countback(3)
+inline def Ult: Countback   = Countback(0)
+inline def Pen: Countback   = Countback(1)
+inline def Ant: Countback   = Countback(2)
 
 extension (inline cardinal: Int)
   @targetName("plus")
@@ -46,4 +45,4 @@ extension [ValueType: Countable](inline value: ValueType)
   inline def full: Interval = Interval(Prim, ult)
 
 export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Confinement}
+export Denominative2.{Countback, Bounds}
