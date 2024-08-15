@@ -150,9 +150,9 @@ object Media:
           Subtype.X(str.chars.filter(!notAllowed(_)).text))
 
       .getOrElse:
-        if str.starts(t"vnd.") then Subtype.Vendor(str.drop(4))
-        else if str.starts(t"prs.") then Subtype.Personal(str.drop(4))
-        else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.drop(2))
+        if str.starts(t"vnd.") then Subtype.Vendor(str.skip(4))
+        else if str.starts(t"prs.") then Subtype.Personal(str.skip(4))
+        else if str.starts(t"x.") || str.starts(t"x-") then Subtype.X(str.skip(2))
         else Subtype.Standard(str)
 
     val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
