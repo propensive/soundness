@@ -24,7 +24,7 @@ import parasite.*
 import symbolism.*
 import turbulence.*
 import contingency.*
-import gossamer.{at as _, slice as _, *}
+import gossamer.{slice as _, *}
 import nettlesome.*
 import monotonous.*, alphabets.base64.standard
 import gesticulate.*
