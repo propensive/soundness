@@ -17,10 +17,11 @@
 package gossamer
 
 import probably.*
-import rudiments.*
+import rudiments.{where as _, *}
 import hieroglyph.*, charEncoders.utf8, textMetrics.uniform
 import spectacular.*
 import vacuous.*
+import denominative.*
 import contingency.*
 import anticipation.*
 import larceny.*
@@ -189,35 +190,35 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == t"+")
 
       test(t"drop the first character"):
-        t"Hello".drop(1)
+        t"Hello".skip(1)
       .assert(_ == t"ello")
 
       test(t"drop the last character"):
-        t"Hello".drop(1, Rtl)
+        t"Hello".skip(1, Rtl)
       .assert(_ == t"Hell")
 
       test(t"drop more characters than the length of the Text"):
-        t"Hello".drop(10)
+        t"Hello".skip(10)
       .assert(_ == t"")
 
       test(t"drop more characters from the right than the length of the Text"):
-        t"Hello".drop(10, Rtl)
+        t"Hello".skip(10, Rtl)
       .assert(_ == t"")
 
       test(t"take the first character"):
-        t"Hello".take(1)
+        t"Hello".keep(1)
       .assert(_ == t"H")
 
       test(t"take the last character"):
-        t"Hello".take(1, Rtl)
+        t"Hello".keep(1, Rtl)
       .assert(_ == t"o")
 
       test(t"take more characters than the length of the Text"):
-        t"Hello".take(10)
+        t"Hello".keep(10)
       .assert(_ == t"Hello")
 
       test(t"take more characters from the right than the length of the Text"):
-        t"Hello".take(10, Rtl)
+        t"Hello".keep(10, Rtl)
       .assert(_ == t"Hello")
 
       test(t"snip a Text in two"):
@@ -233,11 +234,11 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == t"Hello")
 
       test(t"take a slice from a Text"):
-        t"Hello world".slice(4, 7)
+        t"Hello world".slice(Quin ~ Sept)
       .assert(_ == t"o w")
 
       test(t"take an oversized slice from a Text"):
-        t"Hello world".slice(4, 100)
+        t"Hello world".slice(Quin ~ Ordinal.zerary(100))
       .assert(_ == t"o world")
 
       test(t"Get characters from a Text"):
@@ -349,12 +350,16 @@ object Tests extends Suite(t"Gossamer Tests"):
       .assert(_ == t"")
 
       test(t"Random access of character"):
-        t"123"(0)
+        t"123".at(Prim)
       .assert(_ == '1')
 
+      // test(t"Random access of out-of-range character"):
+      //   capture[RangeError](t"123".at(Sen))
+      // .assert(_ == RangeError(5, 0, 3))
+
       test(t"Random access of out-of-range character"):
-        capture[RangeError](t"123"(5))
-      .assert(_ == RangeError(5, 0, 3))
+        t"123".at(Sen)
+      .assert(_ == Unset)
 
       test(t"Pad-right with space"):
         t"123".pad(5, Rtl)
@@ -394,15 +399,15 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       test(t"Index of character satisfying predicate"):
         t"oh, Hello World".where(_.isUpper)
-      .assert(_ == 4)
+      .assert(_ == Quin)
 
       test(t"Index of character satisfying predicate with start point at result index"):
-        t"oh, Hello World".where(_.isUpper, 4)
-      .assert(_ == 4)
+        t"oh, Hello World".where(_.isUpper, Quin)
+      .assert(_ == Quin)
 
       test(t"Index of character satisfying predicate with start point after first result"):
-        t"oh, Hello World".where(_.isUpper, 5)
-      .assert(_ == 10)
+        t"oh, Hello World".where(_.isUpper, Sen)
+      .assert(_ == Ordinal.zerary(10))
 
       test(t"Take characters while predicate is true"):
         t"HELLOworld".whilst(_.isUpper)
@@ -432,7 +437,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Check that Text and String are incompatible"):
         demilitarize:
           val x: String = Text("text")
-      .assert(_.head.errorId == ErrorId.TypeMismatchID)
+      .assert(_.head.id == CompileErrorId.TypeMismatch)
 
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):

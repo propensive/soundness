@@ -19,6 +19,7 @@ package gossamer
 import rudiments.*
 import anticipation.*
 import vacuous.*
+import denominative.*
 
 import language.experimental.captureChecking
 
@@ -31,12 +32,19 @@ object Presentational:
     def length(text: Text): Int = text.s.length
     def apply(text: Text): Text = text
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
-    def range(text: Text, start: Int, end: Int): Text = Text(text.s.substring(start, end).nn)
+
+    def range(text: Text, interval: Interval): Text =
+      text.s.substring(interval.start.n0.max(0), interval.end.n0.min(length(text))).nn.tt
+
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
-    def unsafeChar(text: Text, index: Int): Char = text.s.charAt(index)
-    def indexOf(text: Text, sub: Text): Int = text.s.indexOf(sub.s)
+    def unsafeChar(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
+
+    def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
+      text.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
+
     def buffer(size: Optional[Int]): Buffer[Text] = TextBuffer(size)
+    def size(text: Self): Int = text.length
 
 trait Presentational:
   type Self

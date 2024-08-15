@@ -18,9 +18,11 @@ package gossamer
 
 import rudiments.*
 import vacuous.*
+import symbolism.*
 import anticipation.*
 import spectacular.*
 import kaleidoscope.*
+import denominative.*
 
 import scala.reflect.*
 
@@ -30,38 +32,43 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 object Cuttable:
-  given [TextType: Textual] => Cuttable[TextType, Text] = (text, delimiter, limit) =>
-    val string = TextType.text(text).s
-    val dLength = delimiter.s.length
+  given [TextType: {Textual, Countable}] => TextType is Cuttable by Text =
+    (text, delimiter, limit) =>
+      val string = TextType.text(text).s
+      val dLength = delimiter.s.length
 
-    @tailrec
-    def recur(start: Int, results: List[TextType]): List[TextType] =
-      string.indexOf(delimiter.s, start) match
-        case -1    => TextType.range(text, start, text.length) :: results
-        case index => recur(index + dLength, TextType.range(text, start, index) :: results)
+      @tailrec
+      def recur(start: Ordinal, results: List[TextType]): List[TextType] =
+        TextType.indexOf(text, delimiter, start).lay(text.slice(start ~ Ult.of(text)) :: results):
+          index => recur(index + dLength, text.slice(start ~ index) :: results)
 
-    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
+      recur(Prim, Nil).reverse
 
-  given [TextType: Textual] => Cuttable[TextType, Regex] = (text, regex, limit) =>
+  given [TextType: {Textual, Countable}] => TextType is Cuttable by Regex = (text, regex, limit) =>
     val string = TextType.text(text).s
     val matcher = Pattern.compile(regex.pattern.s).nn.matcher(string).nn
 
     @tailrec
-    def recur(start: Int, results: List[TextType]): List[TextType] =
-      if matcher.find(start)
-      then recur(matcher.end, TextType.range(text, matcher.start, matcher.end) :: results)
+    def recur(start: Ordinal, results: List[TextType]): List[TextType] =
+      if matcher.find(start.n0)
+      then
+        val interval = Ordinal.zerary(matcher.start) ~ Ordinal.zerary(matcher.end)
+        recur(Ordinal.zerary(matcher.end), text.slice(interval) :: results)
       else results
 
-    IArray.from(recur(0, Nil).reverse)(using TextType.classTag)
+    recur(Prim, Nil).reverse
 
-  given Cuttable[Text, Text] = (text, delimiter, limit) =>
-    text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).immutable(using Unsafe)
+  given Text is Cuttable by Text = (text, delimiter, limit) =>
+    text.s.split(Pattern.quote(delimiter.s), limit).nn.map(_.nn.tt).to(List)
 
-  given Cuttable[Text, Regex] = (text, regex, limit) =>
-    text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).immutable(using Unsafe)
+  given Text is Cuttable by Regex = (text, regex, limit) =>
+    text.s.split(regex.pattern.s, limit).nn.map(_.nn.tt).to(List)
 
-  given [TextType](using cuttable: Cuttable[TextType, Text]): Cuttable[TextType, Char] = (text, delimiter, limit) =>
-    cuttable.cut(text, delimiter.show, limit)
+  given [TextType](using cuttable: TextType is Cuttable by Text) => TextType is Cuttable by Char =
+    (text, delimiter, limit) =>
+      cuttable.cut(text, delimiter.toString.tt, limit)
 
-trait Cuttable[TextType, DelimiterType]:
-  def cut(value: TextType, delimiter: DelimiterType, limit: Int): IArray[TextType]
+trait Cuttable:
+  type Self
+  type Operand
+  def cut(value: Self, delimiter: Operand, limit: Int): List[Self]

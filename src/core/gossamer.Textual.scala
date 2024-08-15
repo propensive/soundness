@@ -19,29 +19,30 @@ package gossamer
 import rudiments.*
 import anticipation.*
 import vacuous.*
+import denominative.*
 
 import language.experimental.captureChecking
 
-trait Textual extends Presentational:
+trait Textual extends Presentational, Countable:
   type Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
   def map(text: Self, lambda: Char => Char): Self
-  def range(text: Self, start: Int, end: Int): Self
+  def range(text: Self, interval: Interval): Self
   def empty: Self
   def concat(left: Self, right: Self): Self
-  def unsafeChar(text: Self, index: Int): Char
-  def indexOf(text: Self, sub: Text): Int
+  def unsafeChar(text: Self, index: Ordinal): Char
+  def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def buffer(size: Optional[Int]): Buffer[Self]
 
   extension (left: Self)
     @targetName("mul")
     infix def * (right: Int): Self =
-      def recur(text: Self, n: Int, acc: Self): Self =
-        if n <= 0 then acc else recur(text, n - 1, concat(acc, text))
+      def recur(text: Self, ordinal: Ordinal, acc: Self): Self =
+        if ordinal == Ult.of(right) then acc else recur(text, ordinal + 1, concat(acc, text))
 
-      recur(left, right.max(0), empty)
+      recur(left, Prim, empty)
 
     @targetName("add")
     infix def + (right: Self): Self = concat(left, right)
