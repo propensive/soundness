@@ -33,7 +33,8 @@ case class Table[RowType, TextType: {ClassTag, Textual as textual}](columns0: Co
   table =>
 
   val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
-  val titles: Seq[IArray[IArray[TextType]]] = Seq(IArray.from(columns.map(_.title.cut(t"\n"))))
+  val titles: Seq[IArray[IArray[TextType]]] =
+    Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
 
   def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } = new Tabulation[TextType]:
     type Row = RowType
@@ -41,4 +42,6 @@ case class Table[RowType, TextType: {ClassTag, Textual as textual}](columns0: Co
     val columns: IArray[Column[Row, TextType]] = table.columns
     val titles: Seq[IArray[IArray[TextType]]] = table.titles
     val dataLength: Int = data.length
-    val rows: Seq[IArray[IArray[TextType]]] = data.map { row => columns.map(_.get(row).cut(t"\n")) }
+
+    val rows: Seq[IArray[IArray[TextType]]] =
+      data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }
