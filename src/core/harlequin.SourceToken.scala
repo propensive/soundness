@@ -26,4 +26,4 @@ case class SourceToken(text: Text, accent: Accent):
   def length: Int = text.length
 
   def snip(point: Int): (SourceToken, SourceToken) =
-    (SourceToken(text.take(point), accent), SourceToken(text.drop(point), accent))
+    (SourceToken(text.keep(point), accent), SourceToken(text.skip(point), accent))

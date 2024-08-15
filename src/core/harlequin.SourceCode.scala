@@ -20,6 +20,7 @@ import rudiments.*
 import anticipation.*
 import gossamer.{slice as _, *}
 import vacuous.*
+import denominative.*
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 
@@ -84,7 +85,7 @@ object SourceCode:
     def stream(lastEnd: Int = 0): LazyList[SourceToken] = scanner.token match
       case Tokens.EOF =>
         import gossamer.slice
-        untab(text.slice(lastEnd, text.length)).filter(_.length > 0)
+        untab(text.slice(Ordinal.zerary(lastEnd) ~ Ult.of(text))).filter(_.length > 0)
 
       case token =>
         import gossamer.slice
@@ -93,7 +94,7 @@ object SourceCode:
         val unparsed: LazyList[SourceToken] =
           if lastEnd != start
           then
-            text.slice(lastEnd, start)
+            text.slice(Ordinal.zerary(lastEnd) ~ Ordinal.natural(start))
              .cut(t"\n")
              .to(LazyList)
              .flatMap(untab(_).filter(_.length > 0))
@@ -107,7 +108,7 @@ object SourceCode:
         val content: LazyList[SourceToken] =
           if start == end then LazyList()
           else
-            text.slice(start, end).cut(t"\n").to(LazyList).flatMap: line =>
+            text.slice(Ordinal.zerary(start) ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             .init
