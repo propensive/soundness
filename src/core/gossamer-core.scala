@@ -250,12 +250,12 @@ extension [TextType: Textual](text: TextType)
   def unkebab: List[TextType] = text.cut("-".tt)
   def unsnake: List[TextType] = text.cut("_".tt)
 
-  inline def starts(prefix: into Text): Boolean =
+  def starts(prefix: into Text): Boolean =
     def recur(index: Ordinal): Boolean =
       index > Ult.of(prefix) ||
           TextType.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
 
-    length <= text.length && recur(Prim)
+    prefix.length <= text.length && recur(Prim)
 
   // FIXME
   inline def ends(suffix: into Text): Boolean =
