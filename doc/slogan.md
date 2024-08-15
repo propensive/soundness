@@ -1,1 +1,1 @@
-An experiment in numeric semantics to eradicate off-by-one errors.
+Distinct ordinal numbers to avoid off-by-one errors
