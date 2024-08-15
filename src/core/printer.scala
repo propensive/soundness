@@ -19,7 +19,7 @@ package cellulose
 import rudiments.*
 import vacuous.*
 import anticipation.*
-import gossamer.{take as _, drop as _, *}
+import gossamer.*
 
 import java.io as ji
 

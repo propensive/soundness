@@ -23,6 +23,7 @@ import gossamer.{where as _, *}
 import anticipation.*
 import contextual.*
 import spectacular.*
+import denominative.*
 import dissonance.*
 import chiaroscuro.*
 
@@ -231,7 +232,7 @@ trait Indexed extends Dynamic:
   def ids: Set[Text] = idIndex.keySet
 
   def apply(idx: Int = 0)(using Tactic[MissingIndexValueError]): CodlNode =
-    children.at(idx).or(abort(MissingIndexValueError(idx)))
+    children.at(Ordinal.zerary(idx)).or(abort(MissingIndexValueError(idx)))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 

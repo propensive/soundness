@@ -22,6 +22,7 @@ import gossamer.*
 import anticipation.*
 import kaleidoscope.*
 import spectacular.*
+import denominative.*
 import contingency.*
 
 import language.experimental.captureChecking
@@ -41,7 +42,7 @@ object Character:
   given Decoder[Character] with
     def decode(text: Text): Character = text match
       case r"[$char(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)]" =>
-        Character(char.at(0).vouch(using Unsafe).toInt, l, c)
+        Character(char.at(Prim).vouch(using Unsafe).toInt, l, c)
 
       case _ =>
         End
@@ -70,7 +71,7 @@ class PositionReader(private var in: LazyList[Text]):
   private var finished: Boolean = false
   private val buf: StringBuilder = StringBuilder()
 
-  private var current: Int = -1
+  private var current: Ordinal = Prim - 1
 
   def charStream(): LazyList[Char] = LazyList.continually(read()).takeWhile(_ != -1).map(_.toChar)
 
@@ -89,7 +90,7 @@ class PositionReader(private var in: LazyList[Text]):
       if in.isEmpty then -1 else
         text = in.head
         in = in.tail
-        current = -1
+        current = Prim - 1
         read()
 
   private def advance(char: Character): Unit = char.char match
