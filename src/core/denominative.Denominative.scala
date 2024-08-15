@@ -20,71 +20,6 @@ import anticipation.*
 
 import annotation.targetName
 
-final val Prim: Ordinal = Ordinal.natural(1)
-final val Sec: Ordinal  = Ordinal.natural(2)
-final val Ter: Ordinal  = Ordinal.natural(3)
-final val Quat: Ordinal = Ordinal.natural(4)
-final val Quin: Ordinal = Ordinal.natural(5)
-final val Sen: Ordinal  = Ordinal.natural(6)
-final val Sept: Ordinal = Ordinal.natural(7)
-final val Oct: Ordinal  = Ordinal.natural(8)
-final val Non: Ordinal  = Ordinal.natural(9)
-final val Den: Ordinal  = Ordinal.natural(10)
-
-inline def Ult: Countback = Countback(0)
-inline def Pen: Countback = Countback(1)
-inline def Ant: Countback = Countback(2)
-inline def Pre: Countback = Countback(3)
-
-extension (inline cardinal: Int)
-  @targetName("plus")
-  inline infix def + (inline ordinal: Ordinal): Ordinal =
-    Ordinal.zerary(cardinal + ordinal.n0)
-
-object Denominative2:
-  opaque type Countback = Int
-  opaque type Confinement = Long
-
-  object Confinement:
-    inline def apply(inline start: Ordinal, inline end: Countback): Confinement =
-      (start.n0 & 0xffffffffL) << 32 | end & 0xffffffffL
-
-  extension (confinement: Confinement)
-    inline def start: Ordinal = Ordinal.zerary(((confinement >> 32) & 0xffffffff).toInt)
-    inline def end: Countback = (confinement & 0xffffffff).toInt
-    inline def next: Countback = end - 1
-    inline def previous: Ordinal = start - 1
-
-    inline def of[ValueType: Countable](value: ValueType): Interval =
-      Interval(confinement.start, Ult.of(value))
-
-  extension (countback: Countback)
-    @targetName("minus")
-    infix def - (right: Countback): Int = right - countback
-
-  object Countback:
-    inline def apply(n: Int): Countback = n
-
-  extension (inline countback: Countback)
-    @targetName("plus2")
-    inline infix def + (inline cardinal: Int): Countback = countback - cardinal
-
-    @targetName("invert")
-    inline def `unary_~`: Ordinal = Ordinal.zerary(countback)
-
-    @targetName("minus2")
-    inline infix def - (inline cardinal: Int): Countback = countback + cardinal
-
-    inline def le(inline right: Countback): Boolean = countback >= right
-    inline def lt(inline right: Countback): Boolean = countback > right
-    inline def ge(inline right: Countback): Boolean = countback <= right
-    inline def gt(inline right: Countback): Boolean = countback < right
-    inline def next: Countback = (countback - 1).max(0)
-    inline def previous: Countback = countback + 1
-
-    inline def of[ValueType: Countable](inline value: ValueType): Ordinal =
-      Ordinal.natural(ValueType.size(value) - countback)
-
 object Denominative:
   opaque type Ordinal = Int
   opaque type Interval = Long
@@ -175,22 +110,3 @@ object Denominative:
 
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
       (start & 0xffffffffL) << 32 | (end + 1) & 0xffffffffL
-
-object Countable:
-  given [ElementType] => Seq[ElementType] is Countable = _.length
-  given Text is Countable = _.s.length
-  given Int is Countable = identity(_)
-
-trait Countable:
-  type Self
-  def size(self: Self): Int
-  inline def ult(self: Self): Ordinal = Ordinal.natural(size(self))
-
-extension [ValueType: Countable](inline value: ValueType)
-  inline def ult: Ordinal = ValueType.ult(value)
-  inline def pen: Ordinal = ValueType.ult(value).previous
-  inline def ant: Ordinal = ValueType.ult(value).previous.previous
-  inline def full: Interval = Interval(Prim, ult)
-
-export Denominative.{Ordinal, Interval}
-export Denominative2.{Countback, Confinement}
