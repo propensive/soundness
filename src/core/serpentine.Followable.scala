@@ -58,7 +58,7 @@ object Followable:
         val ascentPrefix: Text = t"$parentRef$foundSeparator"
 
         def recur(text: Text, ascent: Int = 0): LinkType =
-          if text.starts(ascentPrefix) then recur(text.drop(ascentPrefix.length), ascent + 1)
+          if text.starts(ascentPrefix) then recur(text.skip(ascentPrefix.length), ascent + 1)
           else if text == parentRef then creator.path(ascent + 1, Nil)
           else
             val names = text.cut(foundSeparator).to(List).reverse match

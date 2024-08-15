@@ -41,7 +41,7 @@ object SimplePath:
 
   given rootParser: RootParser[SimplePath, Root.type] with
     def parse(text: Text): Optional[(Root.type, Text)] =
-      if text.starts(t"/") then (Root, text.drop(1)) else Unset
+      if text.starts(t"/") then (Root, text.skip(1)) else Unset
 
   given SimplePath is Navigable[".*\\/.*", Root.type] as navigable:
     def separator(path: SimplePath): Text = t"/"
