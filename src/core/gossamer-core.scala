@@ -257,16 +257,7 @@ extension [TextType: Textual](text: TextType)
 
     prefix.length <= text.length && recur(Prim)
 
-  // FIXME
-  inline def ends(suffix: into Text): Boolean =
-    val offset: Int = text.length - suffix.length
-
-    def recur(index: Ordinal): Boolean =
-      index < Countback(suffix.length).of(text) ||
-          TextType.unsafeChar(text, offset + index) == suffix.s.charAt(index.n0) &&
-          recur(index + 1)
-
-    length <= text.length && recur(Prim)
+  def ends(suffix: into Text): Boolean = text.keep(suffix.length, Rtl) == suffix
 
   inline def tr(from: Char, to: Char): TextType =
     TextType.map(text, char => if char == from then to else char)
