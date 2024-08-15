@@ -54,7 +54,7 @@ object TestId:
 case class TestId(name: Text, suite: Optional[TestSuite], codepoint: Codepoint):
   val timestamp: Long = System.currentTimeMillis
   import textMetrics.uniform
-  lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').take(6, Rtl)
+  lazy val id: Text = (suite.hashCode ^ name.hashCode).hex.pad(6, Rtl, '0').keep(6, Rtl)
   lazy val ids: List[Text] =  id :: suite.let(_.id.ids).or(Nil)
 
   def apply[ResultType](ctx: TestContext ?=> ResultType): Test[ResultType] =

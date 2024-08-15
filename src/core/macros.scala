@@ -19,6 +19,7 @@ package probably
 import gossamer.*
 import anticipation.*
 import rudiments.*
+import denominative.*
 import chiaroscuro.*
 import spectacular.*
 
@@ -143,8 +144,11 @@ object Probably:
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match
-      case pos: dtdu.SourcePosition => pos.lineContent.show.slice(pos.startColumn, pos.endColumn)
-      case _                        => t"<unknown>"
+      case pos: dtdu.SourcePosition =>
+        pos.lineContent.show.slice(Ordinal.zerary(pos.startColumn) ~ Ordinal.natural(pos.endColumn))
+
+      case _ =>
+        t"<unknown>"
 
     val inspectable: Expr[TestType is Inspectable] =
       Expr.summon[TestType is Inspectable].getOrElse('{ _.toString.tt })
