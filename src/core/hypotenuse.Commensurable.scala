@@ -24,6 +24,19 @@ import denominative.*
 import rudiments.*
 
 object Commensurable:
+  inline given [OperandType <: Int | Double | Char | Byte | Short | Float]
+      => Boolean is Commensurable as numeric:
+    type Operand = OperandType
+
+    inline def compare
+        (inline left:        Boolean,
+         inline right:       OperandType,
+         inline strict:      Boolean,
+         inline greaterThan: Boolean)
+            : Boolean =
+
+      ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
+
   given ByteSize is Orderable as orderable:
     inline def compare
         (inline left: ByteSize, inline right: ByteSize, inline strict: Boolean, inline greater: Boolean)

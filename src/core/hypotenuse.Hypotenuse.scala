@@ -365,7 +365,7 @@ object Hypotenuse:
       (b: Long) << (interval.start.n0: Int)
 
     @targetName("set2")
-    inline def set(inline confinement: Confinement): B64 = set(confinement.of(64))
+    inline def set(inline bounds: Bounds): B64 = set(bounds.of(64))
 
     inline def apply(inline long: Long): B64 = long
     inline def apply(inline int: Int): B64 = int.toLong
@@ -398,7 +398,7 @@ object Hypotenuse:
     inline def set(inline interval: Interval): B32 = block(interval.size) << interval.start.n0
 
     @targetName("set2")
-    inline def set(inline confinement: Confinement): B32 = set(confinement.of(32))
+    inline def set(inline bounds: Bounds): B32 = set(bounds.of(32))
 
     inline def apply(inline int: Int): B32 = int
     inline def apply(inline short: Short): B32 = short.toInt
@@ -424,7 +424,7 @@ object Hypotenuse:
       (block(interval.size) << interval.start.n0).toShort
 
     @targetName("set2")
-    inline def set(inline confinement: Confinement): B16 = set(confinement.of(16))
+    inline def set(inline bounds: Bounds): B16 = set(bounds.of(16))
 
     inline def apply(inline short: Short): B16 = short
     inline def apply(inline byte: Byte): B16 = byte.toShort
@@ -445,7 +445,7 @@ object Hypotenuse:
       (block(interval.size) << interval.start.n0).toByte
 
     @targetName("set2")
-    inline def set(inline confinement: Confinement): B8 = set(confinement.of(8))
+    inline def set(inline bounds: Bounds): B8 = set(bounds.of(8))
 
     inline def apply(inline byte: Byte): B8 = byte
 
