@@ -33,6 +33,8 @@ import anticipation.*
 import serpentine.*
 import spectacular.*, booleanStyles.trueFalse
 
+import scala.compiletime.*
+
 import java.net.InetSocketAddress
 import java.text as jt
 import com.sun.net.httpserver as csnh
@@ -75,18 +77,18 @@ object Servable:
     Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
       HttpBody.Chunked(ResponseType.content(value).map(identity))
 
-  given Redirect is Servable:
+  given Redirect is Servable as redirect:
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
       headers.each(responder.addHeader)
       responder.sendBody(301, HttpBody.Empty)
 
-  given [ResponseType] => NotFound[ResponseType] is Servable:
+  given [ResponseType] => NotFound[ResponseType] is Servable as notFound:
     def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
       notFound.serve(headers, responder)
 
-  given [ResponseType: Servable.Simple] => ServerError[ResponseType] is Servable:
+  given [ResponseType: Servable.Simple] => ServerError[ResponseType] is Servable as simple:
     def process
         (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
@@ -94,19 +96,20 @@ object Servable:
       headers.each(responder.addHeader)
       responder.sendBody(500, ResponseType.stream(notFound.content))
 
-  given Bytes is Servable = Servable(media"application/octet-stream")(HttpBody.Data(_))
+  given Bytes is Servable as data = Servable(media"application/octet-stream")(HttpBody.Data(_))
 
-  given [ValueType: {Encodable in Bytes as encodable, Media as media}] => ValueType is Servable =
-    (value, status, headers, responder) =>
-      responder.addHeader(ResponseHeader.ContentType.header, media.mediaType(value).show)
-      headers.each(responder.addHeader)
-      responder.sendBody(200, HttpBody.Data(encodable.encode(value)))
-
-  given [ValueType: {Readable by Bytes as readable, Media as media}] => ValueType is Servable =
-    (value, status, headers, responder) =>
-      responder.addHeader(ResponseHeader.ContentType.header, media.mediaType(value).show)
-      headers.each(responder.addHeader)
-      responder.sendBody(200, HttpBody.Chunked(value.stream[Bytes]))
+  inline given [ValueType: Media] => ValueType is Servable as media =
+    summonFrom:
+      case encodable: (ValueType is Encodable in Bytes) =>
+        (value, status, headers, responder) =>
+          responder.addHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show)
+          headers.each(responder.addHeader)
+          responder.sendBody(200, HttpBody.Data(encodable.encode(value)))
+      case readable: (ValueType is Readable by Bytes) =>
+        (value, status, headers, responder) =>
+          responder.addHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show)
+          headers.each(responder.addHeader)
+          responder.sendBody(200, HttpBody.Chunked(value.stream[Bytes]))
 
 object Redirect:
   def apply[LocationType: Locatable](location: LocationType): Redirect =
