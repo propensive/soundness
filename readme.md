@@ -138,7 +138,7 @@ object Size:
   given Size[Boolean] = new Size[Boolean]:
     def size(value: Boolean): Double = 1.0
 
-  given Size[Char] with
+  given Size[Char]:
     def size(value: Char): Double = 2.0
 
   given Size[String] = _.length.toDouble
@@ -415,7 +415,7 @@ object Eq extends ProductDerivation[Eq]:
     (left, right) =>
       fields(left):
         [FieldType] => leftField =>
-          context.eq(leftField, complement(right))
+          context.equal(leftField, complement(right))
       .foldLeft(true)(_ && _)
 ```
 
@@ -579,6 +579,25 @@ inline def split[DerivationType: SumReflection]
 The interpretation of this implementation is that if the left and right sum types represent the same variant,
 then we use `context`, the typeclass instance that is common to both, to compare them. Otherwise, since they are
 evidently different, we return `false`.
+
+Therefore, a complete implementation of `Eq` is as simple as:
+```scala
+trait Eq[ValueType]:
+  def equal(left: ValueType, right: ValueType): Boolean
+
+object Eq extends ProductDerivation[Eq]:
+  inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
+    (left, right) =>
+      fields(left):
+        [FieldType] => left => context.equal(left, complement(right))
+      .foldLeft(true)(_ && _)
+
+  inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
+    (left, right) =>
+      variant(left):
+        [VariantType <: DerivationType] => left =>
+          complement(right).let(context.equal(left, _)).or(false)
+```
 
 #### Producer Sum Typeclasses
 
