@@ -47,15 +47,21 @@ trait Responder:
 
 case class Content(media: MediaType, stream: LazyList[Bytes])
 
-object Servable:
+trait Retrievable(val mediaType: MediaType) extends Servable:
 
-  trait Simple[ResponseType](val mediaType: MediaType, val stream: ResponseType => HttpBody)
-  extends Servable:
-    type Self = ResponseType
-    final def process(content: ResponseType, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
-      responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
-      headers.each(responder.addHeader)
-      responder.sendBody(status, stream(content))
+  type Self
+
+  def stream(response: Self): HttpBody
+
+  final def process
+      (content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
+          : Unit =
+
+    responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
+    headers.each(responder.addHeader)
+    responder.sendBody(status, stream(content))
+
+object Servable:
 
   def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => HttpBody)
           : ResponseType is Servable =
@@ -88,7 +94,7 @@ object Servable:
             : Unit =
       notFound.serve(headers, responder)
 
-  given [ResponseType: Servable.Simple] => ServerError[ResponseType] is Servable as simple:
+  given [ResponseType: Retrievable] => ServerError[ResponseType] is Servable as retrievable:
     def process
         (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
@@ -277,9 +283,38 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handler: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil)
+          : HttpService logs HttpServerEvent =
+
     def handle(exchange: csnh.HttpExchange | Null) =
-      try handler(using makeRequest(exchange.nn)).respond(SimpleResponder(exchange.nn))
+      try
+        val responder = new Responder:
+          def addHeader(key: Text, value: Text): Unit =
+            exchange.nn.getResponseHeaders.nn.add(key.s, value.s)
+
+          def sendBody(status: Int, body: HttpBody): Unit =
+            val length = body match
+              case HttpBody.Empty      => -1
+              case HttpBody.Data(body) => body.length
+              case HttpBody.Chunked(_) => 0
+
+            exchange.nn.sendResponseHeaders(status, length)
+
+            body match
+              case HttpBody.Empty =>
+                ()
+
+              case HttpBody.Data(body) =>
+                exchange.nn.getResponseBody.nn.write(body.mutable(using Unsafe))
+
+              case HttpBody.Chunked(body) =>
+                try body.map(_.mutable(using Unsafe)).each(exchange.nn.getResponseBody.nn.write(_))
+                catch case e: StreamError => () // FIXME: Should this be ignored?
+
+            exchange.nn.getResponseBody.nn.flush()
+            exchange.nn.close()
+
+        handler(using makeRequest(exchange.nn)).respond(responder)
       catch case NonFatal(exception) => exception.printStackTrace()
 
     def startServer(): com.sun.net.httpserver.HttpServer =
@@ -336,31 +371,6 @@ case class HttpServer(port: Int) extends RequestServable:
     Log.fine(HttpServerEvent.Received(request))
 
     request
-
-  class SimpleResponder(exchange: csnh.HttpExchange) extends Responder:
-    def addHeader(key: Text, value: Text): Unit = exchange.getResponseHeaders.nn.add(key.s, value.s)
-
-    def sendBody(status: Int, body: HttpBody): Unit =
-      val length = body match
-        case HttpBody.Empty      => -1
-        case HttpBody.Data(body) => body.length
-        case HttpBody.Chunked(_) => 0
-
-      exchange.sendResponseHeaders(status, length)
-
-      body match
-        case HttpBody.Empty =>
-          ()
-
-        case HttpBody.Data(body) =>
-          exchange.getResponseBody.nn.write(body.mutable(using Unsafe))
-
-        case HttpBody.Chunked(body) =>
-          try body.map(_.mutable(using Unsafe)).each(exchange.getResponseBody.nn.write(_))
-          catch case e: StreamError => () // FIXME: Should this be ignored?
-
-      exchange.getResponseBody.nn.flush()
-      exchange.close()
 
 case class Ttf(content: Bytes)
 object Ttf:
