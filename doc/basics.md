@@ -1,10 +1,15 @@
-All terms and types are defined in the `abacist` package,
-```scala
-import abacist.*
-```
-and build upon definitions in [Quantitative](https://github.com/propensive/quantitative/):
-```scala
-import quantitative.*
+All terms and types are defined in the `abacist` package, and are exported to
+the `soundness` package, and build upon
+definitions in [Quantitative](https://github.com/propensive/quantitative/). You
+can import from either:
+```amok
+syntax scala
+transform
+  before   selective imports
+  after    universal soundness import
+  replace  abacist.*, quantitative.*  soundness.*
+##
+import abacist.*, quantitative.*
 ```
 
 ### Discrete Cascading Units
@@ -17,22 +22,34 @@ physical amounts, confusingly) adopted in various jurisdictions with varying deg
 officiality.
 
 Abacist can accommodate all such systems through a single _type_ which defines a cascade of
-units of the same dimension, in a tuple. For example, one variant of the Imperial System measuring
+units (of the same dimension), in a tuple. The unit types are defined in
+Quantitative, and Abacist makes it
+possible to use them in discrete multiples.
+
+For example, one variant of the Imperial System measuring
 human heights could be defined as,
-```scala
+```amok
+syntax scala
+##
 type ImperialHeight = (Feet[1], Inches[1])
 ```
-or for distances,
-```scala
+or for longer distances,
+```amok
+syntax scala
+##
 type ImperialDistance = (Miles[1], Yards[1], Inches[1])
 ```
 that is, a number of miles, yards and inches, represented as a `Tuple` of these units' types
 (each raised to the power `1`). Another example for mass is,
-```scala
+```amok
+syntax scala
+##
 type Avoirdupois = (Hundredweights[1], Stones[1], Pounds[1], Ounces[1], Drams[1])
 ```
 or alternatively:
-```scala
+```amok
+syntax scala
+##
 type SimpleAvoirdupois = (Pounds[1], Ounces[1])
 ```
 
@@ -46,43 +63,64 @@ the principal unit for their common dimension.
 With a valid definition, such as one of the above, we can represent values in its units, called a `Count`
 (because it's a count of integer multiples of each of the units).
 
+### Construction
+
 To construct a new `Count`, simply call its factory method with the appropriate tuple type, and as many
 integer arguments as necessary. The rightmost `Int` argument will be interpreted as the multiple of the
 rightmost unit in the tuple, and additional arguments will represent (right-to-left) multiples of units of
 increasing magnitude. For example, `Count[ImperialDistance](180, 24)` represents, "180 yards and 24 inches",
 while, `Count[ImperialDistance](1, 180, 24)` represents, "1 mile, 180 yards and 24 inches".
 
-Individual units from a `Count` may be extracted.
+### Extraction
 
-`Count`s of identical units may be added and subtracted, and multiplied and divided by numbers (but not
-other quantities). They may be converted to `Quantity`s with the `in` method, much as a `Quantity` can
-be converted, or constructed from a `Quantity` by applying in to the factory method, e.g.
-```scala
-Count[Avoirdupois](18*Kilo(Gram))
+Individual units from a `Count` may be extracted by applying the units value
+to extract, without its dimension, to the `Count` value, like so:
+```amok
+syntax scala
+##
+type Height = (Feet[1], Inches[1])
+val height: Count[Height] = Count(6, 4)
+val feet = height[Feet]
+val inches = height[Inches]
 ```
 
-### Representation
+The value `feet` will be set to `6`, and the value `inches` will be `4`.
+
+`Count`s of identical units may be added and subtracted, and multiplied and divided by numbers, but not
+by other quantities. They may be converted to `Quantity`s with the `quantity` method, much as a `Quantity` can
+be converted, or constructed from a `Quantity` by calling `count` on the
+`Quantity`, e.g.
+```amok
+syntax scala
+##
+(18*Kilo(Gram)).count[Avoirdupois]
+```
+
+### Rounding
+
+Note that in many cases, the discrete units of a `Count` will not be able to
+precisely represent a `Quantity`. A `Quantity` will be rounded to the nearest
+whole `Count` value. Converting back to a `Quantity` will include this
+rounding error.
+
+For example,
+```amok
+transform
+  before  Imprecise height
+  after   Precise height
+  replace  Inches[1]  Inches[1], Points[1]
+  replace  0.00460  .0000139
+##
+type Height = (Feet[1], Inches[1])
+val height: Quantity[Metres[1]] = Quantity(1.3)
+val error = height - height.count[Height].quantity
+// error == 0.00460
+```
+
+### Underlying Representation
 
 A `Count` is an opaque type alias for a `Long`, meaning that operations involving `Count`s do not involve
-any heap objects. The bits of the `Long` are organized so that a fixed range of the 64 bits available in
-a `Long` will exclusively represent any possible value for that unit. Since the number of different integer
-values that can be represent by such a bit-range will always be a power of two, there may be some unused
-values. These bit-ranges are organized right-to-left in order of increasing magnitude, much like the bits
-in any other integer.
-
-The leftmost bit is a sign bit. The unit of greatest magnitude (which appears first in the tuple) will use
-all the remaining bits to represent the greatest possible range of values.
-
-For example, an Imperial distance measurement in miles, yards and inches, represented by the type,
-`(Miles[1], Yards[1], Inches[1])`, would use: 6 bits for the number of inches, since there are 36 inches in
-a yard, and 64 (or 2⁶) is the smallest power of two large enough to represent every integer in the range
-0-35; 11 bits for the number of yards, since there are 1760 yards in a mile, and 2¹¹ (which is 2048) can
-accommodate any value in the range 0-1759; 1 bit for the sign, and 46 bits for the number of miles, since
-this is the number that remains.
-
-This allows distances of up to 7×10¹³ miles to be represented.
-
-The approach of packing bits into a `Long` provides very fast access of each unit's value, since in may be
-accessed with just a binary `AND` operation and a right-shift.
-
-
+any heap objects. The underlying value of a count represents an integer
+multiple of the smallest unit in the cascade. For example, a length of
+`1ft 3in` would be stored as `15`, being the sum of the 12 inches in one foot,
+plus 3 inches.
