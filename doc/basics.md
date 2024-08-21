@@ -105,6 +105,7 @@ rounding error.
 
 For example,
 ```amok
+syntax scala
 transform
   before  Imprecise height
   after   Precise height
