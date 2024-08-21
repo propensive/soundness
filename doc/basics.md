@@ -111,7 +111,7 @@ transform
   before  Imprecise height
   after   Precise height
   replace  Inches[1]  Inches[1], Points[1]
-  replace  0.00460  .0000139
+  replace  0.00460  0.0000139
 ##
 type Height = (Feet[1], Inches[1])
 val height: Quantity[Metres[1]] = Quantity(1.3)
