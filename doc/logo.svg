@@ -2,9 +2,9 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="120.00001mm"
-   height="120.00003mm"
-   viewBox="0 0 120.00001 120.00003"
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
    version="1.1"
    id="svg1"
    inkscape:version="1.3.2 (091e20e, 2023-11-25)"
@@ -25,20 +25,20 @@
      inkscape:deskcolor="#d1d1d1"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="0.33408691"
-     inkscape:cx="338.23534"
-     inkscape:cy="332.24888"
-     inkscape:window-width="1432"
-     inkscape:window-height="1011"
-     inkscape:window-x="215"
-     inkscape:window-y="44"
+     inkscape:zoom="0.5946522"
+     inkscape:cx="300.17546"
+     inkscape:cy="338.01271"
+     inkscape:window-width="1280"
+     inkscape:window-height="799"
+     inkscape:window-x="0"
+     inkscape:window-y="33"
      inkscape:window-maximized="0"
      inkscape:current-layer="layer1">
     <inkscape:grid
        id="grid1"
        units="mm"
-       originx="-14.999961"
-       originy="-84.999989"
+       originx="-24.999992"
+       originy="-59.999999"
        spacingx="0.99999998"
        spacingy="1"
        empcolor="#0099e5"
@@ -54,757 +54,186 @@
   <defs
      id="defs1">
     <linearGradient
-       id="linearGradient3"
+       id="linearGradient11"
        inkscape:collect="always">
       <stop
-         style="stop-color:#82128b;stop-opacity:1;"
+         style="stop-color:#ff3d1e;stop-opacity:1;"
          offset="0"
-         id="stop3" />
+         id="stop11" />
       <stop
-         style="stop-color:#a55d00;stop-opacity:1;"
+         style="stop-color:#ffb71e;stop-opacity:1;"
          offset="1"
-         id="stop4" />
+         id="stop12" />
     </linearGradient>
-    <inkscape:path-effect
-       effect="fillet_chamfer"
-       id="path-effect1"
-       is_visible="true"
-       lpeversion="1"
-       nodesatellites_param="F,0,0,1,0,4.9999946,0,1 @ F,0,0,1,0,5.0000076,0,1 @ F,0,0,1,0,4.9999887,0,1 @ F,0,0,1,0,4.9999946,0,1"
-       radius="15.11815"
-       unit="px"
-       method="auto"
-       mode="F"
-       chamfer_steps="1"
-       flexible="false"
-       use_knot_distance="true"
-       apply_no_radius="true"
-       apply_with_radius="true"
-       only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
-       effect="fillet_chamfer"
-       id="path-effect1-6"
-       is_visible="true"
-       lpeversion="1"
-       nodesatellites_param="F,0,0,1,0,4.9999946,0,1 @ F,0,0,1,0,5.0000076,0,1 @ F,0,0,1,0,4.9999887,0,1 @ F,0,0,1,0,4.9999946,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1"
-       radius="15.11815"
-       unit="px"
-       method="auto"
-       mode="F"
-       chamfer_steps="1"
-       flexible="false"
-       use_knot_distance="true"
-       apply_no_radius="true"
-       apply_with_radius="true"
-       only_selected="false"
-       hide_knots="false" />
-    <inkscape:path-effect
-       effect="fillet_chamfer"
-       id="path-effect1-3"
-       is_visible="true"
-       lpeversion="1"
-       nodesatellites_param="F,0,0,1,0,4.9999946,0,1 @ F,0,0,1,0,5.0000076,0,1 @ F,0,0,1,0,4.9999887,0,1 @ F,0,0,1,0,4.9999946,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1 @ F,0,0,1,0,15.11815,0,1"
-       radius="15.11815"
-       unit="px"
-       method="auto"
-       mode="F"
-       chamfer_steps="1"
-       flexible="false"
-       use_knot_distance="true"
-       apply_no_radius="true"
-       apply_with_radius="true"
-       only_selected="false"
-       hide_knots="false" />
+    <linearGradient
+       id="linearGradient6"
+       inkscape:collect="always">
+      <stop
+         style="stop-color:#007276;stop-opacity:1;"
+         offset="0"
+         id="stop6" />
+      <stop
+         style="stop-color:#004576;stop-opacity:1;"
+         offset="1"
+         id="stop7" />
+    </linearGradient>
     <linearGradient
        inkscape:collect="always"
-       xlink:href="#linearGradient3"
-       id="linearGradient4"
-       x1="105"
-       y1="175"
-       x2="45"
-       y2="115"
+       xlink:href="#linearGradient6"
+       id="linearGradient7"
+       x1="50"
+       y1="75"
+       x2="125"
+       y2="165"
        gradientUnits="userSpaceOnUse"
-       gradientTransform="translate(86.859249,-166.25016)" />
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter36"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix35" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix36" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix81" />
-      <feColorMatrix
-         id="feColorMatrix82"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix83"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84" />
-      <feColorMatrix
-         id="feColorMatrix85"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter40"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix39" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix40" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix87" />
-      <feColorMatrix
-         id="feColorMatrix88"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix89"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-7"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-3" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-7" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-5" />
-      <feColorMatrix
-         id="feColorMatrix85-0"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-2"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-5"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-5" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-8" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-56" />
-      <feColorMatrix
-         id="feColorMatrix85-7"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-9"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-9"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-34" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-0" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-7" />
-      <feColorMatrix
-         id="feColorMatrix85-5"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-7"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-78"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-4" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-00" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-6" />
-      <feColorMatrix
-         id="feColorMatrix85-2"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-4"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-58"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-9" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-9" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-9" />
-      <feColorMatrix
-         id="feColorMatrix85-3"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-3"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
+       gradientTransform="matrix(1.0826402,0,0,1.0826402,-7.0244117,-9.9168258)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient11"
+       id="linearGradient10"
+       x1="119.31065"
+       y1="144.25856"
+       x2="48.614861"
+       y2="93.60273"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(0.91351725,0,0,0.91351725,7.3510322,10.377922)" />
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath93">
+       id="clipPath13">
       <g
-         id="g94"
-         transform="rotate(-70.129613,74.999968,144.99994)">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse93"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g14">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle13"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath94">
+       id="clipPath14">
       <g
-         id="g95">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse94"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g15">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle14"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath95">
+       id="clipPath15">
       <g
-         id="g96"
-         transform="rotate(109.87039,176.77463,92.357961)">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse95"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g16">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle15"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath94-5">
+       id="clipPath16">
       <g
-         id="g95-4">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse94-5"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g17">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle16"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-3"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-0" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-1" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-94" />
-      <feColorMatrix
-         id="feColorMatrix85-59"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-39"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath94-5-2">
+       id="clipPath17">
       <g
-         id="g95-4-6">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse94-5-6"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g18">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle17"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter38-3-5"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix37-0-4" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix38-1-1" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix84-94-7" />
-      <feColorMatrix
-         id="feColorMatrix85-59-1"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix86-39-3"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath93-8">
+       id="clipPath18">
       <g
-         id="g94-8"
-         transform="rotate(-70.129613,74.999968,144.99994)">
-        <ellipse
-           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:0.206667;stroke:#000000;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
-           id="ellipse93-4"
-           cx="75"
-           cy="145"
-           rx="40"
-           ry="39.999996" />
+         id="g19">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle18"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
       </g>
     </clipPath>
-    <filter
-       style="color-interpolation-filters:sRGB"
-       inkscape:label="Color Shift"
-       id="filter40-5"
-       x="0"
-       y="0"
-       width="1"
-       height="1">
-      <feColorMatrix
-         type="hueRotate"
-         values="304"
-         result="color1"
-         id="feColorMatrix39-7" />
-      <feColorMatrix
-         type="saturate"
-         values="0.6"
-         result="fbSourceGraphic"
-         id="feColorMatrix40-9" />
-      <feColorMatrix
-         result="fbSourceGraphicAlpha"
-         in="fbSourceGraphic"
-         values="0 0 0 -1 0 0 0 0 -1 0 0 0 0 -1 0 0 0 0 1 0"
-         id="feColorMatrix87-8" />
-      <feColorMatrix
-         id="feColorMatrix88-4"
-         type="hueRotate"
-         values="0"
-         result="color1"
-         in="fbSourceGraphic" />
-      <feColorMatrix
-         id="feColorMatrix89-5"
-         type="saturate"
-         values="1"
-         result="color2" />
-    </filter>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath19">
+      <g
+         id="g20">
+        <circle
+           style="font-variation-settings:normal;vector-effect:none;fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+           id="circle19"
+           cx="84.999992"
+           cy="120"
+           r="59.545204" />
+      </g>
+    </clipPath>
   </defs>
   <g
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-14.99996,-84.999991)">
+     transform="translate(-24.999992,-59.999998)">
     <g
-       id="g101">
-      <ellipse
-         style="font-variation-settings:normal;vector-effect:none;fill:url(#linearGradient4);fill-opacity:1;stroke:none;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;filter:url(#filter36);stop-color:#000000"
-         id="path1"
-         cx="161.85925"
-         cy="-21.250162"
-         rx="40.000004"
-         ry="39.999996"
-         transform="matrix(-0.26381314,1.4766189,-1.4766188,-0.2638132,86.322267,-99.610447)"
-         clip-path="url(#clipPath95)" />
+       id="g21"
+       transform="matrix(1.0076378,0,0,1.0076378,-0.64921505,-0.91653898)">
+      <circle
+         style="font-variation-settings:normal;vector-effect:none;fill:url(#linearGradient7);fill-opacity:1;stroke-width:0.211717;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;stop-color:#000000"
+         id="path3-7-9"
+         cx="84.999992"
+         cy="120"
+         r="59.545204"
+         clip-path="url(#clipPath19)" />
       <path
-         id="path1-8"
-         style="font-variation-settings:normal;vector-effect:none;fill:#1d9cff;fill-opacity:0.206667;stroke:none;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;filter:url(#filter38);stop-color:#000000"
-         d="M 112.6187,131.40425 A 40.000004,39.999996 70.129613 0 0 61.404223,107.38135 40.000004,39.999996 70.129613 0 0 37.381314,158.59583 Z"
-         clip-path="url(#clipPath94)"
-         transform="matrix(1.5,0,0,1.5000001,-37.499981,-72.500006)" />
+         id="path9"
+         style="font-variation-settings:normal;opacity:0.748735;vector-effect:none;fill:#002549;fill-opacity:0.793226;stroke:none;stroke-width:0.196377;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
+         d="M 96.046096,60.273453 A 60.754217,60.754217 0 0 0 84.99998,59.245959 60.754217,60.754217 0 0 0 73.95386,60.386475 V 179.61331 a 60.754217,60.754217 0 0 0 11.04612,1.1411 60.754217,60.754217 0 0 0 11.046116,-1.1411 z"
+         clip-path="url(#clipPath18)" />
       <path
-         id="path1-8-6"
-         style="font-variation-settings:normal;vector-effect:none;fill:#1d9cff;fill-opacity:0.206667;stroke:none;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;filter:url(#filter38-3);stop-color:#000000"
-         d="M 112.6187,131.40425 A 40.000004,39.999996 70.129613 0 0 61.404223,107.38135 40.000004,39.999996 70.129613 0 0 37.381314,158.59583 Z"
-         clip-path="url(#clipPath94-5)"
-         transform="matrix(1.2435564,-0.83878941,0.83878936,1.2435564,-139.89117,27.593517)" />
+         id="path9-5"
+         style="font-variation-settings:normal;opacity:0.748735;vector-effect:none;fill:#002549;fill-opacity:0.793226;stroke:none;stroke-width:0.196377;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
+         d="M 101.33776,60.273453 A 60.754217,60.754217 0 0 0 90.291647,59.245959 60.754217,60.754217 0 0 0 79.245527,60.386475 V 179.61331 a 60.754217,60.754217 0 0 0 11.04612,1.1411 60.754217,60.754217 0 0 0 11.046113,-1.1411 z"
+         clip-path="url(#clipPath17)" />
       <path
-         id="path1-8-6-8"
-         style="font-variation-settings:normal;vector-effect:none;fill:#1d9cff;fill-opacity:0.206667;stroke:none;stroke-width:0.177777;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none;filter:url(#filter38-3-5);stop-color:#000000"
-         d="M 112.6187,131.40425 A 40.000004,39.999996 70.129613 0 0 61.404223,107.38135 40.000004,39.999996 70.129613 0 0 37.381314,158.59583 Z"
-         clip-path="url(#clipPath94-5-2)"
-         transform="matrix(1.2435564,0.83878941,-0.83878936,1.2435564,103.35769,-98.224856)" />
-      <g
-         id="g4"
-         style="opacity:0.657676;stroke:none;stroke-opacity:1;filter:url(#filter40)"
-         transform="matrix(0.50984028,1.410696,-1.4106959,0.50984032,241.31278,-34.729049)"
-         clip-path="url(#clipPath93)">
-        <rect
-           style="opacity:0.572614;fill:#f6ff44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-7"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="108.41248"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffe944;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-1-8"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="117.88337"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffca44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-3-7"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="152.6458"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffab44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-0-7"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="162.11664"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ff8c44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-32-4"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="171.58748"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#f6ff44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="107.88335"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffe944;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-1"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="117.35418"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffca44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-3"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="152.11664"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffab44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-0"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="161.58748"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ff8c44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-32"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="171.05832"
-           ry="4.9999957" />
-      </g>
-      <g
-         id="g4-8"
-         style="opacity:0.657676;stroke:none;stroke-opacity:1;filter:url(#filter40-5)"
-         transform="matrix(0.50984028,1.410696,-1.4106959,0.50984032,241.31278,-34.729049)"
-         clip-path="url(#clipPath93-8)">
-        <rect
-           style="opacity:0.572614;fill:#f6ff44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-7-9"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="108.41248"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffe944;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-1-8-4"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="117.88337"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffca44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-3-7-7"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="152.6458"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ffab44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-0-7-0"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="162.11664"
-           ry="4.9999957" />
-        <rect
-           style="opacity:0.572614;fill:#ff8c44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-32-4-4"
-           width="20"
-           height="9.999999"
-           x="66.058334"
-           y="171.58748"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#f6ff44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-06"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="107.88335"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffe944;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-1-5"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="117.35418"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffca44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-3-3"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="152.11664"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ffab44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-0-8"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="161.58748"
-           ry="4.9999957" />
-        <rect
-           style="opacity:1;fill:#ff8c44;fill-opacity:1;stroke:none;stroke-width:0.1;stroke-opacity:1"
-           id="rect3-32-5"
-           width="20"
-           height="9.999999"
-           x="63.941666"
-           y="171.05832"
-           ry="4.9999957" />
-      </g>
+         id="path9-0"
+         style="font-variation-settings:normal;opacity:0.247892;vector-effect:none;fill:#0067c9;fill-opacity:0.793226;stroke:none;stroke-width:0.196377;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;-inkscape-stroke:none"
+         d="M 90.754429,60.273453 A 60.754217,60.754217 0 0 0 79.708313,59.245959 60.754217,60.754217 0 0 0 68.662193,60.386475 V 179.61331 a 60.754217,60.754217 0 0 0 11.04612,1.1411 60.754217,60.754217 0 0 0 11.046116,-1.1411 z"
+         clip-path="url(#clipPath16)" />
+      <path
+         id="path5"
+         style="opacity:0.706577;fill:url(#linearGradient10);fill-opacity:1;stroke-width:0.162402;-inkscape-stroke:none"
+         d="m 128.34006,105.613 a 68.513793,68.513793 0 0 0 -43.34008,-15.45472 68.513793,68.513793 0 0 0 -43.299018,15.56095 45.675862,45.675862 0 0 0 -2.37689,14.28068 45.675862,45.675862 0 0 0 2.37689,14.28068 68.513793,68.513793 0 0 0 43.299018,15.56093 68.513793,68.513793 0 0 0 43.29904,-15.56093 45.675862,45.675862 0 0 0 2.37687,-14.28068 45.675862,45.675862 0 0 0 -2.33583,-14.38691 z"
+         clip-path="url(#clipPath15)" />
+      <path
+         id="path5-4"
+         style="opacity:0.244519;fill:#ffef1e;fill-opacity:1;stroke-width:0.177777;-inkscape-stroke:none"
+         d="M 130.3264,102.13432 A 75,75 0 0 0 82.883312,85.216503 75,75 0 0 0 35.485171,102.25059 a 50,50 0 0 0 -2.601908,15.63264 50,50 0 0 0 2.601908,15.63264 75,75 0 0 0 47.398141,17.0341 75,75 0 0 0 47.398128,-17.0341 50,50 0 0 0 2.60191,-15.63264 50,50 0 0 0 -2.55695,-15.74891 z"
+         clip-path="url(#clipPath14)" />
+      <path
+         id="path5-4-1"
+         style="opacity:0.244519;fill:#ffef1e;fill-opacity:1;stroke-width:0.177777;-inkscape-stroke:none"
+         d="M 134.55976,106.36768 A 75,75 0 0 0 87.116648,89.449839 75,75 0 0 0 39.718507,106.48395 a 50,50 0 0 0 -2.601908,15.63264 50,50 0 0 0 2.601908,15.63264 75,75 0 0 0 47.398141,17.0341 75,75 0 0 0 47.398152,-17.0341 50,50 0 0 0 2.60191,-15.63264 50,50 0 0 0 -2.55695,-15.74891 z"
+         clip-path="url(#clipPath13)" />
     </g>
   </g>
 </svg>
