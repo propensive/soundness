@@ -77,7 +77,8 @@ object Abacist:
       (using Quotes)
           : Expr[Any] =
 
-    '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
+    if division then '{Count.fromLong[CountUnitsType](($count.longValue/$multiplier + 0.5).toLong)}
+    else '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
 
   def toQuantity[CountUnitsType <: Tuple: Type](count: Expr[Count[CountUnitsType]])(using Quotes): Expr[Any] =
     val lastUnit = multipliers[CountUnitsType].last
