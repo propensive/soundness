@@ -140,7 +140,8 @@ precisely represent a `Quantity`. A `Quantity` will be rounded to the nearest
 whole `Count` value. Converting back to a `Quantity` will include this
 rounding error.
 
-For example,
+For example, note how the error changes when more precise `Count` units are
+used:
 ```amok
 syntax scala
 transform
@@ -152,8 +153,10 @@ transform
 type Height = (Feet[1], Inches[1])
 val height: Quantity[Metres[1]] = Quantity(1.3)
 val error = height - height.count[Height].quantity
-// error == 0.00460
+
+assert(error == 0.00460)
 ```
+
 
 ### Underlying Representation
 
