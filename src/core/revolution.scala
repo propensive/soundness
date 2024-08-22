@@ -26,11 +26,9 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import rudiments.*
 import spectacular.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 import vacuous.*
-
-infix type of [Type, ValueType] = Type { type Value = ValueType }
 
 object DecodableManifest:
   given (using Tactic[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
