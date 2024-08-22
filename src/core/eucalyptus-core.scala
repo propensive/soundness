@@ -26,7 +26,7 @@ import hieroglyph.*, textMetrics.uniform
 import parasite.*, orphanDisposal.cancel
 import rudiments.*
 import spectacular.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 
 import language.experimental.pureFunctions
@@ -48,7 +48,6 @@ package logFormats:
     t"[$level] $event\n"
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
-infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
 
 def mute[FormatType](using erased DummyImplicit)[ResultType]
     (lambda: (FormatType is Loggable) ?=> ResultType)

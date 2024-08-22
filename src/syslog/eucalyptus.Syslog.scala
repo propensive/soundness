@@ -20,7 +20,7 @@ import guillotine.*
 import rudiments.*
 import parasite.*
 import anticipation.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 import contingency.*
 
