@@ -28,7 +28,7 @@ import anticipation.*
 import turbulence.*
 import spectacular.*
 import ambience.*
-import symbolism.*
+import prepositional.*
 
 import scala.collection.concurrent as scc
 import scala.collection.mutable as scm
