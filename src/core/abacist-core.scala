@@ -20,6 +20,7 @@ import rudiments.*
 import anticipation.*
 import quantitative.*
 import spectacular.*
+import symbolism.*
 
 import scala.quoted.*
 import scala.compiletime.*, ops.int.*
@@ -33,6 +34,30 @@ object CountOpaques:
 
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
+
+    given [UnitsType <: Tuple] => Count[UnitsType] is Addable as plus:
+      type Operand = Count[UnitsType]
+      type Result = Count[UnitsType]
+
+      def add(left: Count[UnitsType], right: Count[UnitsType]): Count[UnitsType] = left + right
+
+    given [UnitsType <: Tuple] => Count[UnitsType] is Subtractable as minus:
+      type Operand = Count[UnitsType]
+      type Result = Count[UnitsType]
+
+      def subtract(left: Count[UnitsType], right: Count[UnitsType]): Count[UnitsType] = left - right
+
+    given [UnitsType <: Tuple] => Count[UnitsType] is Multiplicable as times:
+      type Operand = Double
+      type Result = Count[UnitsType]
+
+      def multiply(left: Count[UnitsType], right: Double): Count[UnitsType] = left.multiply(right)
+
+    given [UnitsType <: Tuple] => Count[UnitsType] is Divisible as divide:
+      type Operand = Double
+      type Result = Count[UnitsType]
+
+      def divide(left: Count[UnitsType], right: Double): Count[UnitsType] = left.divide(right)
 
     inline given [UnitsType <: Tuple] => Count[UnitsType] is Showable = summonFrom:
       case names: UnitsNames[UnitsType] => count =>
@@ -49,12 +74,6 @@ object CountOpaques:
     def longValue: Long = count
 
   extension [UnitsType <: Tuple](inline count: Count[UnitsType])
-    @targetName("add")
-    inline infix def + (right: Count[UnitsType]): Count[UnitsType] = count + right
-
-    @targetName("sub")
-    inline infix def - (right: Count[UnitsType]): Count[UnitsType] = count - right
-
     @targetName("negate")
     inline def `unary_-`: Count[UnitsType] = -count
 
@@ -67,12 +86,10 @@ object CountOpaques:
     inline def components: ListMap[Text, Long] =
       ${Abacist.describeCount[UnitsType]('count)}
 
-    @targetName("multiply")
-    transparent inline infix def * (inline multiplier: Double): Any =
+    transparent inline def multiply(inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, false)}
 
-    @targetName("divide")
-    transparent inline infix def / (inline multiplier: Double): Any =
+    transparent inline def divide(inline multiplier: Double): Any =
       ${Abacist.multiplyCount('count, 'multiplier, true)}
 
     transparent inline def collapse(length: Int)(using length.type < Tuple.Size[UnitsType] =:= true)

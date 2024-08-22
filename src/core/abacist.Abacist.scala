@@ -16,14 +16,16 @@
 
 package abacist
 
-import quantitative.*
-import anticipation.*
-import fulminate.*
-import rudiments.*
-import vacuous.*
-
 import scala.collection.immutable.*
 import scala.quoted.*
+
+import anticipation.*
+import fulminate.*
+import gossamer.{where as _, *}
+import hieroglyph.*
+import quantitative.*
+import rudiments.*
+import vacuous.*
 
 given Realm = realm"abacist"
 
@@ -67,8 +69,11 @@ object Abacist:
           expr
 
         case (slice@Multiplier(unitPower, subdivision, max)) :: tail =>
+          val power = if unitPower.power == 1 then "".tt else
+            unitPower.power.toString.tt.mapChars(_.superscript.or(' '))
+
           val value = '{(($count.asInstanceOf[Long]/${Expr(subdivision)})%(${Expr(max)}))}
-          recur(tail, '{$expr.updated(${unitPower.ref.unitName}, $value)})
+          recur(tail, '{$expr.updated(${unitPower.ref.unitName}+${Expr(power)}, $value)})
 
     recur(multipliers[CountUnits], '{ListMap()})
 
