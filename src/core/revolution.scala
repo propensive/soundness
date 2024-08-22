@@ -16,18 +16,19 @@
 
 package revolution
 
+import java.util.jar as juj
+
 import anticipation.*
-import rudiments.*
-import turbulence.*
-import vacuous.*
-import gossamer.*
 import contingency.*
-import hieroglyph.*, charEncoders.utf8
+import denominative.*
 import digression.*
+import gossamer.*
+import hieroglyph.*, charEncoders.utf8
+import rudiments.*
 import spectacular.*
 import symbolism.*
-
-import java.util.jar as juj
+import turbulence.*
+import vacuous.*
 
 infix type of [Type, ValueType] = Type { type Value = ValueType }
 
@@ -113,8 +114,9 @@ case class Manifest(entries: Map[Text, Text]):
         val used = key.length + 2
 
         def putValue(index: Int, space: Int): Unit =
-          buffer.append(value.slice(index, index + space))
+          buffer.append(value.slice(Ordinal.zerary(index) ~ Ordinal.natural(index + space)))
           buffer.append(t"\r\n")
+
           if index + space > 70 then
             buffer.append(t" ")
             putValue(index + space, 69)
