@@ -19,11 +19,11 @@ package cellulose
 import gossamer.*
 import fulminate.*
 import rudiments.*
+import prepositional.*
 import vacuous.*
 import anticipation.*
 import spectacular.*, booleanStyles.trueFalse
 import contingency.*
-import symbolism.*
 import contextual.*
 import turbulence.*
 

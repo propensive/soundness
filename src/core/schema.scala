@@ -21,7 +21,7 @@ import vacuous.*
 import contingency.*
 import gossamer.*
 import anticipation.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 
 //import language.experimental.captureChecking
