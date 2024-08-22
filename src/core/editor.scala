@@ -22,6 +22,7 @@ import gossamer.{where as _, *}
 import spectacular.*
 import turbulence.*
 import contingency.*
+import denominative.*
 import anticipation.*
 import fulminate.*
 
@@ -37,21 +38,21 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
-    case CharKey(ch)      => copy(t"${value.take(position)}$ch${value.drop(position)}", position + 1)
-    case Ctrl('U')        => copy(value.drop(position), 0)
+    case CharKey(ch)      => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
+    case Ctrl('U')        => copy(value.skip(position), 0)
 
-    case Ctrl('W')        => val prefix = value.take(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
-                             copy(t"$prefix${value.drop(position)}", prefix.length)
+    case Ctrl('W')        => val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+                             copy(t"$prefix${value.skip(position)}", prefix.length)
 
-    case Delete      => copy(t"${value.take(position)}${value.drop(position + 1)}")
-    case Backspace   => copy(t"${value.take(position - 1)}${value.drop(position)}", (position - 1) max 0)
+    case Delete      => copy(t"${value.keep(position)}${value.skip(position + 1)}")
+    case Backspace   => copy(t"${value.keep(position - 1)}${value.skip(position)}", (position - 1) max 0)
     case Home        => copy(position0 = 0)
     case End         => copy(position0 = value.length)
     case Left        => copy(position0 = (position - 1) `max` 0)
-    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where(value.at(_) == ' ').lay(0)(_ + 1))
+    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where { index => value.at(Ordinal.zerary(index)) == ' ' }.lay(0)(_ + 1))
 
     case Ctrl(Right) => val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
-                        val position2 = range.where(value.at(_) == ' ').lay(value.length)(_ + 1)
+                        val position2 = range.where { index => value.at(Ordinal.zerary(index)) == ' ' }.lay(value.length)(_ + 1)
                         copy(position0 = position2 `min` value.length)
     case Right       => copy(position0 = (position + 1) `min` value.length)
     case _           => this
