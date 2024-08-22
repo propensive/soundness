@@ -18,8 +18,8 @@ package nettlesome
 
 trait Protocolic:
   type Self
-  type On
+  type Transit
   type Request
   type Response
   type Server
-  def server(port: On)(lambda: Request ?=> Response): Server
+  def server(port: Transit)(lambda: Request ?=> Response): Server

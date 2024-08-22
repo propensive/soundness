@@ -16,6 +16,8 @@
 
 package nettlesome
 
+import prepositional.*
+
 export Nettlesome.Ipv6
 export Nettlesome.Opaques.Ipv4
 export Nettlesome.Opaques.MacAddress
@@ -34,7 +36,7 @@ extension [RemoteType: Connectable](value: RemoteType)
     Endpoint(RemoteType.remote(value), port)
 
 extension [PortType](port: PortType)
-  def serve[ProtocolType: Protocolic on PortType]
+  def serve[ProtocolType: Protocolic over PortType]
       (handler: ProtocolType.Request ?=> ProtocolType.Response)
           : ProtocolType.Server =
     ProtocolType.server(port)(handler)
@@ -43,5 +45,3 @@ def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): Resul
   block(using Internet(online))
 
 def online(using internet: Internet): Boolean = internet.online
-
-infix type on [Type <: { type On }, PortType] = Type { type On = PortType }
