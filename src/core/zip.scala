@@ -21,6 +21,7 @@ import gossamer.*
 import vacuous.*
 import contingency.*
 import serpentine.*
+import denominative.*
 import feudalism.*
 import fulminate.*
 import anticipation.*
@@ -81,7 +82,7 @@ object ZipRef:
 
   given rootParser: RootParser[ZipRef, Unset.type] with
     def parse(text: Text): (Unset.type, Text) =
-      (Unset, if text.length > 0 && text.at(0) == '/' then text.drop(1) else text)
+      (Unset, if text.length > 0 && text.at(Prim) == '/' then text.skip(1) else text)
 
   given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
   given ZipRef is Showable = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
