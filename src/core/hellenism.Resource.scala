@@ -16,11 +16,10 @@
 
 package hellenism
 
-import symbolism.*
 import contingency.*
 import anticipation.*
+import prepositional.*
 import turbulence.*
-
 
 object Resource:
   given (using Tactic[ClasspathError]) => Resource is Readable by Bytes as readableBytes =

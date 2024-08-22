@@ -24,6 +24,7 @@ import ambience.*
 import gossamer.*
 import contingency.*
 import anticipation.*
+import prepositional.*
 import symbolism.*
 
 object LocalClasspath:
