@@ -22,6 +22,7 @@ import gossamer.{where as _, *}
 import spectacular.*
 import contingency.*
 import escapade.*
+import denominative.*
 import fulminate.*
 import anticipation.*
 
@@ -146,7 +147,7 @@ case class Flag[OperandType]
     cli.register(this, suggestions)
 
   def matches(key: Argument): Boolean =
-    val flag = if key().starts(t"--") then key().drop(2) else if key().starts(t"-") then key().at(1) else Unset
+    val flag = if key().starts(t"--") then key().skip(2) else if key().starts(t"-") then key().at(Sec) else Unset
     flag == name || aliases.contains(flag)
 
   def apply()
