@@ -585,7 +585,7 @@ Therefore, a complete implementation of `Eq` is as simple as:
 trait Eq[ValueType]:
   def equal(left: ValueType, right: ValueType): Boolean
 
-object Eq extends ProductDerivation[Eq]:
+object Eq extends Derivation[Eq]:
   inline def join[DerivationType <: Product: ProductReflection]: Eq[DerivationType] =
     (left, right) =>
       fields(left):
