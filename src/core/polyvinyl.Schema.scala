@@ -21,6 +21,7 @@ import scala.quoted.*
 import rudiments.*
 import anticipation.*
 import fulminate.*
+import prepositional.*
 
 trait Schema[DataType, RecordType <: Record in DataType]:
   def fields: Map[String, RecordField]
