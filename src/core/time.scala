@@ -118,7 +118,7 @@ object Dates:
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
 
-    infix def at (time: Time)(using Calendar): Timestamp = Timestamp(date, time)
+    infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
 
     @targetName("plus")
     infix def + (period: Period)(using Calendar): Date = Date.plus.add(date, period)
@@ -280,7 +280,7 @@ object Timing:
         case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
 
       val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
-        case (Base24(hour), Base60(minute), Base60(second)) => Time(hour, minute, second)
+        case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
 
       LocalTime(date, time, timezone)
 
@@ -422,15 +422,9 @@ extension (int: Int)
   def minutes: Timespan & FixedDuration = Period.fixed(StandardTime.Minute, int)
   def seconds: Timespan & FixedDuration = Period.fixed(StandardTime.Second, int)
 
-case class Time(hour: Base24, minute: Base60, second: Base60 = 0)
+case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0)
 
-object Timestamp:
-  given Timestamp is Addable as plus:
-    type Result = Timestamp
-    type Operand = Timespan
-    def add(left: Timestamp, right: Timespan): Timestamp = ???
-
-case class Timestamp(date: Date, time: Time):
+case class Timestamp(date: Date, time: Clockface):
   infix def in (timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
 
 object MonthName:
@@ -469,34 +463,34 @@ enum MonthName:
 
 export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
-trait Chronology:
+trait Horology:
   type Primary
   type Secondary
   type Tertiary
   type TimeRepr
 
-  def addPrimary(time: Time, n: Primary): Time
-  def addSecondary(time: Time, n: Secondary): Time
-  def addTertiary(time: Time, n: Tertiary): Time
+  def addPrimary(time: Clockface, n: Primary): Clockface
+  def addSecondary(time: Clockface, n: Secondary): Clockface
+  def addTertiary(time: Clockface, n: Tertiary): Clockface
 
-given Chronology as sexagesimal:
+given Horology as sexagesimal:
   type Primary = Base24
   type Secondary = Base60
   type Tertiary = Base60
   type TimeRepr = Time
 
-  def addPrimary(time: Time, n: Base24): Time = time.copy(hour = (time.hour + n)%%24)
+  def addPrimary(time: Clockface, n: Base24): Clockface = time.copy(hour = (time.hour + n)%%24)
 
-  def addSecondary(time: Time, n: Base60): Time =
+  def addSecondary(time: Clockface, n: Base60): Clockface =
     val minute: Base60 = (time.minute + n)%%60
     val hour: Base24 = (time.hour + (time.minute + n)/60)%%24
     time.copy(hour = hour, minute = minute)
 
-  def addTertiary(time: Time, n: Base60): Time =
+  def addTertiary(time: Clockface, n: Base60): Clockface =
     val second: Base60 = (time.second + n)%%60
     val minute: Base60 = (time.minute + (time.second + n)/60)%%60
     val hour: Base24 = (time.hour + (time.minute + (time.second + n)/60)/60)%%24
-    Time(hour, minute, second)
+    Clockface(hour, minute, second)
 
 object Base60:
   def unapply(value: Int): Option[Base60] =
@@ -535,12 +529,12 @@ extension (i: Int)
       case v: Base60 => v
 
 extension (inline double: Double)
-  inline def am: Time = ${Aviation.validTime('double, false)}
-  inline def pm: Time = ${Aviation.validTime('double, true)}
+  inline def am: Clockface = ${Aviation.validTime('double, false)}
+  inline def pm: Clockface = ${Aviation.validTime('double, true)}
 
 object Aviation:
 
-  def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Time] =
+  def validTime(time: Expr[Double], pm: Boolean)(using Quotes): Expr[Clockface] =
     import quotes.reflect.*
 
     time.asTerm match
@@ -559,7 +553,7 @@ object Aviation:
         then abandon(m"the time should have exactly two minutes digits", lit.pos)
 
         val m: Base60 = minutes.asInstanceOf[Base60]
-        '{Time(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
+        '{Clockface(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
 
       case _ =>
         abandon(m"expected a literal double value")
@@ -574,7 +568,7 @@ object LocalTime:
   given (using RomanCalendar) => LocalTime is GenericInstant as generic =
     _.instant.millisecondsSinceEpoch
 
-case class LocalTime(date: Date, time: Time, timezone: Timezone):
+case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
     val ldt = jt.LocalDateTime.of(date.year, date.month.numerical, date.day, time.hour, time.minute,
         time.second)
