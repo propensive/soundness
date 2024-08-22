@@ -20,13 +20,14 @@ import turbulence.*
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import denominative.*
 import gossamer.*
 import contingency.*
 import serpentine.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import spectacular.*
-import symbolism.*
+import prepositional.*
 
 case class UnixMode
     (setUid:     Boolean = false,
@@ -94,7 +95,7 @@ object TarRef:
 
   given RootParser[TarRef, Unset.type] as rootParser:
     def parse(text: Text): (Unset.type, Text) =
-      (Unset, if text.at(0) == '/' then text.drop(1) else text)
+      (Unset, if text.at(Prim) == '/' then text.skip(1) else text)
 
   given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator = (root, descent) => TarRef(descent)
   given TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")
