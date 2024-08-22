@@ -20,7 +20,6 @@ import rudiments.*
 import gossamer.*
 import vacuous.*
 import anticipation.*
-import hypotenuse.*
 import hieroglyph.*
 
 import annotation.targetName
