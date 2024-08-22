@@ -22,6 +22,7 @@ import spectacular.*
 import anticipation.*
 import gossamer.*
 import contingency.*
+import prepositional.*
 import symbolism.*
 
 object Followable:
