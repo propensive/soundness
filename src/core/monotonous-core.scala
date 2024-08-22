@@ -18,6 +18,7 @@ package monotonous
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 
 package alphabets:
   package binary:

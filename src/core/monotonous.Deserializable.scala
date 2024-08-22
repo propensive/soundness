@@ -24,11 +24,12 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import prepositional.*
 import hypotenuse.*
 import vacuous.*
 
 trait Deserializable:
-  type In <: Serialization
+  type Format <: Serialization
   protected val atomicity: Int = 1
 
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Bytes

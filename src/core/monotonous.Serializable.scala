@@ -18,6 +18,7 @@ package monotonous
 
 import anticipation.*
 import rudiments.*
+import prepositional.*
 
 object Serializable:
   def base[BaseType <: Serialization](bits: Int)(using alphabet: Alphabet[BaseType])
@@ -55,5 +56,5 @@ object Serializable:
   given (using Alphabet[Base64]) => Serializable in Base64 = base(6)
 
 trait Serializable:
-  type In <: Serialization
+  type Format <: Serialization
   def encode(bytes: Bytes): Text
