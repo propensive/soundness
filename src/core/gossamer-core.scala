@@ -22,6 +22,7 @@ import fulminate.*
 import anticipation.*
 import hieroglyph.*
 import symbolism.*
+import prepositional.*
 import hypotenuse.*
 import spectacular.*
 import denominative.*
@@ -341,7 +342,8 @@ extension (text: into Text)
     val count = trans(0, 0, 0)
 
     if matches == 0 then 0.0
-    else (matches.toDouble/text.length + matches.toDouble/other.length + (matches - count/2.0)/matches)/3
+    else (matches.toDouble/text.length + matches.toDouble/other.length +
+        (matches - count/2.0)/matches)/3
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 

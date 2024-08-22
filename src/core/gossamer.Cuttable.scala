@@ -18,8 +18,8 @@ package gossamer
 
 import rudiments.*
 import vacuous.*
-import symbolism.*
 import anticipation.*
+import prepositional.*
 import kaleidoscope.*
 import denominative.*
 
