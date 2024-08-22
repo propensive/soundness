@@ -25,7 +25,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
-import symbolism.*
+import prepositional.*
 
 export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
