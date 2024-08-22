@@ -21,7 +21,7 @@ import language.experimental.pureFunctions
 import scala.collection.mutable as scm
 
 import anticipation.*
-import symbolism.*
+import prepositional.*
 import denominative.*
 
 object Indexable:

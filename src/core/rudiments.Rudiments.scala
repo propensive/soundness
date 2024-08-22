@@ -23,6 +23,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import symbolism.*
+import prepositional.*
 
 object Rudiments:
   given Realm = realm"rudiments"
