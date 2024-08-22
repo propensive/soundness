@@ -18,6 +18,7 @@ package enigmatic
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import monotonous.*
 import spectacular.*
 

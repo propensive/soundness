@@ -19,12 +19,13 @@ package enigmatic
 import anticipation.*
 import gastronomy.*
 import gossamer.*
+import prepositional.*
 import monotonous.*
 import spectacular.*
 
 object Hmac:
   def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
-    type Of = SchemeType
+    type Value = SchemeType
 
   given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
     t"Hmac(${hmac.bytes.serialize[Base64]})"
@@ -32,4 +33,4 @@ object Hmac:
   given [HmacType <: Algorithm] => Hmac of HmacType is Encodable in Bytes = _.bytes
 
 class Hmac(val bytes: Bytes):
-  type Of <: Algorithm
+  type Value <: Algorithm

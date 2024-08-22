@@ -19,6 +19,7 @@ package enigmatic
 import anticipation.*
 import gossamer.*
 import monotonous.*
+import prepositional.*
 import spectacular.*
 
 object Signature:

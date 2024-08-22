@@ -17,6 +17,7 @@
 package enigmatic
 
 import anticipation.*
+import prepositional.*
 
 object SymmetricKey:
   given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes

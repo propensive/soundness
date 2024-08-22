@@ -23,6 +23,7 @@ import scala.compiletime.*, ops.int.*
 import anticipation.*
 import contingency.*
 import gastronomy.*
+import prepositional.*
 import rudiments.*
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
