@@ -134,7 +134,7 @@ object Installer:
         installFile.let: file =>
           val filename: Text = file.inspect
           Log.info(DaemonLogEvent.WriteExecutable(filename))
-          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.skip(fileSize - jarSize)).writeTo(file)
+          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
           file.executable() = true
           Result.Installed(command, file.path.show)
