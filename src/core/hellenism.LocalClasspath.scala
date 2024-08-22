@@ -24,12 +24,24 @@ import ambience.*
 import gossamer.*
 import contingency.*
 import anticipation.*
-
+import symbolism.*
 
 object LocalClasspath:
   def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
           : LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
+
+  given [PathType: GenericPath](using Tactic[PathError], Tactic[IoError])
+      => LocalClasspath is Addable by PathType into LocalClasspath =
+    (classpath, path) =>
+      Path(path).pipe: path =>
+        val entry: ClasspathEntry.Directory | ClasspathEntry.Jarfile =
+          path.entryType() match
+            case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
+            case _                    => ClasspathEntry.Jarfile(path.fullname)
+
+        if classpath.entrySet.contains(entry) then classpath
+        else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 class LocalClasspath private
     (val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type],
@@ -42,13 +54,3 @@ extends Classpath:
       case ClasspathEntry.Jarfile(jarfile)     => List(jarfile)
       case _                                   => Nil
     .join(unsafely(Properties.path.separator()))
-
-  @targetName("append")
-  infix def + [PathType: GenericPath](path: PathType): LocalClasspath raises PathError raises IoError =
-    Path(path).pipe: path =>
-      val classpathEntry: ClasspathEntry.Directory | ClasspathEntry.Jarfile = path.entryType() match
-        case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
-        case _                    => ClasspathEntry.Jarfile(path.fullname)
-
-      if entrySet.contains(classpathEntry) then this
-      else new LocalClasspath(classpathEntry :: entries, entrySet + classpathEntry)
