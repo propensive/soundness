@@ -17,10 +17,8 @@
 package gastronomy
 
 import anticipation.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
-
-infix type of [Type <: { type Of }, OfType] = Type { type Of = OfType }
 
 package hashFunctions:
   given HashFunction of Crc32 as crc32 = Crc32.hashFunction

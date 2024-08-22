@@ -24,11 +24,12 @@ import anticipation.*
 import monotonous.*
 import rudiments.*
 import spectacular.*
+import prepositional.*
 import vacuous.*
 
 object Digest:
   def apply[HashType <: Algorithm](bytes: Bytes): Digest of HashType = new Digest(bytes):
-    type Of = HashType
+    type Value = HashType
 
   given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest of DigestType is Showable =
     _.bytes.serialize[Base64]
@@ -36,7 +37,7 @@ object Digest:
   given [DigestType <: Algorithm] => Digest of DigestType is Encodable in Bytes = _.bytes
 
 class Digest(val bytes: Bytes):
-  type Of <: Algorithm
+  type Value <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest => bytes.sameElements(digest.bytes)

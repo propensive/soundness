@@ -23,6 +23,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import prepositional.*
 import vacuous.*
 
 object Crc32:

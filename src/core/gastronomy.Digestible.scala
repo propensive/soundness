@@ -24,6 +24,7 @@ import scala.compiletime.*, ops.int.*
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import hieroglyph.*
 import rudiments.*
 import vacuous.*

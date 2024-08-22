@@ -17,6 +17,7 @@
 package gastronomy
 
 import anticipation.*
+import prepositional.*
 import gossamer.*
 
 sealed trait Sha1 extends Algorithm:

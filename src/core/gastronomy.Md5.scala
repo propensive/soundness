@@ -17,6 +17,7 @@
 package gastronomy
 
 import anticipation.*
+import prepositional.*
 import gossamer.*
 
 object Md5:

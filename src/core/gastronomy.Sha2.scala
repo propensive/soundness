@@ -18,6 +18,7 @@ package gastronomy
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 
 sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends Algorithm:
   type Bits = BitsType
