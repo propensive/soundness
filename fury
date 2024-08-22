@@ -4,10 +4,12 @@
 target symbolism/core
 
 repo propensive/probably
+repo propensive/prepositional
 
 project symbolism
   module core
     compiler  scala
+    include   prepositional/core
     sources   src/core
 
   module test
