@@ -23,6 +23,7 @@ import anticipation.*
 import symbolism.*
 import turbulence.*
 import contextual.*
+import prepositional.*
 import vacuous.*
 import spectacular.*
 
