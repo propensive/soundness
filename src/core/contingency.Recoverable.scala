@@ -16,7 +16,7 @@
 
 package contingency
 
-import symbolism.*
+import prepositional.*
 
 object Recoverable:
   given [ErrorType <: Exception] => ErrorType is Recoverable into Unit = error => ()

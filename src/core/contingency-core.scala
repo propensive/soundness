@@ -24,7 +24,7 @@ import scala.compiletime.*
 import fulminate.*
 import vacuous.*
 import rudiments.*
-import symbolism.*
+import prepositional.*
 import anticipation.*
 
 package strategies:

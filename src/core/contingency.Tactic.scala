@@ -18,7 +18,7 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import symbolism.*
+import prepositional.*
 import rudiments.*
 
 object Tactic:
