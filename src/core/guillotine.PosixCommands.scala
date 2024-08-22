@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import rudiments.*
-import symbolism.*
+import prepositional.*
 
 trait PosixCommands:
   erased given ("alias" is Intelligible into Text) as alias = ###

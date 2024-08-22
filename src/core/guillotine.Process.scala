@@ -26,7 +26,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import rudiments.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 import vacuous.*
 
