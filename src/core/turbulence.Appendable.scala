@@ -22,7 +22,7 @@ import anticipation.*
 import contingency.*
 import hieroglyph.*
 import rudiments.*
-import symbolism.*
+import prepositional.*
 
 object Appendable extends FallbackAppendable:
   given (using Stdio) => SimpleAppendable[Out.type, Bytes] as stdoutBytes = (_, bytes) =>

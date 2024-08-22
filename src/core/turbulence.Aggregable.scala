@@ -21,7 +21,7 @@ import java.io as ji
 import anticipation.*
 import hieroglyph.*
 import rudiments.*
-import symbolism.*
+import prepositional.*
 import vacuous.*
 
 object Aggregable:

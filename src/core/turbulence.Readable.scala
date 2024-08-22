@@ -24,6 +24,7 @@ import contingency.*
 import hieroglyph.*
 import rudiments.*
 import symbolism.*
+import prepositional.*
 import vacuous.*
 
 object Readable:

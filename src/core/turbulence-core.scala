@@ -28,6 +28,7 @@ import hypotenuse.*
 import parasite.*, orphanDisposal.await
 import rudiments.*
 import symbolism.*
+import prepositional.*
 import vacuous.*
 
 extension [ValueType](value: ValueType)
