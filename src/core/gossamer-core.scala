@@ -27,6 +27,7 @@ import spectacular.*
 import denominative.*
 
 import scala.reflect.*
+import scala.collection.mutable as scm
 
 import java.util.regex.*
 import java.net.{URLEncoder, URLDecoder}
@@ -299,6 +300,49 @@ extension (text: into Text)
       for j <- 0 to n do old(j) = dist(j)
 
     dist(n)
+
+  def prefixMatch(other: Text): Int =
+    val limit = text.length.min(other.length)
+
+    def recur(index: Int = 0): Int = if index >= limit then index else
+      if text.s.charAt(index) == other.s.charAt(index) then recur(index + 1) else index
+
+    recur()
+
+  def jaroWinklerDistance(other: Text, scale: Double = 0.1): Double =
+    val distance = jaroDistance(other)
+    distance + scale*prefixMatch(other).min(4)*(1 - distance)
+
+  def jaroDistance(other: Text): Double = if text == other then 1.0 else
+    val maxDist: Int = text.length.max(other.length)/2 - 1
+    val found1 = new scm.BitSet(text.length)
+    val found2 = new scm.BitSet(other.length)
+
+    @tailrec
+    def recur(i: Int, j: Int, matches: Int): Int =
+      if i >= text.length then matches else
+        if j >= (i + maxDist + 1).min(other.length)
+        then recur(i + 1, (i + 1 - maxDist).max(0), matches)
+        else if text.s.charAt(i) == other.s.charAt(j) && !found2(j) then
+          found1(i) = true
+          found2(j) = true
+          recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
+        else recur(i, j + 1, matches)
+
+    val matches = recur(0, 0, 0)
+
+    def trans(i: Int, j: Int, count: Int): Int =
+      if i >= text.length then count else if found1(i) then
+        def next(j: Int): Int = if found2(j) then j else next(j + 1)
+        val j2 = next(j)
+        trans(i + 1, j2 + 1, if text.s.charAt(i) == other.s.charAt(j2) then count else count + 1)
+      else trans(i + 1, j, count)
+
+    val count = trans(0, 0, 0)
+    println(count)
+
+    if matches == 0 then 0.0
+    else (matches.toDouble/text.length + matches.toDouble/other.length + (matches - count/2.0)/matches)/3
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
