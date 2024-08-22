@@ -339,7 +339,6 @@ extension (text: into Text)
       else trans(i + 1, j, count)
 
     val count = trans(0, 0, 0)
-    println(count)
 
     if matches == 0 then 0.0
     else (matches.toDouble/text.length + matches.toDouble/other.length + (matches - count/2.0)/matches)/3
