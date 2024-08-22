@@ -30,7 +30,8 @@ abstract class Renderer(val language: Optional[Text]):
   def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]
 
 open class HtmlConverter(renderers: Renderer*):
-  def slug(str: Text): Text = str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
+  def slug(str: Text): Text =
+    str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
 
   lazy val renderersMap: Map[Optional[Text], Renderer] = renderers.indexBy(_.language)
 
