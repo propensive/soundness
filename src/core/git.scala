@@ -19,6 +19,7 @@ package octogenarian
 import anticipation.*, filesystemApi.galileiPath
 import fulminate.*
 import contingency.*
+import denominative.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
 import gossamer.*
 import guillotine.*
@@ -147,7 +148,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       case failure       => abort(GitError(CommitFailed))
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Branch] logs GitEvent =
-    sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.drop(2)).to(List).map(Branch.unsafe(_))
+    sh"$git $repoOptions branch".exec[LazyList[Text]]().map(_.skip(2)).to(List).map(Branch.unsafe(_))
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
@@ -266,7 +267,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitPathStatus] logs GitEvent =
     val ignoredParam = if ignored then sh"--ignored" else sh""
 
-    def unescape(text: Text): Text = if text.at(0) != '"' then text else Text.construct:
+    def unescape(text: Text): Text = if text.at(Prim) != '"' then text else Text.construct:
       def recur(index: Int, escape: Boolean): Unit =
         if index < text.length then
           text.s.charAt(index) match
@@ -299,7 +300,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
 
     sh"$git $repoOptions status --porcelain $ignoredParam".exec[List[Text]]().flatMap:
       case r"$key1([ ACDMRU?!])$key2([ ADMU?!]) $path(.*)$path2( -> (.*))?" =>
-        val optionalPath = path2.let(_.drop(4)).let(unescape)
+        val optionalPath = path2.let(_.skip(4)).let(unescape)
         List(GitPathStatus(key(key1), key(key2), unescape(path), optionalPath))
 
       case _ =>
@@ -451,7 +452,7 @@ object Octogenarian:
         if part.length == 0 then raise(GitRefError(text), text)
 
         for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.has(char) then raise(GitRefError(text), text)
+        do if part.contains(char) then raise(GitRefError(text), text)
 
       text
 
