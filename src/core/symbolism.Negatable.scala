@@ -16,6 +16,8 @@
 
 package symbolism
 
+import prepositional.*
+
 import language.experimental.captureChecking
 
 import scala.annotation.targetName

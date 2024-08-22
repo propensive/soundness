@@ -16,4 +16,4 @@
 
 package soundness
 
-export symbolism.{Addable, Subtractable, Multiplicable, Divisible, Negatable, Rootable, sqrt, cbrt, into, by}
+export symbolism.{Addable, Subtractable, Multiplicable, Divisible, Negatable, Rootable, sqrt, cbrt}
