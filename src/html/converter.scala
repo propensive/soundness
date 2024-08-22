@@ -17,6 +17,7 @@
 package punctuation
 
 import honeycomb.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 import anticipation.*
@@ -151,11 +152,8 @@ object OutlineConverter extends HtmlConverter():
           : List[Entry] =
     nodes match
       case Nil => stack match
-        case Nil =>
-          Nil
-
-        case last :: Nil =>
-          last.reverse
+        case Nil         => Nil
+        case last :: Nil => last.reverse
 
         case head :: (Entry(label, something) :: tail) :: more =>
           structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
@@ -163,12 +161,14 @@ object OutlineConverter extends HtmlConverter():
         case head :: Nil :: tail =>
           structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
 
-
       case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
         val minimum2 = minimum.or(level)
         val depth = stack.length + minimum2 - 1
 
         if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
+          case Nil =>
+            throw Panic(m"Stack should always be non-empty")
+
           case head :: next :: stack2 =>
             if level < depth then next match
               case Entry(label, Nil) :: tail =>
