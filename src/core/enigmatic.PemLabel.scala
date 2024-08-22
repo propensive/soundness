@@ -17,7 +17,7 @@
 package enigmatic
 
 import anticipation.*
-import gossamer.{take as _, *}
+import gossamer.*
 import rudiments.*
 import spectacular.*
 

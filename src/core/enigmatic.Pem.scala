@@ -18,7 +18,7 @@ package enigmatic
 
 import anticipation.*
 import contingency.*
-import gossamer.{take as _, *}
+import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64.standard
 import rudiments.*
