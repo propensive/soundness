@@ -19,7 +19,7 @@ package jacinta
 import anticipation.*
 import contingency.*
 import merino.*
-import symbolism.*
+import prepositional.*
 import turbulence.*
 
 object Ndjson:

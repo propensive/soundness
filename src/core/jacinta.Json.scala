@@ -25,11 +25,11 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import prepositional.*
 import gossamer.*
 import hieroglyph.*
 import merino.*
 import rudiments.*
-import symbolism.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
