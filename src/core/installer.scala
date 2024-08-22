@@ -24,7 +24,7 @@ import vacuous.*
 import guillotine.*
 import profanity.*
 import hypotenuse.*
-import gossamer.{take as _, *}
+import gossamer.*
 import exoskeleton.*
 import eucalyptus.*
 import turbulence.*

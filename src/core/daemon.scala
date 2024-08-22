@@ -34,7 +34,7 @@ import profanity.*
 import symbolism.*
 import digression.*
 import fulminate.*
-import gossamer.{has as _, take as _, *}
+import gossamer.*
 import turbulence.*
 import guillotine.*
 import hellenism.*, classloaders.threadContext
