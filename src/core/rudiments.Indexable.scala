@@ -18,6 +18,8 @@ package rudiments
 
 import language.experimental.pureFunctions
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import symbolism.*
 import denominative.*
@@ -56,7 +58,8 @@ object Indexable:
 
       def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
-  given [KeyType, ValueType] => Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  given [KeyType, ValueType]
+      => Map[KeyType, ValueType] is Indexable by KeyType into ValueType as map =
     new Indexable:
       type Self = Map[KeyType, ValueType]
       type Operand = KeyType
@@ -64,6 +67,18 @@ object Indexable:
 
       def contains(value: Self, index: KeyType): Boolean = value.contains(index)
       def access(value: Self, index: KeyType): ValueType = value(index)
+
+  given [KeyType, ValueType]
+      => scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType as hashMap =
+
+    new Indexable:
+      type Self = scm.HashMap[KeyType, ValueType]
+      type Operand = KeyType
+      type Result = ValueType
+
+      def contains(value: Self, index: KeyType): Boolean = value.contains(index)
+      def access(value: Self, index: KeyType): ValueType = value(index)
+
 
 trait Indexable:
   type Self
