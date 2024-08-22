@@ -64,6 +64,11 @@ extension [ValueType](inline value: => ValueType)
     block
     result
 
+extension (inline statement: => Unit)
+  inline def ere[ResultType](inline block: => ResultType): ResultType =
+    statement
+    block
+
 def loop(block: => Unit): Loop^{block} = Loop({ () => block })
 
 export Rudiments.&
