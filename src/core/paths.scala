@@ -23,6 +23,7 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import guillotine.*
+import prepositional.*
 import kaleidoscope.*
 import rudiments.*
 import denominative.*
