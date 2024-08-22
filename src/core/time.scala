@@ -120,9 +120,6 @@ object Dates:
 
     infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
 
-    @targetName("plus")
-    infix def + (period: Period)(using Calendar): Date = Date.plus.add(date, period)
-
     @targetName("gt")
     infix def > (right: Date): Boolean = date > right
 
@@ -266,12 +263,6 @@ object Timing:
     infix def ~ (that: Instant): Interval = Interval(instant, that)
 
     def tai: TaiInstant = LeapSeconds.tai(instant)
-
-    //@targetName("plus")
-    //infix def + (duration: Duration): Instant = Instant.plus(instant, duration)
-
-    //@targetName("minus")
-    //infix def - (duration: Instant): Duration = Instant.minus(instant, duration)
 
     infix def in (using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
