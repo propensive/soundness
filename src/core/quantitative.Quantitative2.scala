@@ -20,6 +20,7 @@ import rudiments.*
 import fulminate.*
 import symbolism.*
 import hypotenuse.*
+import prepositional.*
 import anticipation.*
 
 import scala.quoted.*
