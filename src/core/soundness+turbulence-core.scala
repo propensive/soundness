@@ -20,7 +20,7 @@ export turbulence.{Aggregable, Appendable, Compression, CompressionAlgorithm, Er
     LazyListInputStream, LazyListOutputStream, Line, LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable,
     SimpleAppendable, SimpleWritable, Stdio, StreamError, Tap, Writable, Zlib, stream, read, writeTo, appendTo,
     deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer, pulsar,
-    gzip, gunzip, skip, compress, decompress, shred, chunked, take, spool}
+    gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool}
 
 package stdioSources:
   package virtualMachine:
