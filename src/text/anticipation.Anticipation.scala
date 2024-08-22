@@ -16,6 +16,7 @@
 
 package anticipation
 
+import prepositional.*
 import symbolism.*
 
 import scala.quoted.*

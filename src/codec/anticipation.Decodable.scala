@@ -16,6 +16,8 @@
 
 package anticipation
 
+import prepositional.*
+
 object Decodable:
   given Bytes is Decodable in Bytes = (value, omit) => value
 

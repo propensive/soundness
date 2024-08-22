@@ -18,7 +18,7 @@ package anticipation
 
 import language.experimental.into
 
-import symbolism.*
+import prepositional.*
 
 object Loggable:
   given [InputType: Loggable, OutputType: Transcribable into InputType]

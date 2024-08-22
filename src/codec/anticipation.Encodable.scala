@@ -16,6 +16,8 @@
 
 package anticipation
 
+import prepositional.*
+
 object Encodable:
   given Bytes is Encodable in Bytes = identity(_)
 
