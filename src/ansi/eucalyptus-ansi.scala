@@ -19,6 +19,7 @@ package eucalyptus
 import escapade.*
 import iridescence.*, webColors.*
 import anticipation.*
+import prepositional.*
 import gossamer.*
 import fulminate.*
 import spectacular.*
