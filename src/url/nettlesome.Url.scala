@@ -16,7 +16,7 @@
 
 package nettlesome
 
-import serpentine.{keep as _, *}
+import serpentine.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
