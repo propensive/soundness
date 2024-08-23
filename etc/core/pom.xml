@@ -22,6 +22,11 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
   <dependencies>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>prepositional-core</artifactId>
+      <version>0.13.0</version>
+    </dependency>
   </dependencies>
   <organization>
     <name>Propensive</name>
