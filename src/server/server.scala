@@ -18,10 +18,10 @@ package scintillate
 
 import rudiments.*
 import fulminate.*
+import prepositional.*
 import digression.*
 import vacuous.*
 import parasite.*
-import symbolism.*
 import turbulence.*
 import contingency.*
 import gossamer.{slice as _, *}
@@ -408,7 +408,7 @@ erased trait Http
 
 object Http:
   given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
-    type On = TcpPort
+    type Transit = TcpPort
     type Request = HttpRequest
     type Response = HttpResponse[?]
     type Server = HttpService
