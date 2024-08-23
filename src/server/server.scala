@@ -408,7 +408,7 @@ erased trait Http
 
 object Http:
   given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
-    type Transit = TcpPort
+    type Carrier = TcpPort
     type Request = HttpRequest
     type Response = HttpResponse[?]
     type Server = HttpService
