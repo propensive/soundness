@@ -25,12 +25,12 @@ import spectacular.*
 
 object Hmac:
   def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
-    type Value = SchemeType
+    type Format = SchemeType
 
-  given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac of HmacType is Showable = hmac =>
+  given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac in HmacType is Showable = hmac =>
     t"Hmac(${hmac.bytes.serialize[Base64]})"
 
-  given [HmacType <: Algorithm] => Hmac of HmacType is Encodable in Bytes = _.bytes
+  given [HmacType <: Algorithm] => Hmac in HmacType is Encodable in Bytes = _.bytes
 
 class Hmac(val bytes: Bytes):
-  type Value <: Algorithm
+  type Format <: Algorithm

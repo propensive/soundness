@@ -27,7 +27,9 @@ import prepositional.*
 import rudiments.*
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
-  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction of HashType): Hmac of HashType =
+  def hmac[HashType <: Algorithm](key: Bytes)(using function: HashFunction in HashType)
+          : Hmac in HashType =
+
     val mac = function.hmac0
     mac.init(SecretKeySpec(key.to(Array), function.name.s))
 
