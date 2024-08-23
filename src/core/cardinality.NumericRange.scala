@@ -23,20 +23,7 @@ import annotation.*
 
 import language.experimental.genericNumberLiterals
 
-type Asym[ValueType <: Double, TrueValueType <: Double, FalseValueType <: Double] <: Double =
-  (ValueType > 0.0) match
-    case true  => TrueValueType
-    case false => FalseValueType
-
-type Min4[Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
-  Min[Min[Value1Type, Value2Type], Min[Value3Type, Value4Type]]
-
-type Max4[Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
-  Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
-
-extension (value: Double)
-  def force[MinValueType <: Double, MaxValueType <: Double]: MinValueType ~ MaxValueType =
-    value.asInstanceOf[MinValueType ~ MaxValueType]
+import Cardinality.{Asym, Min4, Max4}
 
 object NumericRange:
   @targetName("Range")
@@ -64,7 +51,7 @@ object NumericRange:
             : RangeParser[MinValueType, MaxValueType] with
       override inline def fromDigits(digits: String): MinValueType ~ MaxValueType =
         ${Cardinality('digits)}
-    
+
     extension [LeftMinType <: Double, LeftMaxType <: Double](left: LeftMinType ~ LeftMaxType)
       def double: Double = left
 
@@ -72,7 +59,7 @@ object NumericRange:
       infix def + [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
               : (LeftMinType + RightMinType) ~ (LeftMaxType + RightMaxType) =
         left + right
-      
+
       @targetName("add2")
       infix def + [E <: Double & Singleton](right: E): (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
         left + right
@@ -87,13 +74,13 @@ object NumericRange:
                     LeftMaxType*RightMaxType, LeftMaxType*RightMinType]) =
 
         left*right
-      
+
       @targetName("times2")
       infix def * [RightType <: Double & Singleton](right: RightType)
               : Min[LeftMinType*RightType, LeftMaxType*RightType] ~ Max[LeftMinType*RightType, LeftMaxType*RightType] =
 
         left*right
-      
+
       @targetName("times3")
       infix def * (right: Double): Double = left*right
 
@@ -117,7 +104,7 @@ object NumericRange:
               : Min[LeftMinType/RightType, LeftMaxType/RightType] ~ Max[LeftMinType/RightType, LeftMaxType/RightType] =
 
         left/right
-      
+
       @targetName("divide2")
       infix def / [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
               : Asym[RightMinType*RightMaxType, Min4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
@@ -125,9 +112,6 @@ object NumericRange:
                     RightMinType*RightMaxType, Max4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
                     LeftMinType/RightMaxType, LeftMaxType/RightMaxType], 1.0/0.0] =
         left/right
-      
+
       @targetName("divide3")
       infix def / (right: Double): Double = left/right
-
-export NumericRange.`~`
-

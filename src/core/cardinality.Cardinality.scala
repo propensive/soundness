@@ -16,6 +16,8 @@
 
 package cardinality
 
+import compiletime.ops.double.*
+
 import fulminate.*
 import anticipation.*
 
@@ -23,6 +25,17 @@ import scala.quoted.*
 import scala.compiletime.*
 
 object Cardinality:
+  type Asym[ValueType <: Double, TrueValueType <: Double, FalseValueType <: Double] <: Double =
+    (ValueType > 0.0) match
+      case true  => TrueValueType
+      case false => FalseValueType
+
+  type Min4[Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
+    Min[Min[Value1Type, Value2Type], Min[Value3Type, Value4Type]]
+
+  type Max4[Value1Type <: Double, Value2Type <: Double, Value3Type <: Double, Value4Type <: Double] =
+    Max[Max[Value1Type, Value2Type], Max[Value3Type, Value4Type]]
+
   given Realm = realm"cardinality"
 
   def apply[LeftDoubleType <: Double: Type, RightDoubleType <: Double: Type](digits: Expr[String])(using Quotes)
