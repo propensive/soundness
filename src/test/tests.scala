@@ -206,7 +206,7 @@ object Tests extends Suite(t"Serpentine Tests"):
       import pathHierarchies.simple
 
       test(t"Check keeping part of a path"):
-        (% / p"home" / p"user" / p"work" / p"data").keep(2)
+        (% / p"home" / p"user" / p"work" / p"data").retain(2)
       .assert(_ == % / p"home" / p"user")
 
       test(t"Access the root of a path"):

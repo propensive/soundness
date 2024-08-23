@@ -99,7 +99,7 @@ extension [PathType <: Matchable, LinkType <: Matchable, NameType <: Label, Root
     linkCreator.path(navigable.depth(right) - common, navigable.descent(left).dropRight(common))
 
 extension[PathType <: Matchable, NameType <: Label, RootType](left: PathType)
-  def keep(n: Int)
+  def retain(n: Int)
       (using navigable: PathType is Navigable[NameType, RootType],
              creator:   PathCreator[PathType, NameType, RootType])
       : PathType =
