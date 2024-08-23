@@ -39,10 +39,10 @@ object Permutation:
       if element >= sequence.length || element < 0
       then
         raise
-         (PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)))(())
+         (PermutationError(PermutationError.Reason.InvalidIndex(element, sequence.length - 1)))
 
       if seen.contains(element)
-      then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))(())
+      then raise(PermutationError(PermutationError.Reason.DuplicateIndex(element, index)))
 
       seen(element) = true
 
@@ -58,7 +58,7 @@ case class Permutation(factoradic: Factoradic):
 
   def apply[ElementType](sequence: List[ElementType]): List[ElementType] raises PermutationError =
     if sequence.length < lehmer.length then
-      raise(PermutationError(PermutationError.Reason.TooShort(sequence.length, lehmer.length)))(())
+      raise(PermutationError(PermutationError.Reason.TooShort(sequence.length, lehmer.length)))
 
     def recur
         (lehmer:  List[Int],

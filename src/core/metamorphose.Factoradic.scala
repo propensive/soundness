@@ -42,7 +42,7 @@ object Factoradic:
         case Nil => result
         case head :: tail =>
           if head >= base
-          then raise(PermutationError(PermutationError.Reason.BaseRange(head, base)))(())
+          then raise(PermutationError(PermutationError.Reason.BaseRange(head, base)))
 
           recur(tail, bases.tail, result + bases.head*head, base - 1)
 
