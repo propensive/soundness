@@ -55,7 +55,8 @@ trait Schema[DataType, RecordType <: Record in DataType]:
             case '[type typeName <: Label; typeName] =>
               (Expr.summon[Schematic[RecordType, DataType, typeName, ?]]: @unchecked) match
                 case None =>
-                  abandon(m"could not find a Schematic instance for the field $name with type $typeName")
+                  abandon
+                   (m"could not find a Schematic instance for the field $name with type $typeName")
 
                 case Some('{$accessor: Schematic[RecordType, DataType, typeName, valueType]}) =>
 
@@ -75,7 +76,9 @@ trait Schema[DataType, RecordType <: Record in DataType]:
             case '[type typeName <: Label; typeName] =>
               (Expr.summon[RecordAccessor[RecordType, DataType, typeName, ?]]: @unchecked) match
                 case None =>
-                  abandon(m"could not find a RecordAccessor instance for the field $name with type $typeName")
+                  abandon
+                   (m"""could not find a RecordAccessor instance for the field $name with type
+                        $typeName""")
 
                 case Some('{ type typeConstructor[_]
                              $accessor: RecordAccessor[RecordType, DataType, typeName, typeConstructor] }) =>
