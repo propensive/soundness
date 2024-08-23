@@ -28,16 +28,16 @@ import prepositional.*
 import vacuous.*
 
 object Digest:
-  def apply[HashType <: Algorithm](bytes: Bytes): Digest of HashType = new Digest(bytes):
-    type Value = HashType
+  def apply[HashType <: Algorithm](bytes: Bytes): Digest in HashType = new Digest(bytes):
+    type Format = HashType
 
-  given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest of DigestType is Showable =
+  given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest in DigestType is Showable =
     _.bytes.serialize[Base64]
 
-  given [DigestType <: Algorithm] => Digest of DigestType is Encodable in Bytes = _.bytes
+  given [DigestType <: Algorithm] => Digest in DigestType is Encodable in Bytes = _.bytes
 
 class Digest(val bytes: Bytes):
-  type Value <: Algorithm
+  type Format <: Algorithm
 
   override def equals(that: Any) = that.asMatchable match
     case digest: Digest => bytes.sameElements(digest.bytes)

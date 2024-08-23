@@ -21,18 +21,18 @@ import prepositional.*
 import turbulence.*
 
 package hashFunctions:
-  given HashFunction of Crc32 as crc32 = Crc32.hashFunction
-  given HashFunction of Md5 as md5 = Md5.hashFunction
-  given HashFunction of Sha1 as sha1 = Sha1.hashFunction
+  given HashFunction in Crc32 as crc32 = Crc32.hashFunction
+  given HashFunction in Md5 as md5 = Md5.hashFunction
+  given HashFunction in Sha1 as sha1 = Sha1.hashFunction
 
-  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction of Sha2[BitsType] as sha2 =
+  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction in Sha2[BitsType] as sha2 =
     Sha2.hashFunction[BitsType]
 
 extension [ValueType: Digestible](value: ValueType)
-  def digest[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
+  def digest[HashType <: Algorithm](using HashFunction in HashType): Digest in HashType =
     val digester = Digester(ValueType.digest(_, value))
     digester.apply
 
 extension [SourceType: Readable by Bytes](source: SourceType)
-  def checksum[HashType <: Algorithm](using HashFunction of HashType): Digest of HashType =
+  def checksum[HashType <: Algorithm](using HashFunction in HashType): Digest in HashType =
     source.stream[Bytes].digest[HashType]

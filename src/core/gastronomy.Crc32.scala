@@ -27,7 +27,7 @@ import prepositional.*
 import vacuous.*
 
 object Crc32:
-  given HashFunction of Crc32 as hashFunction:
+  given HashFunction in Crc32 as hashFunction:
     def init(): Digestion = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
       def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))

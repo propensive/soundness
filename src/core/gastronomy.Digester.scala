@@ -22,7 +22,7 @@ import rudiments.*
 import prepositional.*
 
 case class Digester(run: Digestion => Unit):
-  def apply[HashType <: Algorithm](using function: HashFunction of HashType): Digest of HashType =
+  def apply[HashType <: Algorithm](using function: HashFunction in HashType): Digest in HashType =
     function.init().pipe: accumulator =>
       run(accumulator)
       Digest[HashType](accumulator.digest())
