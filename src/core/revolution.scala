@@ -36,8 +36,8 @@ object DecodableManifest:
 
 trait DecodableManifest:
   type Self <: Label
-  type Value
-  def decode(text: Text): Value
+  type Subject
+  def decode(text: Text): Subject
 
 object EncodableManifest:
   given ("Main-Class" is EncodableManifest of Fqcn) as mainClass = _.text
@@ -46,14 +46,16 @@ object EncodableManifest:
 
 trait EncodableManifest:
   type Self <: Label
-  type Value
-  def encode(value: Value): Text
+  type Subject
+  def encode(value: Subject): Text
 
 abstract class ManifestAttribute[KeyType <: Label: ValueOf]():
   val key: Text = valueOf[KeyType].tt
-  def parse(value: Text)(using decoder: KeyType is DecodableManifest): decoder.Value = decoder.decode(value)
 
-  def apply(using encoder: KeyType is EncodableManifest)(value: encoder.Value): ManifestEntry =
+  def parse(value: Text)(using decoder: KeyType is DecodableManifest): decoder.Subject =
+    decoder.decode(value)
+
+  def apply(using encoder: KeyType is EncodableManifest)(value: encoder.Subject): ManifestEntry =
     ManifestEntry(valueOf[KeyType].tt, encoder.encode(value))
 
 object VersionNumber:
@@ -100,7 +102,7 @@ object Manifest:
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
-          : Optional[KeyType.Value] =
+          : Optional[KeyType.Subject] =
 
     if entries.contains(attribute.key) then KeyType.decode(entries(attribute.key)) else Unset
 
