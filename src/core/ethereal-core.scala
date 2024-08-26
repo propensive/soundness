@@ -52,8 +52,8 @@ import java.net as jn
 import java.io as ji
 
 package daemonConfig:
-  given doNotSupportStderr: StderrSupport = () => false
-  given supportStderr: StderrSupport = () => true
+  given StderrSupport as doNotSupportStderr = () => false
+  given StderrSupport as supportStderr = () => true
 
 def cliService[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
