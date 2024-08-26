@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Ambience</name>
+  <name>Serpentine</name>
   <description>Precise navigation of paths</description>
   <url>https://soundness.dev/serpentine</url>
   <packaging>jar</packaging>
