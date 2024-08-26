@@ -51,37 +51,9 @@ given Message transcribes DaemonLogEvent = _.communicate
 import java.net as jn
 import java.io as ji
 
-object CliInput:
-  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[CliInput] = _.toString.tt.lower
-
-enum CliInput:
-  case Terminal, Pipe
-
 package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
   given supportStderr: StderrSupport = () => true
-
-trait StderrSupport:
-  def apply(): Boolean
-
-case class ClientConnection[BusType <: Matchable](pid: Pid):
-  val stderr: Promise[ji.OutputStream] = Promise()
-  val signals: Spool[Signal] = Spool()
-  val bus: Spool[BusType] = Spool()
-  val terminatePid: Promise[Pid] = Promise()
-  val exitPromise: Promise[ExitStatus] = Promise()
-  def receive(message: BusType): Unit = bus.put(message)
-  val socket: Promise[jn.Socket] = Promise()
-  def close(): Unit = safely(socket.await(1000L).close())
-
-class LazyEnvironment(variables: List[Text]) extends Environment:
-  private lazy val map: Map[Text, Text] =
-    variables.map(_.cut(t"=", 2).to(List)).collect:
-      case List(key, value) => (key, value)
-    .to(Map)
-
-  def variable(key: Text): Optional[Text] = map.get(key).getOrElse(Unset)
 
 def cliService[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
@@ -289,30 +261,3 @@ def cliService[BusType <: Matchable](using executive: Executive)
       loop(safely(makeClient(socket.accept().nn))).run()
 
     ExitStatus.Ok
-
-case class DaemonService[BusType <: Matchable]
-    (pid:        Pid,
-     shutdown:   () => Unit,
-     cliInput:   CliInput,
-     script:     Unix.Path,
-     deliver:    BusType => Unit,
-     bus:        LazyList[BusType],
-     scriptName: Text)
-extends ShellContext:
-
-  def broadcast(message: BusType): Unit = deliver(message)
-
-enum DaemonEvent:
-  case Init
-      (pid:         Pid,
-       work:        Text,
-       script:      Text,
-       cliInput:    CliInput,
-       arguments:   List[Text],
-       environment: List[Text])
-
-  case Trap(pid: Pid, signal: Signal)
-  case Exit(pid: Pid)
-  case Stderr(pid: Pid)
-
-def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service

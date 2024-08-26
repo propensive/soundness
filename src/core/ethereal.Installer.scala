@@ -17,12 +17,12 @@
 package ethereal
 
 import anticipation.*, filesystemApi.galileiPath
-import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting, deleteRecursively, createNonexistentParents}
+import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting,
+    deleteRecursively, createNonexistentParents}
 import serpentine.*, pathHierarchies.unix
 import rudiments.*
 import vacuous.*
 import guillotine.*
-import profanity.*
 import hypotenuse.*
 import gossamer.*
 import exoskeleton.*
@@ -32,33 +32,6 @@ import contingency.*
 import spectacular.*
 import ambience.*
 import fulminate.*
-
-enum DaemonLogEvent:
-  case WriteExecutable(location: Text)
-  case Shutdown
-  case Termination
-  case Failure
-  case NewCli
-  case UnrecognizedMessage
-  case ReceivedSignal(signal: Signal)
-  case ExitStatusRequest(pid: Pid)
-  case CloseConnection(pid: Pid)
-  case StderrRequest(pid: Pid)
-  case Init(pid: Pid)
-
-object DaemonLogEvent:
-  given DaemonLogEvent is Communicable =
-    case WriteExecutable(location) => m"Writing executable to $location"
-    case Shutdown                  => m"Shutting down"
-    case Termination               => m"Terminating client connection"
-    case Failure                   => m"A failure occurred"
-    case NewCli                    => m"Instantiating a new CLI"
-    case UnrecognizedMessage       => m"Unrecognized message"
-    case ReceivedSignal(signal)    => m"Received signal $signal"
-    case ExitStatusRequest(pid)    => m"Exit status requested from $pid"
-    case CloseConnection(pid)      => m"Connection closed from $pid"
-    case StderrRequest(pid)        => m"STDERR requested from $pid"
-    case Init(pid)                 => m"Initializing $pid"
 
 object Installer:
   given Realm = realm"ethereal"
@@ -134,8 +107,11 @@ object Installer:
         installFile.let: file =>
           val filename: Text = file.inspect
           Log.info(DaemonLogEvent.WriteExecutable(filename))
-          if prefixSize > 0.b then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
+
+          if prefixSize > 0.b
+          then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
           else stream.writeTo(file)
+
           file.executable() = true
           Result.Installed(command, file.path.show)
         .or:
