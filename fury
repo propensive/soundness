@@ -7,7 +7,7 @@ repo propensive/imperial
 repo propensive/probably
 repo propensive/guillotine
 
-target galilei/test
+target galilei/core
 
 project galilei
   module core
