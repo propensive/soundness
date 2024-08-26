@@ -29,13 +29,13 @@ import turbulence.*
 import sun.misc as sm
 
 package unhandledErrors:
-  given silent: UnhandledErrorHandler with
+  given UnhandledErrorHandler as silent:
     def handle(block: => ExitStatus)(using Stdio): ExitStatus =
       try block catch
         case error: Exception => ExitStatus(1)
         case error: Throwable => ExitStatus(2)
 
-  given genericErrorMessage: UnhandledErrorHandler with
+  given UnhandledErrorHandler as genericErrorMessage:
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
@@ -45,7 +45,7 @@ package unhandledErrors:
         Out.println(t"An unexpected error occurred.")
         ExitStatus(2)
 
-  given exceptionMessage: UnhandledErrorHandler with
+  given UnhandledErrorHandler as exceptionMessage:
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
         Out.println(error.toString.tt)
@@ -55,7 +55,7 @@ package unhandledErrors:
         Out.println(error.toString.tt)
         ExitStatus(2)
 
-  given stackTrace: UnhandledErrorHandler with
+  given UnhandledErrorHandler as stackTrace:
     def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
