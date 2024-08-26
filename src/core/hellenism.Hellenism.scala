@@ -16,12 +16,10 @@
 
 package hellenism
 
+import scala.quoted.*
+
 import rudiments.*
 import vacuous.*
-
-
-
-import scala.quoted.*
 
 object Hellenism extends Hellenism2:
   opaque type ClassRef = Class[?]

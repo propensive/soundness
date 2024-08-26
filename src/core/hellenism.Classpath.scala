@@ -16,13 +16,13 @@
 
 package hellenism
 
-import rudiments.*
-import vacuous.*
-import serpentine.*
-import fulminate.*
-import anticipation.*
-
 import java.net as jn
+
+import anticipation.*
+import fulminate.*
+import rudiments.*
+import serpentine.*
+import vacuous.*
 
 object Classpath:
   @targetName("child")

@@ -16,13 +16,12 @@
 
 package hellenism
 
+import java.net as jn
+
+import anticipation.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
-import gossamer.*
-import anticipation.*
-
-
-import java.net as jn
 
 sealed trait ClasspathEntry
 

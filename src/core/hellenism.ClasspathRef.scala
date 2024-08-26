@@ -16,16 +16,15 @@
 
 package hellenism
 
+import anticipation.*
+import contingency.*
+import gossamer.*
+import prepositional.*
 import rudiments.*
-import vacuous.*
 import serpentine.*
 import spectacular.*
-import prepositional.*
-import gossamer.*
-import contingency.*
-import anticipation.*
 import turbulence.*
-
+import vacuous.*
 
 object ClasspathRef:
   type Forbidden = "" | ".*\\/.*"

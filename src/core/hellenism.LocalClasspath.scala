@@ -16,16 +16,16 @@
 
 package hellenism
 
-import rudiments.*
-import vacuous.*
-import serpentine.*
-import galilei.*, filesystemOptions.{dereferenceSymlinks}
 import ambience.*
-import gossamer.*
-import contingency.*
 import anticipation.*
+import contingency.*
+import galilei.*, filesystemOptions.{dereferenceSymlinks}
+import gossamer.*
 import prepositional.*
+import rudiments.*
+import serpentine.*
 import symbolism.*
+import vacuous.*
 
 object LocalClasspath:
   def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
