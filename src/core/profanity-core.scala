@@ -65,7 +65,7 @@ package keyboards:
     StandardKeyboard()
 
 package terminalOptions:
-  given bracketedPasteMode: BracketedPasteMode = () => true
-  given backgroundColorDetection: BackgroundColorDetection = () => true
-  given terminalFocusDetection: TerminalFocusDetection = () => true
-  given terminalSizeDetection: TerminalSizeDetection = () => true
+  given BracketedPasteMode as bracketedPasteMode = () => true
+  given BackgroundColorDetection as backgroundColorDetection = () => true
+  given TerminalFocusDetection as terminalFocusDetection = () => true
+  given TerminalSizeDetection as terminalSizeDetection = () => true
