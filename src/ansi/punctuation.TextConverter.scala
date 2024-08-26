@@ -21,28 +21,10 @@ import gossamer.*
 import escapade.*, escapes.*
 import iridescence.*
 import harlequin.*
-import digression.*
+import fulminate.*
+import vacuous.*
 import spectacular.*
 import hieroglyph.*, textMetrics.eastAsianScripts
-
-case class BodyText(blocks: TextBlock*):
-  def serialize(width: Int): Teletype = blocks.map(_.render(width)).join(e"\n\n")
-
-case class TextBlock(indent: Int, text: Teletype):
-  @targetName("add")
-  infix def + (txt: Teletype): TextBlock = TextBlock(indent, text+txt)
-
-  def render(width: Int): Teletype =
-    def rest(text: Teletype, lines: List[Teletype]): List[Teletype] =
-      if text.length == 0 then lines.reverse
-      else
-        try
-          val pt = text.plain.where(_ == ' ', width - indent*2, Rtl)
-          rest(text.drop(pt + 1), text.take(pt) :: lines)
-        catch case err: RangeError =>
-          rest(text.drop(width - indent*2), text.take(width - indent*2) :: lines)
-
-    rest(text, Nil).map((e"  "*indent)+_).join(e"\n")
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =
@@ -71,7 +53,7 @@ open class TextConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
 
               case _ =>
-                throw Panic("unexpected non-paragraph node found while folding inline nodes")
+                throw Panic(m"unexpected non-paragraph node found while folding inline nodes")
             (false, content)
     .apply(1).reverse
 
@@ -91,12 +73,12 @@ open class TextConverter():
           acc :+ TextBlock(indent, e"---")
 
         case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
-          if syntax == Some(t"scala") then
-            val highlightedLines = ScalaSyntax.highlight(value).map:
+          if syntax == t"scala" then
+            val highlightedLines = SourceCode(Scala, value).lines.map:
               line =>
                 line.map:
-                  case Token.Code(code, flair) => flair match
-                    case Accent.Type              => e"${solarized.Blue}(${code.trim})"
+                  case SourceToken(code, accent) => accent match
+                    case Accent.Typed             => e"${solarized.Blue}(${code.trim})"
                     case Accent.Term              => e"${solarized.Green}(${code.trim})"
                     case Accent.Symbol            => e"${solarized.Red}(${code.trim})"
                     case Accent.Keyword           => e"${solarized.Orange}(${code.trim})"
@@ -106,8 +88,6 @@ open class TextConverter():
                     case Accent.Number            => e"${solarized.Violet}(${code.trim})"
                     case Accent.String            => e"${solarized.Violet}(${code.trim})"
                     case other                   => e"${code.trim}"
-                  case Token.Unparsed(content)   => e"${content}"
-                  case _                       => throw Panic("Should not have a newline")
                 .join
 
             acc :+ TextBlock(indent, highlightedLines.join(e"\n"))
@@ -115,7 +95,7 @@ open class TextConverter():
 
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
           acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
-            e"${num.fold(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
+            e"${num.lay(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
           }.join(e"\n"))
 
         case Markdown.Ast.Block.Table(parts*) =>
@@ -142,11 +122,11 @@ open class TextConverter():
 
   def text(node: Seq[Markdown.Ast.Node]): Teletype = node.map:
     case Markdown.Ast.Inline.Image(text, _)         => e"[ $text ]"
-    case Markdown.Ast.Inline.Weblink(s, desc)       => e"${colors.DeepSkyBlue}($Underline(${text(Seq(desc))})${colors.DarkGray}([)${colors.RoyalBlue}($Underline($s))${colors.DarkGray}(])) "
-    case Markdown.Ast.Inline.Break()                => e""
+    case Markdown.Ast.Inline.Weblink(s, desc)       => e"${webColors.DeepSkyBlue}($Underline(${text(Seq(desc))})${webColors.DarkGray}([)${webColors.RoyalBlue}($Underline($s))${webColors.DarkGray}(])) "
+    case Markdown.Ast.Inline.LineBreak              => e""
     case Markdown.Ast.Inline.Emphasis(children*)    => e"$Italic(${text(children)})"
     case Markdown.Ast.Inline.Strong(children*)      => e"$Bold(${text(children)})"
-    case Markdown.Ast.Inline.SourceCode(code)       => e"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.SourceCode(code)       => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
     case Markdown.Ast.Inline.Copy(text)             => e"$text"
     case Markdown.Ast.Block.BulletList(_, _, _, _*) => e""
     case Markdown.Ast.Block.Reference(_, _)         => e""
@@ -154,16 +134,16 @@ open class TextConverter():
     case Markdown.Ast.Block.Paragraph(children*)    => text(children)
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
-    case Markdown.Ast.Block.FencedCode(_, _, code)  => e"${colors.YellowGreen}($code)"
+    case Markdown.Ast.Block.FencedCode(_, _, code)  => e"${webColors.YellowGreen}($code)"
     case Markdown.Ast.Block.Cell(content*)          => text(content)
     case _                                          => e""
   .join
 
   def phrasing(node: Markdown.Ast.Inline): Teletype = node match
     case Markdown.Ast.Inline.Image(altText, location) => e"[ $altText ]"
-    case Markdown.Ast.Inline.Break()                  => e"\n"
+    case Markdown.Ast.Inline.LineBreak                => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => e"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.SourceCode(code)         => e"${colors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+    case Markdown.Ast.Inline.SourceCode(code)         => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
     case Markdown.Ast.Inline.Copy(str)                => e"${str.sub(t"\n", t" ")}"
     case _                                            => text(Seq(node))
