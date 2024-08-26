@@ -14,11 +14,11 @@
     and limitations under the License.
 */
 
-package ambience
+package exoskeleton
 
-import exoskeleton.*
+import galilei.*
+import anticipation.*
 
-import language.experimental.captureChecking
-
-package environments:
-  given daemonClient(using cli: Cli): Environment = cli.environment
+trait ShellContext:
+  def scriptName: Text
+  def script: Path

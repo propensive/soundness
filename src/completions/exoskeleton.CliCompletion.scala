@@ -30,14 +30,6 @@ import hieroglyph.*, textMetrics.uniform
 
 import scala.collection.mutable as scm
 
-//import language.experimental.captureChecking
-
-case class SuggestionsState
-    (suggestions: Map[Argument, () => List[Suggestion]],
-     explanation: Optional[Text],
-     known:       Set[Flag[?]],
-     present:     Set[Flag[?]])
-
 case class CliCompletion
     (fullArguments:    List[Argument],
      arguments:        List[Argument],
@@ -150,48 +142,3 @@ extends Cli:
                 case Unset                 => t"$text"
                 case description: Text     => t"$text\t$description"
                 case description: Teletype => t"$text\t${description.plain}"
-
-case class Execution(exitStatus: ExitStatus)
-
-def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus)(using cli: Cli): Execution =
-  (cli: @unchecked) match
-    case completion: CliCompletion => Execution(ExitStatus.Ok)
-    case invocation: CliInvocation => Execution(block(using ###)(using invocation))
-
-def explain(explanation: (previous: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
-  cli.explain(explanation)
-
-package executives:
-  given completions(using handler: UnhandledErrorHandler): Executive with
-    type CliType = Cli
-    type Return = Execution
-
-    def cli
-        (arguments:        Iterable[Text],
-         environment:      Environment,
-         workingDirectory: WorkingDirectory,
-         stdio:            Stdio,
-         signals:          Spool[Signal])
-        (using interpreter: CliInterpreter)
-            : Cli =
-      arguments match
-        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
-          val shell = shellName match
-            case t"zsh"  => Shell.Zsh
-            case t"fish" => Shell.Fish
-            case _       => Shell.Bash
-
-          CliCompletion(Cli.arguments(arguments, focus - 1, position), Cli.arguments(rest, focus - 1, position), environment,
-              workingDirectory, shell, focus - 1, position, stdio, signals)
-
-        case other =>
-          CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
-
-    def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
-      case completion: CliCompletion =>
-        given Stdio = completion.stdio
-        completion.serialize.each(Out.println(_))
-        ExitStatus.Ok
-
-      case invocation: CliInvocation =>
-        handler.handle(execution(using invocation).exitStatus)(using invocation.stdio)

@@ -18,38 +18,15 @@ package exoskeleton
 
 import profanity.*
 import rudiments.*
-import vacuous.*
 import gossamer.*
-import fulminate.*
 import digression.*
 import hieroglyph.*, textMetrics.uniform
 import escapade.*
 import ambience.*
-import galilei.*
 import anticipation.*
 import turbulence.*
 
 import sun.misc as sm
-
-//import language.experimental.captureChecking
-
-trait Executive:
-  type Return
-  type CliType <: Cli
-
-  def cli
-      (fullArguments:    Iterable[Text],
-       environment:      Environment,
-       workingDirectory: WorkingDirectory,
-       stdio:            Stdio,
-       signals:          Spool[Signal])
-      (using interpreter: CliInterpreter)
-          : CliType
-
-  def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
-
-trait UnhandledErrorHandler:
-  def handle(block: => ExitStatus)(using Stdio): ExitStatus
 
 package unhandledErrors:
   given silent: UnhandledErrorHandler with
@@ -119,38 +96,3 @@ def application(using executive: Executive, interpreter: CliInterpreter)
   val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, spool)
 
   System.exit(executive.process(cli)(block)())
-
-case class CliInvocation
-    (arguments:        List[Argument],
-     environment:      Environment,
-     workingDirectory: WorkingDirectory,
-     stdio:            Stdio,
-     signals:          Spool[Signal])
-    (using interpreter: CliInterpreter)
-extends Cli, Stdio:
-
-  export stdio.{termcap, out, err, in}
-
-  private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
-
-  def readParameter[OperandType](flag: Flag[OperandType])(using FlagInterpreter[OperandType], Suggestions[OperandType]): Optional[OperandType] =
-    given Cli = this
-    parameters.read(flag)
-
-trait ShellContext:
-  def scriptName: Text
-  def script: Path
-
-@capability
-erased trait Effectful
-
-object InstallError:
-  object Reason:
-    given Reason is Communicable as communicable =
-      case Environment => m"it was not possible to get enough information about the install environment"
-      case Io          => m"an I/O error occurred when trying to write an installation file"
-
-  enum Reason:
-    case Environment, Io
-
-case class InstallError(reason: InstallError.Reason) extends Error(m"the installation failed because $reason")
