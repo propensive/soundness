@@ -43,21 +43,21 @@ import language.experimental.pureFunctions
 object Path:
   given Path is GenericPath = _.fullname
 
-  inline given add(using path: Tactic[PathError], followable: Link is Followable[GeneralForbidden, ?, ?])
+  inline given add(using path: Tactic[PathError], followable: Relative is Followable[GeneralForbidden, ?, ?])
           : Addable with
     type Self = Path
-    type Operand = Link
+    type Operand = Relative
 
     type Result = Path
-    inline def add(left: Path, right: Link): Path = left.append(right)
+    inline def add(left: Path, right: Relative): Path = left.append(right)
 
-  inline given add2(using path: Tactic[PathError], followable: SafeLink is Followable[GeneralForbidden, ?, ?])
+  inline given add2(using path: Tactic[PathError], followable: SafeRelative is Followable[GeneralForbidden, ?, ?])
           : Addable with
     type Self = Path
-    type Operand = SafeLink
+    type Operand = SafeRelative
 
     type Result = Path
-    inline def add(left: Path, right: SafeLink): Path = left.append(right)
+    inline def add(left: Path, right: SafeRelative): Path = left.append(right)
 
   given Insertion[Sh.Parameters, Path] = path => Sh.Parameters(path.fullname)
 

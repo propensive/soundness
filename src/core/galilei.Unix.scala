@@ -68,20 +68,20 @@ object Unix:
   class SafePath(val safeDescent: List[Name[GeneralForbidden]])
   extends Path(safeDescent.map(_.widen[Forbidden]))
 
-  object Link:
-    given creator: PathCreator[Link, Forbidden, Int] = Link(_, _)
+  object Relative:
+    given creator: PathCreator[Relative, Forbidden, Int] = Relative(_, _)
 
-    given (using ValueOf["."]) => Link is Followable[Forbidden, "..", "."] as followable:
+    given (using ValueOf["."]) => Relative is Followable[Forbidden, "..", "."] as followable:
       val separators: Set[Char] = Set('/')
-      def separator(path: Link): Text = t"/"
-      def ascent(path: Link): Int = path.ascent
-      def descent(path: Link): List[Name[Forbidden]] = path.descent
+      def separator(path: Relative): Text = t"/"
+      def ascent(path: Relative): Int = path.ascent
+      def descent(path: Relative): List[Name[Forbidden]] = path.descent
 
-    inline given (using Tactic[PathError]) => Decoder[Link] as decoder = Followable.decoder[Link]
-    given Link is Showable as showable = _.render
-    given encoder: Encoder[Link] = _.render
-    given Link is Inspectable = _.render
+    inline given (using Tactic[PathError]) => Decoder[Relative] as decoder = Followable.decoder[Relative]
+    given Relative is Showable as showable = _.render
+    given encoder: Encoder[Relative] = _.render
+    given Relative is Inspectable = _.render
 
-  case class Link(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Link
+  case class Relative(ascent: Int, descent: List[Name[Forbidden]]) extends galilei.Relative
 
   trait Entry extends galilei.Entry

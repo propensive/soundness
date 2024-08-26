@@ -19,29 +19,34 @@ package galilei
 import anticipation.*
 import contextual.*
 import contingency.*
+import fulminate.*
+import galilei.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import vacuous.*
 
-import scala.jdk.StreamConverters.*
+import scala.compiletime.*
 
 import language.experimental.pureFunctions
 
-case class SafeLink(ascent: Int, descent: List[Name[GeneralForbidden]]) extends Link
+object Relative:
+  given creator: PathCreator[Relative, GeneralForbidden, Int] with
+    def path(ascent: Int, descent: List[Name[GeneralForbidden]]): SafeRelative =
+      SafeRelative(ascent, descent)
 
-object SafeLink:
-  given creator: PathCreator[SafeLink, GeneralForbidden, Int] = SafeLink(_, _)
-  given SafeLink is Showable as show = _.render
-  given encoder: Encoder[SafeLink] = _.render
-  given SafeLink is Inspectable = _.render
+  inline given (using Tactic[PathError]) => Decoder[Relative] as decoder:
+    def decode(text: Text): Relative =
+      if text.contains(t"\\") then text.decodeAs[Windows.Relative] else text.decodeAs[Unix.Relative]
 
-  given (using PathCreator[SafeLink, GeneralForbidden, Int], ValueOf["."]) => SafeLink is Followable[GeneralForbidden, "..", "."] =
-    new Followable[GeneralForbidden, "..", "."]:
-      type Self = SafeLink
-      val separators: Set[Char] = Set('/', '\\')
-      def separator(link: SafeLink): Text = t"/"
-      def ascent(link: SafeLink): Int = link.ascent
-      def descent(link: SafeLink): List[Name[GeneralForbidden]] = link.descent
+  given Relative is Showable as showable =
+    case relative: Unix.Relative    => relative.render
+    case relative: Windows.Relative => relative.render
+    case relative: SafeRelative     => relative.render
 
-  inline given decoder(using Tactic[PathError]): Decoder[SafeLink] = Followable.decoder[SafeLink]
+  given encoder: Encoder[Relative] = showable.text(_)
+  given Relative is Inspectable = showable.text(_)
+
+trait Relative

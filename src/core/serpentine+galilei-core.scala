@@ -20,6 +20,6 @@ import rudiments.*
 import galilei.*
 
 package pathHierarchies:
-  erased given windows: Hierarchy[Windows.Path, Windows.Link] = ###
-  erased given unix: Hierarchy[Unix.Path, Unix.Link] = ###
-  erased given unixOrWindows: Hierarchy[Path, SafeLink] = ###
+  erased given windows: Hierarchy[Windows.Path, Windows.Relative] = ###
+  erased given unix: Hierarchy[Unix.Path, Unix.Relative] = ###
+  erased given unixOrWindows: Hierarchy[Path, SafeRelative] = ###

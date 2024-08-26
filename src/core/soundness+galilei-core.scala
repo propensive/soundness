@@ -2,8 +2,8 @@ package soundness
 
 export galilei.{BlockDevice, CharDevice, CopyAttributes, CreateNonexistent,
     CreateNonexistentParents, DeleteRecursively, DereferenceSymlinks, Directory, Entry, EntryMaker,
-    Fifo, File, ForbiddenOperationError, IoError, Link, MoveAtomically, OverwriteError,
-    OverwritePreexisting, Path, PathResolver, PathStatus, PathStatusError, SafeLink, Socket,
+    Fifo, File, ForbiddenOperationError, IoError, Relative, MoveAtomically, OverwriteError,
+    OverwritePreexisting, Path, PathResolver, PathStatus, PathStatusError, SafeRelative, Socket,
     Symlink, UnemptyDirectoryError, Unix, Volume, Windows, WriteSynchronously, GeneralForbidden}
 
 package filesystemOptions:
