@@ -16,37 +16,19 @@
 
 package surveillance
 
-import turbulence.*
-import rudiments.*
-import vacuous.*
-import parasite.*, threadModels.platform
-import feudalism.*
-import fulminate.*
-import contingency.*
-import spectacular.*
-import anticipation.*
+import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 import scala.collection.mutable as scm
 
-import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
-
-case class WatchError()
-extends Error(m"""
-    the operating system's limit on the number of paths that can be watched has been exceeded
-  """)
-
-extension [PathType: GenericPath](path: PathType)
-  def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
-    val watchSet = Watch(List(path))
-    lambda(watchSet).also:
-      watchSet.unregister()
-
-extension [PathType: GenericPath](paths: Iterable[PathType])
-  def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
-    val watchSet = Watch(paths)
-
-    lambda(watchSet).also:
-      watchSet.unregister()
+import anticipation.*
+import contingency.*
+import feudalism.*
+import fulminate.*
+import parasite.*, threadModels.platform
+import rudiments.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
@@ -146,24 +128,3 @@ class Watch():
           Watch.serviceValue.let: service =>
             service.stop()
             Watch.serviceValue = Unset
-
-enum WatchEvent:
-  case NewFile(dir: Text, file: Text)
-  case NewDirectory(dir: Text, directory: Text)
-  case Modify(dir: Text, file: Text)
-  case Delete(dir: Text, file: Text)
-
-  def dir: Text
-
-  def path[DirectoryType: SpecificPath]: DirectoryType = unsafely:
-    val relPath = this match
-      case NewFile(_, file)      => file
-      case NewDirectory(_, path) => path
-      case Modify(_, file)       => file
-      case Delete(_, path)       => path
-
-      SpecificPath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
-
-export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
-
-given Realm = realm"surveillance"
