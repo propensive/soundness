@@ -22,15 +22,15 @@ import anticipation.*
 import vacuous.*
 
 package systemProperties:
-  given empty: SystemProperties with
+  given SystemProperties as empty:
     def apply(name: Text): Unset.type = Unset
 
-  given virtualMachine: SystemProperties with
+  given SystemProperties as virtualMachine:
     def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
 
 package environments:
-  given empty: Environment with
+  given Environment as empty:
     def variable(name: Text): Unset.type = Unset
 
-  given virtualMachine: Environment with
+  given Environment as virtualMachine:
     def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
