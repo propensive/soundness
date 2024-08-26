@@ -1,7 +1,7 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target ambience/test
+target ambience/core
 
 repo propensive/rudiments
 repo propensive/contingency
@@ -10,7 +10,7 @@ project ambience
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core anticipation/path spectacular/core gossamer/core contingency/core
+    include   gossamer/core
   
   module test
     compiler  scala
