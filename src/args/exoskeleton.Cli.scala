@@ -19,33 +19,11 @@ package exoskeleton
 import rudiments.*
 import vacuous.*
 import ambience.*
-import fulminate.*
 import anticipation.*
-import spectacular.*
 import gossamer.*
 import profanity.*
 
 import language.experimental.captureChecking
-
-object Shell:
-  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[Shell] = _.toString.tt.lower
-  given Shell is Communicable as communicable = shell => Message(shell.toString.tt.lower)
-
-enum Shell:
-  case Zsh, Bash, Fish
-
-case class Arguments(sequence: Argument*) extends FlagParameters:
-  def read[OperandType](flag: Flag[OperandType])
-      (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-          : Optional[OperandType] =
-    Unset // FIXME
-
-  def focusFlag: Optional[Argument] = Unset
-
-object SimpleParameterInterpreter extends CliInterpreter:
-  type Parameters = Arguments
-  def interpret(arguments: List[Argument]): Arguments = Arguments(arguments*)
 
 object Cli:
   def arguments
@@ -68,27 +46,3 @@ trait Cli extends ProcessContext:
   def present(flag: Flag[?]): Unit = ()
   def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit = ()
   def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) = ()
-
-trait FlagParameters:
-  def read[OperandType](flag: Flag[OperandType])
-      (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
-          : Optional[OperandType]
-
-  def focusFlag: Optional[Argument]
-
-trait CliInterpreter:
-  type Parameters <: FlagParameters
-  def interpret(arguments: List[Argument]): Parameters
-
-case class Argument(position: Int, value: Text, cursor: Optional[Int]):
-  def apply(): Text = value
-  def prefix: Optional[Text] = cursor.let(value.keep(_))
-  def suffix: Optional[Text] = cursor.let(value.skip(_))
-
-  def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
-    cli.suggest(this, update)
-
-package parameterInterpretation:
-  given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter
-
-def arguments(using cli: Cli): List[Argument] = cli.arguments
