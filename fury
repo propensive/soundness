@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target exoskeleton/test
+target exoskeleton/completions
 
 repo propensive/galilei
 repo propensive/ambience
@@ -12,16 +12,16 @@ repo propensive/hellenism
 project exoskeleton
   module args
     sources  src/args
-    include  escapade/core spectacular/core gossamer/core ambience/core profanity/core eucalyptus/syslog
+    include  escapade/core profanity/core ambience/core
 
   module core
     sources  src/core
     include  exoskeleton/args galilei/core
-  
+
   module completions
     sources src/completions
     include exoskeleton/core
-  
+
   module test
     compiler  scala
     sources   src/test
