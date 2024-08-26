@@ -30,24 +30,10 @@ import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua
 import annotation.tailrec
 
-import scala.quoted.*
-
-object MarkdownError:
-  enum Reason:
-    case BlockInsideInline
-    case BrokenImageRef
-    case BadHeadingLevel
-    case UnexpectedNode
-
-  object Reason:
-    given Reason is Communicable =
-      case BlockInsideInline => m"the markdown contains block-level elements"
-      case BrokenImageRef    => m"the image reference could not be resolved"
-      case BadHeadingLevel   => m"the heading level is not in the range 1-6"
-      case UnexpectedNode    => m"a node with an unexpected type was found"
-
-case class MarkdownError(reason: MarkdownError.Reason)
-extends Error(m"the markdown could not be read because $reason")
+import Markdown.Ast.Inline.*
+import Markdown.Ast.Block.*
+import Markdown.Ast.TablePart
+import Markdown.Ast.ListItem
 
 case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
   def serialize: Text =
@@ -59,14 +45,6 @@ case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
         case node: Markdown.Ast.Block  => node.serialize(buf)
 
     buf.text
-
-import Markdown.Ast.Inline.*
-import Markdown.Ast.Block.*
-import Markdown.Ast.TablePart
-import Markdown.Ast.ListItem
-
-type InlineMd = Markdown[Markdown.Ast.Inline]
-type Md = Markdown[Markdown.Ast.Block]
 
 object Markdown:
   given (using Tactic[MarkdownError]) => Decoder[InlineMd] as decoder = parseInline(_)
@@ -282,9 +260,3 @@ object Markdown:
 
   def tableCell(root: cvfua.Document, node: tables.TableCell): Cell raises MarkdownError =
     Cell(phraseChildren(root, node)*)
-
-object Punctuation:
-  def md(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Markdown[Markdown.Ast.Node]] =
-    Md.Interpolator.expansion(context, parts) match
-      case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
-      case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Md]}

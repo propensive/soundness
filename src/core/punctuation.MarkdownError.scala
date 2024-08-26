@@ -16,7 +16,22 @@
 
 package punctuation
 
-extension (inline stringContext: StringContext)
-  transparent inline def md(inline parts: Any*): Markdown[Markdown.Ast.Node] =
-    ${Punctuation.md('stringContext, 'parts)}
+import anticipation.*
+import fulminate.*
 
+object MarkdownError:
+  enum Reason:
+    case BlockInsideInline
+    case BrokenImageRef
+    case BadHeadingLevel
+    case UnexpectedNode
+
+  object Reason:
+    given Reason is Communicable =
+      case BlockInsideInline => m"the markdown contains block-level elements"
+      case BrokenImageRef    => m"the image reference could not be resolved"
+      case BadHeadingLevel   => m"the heading level is not in the range 1-6"
+      case UnexpectedNode    => m"a node with an unexpected type was found"
+
+case class MarkdownError(reason: MarkdownError.Reason)
+extends Error(m"the markdown could not be read because $reason")
