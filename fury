@@ -13,8 +13,7 @@ project escapade
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core anticipation/color contingency/core turbulence/core anticipation/url iridescence/core
-    include   hypotenuse/core
+    include   gossamer/core turbulence/core anticipation/url iridescence/core hypotenuse/core
 
   module test
     compiler  scala
