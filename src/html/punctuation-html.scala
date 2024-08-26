@@ -25,3 +25,7 @@ extension (value: Markdown[Markdown.Ast.Node])(using conv: HtmlConverter)
 extension (value: Markdown.Ast.Inline)(using conv: HtmlConverter)
   @targetName("html2")
   def html: Seq[Html[Phrasing]] = conv.phrasing(value)
+
+package htmlRenderers:
+  given HtmlConverter as standard = HtmlConverter()
+  given HtmlConverter as outline = OutlineConverter

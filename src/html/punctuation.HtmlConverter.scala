@@ -23,13 +23,6 @@ import vacuous.*
 import anticipation.*
 import gossamer.*
 
-package htmlRenderers:
-  given HtmlConverter as standard = HtmlConverter()
-  given HtmlConverter as outline = OutlineConverter
-
-abstract class Renderer(val language: Optional[Text]):
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]
-
 open class HtmlConverter(renderers: Renderer*):
   def slug(str: Text): Text =
     str.lower.s.replaceAll("[^a-z0-9]", "-").nn.replaceAll("--*", "-").nn.tt
@@ -135,53 +128,3 @@ open class HtmlConverter(renderers: Renderer*):
       nonInteractive(other)
 
   def escape(str: Text): Text = str.sub(t"&", t"&amp;").sub(t"<", t"&lt;").sub(t">", t"&gt;")
-
-case class Entry(label: Text, children: List[Entry])
-
-object OutlineConverter extends HtmlConverter():
-  override def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
-    def recur(entries: List[Entry]): List[Html[Ul.Content]] = entries.map: entry =>
-      val link = A(href = t"#${slug(entry.label)}")(entry.label)
-      if entry.children.isEmpty then Li(link) else Li(link, Ul(recur(entry.children)))
-
-    List(Ul(recur(structure(Unset, nodes.to(List), Nil))*))
-
-  @tailrec
-  def structure
-      (minimum: Optional[Int], nodes: List[Markdown.Ast.Node], stack: List[List[Entry]])
-          : List[Entry] =
-    nodes match
-      case Nil => stack match
-        case Nil         => Nil
-        case last :: Nil => last.reverse
-
-        case head :: (Entry(label, something) :: tail) :: more =>
-          structure(minimum, Nil, (Entry(label, head.reverse) :: tail) :: more)
-
-        case head :: Nil :: tail =>
-          structure(minimum, Nil, List(Entry(t"", head.reverse)) :: tail)
-
-      case Markdown.Ast.Block.Heading(level, children*) :: more if minimum.lay(true)(level >= _) =>
-        val minimum2 = minimum.or(level)
-        val depth = stack.length + minimum2 - 1
-
-        if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
-          case Nil =>
-            throw Panic(m"Stack should always be non-empty")
-
-          case head :: next :: stack2 =>
-            if level < depth then next match
-              case Entry(label, Nil) :: tail =>
-                structure(minimum2, nodes, (Entry(label, head.reverse) :: tail) :: stack2)
-
-              case _ =>
-                structure(minimum2, nodes, (Entry(t"", head.reverse) :: Nil) :: stack2)
-
-            else
-              structure(minimum2, more, (Entry(text(children), Nil) :: head) :: stack.tail)
-
-          case other :: Nil =>
-            structure(minimum2, more, (Entry(text(children), Nil) :: other) :: Nil)
-
-      case _ :: more =>
-        structure(minimum, more, stack)
