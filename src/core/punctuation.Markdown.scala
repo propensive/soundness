@@ -16,6 +16,8 @@
 
 package punctuation
 
+import scala.annotation.tailrec
+
 import rudiments.*
 import fulminate.*
 import anticipation.*
@@ -28,7 +30,6 @@ import turbulence.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua
-import annotation.tailrec
 
 import Markdown.Ast.Inline.*
 import Markdown.Ast.Block.*

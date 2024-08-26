@@ -25,6 +25,8 @@ import anticipation.*
 
 import scala.compiletime.*
 
+type Md = Markdown[Markdown.Ast.Block]
+
 object Md:
   enum Input:
     case Block(content: Text)

@@ -21,4 +21,3 @@ extension (inline stringContext: StringContext)
     ${Punctuation.md('stringContext, 'parts)}
 
 type InlineMd = Markdown[Markdown.Ast.Inline]
-type Md = Markdown[Markdown.Ast.Block]
