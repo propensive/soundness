@@ -16,21 +16,26 @@
 
 package ambience
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
+import language.dynamics
+
+import scala.compiletime.ops.string.*
 
 import anticipation.*
+import contingency.*
+import fulminate.*
+import rudiments.*
 import vacuous.*
 
-package systemProperties:
-  given empty: SystemProperties with
-    def apply(name: Text): Unset.type = Unset
+object Properties extends Dynamic:
+  given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
 
-  given virtualMachine: SystemProperties with
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
+  def apply[PropertyType](property: Text)
+      (using properties:     SystemProperties,
+             reader:         SystemProperty[String, PropertyType],
+             systemProperty: Tactic[SystemPropertyError])
+          : PropertyType^{properties, reader, systemProperty} =
 
-package environments:
-  given empty: Environment with
-    def variable(name: Text): Unset.type = Unset
+    properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
 
-  given virtualMachine: Environment with
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
+  def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)

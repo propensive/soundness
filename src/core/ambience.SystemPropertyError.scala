@@ -16,21 +16,13 @@
 
 package ambience
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
+import language.dynamics
+
+import scala.compiletime.ops.string.*
 
 import anticipation.*
-import vacuous.*
+import fulminate.*
 
-package systemProperties:
-  given empty: SystemProperties with
-    def apply(name: Text): Unset.type = Unset
-
-  given virtualMachine: SystemProperties with
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
-
-package environments:
-  given empty: Environment with
-    def variable(name: Text): Unset.type = Unset
-
-  given virtualMachine: Environment with
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
+case class SystemPropertyError(property: Text)
+extends Error(m"the system property $property was not defined")

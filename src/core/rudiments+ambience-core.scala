@@ -14,23 +14,19 @@
     and limitations under the License.
 */
 
-package ambience
+package rudiments
 
 import language.experimental.pureFunctions
 
+import ambience.*
 import anticipation.*
-import vacuous.*
+import contingency.*
 
-package systemProperties:
-  given empty: SystemProperties with
-    def apply(name: Text): Unset.type = Unset
+package workingDirectories:
+  given (using Tactic[SystemPropertyError], SystemProperties)
+      => WorkingDirectory as virtualMachine =
+    () => Properties.user.dir[Text]()
 
-  given virtualMachine: SystemProperties with
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
-
-package environments:
-  given empty: Environment with
-    def variable(name: Text): Unset.type = Unset
-
-  given virtualMachine: Environment with
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
+package homeDirectories:
+  given (using Tactic[SystemPropertyError], SystemProperties) => HomeDirectory as virtualMachine =
+    () => Properties.user.home[Text]()

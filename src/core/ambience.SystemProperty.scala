@@ -16,35 +16,17 @@
 
 package ambience
 
-import anticipation.*
-import spectacular.*
-import contingency.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import gossamer.*
-
-import scala.compiletime.ops.string.*
-
 import language.experimental.captureChecking
 import language.dynamics
 
-@capability
-trait SystemProperties:
-  def apply(name: Text): Optional[Text]
+import scala.compiletime.ops.string.*
 
-object Properties extends Dynamic:
-  given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
-
-  def apply[PropertyType](property: Text)
-      (using properties:     SystemProperties,
-             reader:         SystemProperty[String, PropertyType],
-             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType^{properties, reader, systemProperty} =
-
-    properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
-
-  def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 @capability
 trait SystemProperty[NameType <: String, PropertyType]:
@@ -93,35 +75,3 @@ object SystemProperty:
           : SystemProperty[UnknownType, PropertyType] =
 
     decoder.decode(_)
-
-case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
-  def selectDynamic(key: String): PropertyAccess[NameType+"."+key.type] =
-    PropertyAccess[NameType+"."+key.type](property+"."+key)
-
-  def applyDynamic[PropertyType](key: String)()
-      (using properties:     SystemProperties,
-             reader:         SystemProperty[NameType+"."+key.type, PropertyType],
-             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType^{properties, reader, systemProperty} =
-
-    properties((property+"."+key).tt).let(reader.read(_)).or:
-      abort(SystemPropertyError((property+"."+key).tt))
-
-  inline def apply[PropertyType]()
-      (using properties: SystemProperties,
-             reader: SystemProperty[NameType, PropertyType],
-             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType^{properties, reader, systemProperty} =
-
-    properties(valueOf[NameType].tt).let(reader.read(_)).or:
-      abort(SystemPropertyError(valueOf[NameType].tt))
-
-case class SystemPropertyError(property: Text)
-extends Error(m"the system property $property was not defined")
-
-package systemProperties:
-  given empty: SystemProperties with
-    def apply(name: Text): Unset.type = Unset
-
-  given virtualMachine: SystemProperties with
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)

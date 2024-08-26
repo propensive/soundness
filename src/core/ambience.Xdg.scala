@@ -16,16 +16,15 @@
 
 package ambience
 
-import gossamer.*
-import contingency.*
+import language.experimental.pureFunctions
+
 import anticipation.*
+import contingency.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import language.experimental.pureFunctions
-
 object Xdg:
-
   def dataHome[PathType: SpecificPath]
       (using environment: Environment, home: HomeDirectory)
           : PathType/*^{PathType, environment, home}*/ =

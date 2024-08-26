@@ -16,21 +16,18 @@
 
 package ambience
 
-import language.experimental.pureFunctions
+import language.experimental.captureChecking
+import language.dynamics
 
 import anticipation.*
-import vacuous.*
+import rudiments.*
+import spectacular.*
 
-package systemProperties:
-  given empty: SystemProperties with
-    def apply(name: Text): Unset.type = Unset
+trait EnvironmentVariable2:
+  given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
+    identity(_)
 
-  given virtualMachine: SystemProperties with
-    def apply(name: Text): Optional[Text] = Optional(System.getProperty(name.s)).let(_.tt)
+  given decoder[UnknownType <: Label, VariableType](using decoder: Decoder[VariableType])
+          : EnvironmentVariable[UnknownType, VariableType] =
 
-package environments:
-  given empty: Environment with
-    def variable(name: Text): Unset.type = Unset
-
-  given virtualMachine: Environment with
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
+    decoder.decode(_)

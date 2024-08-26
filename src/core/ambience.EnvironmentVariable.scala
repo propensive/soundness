@@ -16,56 +16,21 @@
 
 package ambience
 
-import anticipation.*
-import spectacular.*
-import rudiments.*
-import vacuous.*
-import contingency.*
-import fulminate.*
-import gossamer.*
-
 import language.experimental.captureChecking
 import language.dynamics
 
-@capability
-trait Environment:
-  def variable(name: Text): Optional[Text]
-  def knownVariables: Set[Text] = Set()
-
-object Environment extends Dynamic:
-  given default(using Quickstart): Environment = environments.virtualMachine
-
-  def apply[VariableType](variable: Text)
-      (using environment:      Environment,
-             reader:           EnvironmentVariable[Label, VariableType],
-             environmentError: Tactic[EnvironmentError])
-          : VariableType^{environment, reader, environmentError} =
-
-    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable), reader.read(Text(""))))
-
-  inline def selectDynamic[VariableType](key: String)
-      (using environment:      Environment,
-             reader:           EnvironmentVariable[key.type, VariableType],
-             environmentError: Tactic[EnvironmentError])
-          : VariableType^{environment, reader, environmentError} =
-
-    environment.variable(reader.defaultName).let(reader.read(_)).or:
-      raise(EnvironmentError(reader.defaultName), reader.read(Text("")))
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 @capability
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
   def name: Optional[Text] = Unset
   def read(value: Text): VariableType
-
-trait EnvironmentVariable2:
-  given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
-    identity(_)
-
-  given decoder[UnknownType <: Label, VariableType](using decoder: Decoder[VariableType])
-          : EnvironmentVariable[UnknownType, VariableType] =
-
-    decoder.decode(_)
 
 object EnvironmentVariable extends EnvironmentVariable2:
   given [PathType: SpecificPath](using systemProperties: SystemProperties)
@@ -122,13 +87,3 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given lang: EnvironmentVariable["lang", Text] = identity(_)
   given display: EnvironmentVariable["display", Text] = identity(_)
   given term: EnvironmentVariable["term", Text] = identity(_)
-
-case class EnvironmentError(variable: Text)
-extends Error(m"the environment variable ${variable} was not defined")
-
-package environments:
-  given empty: Environment with
-    def variable(name: Text): Unset.type = Unset
-
-  given virtualMachine: Environment with
-    def variable(name: Text): Optional[Text] = Optional(System.getenv(name.s)).let(_.tt)
