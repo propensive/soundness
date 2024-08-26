@@ -13,7 +13,7 @@ project galilei
   module core
     compiler  scala
     sources   src/core
-    include   digression/core serpentine/core eucalyptus/core guillotine/core
+    include   serpentine/core guillotine/core
 
   module test
     compiler  scala
