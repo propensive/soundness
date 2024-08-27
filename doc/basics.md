@@ -3,14 +3,8 @@ you like. The modules include:
  - `args` for parsing command-line arguments
  - `core` to provide an enhanced entry-point into an application (requires
    `args`)
- - `daemon` for running the application as a daemon using the launcher script
-   (requires `core`)
  - `completions` to provide tab-completions for an application (requires
    `core`)
-
-By breaking Exoskeleton up into smaller modules, unnecessary dependencies can
-be avoided for functionality that is not required. In particular, handling
-tab-completions and running as a daemon can be chose independently.
 
 ### Application Entry Point
 
@@ -228,4 +222,3 @@ ensure that that method can _only_ be called from within an `execute` block,
 since the only way to obtain an `Effectful` instance is from within an
 `execute` block. This makes it very difficult to invoke an "effectful" method
 elsewhere, by accident.
-
