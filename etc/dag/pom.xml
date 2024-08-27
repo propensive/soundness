@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Dendrology</name>
+  <name>Dendrology DAG</name>
   <description>Myers' diff algorithm in Scala</description>
   <url>https://soundness.dev/dendrology</url>
   <packaging>jar</packaging>
