@@ -116,7 +116,8 @@ trait Quantitative2:
           Some(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))))
 
         case UnitPower(unit, power) :: more =>
-          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))), construct(more).get))
+          Some(AndType(AppliedType(unit.ref, List(ConstantType(IntConstant(power)))),
+              construct(more).get))
 
     def sub(dimension: DimensionRef, unit: UnitRef, power: Int): UnitsMap =
       new UnitsMap(map.updated(dimension, UnitPower(unit, power)))
@@ -319,8 +320,9 @@ trait Quantitative2:
 
     ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-            ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]} }
+       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+            (left, right) =>
+              ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]} } }
 
       case None =>
        '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
@@ -338,8 +340,9 @@ trait Quantitative2:
 
     ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-            ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]} }
+       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+            (left, right) =>
+              ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]} } }
 
       case None =>
        '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
@@ -435,8 +438,9 @@ trait Quantitative2:
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type measureType <: Measure; measureType]) =>
-       '{ Subtractable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[measureType]]: (left, right) =>
-            ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} }
+       '{ Subtractable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[measureType]] {
+            (left, right) =>
+              ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} } }
 
   def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
           : Expr[Quantity[LeftType] is Addable by Quantity[RightType]] =
@@ -445,8 +449,9 @@ trait Quantitative2:
 
     (units.repr.map(_.asType): @unchecked) match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Addable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]]: (left, right) =>
-            ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} }
+       '{ Addable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+            (left, right) =>
+              ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} } }
 
   def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
       (expr: Expr[Quantity[UnitsType]])

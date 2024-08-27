@@ -36,21 +36,31 @@ object PhysicalQuantity:
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
-  type ElectricalConductivity = Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+  type ElectricalConductivity =
+    Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+
   type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
   type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
   type MolarConcentration = Units[-3, Length] & Units[1, AmountOfSubstance]
   type ElectricChargeDensity = Units[-3, Length] & Units[1, Time] & Units[1, Current]
   type MassDensity = Units[-3, Length] & Units[1, Mass]
   type Reluctance = Units[-2, Length] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
-  type ElectricalConductance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
-  type ThermalResistance = Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+
+  type ElectricalConductance =
+    Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+
+  type ThermalResistance =
+    Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+
   type Capacitance = Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
   type CurrentDensity = Units[-2, Length] & Units[1, Current]
   type ElectricDisplacementField = Units[-2, Length] & Units[1, Time] & Units[1, Current]
   type Illuminance = Units[-2, Length] & Units[1, Luminosity]
   type AreaDensity = Units[-2, Length] & Units[1, Mass]
-  type ThermalResistivity = Units[-1, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+
+  type ThermalResistivity =
+    Units[-1, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+
   type Magnetization = Units[-1, Length] & Units[1, Current]
   type OpticalPower = Units[-1, Length]
   type TempratureGradient = Units[-1, Length] & Units[1, Temperature]
@@ -70,8 +80,13 @@ object PhysicalQuantity:
   type Acceleration = Units[1, Length] & Units[-2, Time]
   type Velocity = Units[1, Length] & Units[-1, Time]
   type ElectricDipoleMoment = Units[1, Length] & Units[1, Time] & Units[1, Current]
-  type ElectricFieldStrength = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
-  type ThermalConductivity = Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+
+  type ElectricFieldStrength =
+    Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+
+  type ThermalConductivity =
+    Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+
   type Permeability = Units[1, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type Force = Units[1, Length] & Units[1, Mass] & Units[-2, Time]
   type Momentum = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
@@ -81,24 +96,34 @@ object PhysicalQuantity:
   type Area = Units[2, Length]
   type MagneticMoment = Units[2, Length] & Units[1, Current]
   type Impedance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
-  type ElectricalPotential = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
-  type ThermalConductance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+
+  type ElectricalPotential =
+    Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+
+  type ThermalConductance =
+    Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+
   type Power = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
   type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
   type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
   type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
 
   type MolarEntropy =
-    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1, AmountOfSubstance]
+    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1,
+        AmountOfSubstance]
 
-  type ChemicalPotential = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
+  type ChemicalPotential =
+    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
+
   type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
   type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
   type MomentOfInertia = Units[2, Length] & Units[1, Mass]
   type SpecificVolume = Units[3, Length] & Units[-1, Mass]
   type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
   type Volume = Units[3, Length]
-  type ElectricalResistivity = Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+
+  type ElectricalResistivity =
+    Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
   erased given absement: PhysicalQuantity[Absement, "absement"] = ###
   erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###
@@ -148,18 +173,39 @@ object PhysicalQuantity:
   erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] = ###
   erased given velocity: PhysicalQuantity[Velocity, "velocity"] = ###
   erased given volume: PhysicalQuantity[Volume, "volume"] = ###
-  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity, "electric charge density"] = ###
-  erased given electricDipoleMoment: PhysicalQuantity[ElectricDipoleMoment, "electric dipole moment"] = ###
-  erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength, "electric field strength"] = ###
-  erased given electricalConductance: PhysicalQuantity[ElectricalConductance, "electric conductance"] = ###
-  erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity, "electric conductivity"] = ###
-  erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] = ###
-  erased given electricalResistivity: PhysicalQuantity[ElectricalResistivity, "electric resistivity"] = ###
-  erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] = ###
-  erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity, "specific heat capacity"] = ###
-  erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] = ###
-  erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] = ###
 
-  erased given electricDisplacementField
-          : PhysicalQuantity[ElectricDisplacementField, "electric displacement field"] =
+  erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity,
+      "electric charge density"] = ###
+
+  erased given electricDipoleMoment: PhysicalQuantity[ElectricDipoleMoment,
+      "electric dipole moment"] = ###
+
+  erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength,
+      "electric field strength"] = ###
+
+  erased given electricalConductance: PhysicalQuantity[ElectricalConductance,
+      "electric conductance"] = ###
+
+  erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity,
+      "electric conductivity"] = ###
+
+  erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] =
     ###
+
+  erased given electricalResistivity: PhysicalQuantity[ElectricalResistivity,
+      "electric resistivity"] = ###
+
+  erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] =
+    ###
+
+  erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity,
+      "specific heat capacity"] = ###
+
+  erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] =
+    ###
+
+  erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
+    ###
+
+  erased given electricDisplacementField: PhysicalQuantity[ElectricDisplacementField,
+      "electric displacement field"] = ###

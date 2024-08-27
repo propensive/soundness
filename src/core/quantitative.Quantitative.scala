@@ -41,25 +41,32 @@ object Quantitative extends Quantitative2:
       case _                                   => quantity
 
   object MetricUnit:
-    erased given [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] as underlying = ###
+    erased given [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] as underlying =
+      ###
+
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
     @targetName("makeDerivedUnit")
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
-    erased given [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] as underlying = ###
+    erased given [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] as underlying =
+      ###
+
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
     given Quantity[Seconds[1]] is GenericDuration as genericDuration =
       quantity => (quantity*1000.0).toLong
 
-    given Quantity[Seconds[1]] is SpecificDuration as specificDuration = long => Quantity(long/1000.0)
+    given Quantity[Seconds[1]] is SpecificDuration as specificDuration =
+      long => Quantity(long/1000.0)
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Addable by Quantity[RightType] as addable =
+    transparent inline given [LeftType <: Measure, RightType <: Measure]
+        => Quantity[LeftType] is Addable by Quantity[RightType] as addable =
       ${Quantitative.addTypeclass[LeftType, RightType]}
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Subtractable by Quantity[RightType] as subtractable =
+    transparent inline given [LeftType <: Measure, RightType <: Measure]
+        => Quantity[LeftType] is Subtractable by Quantity[RightType] as subtractable =
       ${Quantitative.subTypeclass[LeftType, RightType]}
 
     transparent inline given [LeftType <: Measure, RightType <: Measure]
@@ -71,7 +78,8 @@ object Quantitative extends Quantitative2:
       type Result = Quantity[LeftType]
       inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left*right
 
-    transparent inline given [LeftType <: Measure, RightType <: Measure] => Quantity[LeftType] is Divisible by Quantity[RightType] as divisible =
+    transparent inline given [LeftType <: Measure, RightType <: Measure]
+        => Quantity[LeftType] is Divisible by Quantity[RightType] as divisible =
       ${Quantitative.divTypeclass[LeftType, RightType]}
 
     given [LeftType <: Measure] => Quantity[LeftType] is Divisible:
@@ -79,10 +87,12 @@ object Quantitative extends Quantitative2:
       type Operand = Double
       inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
-    transparent inline given [ValueType <: Measure] => Quantity[ValueType] is Rootable[2] as squareRoot =
+    transparent inline given [ValueType <: Measure]
+        => Quantity[ValueType] is Rootable[2] as squareRoot =
       ${Quantitative.sqrtTypeclass[ValueType]}
 
-    transparent inline given [ValueType <: Measure] => Quantity[ValueType] is Rootable[3] as cubeRoot =
+    transparent inline given [ValueType <: Measure]
+        => Quantity[ValueType] is Rootable[3] as cubeRoot =
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
