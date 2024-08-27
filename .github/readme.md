@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/exoskeleton/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/exoskeleton/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Exoskeleton
@@ -21,17 +21,9 @@ Scala. Tab completions are automatically provided for [`bash`](https://www.gnu.o
 - easy installation of completion scripts for each shell
 
 
-## Availability Plan
+## Availability
 
-Exoskeleton has not yet been published. The medium-term plan is to build Exoskeleton
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Exoskeleton.
 
-Subsequently, Exoskeleton will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -40,14 +32,8 @@ you like. The modules include:
  - `args` for parsing command-line arguments
  - `core` to provide an enhanced entry-point into an application (requires
    `args`)
- - `daemon` for running the application as a daemon using the launcher script
-   (requires `core`)
  - `completions` to provide tab-completions for an application (requires
    `core`)
-
-By breaking Exoskeleton up into smaller modules, unnecessary dependencies can
-be avoided for functionality that is not required. In particular, handling
-tab-completions and running as a daemon can be chose independently.
 
 ### Application Entry Point
 
@@ -265,7 +251,6 @@ ensure that that method can _only_ be called from within an `execute` block,
 since the only way to obtain an `Effectful` instance is from within an
 `execute` block. This makes it very difficult to invoke an "effectful" method
 elsewhere, by accident.
-
 
 
 ## Status
