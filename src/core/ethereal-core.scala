@@ -76,11 +76,12 @@ def cliService[BusType <: Matchable](using executive: Executive)
         val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decodeAs[Unix.Path]).or(workingDirectory + jarFile.decodeAs[Unix.Relative])
 
-        safely(Properties.build.`package`[Text]()) match
+        safely(Properties.build.executable[Text]()) match
           case Unset =>
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
-            Out.println(e"To build an Ethereal executable binary, run:")
-            Out.println(e"    java -Dbuild.package=$Italic(executable-file) -jar $jarFile")
+            Out.println(e"To build an Ethereal executable, run:")
+            val relativeJar = jarFile.relativeTo(workingDirectory)
+            Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
             ExitStatus.Fail(1).terminate()
 
           case destination: Text =>
@@ -88,14 +89,13 @@ def cliService[BusType <: Matchable](using executive: Executive)
               workingDirectory + destination.decodeAs[Unix.Relative]
 
             val file = path.as[File]
-            (Classpath / p"ethereal" / p"prefix1").stream[Bytes].writeTo(file)
-            val buildId = Classpath / p"build.id"
-
-            (if buildId.exists() then buildId.stream[Bytes] else t"0".stream[Bytes]).appendTo(file)
-
-            (Classpath / p"ethereal" / p"prefix2").stream[Bytes].appendTo(file)
+            val buildIdPath = Classpath / p"build.id"
+            val buildId = if buildIdPath.exists() then buildIdPath.read[Text].trim else t"0"
+            val prefix = (Classpath / p"ethereal" / p"prefix").read[Text]
+            prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(file)
             jarFile.as[File].stream[Bytes].appendTo(file)
             file.executable() = true
+
             Out.println(t"Built executable file $destination")
 
             ExitStatus.Ok.terminate()

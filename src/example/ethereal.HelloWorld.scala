@@ -5,13 +5,11 @@ import soundness.*
 import executives.direct
 import unhandledErrors.stackTrace
 import parameterInterpretation.posix
-import threadModels.virtual
+import threadModels.platform
 
 @main
-def run(args: Text*): Unit = cliService:
-  Out.println(t"Hello world")
+def run(): Unit = cliService:
   ExitStatus.Ok
-
 
 @main
 def run2(): Unit = println("Testing")
