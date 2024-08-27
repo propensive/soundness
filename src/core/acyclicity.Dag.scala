@@ -18,7 +18,7 @@ package acyclicity
 
 import language.experimental.captureChecking
 
-import scala.collection.mutable.HashMap
+import scala.collection.mutable as scm
 
 import rudiments.*
 
@@ -29,7 +29,9 @@ object Dag:
 
   def create[NodeType](start: NodeType)(dependencies: NodeType => Set[NodeType]): Dag[NodeType] =
     @tailrec
-    def recur(map: Map[NodeType, Set[NodeType]], todo: Set[NodeType], done: Set[NodeType]): Dag[NodeType] =
+    def recur(map: Map[NodeType, Set[NodeType]], todo: Set[NodeType], done: Set[NodeType])
+            : Dag[NodeType] =
+
       if todo.isEmpty then new Dag(map) else
         val key = todo.head
         dependencies(key).pipe: children =>
@@ -46,10 +48,13 @@ object Dag:
   def apply[NodeType](nodes: (NodeType, Set[NodeType])*): Dag[NodeType] = Dag(Map(nodes*))
 
 case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
-  private val reachableCache: HashMap[NodeType, Set[NodeType]] = HashMap()
+  private val reachableCache: scm.HashMap[NodeType, Set[NodeType]] = scm.HashMap()
 
   def keys: Set[NodeType] = edgeMap.keySet
-  def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] = Dag(edgeMap.map { case (k, v) => (lambda(k), v.map(lambda)) })
+
+  def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] =
+    Dag(edgeMap.map { (k, v) => (lambda(k), v.map(lambda)) })
+
   def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
   def apply(key: NodeType): Set[NodeType] = edgeMap.getOrElse(key, Set())
   def descendants(key: NodeType): Dag[NodeType] = subgraph(reachable(key))
@@ -68,7 +73,9 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
 
   def has(key: NodeType): Boolean = edgeMap.contains(key)
 
-  def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2): Map[NodeType, NodeType2] =
+  def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2)
+          : Map[NodeType, NodeType2] =
+
     sorted.foldLeft(Map[NodeType, NodeType2]()):
       (map, next) => map.updated(next, lambda(apply(next).map(map), next))
 
@@ -126,16 +133,17 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
 
   private def findCycle(start: NodeType): Option[List[NodeType]] =
     @tailrec
-    def recur(queue: List[(NodeType, List[NodeType])], finished: Set[NodeType]): Option[List[NodeType]] = queue match
-      case Nil =>
-        None
-      case (vertex, trace) :: tail =>
-        trace.to(Set).intersect(apply(vertex)).headOption match
-          case Some(element) =>
-            Some(trace ++ List(vertex, element))
+    def recur(queue: List[(NodeType, List[NodeType])], finished: Set[NodeType])
+            : Option[List[NodeType]] =
 
-          case None =>
-            val queue = tail ++ apply(vertex).diff(finished).toList.map((_, trace :+ vertex))
-            recur(queue, finished + vertex)
+      queue match
+        case Nil => None
+        case (vertex, trace) :: tail =>
+          trace.to(Set).intersect(apply(vertex)).headOption match
+            case Some(element) => Some(trace ++ List(vertex, element))
+
+            case None =>
+              val queue = tail ++ apply(vertex).diff(finished).to(List).map((_, trace :+ vertex))
+              recur(queue, finished + vertex)
 
     recur(List((start, List())), Set())
