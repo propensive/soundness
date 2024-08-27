@@ -92,7 +92,6 @@ extends Directional[NameType, Int]:
 
     ancestor(path, 1)
 
-
   def render(path: Self): Text =
     val prefix = t"${t"$parentRef${separator(path)}"*(ascent(path))}"
 
