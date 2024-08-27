@@ -33,6 +33,7 @@ import parasite.*
 import profanity.*
 import symbolism.*
 import digression.*
+import escapade.*
 import fulminate.*
 import gossamer.*
 import turbulence.*
@@ -66,8 +67,41 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
   import environments.virtualMachine
   import strategies.throwUnsafely
+  import workingDirectories.default
+  import stdioSources.virtualMachine.ansi
 
-  val name: Text = Properties.ethereal.name[Text]()
+  val name: Text =
+    mend:
+      case SystemPropertyError(_) =>
+        val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
+          safely(jarFile.decodeAs[Unix.Path]).or(workingDirectory + jarFile.decodeAs[Unix.Relative])
+
+        safely(Properties.build.`package`[Text]()) match
+          case Unset =>
+            Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
+            Out.println(e"To build an Ethereal executable binary, run:")
+            Out.println(e"    java -Dbuild.package=$Italic(executable-file) -jar $jarFile")
+            ExitStatus.Fail(1).terminate()
+
+          case destination: Text =>
+            val path = safely(destination.decodeAs[Unix.Path]).or:
+              workingDirectory + destination.decodeAs[Unix.Relative]
+
+            val file = path.as[File]
+            (Classpath / p"ethereal" / p"prefix1").stream[Bytes].writeTo(file)
+            val buildId = Classpath / p"build.id"
+
+            (if buildId.exists() then buildId.stream[Bytes] else t"0".stream[Bytes]).appendTo(file)
+
+            (Classpath / p"ethereal" / p"prefix2").stream[Bytes].appendTo(file)
+            jarFile.as[File].stream[Bytes].appendTo(file)
+            file.executable() = true
+            Out.println(t"Built executable file $destination")
+
+            ExitStatus.Ok.terminate()
+
+    .within(Properties.ethereal.name[Text]())
+
   val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / Name(name)).as[Directory]
   val portFile: Path = baseDir / p"port"
   val pidFile: Path = baseDir / p"pid"
