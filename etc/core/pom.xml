@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Larceny Core</name>
+  <name>Larceny</name>
   <description>Scala 3 compiler plugin for testing compiletime errors</description>
   <url>https://soundness.dev/larceny</url>
   <packaging>jar</packaging>
