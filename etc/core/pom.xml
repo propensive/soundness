@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Nettlesome: Core</name>
+  <name>Nettlesome</name>
   <description>Typesafe representations of network concepts</description>
   <url>https://soundness.dev/nettlesome</url>
   <packaging>jar</packaging>
