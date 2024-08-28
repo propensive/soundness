@@ -4,7 +4,7 @@
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
-  <artifactId>exoskeleton-core</artifactId>
+  <artifactId>exoskeleton-args</artifactId>
   <version>0.15.0</version>
   <licenses>
     <license>
@@ -13,7 +13,7 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Exoskeleton</name>
+  <name>Exoskeleton Arguments</name>
   <description>Interfaces for interacting with the shell</description>
   <url>https://soundness.dev/exoskeleton</url>
   <packaging>jar</packaging>
@@ -24,12 +24,17 @@
   <dependencies>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>exoskeleton-args</artifactId>
+      <artifactId>escapade-core</artifactId>
       <version>0.15.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>galilei-core</artifactId>
+      <artifactId>profanity-core</artifactId>
+      <version>0.15.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>ambience-core</artifactId>
       <version>0.15.0</version>
     </dependency>
   </dependencies>

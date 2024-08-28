@@ -18,7 +18,7 @@ package exoskeleton
 
 import rudiments.*
 import vacuous.*
-import gossamer.{where as _, *}
+import gossamer.*
 import anticipation.*
 
 import language.experimental.pureFunctions

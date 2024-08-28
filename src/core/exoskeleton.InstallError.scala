@@ -22,10 +22,14 @@ import anticipation.*
 object InstallError:
   object Reason:
     given Reason is Communicable as communicable =
-      case Environment => m"it was not possible to get enough information about the install environment"
-      case Io          => m"an I/O error occurred when trying to write an installation file"
+      case Environment =>
+        m"it was not possible to get enough information about the install environment"
+
+      case Io =>
+        m"an I/O error occurred when trying to write an installation file"
 
   enum Reason:
     case Environment, Io
 
-case class InstallError(reason: InstallError.Reason) extends Error(m"the installation failed because $reason")
+case class InstallError(reason: InstallError.Reason)
+extends Error(m"the installation failed because $reason")
