@@ -20,3 +20,6 @@ export eucalyptus.{Inscribable, Taggable, dateFormat, mute, envelop, skip, silen
 
 package logFormats:
   export eucalyptus.logFormats.{standard, untimestamped, lightweight}
+
+package logging:
+  export eucalyptus.logging.silent

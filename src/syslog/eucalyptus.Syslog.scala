@@ -22,20 +22,21 @@ import parasite.*
 import anticipation.*
 import prepositional.*
 import turbulence.*
+import vacuous.*
 import contingency.*
 
 //import scala.language.experimental.captureChecking
 
-case class Syslog(tag: Text)
+case class Syslog(tag: Optional[Text] = Unset)
 
 object Syslog:
-  given Syslog is Parameterizable = _.tag
-
-  given (using Monitor) => Syslog is Appendable by Text = (syslog, stream) =>
+  given (using Monitor) => Syslog is Appendable by Text as appendable = (syslog, stream) =>
     import workingDirectories.default
 
     mend:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
     .within:
-      mute[ExecEvent](stream.appendTo(sh"logger -t $syslog".fork[Unit]()))
+      syslog.tag match
+        case tag: Text => mute[ExecEvent](stream.appendTo(sh"logger -t $tag".fork[Unit]()))
+        case _         => mute[ExecEvent](stream.appendTo(sh"logger".fork[Unit]()))

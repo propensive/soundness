@@ -91,3 +91,6 @@ extension (logObject: Log.type)
 
       def log(level: Level, realm: Realm, timestamp: Long, event: EntryType): Unit =
         spool.put(event.format(level, realm, timestamp))
+
+package logging:
+  given [FormatType] => FormatType is Loggable as silent = Log.silent[FormatType]
