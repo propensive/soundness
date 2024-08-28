@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package punctuation
+package harlequin
 
 import anticipation.*
 import gossamer.*
@@ -33,14 +33,3 @@ trait CommonRenderer:
         line.map { case SourceToken(text, accent) => element(accent, text) }
 
     List(Div.amok(Pre(code)))
-
-object ScalaRenderer extends Renderer(t"scala"), CommonRenderer:
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
-    postprocess(Scala.highlight(content))
-
-object JavaRenderer extends Renderer(t"java"), CommonRenderer:
-  def render(meta: Optional[Text], content: Text): Seq[Html[Flow]] =
-    postprocess(Java.highlight(content))
-
-package htmlRenderers:
-  given HtmlConverter as scalaSyntax = HtmlConverter(ScalaRenderer, JavaRenderer)
