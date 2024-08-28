@@ -56,6 +56,9 @@ package daemonConfig:
   given StderrSupport as doNotSupportStderr = () => false
   given StderrSupport as supportStderr = () => true
 
+
+def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
+
 def cliService[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
     (using interpreter:   CliInterpreter,

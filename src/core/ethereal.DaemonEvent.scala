@@ -34,5 +34,3 @@ enum DaemonEvent:
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
   case Stderr(pid: Pid)
-
-def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
