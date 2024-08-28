@@ -65,7 +65,7 @@ extension [ValueType](inline value: => ValueType)
     result
 
 extension (inline statement: => Unit)
-  inline def ere[ResultType](inline block: => ResultType): ResultType =
+  inline infix def yet [ResultType](inline block: => ResultType): ResultType =
     statement
     block
 
