@@ -1,0 +1,58 @@
+/*
+    Telekinesis, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
+package telekinesis
+
+import gossamer.{slice as _, *}
+import rudiments.*
+import hypotenuse.*
+import vacuous.*
+import fulminate.*
+import hieroglyph.*
+import contingency.*
+import gesticulate.*
+import spectacular.*
+import anticipation.*
+
+import language.dynamics
+
+trait FallbackPostable:
+  given [QueryType](using serializer: QueryEncoder[QueryType]): Postable[QueryType] =
+    Postable(media"application/x-www-form-urlencoded", value =>
+        LazyList(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
+
+object Postable extends FallbackPostable:
+  given text(using encoder: CharEncoder): Postable[Text] =
+    Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+
+  given textStream(using encoder: CharEncoder): Postable[LazyList[Text]] =
+    Postable(media"application/octet-stream", _.map(_.bytes))
+
+  given unit: Postable[Unit] = Postable(media"text/plain", unit => LazyList())
+  given bytes: Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
+  given byteStream: Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
+
+  given [ResponseType: GenericHttpResponseStream](using mediaType: Tactic[MediaTypeError])
+      => Postable[ResponseType] as dataStream =
+
+    // FIXME: Check if mapping `identity` is necessary
+    Postable(Media.parse(ResponseType.mediaType.show), ResponseType.content(_).map(identity))
+
+class Postable[PostType](val contentType: MediaType, val content: PostType => LazyList[Bytes]):
+  def preview(value: PostType): Text = content(value).prim.lay(t""): bytes =>
+    val sample = bytes.take(256)
+    val string: Text = if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
+    if bytes.length > 128 then t"$string..." else string

@@ -17,11 +17,8 @@
 package telekinesis
 
 import rudiments.*
-import contingency.*
 import anticipation.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import monotonous.*
 import spectacular.*
 
 trait RequestHeader[LabelType <: Label]():
@@ -31,9 +28,6 @@ trait RequestHeader[LabelType <: Label]():
           : RequestHeader.Value =
 
     RequestHeader.Value(this, param(content))
-
-class SimpleRequestHeader[LabelType <: Label: ValueOf]() extends RequestHeader[LabelType]():
-  def header: Text = Text(summon[ValueOf[LabelType]].value)
 
 object RequestHeader:
   lazy val standard: Map[Text, RequestHeader[?]] = Set(AIm, Accept, AcceptCh, AcceptDatetime,
@@ -117,106 +111,3 @@ object RequestHeader:
   case object Upgrade extends SimpleRequestHeader["upgrade"]()
   case object Via extends SimpleRequestHeader["via"]()
   case object Warning extends SimpleRequestHeader["warning"]()
-
-object ResponseHeader:
-  lazy val standard: Map[Text, ResponseHeader[?]] = List(AcceptCharset, AccessControlAllowOrigin,
-      AccessControlAllowCredentials, AccessControlExposeHeaders, AccessControlMaxAge,
-      AccessControlAllowMethods, AccessControlAllowHeaders, AcceptPatch, AcceptRanges, Age, Allow,
-      AltSvc, CacheControl, Connection, ContentDisposition, ContentEncoding, ContentLanguage,
-      ContentLength, ContentLocation, ContentMd5, ContentRange, ContentType, Date, DeltaBase, ETag,
-      Expires, Im, LastModified, Link, Location, P3p, Pragma, PreferenceApplied, ProxyAuthenticate,
-      PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
-      TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
-    .bi.map(_.header -> _).to(Map)
-
-  def unapply(str: Text): Some[ResponseHeader[?]] =
-    Some(standard.get(str.lower).getOrElse(Custom(str)))
-
-enum ResponseHeader[ValueType](val header: Text):
-  case AcceptCharset extends ResponseHeader[Text](t"accept-charset")
-  case AccessControlAllowOrigin extends ResponseHeader[Text](t"access-control-allow-origin")
-  case AccessControlAllowCredentials extends ResponseHeader[Text](t"access-control-allow-credentials")
-  case AccessControlExposeHeaders extends ResponseHeader[Text](t"access-control-expose-headers")
-  case AccessControlMaxAge extends ResponseHeader[Text](t"access-control-max-age")
-  case AccessControlAllowMethods extends ResponseHeader[Text](t"access-control-allow-methods")
-  case AccessControlAllowHeaders extends ResponseHeader[Text](t"access-control-allow-headers")
-  case AcceptPatch extends ResponseHeader[Text](t"accept-patch")
-  case AcceptRanges extends ResponseHeader[Text](t"accept-ranges")
-  case Age extends ResponseHeader[Text](t"age")
-  case Allow extends ResponseHeader[Text](t"allow")
-  case AltSvc extends ResponseHeader[Text](t"alt-svc")
-  case CacheControl extends ResponseHeader[Text](t"cache-control")
-  case Connection extends ResponseHeader[Text](t"connection")
-  case ContentDisposition extends ResponseHeader[Text](t"content-disposition")
-  case ContentEncoding extends ResponseHeader[Text](t"content-encoding")
-  case ContentLanguage extends ResponseHeader[Text](t"content-language")
-  case ContentLength extends ResponseHeader[ByteSize](t"content-length")
-  case ContentLocation extends ResponseHeader[Text](t"content-location")
-  case ContentMd5 extends ResponseHeader[Text](t"content-md5")
-  case ContentRange extends ResponseHeader[Text](t"content-range")
-  case ContentType extends ResponseHeader[Text](t"content-type")
-  case Date extends ResponseHeader[Text](t"date")
-  case DeltaBase extends ResponseHeader[Text](t"delta-base")
-  case ETag extends ResponseHeader[Text](t"etag")
-  case Expires extends ResponseHeader[Text](t"expires")
-  case Im extends ResponseHeader[Text](t"im")
-  case LastModified extends ResponseHeader[Text](t"last-modified")
-  case Link extends ResponseHeader[Text](t"link")
-  case Location extends ResponseHeader[Text](t"Location")
-  case P3p extends ResponseHeader[Text](t"p3p")
-  case Pragma extends ResponseHeader[Text](t"pragma")
-  case PreferenceApplied extends ResponseHeader[Text](t"preference-applied")
-  case ProxyAuthenticate extends ResponseHeader[Text](t"proxy-authenticate")
-  case PublicKeyPins extends ResponseHeader[Text](t"public-key-pins")
-  case RetryAfter extends ResponseHeader[Text](t"retry-after")
-  case Server extends ResponseHeader[Text](t"server")
-  case SetCookie extends ResponseHeader[Text](t"set-cookie")
-  case StrictTransportSecurity extends ResponseHeader[Text](t"strict-transport-security")
-  case Trailer extends ResponseHeader[Text](t"trailer")
-  case TransferEncoding extends ResponseHeader[Text](t"transfer-encoding")
-  case Tk extends ResponseHeader[Text](t"tk")
-  case Upgrade extends ResponseHeader[Text](t"upgrade")
-  case Vary extends ResponseHeader[Text](t"vary")
-  case Via extends ResponseHeader[Text](t"via")
-  case Warning extends ResponseHeader[Text](t"warning")
-  case WwwAuthenticate extends ResponseHeader[Text](t"www-authenticate")
-  case XFrameOptions extends ResponseHeader[Text](t"x-frame-options")
-  case Custom(name: Text) extends ResponseHeader[Text](name.lower)
-
-object HttpHeaderDecoder:
-  given text: HttpHeaderDecoder[Text] = identity(_)
-
-  given byteSize(using Tactic[NumberError]): HttpHeaderDecoder[ByteSize] =
-    value => ByteSize(value.decodeAs[Int])
-
-trait HttpHeaderDecoder[ValueType]:
-  def decode(text: Text): ValueType
-
-object Auth:
-  import alphabets.base64.standard
-
-  given Auth is Showable =
-    case Basic(username, password) => t"Basic ${t"$username:$password".bytes.serialize[Base64]}"
-    case Bearer(token)             => t"Bearer $token"
-    case Digest(digest)            => t"Digest $digest"
-    case Hoba(text)                => t"HOBA $text"
-    case Mutual(text)              => t"Mutual $text"
-    case Negotiate(text)           => t"Negotiate $text"
-    case OAuth(text)               => t"OAuth $text"
-    case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
-    case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
-    case Vapid(text)               => t"vapid $text"
-
-  given ("authorization" is GenericHttpRequestParam[Auth]) = _.show
-
-enum Auth:
-  case Basic(username: Text, password: Text)
-  case Bearer(token: Text)
-  case Digest(digest: Text)
-  case Hoba(text: Text)
-  case Mutual(text: Text)
-  case Negotiate(text: Text)
-  case OAuth(text: Text)
-  case ScramSha1(text: Text)
-  case ScramSha256(text: Text)
-  case Vapid(text: Text)
