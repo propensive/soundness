@@ -54,3 +54,18 @@ case class Flag[OperandType]
 
     cli.register(this, suggestions)
     cli.readParameter(this)
+
+  def select(options: Iterable[OperandType])
+      (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
+          : Optional[OperandType] =
+
+    val mapping: Map[Text, OperandType] =
+      options.map { option => (suggestible.suggest(option).text, option) }.to(Map)
+
+    given FlagInterpreter[OperandType] =
+      case List(value) => mapping.at(value())
+      case _           => Unset
+
+    given Suggestions[OperandType] = () => options.map(suggestible.suggest(_))
+
+    this()

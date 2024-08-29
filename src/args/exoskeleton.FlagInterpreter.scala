@@ -18,19 +18,19 @@ package exoskeleton
 
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 
 object FlagInterpreter:
-  given unit: FlagInterpreter[Unit] with
+  given FlagInterpreter[Unit] as unit:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder[OperandType](using decoder: Decoder[OperandType]): FlagInterpreter[OperandType]/*^{decoder}*/ =
-    arguments =>
-      (arguments.take(1): @unchecked) match
-        case List(value) => value().decodeAs[OperandType]
+  given [OperandType: Decoder] => FlagInterpreter[OperandType] as decoder = arguments =>
+    (arguments.take(1): @unchecked) match
+      case List(value) => value().decodeAs[OperandType]
 
 trait FlagInterpreter[OperandType]:
   def operand: Boolean = true
-  def interpret(arguments: List[Argument]): OperandType
+  def interpret(arguments: List[Argument]): Optional[OperandType]
