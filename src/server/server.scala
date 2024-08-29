@@ -159,16 +159,28 @@ case class Cookie
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-case class HttpResponse[ContentType: Servable]
-    (content: ContentType,
-     status: HttpStatus = HttpStatus.Ok,
-     headers: Map[ResponseHeader[?], Text] = Map(),
-     cookies: List[Cookie] = Nil):
+
+object HttpResponse:
+  def apply[FormatType: Servable](content0: FormatType, status0: HttpStatus = HttpStatus.Found, headers0: Map[ResponseHeader[?], Text] = Map(), cookies0: List[Cookie] = Nil): HttpResponse in FormatType = new HttpResponse:
+    type Format = FormatType
+    def servable: Format is Servable = summon[FormatType is Servable]
+    def content: Format = content0
+    def status: HttpStatus = status0
+    def headers: Map[ResponseHeader[?], Text] = headers0
+    def cookies: List[Cookie] = cookies0
+
+trait HttpResponse:
+  type Format
+  def servable: Format is Servable
+  def content: Format
+  def status: HttpStatus
+  def headers: Map[ResponseHeader[?], Text]
+  def cookies: List[Cookie]
 
   def respond(responder: Responder): Unit =
     val cookieHeaders: List[(ResponseHeader[?], Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
 
-    ContentType.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
+    servable.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
 
 object HttpRequest:
   given HttpRequest is Showable = request =>
@@ -243,10 +255,10 @@ case class HttpRequest
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
 trait RequestServable:
-  def listen(handle: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil): HttpService logs HttpServerEvent
+  def listen(handle: (request: HttpRequest) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (request: HttpRequest) ?=> HttpResponse[?])(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handle: (request: HttpRequest) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
 inline def request(using inline request: HttpRequest): HttpRequest = request
@@ -283,7 +295,7 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: HttpRequest) ?=> HttpResponse[?])(using Monitor, Codicil)
+  def listen(handler: (request: HttpRequest) ?=> HttpResponse)(using Monitor, Codicil)
           : HttpService logs HttpServerEvent =
 
     def handle(exchange: csnh.HttpExchange | Null) =
@@ -377,9 +389,9 @@ object Ttf:
   given Ttf is Servable = Servable(media"application/octet-stream"): ttf =>
     HttpBody.Data(ttf.content)
 
-def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse[?])
+def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
     (using HttpRequest)
-        : HttpResponse[?] =
+        : HttpResponse =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
@@ -410,8 +422,8 @@ object Http:
   given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
     type Carrier = TcpPort
     type Request = HttpRequest
-    type Response = HttpResponse[?]
+    type Response = HttpResponse
     type Server = HttpService
 
-    def server(port: TcpPort)(handler: HttpRequest ?=> HttpResponse[?]): HttpService =
+    def server(port: TcpPort)(handler: HttpRequest ?=> HttpResponse): HttpService =
       HttpServer(port.number).listen(handler)

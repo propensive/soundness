@@ -27,7 +27,7 @@ import telekinesis.{HttpRequest as _, HttpResponse as _, *}
 
 import jakarta.servlet as js, js.http as jsh
 
-open class JavaServlet(handle: HttpRequest ?=> HttpResponse[?]) extends jsh.HttpServlet:
+open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpServlet:
   protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
 
@@ -85,5 +85,5 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse[?]) extends jsh.Http
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)
 
-open class JavaServletFn(handle: HttpRequest => HttpResponse[?])
+open class JavaServletFn(handle: HttpRequest => HttpResponse)
 extends JavaServlet(request ?=> handle(request))

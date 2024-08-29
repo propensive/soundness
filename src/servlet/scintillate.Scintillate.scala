@@ -29,9 +29,9 @@ class servlet extends MacroAnnotation:
 
     tree match
       case defDef@DefDef(name, params, returnType, Some(body)) =>
-        if !(returnType.tpe <:< TypeRepr.of[HttpResponse[?]])
+        if !(returnType.tpe <:< TypeRepr.of[HttpResponse])
         then abandon(m"the return type ${returnType.show} is not a subtype of HttpResponse[?]")
-        val ref = Ref(defDef.symbol).etaExpand(tree.symbol.owner).asExprOf[HttpRequest => HttpResponse[?]]
+        val ref = Ref(defDef.symbol).etaExpand(tree.symbol.owner).asExprOf[HttpRequest => HttpResponse]
         val parents0 = List('{new JavaServletFn($ref)}.asTerm)
         val parents = List(TypeTree.of[HttpRequest])
         val newClassName = Symbol.freshName(name)
