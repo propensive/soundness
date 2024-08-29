@@ -17,7 +17,7 @@
 package soundness
 
 export ethereal.{ClientConnection, CliInput, DaemonEvent, DaemonLogEvent, DaemonService, Installer,
-    LazyEnvironment, StderrSupport, cliService}
+    LazyEnvironment, StderrSupport, cliService, service}
 
 package daemonConfig:
   export ethereal.daemonConfig.{doNotSupportStderr, supportStderr}
