@@ -37,16 +37,16 @@ object TabCompletionsInstallation:
   object InstallResult:
     given InstallResult is Communicable =
       case Installed(shell, path) =>
-        m"The $shell completion script installed to $path."
+        m"The $shell completion script was installed to $path."
 
       case AlreadyInstalled(shell, path) =>
         m"A $shell completion script already exists at $path."
 
       case NoWritableLocation(shell) =>
-        m"No writable install location could be found for $shell completions"
+        m"No writable install location could be found for $shell completions."
 
       case ShellNotInstalled(shell) =>
-        m"The $shell shell is not installed"
+        m"The $shell shell is not installed."
 
   enum InstallResult:
     case Installed(shell: Shell, path: Text)
