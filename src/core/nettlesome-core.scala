@@ -16,6 +16,7 @@
 
 package nettlesome
 
+import contingency.*
 import prepositional.*
 
 export Nettlesome.Ipv6
@@ -45,3 +46,7 @@ def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): Resul
   block(using Internet(online))
 
 def online(using internet: Internet): Boolean = internet.online
+
+package internetAccess:
+  given Online as enabled = Online()
+  given (using Tactic[OfflineError]) => Online as disabled = abort(OfflineError())
