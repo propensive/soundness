@@ -340,8 +340,8 @@ object Codl:
           CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
 
         case Margin =>
-          val text = reader.get()
-          val trimmed = if text.last == '\n' then text.skip(1, Rtl) else text
+          val text: Text = reader.get()
+          val trimmed = if text.s.last == '\n' then text.skip(1, Rtl) else text
           CodlToken.Item(trimmed, reader.start()(0), reader.start()(1), true)
 
         case Word | Pending(_) =>
