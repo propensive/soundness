@@ -38,7 +38,7 @@ specified.
 We make the following distinction between _arguments_ and _parameters_: the
 word "arguments" is used to describe a linear sequence of textual values, while
 we use "parameters" to describe the interpreted meaning of arguments. So, for
-example, the arguments of `grep -rA4 pattern` would be [`-rA4`, `pattern`]
+example, the arguments of `grep -rA4 pattern` would be {`-rA4`, `pattern`}
 while its parameters would be some representation of {"search recursively", "4
 lines of trailing content", "search for pattern"}.
 
