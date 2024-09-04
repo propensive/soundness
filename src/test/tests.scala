@@ -207,24 +207,24 @@ object Tests extends Suite(t"Aviation Tests"):
 
       test(t"Specify times"):
         2.01.am
-      .assert(_ == Time(2, 1, 0))
+      .assert(_ == Clockface(2, 1, 0))
 
       test(t"Specify times 2"):
         2.59.am
-      .assert(_ == Time(2, 59, 0))
+      .assert(_ == Clockface(2, 59, 0))
 
       test(t"Specify times 3"):
         11.40.am
-      .assert(_ == Time(11, 40, 0))
+      .assert(_ == Clockface(11, 40, 0))
 
       test(t"Specify times 4"):
         7.25.pm
-      .assert(_ == Time(19, 25, 0))
+      .assert(_ == Clockface(19, 25, 0))
 
       import calendars.gregorian
       test(t"Specify datetime"):
         2018-Aug-11 at 5.25.pm
-      .assert(_ == Timestamp(Date(2018, Aug, 11), Time(17, 25, 0)))
+      .assert(_ == Timestamp(Date(2018, Aug, 11), Clockface(17, 25, 0)))
 
       test(t"Add two months to a date"):
         2014-Nov-20 + 2.months
