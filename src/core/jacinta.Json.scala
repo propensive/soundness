@@ -158,13 +158,13 @@ object Json extends Json2, Dynamic:
       builder.result()
 
   given [ElementType: Decodable in Json](using Tactic[JsonError])
-      => (Map[String, ElementType] is Decodable in Json) as map =
+      => (Map[Text, ElementType] is Decodable in Json) as map =
 
     (value, omit) =>
       val (keys, values) = value.root.obj
 
-      keys.indices.foldLeft(Map[String, ElementType]()): (acc, index) =>
-        acc.updated(keys(index), ElementType.decode(Json.ast(values(index)), false))
+      keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
+        acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
   given Encoder[Json] as encoder = json => MinimalJsonPrinter.print(json.root)
 
