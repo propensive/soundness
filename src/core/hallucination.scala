@@ -19,12 +19,12 @@ package hallucination
 import escapade.*
 import turbulence.*
 import rudiments.*
+import prepositional.*
 import anticipation.*
 import gesticulate.*
 import spectacular.*
 import iridescence.*
 import gossamer.*
-import symbolism.*
 
 import java.awt.image as jai
 import java.awt as ja
@@ -36,14 +36,16 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-  given Image[ImageFormatType] is GenericHttpResponseStream as response:
+  given (Image in ImageFormatType) is GenericHttpResponseStream as response:
     def mediaType = mediaType.show
-    def content(image: Image[ImageFormatType]): LazyList[Bytes] = image.serialize(using codec)
+    def content(image: Image in ImageFormatType): LazyList[Bytes] = image.serialize(using codec)
 
-  def read[InputType: Readable by Bytes](inputType: InputType): Image[ImageFormatType] =
+  def read[InputType: Readable by Bytes](inputType: InputType): Image in ImageFormatType =
     reader.synchronized:
       reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
-      Image(reader.read(0).nn).also(reader.dispose())
+
+      (new Image(reader.read(0).nn) { type Format = ImageFormatType }).also:
+        reader.dispose()
 
 erased trait ImageFormat
 erased trait Bmp extends ImageFormat
@@ -63,7 +65,8 @@ object Gif extends ImageCodec[Gif]("GIF".tt):
 object Png extends ImageCodec[Png]("PNG".tt):
   def mediaType = media"image/png"
 
-case class Image[ImageFormatType <: ImageFormat](private[hallucination] val image: jai.BufferedImage):
+case class Image(private[hallucination] val image: jai.BufferedImage):
+  type Format <: ImageFormat
   def width: Int = image.getWidth
   def height: Int = image.getHeight
 
@@ -76,11 +79,11 @@ case class Image[ImageFormatType <: ImageFormat](private[hallucination] val imag
       for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
       append('\n')
 
-  def serialize(using codec: ImageCodec[ImageFormatType]): LazyList[Bytes] =
+  def serialize(using codec: ImageCodec[Format]): LazyList[Bytes] =
     val out = LazyListOutputStream()
     ji.ImageIO.createImageOutputStream(out)
     out.stream
 
 object Image:
-  def apply[InputType: Readable by Bytes](inputType: InputType): Image[?] =
+  def apply[InputType: Readable by Bytes](inputType: InputType): Image =
     Image(ji.ImageIO.read(inputType.read[Bytes].javaInputStream).nn)
