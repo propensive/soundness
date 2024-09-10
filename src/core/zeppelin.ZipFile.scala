@@ -21,14 +21,12 @@ import gossamer.*
 import vacuous.*
 import contingency.*
 import serpentine.*
-import denominative.*
 import feudalism.*
 import fulminate.*
 import anticipation.*
 import turbulence.*
 import spectacular.*
 import ambience.*
-import prepositional.*
 
 import scala.collection.concurrent as scc
 import scala.collection.mutable as scm
@@ -38,73 +36,8 @@ import java.nio.file as jnf
 import java.net as jn
 import java.util.zip as juz
 
-//import scala.language.experimental.captureChecking
-
-case class ZipError(filename: Text) extends Error(m"could not create ZIP file ${filename}")
-
-// FIXME: Check this
-type InvalidZipNames = ".*'.*" | ".*`.*" | ".*\\/.*" | ".*\\\\.*"
-
-object ZipPath:
-  given ZipPath is Navigable[InvalidZipNames, ZipFile]:
-    def root(path: ZipPath): ZipFile = path.zipFile
-    def descent(path: ZipPath): List[Name[InvalidZipNames]] = path.descent
-    def prefix(path: ZipFile): Text = t"/"
-    def separator(path: ZipPath): Text = t"/"
-
-  given PathCreator[ZipPath, InvalidZipNames, ZipFile] as creator = (root, descent) =>
-    ZipPath(root, ZipRef(descent))
-
-  given (using Tactic[StreamError]) => ZipPath is Readable by Bytes as readable =
-    Readable.lazyList[Bytes].contramap(_.entry().content())
-
-case class ZipPath(zipFile: ZipFile, ref: ZipRef):
-  def entry()(using streamCut: Tactic[StreamError]): ZipEntry = zipFile.entry(ref)
-
-object ZipRef:
-  def apply(text: Text)
-      (using pathError:  Tactic[PathError],
-             navigable:  ZipRef is Navigable[InvalidZipNames, Unset.type],
-             rootParser: RootParser[ZipRef, Unset.type],
-             creator:    PathCreator[ZipRef, InvalidZipNames, Unset.type])
-          : ZipRef =
-
-    Navigable.decode[ZipRef](text)
-
-  @targetName("child")
-  infix def / (name: Name[InvalidZipNames]): ZipRef = ZipRef(List(name))
-
-  given ZipRef is Navigable[InvalidZipNames, Unset.type]:
-    def root(path: ZipRef): Unset.type = Unset
-    def descent(path: ZipRef): List[Name[InvalidZipNames]] = path.descent
-    def prefix(ref: Unset.type): Text = t""
-    def separator(path: ZipRef): Text = t"/"
-
-  given rootParser: RootParser[ZipRef, Unset.type] with
-    def parse(text: Text): (Unset.type, Text) =
-      (Unset, if text.length > 0 && text.at(Prim) == '/' then text.skip(1) else text)
-
-  given creator: PathCreator[ZipRef, InvalidZipNames, Unset.type] = (root, descent) => ZipRef(descent)
-  given ZipRef is Showable = _.descent.reverse.map(_.render).join(t"/", t"/", t"")
-
-case class ZipRef(descent: List[Name[InvalidZipNames]]):
-  def parent: Optional[ZipRef] = descent match
-    case Nil       => Unset
-    case _ :: tail => ZipRef(tail)
-
-object ZipEntry:
-  def apply[ResourceType: Readable by Bytes](path: ZipRef, resource: ResourceType): ZipEntry =
-    new ZipEntry(path, () => resource.stream[Bytes])
-
-  given ZipEntry is Readable by Bytes = Readable.lazyList[Bytes].contramap(_.content())
-
-  // 00:00:00, 1 January 2000
-  val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
-
-case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
-
 object ZipFile:
-  def apply[FileType: GenericFile](file: FileType)(using stream: Tactic[StreamError]): ZipFile =
+  def apply[FileType: GenericFile](file: FileType): ZipFile raises StreamError =
     val name: Text = file.fileText
     new ZipFile(name)
 
@@ -138,7 +71,7 @@ case class ZipFile(private val filename: Text):
 
       lambda(filesystem).also(filesystem.close())
 
-  def entry(ref: ZipRef)(using streamCut: Tactic[StreamError]): ZipEntry =
+  def entry(ref: ZipRef): ZipEntry raises StreamError =
     semaphore.access(ZipEntry(ref, zipFile.getInputStream(zipFile.getEntry(ref.render.s).nn).nn))
 
   def append[InstantType: GenericInstant](entries: LazyList[ZipEntry], timestamp: Optional[InstantType] = Unset)
