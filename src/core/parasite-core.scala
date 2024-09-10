@@ -103,3 +103,5 @@ def retry[ValueType](evaluate: => Perseverance[ValueType])(using Tenacity, Monit
       case Perseverance.Prevail(value) => value
 
   recur(Prim)
+
+export Perseverance.{Persevere, Prevail, Surrender}
