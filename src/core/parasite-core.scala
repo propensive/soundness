@@ -24,6 +24,7 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import digression.*
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -84,3 +85,17 @@ def supervise[ResultType](block: Monitor ?=> ResultType)
     (using model: ThreadModel, codepoint: Codepoint)
         : ResultType raises ConcurrencyError =
   block(using model.supervisor())
+
+def retry[ValueType](evaluate: => Perseverance[ValueType])(using Tenacity, Monitor)
+        : ValueType raises RetryError =
+
+  @tailrec
+  def recur(attempt: Ordinal): ValueType =
+    sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
+
+    evaluate match
+      case Perseverance.Surrender      => abort(RetryError(attempt.n1))
+      case Perseverance.Persevere      => recur(attempt + 1)
+      case Perseverance.Prevail(value) => value
+
+  recur(Prim)
