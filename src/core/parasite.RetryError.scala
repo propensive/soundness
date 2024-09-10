@@ -20,4 +20,4 @@ import language.experimental.captureChecking
 
 import fulminate.*
 
-case class RetryError(count: Int) extends Error(m"Aborted repeated evaluation after attempt $count")
+case class RetryError(count: Int) extends Error(m"Aborted repeated evaluation after $count attempts")
