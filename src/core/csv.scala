@@ -45,14 +45,32 @@ package dsvFormats:
   given DsvFormat as ssv = DsvFormat(' ', '"', '"')
 
 object Dsv:
+  object Row:
+    def apply(iterable: Iterable[Text]): Row = new Row(IArray.from(iterable))
+
+    given (using format: DsvFormat) => Row is Showable =
+      _.data.map: cell =>
+        if !cell.contains(format.Quote) then cell else
+          Text.construct:
+            append(format.quote)
+
+            cell.s.foreach: char =>
+              if char == format.quote then append(char)
+              append(char)
+
+            append(format.quote)
+      .join(format.delimiter.show)
+
   case class Row(data: IArray[Text]):
     override def toString(): String = data.to(List).mkString("[", ";", "]")
 
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
+  def parse[SourceType: Readable by Text](source: SourceType)(using DsvFormat): Dsv =
+    Dsv(recur(source.stream[Text]))
 
-  inline def parse(content: LazyList[Text])(using DsvFormat): Dsv = Dsv(recur(content))
+  given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
       (content: LazyList[Text],
