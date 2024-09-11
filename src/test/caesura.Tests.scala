@@ -110,12 +110,19 @@ object Tests extends Suite(t"Caesura tests"):
       .assert(_ == Dsv(LazyList(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader))
 
     suite(t"Dynamic JSON access"):
+      import dynamicDsvAccess.enabled
+
       test(t"Access field by name"):
         import dsvFormats.tsvWithHeader
-        import dynamicDsvAccess.enabled
         val dsv = Dsv.parse(t"greeting\taddressee\nHello\tWorld\n")
-        dsv.rows.head.addressee
+        dsv.rows.head.addressee[Text]
       .assert(_ == t"World")
+
+      test(t"Access field by name 2"):
+        import dsvFormats.tsvWithHeader
+        val dsv = Dsv.parse(t"greeting\tnumber\nHello\t23\n")
+        dsv.rows.head.number[Int]
+      .assert(_ == 23)
 
     test(t"decode case class"):
       import dsvFormats.csv
@@ -155,15 +162,21 @@ object Tests extends Suite(t"Caesura tests"):
       Dsv.parse(t"hello\tworld")
     .assert(_ == Dsv(LazyList(Row(t"hello", t"world")), format = dsvFormats.tsv))
 
-    test(t"decode case class from tsv"):
+    test(t"decode case class from TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld").rows.head.as[Foo]
     .assert(_ == Foo(t"hello", t"world"))
 
-    test(t"convert case class to tsv"):
+    test(t"decode case class from CSV by headings"):
+      import dsvFormats.csvWithHeader
+      Dsv.parse(t"greeting,name\nhello,world").rows.head.as[Quux]
+    .assert(_ == Quux(t"world", t"hello"))
+
+    test(t"convert case class to TSV"):
       import dsvFormats.tsv
       Seq(Foo(t"hello", t"world")).dsv.show
     .assert(_ == t"hello\tworld")
 
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
+case class Quux(name: Text, greeting: Text)

@@ -29,8 +29,9 @@ import language.dynamics
 case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
   def as[CellType: DsvDecodable]: CellType = CellType.decode(this)
 
-  def selectDynamic(field: String)(using DynamicDsvEnabler): Optional[Text] =
-    columns.let(_.at(field.tt).let(data(_)))
+  def selectDynamic[ValueType: Decoder](field: String)(using DynamicDsvEnabler)
+          : Optional[ValueType] =
+    apply(field.tt)
 
   def apply[ValueType: Decoder](field: Text): Optional[ValueType] =
     columns.let(_.at(field)).let(data(_)).let(ValueType.decode(_))
