@@ -48,6 +48,10 @@ object Dsv:
   case class Row(data: IArray[Text]):
     override def toString(): String = data.to(List).mkString("[", ";", "]")
 
+  private enum State:
+    case Fresh, Quoted, DoubleQuoted
+
+
   inline def parse(content: LazyList[Text])(using DsvFormat): Dsv = Dsv(recur(content))
 
   private def recur
@@ -56,7 +60,7 @@ object Dsv:
        column:  Int            = 0,
        cells:   Array[Text]    = new Array[Text](0),
        buffer:  TextBuffer     = TextBuffer(),
-       quoted:  Boolean        = false)
+       state:   State          = State.Fresh)
       (using format: DsvFormat)
           : LazyList[Row] =
 
@@ -69,33 +73,41 @@ object Dsv:
 
     inline def advance() =
       val cells = putCell()
-      recur(content, index + 1, column + 1, cells, buffer, false)
+      recur(content, index + 1, column + 1, cells, buffer, State.Fresh)
 
     inline def next(char: Char): LazyList[Row] =
-      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, quoted)
+      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state)
 
-    inline def quote(): LazyList[Row] =
-      recur(content, index + 1, column, cells, buffer, !quoted)
+    inline def quote(): LazyList[Row] = state match
+      case State.Fresh  => recur(content, index + 1, column, cells, buffer, State.Quoted)
+      case State.Quoted => recur(content, index + 1, column, cells, buffer, State.DoubleQuoted)
+      case State.DoubleQuoted =>
+        buffer.put(format.Quote)
+        recur(content, index + 1, column, cells, buffer, State.Quoted)
+
 
     inline def fresh(): Array[Text] = new Array[Text](cells.length)
+
     inline def row(): LazyList[Row] =
       val cells = putCell()
       buffer.clear()
-      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, fresh(), buffer, false)
+      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh)
 
     content match
       case LazyList()    => if column == 0 && buffer.empty then LazyList() else row()
       case head #:: tail =>
-        if !head.has(index) then recur(tail, Prim, column, cells, buffer, quoted)
-        else head.s.charAt(index.n0) match
-          case format.Delimiter => if quoted then next(format.Delimiter) else advance()
-          case format.Quote     => quote()
-          case '\n' | '\r'      => if column == 0 && buffer.empty
-                                   then recur(content, index + 1, 0, cells, buffer, false)
-                                   else if quoted then next(head.s.charAt(index.n0)) else row()
-          case char             =>
-            buffer.put(char)
-            recur(content, index + 1, column, cells, buffer, quoted)
+        if !head.has(index) then recur(tail, Prim, column, cells, buffer, state)
+        else
+          head.s.charAt(index.n0) match
+            case format.Delimiter => if state != State.Quoted then advance() else next(format.Delimiter)
+            case format.Quote     => quote()
+            case '\n' | '\r'      => if column == 0 && buffer.empty
+                                     then recur(content, index + 1, 0, cells, buffer, State.Fresh)
+                                     else if state != State.Quoted then row()
+                                     else next(head.s.charAt(index.n0))
+            case char             =>
+              buffer.put(char)
+              recur(content, index + 1, column, cells, buffer, state)
 
 trait RowFormat:
   protected val separator: Char
