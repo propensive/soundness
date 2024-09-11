@@ -18,11 +18,11 @@ package caesura
 
 package dsvFormats:
   given DsvFormat as csv = DsvFormat(false, ',', '"', '"')
-  given DsvFormat as csvWithHeadings = DsvFormat(true, ',', '"', '"')
+  given DsvFormat as csvWithHeader = DsvFormat(true, ',', '"', '"')
   given DsvFormat as tsv = DsvFormat(false, '\t', '"', '"')
-  given DsvFormat as tsvWithHeadings = DsvFormat(true, '\t', '"', '"')
+  given DsvFormat as tsvWithHeader = DsvFormat(true, '\t', '"', '"')
   given DsvFormat as ssv = DsvFormat(false, ' ', '"', '"')
-  given DsvFormat as ssvWithHeadings = DsvFormat(true, ' ', '"', '"')
+  given DsvFormat as ssvWithHeader = DsvFormat(true, ' ', '"', '"')
 
 extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
 

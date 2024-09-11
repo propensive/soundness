@@ -98,6 +98,17 @@ object Tests extends Suite(t"Caesura tests"):
         Dsv.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
       .assert(_ == LazyList(Row(t"f\"oo", t"\"Hello\nWorld\"")))
 
+    suite(t"Alternative formats"):
+      test(t"Parse TSV data"):
+        import dsvFormats.tsv
+        Dsv.parse(t"Hello\tWorld\n").rows
+      .assert(_ == LazyList(Row(t"Hello", t"World")))
+
+      test(t"Parse TSV data"):
+        import dsvFormats.tsvWithHeader
+        Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
+      .assert(_ == Dsv(LazyList(Row(t"Hello", t"World")), Row(t"Greeting", t"Addressee"), dsvFormats.tsvWithHeader))
+
     test(t"decode case class"):
       import dsvFormats.csv
       Dsv.parse(t"""hello,world""").rows.head.as[Foo]
