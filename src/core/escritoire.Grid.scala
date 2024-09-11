@@ -29,7 +29,8 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Grid:
-  given [TextType: {Textual, Printable as printable}](using TextMetrics) => Grid[TextType] is Printable =
+  given [TextType: {Textual, Printable as printable}](using TextMetrics)
+      => Grid[TextType] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
@@ -38,8 +39,12 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
   def render(using metrics: TextMetrics, textual: TextType is Textual): LazyList[TextType] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
-    val rightEdge = Textual(t"$pad${style.charset(top = style.sideLines, bottom = style.sideLines)}")
-    val midEdge = Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
+
+    val rightEdge =
+      Textual(t"$pad${style.charset(top = style.sideLines, bottom = style.sideLines)}")
+
+    val midEdge =
+      Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
     def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
       rows match
@@ -49,7 +54,9 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
               val cell = row(index)
               if cell.minHeight > lineNumber
               then
-                cell.textAlign.pad(cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
+                cell.textAlign.pad
+                 (cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
+
               else Textual((t" "*widths(index)))
             .join(leftEdge, midEdge, rightEdge)
 
@@ -62,11 +69,16 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
       val width = above.or(below).vouch(using Unsafe).pipe: widths =>
         widths.sum + style.cost(widths.length)
 
-      val ascenders = above.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
-      val descenders = below.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+      val ascenders =
+        above.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
+
+      val descenders =
+        below.let(_.scan(0)(_ + _ + style.padding*2 + 1).to(sci.BitSet)).or(sci.BitSet())
 
       val horizontal =
-        if above.absent then style.topLine else if below.absent then style.bottomLine else style.titleLine
+        if above.absent then style.topLine
+        else if below.absent then style.bottomLine
+        else style.titleLine
 
       Textual:
         Text.fill(width): index =>
@@ -92,9 +104,15 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
                bottom = vertical(descenders, style.innerLines),
                left   = horizontal.or(BoxLine.Blank))
 
-    val topLine = if style.topLine.absent then LazyList() else LazyList(rule(Unset, sections.head.widths))
+    val topLine =
+      if style.topLine.absent then LazyList() else LazyList(rule(Unset, sections.head.widths))
+
     val midRule = rule(sections.head.widths, sections.head.widths)
-    val bottomLine = if style.bottomLine.absent then LazyList() else LazyList(rule(sections.head.widths, Unset))
-    val body = sections.to(LazyList).flatMap { section => midRule #:: recur(section.widths, section.rows) }
+
+    val bottomLine =
+      if style.bottomLine.absent then LazyList() else LazyList(rule(sections.head.widths, Unset))
+
+    val body =
+      sections.to(LazyList).flatMap { section => midRule #:: recur(section.widths, section.rows) }
 
     topLine #::: body.tail #::: bottomLine

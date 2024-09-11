@@ -78,7 +78,8 @@ package columnar:
               text.slice(Ordinal.zerary(lineStart) ~ Ordinal.natural(lastSpace)) :: lines)
 
             else format(text, position + 1, lineStart, lastSpace, lines)
-        else if lineStart == position then lines else text.slice(Ordinal.zerary(lineStart) ~ Ordinal.natural(position)) :: lines
+        else if lineStart == position then lines
+        else text.slice(Ordinal.zerary(lineStart) ~ Ordinal.natural(position)) :: lines
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
@@ -106,7 +107,8 @@ package columnar:
         if line.length > width then line.keep(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Collapsible(threshold: Double) extends Columnar:
-    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int] =
+    def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
+            : Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)

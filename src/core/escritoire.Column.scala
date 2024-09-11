@@ -33,7 +33,11 @@ object Column:
     def contents(row: RowType): TextType = TextType.show(get(row))
 
     Column
-      (title, contents, textAlign.or(columnAlignment.text), verticalAlign.or(columnAlignment.vertical), sizing)
+     (title,
+      contents,
+      textAlign.or(columnAlignment.text),
+      verticalAlign.or(columnAlignment.vertical),
+      sizing)
 
 case class Column[RowType, TextType: Textual]
     (title:         TextType,

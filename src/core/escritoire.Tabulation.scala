@@ -28,10 +28,10 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Tabulation:
-  given [TextType: {Textual as textual, Printable as printable}](using TextMetrics, TableStyle, Attenuation) => Tabulation[TextType] is Printable =
+  given [TextType: {Textual as textual, Printable as printable}]
+      (using TextMetrics, TableStyle, Attenuation) => Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
-
 
 abstract class Tabulation[TextType: ClassTag]():
   type Row
@@ -69,7 +69,9 @@ abstract class Tabulation[TextType: ClassTag]():
 
             dataMax.max(titleMax).puncture(0)
 
-        val indices: IndexedSeq[Int] = widths.indices.map { index => widths(index).let(index.waive) }.compact
+        val indices: IndexedSeq[Int] =
+          widths.indices.map { index => widths(index).let(index.waive) }.compact
+
         val totalWidth = widths.sumBy(_.or(0)) + style.cost(indices.size)
 
         Layout(slack, IArray.from(indices), IArray.from(widths.compact), totalWidth)

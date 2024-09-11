@@ -24,24 +24,27 @@ import scala.collection.immutable as sci
 
 object Table:
   @targetName("make")
-  def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual](columns0: Column[RowType, TextType]*)
+  def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual]
+      (columns0: Column[RowType, TextType]*)
           : Table[RowType, TextType] =
 
     new Table(columns0*)
 
-case class Table[RowType, TextType: {ClassTag, Textual as textual}](columns0: Column[RowType, TextType]*):
+case class Table[RowType, TextType: {ClassTag, Textual as textual}]
+    (columns0: Column[RowType, TextType]*):
   table =>
 
   val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)
   val titles: Seq[IArray[IArray[TextType]]] =
     Seq(IArray.from(columns.map { column => IArray.from(column.title.cut(t"\n")) }))
 
-  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } = new Tabulation[TextType]:
-    type Row = RowType
+  def tabulate(data: Seq[RowType]): Tabulation[TextType] { type Row = RowType } =
+    new Tabulation[TextType]:
+      type Row = RowType
 
-    val columns: IArray[Column[Row, TextType]] = table.columns
-    val titles: Seq[IArray[IArray[TextType]]] = table.titles
-    val dataLength: Int = data.length
+      val columns: IArray[Column[Row, TextType]] = table.columns
+      val titles: Seq[IArray[IArray[TextType]]] = table.titles
+      val dataLength: Int = data.length
 
-    val rows: Seq[IArray[IArray[TextType]]] =
-      data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }
+      val rows: Seq[IArray[IArray[TextType]]] =
+        data.map { row => columns.map { column => IArray.from(column.get(row).lines) } }
