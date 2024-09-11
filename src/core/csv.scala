@@ -20,60 +20,86 @@ import wisteria.*
 import rudiments.*
 import gossamer.*
 import fulminate.*
+import prepositional.*
+import denominative.*
 import turbulence.*
+import contingency.*
 import spectacular.*
 import hieroglyph.*
 import anticipation.*
+
+
+case class DsvFormat(delimiter: Char, quote: Char):
+  val Delimiter: Char = delimiter
+  val Quote: Char = quote
+
+case class Dsv(rows: LazyList[Dsv.Row]):
+  override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
+
+package dsvFormats:
+  given DsvFormat as csv = DsvFormat(',', '"')
+  given DsvFormat as tsv = DsvFormat('\t', '"')
+  given DsvFormat as ssv = DsvFormat(' ', '"')
+
+object Dsv:
+  case class Row(data: IArray[Text]):
+    override def toString(): String = data.to(List).mkString("[", ";", "]")
+
+  inline def parse(content: LazyList[Text])(using DsvFormat): Dsv = Dsv(recur(content))
+
+  private def recur
+      (content: LazyList[Text],
+       index:   Ordinal        = Prim,
+       column:  Int            = 0,
+       cells:   Array[Text]    = new Array[Text](0),
+       buffer:  TextBuffer     = TextBuffer(),
+       quoted:  Boolean        = false)
+      (using format: DsvFormat)
+          : LazyList[Row] =
+
+    inline def putCell(): Array[Text] =
+      val cells2 = if cells.length <= column then cells :+ buffer() else
+        cells(column) = buffer()
+        cells
+
+      cells2.also(buffer.clear())
+
+    inline def advance() =
+      val cells = putCell()
+      recur(content, index + 1, column + 1, cells, buffer, false)
+
+    inline def next(char: Char): LazyList[Row] =
+      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, quoted)
+
+    inline def quote(): LazyList[Row] = recur(content, index + 1, column, cells, buffer, !quoted)
+
+    inline def row(): LazyList[Row] =
+      val cells = putCell()
+      buffer.clear()
+      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, new Array[Text](cells.length), buffer, false)
+
+    content match
+      case LazyList()    => LazyList()
+      case head #:: tail =>
+        if !head.has(index) then recur(tail, Prim, column, cells, buffer, quoted)
+        else head.s.charAt(index.n0) match
+          case format.Delimiter => if quoted then next(format.Delimiter) else advance()
+          case format.Quote     => quote()
+          case '\n'             => if quoted then next('\n') else row()
+          case char             =>
+            buffer.put(char)
+            recur(content, index + 1, column, cells, buffer, quoted)
 
 trait RowFormat:
   protected val separator: Char
   type Format
   def wrap(list: List[Csv]): Format
-  
-  def parse[SourceType](source: SourceType)(using readable: Readable[SourceType, Line]): Format = wrap:
-    readable.read(source).to(List).map: line =>
-      parseLine(line.content)
-
-  def parseLine(line: Text): Csv =
-    @tailrec
-    def parseLine(items: Vector[Text], index: Int, quoted: Boolean, start: Int, end: Int, join: Boolean)
-            : Vector[Text] =
-
-      if line.length <= index then
-        if join then items.init :+ t"${items.last}${line.slice(start, if end < 0 then index else end)}"
-        else items :+ line.slice(start, if end < 0 then index else end)
-      else 
-        val ch = try line(index) catch case error: OutOfRangeError => throw Panic(error)
-        
-        (ch: @switch) match
-          case `separator` =>
-            if quoted then parseLine(items, index + 1, quoted, start, end, join)
-            else
-              val elems: Vector[Text] = if start < 0 then items :+ t"" else
-                val suffix = line.slice(start, if end == -1 then index else end)
-                if join then
-                  val part: Text = t"${items.last}${suffix.s}"
-                  items.init :+ part
-                else items :+ suffix
-  
-              parseLine(elems, index + 1, quoted = false, index + 1, -1, join = false)
-  
-          case '"' =>
-            if quoted then parseLine(items, index + 1, quoted = false, start, index, join = join)
-            else if end != -1 then
-              parseLine(items :+ line.slice(start, index), index + 1, quoted = true, index + 1, -1, join = true)
-            else parseLine(items, index + 1, quoted = true, index + 1, -1, join = false)
-  
-          case ch: Char =>
-            parseLine(items, index + 1, quoted, start, end, join)
-
-    Csv(parseLine(Vector(), 0, quoted = false, 0, -1, join = false)*)
 
   def serialize(row: Csv): Text = row.elems.map(escape).join(separator.show)
   protected def escape(str: Text): Text
 
 object Csv:
-  given show: Show[Csv] = _.elems.join(t",")
+  given Csv is Showable = _.elems.join(t",")
 
 case class Csv(elems: Text*):
   def as[CellType: CsvDecoder]: CellType = summon[CsvDecoder[CellType]].decode(this)
@@ -81,15 +107,16 @@ case class Csv(elems: Text*):
 object CsvDoc extends RowFormat:
   type Format = CsvDoc
   def wrap(seq: List[Csv]): CsvDoc = CsvDoc(seq)
-  given show: Show[CsvDoc] = _.rows.map(serialize).join(t"\n")
+  given CsvDoc is Showable = _.rows.map(serialize).join(t"\n")
 
-  given httpResponseStream(using CharEncoder): GenericHttpResponseStream[CsvDoc] with
+  given (using CharEncoder) => CsvDoc is GenericHttpResponseStream:
     def mediaType: Text = t"text/csv"
+
     def content(value: CsvDoc): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(CsvDoc.serialize(_)).join(t"\n").bytes)
 
   override val separator = ','
-  
+
   def escape(text: Text): Text =
     val count = text.count { char => char.isWhitespace || char == '"' || char == ',' }
     if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
@@ -98,10 +125,10 @@ object CsvEncoder extends ProductDerivation[CsvEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CsvEncoder[DerivationType] = value =>
     val cells = fields(value) { [FieldType] => field => context.encode(field).elems }.to(List).flatten
     Csv(cells*)
-  
+
   given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
     Csv(encoder.encode(value))
-  
+
 trait CsvEncoder[ValueType]:
   def encode(value: ValueType): Csv
 
@@ -123,11 +150,11 @@ object TsvDoc extends RowFormat:
   def wrap(seq: List[Csv]): TsvDoc = TsvDoc(seq)
   override val separator = '\t'
   def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
-  given show: Show[TsvDoc] = _.rows.map(serialize).join(t"\n")
+  given TsvDoc is Showable = _.rows.map(serialize).join(t"\n")
 
-  given httpResponseStream(using CharEncoder): GenericHttpResponseStream[TsvDoc] with
+  given (using CharEncoder) => TsvDoc is GenericHttpResponseStream:
     def mediaType: Text = "text/tab-separated-values".tt
-    
+
     def content(value: TsvDoc): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
@@ -141,9 +168,9 @@ object CsvDecoder extends ProductDerivation[CsvDecoder]:
             val row = Csv(elems.elems.drop(count)*)
             count += context.width
             typeclass.decode(row)
-        
+
       override def width: Int = contexts { [FieldType] => context => context.width }.sum
-  
+
   given decoder[ValueType: Decoder]: CsvDecoder[ValueType] = _.elems.head.decodeAs[ValueType]
 
 trait CsvDecoder[ValueType]:
