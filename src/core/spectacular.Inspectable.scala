@@ -26,7 +26,7 @@ import scala.deriving.*
 
 import language.experimental.captureChecking
 
-object Inspectable:
+object Inspectable extends Inspectable2:
   inline given [ValueType] => ValueType is Inspectable as derived = compiletime.summonFrom:
     case encoder: Encoder[ValueType]   => encoder.encode(_)
     case given Reflection[ValueType]   => InspectableDerivation.derived[ValueType].text(_)
@@ -136,6 +136,7 @@ object Inspectable:
 
   given None.type is Inspectable = none => "None".tt
 
+trait Inspectable2:
   given [ValueType: Inspectable] => Optional[ValueType] is Inspectable as optional =
     _.let { value => s"⸂${ValueType.text(value)}⸃".tt }.or("⸄⸅".tt)
 
