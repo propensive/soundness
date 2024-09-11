@@ -134,7 +134,7 @@ object Tests extends Suite(t"Caesura tests"):
     test(t"simple parse TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld")
-    .assert(_ == Dsv(LazyList(Row(t"hello", t"world"))))
+    .assert(_ == Dsv(LazyList(Row(t"hello", t"world")), format = dsvFormats.tsv))
 
     test(t"decode case class from tsv"):
       import dsvFormats.tsv

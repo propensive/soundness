@@ -20,7 +20,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -30,21 +29,25 @@ import wisteria.*
 
 import scala.compiletime.*
 
-case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
+case class DsvFormat(header: Boolean, delimiter: Char, quote: Char, escape: Char):
   val Delimiter: Char = delimiter
   val Quote: Char = quote
   val Escape: Char = escape
 
   def doublingEscapes: Boolean = quote == escape
 
-case class Dsv(rows: LazyList[Row], format: Optional[DsvFormat] = Unset):
+case class Dsv(rows: LazyList[Row], head: Optional[Row] = Unset, format: Optional[DsvFormat] = Unset):
+  lazy val columns: Map[Text, Int] = head.let(_.data.zipWithIndex.to(Map)).or(Map())
   override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
   def as[ValueType: DsvDecoder]: LazyList[ValueType] = rows.map(_.as[ValueType])
 
 package dsvFormats:
-  given DsvFormat as csv = DsvFormat(',', '"', '"')
-  given DsvFormat as tsv = DsvFormat('\t', '"', '"')
-  given DsvFormat as ssv = DsvFormat(' ', '"', '"')
+  given DsvFormat as csv = DsvFormat(false, ',', '"', '"')
+  given DsvFormat as csvWithHeadings = DsvFormat(true, ',', '"', '"')
+  given DsvFormat as tsv = DsvFormat(false, '\t', '"', '"')
+  given DsvFormat as tsvWithHeadings = DsvFormat(true, '\t', '"', '"')
+  given DsvFormat as ssv = DsvFormat(false, ' ', '"', '"')
+  given DsvFormat as ssvWithHeadings = DsvFormat(true, ' ', '"', '"')
 
 case class Row(data: IArray[Text]):
   override def toString(): String = data.to(List).mkString("[", ";", "]")
@@ -77,12 +80,12 @@ object Row:
     .join(format.delimiter.show)
 
 object Dsv:
-
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
-  def parse[SourceType: Readable by Text](source: SourceType)(using DsvFormat): Dsv =
-    Dsv(recur(source.stream[Text]))
+  def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat): Dsv =
+    val rows = recur(source.stream[Text])
+    if format.header then Dsv(rows.tail, rows.head, format) else Dsv(rows, Unset, format)
 
   given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
@@ -126,7 +129,6 @@ object Dsv:
       Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh)
 
     content match
-      case LazyList()    => if column == 0 && buffer.empty then LazyList() else row()
       case head #:: tail =>
         if !head.has(index) then recur(tail, Prim, column, cells, buffer, state)
         else
@@ -141,6 +143,9 @@ object Dsv:
               buffer.put(char)
               recur(content, index + 1, column, cells, buffer, state)
 
+      case _ =>
+        if column == 0 && buffer.empty then LazyList() else row()
+
 trait RowFormat:
   protected val separator: Char
   type Format
@@ -153,23 +158,6 @@ object Csv:
   given Csv is Showable = _.elems.join(t",")
 
 case class Csv(elems: Text*)
-
-object CsvDoc extends RowFormat:
-  type Format = CsvDoc
-  def wrap(seq: List[Csv]): CsvDoc = CsvDoc(seq)
-  given CsvDoc is Showable = _.rows.map(serialize).join(t"\n")
-
-  given (using CharEncoder) => CsvDoc is GenericHttpResponseStream:
-    def mediaType: Text = t"text/csv"
-
-    def content(value: CsvDoc): LazyList[IArray[Byte]] =
-      LazyList(value.rows.map(CsvDoc.serialize(_)).join(t"\n").bytes)
-
-  override val separator = ','
-
-  def escape(text: Text): Text =
-    val count = text.count { char => char.isWhitespace || char == '"' || char == ',' }
-    if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
 
 object DsvEncoder extends ProductDerivation[DsvEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: DsvEncoder[DerivationType] = value =>
@@ -186,25 +174,11 @@ extension [ValueType](value: ValueType)
   def dsv(using encoder: DsvEncoder[ValueType]): Row = encoder.encode(value)
 
 extension [ElementType](value: Seq[ElementType])
-  def dsv(using encoder: DsvEncoder[ElementType]): Dsv = Dsv(value.to(LazyList).map(encoder.encode(_)))
+  def dsv(using encoder: DsvEncoder[ElementType]): Dsv =
+    Dsv(value.to(LazyList).map(encoder.encode(_)))
 
 case class CsvDoc(rows: List[Csv])
 case class TsvDoc(rows: List[Csv])
-
-object TsvDoc extends RowFormat:
-  type Format = TsvDoc
-  def wrap(seq: List[Csv]): TsvDoc = TsvDoc(seq)
-  override val separator = '\t'
-  def escape(str: Text): Text = Text(str.s.replaceAll("\t", "        ").nn)
-  given TsvDoc is Showable = _.rows.map(serialize).join(t"\n")
-
-  given (using CharEncoder) => TsvDoc is GenericHttpResponseStream:
-    def mediaType: Text = "text/tab-separated-values".tt
-
-    def content(value: TsvDoc): LazyList[IArray[Byte]] =
-      LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
-
-
 
 object DsvDecoder extends ProductDerivation[DsvDecoder]:
 
