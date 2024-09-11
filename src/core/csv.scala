@@ -29,17 +29,20 @@ import hieroglyph.*
 import anticipation.*
 
 
-case class DsvFormat(delimiter: Char, quote: Char):
+case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
   val Delimiter: Char = delimiter
   val Quote: Char = quote
+  val Escape: Char = escape
+
+  def doublingEscapes: Boolean = quote == escape
 
 case class Dsv(rows: LazyList[Dsv.Row]):
   override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
 
 package dsvFormats:
-  given DsvFormat as csv = DsvFormat(',', '"')
-  given DsvFormat as tsv = DsvFormat('\t', '"')
-  given DsvFormat as ssv = DsvFormat(' ', '"')
+  given DsvFormat as csv = DsvFormat(',', '"', '"')
+  given DsvFormat as tsv = DsvFormat('\t', '"', '"')
+  given DsvFormat as ssv = DsvFormat(' ', '"', '"')
 
 object Dsv:
   case class Row(data: IArray[Text]):
@@ -71,21 +74,25 @@ object Dsv:
     inline def next(char: Char): LazyList[Row] =
       buffer.put(char) yet recur(content, index + 1, column, cells, buffer, quoted)
 
-    inline def quote(): LazyList[Row] = recur(content, index + 1, column, cells, buffer, !quoted)
+    inline def quote(): LazyList[Row] =
+      recur(content, index + 1, column, cells, buffer, !quoted)
 
+    inline def fresh(): Array[Text] = new Array[Text](cells.length)
     inline def row(): LazyList[Row] =
       val cells = putCell()
       buffer.clear()
-      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, new Array[Text](cells.length), buffer, false)
+      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, fresh(), buffer, false)
 
     content match
-      case LazyList()    => LazyList()
+      case LazyList()    => if column == 0 && buffer.empty then LazyList() else row()
       case head #:: tail =>
         if !head.has(index) then recur(tail, Prim, column, cells, buffer, quoted)
         else head.s.charAt(index.n0) match
           case format.Delimiter => if quoted then next(format.Delimiter) else advance()
           case format.Quote     => quote()
-          case '\n'             => if quoted then next('\n') else row()
+          case '\n' | '\r'      => if column == 0 && buffer.empty
+                                   then recur(content, index + 1, 0, cells, buffer, false)
+                                   else if quoted then next(head.s.charAt(index.n0)) else row()
           case char             =>
             buffer.put(char)
             recur(content, index + 1, column, cells, buffer, quoted)
