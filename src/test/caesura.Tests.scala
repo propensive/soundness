@@ -107,7 +107,15 @@ object Tests extends Suite(t"Caesura tests"):
       test(t"Parse TSV data"):
         import dsvFormats.tsvWithHeader
         Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
-      .assert(_ == Dsv(LazyList(Row(t"Hello", t"World")), Row(t"Greeting", t"Addressee"), dsvFormats.tsvWithHeader))
+      .assert(_ == Dsv(LazyList(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader))
+
+    suite(t"Dynamic JSON access"):
+      test(t"Access field by name"):
+        import dsvFormats.tsvWithHeader
+        import dynamicDsvAccess.enabled
+        val dsv = Dsv.parse(t"greeting\taddressee\nHello\tWorld\n")
+        dsv.rows.head.addressee
+      .assert(_ == t"World")
 
     test(t"decode case class"):
       import dsvFormats.csv

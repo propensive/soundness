@@ -26,11 +26,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-import scala.compiletime.*
-
-case class Dsv(rows: LazyList[Row], head: Optional[Row] = Unset, format: Optional[DsvFormat] = Unset):
-  lazy val columns: Map[Text, Int] = head.let(_.data.zipWithIndex.to(Map)).or(Map())
-  override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
+case class Dsv(rows: LazyList[Row], format: Optional[DsvFormat] = Unset):
   def as[ValueType: DsvDecodable]: LazyList[ValueType] = rows.map(_.as[ValueType])
 
 object Dsv:
@@ -38,18 +34,18 @@ object Dsv:
     case Fresh, Quoted, DoubleQuoted
 
   def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat): Dsv =
-    val rows = recur(source.stream[Text])
-    if format.header then Dsv(rows.tail, rows.head, format) else Dsv(rows, Unset, format)
+    Dsv(recur(source.stream[Text]), format)
 
   given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
       (content: LazyList[Text],
-       index:   Ordinal        = Prim,
-       column:  Int            = 0,
-       cells:   Array[Text]    = new Array[Text](0),
-       buffer:  TextBuffer     = TextBuffer(),
-       state:   State          = State.Fresh)
+       index:   Ordinal                  = Prim,
+       column:  Int                      = 0,
+       cells:   Array[Text]              = new Array[Text](0),
+       buffer:  TextBuffer               = TextBuffer(),
+       state:   State                    = State.Fresh,
+       head:    Optional[Map[Text, Int]] = Unset)
       (using format: DsvFormat)
           : LazyList[Row] =
 
@@ -62,40 +58,46 @@ object Dsv:
 
     inline def advance() =
       val cells = putCell()
-      recur(content, index + 1, column + 1, cells, buffer, State.Fresh)
+      recur(content, index + 1, column + 1, cells, buffer, State.Fresh, head)
 
     inline def next(char: Char): LazyList[Row] =
-      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state)
+      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state, head)
 
     inline def quote(): LazyList[Row] = state match
-      case State.Fresh  => recur(content, index + 1, column, cells, buffer, State.Quoted)
-      case State.Quoted => recur(content, index + 1, column, cells, buffer, State.DoubleQuoted)
+      case State.Fresh  => recur(content, index + 1, column, cells, buffer, State.Quoted, head)
+      case State.Quoted => recur(content, index + 1, column, cells, buffer, State.DoubleQuoted, head)
       case State.DoubleQuoted =>
         buffer.put(format.Quote)
-        recur(content, index + 1, column, cells, buffer, State.Quoted)
+        recur(content, index + 1, column, cells, buffer, State.Quoted, head)
 
 
     inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
-    inline def row(): LazyList[Row] =
+    inline def putRow(): LazyList[Row] =
       val cells = putCell()
       buffer.clear()
-      Row(unsafely(cells.immutable)) #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh)
+
+      if format.header && head.absent then
+        val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
+        recur(content, index + 1, 0, fresh(), buffer, State.Fresh, map)
+      else
+        val row = Row(unsafely(cells.immutable), head)
+        row #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh, head)
 
     content match
-      case head #:: tail =>
-        if !head.has(index) then recur(tail, Prim, column, cells, buffer, state)
+      case row #:: tail =>
+        if !row.has(index) then recur(tail, Prim, column, cells, buffer, state, head)
         else
-          head.s.charAt(index.n0) match
+          row.s.charAt(index.n0) match
             case format.Delimiter => if state != State.Quoted then advance() else next(format.Delimiter)
             case format.Quote     => quote()
             case '\n' | '\r'      => if column == 0 && buffer.empty
-                                     then recur(content, index + 1, 0, cells, buffer, State.Fresh)
-                                     else if state != State.Quoted then row()
-                                     else next(head.s.charAt(index.n0))
+                                     then recur(content, index + 1, 0, cells, buffer, State.Fresh, head)
+                                     else if state != State.Quoted then putRow()
+                                     else next(row.s.charAt(index.n0))
             case char             =>
               buffer.put(char)
-              recur(content, index + 1, column, cells, buffer, state)
+              recur(content, index + 1, column, cells, buffer, state, head)
 
       case _ =>
-        if column == 0 && buffer.empty then LazyList() else row()
+        if column == 0 && buffer.empty then LazyList() else putRow()
