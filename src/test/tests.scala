@@ -27,55 +27,76 @@ given decimalizer: Decimalizer = Decimalizer(1)
 
 object Tests extends Suite(t"Caesura tests"):
   def run(): Unit =
-    test(t"simple parse"):
+    suite(t"Parsing tests"):
       import dsvFormats.csv
-      Dsv.parse(t"""hello,world""").rows.head
-    .assert(_ == Row(t"hello", t"world"))
 
-    test(t"simple parse with quotes"):
-      import dsvFormats.csv
-      Dsv.parse(t""""hello","world"""").rows.head
-    .assert(_ == Row(t"hello", t"world"))
+      test(t"simple parse"):
+        Dsv.parse(t"""hello,world""").rows.head
+      .assert(_ == Row(t"hello", t"world"))
 
-    test(t"empty unquoted field at start"):
-      import dsvFormats.csv
-      Dsv.parse(t",hello,world").rows.head
-    .assert(_ == Row(t"", t"hello", t"world"))
+      test(t"simple parse with quotes"):
+        Dsv.parse(t""""hello","world"""").rows.head
+      .assert(_ == Row(t"hello", t"world"))
 
-    test(t"empty unquoted field at end"):
-      import dsvFormats.csv
-      Dsv.parse(t"hello,world,").rows.head
-    .assert(_ == Row(t"hello", t"world", t""))
+      test(t"empty unquoted field at start"):
+        Dsv.parse(t",hello,world").rows.head
+      .assert(_ == Row(t"", t"hello", t"world"))
 
-    test(t"empty unquoted field in middle"):
-      import dsvFormats.csv
-      Dsv.parse(t"hello,,world").rows.head
-    .assert(_ == Row(t"hello", t"", t"world"))
+      test(t"empty unquoted field at end"):
+        Dsv.parse(t"hello,world,").rows.head
+      .assert(_ == Row(t"hello", t"world", t""))
 
-    test(t"empty quoted field at start"):
-      import dsvFormats.csv
-      Dsv.parse(t""""","hello","world"""").rows.head
-    .assert(_ == Row(t"", t"hello", t"world"))
+      test(t"empty unquoted field in middle"):
+        Dsv.parse(t"hello,,world").rows.head
+      .assert(_ == Row(t"hello", t"", t"world"))
 
-    test(t"empty quoted field at end"):
-      import dsvFormats.csv
-      Dsv.parse(t""""hello","world",""""").rows.head
-    .assert(_ == Row(t"hello", t"world", t""))
+      test(t"empty quoted field at start"):
+        Dsv.parse(t""""","hello","world"""").rows.head
+      .assert(_ == Row(t"", t"hello", t"world"))
 
-    test(t"empty quoted field in middle"):
-      import dsvFormats.csv
-      Dsv.parse(t""""hello","","world"""").rows.head
-    .assert(_ == Row(t"hello", t"", t"world"))
+      test(t"empty quoted field at end"):
+        Dsv.parse(t""""hello","world",""""").rows.head
+      .assert(_ == Row(t"hello", t"world", t""))
 
-    test(t"quoted comma"):
-      import dsvFormats.csv
-      Dsv.parse(t""""hello,world"""").rows.head
-    .assert(_ == Row(t"hello,world"))
+      test(t"empty quoted field in middle"):
+        Dsv.parse(t""""hello","","world"""").rows.head
+      .assert(_ == Row(t"hello", t"", t"world"))
 
-    test(t"escaped quotes"):
-      import dsvFormats.csv
-      Dsv.parse(t""""hello""world"""").rows.head
-    .assert(_ == Row(t"""hello"world"""))
+      test(t"quoted comma"):
+        Dsv.parse(t""""hello,world"""").rows.head
+      .assert(_ == Row(t"hello,world"))
+
+      test(t"escaped quotes"):
+        Dsv.parse(t""""hello""world"""").rows.head
+      .assert(_ == Row(t"""hello"world"""))
+
+      test(t"multi-line CSV without trailing newline"):
+        Dsv.parse(t"""foo,bar\nbaz,quux""").rows
+      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+
+      test(t"multi-line CSV with trailing newline"):
+        Dsv.parse(t"""foo,bar\nbaz,quux\n""").rows
+      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+
+      test(t"multi-line CSV with CR and LF"):
+        Dsv.parse(t"""foo,bar\r\nbaz,quux\r\n""").rows
+      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+
+      test(t"multi-line CSV with quoted newlines"):
+        Dsv.parse(t""""foo","bar"\n"baz","quux"\n""").rows
+      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+
+      test(t"multi-line CSV with newlines and quotes in cells"):
+        Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""").rows
+      .assert(_ == LazyList(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\n2\n3\n")))
+
+      test(t"multi-line CSV with quoted quotes adjacent to newlines"):
+        Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""").rows
+      .assert(_ == LazyList(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\"\n\"2\n3\n")))
+
+      test(t"multi-line CSV with quoted quotes adjacent to open/close quotes"):
+        Dsv.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
+      .assert(_ == LazyList(Row(t"f\"oo", t"\"Hello\nWorld\"")))
 
     test(t"decode case class"):
       import dsvFormats.csv
