@@ -114,12 +114,21 @@ object Tests extends Suite(t"Caesura tests"):
 
       test(t"Access field by name"):
         import dsvFormats.tsvWithHeader
+        import dsvHeaderMappings.unchanged
         val dsv = Dsv.parse(t"greeting\taddressee\nHello\tWorld\n")
         dsv.rows.head.addressee[Text]
       .assert(_ == t"World")
 
+      test(t"Access field by mapped name"):
+        import dsvFormats.tsvWithHeader
+        import dsvHeaderMappings.capitalizedWords
+        val dsv = Dsv.parse(t"Personal Greeting\tTarget Person\nHello\tWorld\n")
+        dsv.rows.head.targetPerson[Text]
+      .assert(_ == t"World")
+
       test(t"Access field by name 2"):
         import dsvFormats.tsvWithHeader
+        import dsvHeaderMappings.unchanged
         val dsv = Dsv.parse(t"greeting\tnumber\nHello\t23\n")
         dsv.rows.head.number[Int]
       .assert(_ == 23)

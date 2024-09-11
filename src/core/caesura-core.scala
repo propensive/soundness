@@ -16,6 +16,8 @@
 
 package caesura
 
+import gossamer.*
+
 package dsvFormats:
   given DsvFormat as csv = DsvFormat(false, ',', '"', '"')
   given DsvFormat as csvWithHeader = DsvFormat(true, ',', '"', '"')
@@ -23,6 +25,13 @@ package dsvFormats:
   given DsvFormat as tsvWithHeader = DsvFormat(true, '\t', '"', '"')
   given DsvFormat as ssv = DsvFormat(false, ' ', '"', '"')
   given DsvFormat as ssvWithHeader = DsvFormat(true, ' ', '"', '"')
+
+package dsvHeaderMappings:
+  given DsvHeaderMapping as unchanged = identity(_)
+  given DsvHeaderMapping as lowerDotted = _.uncamel.map(_.lower).join(t" ")
+  given DsvHeaderMapping as lowerSlashed = _.uncamel.map(_.lower).join(t" ")
+  given DsvHeaderMapping as capitalizedWords = _.uncamel.map(_.capitalize).join(t" ")
+  given DsvHeaderMapping as lowerWords = _.uncamel.map(_.lower).join(t" ")
 
 extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
 

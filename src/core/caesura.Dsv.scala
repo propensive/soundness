@@ -70,7 +70,6 @@ object Dsv:
         buffer.put(format.Quote)
         recur(content, index + 1, column, cells, buffer, State.Quoted, head)
 
-
     inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
     inline def putRow(): LazyList[Row] =

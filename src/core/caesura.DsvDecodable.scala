@@ -36,7 +36,6 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
     DsvProductDecoder[DerivationType](sum, (row: Row) => construct:
       [FieldType] => context =>
         val index = row.columns.let(_.at(label)).or(count)
-        println(row.columns)
         val row2 = Row(row.data.drop(index))
         count += context.width
         typeclass.decode(row2))
