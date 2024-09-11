@@ -16,19 +16,19 @@
 
 package caesura
 
-import wisteria.*
-import rudiments.*
-import gossamer.*
-import fulminate.*
-import prepositional.*
-import denominative.*
-import turbulence.*
-import contingency.*
-import spectacular.*
-import hieroglyph.*
 import anticipation.*
+import contingency.*
+import denominative.*
+import gossamer.*
+import hieroglyph.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
+import wisteria.*
 
-import java.util as ju
+import scala.compiletime.*
 
 case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
   val Delimiter: Char = delimiter
@@ -37,7 +37,7 @@ case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
 
   def doublingEscapes: Boolean = quote == escape
 
-case class Dsv(rows: LazyList[Row]):
+case class Dsv(rows: LazyList[Row], format: Optional[DsvFormat] = Unset):
   override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
   def as[ValueType: DsvDecoder]: LazyList[ValueType] = rows.map(_.as[ValueType])
 
@@ -53,7 +53,7 @@ case class Row(data: IArray[Text]):
   override def hashCode: Int = data.indices.foldLeft(0): (aggregate, index) =>
     aggregate*31 + data(index).hashCode
 
-  override def equals(that: Any): Boolean = that match
+  override def equals(that: Any): Boolean = that.asMatchable match
     case row: Row =>
       data.length == row.data.length && (data.indices.all { index => data(index) == row.data(index) })
 
@@ -204,18 +204,24 @@ object TsvDoc extends RowFormat:
     def content(value: TsvDoc): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
-object DsvDecoder extends ProductDerivation[DsvDecoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: DsvDecoder[DerivationType] =
-    new DsvDecoder[DerivationType]:
-      def decode(elems: Row): DerivationType =
-        var count: Int = 0
-        construct:
-          [FieldType] => context =>
-            val row = Row(elems.data.drop(count))
-            count += context.width
-            typeclass.decode(row)
 
-      override def width: Int = contexts { [FieldType] => context => context.width }.sum
+
+object DsvDecoder extends ProductDerivation[DsvDecoder]:
+
+  class DsvProductDecoder[DerivationType](count: Int, lambda: Row => DerivationType)
+  extends DsvDecoder[DerivationType]:
+    override def width: Int = count
+    def decode(row: Row): DerivationType = lambda(row)
+
+  inline def join[DerivationType <: Product: ProductReflection]: DsvDecoder[DerivationType] =
+    val sum = contexts { [FieldType] => context => context.width }.sum
+    var count = 0
+
+    DsvProductDecoder[DerivationType](sum, elems => construct:
+      [FieldType] => context =>
+        val row = Row(elems.data.drop(count))
+        count += context.width
+        typeclass.decode(row))
 
   given decoder[ValueType: Decoder]: DsvDecoder[ValueType] = _.data.head.decodeAs[ValueType]
 

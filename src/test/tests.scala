@@ -131,7 +131,7 @@ object Tests extends Suite(t"Caesura tests"):
       Dsv(LazyList(Row(t"hello\"world"))).show
     .assert(_ == t""""hello""world"""")
 
-    test(t"simple parse tsv"):
+    test(t"simple parse TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld")
     .assert(_ == Dsv(LazyList(Row(t"hello", t"world"))))
