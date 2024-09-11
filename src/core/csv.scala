@@ -28,6 +28,7 @@ import spectacular.*
 import hieroglyph.*
 import anticipation.*
 
+import java.util as ju
 
 case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
   val Delimiter: Char = delimiter
@@ -36,33 +37,46 @@ case class DsvFormat(delimiter: Char, quote: Char, escape: Char):
 
   def doublingEscapes: Boolean = quote == escape
 
-case class Dsv(rows: LazyList[Dsv.Row]):
+case class Dsv(rows: LazyList[Row]):
   override def toString(): String = rows.to(List).map(_.toString).mkString(" // ")
+  def as[ValueType: DsvDecoder]: LazyList[ValueType] = rows.map(_.as[ValueType])
 
 package dsvFormats:
   given DsvFormat as csv = DsvFormat(',', '"', '"')
   given DsvFormat as tsv = DsvFormat('\t', '"', '"')
   given DsvFormat as ssv = DsvFormat(' ', '"', '"')
 
+case class Row(data: IArray[Text]):
+  override def toString(): String = data.to(List).mkString("[", ";", "]")
+  def as[CellType: DsvDecoder]: CellType = CellType.decode(this)
+
+  override def hashCode: Int = data.indices.foldLeft(0): (aggregate, index) =>
+    aggregate*31 + data(index).hashCode
+
+  override def equals(that: Any): Boolean = that match
+    case row: Row =>
+      data.length == row.data.length && (data.indices.all { index => data(index) == row.data(index) })
+
+    case _        => false
+
+object Row:
+  def apply(iterable: Iterable[Text]): Row = new Row(IArray.from(iterable))
+  def apply(text: Text*): Row = new Row(IArray.from(text))
+
+  given (using format: DsvFormat) => Row is Showable =
+    _.data.map: cell =>
+      if !cell.contains(format.Quote) then cell else
+        Text.construct:
+          append(format.quote)
+
+          cell.s.foreach: char =>
+            if char == format.quote then append(char)
+            append(char)
+
+          append(format.quote)
+    .join(format.delimiter.show)
+
 object Dsv:
-  object Row:
-    def apply(iterable: Iterable[Text]): Row = new Row(IArray.from(iterable))
-
-    given (using format: DsvFormat) => Row is Showable =
-      _.data.map: cell =>
-        if !cell.contains(format.Quote) then cell else
-          Text.construct:
-            append(format.quote)
-
-            cell.s.foreach: char =>
-              if char == format.quote then append(char)
-              append(char)
-
-            append(format.quote)
-      .join(format.delimiter.show)
-
-  case class Row(data: IArray[Text]):
-    override def toString(): String = data.to(List).mkString("[", ";", "]")
 
   private enum State:
     case Fresh, Quoted, DoubleQuoted
@@ -138,8 +152,7 @@ trait RowFormat:
 object Csv:
   given Csv is Showable = _.elems.join(t",")
 
-case class Csv(elems: Text*):
-  def as[CellType: CsvDecoder]: CellType = summon[CsvDecoder[CellType]].decode(this)
+case class Csv(elems: Text*)
 
 object CsvDoc extends RowFormat:
   type Format = CsvDoc
@@ -158,29 +171,25 @@ object CsvDoc extends RowFormat:
     val count = text.count { char => char.isWhitespace || char == '"' || char == ',' }
     if count > 0 then t""""${text.s.replaceAll("\"", "\"\"").nn}"""" else text
 
-object CsvEncoder extends ProductDerivation[CsvEncoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: CsvEncoder[DerivationType] = value =>
-    val cells = fields(value) { [FieldType] => field => context.encode(field).elems }.to(List).flatten
-    Csv(cells*)
+object DsvEncoder extends ProductDerivation[DsvEncoder]:
+  inline def join[DerivationType <: Product: ProductReflection]: DsvEncoder[DerivationType] = value =>
+    val cells = fields(value) { [FieldType] => field => context.encode(field).data }.to(List).flatten
+    Row(cells)
 
-  given encoder[ValueType](using encoder: Encoder[ValueType]): CsvEncoder[ValueType] = value =>
-    Csv(encoder.encode(value))
+  given encoder[ValueType](using encoder: Encoder[ValueType]): DsvEncoder[ValueType] = value =>
+    Row(encoder.encode(value))
 
-trait CsvEncoder[ValueType]:
-  def encode(value: ValueType): Csv
+trait DsvEncoder[ValueType]:
+  def encode(value: ValueType): Row
 
 extension [ValueType](value: ValueType)
-  def csv(using encoder: CsvEncoder[ValueType]): Csv = encoder.encode(value)
+  def dsv(using encoder: DsvEncoder[ValueType]): Row = encoder.encode(value)
 
 extension [ElementType](value: Seq[ElementType])
-  def csv(using encoder: CsvEncoder[ElementType]): CsvDoc = CsvDoc(value.to(List).map(encoder.encode(_)))
-  def tsv(using encoder: CsvEncoder[ElementType]): TsvDoc = TsvDoc(value.to(List).map(encoder.encode(_)))
+  def dsv(using encoder: DsvEncoder[ElementType]): Dsv = Dsv(value.to(LazyList).map(encoder.encode(_)))
 
-case class CsvDoc(rows: List[Csv]):
-  def as[ValueType: CsvDecoder]: List[ValueType] = rows.map(_.as[ValueType])
-
-case class TsvDoc(rows: List[Csv]):
-  def as[ValueType: CsvDecoder]: List[ValueType] = rows.map(_.as[ValueType])
+case class CsvDoc(rows: List[Csv])
+case class TsvDoc(rows: List[Csv])
 
 object TsvDoc extends RowFormat:
   type Format = TsvDoc
@@ -195,21 +204,21 @@ object TsvDoc extends RowFormat:
     def content(value: TsvDoc): LazyList[IArray[Byte]] =
       LazyList(value.rows.map(TsvDoc.serialize(_)).join(t"\n").bytes)
 
-object CsvDecoder extends ProductDerivation[CsvDecoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: CsvDecoder[DerivationType] =
-    new CsvDecoder[DerivationType]:
-      def decode(elems: Csv): DerivationType =
+object DsvDecoder extends ProductDerivation[DsvDecoder]:
+  inline def join[DerivationType <: Product: ProductReflection]: DsvDecoder[DerivationType] =
+    new DsvDecoder[DerivationType]:
+      def decode(elems: Row): DerivationType =
         var count: Int = 0
         construct:
           [FieldType] => context =>
-            val row = Csv(elems.elems.drop(count)*)
+            val row = Row(elems.data.drop(count))
             count += context.width
             typeclass.decode(row)
 
       override def width: Int = contexts { [FieldType] => context => context.width }.sum
 
-  given decoder[ValueType: Decoder]: CsvDecoder[ValueType] = _.elems.head.decodeAs[ValueType]
+  given decoder[ValueType: Decoder]: DsvDecoder[ValueType] = _.data.head.decodeAs[ValueType]
 
-trait CsvDecoder[ValueType]:
-  def decode(elems: Csv): ValueType
+trait DsvDecoder[ValueType]:
+  def decode(elems: Row): ValueType
   def width: Int = 1
