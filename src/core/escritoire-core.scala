@@ -28,6 +28,11 @@ extension [RowType](data: Seq[RowType])
 
     tabulable.tabulate(data)
 
+extension [ValueType](value: ValueType)
+  def table[TextType: Textual](using tabular: ValueType is Tabular[TextType])
+          : Tabulation[TextType] =
+    tabular.tabulate(value)
+
 package columnAttenuation:
   given fail(using Tactic[TableError]): Attenuation =
     (minimum, available) => raise(TableError(minimum, available), ())
