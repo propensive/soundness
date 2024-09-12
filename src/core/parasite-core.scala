@@ -42,6 +42,10 @@ package orphanDisposal:
 package retryTenacities:
   given Tenacity as exponentialForever = Tenacity.exponential(10L, 1.2)
   given Tenacity as exponentialFiveTimes = Tenacity.exponential(10L, 1.2).limit(5)
+  given Tenacity as exponentialTenTimes = Tenacity.exponential(10L, 1.2).limit(10)
+  given Tenacity as fixedNoDelayForever = Tenacity.fixed(0L)
+  given Tenacity as fixedNoDelayFiveTimes = Tenacity.fixed(0L).limit(5)
+  given Tenacity as fixedNoDelayTenTimes = Tenacity.fixed(0L).limit(10)
 
 transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 
@@ -90,18 +94,20 @@ def supervise[ResultType](block: Monitor ?=> ResultType)
         : ResultType raises ConcurrencyError =
   block(using model.supervisor())
 
-def retry[ValueType](evaluate: => Perseverance[ValueType])(using Tenacity, Monitor)
+def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> ValueType)
+    (using Tenacity, Monitor)
         : ValueType raises RetryError =
 
   @tailrec
   def recur(attempt: Ordinal): ValueType =
-    sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
-
-    evaluate match
+    boundary[Perseverance[ValueType]]: label ?=>
+      sleep(summon[Tenacity].delay(attempt).or(abort(RetryError(attempt.n1))))
+      def surrender = boundary.break(Perseverance.Surrender)
+      def persevere = boundary.break(Perseverance.Persevere)
+      Perseverance.Prevail(evaluate(using () => surrender, () => persevere))
+    .match
       case Perseverance.Surrender      => abort(RetryError(attempt.n1))
-      case Perseverance.Persevere      => recur(attempt + 1)
       case Perseverance.Prevail(value) => value
+      case Perseverance.Persevere      => recur(attempt + 1)
 
   recur(Prim)
-
-export Perseverance.{Persevere, Prevail, Surrender}
