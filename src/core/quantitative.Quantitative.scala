@@ -117,16 +117,23 @@ object Quantitative extends Quantitative2:
 
         ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
 
+    class ShowableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
+        (using Decimalizer)
+    extends Showable:
+      type Self = Quantity[UnitsType]
+      def text(value: Quantity[UnitsType]): Text = fn(value)
+
+    class InspectableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
+        (using Decimalizer)
+    extends Inspectable:
+      type Self = Quantity[UnitsType]
+      def text(value: Quantity[UnitsType]): Text = fn(value)
 
     inline given [UnitsType <: Measure](using Decimalizer) => Quantity[UnitsType] is Showable =
-      new Showable:
-        type Self = Quantity[UnitsType]
-        def text(value: Quantity[UnitsType]): Text = value.render
+      ShowableQuantity[UnitsType](_.render)
 
     inline given [UnitsType <: Measure](using Decimalizer) => Quantity[UnitsType] is Inspectable =
-      new Inspectable:
-        type Self = Quantity[UnitsType]
-        def text(value: Quantity[UnitsType]): Text = value.render
+      InspectableQuantity[UnitsType](_.render)
 
     def renderUnits(units: Map[Text, Int]): Text =
       units.to(List).map: (unit, power) =>

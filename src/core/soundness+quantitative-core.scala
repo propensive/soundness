@@ -19,7 +19,7 @@ package soundness
 export quantitative.{Length, Mass, Time, Current, Luminosity, Temperature, AmountOfSubstance, Angle,
     PhysicalQuantity, Measure, Units, Metres, Kilograms, Candelas, Moles, Amperes, Kelvins, Seconds,
     Radians, UnitName, PrincipalUnit, SubstituteUnits, UnitsOffset, Quantity, MetricUnit,
-    Quantifiable, `*`, `/`, `+`, `-`, invert,
+    Quantifiable, invert,
     in, sqrt, cbrt, units, render, dimension, MetricPrefix, NoPrefix, Deka, Hecto, Kilo, Mega, Giga,
     Tera, Peta, Exa, Zetta, Yotta, Ronna, Quetta, Deci, Centi, Milli, Micro, Nano, Pico, Femto,
     Atto, Zepto, Yocto, Ronto, Quecto, Kibi, Mebi, Gibi, Tebi, Pebi, Exbi, Zebi, Yobi}
