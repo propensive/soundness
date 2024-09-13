@@ -1,0 +1,8 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target burdock/core
+
+project burdock
+  module core
+    compiler  java
+    sources   src/core
