@@ -5,56 +5,76 @@ import java.net.*;
 import java.nio.file.*;
 import java.lang.reflect.*;
 import java.security.*;
+import java.util.jar.*;
 import java.util.*;
 
 public class Bootstrap {
-  public static void main(String[] args) throws Exception {
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(
-        Bootstrap.class.getClassLoader().getResourceAsStream("META-INF/bootstrap.codl")))) {
+  static int verbosity = 1;
 
-      String line;
-      List<URL> jars = new ArrayList<>();
+  static void quit(String message) {
+    if (verbosity != 0) System.err.println(message);
+    System.exit(1);
+  }
+
+  static void info(String message, int severity) {
+    if (verbosity >= severity) System.err.println(message);
+  }
+
+  public static void main(String[] args) throws Exception {
+    Attributes attributes = null;
+    List<URL> jars = new ArrayList<>();
+    String mainClassname = null;
+
+    try (InputStream manifestStream =
+        Bootstrap.class.getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF")) {
+
+      if (manifestStream != null) attributes = new Manifest(manifestStream).getMainAttributes();
+      else quit("Manifest file not found!");
+
       CodeSource codeSource = Bootstrap.class.getProtectionDomain().getCodeSource();
       if (codeSource != null) jars.add(codeSource.getLocation().toURI().toURL());
-      String mainClassname = null;
       String cacheEnv = System.getenv("XDG_CACHE_HOME");
       File cache = null;
-      int verbosity = 1;
 
       if (cacheEnv == null || cacheEnv.isEmpty())
         cache = new File(new File(System.getProperty("user.home")), ".cache");
 
-      while ((line = reader.readLine()) != null) {
-        String[] words = line.split("  *");
-        String keyword = words[0];
+      String verbosityLevel = attributes.getValue("Burdock-Verbosity");
+      mainClassname = attributes.getValue("Burdock-Main");
 
-        if (keyword.equals("verbosity")) {
-          String param = words[1];
-          if (param.equals("debug")) verbosity = 3;
-          else if (param.equals("info")) verbosity = 2;
-          else if (param.equals("error")) verbosity = 1;
-          else if (param.equals("silent")) verbosity = 0;
-          else System.err.println("Invalid verbosity level. Valid values are {debug, info, error}");
+      verbosity = switch (verbosityLevel) {
+        case null     -> 1;
+        case "debug"  -> 3;
+        case "info"   -> 2;
+        case "error"  -> 1;
+        case "silent" -> 0;
+        default       -> {
+          quit("invalid verbosity level: "+verbosityLevel);
+          yield 1;
+        }
+      };
 
-        } else if (keyword.equals("require")) {
-
-          URL url = new URI(words[1]).toURL();
-          String requiredHash = words[2];
-          if (verbosity >= 3) System.err.println("Application requires "+url+".");
+      String requirements = attributes.getValue("Burdock-Require");
+      if (requirements != null) {
+        for (String item : requirements.split(" ")) {
+          String requiredHash = item.substring(0, 64);
+          URL url = new URI(item.substring(65)).toURL();
+          info("Application requires "+url+".", 3);
           File dir = new File(cache, "burdock");
           File temp = dir.createTempFile("tempfiles", ".tmp");
           dir.mkdirs();
           File destination = new File(dir, requiredHash+".jar");
 
           if (!destination.exists()) {
-            if (verbosity >= 3) System.err.println("File does not exist locally.");
+            info("File does not exist locally.", 3);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String calculatedHash = null;
 
-            if (verbosity >= 2) System.err.println("Downloading "+url+".");
+            info("Downloading "+url, 2);
 
             try (InputStream in = url.openStream();
                  FileOutputStream out = new FileOutputStream(temp)) {
+
               byte[] buffer = new byte[4096];
               int n = 0;
 
@@ -71,20 +91,17 @@ public class Bootstrap {
               out.close();
             }
 
-            if (verbosity >= 3)
-              System.err.println("Calculated hash of downloaded file as "+calculatedHash+".");
+            info("Calculated hash of downloaded file as "+calculatedHash+".", 3);
 
             if (calculatedHash.equals(requiredHash))
               Files.move(temp.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
             else {
-              if (verbosity >= 1) System.err.println("SHA-256 checksum of dependency "+url+
-                  " does not match expected value ("+requiredHash+").");
-
               Files.delete(temp.toPath());
-              System.exit(1);
+              quit("SHA-256 checksum of dependency "+url+" does not match expected value ("+
+                  requiredHash+").");
             }
           } else if (verbosity >= 1) {
-            if (verbosity >= 3) System.err.println("JAR file exists locally at "+destination+".");
+            info("JAR file exists locally at "+destination+".", 3);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (FileInputStream fis = new FileInputStream(destination)) {
               byte[] byteArray = new byte[4096];
@@ -98,28 +115,16 @@ public class Bootstrap {
               String calculatedHash = builder.toString();
 
               if (!calculatedHash.equals(requiredHash)) {
-                if (verbosity >= 1) {
-                  System.err.println("SHA-256 checksum of local dependency "+
-                      destination+" does not match hash value ("+requiredHash+").");
-                  System.exit(1);
-                }
+                quit("SHA-256 checksum of local dependency "+destination+" does not match hash value ("+requiredHash+").");
               }
             }
           }
 
           jars.add(destination.toURI().toURL());
-
-        } else if (keyword.equals("main")) mainClassname = words[1];
-        else {
-          System.err.println("The keyword "+keyword+" is not recognized.");
-          System.exit(1);
         }
       }
 
-      if (mainClassname == null) {
-        if (verbosity >= 1) System.err.println("The main method has not been specified.");
-        System.exit(1);
-      }
+      if (mainClassname == null) quit("The main method has not been specified.");
 
       URL[] jarfiles = new URL[jars.size()];
 
@@ -133,6 +138,7 @@ public class Bootstrap {
         mainMethod.invoke(null, (Object) args);
       }
     } catch (Exception exception) {
+      System.err.println(exception);
       System.exit(2);
     }
   }
