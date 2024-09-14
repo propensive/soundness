@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/hellenism/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/hellenism/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Hellenism
@@ -21,17 +21,9 @@ constructing classpaths.
 - use polykinded types to get `ClassRef`s, for slightly more concise code
 
 
-## Availability Plan
+## Availability
 
-Hellenism has not yet been published. The medium-term plan is to build Hellenism
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Hellenism.
 
-Subsequently, Hellenism will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
