@@ -28,7 +28,7 @@ import symbolism.*
 import vacuous.*
 
 object LocalClasspath:
-  def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type])
+  def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type])
           : LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
@@ -36,22 +36,22 @@ object LocalClasspath:
       => LocalClasspath is Addable by PathType into LocalClasspath =
     (classpath, path) =>
       Path(path).pipe: path =>
-        val entry: ClasspathEntry.Directory | ClasspathEntry.Jarfile =
+        val entry: ClasspathEntry.Directory | ClasspathEntry.Jar =
           path.entryType() match
             case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
-            case _                    => ClasspathEntry.Jarfile(path.fullname)
+            case _                    => ClasspathEntry.Jar(path.fullname)
 
         if classpath.entrySet.contains(entry) then classpath
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 class LocalClasspath private
-    (val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jarfile | ClasspathEntry.JavaRuntime.type],
+    (val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
      val entrySet: Set[ClasspathEntry])
 extends Classpath:
 
   def apply()(using SystemProperties): Text =
     entries.flatMap:
       case ClasspathEntry.Directory(directory) => List(directory)
-      case ClasspathEntry.Jarfile(jarfile)     => List(jarfile)
+      case ClasspathEntry.Jar(jar)             => List(jar)
       case _                                   => Nil
     .join(unsafely(Properties.path.separator()))

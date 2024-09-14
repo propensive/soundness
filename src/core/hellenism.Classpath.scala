@@ -38,7 +38,7 @@ object Classpath:
     else LocalClasspath:
       entries.collect:
         case directory: ClasspathEntry.Directory      => directory
-        case jar: ClasspathEntry.Jarfile              => jar
+        case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
 trait Classpath:

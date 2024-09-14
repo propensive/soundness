@@ -29,7 +29,7 @@ object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
     def apply[DirectoryType: SpecificDirectory](): DirectoryType = SpecificDirectory(path)
 
-  case class Jarfile(path: Text) extends ClasspathEntry:
+  case class Jar(path: Text) extends ClasspathEntry:
     def apply[FileType: SpecificFile](): FileType = SpecificFile(path)
 
   case class Url(url: Text) extends ClasspathEntry:
@@ -43,7 +43,7 @@ object ClasspathEntry:
 
     case t"file" =>
       val path: Text = url.nn.getPath.nn.tt
-      if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jarfile(path)
+      if path.ends(t"/") then ClasspathEntry.Directory(path) else ClasspathEntry.Jar(path)
 
     case t"http" | t"https" =>
       ClasspathEntry.Url(url.toString.tt)
