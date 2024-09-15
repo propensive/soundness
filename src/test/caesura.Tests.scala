@@ -70,6 +70,10 @@ object Tests extends Suite(t"Caesura tests"):
         Dsv.parse(t""""hello""world"""").rows.head
       .assert(_ == Row(t"""hello"world"""))
 
+      test(t"misplaced quote"):
+        capture(Dsv.parse(t"""hello,wo"rld"""))
+      .assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote))
+
       test(t"multi-line CSV without trailing newline"):
         Dsv.parse(t"""foo,bar\nbaz,quux""").rows
       .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))

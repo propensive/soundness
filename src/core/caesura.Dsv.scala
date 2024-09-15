@@ -69,7 +69,8 @@ object Dsv:
        ((columns.map: name =>
           Column[Row, Text, Text](name.or(t""), sizing = columnar.Collapsible(0.5))(_[Text](name).or(t"")))*)
 
-  def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat): Dsv =
+  def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat)
+          : Dsv raises DsvError =
     val rows = recur(source.stream[Text])
     if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
 
@@ -83,7 +84,7 @@ object Dsv:
        buffer:  TextBuffer               = TextBuffer(),
        state:   State                    = State.Fresh,
        head:    Optional[Map[Text, Int]] = Unset)
-      (using format: DsvFormat)
+      (using format: DsvFormat, tactic: Tactic[DsvError])
           : LazyList[Row] =
 
     inline def putCell(): Array[Text] =
@@ -101,8 +102,13 @@ object Dsv:
       buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state, head)
 
     inline def quote(): LazyList[Row] = state match
-      case State.Fresh  => recur(content, index + 1, column, cells, buffer, State.Quoted, head)
-      case State.Quoted => recur(content, index + 1, column, cells, buffer, State.DoubleQuoted, head)
+      case State.Fresh =>
+        if !buffer.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+        recur(content, index + 1, column, cells, buffer, State.Quoted, head)
+
+      case State.Quoted =>
+        recur(content, index + 1, column, cells, buffer, State.DoubleQuoted, head)
+
       case State.DoubleQuoted =>
         buffer.put(format.Quote)
         recur(content, index + 1, column, cells, buffer, State.Quoted, head)
@@ -111,7 +117,6 @@ object Dsv:
 
     inline def putRow(): LazyList[Row] =
       val cells = putCell()
-      buffer.clear()
 
       if format.header && head.absent then
         val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
@@ -128,13 +133,19 @@ object Dsv:
         if !row.has(index) then recur(tail, Prim, column, cells, buffer, state, head)
         else
           row.s.charAt(index.n0) match
-            case format.Delimiter => if state != State.Quoted then advance() else next(format.Delimiter)
-            case format.Quote     => quote()
-            case '\n' | '\r'      => if column == 0 && buffer.empty
-                                     then recur(content, index + 1, 0, cells, buffer, State.Fresh, head)
-                                     else if state != State.Quoted then putRow()
-                                     else next(row.s.charAt(index.n0))
-            case char             =>
+            case format.Delimiter =>
+              if state != State.Quoted then advance() else next(format.Delimiter)
+
+            case format.Quote =>
+              quote()
+
+            case '\n' | '\r' =>
+              if column == 0 && buffer.empty
+              then recur(content, index + 1, 0, cells, buffer, State.Fresh, head)
+              else if state != State.Quoted then putRow()
+              else next(row.s.charAt(index.n0))
+
+            case char =>
               buffer.put(char)
               recur(content, index + 1, column, cells, buffer, state, head)
 
