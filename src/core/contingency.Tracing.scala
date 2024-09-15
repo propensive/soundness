@@ -21,24 +21,22 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-class Tracing[SupplementType]():
-  private val buffer: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
-  private val supplements: scm.ArrayBuffer[Optional[SupplementType]] = scm.ArrayBuffer()
+class Tracing[FocusType]():
+  private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
+  private val focuses: scm.ArrayBuffer[Optional[FocusType]] = scm.ArrayBuffer()
 
-  def length: Int = buffer.length
+  def length: Int = errors.length
   def success: Boolean = length == 0
   def register(error: Exception): Unit =
-    buffer.append(error)
-    supplements.append(Unset)
+    errors.append(error)
+    focuses.append(Unset)
 
   def fold[AccrualType](initial: AccrualType)
-      (lambda: (Optional[SupplementType], AccrualType) => PartialFunction[Exception, AccrualType])
+      (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
           : AccrualType =
-    (0 until buffer.length).foldLeft(initial): (accrual, index) =>
-      lambda(supplements(index), accrual)(buffer(index))
+    (0 until errors.length).foldLeft(initial): (accrual, index) =>
+      lambda(focuses(index), accrual)(errors(index))
 
-  def supplement(last: Int, transform: Optional[SupplementType] => SupplementType)
-          : Unit =
-
-    for i <- (buffer.length - last) until buffer.length do
-      supplements(i) = transform(supplements(i))
+  def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit =
+    for i <- (errors.length - count) until errors.length
+    do focuses(i) = transform(focuses(i))

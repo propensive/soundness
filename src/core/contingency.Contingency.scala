@@ -125,9 +125,9 @@ object Contingency:
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
-  def trace[AccrualType <: Exception: Type, TraceType: Type]
+  def trace[AccrualType <: Exception: Type, FocusType: Type]
       (accrual: Expr[AccrualType],
-       handler: Expr[(Optional[TraceType], AccrualType) ?=> PartialFunction[Exception, AccrualType]])
+       handler: Expr[(Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType]])
       (using Quotes)
           : Expr[Any] =
 
@@ -145,7 +145,7 @@ object Contingency:
 
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Trace[AccrualType, typeLambda, TraceType]($accrual, (focus, accrual) ?=> $handler(using focus, accrual))}
+        '{Trace[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
       (accrual: Expr[AccrualType],
@@ -280,14 +280,14 @@ object Contingency:
             case error       => $tactic.abort(error)
     }
 
-  def traceWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, TraceType: Type]
-      (trace: Expr[Trace[AccrualType, ContextType, TraceType]],
-       lambda: Expr[Tracing[TraceType] ?=> ContextType[ResultType]],
+  def traceWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
+      (trace: Expr[Trace[AccrualType, ContextType, FocusType]],
+       lambda: Expr[Tracing[FocusType] ?=> ContextType[ResultType]],
        tactic: Expr[Tactic[AccrualType]])
       (using Quotes)
           : Expr[ResultType] =
 
-    '{  val tracing: Tracing[TraceType] = Tracing()
+    '{  val tracing: Tracing[FocusType] = Tracing()
         val result = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 

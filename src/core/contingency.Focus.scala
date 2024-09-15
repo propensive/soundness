@@ -18,7 +18,6 @@ package contingency
 
 import vacuous.*
 
-class Trace[AccrualType <: Exception, LambdaType[_], TraceType]
+class Trace[AccrualType <: Exception, LambdaType[_], FocusType]
     (val initial: AccrualType,
-     val lambda: (supplement: Optional[TraceType], accrual: AccrualType) ?=>
-                      PartialFunction[Exception, AccrualType])
+     val lambda: (Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType])

@@ -110,12 +110,12 @@ infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> 
 infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
 
-infix type traces [ResultType, TraceType] = Tracing[TraceType] ?=> ResultType
+infix type traces [ResultType, FocusType] = Tracing[FocusType] ?=> ResultType
 
-inline def focus[TraceType, ResultType](using inline trace: Tracing[TraceType])
-    (transform: Optional[TraceType] => TraceType)
+inline def focus[FocusType, ResultType](using inline trace: Tracing[FocusType])
+    (transform: Optional[FocusType] => FocusType)
     (block: => ResultType)
-        : Unit =
+        : ResultType =
   val length = trace.length
   block.also:
     trace.supplement(trace.length - length, transform)
@@ -135,12 +135,12 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
           : ResultType2 =
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
-transparent inline def trace[AccrualType <: Exception](accrual: AccrualType)[TraceType]
+transparent inline def trace[AccrualType <: Exception](accrual: AccrualType)[FocusType]
     (using DummyImplicit)
     [ResultType]
-    (inline block: (focus: Optional[TraceType], accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+    (inline block: (focus: Optional[FocusType], accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
         : Any =
-  ${Contingency.trace[AccrualType, TraceType]('accrual, 'block)}
+  ${Contingency.trace[AccrualType, FocusType]('accrual, 'block)}
 
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
     (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
@@ -154,9 +154,9 @@ extension [AccrualType <: Exception,  LambdaType[_]]
           : ResultType =
     ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic)}
 
-extension [AccrualType <: Exception,  LambdaType[_], TraceType]
-    (inline trace: Trace[AccrualType, LambdaType, TraceType])
-  inline def within[ResultType](inline lambda: Tracing[TraceType] ?=> LambdaType[ResultType])
+extension [AccrualType <: Exception,  LambdaType[_], FocusType]
+    (inline trace: Trace[AccrualType, LambdaType, FocusType])
+  inline def within[ResultType](inline lambda: Tracing[FocusType] ?=> LambdaType[ResultType])
       (using tactic: Tactic[AccrualType])
           : ResultType =
-    ${ Contingency.traceWithin[AccrualType, LambdaType, ResultType, TraceType]('trace, 'lambda, 'tactic) }
+    ${ Contingency.traceWithin[AccrualType, LambdaType, ResultType, FocusType]('trace, 'lambda, 'tactic) }
