@@ -58,7 +58,7 @@ object Json extends Json2, Dynamic:
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
       (json, omit) =>
-        summonInline[Tracing[List[Text]]].give:
+        summonInline[Foci[List[Text]]].give:
           summonInline[Tactic[JsonError]].give:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
@@ -86,7 +86,7 @@ object Json extends Json2, Dynamic:
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Encodable in Json =
       value =>
-        summonInline[Tracing[JsonPath]].give:
+        summonInline[Foci[JsonPath]].give:
           val labels = fields(value): [FieldType] =>
             field => if context.omit(field) then "" else label.s
 
@@ -154,7 +154,7 @@ object Json extends Json2, Dynamic:
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
       (using factory:    Factory[ElementType, CollectionType[ElementType]],
              jsonAccess: Tactic[JsonError],
-             tracing:    Tracing[JsonPath])
+             foci:       Foci[JsonPath])
       => (CollectionType[ElementType] is Decodable in Json) as array =
     (value, omit) =>
       val builder = factory.newBuilder
