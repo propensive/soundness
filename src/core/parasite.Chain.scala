@@ -25,4 +25,4 @@ import vacuous.*
 
 import Completion.*
 
-case class Trace(codepoint: Codepoint, parent: Optional[Trace])
+case class Chain(codepoint: Codepoint, parent: Optional[Chain])

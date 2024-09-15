@@ -37,11 +37,11 @@ sealed trait Monitor:
   val promise: Promise[Result]
   protected[parasite] var subordinates: Set[Subordinate] = Set()
 
-  protected[parasite] val interception: Mutex[Trace => PartialFunction[Throwable, Transgression]] =
-    Mutex({ trace => { case _ => Transgression.Escalate } })
+  protected[parasite] val interception: Mutex[Chain => PartialFunction[Throwable, Transgression]] =
+    Mutex({ chain => { case _ => Transgression.Escalate } })
 
   def name: Optional[Text]
-  def trace: Optional[Trace]
+  def chain: Optional[Chain]
   def stack: Text
   def daemon: Boolean
   def attend(): Unit = promise.attend()
@@ -49,16 +49,16 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def intercept(trace: Trace, error: Throwable): Unit
+  def intercept(chain: Chain, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
 
-  def interceptor(lambda: Trace => PartialFunction[Throwable, Transgression]): Unit =
+  def interceptor(lambda: Chain => PartialFunction[Throwable, Transgression]): Unit =
     interception.replace: interception =>
-      trace => lambda(trace).orElse(interception(trace))
+      chain => lambda(chain).orElse(interception(chain))
 
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
-  def trace: Optional[Trace] = Unset
+  def chain: Optional[Chain] = Unset
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
   def name: Text
@@ -67,7 +67,7 @@ sealed abstract class Supervisor() extends Monitor:
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = subordinates.each(_.cancel())
-  def intercept(trace: Trace, error: Throwable): Unit = interception()(trace)(error)
+  def intercept(chain: Chain, error: Throwable): Unit = interception()(chain)(error)
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
@@ -86,7 +86,7 @@ object PlatformSupervisor extends Supervisor():
 abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
 
-  def trace: Trace = Trace(frame, parent.trace)
+  def chain: Chain = Chain(frame, parent.chain)
   def evaluate(subordinate: Subordinate): Result
   val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
@@ -103,9 +103,9 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
       case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
 
-  def intercept(trace: Trace, error: Throwable): Unit =
-    interception()(trace)(error) match
-      case Transgression.Escalate => parent.intercept(trace, error)
+  def intercept(chain: Chain, error: Throwable): Unit =
+    interception()(chain)(error) match
+      case Transgression.Escalate => parent.intercept(chain, error)
       case Transgression.Cancel   => cancel()
       case Transgression.Absorb   => ()
 
@@ -211,7 +211,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
             case _         => ()
 
         case error: Throwable =>
-          intercept(trace, error)
+          intercept(chain, error)
           state() = Failed(error)
           subordinates.each { child => if child.daemon then child.cancel() }
 
