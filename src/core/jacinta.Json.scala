@@ -58,15 +58,17 @@ object Json extends Json2, Dynamic:
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
       (json, omit) =>
-        summonInline[Tactic[JsonError]].give:
-          val keyValues = json.root.obj
-          val values = keyValues(0).zip(keyValues(1)).to(Map)
+        summonInline[Tracing[List[Text]]].give:
+          summonInline[Tactic[JsonError]].give:
+            val keyValues = json.root.obj
+            val values = keyValues(0).zip(keyValues(1)).to(Map)
 
-          construct: [FieldType] =>
-            context =>
-              val omit = !values.contains(label.s)
-              val value = if omit then JsonAst(0L) else values(label.s)
-              context.decode(new Json(value), omit)
+            construct: [FieldType] =>
+              context =>
+                val omit = !values.contains(label.s)
+                val value = if omit then JsonAst(0L) else values(label.s)
+                focus(label :: _.or(Nil)):
+                  context.decode(new Json(value), omit)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json = (json, omit) =>
       summonInline[Tactic[JsonError]].give:
@@ -84,13 +86,16 @@ object Json extends Json2, Dynamic:
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Encodable in Json =
       value =>
-        val labels = fields(value): [FieldType] =>
-          field => if context.omit(field) then "" else label.s
+        summonInline[Tracing[JsonPath]].give:
+          val labels = fields(value): [FieldType] =>
+            field => if context.omit(field) then "" else label.s
 
-        val values = fields(value): [FieldType] =>
-          field => if context.omit(field) then null else context.encode(field).root
+          val values = fields(value): [FieldType] =>
+            field =>
+              focus(_.or(JsonPath()) / label):
+                if context.omit(field) then null else context.encode(field).root
 
-        Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
+          Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
 
     inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
       variant(value): [VariantType <: DerivationType] =>
@@ -148,12 +153,16 @@ object Json extends Json2, Dynamic:
 
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
       (using factory:    Factory[ElementType, CollectionType[ElementType]],
-             jsonAccess: Tactic[JsonError])
+             jsonAccess: Tactic[JsonError],
+             tracing:    Tracing[JsonPath])
       => (CollectionType[ElementType] is Decodable in Json) as array =
     (value, omit) =>
       val builder = factory.newBuilder
+      var index: Int = 0
       value.root.array.each: json =>
-        builder += ElementType.decode(Json.ast(json), false)
+        focus(_.or(JsonPath()) / index):
+          builder += ElementType.decode(Json.ast(json), false)
+          index += 1
 
       builder.result()
 
@@ -291,5 +300,5 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType: Decodable in Json]: ValueType raises JsonError =
+  def as[ValueType: Decodable in Json]: ValueType raises JsonError traces List[Text] =
     ValueType.decode(this, false)
