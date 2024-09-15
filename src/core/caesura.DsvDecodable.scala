@@ -16,6 +16,8 @@
 
 package caesura
 
+import contingency.*
+import denominative.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -31,6 +33,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvDecodable =
     val sum = contexts { [FieldType] => context => context.width }.sum
+    var rowNumber: Ordinal = Prim
     var count = 0
 
     DsvProductDecoder[DerivationType](sum, (row: Row) => construct:
@@ -38,7 +41,8 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
         val index = row.columns.let(_.at(label)).or(count)
         val row2 = Row(row.data.drop(index))
         count += context.width
-        typeclass.decode(row2))
+        focus(_ => CellRef(rowNumber, label)):
+          typeclass.decode(row2))
 
   given [ValueType: Decoder] => ValueType is DsvDecodable as decoder = _.data.head.decodeAs[ValueType]
 

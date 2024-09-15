@@ -20,21 +20,42 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
+import escritoire.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
 
-case class Dsv(rows: LazyList[Row], format: Optional[DsvFormat] = Unset):
-  def as[ValueType: DsvDecodable]: LazyList[ValueType] = rows.map(_.as[ValueType])
+case class Dsv
+    (rows:    LazyList[Row],
+     format:  Optional[DsvFormat]    = Unset,
+     columns: Optional[IArray[Text]] = Unset):
+
+  def as[ValueType: DsvDecodable]: LazyList[ValueType] traces CellRef = rows.map(_.as[ValueType])
 
 object Dsv:
   private enum State:
     case Fresh, Quoted, DoubleQuoted
 
+  given Dsv is Tabular[Text]:
+    type Element = Row
+    def rows(value: Dsv) = value.rows
+
+    def table(dsv: Dsv): Table[Row, Text] =
+      val columns: List[Text] =
+        dsv.columns.let(_.to(List)).or:
+          dsv.rows.prim.let: head =>
+            (1 to head.data.length).to(List).map(_.toString.tt)
+        .or(Nil)
+
+      Table[Row]
+       ((columns.map: name =>
+          Column[Row, Text, Text](name.or(t""), sizing = columnar.Collapsible(0.5))(_[Text](name).or(t"")))*)
+
   def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat): Dsv =
-    Dsv(recur(source.stream[Text]), format)
+    val rows = recur(source.stream[Text])
+    if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
 
   given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
@@ -80,6 +101,9 @@ object Dsv:
         val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
         recur(content, index + 1, 0, fresh(), buffer, State.Fresh, map)
       else
+        (column + 1).until(cells.length).each: index =>
+          cells(index) = t""
+
         val row = Row(unsafely(cells.immutable), head)
         row #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh, head)
 
