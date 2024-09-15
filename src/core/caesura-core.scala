@@ -26,12 +26,12 @@ package dsvFormats:
   given DsvFormat as ssv = DsvFormat(false, ' ', '"', '"')
   given DsvFormat as ssvWithHeader = DsvFormat(true, ' ', '"', '"')
 
-package dsvHeaderMappings:
-  given DsvHeaderMapping as unchanged = identity(_)
-  given DsvHeaderMapping as lowerDotted = _.uncamel.map(_.lower).join(t" ")
-  given DsvHeaderMapping as lowerSlashed = _.uncamel.map(_.lower).join(t" ")
-  given DsvHeaderMapping as capitalizedWords = _.uncamel.map(_.capitalize).join(t" ")
-  given DsvHeaderMapping as lowerWords = _.uncamel.map(_.lower).join(t" ")
+package dsvRedesignations:
+  given DsvRedesignation as unchanged = identity(_)
+  given DsvRedesignation as lowerDotted = _.uncamel.map(_.lower).join(t" ")
+  given DsvRedesignation as lowerSlashed = _.uncamel.map(_.lower).join(t" ")
+  given DsvRedesignation as capitalizedWords = _.uncamel.map(_.capitalize).join(t" ")
+  given DsvRedesignation as lowerWords = _.uncamel.map(_.lower).join(t" ")
 
 extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
 

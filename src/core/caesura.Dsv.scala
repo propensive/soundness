@@ -27,12 +27,28 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
+import scala.compiletime.*
+
+import java.util as ju
+
 case class Dsv
     (rows:    LazyList[Row],
      format:  Optional[DsvFormat]    = Unset,
      columns: Optional[IArray[Text]] = Unset):
 
   def as[ValueType: DsvDecodable]: LazyList[ValueType] traces CellRef = rows.map(_.as[ValueType])
+
+  override def hashCode: Int =
+    (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
+      ju.Arrays.hashCode(array.mutable(using Unsafe))
+
+  override def equals(that: Any): Boolean = that.asMatchable match
+    case dsv: Dsv =>
+      dsv.rows == rows && dsv.format == format && columns.lay(dsv.columns == Unset): columns =>
+        dsv.columns.lay(false)(columns.sameElements(_))
+
+    case _ =>
+      false
 
 object Dsv:
   private enum State:

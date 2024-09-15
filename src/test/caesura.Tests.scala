@@ -107,28 +107,28 @@ object Tests extends Suite(t"Caesura tests"):
       test(t"Parse TSV data"):
         import dsvFormats.tsvWithHeader
         Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
-      .assert(_ == Dsv(LazyList(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader))
+      .assert(_ == Dsv(LazyList(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
 
     suite(t"Dynamic JSON access"):
       import dynamicDsvAccess.enabled
 
       test(t"Access field by name"):
         import dsvFormats.tsvWithHeader
-        import dsvHeaderMappings.unchanged
+        import dsvRedesignations.unchanged
         val dsv = Dsv.parse(t"greeting\taddressee\nHello\tWorld\n")
         dsv.rows.head.addressee[Text]
       .assert(_ == t"World")
 
       test(t"Access field by mapped name"):
         import dsvFormats.tsvWithHeader
-        import dsvHeaderMappings.capitalizedWords
+        import dsvRedesignations.capitalizedWords
         val dsv = Dsv.parse(t"Personal Greeting\tTarget Person\nHello\tWorld\n")
         dsv.rows.head.targetPerson[Text]
       .assert(_ == t"World")
 
       test(t"Access field by name 2"):
         import dsvFormats.tsvWithHeader
-        import dsvHeaderMappings.unchanged
+        import dsvRedesignations.unchanged
         val dsv = Dsv.parse(t"greeting\tnumber\nHello\t23\n")
         dsv.rows.head.number[Int]
       .assert(_ == 23)

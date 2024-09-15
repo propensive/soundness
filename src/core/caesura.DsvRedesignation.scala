@@ -2,5 +2,5 @@ package caesura
 
 import anticipation.*
 
-trait DsvHeaderMapping:
+trait DsvRedesignation:
   def transform(name: Text): Text

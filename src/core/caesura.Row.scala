@@ -34,9 +34,9 @@ case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     val columns = map.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
 
-  def selectDynamic[ValueType: Decoder](field: String)(using DynamicDsvEnabler, DsvHeaderMapping)
+  def selectDynamic[ValueType: Decoder](field: String)(using DynamicDsvEnabler, DsvRedesignation)
           : Optional[ValueType] =
-    apply(summon[DsvHeaderMapping].transform(field.tt))
+    apply(summon[DsvRedesignation].transform(field.tt))
 
   def apply[ValueType: Decoder](field: Text): Optional[ValueType] =
     columns.let(_.at(field)).let { index => data.at(Ordinal.zerary(index)) }.let(ValueType.decode(_))

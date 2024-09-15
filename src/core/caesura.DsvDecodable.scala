@@ -23,8 +23,9 @@ import spectacular.*
 import vacuous.*
 import wisteria.*
 
-object DsvDecodable extends ProductDerivable[DsvDecodable]:
+import scala.compiletime.*
 
+object DsvDecodable extends ProductDerivable[DsvDecodable]:
   class DsvProductDecoder[DerivationType](count: Int, lambda: Row => DerivationType)
   extends DsvDecodable:
     type Self = DerivationType
@@ -36,13 +37,14 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
     var rowNumber: Ordinal = Prim
     var count = 0
 
-    DsvProductDecoder[DerivationType](sum, (row: Row) => construct:
-      [FieldType] => context =>
-        val index = row.columns.let(_.at(label)).or(count)
-        val row2 = Row(row.data.drop(index))
-        count += context.width
-        focus(_ => CellRef(rowNumber, label)):
-          typeclass.decode(row2))
+    summonInline[Foci[CellRef]].give:
+      DsvProductDecoder[DerivationType](sum, (row: Row) => construct:
+        [FieldType] => context =>
+          val index = row.columns.let(_.at(label)).or(count)
+          val row2 = Row(row.data.drop(index))
+          count += context.width
+          focus(_ => CellRef(rowNumber, label)):
+            typeclass.decode(row2))
 
   given [ValueType: Decoder] => ValueType is DsvDecodable as decoder = _.data.head.decodeAs[ValueType]
 
