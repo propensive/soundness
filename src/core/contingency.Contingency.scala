@@ -287,7 +287,7 @@ object Contingency:
       (using Quotes)
           : Expr[ResultType] =
 
-    '{  val foci: Foci[FocusType] = Foci()
+    '{  val foci: Foci[FocusType] = TraceFoci()
         val result = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 

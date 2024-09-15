@@ -21,7 +21,31 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-class Foci[FocusType]():
+object Foci:
+  given [FocusType] => Foci[FocusType] = new:
+    def length: Int = 0
+    def success: Boolean = false
+    def register(error: Exception): Unit = ()
+
+    def fold[AccrualType](initial: AccrualType)
+        (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
+            : AccrualType =
+      initial
+
+    def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit = ()
+
+trait Foci[FocusType]:
+  def length: Int
+  def success: Boolean
+  def register(error: Exception): Unit
+
+  def fold[AccrualType](initial: AccrualType)
+      (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
+          : AccrualType
+
+  def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit
+
+class TraceFoci[FocusType]() extends Foci[FocusType]:
   private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
   private val focuses: scm.ArrayBuffer[Optional[FocusType]] = scm.ArrayBuffer()
 
