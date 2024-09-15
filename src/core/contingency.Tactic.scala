@@ -32,7 +32,7 @@ object Tactic:
 
   given [ErrorType <: Exception](using erased ErrorType is Unchecked)
       => Tactic[ErrorType] as uncheckedErrors:
-    import unsafeExceptions.canThrowAny
+    given CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: ErrorType): Unit = throw error
     def abort(error: ErrorType): Nothing = throw error
 

@@ -110,6 +110,16 @@ infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> 
 infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
 
+infix type traces [ResultType, TraceType] = Tracing[TraceType] ?=> ResultType
+
+inline def focus[TraceType, ResultType](using inline trace: Tracing[TraceType])
+    (transform: Optional[TraceType] => TraceType)
+    (block: => ResultType)
+        : Unit =
+  val length = trace.length
+  block.also:
+    trace.supplement(trace.length - length, transform)
+
 transparent inline def tend(inline block: PartialFunction[Exception, Exception]): Any =
   ${Contingency.tend('block)}
 
@@ -125,6 +135,13 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
           : ResultType2 =
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
+transparent inline def trace[AccrualType <: Exception](accrual: AccrualType)[TraceType]
+    (using DummyImplicit)
+    [ResultType]
+    (inline block: (focus: Optional[TraceType], accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+        : Any =
+  ${Contingency.trace[AccrualType, TraceType]('accrual, 'block)}
+
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
     (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
         : Any =
@@ -136,3 +153,10 @@ extension [AccrualType <: Exception,  LambdaType[_]]
       (using tactic: Tactic[AccrualType])
           : ResultType =
     ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic)}
+
+extension [AccrualType <: Exception,  LambdaType[_], TraceType]
+    (inline trace: Trace[AccrualType, LambdaType, TraceType])
+  inline def within[ResultType](inline lambda: Tracing[TraceType] ?=> LambdaType[ResultType])
+      (using tactic: Tactic[AccrualType])
+          : ResultType =
+    ${ Contingency.traceWithin[AccrualType, LambdaType, ResultType, TraceType]('trace, 'lambda, 'tactic) }
