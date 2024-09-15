@@ -21,15 +21,15 @@ import language.experimental.pureFunctions
 import rudiments.*
 
 @capability
-class SupplementTactic
+class TraceTactic
     [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
     (label: boundary.Label[Option[ResultType]],
      initial: AccrualType,
-     trace: Tracing[SupplementType])
+     foci: Foci[SupplementType])
 extends Tactic[ErrorType]:
-  def record(error: ErrorType): Unit = trace.register(error)
+  def record(error: ErrorType): Unit = foci.register(error)
   def finish(): Unit = ()
 
   def abort(error: ErrorType): Nothing =
-    trace.register(error)
+    foci.register(error)
     boundary.break(None)(using label)

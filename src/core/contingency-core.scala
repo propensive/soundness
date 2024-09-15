@@ -110,9 +110,9 @@ infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> 
 infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
   ErrorType2 is Mitigable into ErrorType
 
-infix type traces [ResultType, FocusType] = Tracing[FocusType] ?=> ResultType
+infix type traces [ResultType, FocusType] = Foci[FocusType] ?=> ResultType
 
-inline def focus[FocusType, ResultType](using inline trace: Tracing[FocusType])
+inline def focus[FocusType, ResultType](using inline trace: Foci[FocusType])
     (transform: Optional[FocusType] => FocusType)
     (block: => ResultType)
         : ResultType =
@@ -156,7 +156,7 @@ extension [AccrualType <: Exception,  LambdaType[_]]
 
 extension [AccrualType <: Exception,  LambdaType[_], FocusType]
     (inline trace: Trace[AccrualType, LambdaType, FocusType])
-  inline def within[ResultType](inline lambda: Tracing[FocusType] ?=> LambdaType[ResultType])
+  inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
       (using tactic: Tactic[AccrualType])
           : ResultType =
     ${ Contingency.traceWithin[AccrualType, LambdaType, ResultType, FocusType]('trace, 'lambda, 'tactic) }

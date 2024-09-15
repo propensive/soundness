@@ -21,7 +21,7 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-class Tracing[FocusType]():
+class Foci[FocusType]():
   private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
   private val focuses: scm.ArrayBuffer[Optional[FocusType]] = scm.ArrayBuffer()
 

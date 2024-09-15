@@ -282,12 +282,12 @@ object Contingency:
 
   def traceWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
       (trace: Expr[Trace[AccrualType, ContextType, FocusType]],
-       lambda: Expr[Tracing[FocusType] ?=> ContextType[ResultType]],
+       lambda: Expr[Foci[FocusType] ?=> ContextType[ResultType]],
        tactic: Expr[Tactic[AccrualType]])
       (using Quotes)
           : Expr[ResultType] =
 
-    '{  val tracing: Tracing[FocusType] = Tracing()
+    '{  val foci: Foci[FocusType] = Foci()
         val result = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 
@@ -299,11 +299,11 @@ object Contingency:
                   m"argument to `trace` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{SupplementTactic(label, $trace.initial, tracing)}.asTerm
+                '{TraceTactic(label, $trace.initial, foci)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-              val term = '{$lambda(using tracing)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+              val term = '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
               val expr = term.asExprOf[ResultType]
 
               '{Some($expr)}  }
@@ -311,7 +311,7 @@ object Contingency:
         result match
           case None        => $tactic.abort($trace.initial)
           case Some(value) =>
-            if tracing.success then value
-            else $tactic.abort(tracing.fold[AccrualType]($trace.initial)($trace.lambda(using _, _)))
+            if foci.success then value
+            else $tactic.abort(foci.fold[AccrualType]($trace.initial)($trace.lambda(using _, _)))
 
     }
