@@ -30,6 +30,8 @@ import spectacular.*
 
 import JsonError.Reason
 
+export Jacinta.JsonPath
+
 given (using js: JsonPrinter) => JsonAst is Showable = js.print(_)
 
 extension (json: JsonAst)
