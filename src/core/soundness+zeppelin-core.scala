@@ -1,3 +1,3 @@
 package soundness
 
-export zeppelin.{ZipEntry, ZipError, ZipFile, ZipPath, ZipRef, InvalidZipNames}
+export zeppelin.{ZipEntry, ZipError, ZipFile, ZipPath, ZipRef, InvalidZipNames, ZipStream}
