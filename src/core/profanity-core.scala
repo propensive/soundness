@@ -27,14 +27,12 @@ import language.experimental.captureChecking
 
 given realm: Realm = realm"profanity"
 
-inline def terminal: Terminal = compiletime.summonInline[Terminal]
-
 given (using terminal: Terminal) => Stdio as stdio = terminal.stdio
 
-def terminal[ResultType](block: Terminal ?=> ResultType)
+def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
     (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
     (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
-        : ResultType =
+        : ResultType raises TerminalError =
 
   given terminal: Terminal = Terminal(context.signals)
 
@@ -43,7 +41,13 @@ def terminal[ResultType](block: Terminal ?=> ResultType)
   if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
   if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
 
-  try block(using terminal) finally
+  try
+    if context.stdio.platform then
+      val processBuilder = ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+      processBuilder.inheritIO()
+      if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+    block(using terminal)
+  finally
     terminal.signals.stop()
     terminal.stdio.in.close()
     terminal.events.stop()
