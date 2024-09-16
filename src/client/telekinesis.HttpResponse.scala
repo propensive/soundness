@@ -16,10 +16,23 @@
 
 package telekinesis
 
-import rudiments.*
-import vacuous.*
-import contingency.*
 import anticipation.*
+import contingency.*
+import prepositional.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
+
+object HttpResponse:
+  given (using Tactic[HttpError]) => HttpResponse is Readable by Bytes = response =>
+    val body = response.status match
+      case status: (HttpStatus & FailureCase) =>
+        raise(HttpError(status, response.body), response.body)
+
+      case status =>
+        response.body
+
+    body.stream
 
 case class HttpResponse
     (status: HttpStatus, headers: Map[ResponseHeader[?], List[Text]], body: HttpBody):
