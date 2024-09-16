@@ -16,9 +16,16 @@
 
 package telekinesis
 
+import anticipation.*
+
 enum HttpBody:
   case Empty
-  case Chunked(stream: LazyList[IArray[Byte]])
+  case Chunked(data: LazyList[IArray[Byte]])
   case Data(data: IArray[Byte])
 
   def as[ResultType: HttpReadable as readable]: ResultType = readable.read(HttpStatus.Ok, this)
+
+  def stream: LazyList[Bytes] = this match
+    case Empty         => LazyList()
+    case Chunked(data) => data
+    case Data(data)    => LazyList(data)
