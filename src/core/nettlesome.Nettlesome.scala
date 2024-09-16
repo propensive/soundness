@@ -66,14 +66,14 @@ object Nettlesome:
       def parse(text: Text)(using Tactic[IpAddressError]): Ipv4 =
         val bytes = text.cut(t".")
         if bytes.length == 4 then
-          given IpAddressError mitigates NumberError =
+          tend:
             case NumberError(text, _) => IpAddressError(Ipv4ByteNotNumeric(text))
+          .within:
+            bytes.map(Decoder.int.decode(_)).pipe: bytes =>
+              for byte <- bytes
+              do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
 
-          bytes.map(Decoder.int.decode(_)).pipe: bytes =>
-            for byte <- bytes
-            do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
-
-            Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
+              Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
         else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)), 0)
 
