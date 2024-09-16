@@ -127,7 +127,8 @@ object Contingency:
 
   def trace[AccrualType <: Exception: Type, FocusType: Type]
       (accrual: Expr[AccrualType],
-       handler: Expr[(Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType]])
+       handler: Expr[(Optional[FocusType], AccrualType) ?=>
+                    PartialFunction[Exception, AccrualType]])
       (using Quotes)
           : Expr[Any] =
 
@@ -145,7 +146,8 @@ object Contingency:
 
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Trace[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using focus, accrual))}
+        '{Trace[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+            focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
       (accrual: Expr[AccrualType],
@@ -202,7 +204,7 @@ object Contingency:
               case '[type errorType <: Exception; errorType] =>
                 Expr.summon[Tactic[errorType]] match
                   case Some(errorTactic) =>
-                    '{  $errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])  }.asTerm
+                    '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
 
                   case None =>
                     abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
@@ -228,7 +230,8 @@ object Contingency:
                 case Apply(_, List(Inlined(_, _, matches))) => matches
 
                 case _ =>
-                  abandon(m"argument to `mend` should be a partial function implemented as match cases")
+                  abandon
+                   (m"argument to `mend` should be a partial function implemented as match cases")
 
               val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, ResultType]]
 
@@ -280,7 +283,8 @@ object Contingency:
             case error       => $tactic.abort(error)
     }
 
-  def traceWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
+  def traceWithin
+      [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
       (trace: Expr[Trace[AccrualType, ContextType, FocusType]],
        lambda: Expr[Foci[FocusType] ?=> ContextType[ResultType]],
        tactic: Expr[Tactic[AccrualType]])
@@ -303,7 +307,10 @@ object Contingency:
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-              val term = '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+
+              val term =
+                '{$lambda(using foci)}.asTerm.select(method).appliedToArgs(tactics.to(List))
+
               val expr = term.asExprOf[ResultType]
 
               '{Some($expr)}  }

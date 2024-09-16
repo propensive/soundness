@@ -31,9 +31,23 @@ package strategies:
   given throwUnsafely[SuccessType]: ThrowTactic[Exception, SuccessType] =
     ThrowTactic()(using unsafeExceptions.canThrowAny)
 
-  given throwSafely[ErrorType <: Exception: CanThrow, SuccessType]
-          : ThrowTactic[ErrorType, SuccessType] =
+  given [ErrorType <: Exception: CanThrow, SuccessType]
+      => ThrowTactic[ErrorType, SuccessType] as throwSafely =
     ThrowTactic()
+
+  given [ErrorType <: Exception: Tactic, ErrorType2 <: Exception: Mitigable into ErrorType]
+      => Tactic[ErrorType2] as mitigation =
+    ErrorType.contramap(ErrorType2.mitigate(_))
+
+  given [ErrorType <: Exception: Fatal] => Tactic[ErrorType] as fatalErrors:
+    def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
+    def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
+
+  given [ErrorType <: Exception](using erased ErrorType is Unchecked)
+      => Tactic[ErrorType] as uncheckedErrors:
+    given CanThrow[Exception] = unsafeExceptions.canThrowAny
+    def record(error: ErrorType): Unit = throw error
+    def abort(error: ErrorType): Nothing = throw error
 
 given realm: Realm = realm"contingency"
 
@@ -138,7 +152,8 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
 transparent inline def trace[AccrualType <: Exception](accrual: AccrualType)[FocusType]
     (using DummyImplicit)
     [ResultType]
-    (inline block: (focus: Optional[FocusType], accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+    (inline block: (focus: Optional[FocusType], accrual: AccrualType) ?=>
+                       PartialFunction[Exception, AccrualType])
         : Any =
   ${Contingency.trace[AccrualType, FocusType]('accrual, 'block)}
 
@@ -159,4 +174,5 @@ extension [AccrualType <: Exception,  LambdaType[_], FocusType]
   inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
       (using tactic: Tactic[AccrualType])
           : ResultType =
-    ${ Contingency.traceWithin[AccrualType, LambdaType, ResultType, FocusType]('trace, 'lambda, 'tactic) }
+    ${Contingency.traceWithin[AccrualType, LambdaType, ResultType, FocusType]('trace, 'lambda,
+        'tactic)}

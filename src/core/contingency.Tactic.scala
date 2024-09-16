@@ -18,23 +18,7 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import prepositional.*
 import rudiments.*
-
-object Tactic:
-  given [ErrorType <: Exception: Tactic, ErrorType2 <: Exception: Mitigable into ErrorType]
-      => Tactic[ErrorType2] =
-    ErrorType.contramap(ErrorType2.mitigate(_))
-
-  given [ErrorType <: Exception: Fatal] => Tactic[ErrorType] as fatalErrors:
-    def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
-    def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
-
-  given [ErrorType <: Exception](using erased ErrorType is Unchecked)
-      => Tactic[ErrorType] as uncheckedErrors:
-    given CanThrow[Exception] = unsafeExceptions.canThrowAny
-    def record(error: ErrorType): Unit = throw error
-    def abort(error: ErrorType): Nothing = throw error
 
 @capability
 trait Tactic[-ErrorType <: Exception]:
