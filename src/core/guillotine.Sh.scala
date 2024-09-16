@@ -120,6 +120,7 @@ object Sh:
         case (State(context, _, more :+ current), char) =>
           State(context, false, more :+ t"$current$char")
 
+  given Insertion[Parameters, Nothing] = value => Parameters(t"")
   given Insertion[Parameters, Text] = value => Parameters(value)
   given Insertion[Parameters, List[Text]] = xs => Parameters(xs*)
   given Insertion[Parameters, Command] = command => Parameters(command.arguments*)
