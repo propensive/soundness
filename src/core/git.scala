@@ -167,7 +167,7 @@ case class GitRepo(gitDir: Directory, workTree: Optional[Directory] = Unset):
       (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
           : Unit logs GitEvent =
 
-    val relativePath: Link =
+    val relativePath: SafeRelative =
       workTree.let: workTree =>
         safely(path.pathText.decodeAs[Path].relativeTo(workTree.path)).or:
           abort(GitError(AddFailed))
