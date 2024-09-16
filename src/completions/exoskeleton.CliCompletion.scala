@@ -44,12 +44,12 @@ case class CliCompletion
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
-  val flags: scm.HashMap[Flag[?], Suggestions[?]] = scm.HashMap()
-  val seenFlags: scm.HashSet[Flag[?]] = scm.HashSet()
+  val flags: scm.HashMap[Flag, Suggestions[?]] = scm.HashMap()
+  val seenFlags: scm.HashSet[Flag] = scm.HashSet()
   var explanation: Optional[Text] = Unset
   var cursorSuggestions: List[Suggestion] = Nil
 
-  def readParameter[OperandType](flag: Flag[OperandType])
+  def readParameter[OperandType](flag: Flag)
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType] =
 
@@ -58,7 +58,7 @@ extends Cli:
 
   def focus: Argument = arguments(currentArgument)
 
-  override def register(flag: Flag[?], suggestions: Suggestions[?]): Unit =
+  override def register(flag: Flag, suggestions: Suggestions[?]): Unit =
     parameters.focusFlag.let: argument =>
       if flag.matches(argument) && currentArgument == argument.position + 1 then
         val allSuggestions = suggestions.suggest().to(List)
@@ -66,7 +66,7 @@ extends Cli:
 
     if !flag.secret then flags(flag) = suggestions
 
-  override def present(flag: Flag[?]): Unit = if !flag.repeatable then seenFlags += flag
+  override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
   override def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 

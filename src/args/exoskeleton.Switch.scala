@@ -29,6 +29,6 @@ object Switch:
        aliases: List[Text | Char]  = Nil,
        description: Optional[Text] = Unset,
        secret: Boolean             = false)
-          : Flag[Unit] =
+          : Flag =
 
-    Flag[Unit](name, repeatable, aliases, description, secret)(using FlagInterpreter.unit)
+    Flag(name, repeatable, aliases, description, secret)

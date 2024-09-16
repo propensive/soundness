@@ -1,0 +1,5 @@
+#!/bin/sh
+
+DIR="$(realpath $(dirname "$(readlink -f "$0")")/..)"
+
+java -cp "$DIR/lib/exoskeleton-core.jar" "exoskeleton.Main" "$@"

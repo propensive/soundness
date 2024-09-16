@@ -38,11 +38,11 @@ trait Cli extends ProcessContext:
   def environment: Environment
   def workingDirectory: WorkingDirectory
 
-  def readParameter[OperandType](flag: Flag[OperandType])
+  def readParameter[OperandType](flag: Flag)
       (using FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType]
 
-  def register(flag: Flag[?], suggestions: Suggestions[?]): Unit = ()
-  def present(flag: Flag[?]): Unit = ()
+  def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
+  def present(flag: Flag): Unit = ()
   def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit = ()
   def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) = ()

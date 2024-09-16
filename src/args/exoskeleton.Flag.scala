@@ -30,22 +30,21 @@ object Flag:
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-case class Flag[OperandType]
+case class Flag
     (name: Text | Char,
      repeatable: Boolean         = false,
      aliases: List[Text | Char]  = Nil,
      description: Optional[Text] = Unset,
-     secret: Boolean             = false)
-    (using FlagInterpreter[OperandType]):
+     secret: Boolean             = false):
 
-  def suggest(suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
+  def suggest[OperandType: FlagInterpreter](suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
     cli.register(this, suggestions)
 
   def matches(key: Argument): Boolean =
     val flag = if key().starts(t"--") then key().skip(2) else if key().starts(t"-") then key().at(Sec) else Unset
     flag == name || aliases.contains(flag)
 
-  def apply()
+  def apply[OperandType]()
       (using cli:             Cli,
              interpreter:     CliInterpreter,
              flagInterpreter: FlagInterpreter[OperandType],
@@ -55,7 +54,7 @@ case class Flag[OperandType]
     cli.register(this, suggestions)
     cli.readParameter(this)
 
-  def select(options: Iterable[OperandType])
+  def select[OperandType](options: Iterable[OperandType])
       (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
           : Optional[OperandType] =
 
