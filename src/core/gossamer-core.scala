@@ -141,8 +141,6 @@ extension [TextType: Textual](text: TextType)
   def capitalize: TextType = TextType.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: TextType = TextType.concat(text.keep(1).lower, text.after(Prim))
 
-  inline def head: Char = TextType.unsafeChar(text, Prim)
-  inline def last: Char = TextType.unsafeChar(text, Ult.of(text))
   inline def tail: TextType = text.skip(1, Ltr)
   inline def init: TextType = text.skip(1, Rtl)
   inline def empty: Boolean = text.length == 0

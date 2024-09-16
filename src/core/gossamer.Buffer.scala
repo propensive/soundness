@@ -32,3 +32,5 @@ abstract class Buffer[TextType](size: Optional[Int] = Unset):
 
   def apply(): TextType = result()
   def clear(): this.type = this.also(wipe())
+  def empty: Boolean = length == 0
+  def length: Int
