@@ -75,3 +75,5 @@ trait Stdio extends Io:
 
   def read(array: Array[Byte]): Int = in.read(array, 0, array.length)
   def read(array: Array[Char]): Int = reader.read(array, 0, array.length)
+
+  def platform: Boolean = System.out == out && System.in == in && System.err == err
