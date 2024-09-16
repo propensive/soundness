@@ -29,6 +29,8 @@ class TeletypeBuffer(size: Optional[Int]) extends Buffer[Teletype]:
   private val insertions: scm.Map[Int, Text] = scm.HashMap()
   private var offset: Int = 0
 
+  def length: Int = buffer.length
+
   protected def wipe(): Unit =
     offset = 0
     buffer.clear()
