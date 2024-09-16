@@ -1,8 +1,13 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target burdock/core
+target burdock/build
+
+repo propensive/zeppelin
+repo propensive/hellenism
+repo propensive/galilei
 
 project burdock
-  module core
-    compiler  java
-    sources   src/core
+  module build
+    compiler  scala
+    sources   src/build
+    include   galilei/core hellenism/core zeppelin/core
