@@ -11,9 +11,9 @@ import java.util.*;
 public class Bootstrap {
   static int verbosity = 1;
 
-  static void quit(String message) {
+  static void quit(String message, int status) {
     if (verbosity != 0) System.err.println(message);
-    System.exit(1);
+    System.exit(status);
   }
 
   static void info(String message, int severity) {
@@ -25,11 +25,11 @@ public class Bootstrap {
     List<URL> jars = new ArrayList<>();
     String mainClassname = null;
 
-    try (InputStream manifestStream =
+    try (InputStream manifest =
         Bootstrap.class.getClassLoader().getResourceAsStream("META-INF/MANIFEST.MF")) {
 
-      if (manifestStream != null) attributes = new Manifest(manifestStream).getMainAttributes();
-      else quit("Manifest file not found!");
+      if (manifest != null) attributes = new Manifest(manifest).getMainAttributes();
+      else quit("Manifest file not found!", 2);
 
       CodeSource codeSource = Bootstrap.class.getProtectionDomain().getCodeSource();
       if (codeSource != null) jars.add(codeSource.getLocation().toURI().toURL());
@@ -43,16 +43,15 @@ public class Bootstrap {
       mainClassname = attributes.getValue("Burdock-Main");
 
       verbosity = switch (verbosityLevel) {
-        case null     -> 1;
-        case "debug"  -> 3;
-        case "info"   -> 2;
-        case "error"  -> 1;
         case "silent" -> 0;
-        default       -> {
-          quit("invalid verbosity level: "+verbosityLevel);
-          yield 1;
-        }
+        case "error"  -> 1;
+        case null     -> 1;
+        case "info"   -> 2;
+        case "debug"  -> 3;
+        default       -> -1;
       };
+
+      if (verbosity < 0) quit("invalid verbosity level: "+verbosityLevel, 2);
 
       String requirements = attributes.getValue("Burdock-Require");
       if (requirements != null) {
@@ -63,9 +62,9 @@ public class Bootstrap {
           File dir = new File(cache, "burdock");
           File temp = dir.createTempFile("tempfiles", ".tmp");
           dir.mkdirs();
-          File destination = new File(dir, requiredHash+".jar");
+          File file = new File(dir, requiredHash+".jar");
 
-          if (!destination.exists()) {
+          if (!file.exists()) {
             info("File does not exist locally.", 3);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String calculatedHash = null;
@@ -94,16 +93,16 @@ public class Bootstrap {
             info("Calculated hash of downloaded file as "+calculatedHash+".", 3);
 
             if (calculatedHash.equals(requiredHash))
-              Files.move(temp.toPath(), destination.toPath(), StandardCopyOption.REPLACE_EXISTING);
+              Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING);
             else {
               Files.delete(temp.toPath());
               quit("SHA-256 checksum of dependency "+url+" does not match expected value ("+
-                  requiredHash+").");
+                  requiredHash+").", 1);
             }
           } else if (verbosity >= 1) {
-            info("JAR file exists locally at "+destination+".", 3);
+            info("JAR file exists locally at "+file+".", 3);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            try (FileInputStream fis = new FileInputStream(destination)) {
+            try (FileInputStream fis = new FileInputStream(file)) {
               byte[] byteArray = new byte[4096];
               int bytesRead;
               while ((bytesRead = fis.read(byteArray)) != -1) {
@@ -115,16 +114,17 @@ public class Bootstrap {
               String calculatedHash = builder.toString();
 
               if (!calculatedHash.equals(requiredHash)) {
-                quit("SHA-256 checksum of local dependency "+destination+" does not match hash value ("+requiredHash+").");
+                quit("SHA-256 checksum of local dependency "+file+" does not match hash value ("+
+                    requiredHash+").", 1);
               }
             }
           }
 
-          jars.add(destination.toURI().toURL());
+          jars.add(file.toURI().toURL());
         }
       }
 
-      if (mainClassname == null) quit("The main method has not been specified.");
+      if (mainClassname == null) quit("The main method has not been specified.", 2);
 
       URL[] jarfiles = new URL[jars.size()];
 
