@@ -11,8 +11,9 @@ repo propensive/quantitative
 project aviation
   module core
     compiler  scala
-    sources   src/core
     include   eucalyptus/core cardinality/core kaleidoscope/core quantitative/core hypotenuse/core anticipation/opaque
+    sources   src/core
+
 
   module test
     compiler  scala
