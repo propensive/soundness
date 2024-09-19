@@ -36,7 +36,7 @@ trait CodlRelabelling[+TargetType]:
 
   def apply(label: Text): Optional[Text] = if labels.contains(label) then labels(label) else Unset
 
-case class CodlReadError(label: Optional[Text] = Unset)
+case class CodlReadError(label: Optional[Text] = Unset)(using Diagnostics)
 extends Error(m"the CoDL value ${label.or(t"<unknown>")} is not of the right format")
 
 trait CodlEncoder[ValueType]:
