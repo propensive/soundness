@@ -22,5 +22,5 @@ import language.dynamics
 import anticipation.*
 import fulminate.*
 
-case class EnvironmentError(variable: Text)
+case class EnvironmentError(variable: Text)(using Diagnostics)
 extends Error(m"the environment variable ${variable} was not defined")

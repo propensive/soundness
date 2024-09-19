@@ -24,5 +24,5 @@ import scala.compiletime.ops.string.*
 import anticipation.*
 import fulminate.*
 
-case class SystemPropertyError(property: Text)
+case class SystemPropertyError(property: Text)(using Diagnostics)
 extends Error(m"the system property $property was not defined")
