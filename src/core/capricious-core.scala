@@ -64,6 +64,8 @@ def random[ValueType: Randomizable](): ValueType =
   given Random = Random.global
   ValueType()
 
+def toss()(using Random): Boolean = math.random < 0.5
+
 package randomDistributions:
   given Distribution as gaussian = Gaussian()
   given Distribution as uniformUnitInterval = UniformDistribution(0, 1)
