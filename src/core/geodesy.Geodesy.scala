@@ -8,29 +8,29 @@ import prepositional.*
 
 import scala.compiletime.*
 
-export Geodesy.{Geolocation, Radians, Degrees}
+export Geodesy.{Location, Radians, Degrees}
 
 object Geodesy:
   private val range = math.pow(2, 32) - 2
   private given Decimalizer = Decimalizer(decimalPlaces = 6)
 
-  opaque type Geolocation = Long
+  opaque type Location = Long
   opaque type Radians = Double
   opaque type Degrees = Double
 
-  object Geolocation:
-    given Geolocation is Showable = geolocation =>
-      t"${geolocation.latitude.degrees},${geolocation.longitude.degrees}"
+  object Location:
+    given Location is Showable = location =>
+      t"${location.latitude.degrees},${location.longitude.degrees}"
 
-    private def fromRadians(latitude: Radians, longitude: Radians): Geolocation =
+    private def fromRadians(latitude: Radians, longitude: Radians): Location =
       val latitude2 = ((latitude + math.Pi/2)*range/math.Pi).toLong
       val longitude2 = (longitude*range/(2*math.Pi)).toLong
       (latitude2 << 32) | longitude2
     
-    def apply(latitude: Radians, longitude: Radians): Geolocation = fromRadians(latitude, longitude)
+    def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
     
     @targetName("applyDegrees")
-    def apply(latitude: Degrees, longitude: Degrees): Geolocation =
+    def apply(latitude: Degrees, longitude: Degrees): Location =
       fromRadians(latitude.radians, longitude.radians)
 
   object Radians:
@@ -56,12 +56,12 @@ object Geodesy:
     @targetName("degreesValue")
     def value: Double = degrees
 
-  extension (left: Geolocation)
+  extension (left: Location)
     def latitude: Radians = (left >>> 32).toDouble/range*math.Pi - math.Pi/2
     def longitude: Radians = (left & 0xffffffffL).toDouble/range*2*math.Pi
     def pair: (Radians, Radians) = (latitude, longitude)
 
-    def surfaceDistance(right: Geolocation): Radians =
+    def surfaceDistance(right: Location): Radians =
       val dLat = math.abs(left.latitude - right.latitude)
       val dLng = math.abs(left.longitude - right.longitude)
 
@@ -70,7 +70,7 @@ object Geodesy:
       
       2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-    def bearing[CompassType](right: Geolocation)(using compass: Bearing[CompassType]): CompassType =
+    def bearing[CompassType](right: Location)(using compass: Bearing[CompassType]): CompassType =
       val dLng = math.abs(left.longitude - right.longitude)
 
       val result: Double =
