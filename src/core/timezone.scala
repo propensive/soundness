@@ -50,7 +50,7 @@ object TzdbError:
     case BadName(name: Text)
     case ZoneFileMissing(name: Text)
 
-case class TzdbError(reason: TzdbError.Reason, line: Int)
+case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
 extends Error(m"the timezone could not be parsed at line $line: $reason")
 
 object Tzdb:

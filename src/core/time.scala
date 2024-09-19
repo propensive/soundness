@@ -60,7 +60,8 @@ object Clock:
 enum Weekday:
   case Mon, Tue, Wed, Thu, Fri, Sat, Sun
 
-case class DateError(text: Text) extends Error(m"the value $text is not a valid date")
+case class DateError(text: Text)(using Diagnostics)
+extends Error(m"the value $text is not a valid date")
 
 object Dates:
   opaque type Date = Int
@@ -552,7 +553,7 @@ object Aviation:
 @capability
 case class Timezone private(name: Text)
 
-case class TimezoneError(name: Text)
+case class TimezoneError(name: Text)(using Diagnostics)
 extends Error(m"the name $name does not refer to a known timezone")
 
 object LocalTime:
@@ -578,7 +579,9 @@ object Timezone:
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =
       try throwErrors(Timezone.parse(name))
-      catch case err: TimezoneError => throw InterpolationError(err.message)
+      catch case err: TimezoneError =>
+        import exceptionDiagnostics.empty
+        throw InterpolationError(err.message)
 
 extension (inline context: StringContext)
   inline def tz(): Timezone = ${Timezone.Tz.expand('context)}
