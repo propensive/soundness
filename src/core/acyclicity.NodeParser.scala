@@ -40,6 +40,7 @@ object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:
             Some(Dot.CompassPoint.valueOf(point.capitalize.s)))))
 
       case _ =>
+        import exceptionDiagnostics.empty
         throw InterpolationError(m"not a valid node ID")
     }
 
