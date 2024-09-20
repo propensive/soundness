@@ -16,6 +16,8 @@
 
 package escapade
 
+import language.experimental.pureFunctions
+
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -27,7 +29,7 @@ import symbolism.*
 import contextual.*
 import spectacular.*
 
-import language.experimental.pureFunctions
+import exceptionDiagnostics.empty
 
 trait Ansi2:
 
