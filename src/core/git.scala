@@ -61,10 +61,11 @@ object GitError:
     case NoWorkTree         => m"this bare repository does not have a work tree"
     case CannotSwitchBranch => m"the branch could not be changed"
 
-case class GitError(detail: GitError.Detail)
+case class GitError(detail: GitError.Detail)(using Diagnostics)
 extends Error(m"the Git operation could not be completed because $detail")
 
-case class GitRefError(value: Text) extends Error(m"$value is not a valid Git reference")
+case class GitRefError(value: Text)(using Diagnostics)
+extends Error(m"$value is not a valid Git reference")
 
 class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType):
   lazy val result: ResultType/*^{closure*}*/ = closure
