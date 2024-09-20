@@ -26,4 +26,3 @@ object TextSanitizer:
 
 trait TextSanitizer:
   def sanitize(pos: Int, encoding: Encoding): Optional[Char]
-  def complete(): Unit

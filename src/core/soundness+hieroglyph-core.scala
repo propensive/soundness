@@ -20,7 +20,7 @@ export hieroglyph.{Encoding, encoder, CharDecoder, CharEncoder, TextSanitizer, C
     CharEncodeError, enc, Unicode, metrics, TextMetrics, Chars, superscript, subscript}
 
 package textSanitizers:
-  export hieroglyph.textSanitizers.{strict, skip, substitute, collect}
+  export hieroglyph.textSanitizers.{strict, skip, substitute}
 
 package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScripts, uniform}

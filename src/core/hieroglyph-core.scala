@@ -17,12 +17,9 @@
 package hieroglyph
 
 import vacuous.*
-import rudiments.*
 import fulminate.*
 import contingency.*
 import anticipation.*
-
-import scala.collection.mutable as scm
 
 import language.experimental.captureChecking
 
@@ -56,22 +53,12 @@ package textSanitizers:
   given strict(using charDecode: Tactic[CharDecodeError]): (TextSanitizer^{charDecode}) =
     new TextSanitizer:
       def sanitize(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding), '?')
-      def complete(): Unit = ()
 
   given TextSanitizer as skip:
     def sanitize(pos: Int, encoding: Encoding): Optional[Char] = Unset
-    def complete(): Unit = ()
 
   given TextSanitizer as substitute:
     def sanitize(pos: Int, encoding: Encoding): Optional[Char] = '?'
-    def complete(): Unit = ()
-
-  given (using aggregate: Tactic[AggregateError[CharDecodeError]])
-      => (TextSanitizer^{aggregate}) as collect =
-    new TextSanitizer:
-      private val mistakes: scm.ArrayBuffer[CharDecodeError] = scm.ArrayBuffer()
-      def sanitize(pos: Int, encoding: Encoding): Optional[Char] = Unset
-      def complete(): Unit = if !mistakes.isEmpty then raise(AggregateError(mistakes.to(List)), ())
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
