@@ -27,6 +27,8 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 
+import exceptionDiagnostics.empty
+
 object Sh:
   enum Context:
     case Awaiting, Unquoted, Quotes2, Quotes1

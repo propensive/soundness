@@ -20,4 +20,5 @@ import anticipation.*
 import fulminate.*
 
 case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
+    (using Diagnostics)
 extends Error(m"execution of the command $command failed")
