@@ -31,5 +31,5 @@ object InstallError:
   enum Reason:
     case Environment, Io
 
-case class InstallError(reason: InstallError.Reason)
+case class InstallError(reason: InstallError.Reason)(using Diagnostics)
 extends Error(m"the installation failed because $reason")

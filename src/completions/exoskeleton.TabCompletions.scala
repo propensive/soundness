@@ -32,7 +32,7 @@ import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent,
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)
-      (using WorkingDirectory, Effectful)
+      (using WorkingDirectory, Effectful, Diagnostics)
           : TabCompletionsInstallation raises InstallError logs CliEvent =
     tend:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -74,7 +74,7 @@ object TabCompletions:
         TabCompletionsInstallation.Shells(zsh, bash, fish)
 
   def install(shell: Shell, command: Text, scriptName: Name[GeneralForbidden], dirs: List[Path])
-      (using Effectful)
+      (using Effectful, Diagnostics)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
     tend:
