@@ -19,4 +19,4 @@ package profanity
 import fulminate.*
 import anticipation.*
 
-case class TerminalError() extends Error(m"STDIN is not attached to a TTY")
+case class TerminalError()(using Diagnostics) extends Error(m"STDIN is not attached to a TTY")

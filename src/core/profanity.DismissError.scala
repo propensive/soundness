@@ -18,4 +18,4 @@ package profanity
 
 import fulminate.*
 
-case class DismissError() extends Error(m"the user dismissed an interaction")
+case class DismissError()(using Diagnostics) extends Error(m"the user dismissed an interaction")
