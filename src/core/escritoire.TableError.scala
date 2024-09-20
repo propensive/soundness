@@ -18,6 +18,6 @@ package escritoire
 
 import fulminate.*
 
-case class TableError(minimumWidth: Int, availableWidth: Int)
+case class TableError(minimumWidth: Int, availableWidth: Int)(using Diagnostics)
 extends Error(m"""The table required a minimum width of $minimumWidth, but only $availableWidth was
                   available""")
