@@ -21,4 +21,5 @@ import anticipation.*
 
 import language.experimental.pureFunctions
 
-case class EnumCaseError(text: Text) extends Error(m"$text is not a valid enumeration case")
+case class EnumCaseError(text: Text)(using Diagnostics)
+extends Error(m"$text is not a valid enumeration case")

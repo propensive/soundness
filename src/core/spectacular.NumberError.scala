@@ -21,5 +21,5 @@ import anticipation.*
 
 import language.experimental.pureFunctions
 
-case class NumberError(text: Text, specializable: Specializable)
+case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
 extends Error(m"$text is not a valid ${specializable.show}")
