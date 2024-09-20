@@ -18,12 +18,14 @@ package vacuous
 
 import language.experimental.pureFunctions
 
-import _root_.java.util as ju
+import java.util as ju
 
 import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+
+import exceptionDiagnostics.stackTraces
 
 object Unset:
   override def toString(): String = "∅"
@@ -42,22 +44,25 @@ extension [ValueType](optional: Optional[ValueType])
   inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
     optional.let { value => if predicate(value) then Unset else value }
 
-  def stdlib: ju.Optional[ValueType] = optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
+  def stdlib: ju.Optional[ValueType] =
+    optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
+
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())
   def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
   def assume(using absentValue: CanThrow[UnsetError]): ValueType = optional.or(throw UnsetError())
 
-  inline def lay[ValueType2](inline alternative: => ValueType2)(inline lambda: ValueType => ValueType2)
+  inline def lay[ValueType2](inline alternative: => ValueType2)
+      (inline lambda: ValueType => ValueType2)
           : ValueType2 =
 
     if absent then alternative else lambda(vouch(using Unsafe))
 
 
-  inline def layGiven[ValueType2](inline alternative: => ValueType2)(inline block: ValueType ?=> ValueType2)
+  inline def layGiven[ValueType2](inline alternative: => ValueType2)
+      (inline block: ValueType ?=> ValueType2)
           : ValueType2 =
 
     if absent then alternative else block(using vouch(using Unsafe))
-
 
   inline def let[ValueType2](inline lambda: ValueType => ValueType2): Optional[ValueType2] =
     if absent then Unset else lambda(vouch(using Unsafe))
