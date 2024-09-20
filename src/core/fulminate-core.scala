@@ -23,7 +23,14 @@ import scala.quoted.*
 
 import anticipation.*
 
-def abandon(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm): Nothing =
+export Fulminate.Diagnostics
+
+package exceptionDiagnostics:
+  given Diagnostics as empty = Diagnostics.omit
+  given Diagnostics as stackTraces = Diagnostics.capture
+
+def abandon(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
+        : Nothing =
   import quotes.reflect.*
   import dotty.tools.dotc.config.Settings.Setting.value
 
@@ -37,7 +44,6 @@ def abandon(using Quotes)(message: Message, pos: quotes.reflect.Position | Null 
     else s"${summon[Realm].name}: ${message.text}"
 
   if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
-
 
 def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm): Unit =
   import quotes.reflect.*

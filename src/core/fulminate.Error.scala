@@ -21,8 +21,9 @@ import language.experimental.captureChecking
 import anticipation.*
 
 transparent abstract class Error
-    (val message: Message, private val cause: Error | Null = null, hideStack: Boolean = false)
-extends Exception(message.text.s, cause, false, !hideStack):
+    (val message: Message, private val cause: Error | Null = null)
+    (using diagnostics: Diagnostics)
+extends Exception(message.text.s, cause, false, diagnostics.captureStack):
   this: Error =>
   def fullClass: List[Text] = List(getClass.nn.getName.nn.split("\\.").nn.map(_.nn).map(Text(_))*)
   def className: Text = fullClass.last

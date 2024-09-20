@@ -23,6 +23,7 @@ import scala.annotation.*
 import anticipation.*
 
 object TextEscapes:
+  import exceptionDiagnostics.stackTraces
   def standardEscape
       (text: into Text, cur: Int, esc: Boolean)
       : (Int, Int, Boolean) throws EscapeError =

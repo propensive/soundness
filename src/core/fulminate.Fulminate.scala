@@ -23,6 +23,15 @@ import scala.quoted.*
 import anticipation.*
 
 object Fulminate:
+
+  opaque type Diagnostics = Boolean
+
+  object Diagnostics:
+    val capture: Diagnostics = true
+    val omit: Diagnostics = false
+  
+  extension (diagnostics: Diagnostics) def captureStack: Boolean = diagnostics
+
   def realm(context: Expr[StringContext])(using Quotes): Expr[Realm] =
     val name: String = context.valueOrAbort.parts.head
     if !name.matches("[a-z]+")

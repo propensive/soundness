@@ -16,4 +16,4 @@
 
 package fulminate
 
-case class EscapeError(initMessage: Message) extends Error(initMessage)
+case class EscapeError(initMessage: Message)(using Diagnostics) extends Error(initMessage)
