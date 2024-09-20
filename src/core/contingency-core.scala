@@ -135,12 +135,12 @@ infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
 infix type traces [ResultType, FocusType] = Foci[FocusType] ?=> ResultType
 
 inline def focus[FocusType, ResultType](using inline trace: Foci[FocusType])
-    (transform: Optional[FocusType] => FocusType)
+    (transform: (prior: Optional[FocusType]) ?=> FocusType)
     (block: => ResultType)
         : ResultType =
   val length = trace.length
   block.also:
-    trace.supplement(trace.length - length, transform)
+    trace.supplement(trace.length - length, transform(using _))
 
 transparent inline def tend(inline block: PartialFunction[Exception, Exception]): Any =
   ${Contingency.tend('block)}
