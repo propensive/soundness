@@ -47,5 +47,5 @@ object IpAddressError:
       case Ipv6GroupWrongLength(group) =>
         m"the group is more than 4 hexadecimal characters long"
 
-case class IpAddressError(reason: IpAddressError.Reason)
+case class IpAddressError(reason: IpAddressError.Reason)(using Diagnostics)
 extends Error(m"the IP address is not valid because $reason")

@@ -21,7 +21,7 @@ import anticipation.*
 
 import scala.compiletime.*
 
-case class EmailAddressError(reason: EmailAddressError.Reason)
+case class EmailAddressError(reason: EmailAddressError.Reason)(using Diagnostics)
 extends Error(m"the email address is not valid because $reason")
 
 object EmailAddressError:

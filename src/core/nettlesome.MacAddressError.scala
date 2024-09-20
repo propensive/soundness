@@ -37,5 +37,5 @@ object MacAddressError:
         m"group $group should be a two-digit hex number, but it is $content"
 
 
-case class MacAddressError(reason: MacAddressError.Reason)
+case class MacAddressError(reason: MacAddressError.Reason)(using Diagnostics)
 extends Error(m"the MAC address is not valid because $reason")

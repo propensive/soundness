@@ -26,6 +26,8 @@ import spectacular.*
 
 import scala.quoted.*
 
+import exceptionDiagnostics.empty
+
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
 
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)

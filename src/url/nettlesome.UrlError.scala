@@ -20,7 +20,7 @@ import fulminate.*
 import anticipation.*
 import denominative.*
 
-case class UrlError(text: Text, offset: Ordinal, expected: UrlError.Expectation)
+case class UrlError(text: Text, offset: Ordinal, expected: UrlError.Expectation)(using Diagnostics)
 extends Error(m"the URL $text is not valid: expected $expected at ${offset.n0}")
 
 object UrlError:

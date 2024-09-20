@@ -21,4 +21,4 @@ import anticipation.*
 
 import IpAddressError.Reason, Reason.*
 
-case class PortError() extends Error(m"the port is not in the valid range")
+case class PortError()(using Diagnostics) extends Error(m"the port is not in the valid range")

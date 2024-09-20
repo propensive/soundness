@@ -35,5 +35,5 @@ object HostnameError:
       case EmptyDnsLabel(n)    => m"a DNS label cannot be empty"
       case InitialDash(label)  => m"the DNS label $label begins with a dash which is not allowed"
 
-case class HostnameError(text: Text, reason: HostnameError.Reason)
+case class HostnameError(text: Text, reason: HostnameError.Reason)(using Diagnostics)
 extends Error(m"the hostname is not valid because $reason")

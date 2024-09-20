@@ -47,7 +47,7 @@ object EmailAddress:
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
       case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
 
-  def parse(text: Text): EmailAddress raises EmailAddressError =
+  def parse(text: Text)(using Diagnostics): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
 
