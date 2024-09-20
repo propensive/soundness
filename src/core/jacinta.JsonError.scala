@@ -34,5 +34,5 @@ object JsonError:
       case Label(label)       => m"the JSON object does not contain the label $label"
       case NotType(primitive) => m"the JSON value did not have the type $primitive"
 
-case class JsonError(reason: JsonError.Reason)
+case class JsonError(reason: JsonError.Reason)(using Diagnostics)
 extends Error(m"could not access the value because $reason")
