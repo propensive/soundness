@@ -24,7 +24,8 @@ import scala.deriving.*
 import scala.compiletime.*
 
 object VariantError:
-  inline def apply[DerivationType](inputLabel: Text)(using reflection: SumReflection[DerivationType])
+  inline def apply[DerivationType](inputLabel: Text)
+      (using reflection: SumReflection[DerivationType], diagnostics: Diagnostics)
           : VariantError =
 
     val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
@@ -32,6 +33,7 @@ object VariantError:
 
     VariantError(inputLabel, sum, variants)
 
-case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])
-extends Error(m"""the specified variant ($inputLabel) is not one of the valid variants
-                    (${validVariants.mkString(", ").tt}) of sum type $sum""")
+case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)
+extends Error
+    (m"""the specified variant ($inputLabel) is not one of the valid variants
+     (${validVariants.mkString(", ").tt}) of sum type $sum""")
