@@ -21,5 +21,5 @@ import fulminate.*
 
 import language.experimental.pureFunctions
 
-case class UnemptyDirectoryError(path: Path)
+case class UnemptyDirectoryError(path: Path)(using Diagnostics)
 extends Error(m"the directory is not empty")

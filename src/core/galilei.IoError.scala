@@ -21,4 +21,5 @@ import fulminate.*
 
 import language.experimental.pureFunctions
 
-case class IoError(path: Path) extends Error(m"an I/O error occurred involving $path")
+case class IoError(path: Path)(using Diagnostics)
+extends Error(m"an I/O error occurred involving $path")

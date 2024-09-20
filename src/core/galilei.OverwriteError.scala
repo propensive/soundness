@@ -21,5 +21,5 @@ import fulminate.*
 
 import language.experimental.pureFunctions
 
-case class OverwriteError(path: Path)
+case class OverwriteError(path: Path)(using Diagnostics)
 extends Error(m"cannot overwrite a pre-existing filesystem node $path")

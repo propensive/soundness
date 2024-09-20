@@ -21,5 +21,5 @@ import fulminate.*
 
 import language.experimental.pureFunctions
 
-case class ForbiddenOperationError(path: Path)
+case class ForbiddenOperationError(path: Path)(using Diagnostics)
 extends Error(m"insufficient permissions to modify $path")

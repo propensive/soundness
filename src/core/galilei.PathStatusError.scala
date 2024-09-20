@@ -18,5 +18,5 @@ package galilei
 
 import fulminate.*
 
-case class PathStatusError(path: Path)
+case class PathStatusError(path: Path)(using Diagnostics)
 extends Error(m"the filesystem node at $path was expected to be a different type")
