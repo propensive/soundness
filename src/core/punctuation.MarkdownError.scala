@@ -33,5 +33,5 @@ object MarkdownError:
       case BadHeadingLevel   => m"the heading level is not in the range 1-6"
       case UnexpectedNode    => m"a node with an unexpected type was found"
 
-case class MarkdownError(reason: MarkdownError.Reason)
+case class MarkdownError(reason: MarkdownError.Reason)(using Diagnostics)
 extends Error(m"the markdown could not be read because $reason")
