@@ -31,4 +31,5 @@ object ConcurrencyError:
   enum Reason:
     case Cancelled, Incomplete, AlreadyComplete, Timeout
 
-case class ConcurrencyError(reason: ConcurrencyError.Reason) extends Error(reason.communicate)
+case class ConcurrencyError(reason: ConcurrencyError.Reason)(using Diagnostics)
+extends Error(reason.communicate)
