@@ -18,14 +18,21 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import fulminate.*
 import rudiments.*
 
 @capability
 class AttemptTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Attempt[SuccessType, ErrorType]])
+    (using Diagnostics)
 extends Tactic[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]
 
-  def record(error: ErrorType): Unit = boundary.break(Attempt.Failure(error))(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Attempt.Failure(error))(using label)
+  def diagnostics: Diagnostics = summon[Diagnostics]
+
+  def record(error: Diagnostics ?=> ErrorType): Unit =
+    boundary.break(Attempt.Failure(error))(using label)
+
+  def abort(error: Diagnostics ?=> ErrorType): Nothing =
+    boundary.break(Attempt.Failure(error))(using label)

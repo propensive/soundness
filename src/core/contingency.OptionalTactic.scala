@@ -18,6 +18,7 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import fulminate.*
 import vacuous.*
 import rudiments.*
 
@@ -28,5 +29,6 @@ extends Tactic[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]
 
-  def record(error: ErrorType): Unit = boundary.break(Unset)(using label)
-  def abort(error: ErrorType): Nothing = boundary.break(Unset)(using label)
+  def diagnostics: Diagnostics = Diagnostics.omit
+  def record(error: Diagnostics ?=> ErrorType): Unit = boundary.break(Unset)(using label)
+  def abort(error: Diagnostics ?=> ErrorType): Nothing = boundary.break(Unset)(using label)

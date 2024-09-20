@@ -18,6 +18,7 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import fulminate.*
 import rudiments.*
 
 @capability
@@ -26,10 +27,12 @@ class TraceTactic
     (label: boundary.Label[Option[ResultType]],
      initial: AccrualType,
      foci: Foci[SupplementType])
+    (using Diagnostics)
 extends Tactic[ErrorType]:
-  def record(error: ErrorType): Unit = foci.register(error)
+  def diagnostics: Diagnostics = summon[Diagnostics]
+  def record(error: Diagnostics ?=> ErrorType): Unit = foci.register(error)
   def finish(): Unit = ()
 
-  def abort(error: ErrorType): Nothing =
+  def abort(error: Diagnostics ?=> ErrorType): Nothing =
     foci.register(error)
     boundary.break(None)(using label)

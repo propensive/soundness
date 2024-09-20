@@ -18,16 +18,19 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import fulminate.*
 import rudiments.*
 
 @capability
 trait Tactic[-ErrorType <: Exception]:
   private inline def tactic: this.type = this
 
-  def record(error: ErrorType): Unit
-  def abort(error: ErrorType): Nothing
+  def diagnostics: Diagnostics
+  def record(error: Diagnostics ?=> ErrorType): Unit
+  def abort(error: Diagnostics ?=> ErrorType): Nothing
 
   def contramap[ErrorType2 <: Exception](lambda: ErrorType2 => ErrorType): Tactic[ErrorType2] =
     new Tactic[ErrorType2]:
-      def record(error: ErrorType2): Unit = tactic.record(lambda(error))
-      def abort(error: ErrorType2): Nothing = tactic.abort(lambda(error))
+      def diagnostics: Diagnostics = tactic.diagnostics
+      def record(error: Diagnostics ?=> ErrorType2): Unit = tactic.record(lambda(error))
+      def abort(error: Diagnostics ?=> ErrorType2): Nothing = tactic.abort(lambda(error))

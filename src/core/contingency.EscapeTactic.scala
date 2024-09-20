@@ -16,9 +16,15 @@
 
 package contingency
 
+import fulminate.*
 import rudiments.*
 
 class EscapeTactic[ResultType](label: boundary.Label[ResultType])
 extends Tactic[Break[ResultType]]:
-  def abort(escape: Break[ResultType]): Nothing = boundary.break(escape.value)(using label)
-  def record(escape: Break[ResultType]): Unit = abort(escape)
+  
+  given Diagnostics as diagnostics = Diagnostics.omit
+
+  def abort(escape: Diagnostics ?=> Break[ResultType]): Nothing =
+    boundary.break(escape.value)(using label)
+  
+  def record(escape: Diagnostics ?=> Break[ResultType]): Unit = abort(escape)

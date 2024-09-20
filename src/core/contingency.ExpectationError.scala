@@ -21,5 +21,5 @@ import language.experimental.pureFunctions
 import fulminate.*
 import anticipation.*
 
-case class ExpectationError[ResultType](result: ResultType)
+case class ExpectationError[ResultType](result: ResultType)(using Diagnostics)
 extends Error(m"the expression was expected to fail, but succeeded")

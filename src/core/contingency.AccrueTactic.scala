@@ -20,6 +20,7 @@ import language.experimental.pureFunctions
 
 import java.util.concurrent.atomic as juca
 
+import fulminate.*
 import rudiments.*
 
 @capability
@@ -29,11 +30,13 @@ class AccrueTactic
      ref: juca.AtomicReference[AccrualType],
      initial: AccrualType)
     (lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+    (using val diagnostics: Diagnostics)
 extends Tactic[ErrorType]:
-  def record(error: ErrorType): Unit = ref.getAndUpdate: accrual =>
+
+  def record(error: Diagnostics ?=> ErrorType): Unit = ref.getAndUpdate: accrual =>
     lambda(using if accrual == null then initial else accrual.nn)(error)
 
-  def abort(error: ErrorType): Nothing =
+  def abort(error: Diagnostics ?=> ErrorType): Nothing =
     record(error)
     boundary.break(None)(using label)
 

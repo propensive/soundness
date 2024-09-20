@@ -40,37 +40,42 @@ package strategies:
     ErrorType.contramap(ErrorType2.mitigate(_))
 
   given [ErrorType <: Exception: Fatal] => Tactic[ErrorType] as fatalErrors:
-    def record(error: ErrorType): Unit = ErrorType.status(error).terminate()
-    def abort(error: ErrorType): Nothing = ErrorType.status(error).terminate()
+    given Diagnostics as diagnostics = exceptionDiagnostics.stackTraces
+    def record(error: Diagnostics ?=> ErrorType): Unit = ErrorType.status(error).terminate()
+    def abort(error: Diagnostics ?=> ErrorType): Nothing = ErrorType.status(error).terminate()
 
   given [ErrorType <: Exception](using erased ErrorType is Unchecked)
       => Tactic[ErrorType] as uncheckedErrors:
+    given Diagnostics as diagnostics = exceptionDiagnostics.stackTraces
     given CanThrow[Exception] = unsafeExceptions.canThrowAny
-    def record(error: ErrorType): Unit = throw error
-    def abort(error: ErrorType): Nothing = throw error
+    def record(error: Diagnostics ?=> ErrorType): Unit = throw error
+    def abort(error: Diagnostics ?=> ErrorType): Nothing = throw error
 
 given realm: Realm = realm"contingency"
 
-def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType](error: ErrorType)
-    (using handler: Tactic[ErrorType])
+def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType]
+    (error: Diagnostics ?=> ErrorType)
+    (using tactic: Tactic[ErrorType])
         : SuccessType =
-  handler.record(error)
-  ErrorType.recover(error)
+  tactic.record(error)
+  ErrorType.recover(error(using tactic.diagnostics))
 
-def raise[SuccessType, ErrorType <: Exception: Tactic](error: ErrorType, ersatz: => SuccessType)
+def raise[SuccessType, ErrorType <: Exception: Tactic]
+    (error: Diagnostics ?=> ErrorType, ersatz: => SuccessType)
         : SuccessType =
   ErrorType.record(error)
   ersatz
 
-def abort[SuccessType, ErrorType <: Exception: Tactic](error: ErrorType): Nothing =
+def abort[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType): Nothing =
   ErrorType.abort(error)
 
 def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: OptionalTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
+    (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
+                SuccessType)
         : Optional[SuccessType] =
 
   try boundary: label ?=>
-    block(using OptionalTactic(label))
+    block(using Diagnostics.omit, OptionalTactic(label))
   catch case error: Exception => Unset
 
 def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
@@ -90,7 +95,7 @@ def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
 
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
-    (using Tactic[ExpectationError[SuccessType]])
+    (using Tactic[ExpectationError[SuccessType]], Diagnostics)
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherTactic(label)))
@@ -101,6 +106,7 @@ def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 
 def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
+    (using Diagnostics)
         : Attempt[SuccessType, ErrorType] =
 
   boundary: label ?=>
@@ -108,15 +114,17 @@ def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 
 def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
+    (using Diagnostics)
         : SuccessType | ErrorType =
   boundary: label ?=>
     block(using AmalgamateTactic(label))
 
 def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
-    (block: AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
+    (block: Diagnostics ?=> AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
   given AbandonTactic[ErrorType, SuccessType]()
+  given Diagnostics = Diagnostics.omit
   block
 
 infix type raises [SuccessType, ErrorType <: Exception] = Tactic[ErrorType] ?=> SuccessType
@@ -165,14 +173,15 @@ transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[Re
 extension [AccrualType <: Exception,  LambdaType[_]]
     (inline accrue: Accrue[AccrualType, LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType])
-      (using tactic: Tactic[AccrualType])
+      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =
-    ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic)}
+    ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic,
+        'diagnostics)}
 
 extension [AccrualType <: Exception,  LambdaType[_], FocusType]
     (inline trace: Trace[AccrualType, LambdaType, FocusType])
   inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
-      (using tactic: Tactic[AccrualType])
+      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =
     ${Contingency.traceWithin[AccrualType, LambdaType, ResultType, FocusType]('trace, 'lambda,
-        'tactic)}
+        'tactic, 'diagnostics)}

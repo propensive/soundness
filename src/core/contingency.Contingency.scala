@@ -246,9 +246,10 @@ object Contingency:
     }
 
   def accrueWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type]
-      (accrue: Expr[Accrue[AccrualType, ContextType]],
-       lambda: Expr[ContextType[ResultType]],
-       tactic: Expr[Tactic[AccrualType]])
+      (accrue:      Expr[Accrue[AccrualType, ContextType]],
+       lambda:      Expr[ContextType[ResultType]],
+       tactic:      Expr[Tactic[AccrualType]],
+       diagnostics: Expr[Diagnostics])
       (using Quotes)
           : Expr[ResultType] =
 
@@ -264,7 +265,7 @@ object Contingency:
                   m"argument to `accrue` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)}.asTerm
+                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
@@ -285,9 +286,10 @@ object Contingency:
 
   def traceWithin
       [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-      (trace: Expr[Trace[AccrualType, ContextType, FocusType]],
-       lambda: Expr[Foci[FocusType] ?=> ContextType[ResultType]],
-       tactic: Expr[Tactic[AccrualType]])
+      (trace:       Expr[Trace[AccrualType, ContextType, FocusType]],
+       lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
+       tactic:      Expr[Tactic[AccrualType]],
+       diagnostics: Expr[Diagnostics])
       (using Quotes)
           : Expr[ResultType] =
 
@@ -303,7 +305,7 @@ object Contingency:
                   m"argument to `trace` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{TraceTactic(label, $trace.initial, foci)}.asTerm
+                '{TraceTactic(label, $trace.initial, foci)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head

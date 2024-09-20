@@ -19,11 +19,13 @@ package contingency
 import language.experimental.pureFunctions
 
 import rudiments.*
+import fulminate.*
 
 @capability
 class ThrowTactic[ErrorType <: Exception, SuccessType]()
     (using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Tactic[ErrorType]:
 
-  def record(error: ErrorType): Unit = throw error
-  def abort(error: ErrorType): Nothing = throw error
+  def diagnostics: Diagnostics = Diagnostics.capture
+  def record(error: Diagnostics ?=> ErrorType): Unit = throw error(using diagnostics)
+  def abort(error: Diagnostics ?=> ErrorType): Nothing = throw error(using diagnostics)

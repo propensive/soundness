@@ -27,5 +27,6 @@ import anticipation.*
 @capability
 open class AbandonTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Tactic[ErrorType]:
-  def record(error: ErrorType): Unit = abandon(error.message)
-  def abort(error: ErrorType): Nothing = abandon(error.message)
+  given Diagnostics as diagnostics = Diagnostics.omit
+  def record(error: Diagnostics ?=> ErrorType): Unit = abandon(error.message)
+  def abort(error: Diagnostics ?=> ErrorType): Nothing = abandon(error.message)
