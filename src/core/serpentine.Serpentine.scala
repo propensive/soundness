@@ -20,7 +20,6 @@ import rudiments.*
 import spectacular.*
 import anticipation.*
 import contingency.*
-import gossamer.*
 import fulminate.*
 import kaleidoscope.*
 

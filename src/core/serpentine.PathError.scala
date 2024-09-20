@@ -39,5 +39,5 @@ object PathError:
     case Reason.ParentOfRoot          => m"it has no parent"
     case Reason.NotRooted             => m"it is not rooted"
 
-case class PathError(path: Text, reason: PathError.Reason)
+case class PathError(path: Text, reason: PathError.Reason)(using Diagnostics)
 extends Error(m"the path $path is invalid because $reason")
