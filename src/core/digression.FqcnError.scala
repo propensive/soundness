@@ -34,5 +34,5 @@ object FqcnError:
     case Reason.EmptyName            => m"a package name cannot be empty"
     case Reason.JavaKeyword(keyword) => m"a package name cannot be the Java keyword, $keyword"
 
-case class FqcnError(name: Text, reason: FqcnError.Reason)
+case class FqcnError(name: Text, reason: FqcnError.Reason)(using Diagnostics)
 extends Error(m"the class name $name is not valid because $reason")
