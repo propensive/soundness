@@ -29,5 +29,5 @@ object PemError:
   enum Reason:
     case BeginMissing, EndMissing, BadBase64, EmptyFile
 
-case class PemError(reason: PemError.Reason)
+case class PemError(reason: PemError.Reason)(using Diagnostics)
 extends Error(m"could not parse PEM content because $reason")

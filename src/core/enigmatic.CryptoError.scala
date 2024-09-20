@@ -19,4 +19,5 @@ package enigmatic
 import anticipation.*
 import fulminate.*
 
-case class CryptoError(detail: Text) extends Error(m"could not decode the encrypted data: $detail")
+case class CryptoError(detail: Text)(using Diagnostics)
+extends Error(m"could not decode the encrypted data: $detail")

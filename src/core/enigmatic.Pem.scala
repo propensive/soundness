@@ -22,6 +22,7 @@ import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64.standard
 import rudiments.*
+import fulminate.*
 import vacuous.*
 
 case class Pem(label: PemLabel, data: Bytes):
@@ -32,7 +33,7 @@ case class Pem(label: PemLabel, data: Bytes):
       Seq(t"-----END $label-----")).flatten.join(t"\n")
 
 object Pem:
-  def parse(text: Text): Pem raises PemError =
+  def parse(text: Text)(using Diagnostics): Pem raises PemError =
     val lines = text.trim.cut(t"\n")
 
     val label = lines.prim match
