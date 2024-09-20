@@ -18,4 +18,4 @@ package hypotenuse
 
 import fulminate.*
 
-case class OverflowError() extends Error(m"an overflow error occurred")
+case class OverflowError()(using Diagnostics) extends Error(m"an overflow error occurred")
