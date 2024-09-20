@@ -21,5 +21,5 @@ import language.experimental.into
 
 import fulminate.*
 
-case class RangeError(index: Int, from: Int, to: Int)
+case class RangeError(index: Int, from: Int, to: Int)(using Diagnostics)
 extends Error(m"the index $index is outside the range $from-$to")

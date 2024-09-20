@@ -16,16 +16,18 @@
 
 package gossamer
 
+import language.experimental.pureFunctions
+import language.experimental.into
+
+import scala.reflect.*
+
 import rudiments.*
 import fulminate.*
 import anticipation.*
 import spectacular.*
 import contextual.*
 
-import scala.reflect.*
-
-import language.experimental.pureFunctions
-import language.experimental.into
+import exceptionDiagnostics.empty
 
 object Interpolation:
   case class Input(txt: Text)
