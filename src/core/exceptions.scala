@@ -19,11 +19,11 @@ package xylophone
 import fulminate.*
 import gossamer.*
 
-case class XmlParseError(line: Int, column: Int)
+case class XmlParseError(line: Int, column: Int)(using Diagnostics)
 extends Error(m"the XML source could not be parsed at line $line, column $column")
 
-case class XmlReadError() extends Error(m"could not read value")
+case class XmlReadError()(using Diagnostics) extends Error(m"could not read value")
 
-case class XmlAccessError(index: Int, path: XmlPath)
+case class XmlAccessError(index: Int, path: XmlPath)(using Diagnostics)
 extends Error(m"""could not access ${if index == 0 then t"any nodes" else t"node $index"} at path
     ${Xml.pathString(path)}""")

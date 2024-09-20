@@ -25,6 +25,8 @@ import contingency.*
 import gossamer.*
 import spectacular.*
 
+import exceptionDiagnostics.empty
+
 object XmlInterpolation:
 
   enum XmlInput:
