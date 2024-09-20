@@ -21,5 +21,5 @@ import language.experimental.captureChecking
 import anticipation.*
 import fulminate.*
 
-case class DiffError(lineNo: Int, line: Text)
+case class DiffError(lineNo: Int, line: Text)(using Diagnostics)
 extends Error(m"could not read the diff at line $lineNo: $line")
