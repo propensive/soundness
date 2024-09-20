@@ -41,5 +41,5 @@ object MediaTypeError:
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
-case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)
+case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
 extends Error(m"the value $value is not a valid media type; ${reason.message}")
