@@ -67,7 +67,7 @@ object Json extends Json2, Dynamic:
               context =>
                 val omit = !values.contains(label.s)
                 val value = if omit then JsonAst(0L) else values(label.s)
-                focus(label :: _.or(Nil)):
+                focus(label :: prior.or(Nil)):
                   context.decode(new Json(value), omit)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json = (json, omit) =>
@@ -92,7 +92,7 @@ object Json extends Json2, Dynamic:
 
           val values = fields(value): [FieldType] =>
             field =>
-              focus(_.or(JsonPath()) / label):
+              focus(prior.or(JsonPath()) / label):
                 if context.omit(field) then null else context.encode(field).root
 
           Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
@@ -160,7 +160,7 @@ object Json extends Json2, Dynamic:
       val builder = factory.newBuilder
       var index: Int = 0
       value.root.array.each: json =>
-        focus(_.or(JsonPath()) / index):
+        focus(prior.or(JsonPath()) / index):
           builder += ElementType.decode(Json.ast(json), false)
           index += 1
 
@@ -173,7 +173,8 @@ object Json extends Json2, Dynamic:
       val (keys, values) = value.root.obj
 
       keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
-        acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
+        focus(prior.or(JsonPath()) / keys(index)):
+          acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
   given Encoder[Json] as encoder = json => MinimalJsonPrinter.print(json.root)
 
