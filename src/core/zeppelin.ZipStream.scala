@@ -1,6 +1,7 @@
 package zeppelin
 
 import anticipation.*
+import fulminate.*
 import contingency.*
 import prepositional.*
 import rudiments.*
@@ -32,6 +33,7 @@ class ZipStream(stream: () => LazyList[Bytes], filter: ZipRef => Boolean):
       case null                         => LazyList()
       case entry if entry.isDirectory() => recur()
       case entry =>
+        import exceptionDiagnostics.empty
         val ref = tend { case PathError(path, _) => ZipError(path) }.within:
           ZipRef(entry.getName().nn.tt)
 
