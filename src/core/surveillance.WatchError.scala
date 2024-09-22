@@ -19,7 +19,7 @@ package surveillance
 import anticipation.*
 import fulminate.*
 
-case class WatchError()
+case class WatchError()(using Diagnostics)
 extends Error(m"""
     the operating system's limit on the number of paths that can be watched has been exceeded
   """)
