@@ -165,7 +165,7 @@ object Serpentine:
         import PathError.Reason.*
 
         def reasonExpr: Expr[PathError.Reason] = pattern match
-          case r"\.\*\\?$char(.)\.\*"       => '{InvalidChar(${Expr(char.s.head)})}
+          case r"\.\*\\?$char(.)\.\*"       => '{InvalidChar(${Expr(char.s.charAt(0))})}
           case r"$prefix([a-zA-Z0-9]*)\.\*" => '{InvalidPrefix(Text(${Expr(prefix.toString)}))}
           case r"\.\*$suffix([a-zA-Z0-9]*)" => '{InvalidSuffix(Text(${Expr(suffix.toString)}))}
           case other                        => '{InvalidName(Text(${Expr(pattern)}))}
