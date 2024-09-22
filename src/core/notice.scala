@@ -36,7 +36,8 @@ enum Importance:
 case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
 case class Notice(importance: Importance, file: Text, message: Text, codeRange: Optional[CodeRange])
 
-case class CompileError() extends Error(m"there was a problem with the compiler configuration")
+case class CompilerError()(using Diagnostics)
+extends Error(m"there was a problem with the compiler configuration")
 
 enum CompileResult:
   case Failure
@@ -49,7 +50,7 @@ trait Compiler:
   def apply(classpath: LocalClasspath)[PathType: GenericPath]
       (sources: Map[Text, Text], out: PathType)
       (using SystemProperties, Monitor)
-          : CompileProcess logs CompileEvent raises CompileError
+          : CompileProcess logs CompileEvent raises CompilerError
 
 class CompileProcess():
   private[anthology] var continue: Boolean = true
