@@ -39,7 +39,8 @@ import java.net.InetSocketAddress
 import java.text as jt
 import com.sun.net.httpserver as csnh
 
-case class MissingParamError(key: Text) extends Error(m"the parameter $key was not sent in the request")
+case class MissingParamError(key: Text)(using Diagnostics)
+extends Error(m"the parameter $key was not sent in the request")
 
 trait Responder:
   def sendBody(status: Int, body: HttpBody): Unit
