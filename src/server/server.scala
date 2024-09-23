@@ -119,8 +119,8 @@ object Servable:
           responder.sendBody(200, HttpBody.Chunked(value.stream[Bytes]))
 
 object Redirect:
-  def apply[LocationType: Locatable](location: LocationType): Redirect =
-    new Redirect(LocationType.location(location))
+  def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType): Redirect =
+    new Redirect(HyperlinkType.hyperlink(location))
 
 case class Redirect(location: Url["http" | "https"])
 
