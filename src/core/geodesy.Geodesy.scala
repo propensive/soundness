@@ -19,12 +19,12 @@ object Geodesy:
     given Location is Showable = location =>
       t"${location.latitude.degrees},${location.longitude.degrees}"
 
-    def fromRadians(latitude: Radians, longitude: Radians): Location =
+    private def fromRadians(latitude: Radians, longitude: Radians): Location =
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 
-    def encodeLatitude(latitude: Radians): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
+    private def encodeLatitude(latitude: Radians): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
     
-    def encodeLongitude(longitude: Radians): Int =
+    private def encodeLongitude(longitude: Radians): Int =
       ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
 
     def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
