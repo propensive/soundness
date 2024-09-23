@@ -6,10 +6,6 @@ import spectacular.*
 import symbolism.*
 import prepositional.*
 
-import scala.compiletime.*
-
-export Geodesy.{Location, Radians, Degrees}
-
 object Geodesy:
   private val range = math.pow(2, 32) - 2
   private given Decimalizer = Decimalizer(decimalPlaces = 6)
@@ -80,55 +76,3 @@ object Geodesy:
               math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
       
       compass.from(result.rad)
-
-extension (double: Double)
-  def rad: Radians = Radians(double)
-  def deg: Degrees = Degrees(double)
-
-enum CardinalWind:
-  case North, East, South, West
-
-enum IntercardinalWind:
-  case Northeast, Southeast, Southwest, Northwest
-
-enum HalfWind:
-  case NorthNortheast, EastNortheast, EastSoutheast, SouthSoutheast, SouthSouthwest, WestSouthwest,
-      WestNorthwest, NorthNorthwest
-
-export CardinalWind.*, IntercardinalWind.*, HalfWind.*
-
-object Compass:
-  val points4: IArray[CardinalWind] =
-    IArray(North, East, South, West)
-  
-  val points8: IArray[CardinalWind | IntercardinalWind] =
-    IArray(North, Northeast, East, Southeast, South, Southwest, West, Southwest)
-  
-  val points16: IArray[CardinalWind | IntercardinalWind | HalfWind] =
-    IArray
-     (North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
-      SouthSoutheast, South, SouthSouthwest, Southwest, WestSouthwest, West, WestNorthwest,
-      Northwest, NorthNorthwest)
-
-  inline def apply[PointsType <: 4 | 8 | 16](angle: Radians): Compass[PointsType] =
-    inline erasedValue[PointsType] match
-      case _: 4  => points4((0.5 + 2*angle.value/math.Pi).toInt%4)
-      case _: 8  => points8((0.5 + 4*angle.value/math.Pi).toInt%8)
-      case _: 16 => points16((0.5 + 8*angle.value/math.Pi).toInt%16)
-
-type Compass[PointsType <: 4 | 8 | 16] = PointsType match
-  case 4  => CardinalWind
-  case 8  => CardinalWind | IntercardinalWind
-  case 16 => CardinalWind | IntercardinalWind | HalfWind
-
-trait Bearing[BearingType]:
-  def from(radians: Radians): BearingType
-
-package compassBearings:
-  given Bearing[Compass[4]] as fourPointCompass = Compass[4](_)
-  given Bearing[Compass[8]] as eightPointCompass = Compass[8](_)
-  given Bearing[Compass[16]] as sixteenPointCompass = Compass[16](_)
-  given Bearing[Degrees] as degreesFromNorth = _.degrees
-  given Bearing[Radians] as radiansFromNorth = identity(_)
-  given Bearing[Degrees] as degreesFromEast = radians => (radians - Radians(math.Pi/2)).degrees
-  given Bearing[Radians] as radiansFromEast = radians => radians - Radians(math.Pi/2)
