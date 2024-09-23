@@ -19,8 +19,8 @@ package telekinesis
 import rudiments.*
 import nettlesome.*
 
-object Locatable:
-  given httpUrl: Locatable[HttpUrl] = identity(_)
+object Hyperlinkable:
+  given httpUrl: Hyperlinkable[HttpUrl] = identity(_)
 
-trait Locatable[-UrlType]:
-  def location(value: UrlType): HttpUrl
+trait Hyperlinkable[-UrlType]:
+  def hyperlink(value: UrlType): HttpUrl

@@ -30,60 +30,60 @@ import java.util as ju
 import language.dynamics
 
 object Http:
-  def post[PostType: Postable, UrlType: Locatable]
+  def post[PostType: Postable, UrlType: Hyperlinkable]
       (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
       (using Online)
           : HttpResponse logs HttpEvent =
 
-    request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Post, headers)
+    request[PostType](UrlType.hyperlink(url), content, HttpMethod.Post, headers)
 
-  def put[PostType: Postable, UrlType: Locatable]
+  def put[PostType: Postable, UrlType: Hyperlinkable]
       (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
       (using Online)
           : HttpResponse logs HttpEvent =
 
-    request[PostType](summon[Locatable[UrlType]].location(url), content, HttpMethod.Put, headers)
+    request[PostType](UrlType.hyperlink(url), content, HttpMethod.Put, headers)
 
-  def get[UrlType: Locatable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
+  def get[UrlType: Hyperlinkable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Get, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Get, headers)
 
-  def options[UrlType: Locatable]
+  def options[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Options, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Options, headers)
 
-  def head[UrlType: Locatable]
+  def head[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Head, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Head, headers)
 
-  def delete[UrlType: Locatable]
+  def delete[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Delete, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Delete, headers)
 
-  def connect[UrlType: Locatable]
+  def connect[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Connect, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Connect, headers)
 
-  def trace[UrlType: Locatable]
+  def trace[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Trace, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Trace, headers)
 
-  def patch[UrlType: Locatable]
+  def patch[UrlType: Hyperlinkable]
       (url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(summon[Locatable[UrlType]].location(url), (), HttpMethod.Patch, headers)
+    request(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
 
   private def request[PostType: Postable]
       (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
