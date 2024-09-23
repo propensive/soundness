@@ -2,6 +2,7 @@ package geodesy
 
 import gossamer.*
 import rudiments.*
+import anticipation.*
 import spectacular.*
 import symbolism.*
 import prepositional.*
@@ -18,11 +19,14 @@ object Geodesy:
     given Location is Showable = location =>
       t"${location.latitude.degrees},${location.longitude.degrees}"
 
-    private def fromRadians(latitude: Radians, longitude: Radians): Location =
-      val latitude2 = ((latitude + math.Pi/2)*range/math.Pi).toLong
-      val longitude2 = (longitude*range/(2*math.Pi)).toLong
-      (latitude2 << 32) | longitude2
+    def fromRadians(latitude: Radians, longitude: Radians): Location =
+      (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
+
+    def encodeLatitude(latitude: Radians): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
     
+    def encodeLongitude(longitude: Radians): Int =
+      ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
+
     def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
     
     @targetName("applyDegrees")
@@ -30,6 +34,7 @@ object Geodesy:
       fromRadians(latitude.radians, longitude.radians)
 
   object Radians:
+    private val c = math.Pi*2
     def apply(value: Double): Radians = value
 
     given Radians is Addable by Radians into Radians as addable =
@@ -53,9 +58,46 @@ object Geodesy:
     def value: Double = degrees
 
   extension (left: Location)
-    def latitude: Radians = (left >>> 32).toDouble/range*math.Pi - math.Pi/2
-    def longitude: Radians = (left & 0xffffffffL).toDouble/range*2*math.Pi
+    def latitude: Radians = ((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*math.Pi
+    def longitude: Radians = (left & 0xffffffffL).toInt.toDouble/Int.MaxValue*math.Pi + math.Pi
     def pair: (Radians, Radians) = (latitude, longitude)
+
+    def geohash(length: Int): Text =
+
+      val bits = length*5
+      val lat: Int = ((left >>> 32)&0xffffffffL).toInt
+      
+      val long: Int =
+        val long0 = left&0xffffffffL
+        if long0 < 0 then (long0 + Int.MaxValue).toInt else (long0 - Int.MaxValue).toInt
+      
+      def recur
+          (value:   Long,
+           latMin:  Long,
+           latMax:  Long,
+           longMin: Long,
+           longMax: Long,
+           count: Int)
+              : Long =
+        
+        if count >= bits then value else (count%2: @unchecked) match
+          case 0 =>
+            val midpoint = (longMin + longMax)/2
+            if long < midpoint
+            then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
+            else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
+          
+          case 1 =>
+            val midpoint = (latMin + latMax)/2
+            if lat < midpoint
+            then recur(value << 1, latMin, midpoint, longMin, longMax, count + 1)
+            else recur((value << 1) | 1L, midpoint, latMax, longMin, longMax, count + 1)
+
+      val binary = recur(0L, Int.MinValue + 1, Int.MaxValue, Int.MinValue + 1, Int.MaxValue, 0)
+
+      Text:
+        IArray.tabulate[Char](length): index =>
+          "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
     def surfaceDistance(right: Location): Radians =
       val dLat = math.abs(left.latitude - right.latitude)
