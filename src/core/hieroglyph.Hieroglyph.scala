@@ -59,3 +59,11 @@ object Hieroglyph:
         val name = context.parts.head.toLowerCase.nn
         if encoding.charset.canEncode then '{Encoding.codecs(${Expr(name)}.tt)}
         else '{Encoding.decodeOnly(${Expr(name)}.tt)}
+
+  def char(contextExpr: Expr[StringContext])(using Quotes): Expr[Char | Text] =
+    val name: Text = contextExpr.valueOrAbort.parts.head.toUpperCase.nn.tt
+
+    Unicode(name) match
+      case char: Char => Expr(char)
+      case text: Text => Expr(text)
+      case _          => abandon(m"the unicode character $name does not exist")

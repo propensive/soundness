@@ -52,6 +52,28 @@ object Unicode:
   def eastAsianWidth(char: Char): Optional[EaWidth] =
     eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
 
+  def apply(name: Text): Optional[Char | Text] = unicodeData.at(name)
+  def name(char: Char): Optional[Text] = unicodeNames.at(char)
+
+  lazy val unicodeData: Map[Text, Char | Text] =
+    val in: ji.InputStream =
+      Option(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).map(_.nn).getOrElse:
+        throw Panic(m"could not find hieroglyph/UnicodeData.txt on the classpath")
+    
+    scala.io.Source.fromInputStream(in).getLines.map(_.split(";").nn.to(List)).flatMap:
+      case hex :: name :: _ if !name.nn.startsWith("<") =>
+        val hexInt = Integer.parseInt(hex, 16)
+
+        if hexInt < 65536 then List((name.nn.tt, hexInt.toChar))
+        else List((name.nn.tt, new String(Character.toChars(hexInt)).tt))
+      
+      case _ =>
+        Nil
+    .to(Map)
+  
+  lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
+    value -> key.s.split(" ").nn.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt
+
   lazy val eastAsianWidths: TreeMap[CharRange, EaWidth] =
     extension (map: TreeMap[CharRange, EaWidth])
       def append(range: CharRange, width: EaWidth): TreeMap[CharRange, EaWidth] =

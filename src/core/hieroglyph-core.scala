@@ -62,6 +62,7 @@ package textSanitizers:
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
+  transparent inline def u(): Char | Text = ${Hieroglyph.char('context)}
 
 package textMetrics:
   given TextMetrics as uniform:
@@ -76,3 +77,4 @@ extension (char: Char)
   def metrics: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
   def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
   def subscript: Optional[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
+  def description: Optional[Text] = Unicode.name(char)
