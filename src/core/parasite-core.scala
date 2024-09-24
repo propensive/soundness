@@ -89,6 +89,10 @@ extension [ResultType](tasks: Iterable[Task[ResultType]])
 
     promise.await()
 
+extension [ResultType](stream: LazyList[ResultType])
+  def parallelize(using Monitor, Codicil): LazyList[ResultType] raises ConcurrencyError =
+    if async(stream.isEmpty).await() then LazyList() else stream.head #:: stream.tail.parallelize
+
 def supervise[ResultType](block: Monitor ?=> ResultType)
     (using model: ThreadModel, codepoint: Codepoint)
         : ResultType raises ConcurrencyError =
