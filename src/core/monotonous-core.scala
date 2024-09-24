@@ -120,4 +120,4 @@ extension (stream: LazyList[Text])
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
   def serialize[SchemeType <: Serialization](using encodable: Serializable in SchemeType): Text =
-    encodable.encode(value.binary)
+    encodable.encode(value.bytestream)
