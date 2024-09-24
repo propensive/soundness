@@ -39,10 +39,10 @@ object Geodesy:
 
     given Radians is Addable by Radians into Radians as addable =
       (left, right) => (left + right)%(2*math.Pi)
-    
+
     given Radians is Subtractable by Radians into Radians as subtractable =
       (left, right) => (2*math.Pi + left - right)%(2*math.Pi)
-  
+
   extension (radians: Radians)
     def degrees: Degrees = radians*180/math.Pi
     def value: Double = radians
