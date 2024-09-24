@@ -21,10 +21,10 @@ import bifurcate.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import hypotenuse.*
 import quantitative.*
 import rudiments.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 

@@ -30,5 +30,5 @@ object FontError:
     case Reason.UnknownFormat     => m"the table contains data in an unknown format"
     case Reason.MagicNumber       => m"the font did not contain expected check data"
 
-case class FontError(reason: FontError.Reason)
+case class FontError(reason: FontError.Reason)(using Diagnostics)
 extends Error(m"the font could not be read because $reason")
