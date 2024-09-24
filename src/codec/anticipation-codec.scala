@@ -31,4 +31,4 @@ object Bytes:
     array.asInstanceOf[IArray[Byte]]
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
-  def binary: Bytes = ValueType.encode(value)
+  def bytestream: Bytes = ValueType.encode(value)
