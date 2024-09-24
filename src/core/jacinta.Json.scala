@@ -38,7 +38,8 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
-  given [ValueType: Encodable in Json] => Optional[ValueType] is Encodable in Json as optionalEncodable =
+  given [ValueType: Encodable in Json]
+      => Optional[ValueType] is Encodable in Json as optionalEncodable =
     new Encodable:
       type Self = Optional[ValueType]
       type Format = Json
@@ -56,7 +57,8 @@ object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
-    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decodable in Json =
+    inline def join[DerivationType <: Product: ProductReflection]
+            : DerivationType is Decodable in Json =
       (json, omit) =>
         summonInline[Foci[List[Text]]].give:
           summonInline[Tactic[JsonError]].give:
@@ -70,21 +72,23 @@ object Json extends Json2, Dynamic:
                 focus(label :: prior.or(Nil)):
                   context.decode(new Json(value), omit)
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json = (json, omit) =>
-      summonInline[Tactic[JsonError]].give:
-        summonInline[Tactic[VariantError]].give:
-          val values = json.root.obj
+    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
+      (json, omit) =>
+        summonInline[Tactic[JsonError]].give:
+          summonInline[Tactic[VariantError]].give:
+            val values = json.root.obj
 
-          values(0).indexOf("_type") match
-            case -1 =>
-              abort(JsonError(Reason.Label(t"_type")))
+            values(0).indexOf("_type") match
+              case -1 =>
+                abort(JsonError(Reason.Label(t"_type")))
 
-            case index =>
-              delegate(values(1)(index).string): [VariantType <: DerivationType] =>
-                context => context.decode(json, omit)
+              case index =>
+                delegate(values(1)(index).string): [VariantType <: DerivationType] =>
+                  context => context.decode(json, omit)
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
-    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Encodable in Json =
+    inline def join[DerivationType <: Product: ProductReflection]
+            : DerivationType is Encodable in Json =
       value =>
         summonInline[Foci[JsonPath]].give:
           val labels = fields(value): [FieldType] =>
