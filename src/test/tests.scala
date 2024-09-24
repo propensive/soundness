@@ -50,7 +50,7 @@ object Tests extends Suite(t"Merino tests"):
           case JsonParseError(_, _, _) => true
           case _                       => false
 
-    val testDir = ji.File(workingDirectory, "test")
+    val testDir = ji.File(workingDirectory, "data")
 
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
