@@ -21,6 +21,7 @@ import vacuous.*
 import anticipation.*
 import digression.*
 import fulminate.*
+import denominative.*
 
 import language.experimental.captureChecking
 
@@ -30,6 +31,8 @@ trait Showable extends TextConversion:
 object Showable:
   given Specializable is Showable as specializable = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
+
+  given Ordinal is Showable as zerary = ordinal => s"${ordinal.n0}.₀".tt
 
   given StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
