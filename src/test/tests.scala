@@ -50,13 +50,15 @@ object Tests extends Suite(t"Merino tests"):
           case JsonParseError(_, _, _) => true
           case _                       => false
 
+    val testDir = ji.File(workingDirectory, "test")
+
     suite(t"Parse large files"):
       val file: Bytes = test(t"Read file"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge.json"))).read[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge.json"))).read[Bytes]
       .check()
 
       val file2: Bytes = test(t"Read file 2"):
-        ji.BufferedInputStream(ji.FileInputStream(ji.File(workingDirectory, "huge2.json"))).read[Bytes]
+        ji.BufferedInputStream(ji.FileInputStream(ji.File(testDir, "huge2.json"))).read[Bytes]
       .check()
 
       // test(t"Parse huge file with Jawn"):
