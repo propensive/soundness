@@ -34,7 +34,7 @@ case class PublicKey[CipherType <: Cipher](bytes: Bytes):
       (using algorithm: CipherType & Encryption)
           : Bytes =
 
-    algorithm.encrypt(value.binary, bytes)
+    algorithm.encrypt(value.bytestream, bytes)
 
   def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
       (using algorithm: CipherType & Signing)
