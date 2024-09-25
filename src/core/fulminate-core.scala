@@ -82,3 +82,5 @@ extension (inline context: StringContext)
 
 extension [ValueType: Communicable](value: ValueType)
   def communicate: Message = ValueType.message(value)
+
+inline def express[ErasedType: Expressible]: Message = ErasedType.express()
