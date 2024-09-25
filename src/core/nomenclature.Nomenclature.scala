@@ -23,7 +23,11 @@ object Nomenclature:
 
     given Name is Showable = identity(_)
 
-  def parse[PlatformType: Type](context: Expr[StringContext], nominative: Expr[PlatformType is Nominative])(using Quotes)
+  def parse[PlatformType: Type]
+      (context: Expr[StringContext], nominative: Expr[PlatformType is Nominative])
+      (using Quotes)
           : Expr[Name on PlatformType] =
     val text: Text = context.valueOrAbort.parts.head.tt
+    
+
     '{???}

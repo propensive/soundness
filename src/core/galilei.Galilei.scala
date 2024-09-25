@@ -10,10 +10,11 @@ import rudiments.*
 import vacuous.*
 import serpentine.*
 
+import scala.reflect.*
+
 object Galilei:
   @targetName("UnixRoot")
   object % extends Pathlike:
-
     protected def pathRoot: AnyRef = this
     protected def pathDescent: List[Any] = Nil
 
