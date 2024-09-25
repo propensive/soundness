@@ -1,10 +1,12 @@
 package serpentine
 
+import anticipation.*
 import prepositional.*
 import gossamer.*
 import symbolism.*
 import spectacular.*
 import rudiments.*
+import vacuous.*
 
 object Relative:
   given [ElementType, RootType: Navigable by ElementType] => Encoder[Relative by ElementType] =
@@ -18,6 +20,22 @@ object Relative:
        .map(RootType.elementText)
        .reverse
        .join(RootType.ascent*relative.ascent, RootType.separator, t"")
+
+  def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
+          : Relative by ElementType =
+    def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
+      if start >= text.length then Relative(ascent, elements)
+      else
+        val end = text.s.indexOf(navigable.separator.s, start).puncture(-1).or(text.length)
+        val element = text.s.substring(start, end).nn.tt
+        val start2 = end + navigable.separator.length
+
+        if element == navigable.parentElement then
+          if elements.isEmpty then recur(start2, ascent + 1, Nil)
+          else recur(start2, ascent, elements.tail)
+        else recur(start2, ascent, navigable.element(element) :: elements)
+    
+    if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
   def apply[ElementType](using navigable: Navigable by ElementType)
       (ascent0: Int, descent0: List[ElementType])
@@ -40,8 +58,6 @@ object Relative:
       recur(left.ascent, left.descent, right.ascent)
         
 abstract class Relative extends Pathlike:
-  override def toString(): String = descent.reverse.mkString("../"*ascent, "/", "")
-
   type Operand
   val ascent: Int
   val descent: List[Operand]

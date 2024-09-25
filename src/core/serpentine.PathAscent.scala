@@ -2,6 +2,8 @@ package serpentine
 
 import rudiments.*
 import prepositional.*
+import gossamer.*
+import spectacular.*
 import symbolism.*
 
 object PathAscent:
@@ -15,6 +17,18 @@ object PathAscent:
       def divide(path: PathAscent, child: ElementType): Relative by ElementType =
         Relative(path.ascent, List(child))
 
+  given [ElementType, RootType: Navigable by ElementType] => Encoder[PathAscent] =
+    pathAscent =>
+      if pathAscent.descent.isEmpty
+      then
+        if pathAscent.ascent == 0 then RootType.selfText
+        else List.fill(pathAscent.ascent)(RootType.parentElement).join(RootType.separator)
+      else pathAscent
+       .descent
+       .map(RootType.elementText)
+       .reverse
+       .join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
+
 case class PathAscent(ascent: Int) extends Relative:
   type Operand = Nothing
   val descent: List[Operand] = Nil
@@ -22,5 +36,4 @@ case class PathAscent(ascent: Int) extends Relative:
   @targetName("parent")
   infix def / (parent: ^.type): PathAscent = PathAscent(ascent + 1)
 
-  override def parent(using navigable: Navigable by Nothing): PathAscent =
-    PathAscent(ascent + 1)
+  def parent: PathAscent = PathAscent(ascent + 1)

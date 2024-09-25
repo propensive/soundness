@@ -11,7 +11,6 @@ object Pathlike:
 transparent trait Pathlike:
   protected def pathDescent: List[Any]
   protected def pathRoot: AnyRef
-
   override def toString(): String = pathDescent.reverse.mkString(pathRoot.toString, "/", "")
 
   override def equals(that: Any): Boolean =
