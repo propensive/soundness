@@ -7,13 +7,13 @@ import rudiments.*
 import serpentine.*
 
 package pathNavigation:
-  given (using Tactic[PathError]) => %.type is Navigable by Text as unix = %.navigable
+  given (using Tactic[PathError]) => UnixRoot is Navigable by Text as unix = UnixRoot.navigable
   
   given (using Tactic[PathError]) => WindowsDrive is Navigable by Text as windows =
     WindowsDrive.navigable
 
-@targetName("UnixRoot")
-final val `%`: Pathlike & Galilei.%.type = Galilei.%
+final val C: WindowsDrive = WindowsDrive('C')
+final val D: WindowsDrive = WindowsDrive('D')
 
-val C: WindowsDrive = WindowsDrive('C')
-val D: WindowsDrive = WindowsDrive('D')
+@targetName("UnixRoot")
+final val `%`: UnixRoot = UnixRoot()

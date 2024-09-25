@@ -4,7 +4,7 @@ import anticipation.*
 import prepositional.*
 
 trait Navigable:
-  type Self <: AnyRef
+  type Self <: AnyRef & Matchable
   type Operand
 
   def prefixLength(path: Text): Int

@@ -14,7 +14,7 @@ object Serpentine:
 
   @targetName("Slash")
   object `/`:
-    def unapply[RootType <: AnyRef, ElementType]
+    def unapply[RootType <: AnyRef & Matchable, ElementType]
         (using RootType is Navigable by ElementType)
         (path: Path on RootType by ElementType)
             : Option[(RootType | Path, ElementType)] =

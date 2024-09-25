@@ -76,10 +76,10 @@ abstract class Path extends Pathlike:
     type Platform <: AnyRef
     type Operand
     
-    val root: Platform
-    val descent: List[Operand]
+    def root: Platform
+    def descent: List[Operand]
     
-    protected def pathRoot: AnyRef = root
+    protected def pathRoot: AnyRef & Matchable = root
     protected def pathDescent: List[Operand] = descent
     
     def depth: Int = descent.length
