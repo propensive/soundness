@@ -32,6 +32,8 @@ object PathAscent:
 case class PathAscent(ascent: Int) extends Relative:
   type Operand = Nothing
   val descent: List[Operand] = Nil
+  def root: Root on Platform = ???
+  //def root: java.lang.Integer = ascent
 
   @targetName("parent")
   infix def / (parent: ^.type): PathAscent = PathAscent(ascent + 1)

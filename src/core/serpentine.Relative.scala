@@ -67,8 +67,10 @@ abstract class Relative extends Pathlike:
   def parent(using Navigable by Operand): Relative =
     if descent.isEmpty then Relative(ascent + 1, Nil) else Relative(ascent, descent.tail)
 
-  protected def pathRoot: java.lang.Integer = ascent
-  protected def pathDescent: List[Operand] = descent
+  override def equals(that: Any): Boolean = that match
+    case that: Relative => that.ascent == ascent && that.descent == descent
+    case _              => false
+  
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand)

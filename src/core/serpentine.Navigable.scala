@@ -2,14 +2,15 @@ package serpentine
 
 import anticipation.*
 import prepositional.*
+import nomenclature.*
 
-trait Navigable:
-  type Self <: AnyRef & Matchable
+trait Navigable extends Nominative:
+  type Self
   type Operand
 
   def prefixLength(path: Text): Int
-  def prefix(path: Text): Self
-  def rootText(root: Self): Text
+  def prefix(path: Text): Root on Self
+  def rootText(root: Root on Self): Text
   def element(element: Text): Operand
   def elementText(element: Operand): Text
   def separator: Text

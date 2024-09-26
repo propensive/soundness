@@ -4,13 +4,20 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import nomenclature.*
 import serpentine.*
 
+
+erased trait Windows
+
+object Unix:
+  export UnixRoot.navigable
+
+erased trait Unix
+
 package pathNavigation:
-  given (using Tactic[PathError]) => UnixRoot is Navigable by Text as unix = UnixRoot.navigable
-  
-  given (using Tactic[PathError]) => WindowsDrive is Navigable by Text as windows =
-    WindowsDrive.navigable
+  export UnixRoot.navigable as unix
+  export WindowsDrive.navigable as windows
 
 final val C: WindowsDrive = WindowsDrive('C')
 final val D: WindowsDrive = WindowsDrive('D')

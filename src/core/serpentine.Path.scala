@@ -10,22 +10,19 @@ import symbolism.*
 import vacuous.*
 
 object Path:
-  given [ElementType, RootType <: AnyRef: Navigable by ElementType]
-      => Encoder[Path on RootType by ElementType] as encoder = path =>
-    path
-     .descent
-     .reverse
-     .map(RootType.elementText(_))
-     .join(RootType.rootText(path.root), RootType.separator, t"")
+  given [ElementType, PlatformType: Navigable by ElementType]
+      => Encoder[Path on PlatformType by ElementType] as encoder = path =>
+    path.descent.reverse
+     .map(PlatformType.elementText(_))
+     .join(PlatformType.rootText(path.root), PlatformType.separator, t"")
     
-  given [ElementType, RootType <: AnyRef](using RootType is Navigable by ElementType, Tactic[PathError])
-      => (Path on RootType by ElementType) is Addable by (Relative by ElementType) into
-          (Path on RootType by ElementType) =
+  given [ElementType, PlatformType](using PlatformType is Navigable by ElementType, Tactic[PathError])
+      => (Path on PlatformType by ElementType) is Addable by (Relative by ElementType) into
+          (Path on PlatformType by ElementType) =
     (left, right) =>
-      def recur(descent: List[ElementType], ascent: Int): Path on RootType by ElementType =
+      def recur(descent: List[ElementType], ascent: Int): Path on PlatformType by ElementType =
         if ascent > 0 then
-          if descent.isEmpty
-          then
+          if descent.isEmpty then
             raise(PathError(PathError.Reason.RootParent))
             Path(left.root)(Nil)
           else recur(descent.tail, ascent - 1)
@@ -33,57 +30,55 @@ object Path:
 
       recur(left.descent, right.ascent)
         
-  def apply[RootType <: AnyRef, ElementType](root0: RootType)(elements: List[ElementType])
-      (using navigable: RootType is Navigable by ElementType)
-          : Path on RootType by ElementType =
-    new Path:
-      type Platform = RootType
+  def apply[PlatformType, ElementType](root0: Root on PlatformType)(elements: List[ElementType])
+      (using navigable: PlatformType is Navigable by ElementType)
+          : Path on PlatformType by ElementType =
+    if elements.isEmpty then root0.asInstanceOf[Path on PlatformType by ElementType] else new Path:
+      type Platform = PlatformType
       type Operand = ElementType
-      val root: Platform = root0
+      val root: Root on Platform = root0
       val descent: List[Operand] = elements
 
-  def parse[RootType <: AnyRef: Navigable](path: Text): Path on RootType =
-    val root = RootType.prefix(path)
+  def parse[PlatformType: Navigable](path: Text): Path on PlatformType =
+    val root = PlatformType.prefix(path)
 
     val descent = path
-     .skip(RootType.prefixLength(path))
-     .cut(RootType.separator)
+     .skip(PlatformType.prefixLength(path))
+     .cut(PlatformType.separator)
      .filter(_ != t"")
      .reverse
-     .map(RootType.element(_))
+     .map(PlatformType.element(_))
 
     Path(root)(descent)
 
-  given [RootType <: AnyRef, ElementType]
-      => (Path on RootType by ElementType) is Divisible by ElementType into
-          (Path on RootType by ElementType) =
+  given [PlatformType, ElementType]
+      => (Path on PlatformType by ElementType) is Divisible by ElementType into
+          (Path on PlatformType by ElementType) =
     new Divisible:
-      type Self = Path on RootType by ElementType
-      type Result = Path on RootType by ElementType
+      type Self = Path on PlatformType by ElementType
+      type Result = Path on PlatformType by ElementType
       type Operand = ElementType
 
-      def divide(path: Path on RootType by ElementType, child: ElementType)
-              : Path on RootType by ElementType =
+      def divide(path: Path on PlatformType by ElementType, child: ElementType)
+              : Path on PlatformType by ElementType =
         new Path:
           type Platform = path.Platform
           type Operand = path.Operand
-          val root: Platform = path.root
+          val root: Root on Platform = path.root
           val descent: List[Operand] = child :: path.descent
 
 abstract class Path extends Pathlike:
   path =>
-
-    type Platform <: AnyRef
+    type Platform
     type Operand
     
-    def root: Platform
+    def root: Root on Platform
     def descent: List[Operand]
-    
-    protected def pathRoot: AnyRef & Matchable = root
-    protected def pathDescent: List[Operand] = descent
-    
     def depth: Int = descent.length
-    
+
+    override def equals(that: Any): Boolean = that match
+      case that: Path => (root.toString == that.root.toString) && descent == that.descent
+
     def parent(using Platform is Navigable by Operand): Optional[Path on Platform by Operand] =
       if descent == Nil then Unset else Path(root)(descent.tail)
 
@@ -103,7 +98,7 @@ abstract class Path extends Pathlike:
 
     def precedes(path: Path on Platform by Operand)(using Platform is Navigable by Operand)
             : Boolean =
-      conjunction(path) == path
+      descent == Nil || conjunction(path) == path
 
     def retain(count: Int)(using Platform is Navigable by Operand): Path on Platform by Operand =
       Path(root)(descent.drop(depth - count))
@@ -112,3 +107,10 @@ abstract class Path extends Pathlike:
             : Relative by Operand =
       val common = conjunction(right).depth
       Relative(right.depth - common, descent.dropRight(common))
+      
+    infix def / (path: Path on Platform by Operand, child: Operand): Path on Platform by Operand =
+      new Path:
+        type Platform = path.Platform
+        type Operand = path.Operand
+        val root: Root on Platform = path.root
+        val descent: List[Operand] = child :: path.descent
