@@ -1,6 +1,5 @@
 package galilei
 
-import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*

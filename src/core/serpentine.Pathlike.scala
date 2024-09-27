@@ -1,9 +1,7 @@
 package serpentine
 
 import rudiments.*
-import prepositional.*
 
-import scala.compiletime.*
 import scala.reflect.*
 
 object Pathlike:

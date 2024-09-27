@@ -4,7 +4,6 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
-import symbolism.*
 import hieroglyph.*
 import nomenclature.*
 import hypotenuse.*
@@ -46,6 +45,7 @@ object WindowsDrive:
       def element(element: Text): Name[Windows] = Name(element)
       def prefixLength(path: Text): Int = 3
       def elementText(element: Name[Windows]): Text = element.text
+
       def rootText(drive: Root on Windows): Text = drive match
         case drive: WindowsDrive => t"${drive.letter}:\\"
 

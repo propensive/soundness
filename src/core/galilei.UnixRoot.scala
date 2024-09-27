@@ -4,7 +4,6 @@ import anticipation.*
 import denominative.*
 import nomenclature.*
 import prepositional.*
-import symbolism.*
 import rudiments.*
 import contingency.*
 import serpentine.*
