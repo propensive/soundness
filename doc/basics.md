@@ -1,6 +1,6 @@
 ### Supplementary types
 
-Prepositional defines the aliases, `by`, `from`, `in`, `into`, `of`, `on`, `onto` and `over`,
+Prepositional defines the aliases, `by`, `from`, `in`, `into`, `of`, `on`, `onto`, `over` and `under`,
 to be used in _type supplements_.
 
 A type supplement is a transformation of a type `T`, in the form `T op S`, which specifies a
@@ -74,6 +74,7 @@ They are:
 - `on` adds the `Platform` type member
 - `onto` adds the `Target` type member
 - `over` adds the `Carrier` type member
+- `under` adds the `Constraint` type member
 
 So, for example, a type such as `Fillable by Text on Linux into Data` would correspond to the type,
 `Fillable { type Operand = Text; type Platform = Linux; type Result = Data }`.
