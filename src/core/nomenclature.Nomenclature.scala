@@ -1,7 +1,6 @@
 package nomenclature
 
 import anticipation.*
-import fulminate.*
 import rudiments.*
 import contingency.*
 import spectacular.*
@@ -15,11 +14,15 @@ object Nomenclature:
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
         case _: EmptyTuple     => ()
-        case _: (head *: tail) => inline erasedValue[head] match
+        case _: (head *: tail) => inline erasedValue[head & Matchable] match
           case _: Check[param] =>
-            staticCompanion[head] match
+            inline staticCompanion[head] match
               case rule: Rule =>
-                if !rule.check(name, constValue[param].tt) then raise(NameError(name, express[head]))
+                if !rule.check(name, constValue[param].tt)
+                then raise(NameError(name, rule.describe(constValue[param].tt)))
+              
+              case other =>
+                error("The companion object was not a subtype of Rule")
 
             check[tail](name)
 
