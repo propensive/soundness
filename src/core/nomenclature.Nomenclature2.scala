@@ -43,6 +43,7 @@ object Nomenclature2:
       (using Quotes)
           : Expr[Boolean] =
     import quotes.reflect.*
+    parse[PlatformType, NameType]
     '{${Expr(constant[NameType])}.tt == $scrutinee.text}
 
   def constant[TextType <: String: Type](using Quotes): TextType =
