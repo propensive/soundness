@@ -19,7 +19,7 @@ object Nomenclature:
             inline staticCompanion[head] match
               case rule: Rule =>
                 if !rule.check(name, constValue[param].tt)
-                then raise(NameError(name, rule.describe(constValue[param].tt)))
+                then raise(NameError(name, rule, constValue[param].tt))
               
               case other =>
                 error("The companion object was not a subtype of Rule")
