@@ -15,10 +15,13 @@ object Nomenclature:
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
         case _: EmptyTuple     => ()
-        case _: (head *: tail) =>
-          val checkable = summonInline[head is Checkable]
-          if !checkable.check(name) then raise(NameError(name, express[head]))
-          check[tail](name)
+        case _: (head *: tail) => inline erasedValue[head] match
+          case _: Check[param] =>
+            staticCompanion[head] match
+              case rule: Rule =>
+                if !rule.check(name, constValue[param].tt) then raise(NameError(name, express[head]))
+
+            check[tail](name)
 
     inline def apply[PlatformType](name: Text)(using nominative: PlatformType is Nominative)
             : Name[PlatformType] raises NameError =
