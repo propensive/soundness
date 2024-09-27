@@ -18,31 +18,19 @@ import serpentine.*
 import scala.compiletime.*
 
 object WindowsDrive:
-  // given [ElementType](using navigable: WindowsDrive is Navigable by ElementType)
-  //     => WindowsDrive is Divisible by ElementType into (Path on WindowsDrive by ElementType) =
-  //   new Divisible:
-  //     type Self = WindowsDrive
-  //     type Result = Path on WindowsDrive by ElementType
-  //     type Operand = ElementType
-
-  //     def divide(drive: WindowsDrive, child: ElementType): Path on WindowsDrive by ElementType =
-  //       new Path:
-  //         type Platform = WindowsDrive
-  //         type Operand = ElementType
-  //         val root: WindowsDrive = drive
-  //         val descent: List[ElementType] = List(child)
-
   given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by
       Name[Windows] under MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
           MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-          MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] as navigable =
+          MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
+          MustNotEqual["CON"] & MustNotEqual["PRN"] & MustNotEqual["AUX"] & MustNotEqual["NUL"] as navigable =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows
 
       type Constraint = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
           MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-          MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+          MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
+          MustNotEqual["CON"] & MustNotEqual["PRN"] & MustNotEqual["AUX"] & MustNotEqual["NUL"]
 
       val separator: Text = t"\\"
       val parentElement: Text = t".."
