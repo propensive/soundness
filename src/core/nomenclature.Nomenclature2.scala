@@ -79,6 +79,3 @@ object Nomenclature2:
 
     
     '{${Expr(name)}.asInstanceOf[Name[PlatformType]]}
-
-transparent inline def disintersect[IntersectionType] =
-  ${Nomenclature2.disintersection[IntersectionType]}
