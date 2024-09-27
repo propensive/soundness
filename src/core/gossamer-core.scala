@@ -168,6 +168,7 @@ extension [TextType: Textual](text: TextType)
 
   def contains(substring: into Text): Boolean = TextType.indexOf(text, substring).present
   def contains(char: Char): Boolean = TextType.indexOf(text, char.show).present
+  def seek(substring: into Text): Optional[Ordinal] = TextType.indexOf(text, substring)
 
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(Ult.of(text))
