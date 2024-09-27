@@ -52,14 +52,11 @@ object Nomenclature2:
     (TypeRepr.of[TextType].asMatchable: @unchecked) match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[TextType]
 
-  def companion[CompanionType: ClassTag](using Quotes)(symbol: quotes.reflect.Symbol)
+  def companion[CompanionType: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
           : CompanionType =
-    val name = s"${symbol.companionModule.fullName}$$"
-    val singletonClass = Class.forName(name).nn
-    val module = singletonClass.getField("MODULE$").nn.get(null)
-    
-    if module.isInstanceOf[CompanionType] then module.asInstanceOf[CompanionType]
-    else abandon(m"The companion object did not have the expected type.")
+    Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
+      case module: CompanionType => module
+      case _                     => abandon(m"The companion object did not have the expected type.")
 
   def parse[PlatformType: Type, NameType <: String: Type](using Quotes): Expr[Name[PlatformType]] =
     import quotes.reflect.*
