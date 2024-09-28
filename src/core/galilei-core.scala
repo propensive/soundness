@@ -11,14 +11,17 @@ import spectacular.*
 import anticipation.*
 
 package pathNavigation:
-  export Unix.navigable as unix
+  export Linux.navigable as linux
   export Windows.navigable as windows
 
 final val C: WindowsDrive = WindowsDrive('C')
 final val D: WindowsDrive = WindowsDrive('D')
 
-@targetName("UnixRoot")
-final val `%`: UnixRoot = UnixRootSingleton
+@targetName("LinuxRoot")
+final val `%`: Linux.Root = Linux.RootSingleton
+
+@targetName("MacOsRoot")
+final val `$`: MacOs.Root = MacOs.RootSingleton
 
 extension [ElementType, PlatformType <: Filesystem: Navigable by ElementType]
     (path: Path on PlatformType)

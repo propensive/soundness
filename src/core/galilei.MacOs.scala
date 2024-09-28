@@ -10,21 +10,21 @@ import gossamer.*
 import vacuous.*
 import anticipation.*
 
-object Linux:
+object MacOs:
   object Root
 
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Linux
+  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Preserving):
+    type Platform = MacOs
   
   object RootSingleton extends Root()
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError], Tactic[NameError]) => Linux is Navigable by Name[Linux] from
+  given (using Tactic[PathError], Tactic[NameError]) => MacOs is Navigable by Name[MacOs] from
       Root under Rules as navigable =
     new Navigable:
-      type Self = Linux
-      type Operand = Name[Linux]
+      type Self = MacOs
+      type Operand = Name[MacOs]
       type Source = Root
       type Constraint = Rules
 
@@ -32,15 +32,15 @@ object Linux:
       val parentElement: Text = t".."
       val selfText: Text = t"."
 
-      def element(element: Text): Name[Linux] = Name(element)
+      def element(element: Text): Name[MacOs] = Name(element)
       def rootLength(path: Text): Int = 1
-      def elementText(element: Name[Linux]): Text = element.text
+      def elementText(element: Name[MacOs]): Text = element.text
       def rootText(root: Source): Text = t"/"
     
       def root(path: Text): Source =
-        if path.at(Prim) == '/' then %
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
+        if path.at(Prim) == '/' then $
+        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet $
       
-      def caseSensitivity: Case = Case.Sensitive
+      def caseSensitivity: Case = Case.Preserving
 
-erased trait Linux extends Filesystem
+erased trait MacOs extends Filesystem
