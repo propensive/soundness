@@ -1,4 +1,5 @@
 package serpentine
 
-trait Root extends Path:
-  def descent: Nil.type = Nil
+import anticipation.*
+
+abstract class Root(root: Text) extends Path(root, Nil)

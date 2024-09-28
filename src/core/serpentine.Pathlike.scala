@@ -1,6 +1,7 @@
 package serpentine
 
 import rudiments.*
+import anticipation.*
 
 import scala.reflect.*
 
@@ -9,7 +10,6 @@ object Pathlike:
 
 transparent trait Pathlike:
   type Platform
-  //def root: Root on Platform
-  def descent: List[Any]
+  def descent: List[Text]
 
   override def toString(): String = descent.reverse.mkString("/", "/", "")

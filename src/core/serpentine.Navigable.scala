@@ -8,8 +8,8 @@ trait Navigable extends Nominative:
   type Self
   type Operand
 
-  def prefixLength(path: Text): Int
-  def prefix(path: Text): Root on Self
+  def rootLength(path: Text): Int
+  def root(path: Text): Root on Self
   def rootText(root: Root on Self): Text
   def element(element: Text): Operand
   def elementText(element: Operand): Text
