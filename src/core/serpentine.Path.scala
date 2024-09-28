@@ -12,7 +12,7 @@ import vacuous.*
 import scala.compiletime.*
 
 object Path:
-  given [PlatformType: Navigable] => Encoder[Path on PlatformType] as encoder = path =>
+  given [PlatformType] => Encoder[Path on PlatformType] as encoder = path =>
     path.textDescent.reverse.join(path.textRoot, path.separator, t"")
     
   given [PlatformType: Navigable](using Tactic[PathError])
@@ -25,7 +25,7 @@ object Path:
             raise(PathError(PathError.Reason.RootParent))
             
             Path.from[PlatformType]
-             (left.textRoot, Nil, PlatformType.separator, PlatformType.caseSensitivity)
+             (left.textRoot, Nil, left.separator, left.caseSensitivity)
           else recur(descent.tail, ascent - 1)
         else
           Path.from[PlatformType]
@@ -81,8 +81,11 @@ object Path:
           PlatformType.separator,
           PlatformType.caseSensitivity)
 
-abstract class Path
-    (val textRoot: Text, val textDescent: List[Text], val separator: Text, caseSensitivity: Case)
+open class Path
+    (val textRoot: Text,
+     val textDescent: List[Text],
+     val separator: Text,
+     val caseSensitivity: Case)
 extends Pathlike:
   type Platform
   
@@ -108,7 +111,7 @@ extends Pathlike:
     else Path.from(textRoot, textDescent.tail, separator, caseSensitivity)
 
   transparent inline def on [PlatformType]: Path on PlatformType =
-    inline erasedValue[PlatformType] match
+    inline erasedValue[PlatformType & Matchable] match
       case _: Platform => this.asInstanceOf[Path on PlatformType]
       case _ =>
         val navigable = summonInline[PlatformType is Navigable]
