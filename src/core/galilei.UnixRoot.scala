@@ -34,5 +34,7 @@ object UnixRoot:
       
       def caseSensitivity: Case = Case.Sensitive
 
-class UnixRoot() extends Root(t"/", t"/", Case.Sensitive):
+abstract class UnixRoot() extends Root(t"/", t"/", Case.Sensitive):
   type Platform = Unix
+
+object UnixRootSingleton extends UnixRoot()

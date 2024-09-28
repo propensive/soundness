@@ -16,6 +16,9 @@ erased trait Windows extends OperatingSystem
 object Unix:
   export UnixRoot.navigable
 
+object Windows:
+  export WindowsDrive.navigable
+
 erased trait Unix extends OperatingSystem
 
 package pathNavigation:
@@ -26,7 +29,7 @@ final val C: WindowsDrive = WindowsDrive('C')
 final val D: WindowsDrive = WindowsDrive('D')
 
 @targetName("UnixRoot")
-final val `%`: UnixRoot = UnixRoot()
+final val `%`: UnixRoot = UnixRootSingleton
 
 extension [ElementType, PlatformType <: OperatingSystem: Navigable by ElementType](path: Path on PlatformType)
   def open[ResultType](lambda: File => ResultType)(using Encoder[Path on PlatformType])

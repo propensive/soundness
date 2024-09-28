@@ -17,21 +17,19 @@ import serpentine.*
 import scala.compiletime.*
 
 object WindowsDrive:
-  given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by
-      Name[Windows] from WindowsDrive under
-      MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
+  type Rules = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
           MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
           MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-          MustNotEqual["CON"] & MustNotEqual["PRN"] & MustNotEqual["AUX"] & MustNotEqual["NUL"] as navigable =
+          MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotEqual["(?i)PRN(\\.[^.]+)?"] &
+          MustNotEqual["(?i)AUX(\\.[^.]+)?"] & MustNotEqual["(?i)NUL(\\.[^.]+)?"]
+
+  given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by
+      Name[Windows] from WindowsDrive under Rules as navigable =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows
       type Source = WindowsDrive
-
-      type Constraint = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
-          MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-          MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-          MustNotEqual["CON"] & MustNotEqual["PRN"] & MustNotEqual["AUX"] & MustNotEqual["NUL"]
+      type Constraint = Rules
 
       val separator: Text = t"\\"
       val parentElement: Text = t".."
