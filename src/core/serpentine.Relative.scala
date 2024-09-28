@@ -46,16 +46,13 @@ object Relative:
       val ascent: Int = ascent0
       val textDescent: List[Text] = descent0.map(navigable.elementText(_))
 
-  def from[ElementType](using navigable: Navigable by ElementType)
-      (ascent0: Int, descent0: List[Text])
-          : Relative by ElementType =
+  private def from[ElementType](ascent0: Int, descent0: List[Text]): Relative by ElementType =
     new Relative:
       type Operand = ElementType
       val ascent: Int = ascent0
       val textDescent: List[Text] = descent0
 
-  given [ElementType](using navigable: Navigable by ElementType)
-      => (Relative by ElementType) is Addable by (Relative by ElementType) into
+  given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
           (Relative by ElementType) =
     (left, right) =>
       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
@@ -74,8 +71,9 @@ abstract class Relative extends Pathlike:
 
   def delta: Int = textDescent.length - ascent
 
-  def parent(using Navigable by Operand): Relative =
-    if textDescent.isEmpty then Relative(ascent + 1, Nil) else Relative.from(ascent, textDescent.tail)
+  def parent: Relative =
+    if textDescent.isEmpty then Relative.from(ascent + 1, Nil)
+    else Relative.from(ascent, textDescent.tail)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case that: Relative => that.ascent == ascent && that.textDescent == textDescent
@@ -84,6 +82,5 @@ abstract class Relative extends Pathlike:
   override def hashCode: Int = ascent*31 + textDescent.hashCode
 
   @targetName("child")
-  infix def / (element: Operand)(using navigable: Navigable by Operand)
-          : Relative by Operand =
+  infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
     Relative.from(ascent, navigable.elementText(element) :: textDescent)

@@ -36,4 +36,4 @@ case class PathAscent(ascent: Int) extends Relative:
   @targetName("parent")
   infix def / (parent: ^.type): PathAscent = PathAscent(ascent + 1)
 
-  def parent: PathAscent = PathAscent(ascent + 1)
+  override def parent: PathAscent = PathAscent(ascent + 1)
