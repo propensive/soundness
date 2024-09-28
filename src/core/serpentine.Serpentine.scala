@@ -18,8 +18,8 @@ object Serpentine:
         (using navigable: PlatformType is Navigable)
         (path: Path on PlatformType)
             : Option[(Path on PlatformType, navigable.Operand)] =
-      path.descent match
+      path.textDescent match
         case Nil          => None
-        case head :: Nil  => Some((navigable.root(path.root), navigable.element(head)))
+        case head :: Nil  => Some((navigable.root(path.textRoot), navigable.element(head)))
         case head :: tail => Some((unsafely(path.parent.vouch), navigable.element(head)))
   

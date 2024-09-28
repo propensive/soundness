@@ -7,10 +7,11 @@ import nomenclature.*
 trait Navigable extends Nominative:
   type Self
   type Operand
+  type Source <: Root on Self
 
   def rootLength(path: Text): Int
-  def root(path: Text): Root on Self
-  def rootText(root: Root on Self): Text
+  def root(path: Text): Source
+  def rootText(root: Source): Text
   def element(element: Text): Operand
   def elementText(element: Operand): Text
   def separator: Text

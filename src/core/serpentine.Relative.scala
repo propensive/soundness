@@ -13,12 +13,12 @@ import scala.compiletime.*
 object Relative:
   given [ElementType, RootType: Navigable by ElementType] => Encoder[Relative by ElementType] =
     relative =>
-      if relative.descent.isEmpty
+      if relative.textDescent.isEmpty
       then
         if relative.ascent == 0 then RootType.selfText
         else List.fill(relative.ascent)(RootType.parentElement).join(RootType.separator)
       else relative
-       .descent
+       .textDescent
        .reverse
        .join(RootType.ascent*relative.ascent, RootType.separator, t"")
 
@@ -44,7 +44,7 @@ object Relative:
     new Relative:
       type Operand = ElementType
       val ascent: Int = ascent0
-      val descent: List[Text] = descent0.map(navigable.elementText(_))
+      val textDescent: List[Text] = descent0.map(navigable.elementText(_))
 
   def from[ElementType](using navigable: Navigable by ElementType)
       (ascent0: Int, descent0: List[Text])
@@ -52,7 +52,7 @@ object Relative:
     new Relative:
       type Operand = ElementType
       val ascent: Int = ascent0
-      val descent: List[Text] = descent0
+      val textDescent: List[Text] = descent0
 
   given [ElementType](using navigable: Navigable by ElementType)
       => (Relative by ElementType) is Addable by (Relative by ElementType) into
@@ -62,27 +62,27 @@ object Relative:
         if ascent2 > 0 then
           if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
           else recur(ascent, descent.tail, ascent - 1)
-        else Relative.from(ascent, right.descent ++ descent)
+        else Relative.from(ascent, right.textDescent ++ descent)
 
-      recur(left.ascent, left.descent, right.ascent)
+      recur(left.ascent, left.textDescent, right.ascent)
         
 abstract class Relative extends Pathlike:
   type Operand
   val ascent: Int
-  val descent: List[Text]
+  val textDescent: List[Text]
 
-  def delta: Int = descent.length - ascent
+  def delta: Int = textDescent.length - ascent
 
   def parent(using Navigable by Operand): Relative =
-    if descent.isEmpty then Relative(ascent + 1, Nil) else Relative.from(ascent, descent.tail)
+    if textDescent.isEmpty then Relative(ascent + 1, Nil) else Relative.from(ascent, textDescent.tail)
 
   override def equals(that: Any): Boolean = that.asMatchable match
-    case that: Relative => that.ascent == ascent && that.descent == descent
+    case that: Relative => that.ascent == ascent && that.textDescent == textDescent
     case _              => false
   
-  override def hashCode: Int = ascent*31 + descent.hashCode
+  override def hashCode: Int = ascent*31 + textDescent.hashCode
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand)
           : Relative by Operand =
-    Relative.from(ascent, navigable.elementText(element) :: descent)
+    Relative.from(ascent, navigable.elementText(element) :: textDescent)

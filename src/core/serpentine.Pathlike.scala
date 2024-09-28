@@ -10,6 +10,6 @@ object Pathlike:
 
 transparent trait Pathlike:
   type Platform
-  def descent: List[Text]
+  def textDescent: List[Text]
 
-  override def toString(): String = descent.reverse.mkString("/", "/", "")
+  override def toString(): String = textDescent.reverse.mkString("/", "/", "")
