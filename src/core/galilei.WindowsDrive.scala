@@ -50,5 +50,5 @@ object WindowsDrive:
 
       def rootText(drive: Source): Text = t"${drive.letter}:\\"
 
-case class WindowsDrive(letter: Char) extends Root(t"$letter:\\"):
+case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\"):
   type Platform = Windows

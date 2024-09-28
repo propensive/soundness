@@ -46,5 +46,5 @@ object UnixRoot:
         if path.at(Prim) == '/' then %
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
 
-class UnixRoot() extends Root(t"/"):
+class UnixRoot() extends Root(t"/", t"/"):
   type Platform = Unix

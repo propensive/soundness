@@ -6,7 +6,6 @@ import prepositional.*
 import turbulence.*
 import contingency.*
 import anticipation.*
-import rudiments.*
 
 object File:
   given (using Tactic[StreamError]) => File is Readable by Bytes =
