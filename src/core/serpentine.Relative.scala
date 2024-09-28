@@ -70,6 +70,7 @@ abstract class Relative extends Pathlike:
   type Operand
   val ascent: Int
   val textDescent: List[Text]
+  def separator: Text = t"/"
 
   def delta: Int = textDescent.length - ascent
 

@@ -2,6 +2,7 @@ package serpentine
 
 import rudiments.*
 import prepositional.*
+import anticipation.*
 import gossamer.*
 import spectacular.*
 import symbolism.*

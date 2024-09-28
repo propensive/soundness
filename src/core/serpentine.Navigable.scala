@@ -18,4 +18,4 @@ trait Navigable extends Nominative:
   def selfText: Text
   def parentElement: Text
   def ascent: Text = parentElement+separator
-  //def caseSensitive: Boolean
+  def caseSensitivity: Case
