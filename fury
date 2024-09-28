@@ -1,23 +1,24 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
 
-target serpentine/core
+target serpentine/test
 
 repo propensive/probably
 repo propensive/kaleidoscope
 repo propensive/contingency
+repo propensive/nomenclature
 
 project serpentine
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core
+    include   gossamer/core nomenclature/core
 
   module test
     compiler  scala
     sources   src/test
     include   serpentine/core probably/cli larceny/plugin
-    main      serpentine.Tests
+    main      galilei.Tests
   
   module bench
     compiler   scala
