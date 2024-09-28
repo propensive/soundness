@@ -18,13 +18,15 @@ import scala.compiletime.*
 
 object WindowsDrive:
   given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by
-      Name[Windows] under MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
+      Name[Windows] from WindowsDrive under
+      MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
           MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
           MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
           MustNotEqual["CON"] & MustNotEqual["PRN"] & MustNotEqual["AUX"] & MustNotEqual["NUL"] as navigable =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows
+      type Source = WindowsDrive
 
       type Constraint = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
           MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
@@ -46,8 +48,7 @@ object WindowsDrive:
       def rootLength(path: Text): Int = 3
       def elementText(element: Name[Windows]): Text = element.text
 
-      def rootText(drive: Root on Windows): Text = drive match
-        case drive: WindowsDrive => t"${drive.letter}:\\"
+      def rootText(drive: Source): Text = t"${drive.letter}:\\"
 
 case class WindowsDrive(letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows

@@ -25,10 +25,12 @@ object UnixRoot:
   //         val descent: List[Operand] = List(child)
 
   given (using Tactic[PathError], Tactic[NameError]) => Unix is Navigable by
-      Name[Unix] under MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] as navigable =
+      Name[Unix] from UnixRoot under
+      MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] as navigable =
     new Navigable:
       type Self = Unix
       type Operand = Name[Unix]
+      type Source = UnixRoot
       type Constraint = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."]
 
       val separator: Text = t"/"
@@ -38,9 +40,9 @@ object UnixRoot:
       def element(element: Text): Name[Unix] = Name(element)
       def rootLength(path: Text): Int = 1
       def elementText(element: Name[Unix]): Text = element.text
-      def rootText(root: Root on Unix): Text = t"/"
+      def rootText(root: Source): Text = t"/"
     
-      def root(path: Text): Root on Unix =
+      def root(path: Text): Source =
         if path.at(Prim) == '/' then %
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
 
