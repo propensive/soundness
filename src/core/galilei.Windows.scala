@@ -23,13 +23,13 @@ object Windows:
       MustNotEqual["(?i)AUX(\\.[^.]+)?"] & MustNotEqual["(?i)NUL(\\.[^.]+)?"] &
       MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"]
 
-  given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by
-      Name[Windows] from WindowsDrive under Windows.Rules as navigable =
+  given (using Tactic[PathError], Tactic[NameError]) => Windows is Navigable by Name[Windows] from
+      WindowsDrive under Rules as navigable =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows
       type Source = WindowsDrive
-      type Constraint = Windows.Rules
+      type Constraint = Rules
 
       val separator: Text = t"\\"
       val parentElement: Text = t".."

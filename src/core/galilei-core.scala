@@ -23,9 +23,7 @@ final val `%`: Linux.Root = Linux.RootSingleton
 @targetName("MacOsRoot")
 final val `$`: MacOs.Root = MacOs.RootSingleton
 
-extension [ElementType, PlatformType <: Filesystem: Navigable by ElementType]
-    (path: Path on PlatformType)
-  def open[ResultType](lambda: File => ResultType)(using Encoder[Path on PlatformType])
-          : ResultType =
+extension [PlatformType <: Filesystem: Navigable](path: Path on PlatformType)
+  def open[ResultType](lambda: File => ResultType): ResultType =
     val file = File(ji.FileInputStream(ji.File(path.encode.s)))
     try lambda(file) finally file.close()
