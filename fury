@@ -6,17 +6,18 @@ repo propensive/serpentine
 repo propensive/imperial
 repo propensive/probably
 repo propensive/guillotine
+repo propensive/larceny
 
-target galilei/core
+target galilei/test
 
 project galilei
   module core
     compiler  scala
     sources   src/core
-    include   serpentine/core guillotine/core
+    include   serpentine/core guillotine/core nomenclature/core
 
   module test
     compiler  scala
     sources   src/test
-    include   galilei/core probably/cli imperial/core
+    include   galilei/core probably/cli imperial/core larceny/plugin
     main      galilei.Tests
