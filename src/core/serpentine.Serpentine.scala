@@ -14,10 +14,10 @@ object Serpentine:
 
   @targetName("Slash")
   object `/`:
-    def unapply[RootType <: AnyRef & Matchable, ElementType]
-        (using RootType is Navigable by ElementType)
-        (path: Path on RootType by ElementType)
-            : Option[(RootType | Path, ElementType)] =
+    def unapply[PlatformType <: AnyRef & Matchable, ElementType]
+        (using PlatformType is Navigable by ElementType)
+        (path: Path on PlatformType by ElementType)
+            : Option[(Path on PlatformType, ElementType)] =
       path.descent match
         case Nil          => None
         case head :: Nil  => Some((path.root, head))

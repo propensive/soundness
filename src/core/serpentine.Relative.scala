@@ -8,6 +8,8 @@ import spectacular.*
 import rudiments.*
 import vacuous.*
 
+import scala.compiletime.*
+
 object Relative:
   given [ElementType, RootType: Navigable by ElementType] => Encoder[Relative by ElementType] =
     relative =>
@@ -67,10 +69,11 @@ abstract class Relative extends Pathlike:
   def parent(using Navigable by Operand): Relative =
     if descent.isEmpty then Relative(ascent + 1, Nil) else Relative(ascent, descent.tail)
 
-  override def equals(that: Any): Boolean = that match
+  override def equals(that: Any): Boolean = that.asMatchable match
     case that: Relative => that.ascent == ascent && that.descent == descent
     case _              => false
   
+  override def hashCode: Int = ascent*31 + descent.hashCode
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand)

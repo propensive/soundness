@@ -9,6 +9,8 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+import scala.compiletime.*
+
 object Path:
   given [ElementType, PlatformType: Navigable by ElementType]
       => Encoder[Path on PlatformType by ElementType] as encoder = path =>
@@ -76,8 +78,11 @@ abstract class Path extends Pathlike:
     def descent: List[Operand]
     def depth: Int = descent.length
 
-    override def equals(that: Any): Boolean = that match
+    override def equals(that: Any): Boolean = that.asMatchable match
       case that: Path => (root.toString == that.root.toString) && descent == that.descent
+      case _          => false
+
+    override def hashCode: Int = root.toString.hashCode*31 + descent.hashCode
 
     def parent(using Platform is Navigable by Operand): Optional[Path on Platform by Operand] =
       if descent == Nil then Unset else Path(root)(descent.tail)
@@ -107,7 +112,8 @@ abstract class Path extends Pathlike:
             : Relative by Operand =
       val common = conjunction(right).depth
       Relative(right.depth - common, descent.dropRight(common))
-      
+
+    @targetName("child")
     infix def / (path: Path on Platform by Operand, child: Operand): Path on Platform by Operand =
       new Path:
         type Platform = path.Platform
