@@ -47,8 +47,8 @@ object WindowsDrive:
       def element(element: Text): Name[Windows] = Name(element)
       def rootLength(path: Text): Int = 3
       def elementText(element: Name[Windows]): Text = element.text
-
       def rootText(drive: Source): Text = t"${drive.letter}:\\"
+      def caseSensitivity: Case = Case.Preserving
 
-case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\"):
+case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\", Case.Preserving):
   type Platform = Windows

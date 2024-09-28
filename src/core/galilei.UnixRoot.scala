@@ -10,20 +10,6 @@ import serpentine.*
 import gossamer.*
 
 object UnixRoot:
-  // given [ElementType](using navigable: UnixRoot is Navigable by ElementType)
-  //     => UnixRoot is Divisible by ElementType into (Path on UnixRoot by ElementType) =
-  //   new Divisible:
-  //     type Self = UnixRoot
-  //     type Result = Path on UnixRoot by ElementType
-  //     type Operand = ElementType
-
-  //     def divide(root: UnixRoot, child: ElementType): Path on UnixRoot by ElementType =
-  //       new Path:
-  //         type Platform = UnixRoot
-  //         type Operand = ElementType
-  //         val root: UnixRoot = %
-  //         val descent: List[Operand] = List(child)
-
   given (using Tactic[PathError], Tactic[NameError]) => Unix is Navigable by
       Name[Unix] from UnixRoot under
       MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] as navigable =
@@ -45,6 +31,8 @@ object UnixRoot:
       def root(path: Text): Source =
         if path.at(Prim) == '/' then %
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
+      
+      def caseSensitivity: Case = Case.Sensitive
 
-class UnixRoot() extends Root(t"/", t"/"):
+class UnixRoot() extends Root(t"/", t"/", Case.Sensitive):
   type Platform = Unix
