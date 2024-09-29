@@ -34,88 +34,69 @@ import java.nio.file as jnf
 import language.experimental.pureFunctions
 
 package filesystemOptions:
-  given dereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
-    def options(): List[jnf.LinkOption] = Nil
+  object dereferenceSymlinks:
+    given DereferenceSymlinks as enabled = () => Nil
+    given DereferenceSymlinks as disabled = () => List(jnf.LinkOption.NOFOLLOW_LINKS)
 
-  given doNotDereferenceSymlinks: DereferenceSymlinks = new DereferenceSymlinks:
-    def options(): List[jnf.LinkOption] = List(jnf.LinkOption.NOFOLLOW_LINKS)
+  object moveAtomically:
+    given MoveAtomically as enabled = () => List(jnf.StandardCopyOption.ATOMIC_MOVE)
+    given MoveAtomically as disabled = () => Nil
 
-  given moveAtomically: MoveAtomically with
-    def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.ATOMIC_MOVE)
+  object copyAttributes:
+    given CopyAttributes as enabled = () => List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
+    given CopyAttributes as disabled = () => Nil
 
-  given doNotMoveAtomically: MoveAtomically with
-    def options(): List[jnf.CopyOption] = Nil
-
-  given copyAttributes: CopyAttributes with
-    def options(): List[jnf.CopyOption] = List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
-
-  given doNotCopyAttributes: CopyAttributes with
-    def options(): List[jnf.CopyOption] = Nil
-
-  given deleteRecursively(using io: Tactic[IoError])
-          : DeleteRecursively =
-
-    new DeleteRecursively:
+  object deleteRecursively
+    given (using Tactic[IoError]) => DeleteRecursively as enabled:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         given symlinks: DereferenceSymlinks = doNotDereferenceSymlinks
         given creation: CreateNonexistent = doNotCreateNonexistent
 
         if path.exists() then
-          if path.is[Directory] then path.as[Directory].children.each(conditionally(_)(()))
+          if path.entry == Directory then path.children.each(conditionally(_)(()))
           jnf.Files.delete(path.stdlib)
 
         operation
 
-  given doNotDeleteRecursively(using unemptyDirectory: Tactic[UnemptyDirectoryError])
-          : DeleteRecursively =
-    new DeleteRecursively:
+    given (using Tactic[IoError]) => DeleteRecursively as disabled:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation
-        catch case error: jnf.DirectoryNotEmptyException => abort(UnemptyDirectoryError(path))
-
-  given overwritePreexisting(using deleteRecursively: DeleteRecursively): OverwritePreexisting =
-    new OverwritePreexisting:
+        try operation catch case error: jnf.DirectoryNotEmptyException =>
+          raise(IoError(path, IoError.Operation.Delete, IoError.Reason.NotEmpty))
+  
+  object overwritePreexisting:
+    given (using DeleteRecursively) => OverwritePreexisting as enabled:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
 
-  given doNotOverwritePreexisting(using overwrite: Tactic[OverwriteError]): OverwritePreexisting =
-    new OverwritePreexisting:
+    given (using Tactic[IoError]) => OverwritePreexisting as disabled:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: jnf.FileAlreadyExistsException => abort(OverwriteError(path))
+        try operation catch case error: jnf.FileAlreadyExistsException =>
+          raise(IoError(path, IoError.Operation.Write, IoError.Reason.AlreadyExists))
 
-  given createNonexistentParents(using Tactic[IoError]): CreateNonexistentParents =
-    new CreateNonexistentParents:
+  object createNonexistentParents:
+    given (using Tactic[IoError]) => CreateNonexistentParents as enabled:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         path.parent.let: parent =>
           given DereferenceSymlinks = filesystemOptions.doNotDereferenceSymlinks
 
-          if !parent.exists() || !parent.is[Directory]
+          if !parent.exists() || parent.entry != Directory
           then jnf.Files.createDirectories(parent.stdlib)
 
         operation
 
-  given doNotCreateNonexistentParents(using io: Tactic[IoError]): CreateNonexistentParents =
-
-    new CreateNonexistentParents:
+    given (using Tactic[IoError]) => CreateNonexistentParents as disabled:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: ji.FileNotFoundException => abort(IoError(path))
+        try operation catch case error: ji.FileNotFoundException =>
+          abort(IoError(path), IoError.Operation.Write, IoError.Reason.Nonexistent)
 
-  given createNonexistent(using createNonexistentParents: CreateNonexistentParents)
-          : CreateNonexistent =
-    new CreateNonexistent:
+  object createNonexistent:
+    given (using CreateNonexistentParents) => CreateNonexistent as enabled:
       def apply(path: Path)(operation: => Unit): Unit =
         if !path.exists() then createNonexistentParents(path)(operation)
 
-  given doNotCreateNonexistent: CreateNonexistent = new CreateNonexistent:
-    def apply(path: Path)(operation: => Unit): Unit = ()
+    given CreateNonexistent as disabled:
+      def apply(path: Path)(operation: => Unit): Unit = ()
 
-  given writeSynchronously: WriteSynchronously with
-    def options(): List[jnf.StandardOpenOption] = List(jnf.StandardOpenOption.SYNC)
-
-  given doNotWriteSynchronously: WriteSynchronously with
-    def options(): List[jnf.StandardOpenOption] = Nil
-
-given (using log: IoEvent is Loggable) => ExecEvent is Loggable =
-  log.contramap(IoEvent.Exec(_))
-
-type GeneralForbidden = Windows.Forbidden | Unix.Forbidden
+  object writeSynchronously:
+    given WriteSynchronously as enabled = () => List(jnf.StandardOpenOption.SYNC)
+    given WriteSynchronously as disabled = () => Nil

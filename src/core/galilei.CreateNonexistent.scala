@@ -16,16 +16,7 @@
 
 package galilei
 
-import rudiments.*
+import serpentine.*
 
-import java.nio as jn
-import java.nio.file as jnf
-
-import language.experimental.pureFunctions
-
-object DereferenceSymlinks:
-  given default(using Quickstart): DereferenceSymlinks = filesystemOptions.dereferenceSymlinks
-
-@capability
-trait DereferenceSymlinks:
-  def options(): List[jnf.LinkOption]
+trait CreateNonexistent:
+  def apply(path: Path)(operation: => Unit): Unit

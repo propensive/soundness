@@ -16,15 +16,7 @@
 
 package galilei
 
-import contingency.*
-import rudiments.*
+import java.nio.file as jnf
 
-import language.experimental.pureFunctions
-
-object CreateNonexistent:
-  given default(using Quickstart, Tactic[IoError]): CreateNonexistent =
-    filesystemOptions.createNonexistent(using filesystemOptions.createNonexistentParents)
-
-@capability
-trait CreateNonexistent:
-  def apply(path: Path)(operation: => Unit): Unit
+trait MoveAtomically:
+  def options(): List[jnf.CopyOption]

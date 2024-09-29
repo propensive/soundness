@@ -16,7 +16,7 @@
 
 package galilei
 
-import fulminate.*
+import serpentine.*
 
-case class PathStatusError(path: Path)(using Diagnostics)
-extends Error(m"the filesystem node at $path was expected to be a different type")
+trait DeleteRecursively:
+  def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType

@@ -16,10 +16,7 @@
 
 package galilei
 
-import anticipation.*
-import fulminate.*
+import java.nio.file as jnf
 
-import language.experimental.pureFunctions
-
-case class ForbiddenOperationError(path: Path)(using Diagnostics)
-extends Error(m"insufficient permissions to modify $path")
+trait DereferenceSymlinks:
+  def options(): List[jnf.LinkOption]

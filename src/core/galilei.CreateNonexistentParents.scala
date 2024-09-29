@@ -16,10 +16,7 @@
 
 package galilei
 
-import anticipation.*
-import fulminate.*
+import serpentine.*
 
-import language.experimental.pureFunctions
-
-case class OverwriteError(path: Path)(using Diagnostics)
-extends Error(m"cannot overwrite a pre-existing filesystem node $path")
+trait CreateNonexistentParents:
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType

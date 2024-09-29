@@ -16,16 +16,7 @@
 
 package galilei
 
-import rudiments.*
-
-import java.nio as jn
 import java.nio.file as jnf
 
-import language.experimental.pureFunctions
-
-object WriteSynchronously:
-  given default(using Quickstart): WriteSynchronously = filesystemOptions.writeSynchronously
-
-@capability
-trait WriteSynchronously:
-  def options(): List[jnf.StandardOpenOption]
+trait CopyAttributes:
+  def options(): List[jnf.CopyOption]

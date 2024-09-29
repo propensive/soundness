@@ -39,27 +39,6 @@ trait Entry:
     try jnf.Files.setLastModifiedTime(path.stdlib, jnfa.FileTime.fromMillis(System.currentTimeMillis))
     catch case error: ji.IOException => raise(IoError(path))
 
-  def hidden()(using Tactic[IoError]): Boolean =
-    try jnf.Files.isHidden(path.stdlib) catch case error: ji.IOException => raise(IoError(path), false)
-
-  object readable:
-    def apply(): Boolean = jnf.Files.isReadable(path.stdlib)
-    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setReadable(status)
-
-  object writable:
-    def apply(): Boolean = jnf.Files.isWritable(path.stdlib)
-    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setWritable(status)
-
-  object executable:
-    def apply(): Boolean = jnf.Files.isExecutable(path.stdlib)
-    def update(status: Boolean): Unit = path.stdlib.toFile.nn.setExecutable(status)
-
-  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks, io: Tactic[IoError]): Int =
-    try jnf.Files.getAttribute(path.stdlib, "unix:nlink", dereferenceSymlinks.options()*) match
-      case count: Int => count
-      case _          => raise(IoError(path), 1)
-    catch case error: IllegalArgumentException => raise(IoError(path), 1)
-
   def volume: Volume =
     val fileStore = jnf.Files.getFileStore(path.stdlib).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
@@ -73,65 +52,3 @@ trait Entry:
 
     path
 
-  def symlinkTo(destination: Path)
-      (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
-
-    createNonexistentParents(destination):
-      overwritePreexisting(destination):
-        jnf.Files.createSymbolicLink(destination.stdlib, path.stdlib)
-
-    destination
-
-  def copyInto(destination: Directory)
-      (using overwritePreexisting: OverwritePreexisting, dereferenceSymlinks: DereferenceSymlinks)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, dereferenceSymlinks}*/ =
-
-    given CreateNonexistentParents = filesystemOptions.createNonexistentParents
-    copyTo(destination / path.descent.head)
-
-  def copyTo(destination: Path)
-      (using overwritePreexisting:     OverwritePreexisting,
-             dereferenceSymlinks:      DereferenceSymlinks,
-             createNonexistentParents: CreateNonexistentParents)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, createNonexistentParents, dereferenceSymlinks}*/ =
-
-    createNonexistentParents(destination):
-      overwritePreexisting(destination):
-        jnf.Files.copy(path.stdlib, destination.stdlib, dereferenceSymlinks.options()*)
-
-    destination
-
-  def moveInto
-      (destination: Directory)
-      (using overwritePreexisting: OverwritePreexisting,
-             moveAtomically:       MoveAtomically,
-             dereferenceSymlinks:  DereferenceSymlinks)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, moveAtomically, dereferenceSymlinks}*/ =
-
-    given CreateNonexistentParents = filesystemOptions.createNonexistentParents
-    moveTo(destination / path.descent.head)
-
-  def moveTo
-      (destination: Path)
-      (using overwritePreexisting:     OverwritePreexisting,
-             moveAtomically:           MoveAtomically,
-             dereferenceSymlinks:      DereferenceSymlinks,
-             createNonexistentParents: CreateNonexistentParents)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, createNonexistentParents, moveAtomically, dereferenceSymlinks}*/ =
-
-    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
-
-    createNonexistentParents(destination):
-      overwritePreexisting(destination):
-        jnf.Files.move(path.stdlib, destination.stdlib, options*)
-
-    destination
-
-  def lastModified[InstantType: SpecificInstant]: InstantType =
-    SpecificInstant(jnf.Files.getLastModifiedTime(path.stdlib).nn.toInstant.nn.toEpochMilli)

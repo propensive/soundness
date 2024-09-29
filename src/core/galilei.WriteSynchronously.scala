@@ -16,15 +16,7 @@
 
 package galilei
 
-import contingency.*
-import rudiments.*
+import java.nio.file as jnf
 
-import language.experimental.pureFunctions
-
-object CreateNonexistentParents:
-  given default(using Quickstart, Tactic[IoError]): CreateNonexistentParents =
-    filesystemOptions.createNonexistentParents
-
-@capability
-trait CreateNonexistentParents:
-  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
+trait WriteSynchronously:
+  def options(): List[jnf.StandardOpenOption]

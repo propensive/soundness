@@ -16,16 +16,7 @@
 
 package galilei
 
-import rudiments.*
+import serpentine.*
 
-import java.nio as jn
-import java.nio.file as jnf
-
-import language.experimental.pureFunctions
-
-object CopyAttributes:
-  given default(using Quickstart): CopyAttributes = filesystemOptions.doNotCopyAttributes
-
-@capability
-trait CopyAttributes:
-  def options(): List[jnf.CopyOption]
+trait OverwritePreexisting:
+  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
