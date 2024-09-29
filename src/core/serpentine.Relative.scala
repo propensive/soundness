@@ -41,7 +41,7 @@ object Relative:
   def apply[ElementType](using navigable: Navigable by ElementType)
       (ascent0: Int, descent0: List[ElementType])
           : Relative by ElementType =
-    Relative.from[ElementType](ascent0, descent0.map(navigable.elementText(_)), navigable.separator)
+    Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
 
   private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
           : Relative by ElementType =
@@ -77,4 +77,4 @@ extends Pathlike:
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
-    Relative.from(ascent, navigable.elementText(element) :: textDescent, separator)
+    Relative.from(ascent, navigable.makeElement(element) :: textDescent, separator)

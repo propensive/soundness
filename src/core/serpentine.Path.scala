@@ -13,11 +13,9 @@ import vacuous.*
 import scala.compiletime.*
 
 object Path:
-  given Encoder[Path] as encoder = path =>
-    path.textDescent.reverse.join(path.textRoot, path.separator, t"")
-  
-  given Path is Showable as showable = path =>
-    path.textDescent.reverse.join(path.textRoot, path.separator, t"")
+  given Encoder[Path] as encoder = _.text
+  given [PlatformType: Navigable] => Decoder[Path on PlatformType] as decoder = Path.parse(_)
+  given Path is Showable as showable = _.text
     
   given Path is Communicable as communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
@@ -52,7 +50,7 @@ object Path:
     if elements.isEmpty then root0 else
       Path.from[PlatformType]
        (PlatformType.rootText(root0),
-        elements.map(PlatformType.elementText(_)),
+        elements.map(PlatformType.makeElement(_)),
         PlatformType.separator,
         PlatformType.caseSensitivity)
   
@@ -84,7 +82,7 @@ object Path:
       def divide(path: Path on PlatformType, child: PlatformType.Operand): Path on PlatformType =
         Path.from[path.Platform]
          (path.textRoot,
-          PlatformType.elementText(child) :: path.textDescent,
+          PlatformType.makeElement(child) :: path.textDescent,
           PlatformType.separator,
           PlatformType.caseSensitivity)
 
@@ -98,14 +96,15 @@ extends Pathlike:
   
   def depth: Int = textDescent.length
   def root(using navigable: Platform is Navigable): navigable.Source = navigable.root(textRoot)
-  
+  def text: Text = textDescent.reverse.join(textRoot, separator, t"")
+
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
     textDescent.reverse.map(navigable.element(_))
 
   def child(filename: Text)(using Unsafe): Path on Platform =
     Path.from(textRoot, filename :: textDescent, separator, caseSensitivity)
 
-  override def toString(): String = textDescent.reverse.mkString(textRoot.s, separator.s, "")
+  override def toString(): String = text.s
   
   override def equals(that: Any): Boolean = that.asMatchable match
     case that: Path =>
@@ -114,7 +113,8 @@ extends Pathlike:
     case _ =>
       false
 
-  override def hashCode: Int = textRoot.toString.hashCode*31 + textDescent.hashCode
+  override def hashCode: Int =
+    separator.hashCode + textRoot.toString.hashCode*31 + textDescent.hashCode
 
   def parent: Optional[Path on Platform] =
     if textDescent == Nil then Unset
@@ -123,10 +123,7 @@ extends Pathlike:
   transparent inline def on [PlatformType]: Path on PlatformType =
     inline erasedValue[PlatformType & Matchable] match
       case _: Platform => this.asInstanceOf[Path on PlatformType]
-      case _ =>
-        val navigable = summonInline[PlatformType is Navigable]
-        summonInline[Tactic[PathError]].give:
-          Path.from(textRoot, textDescent, navigable.separator, navigable.caseSensitivity)
+      case _           => summonInline[PlatformType is Navigable].give(Path.parse(text))
 
   def conjunction(right: Path on Platform): Path on Platform =
     val difference = depth - right.depth
