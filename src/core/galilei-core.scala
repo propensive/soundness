@@ -39,9 +39,51 @@ extension [PlatformType](path: Path on PlatformType)
   def javaFile: ji.File = javaPath.toFile.nn
   def exists(): Boolean = jnf.Files.exists(javaPath)
 
-  def children: LazyList[Path on PlatformType] =
+  def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] =
     jnf.Files.list(path.javaPath).nn.toScala(LazyList).map: child =>
       unsafely(path.child(child.getFileName.nn.toString.nn.tt))
+
+  def descendants(using DereferenceSymlinks, TraversalOrder): LazyList[Path] =
+    children.flatMap: child =>
+      summon[TraversalOrder] match
+        case TraversalOrder.PreOrder  => child #:: child.descendants 
+        case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
+  
+  def size(): ByteSize raises IoError =
+    import filesystemOptions.dereferenceSymlinks.disabled
+    given TraversalOrder = TraversalOrder.PreOrder
+    descendants.foldLeft(jnf.Files.size(path.javaPath).b)(_ + _.size())
+  
+  def delete()(using deleteRecursively: DeleteRecursively): Path raises IoError =
+    try deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath)) catch
+      case error: jnf.NoSuchFileException  =>
+        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Nonexistent))
+      
+      case error: ji.FileNotFoundException =>
+        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Nonexistent))
+      
+      case error: ji.IOException =>
+        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Unsupported))
+      
+      case error: SecurityException        =>
+        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.PermissionDenied))
+
+    path
+
+  def volume: Volume =
+    val fileStore = jnf.Files.getFileStore(path.javaPath).nn
+    Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
+  
+  def hardLinkTo(destination: Path)
+      (using overwritePreexisting: OverwritePreexisting,
+             createNonexistentParents: CreateNonexistentParents)
+          : Path raises IoError =
+
+    createNonexistentParents(destination):
+      overwritePreexisting(destination):
+        jnf.Files.createLink(destination.javaPath, path.javaPath)
+
+    destination
 
   def entry(using symlinks: DereferenceSymlinks): Entry =
     if jnf.Files.isRegularFile(javaPath) then File
@@ -140,6 +182,8 @@ extension [PlatformType](path: Path on PlatformType)
        (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
     catch case error: ji.IOException =>
       raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), false)
+  
+  def create[EntryType: Creatable]: EntryType.Result = EntryType.create(path)
 
 package filesystemOptions:
   object dereferenceSymlinks:

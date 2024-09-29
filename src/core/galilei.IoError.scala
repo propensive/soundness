@@ -5,7 +5,7 @@ import serpentine.*
 
 object IoError:
   enum Operation:
-    case Read, Write, Copy, Move, Delete, Metadata
+    case Read, Write, Create, Copy, Move, Delete, Metadata
 
   enum Reason:
     case PermissionDenied, Nonexistent, WrongType, AlreadyExists, IsNotDirectory, IsDirectory,
@@ -26,6 +26,7 @@ object IoError:
     case Operation.Read     => m"read"
     case Operation.Write    => m"write"
     case Operation.Copy     => m"copy"
+    case Operation.Create   => m"create"
     case Operation.Move     => m"move"
     case Operation.Delete   => m"delete"
     case Operation.Metadata => m"metadata"
