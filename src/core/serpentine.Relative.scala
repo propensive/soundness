@@ -41,16 +41,12 @@ object Relative:
   def apply[ElementType](using navigable: Navigable by ElementType)
       (ascent0: Int, descent0: List[ElementType])
           : Relative by ElementType =
-    new Relative:
-      type Operand = ElementType
-      val ascent: Int = ascent0
-      val textDescent: List[Text] = descent0.map(navigable.elementText(_))
+    Relative.from[ElementType](ascent0, descent0.map(navigable.elementText(_)), navigable.separator)
 
-  private def from[ElementType](ascent0: Int, descent0: List[Text]): Relative by ElementType =
-    new Relative:
+  private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
+          : Relative by ElementType =
+    new Relative(ascent0, descent0, separator):
       type Operand = ElementType
-      val ascent: Int = ascent0
-      val textDescent: List[Text] = descent0
 
   given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
           (Relative by ElementType) =
@@ -59,21 +55,19 @@ object Relative:
         if ascent2 > 0 then
           if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
           else recur(ascent, descent.tail, ascent - 1)
-        else Relative.from(ascent, right.textDescent ++ descent)
+        else Relative.from(ascent, right.textDescent ++ descent, left.separator)
 
       recur(left.ascent, left.textDescent, right.ascent)
         
-abstract class Relative extends Pathlike:
+abstract class Relative(val ascent: Int, val textDescent: List[Text], val separator: Text)
+extends Pathlike:
   type Operand
-  val ascent: Int
-  val textDescent: List[Text]
-  def separator: Text = t"/"
 
   def delta: Int = textDescent.length - ascent
 
   def parent: Relative =
-    if textDescent.isEmpty then Relative.from(ascent + 1, Nil)
-    else Relative.from(ascent, textDescent.tail)
+    if textDescent.isEmpty then Relative.from(ascent + 1, Nil, separator)
+    else Relative.from(ascent, textDescent.tail, separator)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case that: Relative => that.ascent == ascent && that.textDescent == textDescent
@@ -83,4 +77,4 @@ abstract class Relative extends Pathlike:
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
-    Relative.from(ascent, navigable.elementText(element) :: textDescent)
+    Relative.from(ascent, navigable.elementText(element) :: textDescent, separator)

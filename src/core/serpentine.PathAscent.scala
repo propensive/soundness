@@ -29,9 +29,8 @@ object PathAscent:
        .reverse
        .join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
 
-case class PathAscent(ascent: Int) extends Relative:
+case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
   type Operand = Nothing
-  val textDescent: List[Operand] = Nil
 
   @targetName("parent")
   infix def / (parent: ^.type): PathAscent = PathAscent(ascent + 1)
