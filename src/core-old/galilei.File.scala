@@ -58,17 +58,3 @@ object File:
       ji.BufferedOutputStream(ji.FileOutputStream(file.path.stdlib.toFile, true))
 
   given File is GenericFile = _.path.fullname
-
-case class File(path: Path) extends Unix.Entry, Windows.Entry:
-  def size(): ByteSize = jnf.Files.size(path.stdlib).b
-
-  def hardLinkTo(destination: Path)
-      (using overwritePreexisting: OverwritePreexisting, createNonexistentParents: CreateNonexistentParents)
-      (using io: Tactic[IoError])
-          : Path/*^{io, overwritePreexisting, createNonexistentParents}*/ =
-
-    createNonexistentParents(destination):
-      overwritePreexisting(destination):
-        jnf.Files.createLink(destination.stdlib, path.stdlib)
-
-    destination

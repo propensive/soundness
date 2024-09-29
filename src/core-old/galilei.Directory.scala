@@ -44,20 +44,3 @@ object Directory:
     def apply(): java.nio.file.WatchService = jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
 
   given Directory is GenericDirectory = _.path.fullname
-
-case class Directory(path: Path) extends Unix.Entry, Windows.Entry:
-  def children: LazyList[Path] = jnf.Files.list(path.stdlib).nn.toScala(LazyList).map: child =>
-    path / Name.unsafe(child.getFileName.nn.toString.nn.tt)
-
-  def descendants(using DereferenceSymlinks, Tactic[IoError], PathResolver[Directory, Path]): LazyList[Path] =
-    children #::: children.filter(_.is[Directory]).map(_.as[Directory]).flatMap(_.descendants)
-
-  def size()(using PathResolver[Directory, Path], PathResolver[File, Path]): ByteSize raises IoError =
-    import filesystemOptions.doNotDereferenceSymlinks
-    descendants.map(_.at[File].let(_.size()).or(0.b)).foldLeft(0.b)(_ + _)
-
-  @targetName("child")
-  infix def / (name: Name[GeneralForbidden]): Path = path / name
-
-  @targetName("child2")
-  inline infix def / (name: Text)(using Tactic[PathError]): Path = path / Name(name)

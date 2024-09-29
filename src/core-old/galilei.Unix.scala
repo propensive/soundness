@@ -56,8 +56,6 @@ object Unix:
       def prefix(root: Unset.type): Text = t"/"
       def descent(path: Path): List[Name[Forbidden]] = path.descent
 
-    given Path is Showable as showable = _.render
-    given encoder: Encoder[Path] = _.render
     given Path is Inspectable = _.render
 
   case class Path(descent: List[Name[Forbidden]]) extends galilei.Path:
