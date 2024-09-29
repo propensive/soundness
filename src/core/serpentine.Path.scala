@@ -7,13 +7,20 @@ import contingency.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
+import fulminate.*
 import vacuous.*
 
 import scala.compiletime.*
 
 object Path:
-  given [PlatformType] => Encoder[Path on PlatformType] as encoder = path =>
+  given Encoder[Path] as encoder = path =>
     path.textDescent.reverse.join(path.textRoot, path.separator, t"")
+  
+  given Path is Showable as showable = path =>
+    path.textDescent.reverse.join(path.textRoot, path.separator, t"")
+    
+  given Path is Communicable as communicable = path =>
+    Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
     
   given [PlatformType: Navigable](using Tactic[PathError])
       => (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
@@ -54,7 +61,7 @@ object Path:
           : Path on PlatformType =
     new Path(root0, elements, separator, caseSensitivity):
       type Platform = PlatformType
-
+  
   def parse[PlatformType: Navigable](path: Text): Path on PlatformType =
     val root = PlatformType.root(path)
 
@@ -94,6 +101,9 @@ extends Pathlike:
   
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
     textDescent.reverse.map(navigable.element(_))
+
+  def child(filename: Text)(using Unsafe): Path on Platform =
+    Path.from(textRoot, filename :: textDescent, separator, caseSensitivity)
 
   override def toString(): String = textDescent.reverse.mkString(textRoot.s, separator.s, "")
   
