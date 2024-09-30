@@ -22,12 +22,12 @@ export rudiments.{ByteSize, bin, hex, Hex, b, kb, mb, gb, tb, byteSize, sift, ha
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as, Irrefutable,
     Unapply, As, ClassTag, Typeable, Set, List, ListMap, Map, TreeSet, TreeMap, TrieMap, NonFatal,
     boundary, break, IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
-    EnumerationHasAsScala, tailrec, missingContext, targetName, switch, StaticAnnotation, capability,
+    EnumerationHasAsScala, tailrec, missingContext, targetName, switch, StaticAnnotation,
     uncheckedVariance, uncheckedCaptures, uncheckedStable, ###, map, contramap, Functor, Cofunctor,
     ExitStatus, Pid, Quickstart, Nat, Label, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
-    ter, unwind, at, Indexable, yet}
+    ter, unwind, at, Indexable, yet, Capability}
 
 package quickstart:
   export rudiments.quickstart.defaults as defaults

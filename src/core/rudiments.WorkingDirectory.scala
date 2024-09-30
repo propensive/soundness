@@ -24,7 +24,6 @@ object WorkingDirectory:
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
   def apply[PathType](path: PathType)(using GenericPath { type Self = PathType }): WorkingDirectory = () => path.pathText
 
-@capability
 trait WorkingDirectory:
   def directory(): Text
   def path[PathType: SpecificPath]: PathType = SpecificPath(directory())

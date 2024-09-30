@@ -105,8 +105,9 @@ export scala.util.boundary, boundary.break
 export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
     MapHasAsJava, EnumerationHasAsScala}
 
-export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation,
-    capability}
+export caps.Cap as Capability
+
+export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation}
 
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
@@ -300,12 +301,12 @@ extension (bytes: Bytes)
   def byteSize: ByteSize = ByteSize(bytes.size)
 
 def workingDirectory[PathType](using directory: WorkingDirectory, specific: SpecificPath { type Self = PathType })
-        : PathType^{specific} =
+        : PathType =
 
   directory.path[PathType]
 
 def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPath { type Self = PathType })
-        : PathType^{specific} =
+        : PathType =
 
   directory.path[PathType]
 
