@@ -205,16 +205,6 @@ extension [PlatformType](path: Path on PlatformType)
     val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
     SpecificInstant(attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli)
 
-  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
-    try jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
-      case count: Int => count
-      
-      case _ =>
-        raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
-
-    catch case error: IllegalArgumentException =>
-      raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
-  
   def executable: FilesystemAttribute.Executable.Target = FilesystemAttribute.Executable(path)
   def readable: FilesystemAttribute.Readable.Target = FilesystemAttribute.Readable(path)
   def writable: FilesystemAttribute.Writable.Target = FilesystemAttribute.Writable(path)
@@ -237,6 +227,17 @@ extension (path: Path on Windows)
     val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
     SpecificInstant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
+extension (path: (Path on Linux) | (Path on MacOs))
+  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
+    try jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
+      case count: Int => count
+      
+      case _ =>
+        raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
+
+    catch case error: IllegalArgumentException =>
+      raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
+  
 package filesystemOptions:
   object readAccess:
     given ReadAccess as enabled:
