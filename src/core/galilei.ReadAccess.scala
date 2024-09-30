@@ -16,31 +16,14 @@
 
 package galilei
 
-import anticipation.*
-import contextual.*
-import contingency.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
-
-import scala.compiletime.*
-import scala.jdk.StreamConverters.*
-
-import java.nio as jn
 import java.nio.file as jnf
 
-import language.experimental.pureFunctions
+object ReadAccess:
+  erased trait Ability
 
-object Directory:
-  given Directory is Inspectable = directory => t"directory:${directory.path.render}"
+trait ReadAccess:
+  type Transform[_]
+  def options(): List[jnf.OpenOption]
 
-  given GenericWatchService:
-    def apply(): java.nio.file.WatchService = jnf.Path.of("/").nn.getFileSystem.nn.newWatchService().nn
-
-  given Directory is GenericDirectory = _.path.fullname
+  def transform[HandleType](handle: HandleType): Transform[HandleType] =
+    handle.asInstanceOf[Transform[HandleType]]

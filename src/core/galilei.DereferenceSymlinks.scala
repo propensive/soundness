@@ -19,4 +19,5 @@ package galilei
 import java.nio.file as jnf
 
 trait DereferenceSymlinks:
+  def dereference: Boolean
   def options(): List[jnf.LinkOption]

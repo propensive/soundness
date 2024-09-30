@@ -16,7 +16,11 @@
 
 package galilei
 
+import java.nio.file as jnf
+
 import serpentine.*
 
 trait CreateNonexistent:
   def apply(path: Path)(operation: => Unit): Unit
+  def error(path: Path, operation: IoError.Operation): Nothing
+  def options(): List[jnf.OpenOption]

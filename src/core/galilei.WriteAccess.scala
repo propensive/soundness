@@ -14,12 +14,17 @@
     and limitations under the License.
 */
 
-package serpentine
+package galilei
 
-import rudiments.*
-import galilei.*
+import java.nio.file as jnf
 
-package pathHierarchies:
-  erased given windows: Hierarchy[Windows.Path, Windows.Relative] = ###
-  erased given unix: Hierarchy[Unix.Path, Unix.Relative] = ###
-  erased given unixOrWindows: Hierarchy[Path, SafeRelative] = ###
+
+object WriteAccess:
+  erased trait Ability
+
+trait WriteAccess:
+  type Transform[_]
+  def options(): List[jnf.OpenOption]
+  
+  def transform[HandleType](handle: HandleType): Transform[HandleType] =
+    handle.asInstanceOf[Transform[HandleType]]
