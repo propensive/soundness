@@ -82,31 +82,12 @@ object Readable:
 
       LazyList.defer(recur(0L.b))
 
-  given [InType <: ji.InputStream] => InType is Readable by Bytes as reliableInputStream = in =>
-    val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
-    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
-
-    def recur(): LazyList[Bytes] =
-      try channel.read(buf) match
-        case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
-        case 0  => recur()
-
-        case count =>
-          buf.flip()
-          val size: Int = count.min(1024)
-          val array: Array[Byte] = new Array[Byte](size)
-          buf.get(array)
-          buf.clear()
-
-          array.immutable(using Unsafe) #:: recur()
-
-      catch case e: Exception => LazyList()
-
-    LazyList.defer(recur())
-
   given [InType <: ji.InputStream](using Tactic[StreamError])
-      => InType is Readable by Bytes as inputStream = in =>
-    val channel: jn.channels.ReadableByteChannel = jn.channels.Channels.newChannel(in).nn
+      => InType is Readable by Bytes as inputStream =
+    channel.contramap(jn.channels.Channels.newChannel(_).nn)
+
+  given (using Tactic[StreamError])
+      => jn.channels.ReadableByteChannel is Readable by Bytes as channel = channel =>
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
     def recur(total: Long): LazyList[Bytes] =

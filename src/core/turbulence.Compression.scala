@@ -23,6 +23,7 @@ import java.util.zip as juz
 
 import anticipation.*
 import rudiments.*
+import contingency.*
 import vacuous.*
 
 trait Compression:
@@ -51,4 +52,4 @@ object Compression:
       recur(lazyList)
 
     def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
-      juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes]
+      unsafely(juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes])
