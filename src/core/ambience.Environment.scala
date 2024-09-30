@@ -25,7 +25,6 @@ import fulminate.*
 import rudiments.*
 import vacuous.*
 
-@capability
 trait Environment:
   def variable(name: Text): Optional[Text]
   def knownVariables: Set[Text] = Set()

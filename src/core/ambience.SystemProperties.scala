@@ -22,6 +22,5 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 
-@capability
 trait SystemProperties:
   def apply(name: Text): Optional[Text]

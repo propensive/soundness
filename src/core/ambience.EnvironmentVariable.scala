@@ -26,7 +26,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-@capability
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   inline def defaultName: Text = name.or(valueOf[AliasType].tt.uncamel.snake.upper)
   def name: Optional[Text] = Unset

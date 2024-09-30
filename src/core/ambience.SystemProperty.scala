@@ -28,7 +28,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-@capability
 trait SystemProperty[NameType <: String, PropertyType]:
   def read(value: Text): PropertyType
 
