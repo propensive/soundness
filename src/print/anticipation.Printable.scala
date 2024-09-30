@@ -23,7 +23,6 @@ object Printable:
   given String is Printable = (string, termcap) => string.tt
   given Char is Printable = (char, termcap) => char.toString.tt
 
-@capability
 trait Printable:
   type Self
   def print(text: Self, termcap: Termcap): Text

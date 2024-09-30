@@ -20,7 +20,6 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-@capability
 trait GenericPath:
   type Self
   def pathText(path: Self): Text

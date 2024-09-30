@@ -20,7 +20,6 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-@capability
 trait SpecificPath:
   type Self
   def path(path: Text): Self

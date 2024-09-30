@@ -20,7 +20,6 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-@capability
 trait GenericDirectory:
   type Self
   def directoryText(path: Self): Text

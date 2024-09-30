@@ -22,6 +22,5 @@ import java.nio.file as jnf
 
 import language.experimental.captureChecking
 
-@capability
 trait GenericWatchService:
   def apply(): jnf.WatchService

@@ -20,7 +20,6 @@ import annotation.*
 
 import language.experimental.captureChecking
 
-@capability
 trait SpecificDirectory:
   type Self
   def directory(directory: Text): Self
