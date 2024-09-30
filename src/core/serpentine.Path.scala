@@ -97,6 +97,13 @@ extends Pathlike:
   def depth: Int = textDescent.length
   def root(using navigable: Platform is Navigable): navigable.Source = navigable.root(textRoot)
   def text: Text = textDescent.reverse.join(textRoot, separator, t"")
+  
+  def name(using navigable: Platform is Navigable): Optional[navigable.Operand] =
+    textDescent.prim.let(navigable.element(_))
+  
+  def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
+          : Path on Platform raises PathError =
+    parent.let(_ / name).or(abort(PathError(PathError.Reason.RootParent)))
 
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
     textDescent.reverse.map(navigable.element(_))
