@@ -25,12 +25,13 @@ import denominative.*
 import anticipation.*
 import contextual.*
 import spectacular.*
+import serpentine.*
 
 object Authority:
   given Authority is Showable = auth =>
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
-  def parse(value: Text)(using Tactic[UrlError]): Authority raises HostnameError =
+  def parse(value: Text): Authority raises HostnameError raises UrlError =
     import UrlError.Expectation.*
 
     safely(value.where(_ == '@')) match

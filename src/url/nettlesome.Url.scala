@@ -22,27 +22,46 @@ import rudiments.*
 import vacuous.*
 import fulminate.*
 import contingency.*
+import prepositional.*
 import denominative.*
 import escapade.*
 import anticipation.*
 import contextual.*
 import spectacular.*
+import nomenclature.*
 
 case class Url[+SchemeType <: Label]
     (scheme:    Scheme[SchemeType],
      authority: Optional[Authority],
      pathText:  Text,
      query:     Optional[Text]      = Unset,
-     fragment:  Optional[Text]      = Unset):
-
-  lazy val path: List[Name[""]] =
-    // FIXME: This needs to be handled better
-    import strategies.throwUnsafely
-    pathText.tail.cut(t"/").reverse.map(_.urlDecode).map(Name(_))
+     fragment:  Optional[Text]      = Unset)
+extends Root(t"${scheme.name}://${authority.lay(t"")(_.show)}$pathText", t"/", Case.Sensitive):
+  type Platform = HttpUrl
 
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
 
 object Url:
+  type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
+
+  given (using Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+      => HttpUrl is Navigable by Name[HttpUrl] from HttpUrl under Rules as navigable = new Navigable:
+    type Operand = Name[HttpUrl]
+    type Self = HttpUrl
+    type Source = HttpUrl
+    type Constraint = Rules
+
+    val separator: Text = t"/"
+    val parentElement: Text = t".."
+    val selfText: Text = t"."
+
+    def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
+    def element(element: Text): Name[HttpUrl] = Name(element)
+    def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
+    def elementText(element: Name[HttpUrl]): Text = element.text
+    def rootText(url: HttpUrl): Text = url.show
+    def caseSensitivity: Case = Case.Sensitive
+
   given HttpUrl is GenericUrl = _.show
   given (using Tactic[UrlError], Tactic[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
 
@@ -58,25 +77,6 @@ object Url:
     parse(_)
 
   given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
-
-  given [SchemeType <: Label]
-      => Url[SchemeType] is Navigable["", (Scheme[SchemeType], Optional[Authority])]:
-    def separator(url: Url[SchemeType]): Text = t"/"
-    def descent(url: Url[SchemeType]): List[Name[""]] = url.path
-
-    def root(url: Url[SchemeType]): (Scheme[SchemeType], Optional[Authority]) =
-      (url.scheme, url.authority)
-
-    def prefix(root: (Scheme[SchemeType], Optional[Authority])): Text =
-      t"${root(0).name}:${root(1).let(t"//"+_.show).or(t"")}"
-
-  given [SchemeType <: Label]
-      => PathCreator[Url[SchemeType], "", (Scheme[SchemeType], Optional[Authority])]:
-
-    def path(ascent: (Scheme[SchemeType], Optional[Authority]), descent: List[Name[""]])
-            : Url[SchemeType] =
-
-      Url(ascent(0), ascent(1), descent.reverse.map(_.render).join(t"/"))
 
   given [SchemeType <: Label] => Url[SchemeType] is Teletypeable as teletype =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
