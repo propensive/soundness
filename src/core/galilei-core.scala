@@ -19,10 +19,13 @@ import vacuous.*
 
 import language.experimental.captureChecking
 
+import IoError.{Operation, Reason}
+
 package pathNavigation:
   export Linux.navigable as linux
   export Windows.navigable as windows
   export MacOs.navigable as macOs
+
 
 final val C: WindowsDrive = WindowsDrive('C')
 final val D: WindowsDrive = WindowsDrive('D')
@@ -34,31 +37,44 @@ final val `%`: Linux.Root = Linux.RootSingleton
 final val `$`: MacOs.Root = MacOs.RootSingleton
 
 extension [PlatformType](path: Path on PlatformType)
+
+  private def protect[ResultType](operation: Operation)(block: => ResultType)
+          : ResultType raises IoError =
+    import Reason.*
+    try block catch
+      case break: boundary.Break[?]          => throw break
+      case _: jnf.NoSuchFileException        => abort(IoError(path, operation, Nonexistent))
+      case _: jnf.FileAlreadyExistsException => abort(IoError(path, operation, AlreadyExists))
+      case _: jnf.DirectoryNotEmptyException => abort(IoError(path, operation, DirectoryNotEmpty))
+      case _: jnf.AccessDeniedException      => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
+      case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
+      case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
+      case other                             => abort(IoError(path, operation, Unsupported))
+
   def open[ResultType](lambda: Handle => ResultType)
       (using read:        ReadAccess          = filesystemOptions.readAccess.enabled,
              write:       WriteAccess         = filesystemOptions.writeAccess.enabled,
              dereference: DereferenceSymlinks,
              create:      CreateNonexistent)
-          : ResultType =
+          : ResultType raises IoError =
     val options = read.options() ++ write.options() ++ create.options() ++ dereference.options()
-    try
+    
+    protect(Operation.Open):
       val channel = jnc.FileChannel.open(path.javaPath, options*).nn
       try lambda(Handle(channel)) finally channel.close()
-    catch case _: jnf.NoSuchFileException => create.error(path, IoError.Operation.Write)
 
   def javaPath: jnf.Path = jnf.Path.of(path.encode.s).nn
   def javaFile: ji.File = javaPath.toFile.nn
   def exists(): Boolean = jnf.Files.exists(javaPath)
 
-  def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] =
-    val list =
-      try jnf.Files.list(path.javaPath).nn.toScala(LazyList)
-      catch case _: Exception => LazyList()
+  def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] raises IoError =
+    val list = safely(jnf.Files.list(path.javaPath).nn.toScala(LazyList)).or(LazyList())
     
     list.map: child =>
       unsafely(path.child(child.getFileName.nn.toString.nn.tt))
 
-  def descendants(using DereferenceSymlinks, TraversalOrder): LazyList[Path] =
+  def descendants(using DereferenceSymlinks, TraversalOrder): LazyList[Path] raises IoError =
     children.flatMap: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants 
@@ -70,25 +86,15 @@ extension [PlatformType](path: Path on PlatformType)
     descendants.foldLeft(jnf.Files.size(path.javaPath).b)(_ + _.size())
   
   def delete()(using deleteRecursively: DeleteRecursively): Path raises IoError =
-    try deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath)) catch
-      case error: jnf.NoSuchFileException  =>
-        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Nonexistent))
-      
-      case error: ji.FileNotFoundException =>
-        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Nonexistent))
-      
-      case error: ji.IOException =>
-        println(error)
-        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.Unsupported))
-      
-      case error: SecurityException        =>
-        raise(IoError(path, IoError.Operation.Delete, IoError.Reason.PermissionDenied))
+    protect(Operation.Delete):
+      deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
 
     path
 
-  def wipe()(using deleteRecursively: DeleteRecursively)(using io: Tactic[IoError]): Path =
-    path.also:
-      deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+  def wipe()(using deleteRecursively: DeleteRecursively)(using io: Tactic[IoError])
+          : Path raises IoError =
+    deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+    path
   
   def volume(): Volume =
     val fileStore = jnf.Files.getFileStore(path.javaPath).nn
@@ -148,7 +154,7 @@ extension [PlatformType](path: Path on PlatformType)
       (name: (prior: navigable.Operand) ?=> navigable.Operand)
           : Path raises IoError raises PathError =
     val name0 = path.name.or:
-      abort(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported))
+      abort(IoError(path, IoError.Operation.Metadata, Reason.Unsupported))
 
     path.moveTo(path.peer(name(using name0)))
 
@@ -210,33 +216,26 @@ extension [PlatformType](path: Path on PlatformType)
   def writable: FilesystemAttribute.Writable.Target = FilesystemAttribute.Writable(path)
   
   def hidden(): Boolean raises IoError =
-    try jnf.Files.isHidden(path.javaPath) catch case error: ji.IOException =>
-      raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), false)
+    protect(Operation.Metadata)(jnf.Files.isHidden(path.javaPath))
 
-  def touch(): Unit raises IoError =
-    try
-      jnf.Files.setLastModifiedTime
-       (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
-    catch case error: ji.IOException =>
-      raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), false)
+  def touch(): Unit raises IoError = protect(Operation.Metadata):
+    jnf.Files.setLastModifiedTime
+     (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
   
   def create[EntryType: Creatable]: EntryType.Result = EntryType.create(path)
 
 extension (path: Path on Windows)
-  def created[InstantType: SpecificInstant](): InstantType =
-    val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-    SpecificInstant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
+  def created[InstantType: SpecificInstant](): InstantType raises IoError =
+    protect(path)(Operation.Metadata):
+      val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
+      SpecificInstant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
 extension (path: (Path on Linux) | (Path on MacOs))
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
-    try jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
-      case count: Int => count
-      
-      case _ =>
-        raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
-
-    catch case error: IllegalArgumentException =>
-      raise(IoError(path, IoError.Operation.Metadata, IoError.Reason.Unsupported), 1)
+    protect(path)(Operation.Metadata):
+      jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
+        case count: Int => count
+        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported), 1)
   
 package filesystemOptions:
   object readAccess:
@@ -289,7 +288,7 @@ package filesystemOptions:
       def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType =
         import filesystemOptions.dereferenceSymlinks.disabled
         if !path.children.isEmpty
-        then abort(IoError(path, IoError.Operation.Delete, IoError.Reason.DirectoryNotEmpty))
+        then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
         else operation
   
   object overwritePreexisting:
@@ -300,7 +299,7 @@ package filesystemOptions:
     given (using Tactic[IoError]) => OverwritePreexisting as disabled:
       def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
         try operation catch case error: jnf.FileAlreadyExistsException =>
-          abort(IoError(path, IoError.Operation.Write, IoError.Reason.AlreadyExists))
+          abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
     given (using Tactic[IoError]) => CreateNonexistentParents as enabled:
@@ -314,15 +313,14 @@ package filesystemOptions:
         operation
 
     given (using Tactic[IoError]) => CreateNonexistentParents as disabled:
-      def apply[ResultType](path: Path)(operation: => ResultType): ResultType =
-        try operation catch case error: ji.FileNotFoundException =>
-          abort(IoError(path, IoError.Operation.Write, IoError.Reason.Nonexistent))
+      def apply[ResultType](path: Path)(block: => ResultType): ResultType =
+        protect(path)(Operation.Write)(block)
 
   object createNonexistent:
     given (using create: CreateNonexistentParents) => CreateNonexistent as enabled:
       def error(path: Path, operation: IoError.Operation): Nothing =
         import strategies.throwUnsafely
-        abort(IoError(path, operation, IoError.Reason.Nonexistent))
+        abort(IoError(path, operation, Reason.Nonexistent))
       
       def apply(path: Path)(operation: => Unit): Unit =
         if !path.exists() then create(path)(operation)
@@ -331,7 +329,7 @@ package filesystemOptions:
 
     given (using Tactic[IoError]) => CreateNonexistent as disabled:
       def error(path: Path, operation: IoError.Operation): Nothing =
-        abort(IoError(path, operation, IoError.Reason.Nonexistent))
+        abort(IoError(path, operation, Reason.Nonexistent))
 
       def apply(path: Path)(operation: => Unit): Unit = ()
       def options(): List[jnf.OpenOption] = List()
