@@ -16,4 +16,4 @@
 
 package soundness
 
-export prepositional.{by, in, into, of, onto, over}
+export prepositional.{by, from, in, into, of, on, onto, over, under}
