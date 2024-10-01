@@ -16,7 +16,11 @@ object Path:
   given Encoder[Path] as encoder = _.text
   given [PlatformType: Navigable] => Decoder[Path on PlatformType] as decoder = Path.parse(_)
   given Path is Showable as showable = _.text
-    
+  given Path is GenericPath = _.text
+  
+  given [PlatformType: Navigable] => Path on PlatformType is SpecificPath =
+    _.decodeAs[Path on PlatformType]
+  
   given Path is Communicable as communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
     
@@ -153,6 +157,7 @@ extends Pathlike:
      (textRoot, textDescent.drop(depth - count), separator, caseSensitivity)
 
   def relativeTo(right: Path on Platform)(using navigable: Platform is Navigable)
-          : Relative by navigable.Operand =
+          : Relative by navigable.Operand raises PathError =
+    if textRoot != right.textRoot then raise(PathError(PathError.Reason.DifferentRoots, right.text))
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
