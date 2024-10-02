@@ -10,37 +10,35 @@ import gossamer.*
 import vacuous.*
 import anticipation.*
 
-object Linux:
-  object Root
-
+object Posix:
   abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Linux
+    type Platform = Posix
   
   object RootSingleton extends Root()
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError], Tactic[NameError]) => Linux is Navigable by Name[Linux] from
-      Root under Rules as navigable =
+  given (using Tactic[PathError], Tactic[NameError]) => Posix is Navigable by Name[Posix] from
+      (Root on Posix) under Rules as navigable =
     new Navigable:
-      type Self = Linux
-      type Operand = Name[Linux]
-      type Source = Root
+      type Self = Posix
+      type Operand = Name[Posix]
+      type Source = Root on Posix
       type Constraint = Rules
 
       val separator: Text = t"/"
       val parentElement: Text = t".."
       val selfText: Text = t"."
 
-      def element(element: Text): Name[Linux] = Name(element)
+      def element(element: Text): Name[Posix] = Name(element)
       def rootLength(path: Text): Int = 1
-      def elementText(element: Name[Linux]): Text = element.text
+      def elementText(element: Name[Posix]): Text = element.text
       def rootText(root: Source): Text = t"/"
     
       def root(path: Text): Source =
-        if path.at(Prim) == '/' then %
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
+        if path.at(Prim) == '/' then Posix.RootSingleton
+        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
       
       def caseSensitivity: Case = Case.Sensitive
 
-erased trait Linux extends Posix
+erased trait Posix extends Filesystem

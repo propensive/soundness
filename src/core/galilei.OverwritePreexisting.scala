@@ -17,6 +17,8 @@
 package galilei
 
 import serpentine.*
+import prepositional.*
 
 trait OverwritePreexisting:
-  def apply[ResultType](path: Path)(operation: => ResultType): ResultType
+  type Platform <: Filesystem
+  def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType

@@ -3,22 +3,17 @@ package galilei
 import java.nio.file as jnf
 
 import serpentine.*
+import prepositional.*
 
 object FilesystemAttribute:
-  object Readable
-  extends FilesystemAttribute
-      (path => jnf.Files.isReadable(path.javaPath), _.javaFile.setReadable(_))
+  class Readable[PlatformType <: Filesystem](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isReadable(path.javaPath)
+    def update(value: Boolean): Unit = path.javaFile.setReadable(value)
   
-  object Writable
-  extends FilesystemAttribute
-      (path => jnf.Files.isWritable(path.javaPath), _.javaFile.setWritable(_))
+  class Writable[PlatformType <: Filesystem](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isWritable(path.javaPath)
+    def update(value: Boolean): Unit = path.javaFile.setWritable(value)
   
-  object Executable
-  extends FilesystemAttribute
-      (path => jnf.Files.isExecutable(path.javaPath), _.javaFile.setExecutable(_))
-
-case class FilesystemAttribute(get: Path => Boolean, set: (Path, Boolean) => Unit):
-  def apply(path: Path): Target = Target(path)
-  class Target(path: Path):
-    def apply(): Boolean = get(path)
-    def update(value: Boolean): Unit = set(path, value)
+  class Executable[PlatformType <: Posix](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isExecutable(path.javaPath)
+    def update(value: Boolean): Unit = path.javaFile.setExecutable(value)

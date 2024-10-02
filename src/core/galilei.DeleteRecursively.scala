@@ -16,7 +16,9 @@
 
 package galilei
 
+import prepositional.*
 import serpentine.*
 
 trait DeleteRecursively:
-  def conditionally[ResultType](path: Path)(operation: => ResultType): ResultType
+  type Platform <: Filesystem
+  def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType

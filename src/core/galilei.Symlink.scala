@@ -18,6 +18,7 @@ package galilei
 
 import anticipation.*
 import contextual.*
+import prepositional.*
 import gossamer.*
 import serpentine.*
 import spectacular.*
@@ -27,6 +28,7 @@ import scala.jdk.StreamConverters.*
 import language.experimental.pureFunctions
 
 object Symlink extends UnixEntry, WindowsEntry:
-  given Symlink is Inspectable = symlink => t"symlink:${symlink.path.text}"
+  given [PlatformType <: Filesystem] => Symlink[PlatformType] is Inspectable =
+    symlink => t"symlink:${symlink.path.text}"
 
-case class Symlink(path: Path)
+case class Symlink[PlatformType <: Filesystem](path: Path on PlatformType)

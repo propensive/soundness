@@ -34,55 +34,82 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Creatable:
-  given (using createNonexistentParents: CreateNonexistentParents,
-               overwritePreexisting:     OverwritePreexisting,
-               tactic:                   Tactic[IoError]) => Directory is Creatable into Path =
-    _.tap: path =>
-      createNonexistentParents(path):
-        overwritePreexisting(path):
-          jnf.Files.createDirectory(path.javaPath)
+  given [PlatformType <: Filesystem]
+      (using createNonexistentParents: CreateNonexistentParents on PlatformType,
+             overwritePreexisting:     OverwritePreexisting on PlatformType,
+             tactic:                   Tactic[IoError])
+          => Directory is Creatable on PlatformType into (Path on PlatformType) =
+    new Creatable:
+      type Self = Directory
+      type Result = Path on Platform
+      type Platform = PlatformType
 
-  given (using createNonexistentParents: CreateNonexistentParents,
-               overwritePreexisting:     OverwritePreexisting,
-               tactic:                   Tactic[IoError])
-            => Socket is Creatable into Socket as socket =
+      def create(path: Path on Platform): Path on Platform =
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            jnf.Files.createDirectory(path.javaPath)
+            path
 
-    path =>
-      createNonexistentParents(path):
-        overwritePreexisting(path):
-          val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
-          val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
-          channel.bind(address)
-          Socket(channel)
+  given [PlatformType <: Posix]
+      (using createNonexistentParents: CreateNonexistentParents on PlatformType,
+             overwritePreexisting:     OverwritePreexisting on PlatformType,
+             tactic:                   Tactic[IoError])
+      => Socket is Creatable into Socket as socket =
+    new Creatable:
+      type Platform = PlatformType
+      type Self = Socket
+      type Result = Socket
 
-  given (using createNonexistentParents: CreateNonexistentParents,
-               overwritePreexisting:     OverwritePreexisting,
-               tactic:                   Tactic[IoError]) => File is Creatable into Path as file =
-    _.tap: path =>
-      createNonexistentParents(path):
-        overwritePreexisting(path):
-          jnf.Files.createFile(path.javaPath)
+      def create(path: Path on Platform): Result =
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
+            val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
+            channel.bind(address)
+            Socket(channel)
 
-  given (using createNonexistentParents: CreateNonexistentParents,
-               overwritePreexisting:     OverwritePreexisting,
-               working:                  WorkingDirectory,
-               tactic:                   Tactic[IoError],
-               loggable:                 ExecEvent is Loggable)
-      => Fifo is Creatable into Path as fifo =
-    _.tap: path =>
-      createNonexistentParents(path):
-        overwritePreexisting(path):
-          tend:
-            case ExecError(_, _, _) =>
-              import exceptionDiagnostics.stackTraces
-              IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
-          .within:
-            sh"mkfifo $path"() match
-              case ExitStatus.Ok => ()
-              case _             =>
-                raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
+  given [PlatformType <: Filesystem]
+      (using createNonexistentParents: CreateNonexistentParents on PlatformType,
+             overwritePreexisting:     OverwritePreexisting on PlatformType,
+             tactic:                   Tactic[IoError])
+            => File is Creatable on PlatformType into (Path on PlatformType) as file =
+    new Creatable:
+      type Platform = PlatformType
+      type Self = File
+      type Result = Path on Platform
+
+      def create(path: Path on Platform): Path on Platform = path.also:
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            jnf.Files.createFile(path.javaPath)
+
+  given [PlatformType <: Filesystem]
+      (using createNonexistentParents: CreateNonexistentParents on PlatformType,
+             overwritePreexisting:     OverwritePreexisting on PlatformType,
+             working:                  WorkingDirectory,
+             tactic:                   Tactic[IoError],
+             loggable:                 ExecEvent is Loggable)
+      => Fifo is Creatable into (Path on PlatformType) as fifo =
+    new Creatable:
+      type Self = Fifo
+      type Result = Path on Platform
+      type Platform = PlatformType
+
+      def create(path: Path on Platform): Path on Platform = path.also:
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            tend:
+              case ExecError(_, _, _) =>
+                import exceptionDiagnostics.stackTraces
+                IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
+            .within:
+              sh"mkfifo $path"() match
+                case ExitStatus.Ok => ()
+                case _             =>
+                  raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
 trait Creatable:
   type Self
   type Result
-  def create(path: Path): Result
+  type Platform <: Filesystem
+  def create(path: Path on Platform): Result

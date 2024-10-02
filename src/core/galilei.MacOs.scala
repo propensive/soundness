@@ -43,4 +43,4 @@ object MacOs:
       
       def caseSensitivity: Case = Case.Preserving
 
-erased trait MacOs extends Filesystem
+erased trait MacOs extends Posix
