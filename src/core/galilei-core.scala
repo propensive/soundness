@@ -13,6 +13,7 @@ import rudiments.*
 import nomenclature.*
 import fulminate.*
 import serpentine.*
+import turbulence.*
 import spectacular.*
 import anticipation.*
 import vacuous.*
@@ -25,7 +26,8 @@ package pathNavigation:
   export Linux.navigable as linux
   export Windows.navigable as windows
   export MacOs.navigable as macOs
-
+  export Posix.navigable as posix
+  export Filesystem.navigable as operatingSystem
 
 final val C: WindowsDrive = WindowsDrive('C')
 final val D: WindowsDrive = WindowsDrive('D')
@@ -36,8 +38,13 @@ final val `%`: Linux.Root = Linux.RootSingleton
 @targetName("MacOsRoot")
 final val `$`: MacOs.Root = MacOs.RootSingleton
 
+extension [ValueType: Openable](value: ValueType)
+  def open[ResultType](lambda: Handle => ResultType, options: List[ValueType.Operand] = Nil)
+          : ResultType =
+    ValueType.open(value, lambda, options)
+
 extension [PlatformType <: Filesystem](path: Path on PlatformType)
-  private def protect[ResultType](operation: Operation)(block: => ResultType)
+  private[galilei] def protect[ResultType](operation: Operation)(block: => ResultType)
           : ResultType raises IoError =
     import Reason.*
     try block catch
@@ -50,19 +57,6 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
       case other                             => abort(IoError(path, operation, Unsupported))
-
-  def open[ResultType](lambda: Handle => ResultType, extraOptions: List[jnf.OpenOption] = Nil)
-      (using read:        ReadAccess          = filesystemOptions.readAccess.enabled,
-             write:       WriteAccess         = filesystemOptions.writeAccess.enabled,
-             dereference: DereferenceSymlinks,
-             create:      CreateNonexistent on PlatformType)
-          : ResultType raises IoError =
-    val options = read.options() ++ write.options() ++ create.options() ++ dereference.options() ++
-        extraOptions
-    
-    protect(Operation.Open):
-      val channel = jnc.FileChannel.open(path.javaPath, options*).nn
-      try lambda(Handle(channel)) finally channel.close()
 
   def javaPath: jnf.Path = jnf.Path.of(path.encode.s).nn
   def javaFile: ji.File = javaPath.toFile.nn
@@ -230,7 +224,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
 
 extension [PlatformType <: Windows](path: Path on PlatformType)
   def created[InstantType: SpecificInstant](): InstantType raises IoError =
-    protect(path)(Operation.Metadata):
+    path.protect(Operation.Metadata):
       val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
       SpecificInstant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
 
@@ -239,7 +233,7 @@ extension [PlatformType <: Posix](path: Path on PlatformType)
     FilesystemAttribute.Executable(path)
 
   def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
-    protect(path)(Operation.Metadata):
+    path.protect(Operation.Metadata):
       jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
         case count: Int => count
         case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported), 1)
@@ -341,7 +335,7 @@ package filesystemOptions:
       type Platform = PlatformType
 
       def apply[ResultType](path: Path on PlatformType)(block: => ResultType): ResultType =
-        protect(path)(Operation.Write)(block)
+        path.protect(Operation.Write)(block)
 
   object createNonexistent:
     given [PlatformType <: Filesystem](using create: CreateNonexistentParents on PlatformType)

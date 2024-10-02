@@ -8,10 +8,9 @@ import contingency.*
 import anticipation.*
 
 object Handle:
-  given (using Tactic[StreamError]) => Handle is Readable by Bytes as readable =
-    Readable.channel.contramap(_.channel)
-  
-  given (using Tactic[StreamError]) => Handle is Writable by Bytes as writable =
-    Writable.channel.contramap(_.channel)
+  given (using Tactic[StreamError]) => Handle is Readable by Bytes as readable = _.reader()
+  given (using Tactic[StreamError]) => Handle is Writable by Bytes as writable = _.writer(_)
 
-class Handle(private[galilei] val channel: jnc.FileChannel)
+class Handle
+    (val reader: () => LazyList[Bytes],
+     val writer: LazyList[Bytes] => Unit)
