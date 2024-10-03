@@ -16,10 +16,7 @@
 
 package phoenicia
 
-import rudiments.*
 import quantitative.*
-
-erased given PhysicalQuantity[Units[1, FontSize], "font size"] as fontSize = ###
 
 val Em: Quantity[Ems[1]] = Quantity(1.0)
 
