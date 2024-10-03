@@ -11,7 +11,7 @@ project merino
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core turbulence/core
+    include   turbulence/core
 
   module bench
     compiler  scala
