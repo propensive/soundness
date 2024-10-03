@@ -31,7 +31,6 @@ import vacuous.*
 import Completion.*
 import ConcurrencyError.Reason
 
-@capability
 sealed trait Monitor:
   type Result
   val promise: Promise[Result]
@@ -82,7 +81,6 @@ object PlatformSupervisor extends Supervisor():
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
 
-@capability
 abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
 
