@@ -30,7 +30,7 @@ import contingency.*
 case class Syslog(tag: Optional[Text] = Unset)
 
 object Syslog:
-  given (using Monitor) => Syslog is Appendable by Text as appendable = (syslog, stream) =>
+  given (using Monitor) => Syslog is Writable by Text as appendable = (syslog, stream) =>
     import workingDirectories.default
 
     mend:
@@ -38,5 +38,5 @@ object Syslog:
       case ExecError(_, _, _) => ()
     .within:
       syslog.tag match
-        case tag: Text => mute[ExecEvent](stream.appendTo(sh"logger -t $tag".fork[Unit]()))
-        case _         => mute[ExecEvent](stream.appendTo(sh"logger".fork[Unit]()))
+        case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
+        case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))

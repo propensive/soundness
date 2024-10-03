@@ -73,7 +73,7 @@ extension (logObject: Log.type)
     def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
   def route[FormatType](using DummyImplicit)
-      [EntryType: Inscribable in FormatType, TargetType: Appendable by FormatType]
+      [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
       (target: TargetType)
       (using Monitor)
           : EntryType is Loggable =
@@ -83,7 +83,7 @@ extension (logObject: Log.type)
 
       private lazy val spool: Spool[TargetType.Operand] =
         Spool().tap: spool =>
-          val task = async(spool.stream.appendTo(target))
+          val task = async(spool.stream.writeTo(target))
 
           Hook.onShutdown:
             spool.stop()
