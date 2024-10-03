@@ -11,7 +11,7 @@ object Jacinta:
 
   object JsonPath:
     given JsonPath is Showable = jsonPath =>
-      def recur(elements: List[Int | Text], result: Text): Text = elements match
+      def recur(elements: List[Int | Text], result: Text): Text = (elements: @unchecked) match
         case Nil                  => if result.empty then t"." else result
         case (index: Int) :: tail => recur(tail, t"[$index]$result")
         case (key: Text) :: tail  => recur(tail, t".$key$result")

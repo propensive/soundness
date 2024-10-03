@@ -105,9 +105,11 @@ object Json extends Json2, Dynamic:
       variant(value): [VariantType <: DerivationType] =>
         value => summonInline[Tactic[JsonError]].give:
           Json.ast:
-            context.encode(value).root match
-              case (labels: IArray[String], values: IArray[JsonAst]) =>
-                JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
+            (context.encode(value).root.asMatchable: @unchecked) match
+              case (labels, values) => (labels.asMatchable: @unchecked) match
+                case labels: IArray[String] => (values.asMatchable: @unchecked) match
+                  case values: IArray[JsonAst] =>
+                    JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
   inline given [ValueType: Reflection] => ValueType is Decodable in Json as decodable =
     DecodableDerivation.derived
