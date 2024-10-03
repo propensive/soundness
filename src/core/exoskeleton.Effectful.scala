@@ -16,7 +16,4 @@
 
 package exoskeleton
 
-import rudiments.*
-
-@capability
 erased trait Effectful

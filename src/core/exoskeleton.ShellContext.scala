@@ -18,7 +18,9 @@ package exoskeleton
 
 import galilei.*
 import anticipation.*
+import serpentine.*
+import prepositional.*
 
 trait ShellContext:
   def scriptName: Text
-  def script: Path
+  def script: Path on Linux

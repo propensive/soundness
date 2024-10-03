@@ -18,17 +18,25 @@ package exoskeleton
 
 import spectacular.*
 import gossamer.{where as _, *}
-import anticipation.*, filesystemApi.galileiPath
+import anticipation.*, filesystemApi.serpentinePath
 import rudiments.*, homeDirectories.default
 import vacuous.*
-import serpentine.*, pathHierarchies.unix
+import serpentine.*
+import prepositional.*
 import contingency.*
+import nomenclature.*
 import guillotine.*
 import fulminate.*
 import turbulence.*
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
-import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent,
-    createNonexistentParents, doNotOverwritePreexisting}
+import galilei.*
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+
+import pathNavigation.posix
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)
@@ -36,12 +44,13 @@ object TabCompletions:
           : TabCompletionsInstallation raises InstallError logs CliEvent =
     tend:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
+      case NameError(_, _, _) => InstallError(InstallError.Reason.Environment)
       case ExecError(_, _, _) => InstallError(InstallError.Reason.Environment)
     .within:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
       val command: Text = service.scriptName
 
-      if !force && safely(scriptPath.decodeAs[Path]) != service.script
+      if !force && safely(scriptPath.decodeAs[Path on Posix]) != service.script
       then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
       else
         val zsh: TabCompletionsInstallation.InstallResult =
@@ -53,7 +62,7 @@ object TabCompletions:
 
             val dirs =
               dirNames.filter(_.trim != t"").map: dir =>
-                safely(dir.decodeAs[Path])
+                safely(dir.decodeAs[Path on Posix])
               .compact
 
             install(Shell.Zsh, command, Name(t"_$command"), dirs)
@@ -61,33 +70,38 @@ object TabCompletions:
         val bash: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v bash'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Bash)
-          else install(Shell.Bash, command, Name(command), List(Xdg.dataDirs.last /
-              p"bash-completion" / p"completions", Xdg.dataHome / p"bash-completion" /
-              p"completions"))
+          else
+            install
+             (Shell.Bash,
+              command,
+              Name[Posix](command),
+              List(Xdg.dataDirs.last / n"bash-completion" / n"completions",
+              Xdg.dataHome / n"bash-completion" / n"completions"))
 
         val fish: TabCompletionsInstallation.InstallResult =
           if sh"sh -c 'command -v fish'".exec[ExitStatus]() != ExitStatus.Ok
           then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
-          else install(Shell.Fish, command, Name(t"$command.fish"), List(Xdg.dataDirs.last /
-              p"fish" / p"vendor_completions.d", Xdg.configHome / p"fish" / p"completions"))
+          else install(Shell.Fish, command, Name[Posix](t"$command.fish"), List(Xdg.dataDirs.last /
+              n"fish" / n"vendor_completions.d", Xdg.configHome / n"fish" / n"completions"))
 
         TabCompletionsInstallation.Shells(zsh, bash, fish)
 
-  def install(shell: Shell, command: Text, scriptName: Name[GeneralForbidden], dirs: List[Path])
+  def install(shell: Shell, command: Text, scriptName: Name[Posix], dirs: List[Path on Posix])
       (using Effectful, Diagnostics)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
     tend:
-      case IoError(_)        => InstallError(InstallError.Reason.Io)
-      case OverwriteError(_) => InstallError(InstallError.Reason.Io)
-      case StreamError(_)    => InstallError(InstallError.Reason.Io)
+      case IoError(_, _, _)   => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _) => InstallError(InstallError.Reason.Io)
+      case PathError(_, _)    => InstallError(InstallError.Reason.Io)
+      case StreamError(_)     => InstallError(InstallError.Reason.Io)
     .within:
-      dirs.where { dir => dir.exists() && dir.as[Directory].writable() }.let: dir =>
+      dirs.where { dir => dir.exists() && dir.writable() }.let: dir =>
         val path = dir / scriptName
         if path.exists()
         then TabCompletionsInstallation.InstallResult.AlreadyInstalled(shell, path.show)
         else
-          script(shell, command).sysBytes.writeTo(path.make[File]())
+          path.open(script(shell, command).sysBytes.writeTo(_))
           TabCompletionsInstallation.InstallResult.Installed(shell, path.show)
       .or(TabCompletionsInstallation.InstallResult.NoWritableLocation(shell))
 
