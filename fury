@@ -10,12 +10,12 @@ repo propensive/nettlesome
 target telekinesis/test
 
 project telekinesis
-  module client
-    sources  src/client
+  module core
+    sources  src/core
     include  monotonous/core gesticulate/core eucalyptus/core hieroglyph/core wisteria/core nettlesome/url
 
   module test
     sources  src/test
-    include  telekinesis/client probably/cli
+    include  telekinesis/core probably/cli
     main     telekinesis.Tests
 
