@@ -135,7 +135,6 @@ object Dates:
 
 export Dates.Date
 
-@capability
 trait Calendar:
   type Day
   type Month
@@ -149,7 +148,6 @@ trait Calendar:
   def julianDay(year: Year, month: Month, day: Day): Date raises DateError
   def add(date: Date, period: Timespan): Date
 
-@capability
 abstract class RomanCalendar() extends Calendar:
   type Year = Int
   type Month = MonthName
@@ -550,7 +548,6 @@ object Aviation:
       case _ =>
         abandon(m"expected a literal double value")
 
-@capability
 case class Timezone private(name: Text)
 
 case class TimezoneError(name: Text)(using Diagnostics)
@@ -580,7 +577,7 @@ object Timezone:
     def verify(name: Text): Timezone =
       try throwErrors(Timezone.parse(name))
       catch case err: TimezoneError =>
-        import exceptionDiagnostics.empty
+        import errorDiagnostics.empty
         throw InterpolationError(err.message)
 
 extension (inline context: StringContext)
