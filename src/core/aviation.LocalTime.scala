@@ -14,20 +14,20 @@
     and limitations under the License.
 */
 
-package anticipation
+package aviation
 
-import aviation.*
+import rudiments.*
+import anticipation.*
 
-//import language.experimental.captureChecking
+import java.time as jt
 
-package instantApi:
-  given Timing.Instant is GenericInstant & SpecificInstant as aviationInstant =
-    new GenericInstant with SpecificInstant:
-      type Self = Timing.Instant
-      export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
+object LocalTime:
+  given (using RomanCalendar) => LocalTime is GenericInstant as generic =
+    _.instant.millisecondsSinceEpoch
 
-package durationApi:
-  given Timing.Duration is GenericDuration & SpecificDuration as aviationDuration =
-    new GenericDuration with SpecificDuration:
-      type Self = Timing.Duration
-      export Timing.Duration.generic.{duration, milliseconds}
+case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
+  def instant(using RomanCalendar): Instant =
+    val ldt = jt.LocalDateTime.of(date.year, date.month.numerical, date.day, time.hour, time.minute,
+        time.second)
+
+    Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)

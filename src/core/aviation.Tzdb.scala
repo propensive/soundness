@@ -23,35 +23,8 @@ import spectacular.*
 import rudiments.*
 import vacuous.*
 import contingency.*
-import fulminate.*
 
 import scala.io.*
-
-//import language.experimental.captureChecking
-
-object TzdbError:
-  given Reason is Communicable =
-    case Reason.CouldNotParseTime(time) => m"could not parse time $time"
-    case Reason.UnexpectedRule          => m"unexpected rule"
-    case Reason.UnexpectedLink          => m"unexpected link"
-    case Reason.UnexpectedZoneInfo      => m"unexpected zone info"
-    case Reason.BadZoneInfo(line)       => m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
-    case Reason.BadName(name)           => m"the name $name is not valid"
-    case Reason.UnparsableDate          => m"the date could not be parsed"
-    case Reason.ZoneFileMissing(name)   => m"the zone file $name could not be found on the classpath"
-
-  enum Reason:
-    case CouldNotParseTime(time: Text)
-    case UnexpectedRule
-    case UnexpectedLink
-    case UnexpectedZoneInfo
-    case UnparsableDate
-    case BadZoneInfo(line: List[Text])
-    case BadName(name: Text)
-    case ZoneFileMissing(name: Text)
-
-case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
-extends Error(m"the timezone could not be parsed at line $line: $reason")
 
 object Tzdb:
   case class Time(hours: Int, minutes: Int, seconds: Int, suffix: Optional[Char])
@@ -212,8 +185,3 @@ object Tzdb:
             recur(lineNo + 1, lines.tail, entries, zone)
 
     recur(1, lines)
-
-given realm: Realm = realm"aviation"
-
-enum TimeEvent:
-  case ParseStart
