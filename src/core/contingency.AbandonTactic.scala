@@ -21,10 +21,8 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 import fulminate.*
-import rudiments.*
 import anticipation.*
 
-@capability
 open class AbandonTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Tactic[ErrorType]:
   given Diagnostics as diagnostics = Diagnostics.omit

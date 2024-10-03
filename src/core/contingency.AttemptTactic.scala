@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
-@capability
 class AttemptTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Attempt[SuccessType, ErrorType]])
     (using Diagnostics)

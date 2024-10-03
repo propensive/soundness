@@ -23,7 +23,6 @@ import java.util.concurrent.atomic as juca
 import fulminate.*
 import rudiments.*
 
-@capability
 class AccrueTactic
     [ErrorType <: Exception, AccrualType, ResultType]
     (label: boundary.Label[Option[ResultType]],

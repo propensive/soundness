@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
-@capability
 class AmalgamateTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[SuccessType | ErrorType])
     (using Diagnostics)

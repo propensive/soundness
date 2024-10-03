@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
-@capability
 class EitherTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Either[ErrorType, SuccessType]])
     (using Diagnostics)

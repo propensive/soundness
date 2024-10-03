@@ -22,7 +22,6 @@ import fulminate.*
 import vacuous.*
 import rudiments.*
 
-@capability
 class OptionalTactic[ErrorType <: Exception, SuccessType]
     (label: boundary.Label[Optional[SuccessType]])
 extends Tactic[ErrorType]:

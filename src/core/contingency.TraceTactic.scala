@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 import fulminate.*
 import rudiments.*
 
-@capability
 class TraceTactic
     [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
     (label: boundary.Label[Option[ResultType]],

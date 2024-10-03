@@ -18,10 +18,8 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import rudiments.*
 import fulminate.*
 
-@capability
 class ThrowTactic[ErrorType <: Exception, SuccessType]()
     (using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Tactic[ErrorType]:

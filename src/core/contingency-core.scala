@@ -40,13 +40,13 @@ package strategies:
     ErrorType.contramap(ErrorType2.mitigate(_))
 
   given [ErrorType <: Exception: Fatal] => Tactic[ErrorType] as fatalErrors:
-    given Diagnostics as diagnostics = exceptionDiagnostics.stackTraces
+    given Diagnostics as diagnostics = errorDiagnostics.stackTraces
     def record(error: Diagnostics ?=> ErrorType): Unit = ErrorType.status(error).terminate()
     def abort(error: Diagnostics ?=> ErrorType): Nothing = ErrorType.status(error).terminate()
 
   given [ErrorType <: Exception](using erased ErrorType is Unchecked)
       => Tactic[ErrorType] as uncheckedErrors:
-    given Diagnostics as diagnostics = exceptionDiagnostics.stackTraces
+    given Diagnostics as diagnostics = errorDiagnostics.stackTraces
     given CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: Diagnostics ?=> ErrorType): Unit = throw error
     def abort(error: Diagnostics ?=> ErrorType): Nothing = throw error

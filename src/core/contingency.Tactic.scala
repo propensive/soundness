@@ -19,9 +19,7 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import rudiments.*
 
-@capability
 trait Tactic[-ErrorType <: Exception]:
   private inline def tactic: this.type = this
 
