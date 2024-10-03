@@ -222,7 +222,8 @@ case class HttpRequest
      rawHeaders: Map[Text, List[Text]],
      queryParams: Map[Text, List[Text]]):
 
-  lazy val path: SimplePath raises PathError = pathText.decodeAs[SimplePath]
+  lazy val path: Path on HttpUrl raises PathError raises UrlError raises HostnameError =
+    pathText.decodeAs[Path on HttpUrl]
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
