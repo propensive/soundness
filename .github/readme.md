@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/ulysses/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/ulysses/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Ulysses
@@ -19,17 +19,9 @@ Bloom filter, with flexibility to tune its properties according to need.
 - Uses Gastronomy to derive hashes for primitive, product and sum types
 
 
-## Availability Plan
+## Availability
 
-Ulysses has not yet been published. The medium-term plan is to build Ulysses
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Ulysses.
 
-Subsequently, Ulysses will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -96,7 +88,7 @@ smaller had significantly fewer elements been added.
 
 ## Status
 
-Ulysses is classified as __fledgling__. For reference, Scala One projects are
+Ulysses is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -110,7 +102,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Ulysses is designed to be _small_. Its entire source code currently consists
-of 74 lines of code.
+of 76 lines of code.
 
 ## Building
 
@@ -179,7 +171,7 @@ O&Uuml;](https://propensive.com/).
 
 _Ulysses_ is named after the novel by James Joyce, whose principal character is Leopold Bloom, a namesake of the creator of Bloom Filters, Burton H. Bloom.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
