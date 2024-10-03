@@ -33,12 +33,12 @@ import vacuous.*
 object Process:
   given [ChunkType, CommandType <: Label, ResultType]
       (using ji.OutputStream is Writable by ChunkType)
-      => Process[CommandType, ResultType] is Appendable by ChunkType as appendable =
+      => Process[CommandType, ResultType] is Writable by ChunkType as writable =
 
     (process, stream) => process.stdin(stream)
 
   given [CommandType <: Label, ResultType](using Tactic[StreamError])
-      => Process[CommandType, ResultType] is Appendable by Text as appendableText =
+      => Process[CommandType, ResultType] is Writable by Text as writableText =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
