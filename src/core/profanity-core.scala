@@ -65,7 +65,7 @@ package keyboards:
     type Keypress = Int
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given (using monitor: Monitor, codicil: Codicil) => (StandardKeyboard^{monitor}) as standard =
+  given (using monitor: Monitor, codicil: Codicil) => StandardKeyboard as standard =
     StandardKeyboard()
 
 package terminalOptions:

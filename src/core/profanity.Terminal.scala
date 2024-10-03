@@ -40,7 +40,7 @@ extends Interactivity[TerminalEvent]:
 
   export context.stdio.{in, out, err}
 
-  val keyboard: StandardKeyboard^{monitor} = StandardKeyboard()
+  val keyboard: StandardKeyboard = StandardKeyboard()
   val rows0: Promise[Int] = Promise()
   val columns0: Promise[Int] = Promise()
   var mode: Optional[TerminalMode] = Unset
