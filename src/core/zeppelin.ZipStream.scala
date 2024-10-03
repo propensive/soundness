@@ -6,7 +6,7 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
+import nomenclature.*
 import turbulence.*
 import vacuous.*
 
@@ -16,13 +16,14 @@ object ZipStream:
   def apply[SourceType: Readable by Bytes](source: SourceType): ZipStream =
     new ZipStream(() => source.stream[Bytes], { _ => true })
 
-class ZipStream(stream: () => LazyList[Bytes], filter: ZipRef => Boolean):
-  def keep(predicate: ZipRef => Boolean): ZipStream =
-    new ZipStream(stream, { (ref: ZipRef) => filter(ref) && predicate(ref) })
+class ZipStream(stream: () => LazyList[Bytes], filter: (Path on Zip) => Boolean):
+  def keep(predicate: (Path on Zip) => Boolean): ZipStream =
+    new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
 
-  def extract(ref: ZipRef): ZipEntry raises ZipError =
-    safely(keep(_ == ref).map(identity(_)).headOption.getOrElse(Unset)).or:
-      abort(ZipError(ref.show))
+  def extract(ref: Zip.ZipRoot => Path on Zip): ZipEntry raises ZipError =
+    val root = Zip.ZipRoot()
+    safely(keep(_ == ref(root)).map(identity(_)).headOption.getOrElse(Unset)).or:
+      abort(ZipError())
 
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
@@ -33,9 +34,13 @@ class ZipStream(stream: () => LazyList[Bytes], filter: ZipRef => Boolean):
       case null                         => LazyList()
       case entry if entry.isDirectory() => recur()
       case entry =>
-        import exceptionDiagnostics.empty
-        val ref = tend { case PathError(path, _) => ZipError(path) }.within:
-          ZipRef(entry.getName().nn.tt)
+        import errorDiagnostics.empty
+        val ref: Path on Zip =
+          tend:
+            case PathError(reason, path) => ZipError()
+            case NameError(_, _, _)      => ZipError()
+          .within:
+            Path.parse[Zip](entry.getName().nn.tt)
 
         if !filter(ref) then recur() else
           ZipEntry(ref, LazyList(Bytes.construct(entry.getSize.toInt): array =>

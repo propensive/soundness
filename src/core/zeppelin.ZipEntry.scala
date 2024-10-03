@@ -19,12 +19,13 @@ package zeppelin
 import rudiments.*
 import anticipation.*
 import turbulence.*
+import serpentine.*
 import prepositional.*
 
 import java.nio.file as jnf
 
 object ZipEntry:
-  def apply[ResourceType: Readable by Bytes](path: ZipRef, resource: ResourceType): ZipEntry =
+  def apply[ResourceType: Readable by Bytes](path: Path on Zip, resource: ResourceType): ZipEntry =
     new ZipEntry(path, () => resource.stream[Bytes])
 
   given ZipEntry is Readable by Bytes = Readable.lazyList[Bytes].contramap(_.content())
@@ -32,4 +33,4 @@ object ZipEntry:
   // 00:00:00, 1 January 2000
   val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
 
-case class ZipEntry(ref: ZipRef, content: () => LazyList[Bytes])
+case class ZipEntry(ref: Path on Zip, content: () => LazyList[Bytes])

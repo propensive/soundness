@@ -19,5 +19,5 @@ package zeppelin
 import fulminate.*
 import anticipation.*
 
-case class ZipError(filename: Text)(using Diagnostics)
-extends Error(m"could not create ZIP file ${filename}")
+case class ZipError()(using Diagnostics)
+extends Error(m"problem with ZIP file")
