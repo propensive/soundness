@@ -17,6 +17,7 @@
 package turbulence
 
 import java.io as ji
+import java.nio as jn
 
 import anticipation.*
 import contingency.*
@@ -26,7 +27,8 @@ import prepositional.*
 import vacuous.*
 
 object Writable:
-  given [OutType <: ji.OutputStream](using streamCut: Tactic[StreamError]) => OutType is Writable by Bytes as outputStreamBytes =
+  given [OutType <: ji.OutputStream](using streamCut: Tactic[StreamError])
+      => OutType is Writable by Bytes as outputStreamBytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -52,7 +54,20 @@ object Writable:
       => TargetType is Writable by Text as encodingAdapter =
     (target, stream) => TargetType.write(target, encoder.encode(stream))
 
-@capability
+  given (using Tactic[StreamError])
+      => jn.channels.WritableByteChannel is Writable by Bytes as channel = (channel, stream) =>
+    def recur(total: ByteSize, todo: LazyList[jn.ByteBuffer]): Unit = todo match
+      case head #:: tail =>
+        try
+          val count = channel.write(head).b
+          if head.hasRemaining then recur(total + count, todo) else recur(total + count, tail)
+        catch case e: Exception => LazyList(raise(StreamError(total)))
+
+      case _ =>
+        ()
+
+    recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
+
 trait Writable:
   type Self
   type Operand
