@@ -27,7 +27,7 @@ import anticipation.*
 import spectacular.*
 import contextual.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object Interpolation:
   case class Input(txt: Text)
