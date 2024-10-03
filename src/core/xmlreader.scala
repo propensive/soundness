@@ -41,9 +41,10 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     construct:
       [FieldType] => context =>
         val element =
-          elements.collect { case element: XmlAst.Element => element }
-            .find(_.name.name == label)
-            .get
+          elements.find:
+            case element: XmlAst.Element if element.name.name == label => true
+            case _                                                     => false
+          .get
 
         context.read(List(element))
 
