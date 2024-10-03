@@ -8,7 +8,7 @@ repo propensive/xylophone
 project honeycomb
   module core
     sources  src/core
-    include  gossamer/core anticipation/html anticipation/css anticipation/path serpentine/core xylophone/core
+    include  gossamer/core anticipation/html anticipation/css anticipation/path serpentine/core xylophone/core anticipation/url
 
   module test
     sources   src/test
