@@ -38,7 +38,7 @@ final val `$`: MacOs.Root = MacOs.RootSingleton
 
 extension [ValueType: Openable](value: ValueType)
   def open[ResultType]
-      (lambda: ValueType.Result => ResultType, options: List[ValueType.Operand] = Nil)
+      (lambda:  ValueType.Result => ResultType, options: List[ValueType.Operand] = Nil)
           : ResultType =
     ValueType.open(value, lambda, options)
 
@@ -55,7 +55,10 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
       case _: jnf.NotDirectoryException      => abort(IoError(path, operation, IsNotDirectory))
       case _: SecurityException              => abort(IoError(path, operation, PermissionDenied))
       case _: jnf.FileSystemLoopException    => abort(IoError(path, operation, Cycle))
-      case other                             => abort(IoError(path, operation, Unsupported))
+      case other                             =>
+        println(other)
+        other.printStackTrace()
+        abort(IoError(path, operation, Unsupported))
 
   def javaPath: jnf.Path = jnf.Path.of(path.encode.s).nn
   def javaFile: ji.File = javaPath.toFile.nn
@@ -219,7 +222,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
     jnf.Files.setLastModifiedTime
      (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
   
-  def create[EntryType: Creatable on PlatformType](): EntryType.Result = EntryType.create(path)
+  def make[EntryType: Makable on PlatformType](): EntryType.Result = EntryType.make(path)
 
 extension [PlatformType <: Windows](path: Path on PlatformType)
   def created[InstantType: SpecificInstant](): InstantType raises IoError =

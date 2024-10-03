@@ -29,7 +29,14 @@ object Openable:
       val options = read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
           extraOptions
 
-      path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options*).nn)
+      import jnf.StandardOpenOption as jnfsoo
+      
+      val options2 =
+        if options.contains(jnfsoo.READ) && options.contains(jnfsoo.APPEND)
+        then options.filter(_ != jnfsoo.READ)
+        else options
+
+      path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options2*).nn)
     
     def handle(channel: jnc.FileChannel): Handle =
       Handle

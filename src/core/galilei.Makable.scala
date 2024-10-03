@@ -33,18 +33,18 @@ import java.nio.channels as jnc
 
 import language.experimental.pureFunctions
 
-object Creatable:
+object Makable:
   given [PlatformType <: Filesystem]
       (using createNonexistentParents: CreateNonexistentParents on PlatformType,
              overwritePreexisting:     OverwritePreexisting on PlatformType,
              tactic:                   Tactic[IoError])
-          => Directory is Creatable on PlatformType into (Path on PlatformType) =
-    new Creatable:
+          => Directory is Makable on PlatformType into (Path on PlatformType) =
+    new Makable:
       type Self = Directory
       type Result = Path on Platform
       type Platform = PlatformType
 
-      def create(path: Path on Platform): Path on Platform =
+      def make(path: Path on Platform): Path on Platform =
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createDirectory(path.javaPath)
@@ -54,13 +54,13 @@ object Creatable:
       (using createNonexistentParents: CreateNonexistentParents on PlatformType,
              overwritePreexisting:     OverwritePreexisting on PlatformType,
              tactic:                   Tactic[IoError])
-      => Socket is Creatable into Socket as socket =
-    new Creatable:
+      => Socket is Makable into Socket as socket =
+    new Makable:
       type Platform = PlatformType
       type Self = Socket
       type Result = Socket
 
-      def create(path: Path on Platform): Result =
+      def make(path: Path on Platform): Result =
         createNonexistentParents(path):
           overwritePreexisting(path):
             val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
@@ -72,13 +72,13 @@ object Creatable:
       (using createNonexistentParents: CreateNonexistentParents on PlatformType,
              overwritePreexisting:     OverwritePreexisting on PlatformType,
              tactic:                   Tactic[IoError])
-            => File is Creatable on PlatformType into (Path on PlatformType) as file =
-    new Creatable:
+            => File is Makable on PlatformType into (Path on PlatformType) as file =
+    new Makable:
       type Platform = PlatformType
       type Self = File
       type Result = Path on Platform
 
-      def create(path: Path on Platform): Path on Platform = path.also:
+      def make(path: Path on Platform): Path on Platform = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
@@ -89,13 +89,13 @@ object Creatable:
              working:                  WorkingDirectory,
              tactic:                   Tactic[IoError],
              loggable:                 ExecEvent is Loggable)
-      => Fifo is Creatable into (Path on PlatformType) as fifo =
-    new Creatable:
+      => Fifo is Makable into (Path on PlatformType) as fifo =
+    new Makable:
       type Self = Fifo
       type Result = Path on Platform
       type Platform = PlatformType
 
-      def create(path: Path on Platform): Path on Platform = path.also:
+      def make(path: Path on Platform): Path on Platform = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
             tend:
@@ -108,8 +108,8 @@ object Creatable:
                 case _             =>
                   raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
-trait Creatable:
+trait Makable:
   type Self
   type Result
   type Platform <: Filesystem
-  def create(path: Path on Platform): Result
+  def make(path: Path on Platform): Result
