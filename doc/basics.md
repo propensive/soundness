@@ -107,10 +107,10 @@ multiple sources into `LazyList`s; `Multiplexer`s merge streams.
 Finally, Turbulence provides implementations of GZIP and Zlib compression
 algorithms on byte streams.
 
-### Reading, Writing and Appending
+### Reading, Writing (and Appending)
 
 Turbulence defines four key typeclass interfaces related to streaming:
-`Readable`, `Writable`, `Appendable` and `Aggregable`, and
+`Readable`, `Writable` and `Aggregable`, and
 
 #### `Funnel`s
 
