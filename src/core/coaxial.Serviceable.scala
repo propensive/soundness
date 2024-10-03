@@ -30,8 +30,8 @@ import java.nio.file as jnf
 
 import Control.*
 
-object Connectable:
-  given domainSocket(using Tactic[StreamError]): Connectable[DomainSocket] with
+object Serviceable:
+  given domainSocket(using Tactic[StreamError]): Serviceable[DomainSocket] with
     type Output = Bytes
     case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
 
@@ -55,7 +55,7 @@ object Connectable:
 
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpEndpoint(using Online, Tactic[StreamError]): Connectable[Endpoint[TcpPort]] with
+  given tcpEndpoint(using Online, Tactic[StreamError]): Serviceable[Endpoint[TcpPort]] with
     type Output = Bytes
     type Connection = jn.Socket
 
@@ -71,7 +71,7 @@ object Connectable:
 
     def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
-  given tcpPort(using Tactic[StreamError]): Connectable[TcpPort] with
+  given tcpPort(using Tactic[StreamError]): Serviceable[TcpPort] with
     type Output = Bytes
     type Connection = jn.Socket
 
@@ -84,6 +84,6 @@ object Connectable:
       out.write(input.mutable(using Unsafe))
       out.flush()
 
-trait Connectable[EndpointType] extends Addressable[EndpointType]:
+trait Serviceable[EndpointType] extends Addressable[EndpointType]:
   def receive(connection: Connection): LazyList[Bytes]
   def close(connection: Connection): Unit

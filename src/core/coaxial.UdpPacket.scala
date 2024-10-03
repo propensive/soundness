@@ -16,7 +16,7 @@
 
 package coaxial
 
-import nettlesome.{Connectable as _, *}
+import nettlesome.*
 import anticipation.*
 
 case class UdpPacket(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)

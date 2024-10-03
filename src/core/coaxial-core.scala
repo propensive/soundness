@@ -47,10 +47,10 @@ extension [SocketType](socket: SocketType)
 extension [EndpointType](endpoint: EndpointType)
   def connect[StateType](initialState: StateType)[MessageType](initialMessage: MessageType = Bytes())
       (handle: (state: StateType) ?=> MessageType => Control[StateType])
-      (using connectable: Connectable[EndpointType], receivable: Receivable[MessageType])
+      (using serviceable: Serviceable[EndpointType], receivable: Receivable[MessageType])
           : StateType =
 
-    val connection = connectable.connect(endpoint)
+    val connection = serviceable.connect(endpoint)
 
     def recur(input: LazyList[Bytes], state: StateType): StateType = input match
       case head #:: tail => handle(using state)(receivable.deserialize(head)) match
@@ -58,17 +58,17 @@ extension [EndpointType](endpoint: EndpointType)
         case Terminate        => state
 
         case Reply(message, state2) =>
-          connectable.transmit(connection, message)
+          serviceable.transmit(connection, message)
           recur(tail, state2.or(state))
 
         case Conclude(message, state2) =>
-          connectable.transmit(connection, message)
+          serviceable.transmit(connection, message)
           state2.or(state)
 
       case _ => state
 
-    recur(connectable.receive(connection), initialState).also:
-      connectable.close(connection)
+    recur(serviceable.receive(connection), initialState).also:
+      serviceable.close(connection)
 
   def transmit[MessageType](message: MessageType)
       (using transmissible: Transmissible[MessageType], addressable: Addressable[EndpointType])

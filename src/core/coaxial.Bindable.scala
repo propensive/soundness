@@ -16,7 +16,7 @@
 
 package coaxial
 
-import nettlesome.{Connectable as _, *}
+import nettlesome.*
 import hypotenuse.*
 import turbulence.*
 import rudiments.*
