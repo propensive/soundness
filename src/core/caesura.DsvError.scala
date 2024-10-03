@@ -9,5 +9,5 @@ object DsvError:
   enum Reason:
     case MisplacedQuote
 
-case class DsvError(format: DsvFormat, reason: DsvError.Reason)
+case class DsvError(format: DsvFormat, reason: DsvError.Reason)(using Diagnostics)
 extends Error(m"Could not parse row data because $reason")
