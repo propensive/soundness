@@ -51,13 +51,6 @@ extension [ValueType](value: ValueType)
 
     writable.write(target, readable.stream(value))
 
-  def appendTo[TargetType](target: TargetType)[ElementType]
-      (using readable:   ValueType is Readable by ElementType,
-             appendable: TargetType is Appendable by ElementType)
-          : Unit =
-
-    appendable.append(target, readable.stream(value))
-
 package stdioSources:
   package virtualMachine:
     given Stdio as textOnly =
