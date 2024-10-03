@@ -16,6 +16,8 @@
 
 package nettlesome
 
+import scala.compiletime.*
+
 import gossamer.*
 import rudiments.*
 import vacuous.*
@@ -25,7 +27,6 @@ import denominative.*
 import anticipation.*
 import contextual.*
 import spectacular.*
-import serpentine.*
 
 object Authority:
   given Authority is Showable = auth =>
@@ -34,35 +35,35 @@ object Authority:
   def parse(value: Text): Authority raises HostnameError raises UrlError =
     import UrlError.Expectation.*
 
-    safely(value.where(_ == '@')) match
-      case Unset => value.where(_ == ':') match
-        case Unset =>
-          Authority(Hostname.parse(value))
-
-        case colon: Ordinal =>
+    safely(value.where(_ == '@')).asMatchable match
+      case Zerary(arobase) => safely(value.where(_ == ':', arobase + 1)).asMatchable match
+        case Zerary(colon) =>
           safely(value.after(colon).s.toInt).match
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
               raise(UrlError(value, colon + 1, PortRange), 0)
 
-            case Unset =>
+            case _ =>
+              raise(UrlError(value, colon + 1, Number), 0)
+          .pipe(Authority(Hostname.parse(value.slice((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _))
+
+        case _ =>
+          Authority(Hostname.parse(value.after(arobase)), value.before(arobase))
+
+      case _ => value.where(_ == ':').asMatchable match
+        case Zerary(colon) =>
+          safely(value.after(colon).s.toInt).match
+            case port: Int if port >= 0 && port <= 65535 => port
+
+            case port: Int =>
+              raise(UrlError(value, colon + 1, PortRange), 0)
+
+            case _ =>
               raise(UrlError(value, colon + 1, Number), 0)
           .pipe(Authority(Hostname.parse(value.before(colon)), Unset, _))
 
-      case arobase: Ordinal => safely(value.where(_ == ':', arobase + 1)) match
-        case Unset =>
-          Authority(Hostname.parse(value.after(arobase)), value.before(arobase))
-
-        case colon: Ordinal =>
-          safely(value.after(colon).s.toInt).match
-            case port: Int if port >= 0 && port <= 65535 => port
-
-            case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange), 0)
-
-            case Unset =>
-              raise(UrlError(value, colon + 1, Number), 0)
-          .pipe(Authority(Hostname.parse(value.slice((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _))
+        case _ =>
+          Authority(Hostname.parse(value))
 
 case class Authority(host: Hostname, userInfo: Optional[Text] = Unset, port: Optional[Int] = Unset)

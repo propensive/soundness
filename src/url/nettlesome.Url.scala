@@ -16,6 +16,8 @@
 
 package nettlesome
 
+import scala.compiletime.*
+
 import serpentine.*
 import gossamer.*
 import rudiments.*
@@ -125,11 +127,8 @@ object Url:
           : Url[SchemeType] =
     import UrlError.Expectation.*
 
-    safely(value.where(_ == ':')) match
-      case Unset =>
-        abort(UrlError(value, Ult.of(value), Colon))
-
-      case colon: Ordinal =>
+    safely(value.where(_ == ':')).asMatchable match
+      case Zerary(colon) =>
         val text = value.before(colon)
         val scheme = Scheme(text)
 
@@ -139,23 +138,28 @@ object Url:
             (authEnd, Authority.parse(value.slice((colon + 3) ~ authEnd.previous)))
           else (colon + 1, Unset)
 
-        safely(value.where(_ == '?', pathStart)) match
-          case Unset => safely(value.where(_ == '#', pathStart)) match
-            case Unset =>
-              Url(scheme, auth, value.from(pathStart), Unset, Unset)
-
-            case hash: Ordinal =>
-              Url(scheme, auth, value.slice(pathStart ~ hash.previous), Unset, value.after(hash))
-
-          case qmark: Ordinal =>
-            safely(value.where(_ == '#', qmark + 1)) match
-              case Unset =>
-                Url(scheme, auth, value.slice(pathStart ~ qmark.previous), value.after(qmark), Unset)
-
-              case hash: Ordinal =>
+        safely(value.where(_ == '?', pathStart)).asMatchable match
+          case Zerary(qmark) =>
+            safely(value.where(_ == '#', qmark + 1)).asMatchable match
+              case Zerary(hash) =>
                 Url
                  (scheme,
                   auth,
                   value.slice(pathStart ~ qmark.previous),
                   value.slice((qmark + 1) ~ hash.previous),
                   value.after(hash))
+              
+              case _ =>
+                Url
+                 (scheme, auth, value.slice(pathStart ~ qmark.previous), value.after(qmark), Unset)
+
+          case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
+            case Zerary(hash) =>
+              Url(scheme, auth, value.slice(pathStart ~ hash.previous), Unset, value.after(hash))
+            
+            case _ =>
+              Url(scheme, auth, value.from(pathStart), Unset, Unset)
+
+      case _ =>
+        abort(UrlError(value, Ult.of(value), Colon))
+

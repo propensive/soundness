@@ -26,7 +26,7 @@ import spectacular.*
 
 import scala.quoted.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
 
