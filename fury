@@ -19,6 +19,6 @@ project hellenism
   module test
     compiler  scala
     sources   src/test
-    include   hellenism/core probably/cli imperial/core
+    include   hellenism/core probably/cli
     coverage  hellenism/core
     main      hellenism.Tests
