@@ -27,7 +27,7 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object Sh:
   enum Context:

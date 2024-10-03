@@ -56,7 +56,6 @@ object Computable:
   given [PathType: SpecificPath] => PathType is Computable =
     proc => SpecificPath(text.compute(proc))
 
-@capability
 trait Computable:
   type Self
   def compute(process: java.lang.Process): Self

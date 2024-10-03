@@ -31,12 +31,14 @@ import turbulence.*
 import vacuous.*
 
 object Process:
-  given [ChunkType, CommandType <: Label, ResultType](using writable: ji.OutputStream is Writable by ChunkType)
+  given [ChunkType, CommandType <: Label, ResultType]
+      (using ji.OutputStream is Writable by ChunkType)
       => Process[CommandType, ResultType] is Appendable by ChunkType as appendable =
 
     (process, stream) => process.stdin(stream)
 
-  given [CommandType <: Label, ResultType](using streamCut: Tactic[StreamError]) => Process[CommandType, ResultType] is Appendable by Text as appendableText =
+  given [CommandType <: Label, ResultType](using Tactic[StreamError])
+      => Process[CommandType, ResultType] is Appendable by Text as appendableText =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:
@@ -50,7 +52,8 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def stderr(): LazyList[Bytes] raises StreamError =
     Readable.inputStream.stream(process.getErrorStream.nn)
 
-  def stdin[ChunkType](stream: LazyList[ChunkType])(using writable: ji.OutputStream is Writable by ChunkType)
+  def stdin[ChunkType](stream: LazyList[ChunkType])
+      (using writable: ji.OutputStream is Writable by ChunkType)
           : Unit =
 
     writable.write(process.getOutputStream.nn, stream)
