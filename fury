@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target coaxial/test
+target coaxial/core
 
 repo propensive/nettlesome
 repo propensive/galilei
