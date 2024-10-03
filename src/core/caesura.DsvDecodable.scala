@@ -43,7 +43,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
           val index = row.columns.let(_.at(label)).or(count)
           val row2 = Row(row.data.drop(index))
           count += context.width
-          focus(_ => CellRef(rowNumber, label)):
+          focus(CellRef(rowNumber, label)):
             typeclass.decode(row2))
 
   given [ValueType: Decoder] => ValueType is DsvDecodable as decoder = _.data.head.decodeAs[ValueType]
