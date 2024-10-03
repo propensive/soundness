@@ -1,0 +1,89 @@
+/*
+    Coaxial, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
+package coaxial
+
+import nettlesome.*
+import turbulence.*
+import rudiments.*
+import vacuous.*
+import anticipation.*
+import contingency.*
+
+import java.net as jn
+import java.io as ji
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
+import Control.*
+
+object Connectable:
+  given domainSocket(using Tactic[StreamError]): Connectable[DomainSocket] with
+    type Output = Bytes
+    case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
+
+    def connect(domainSocket: DomainSocket): Connection =
+      val path = jnf.Path.of(domainSocket.address.s)
+      val address = jn.UnixDomainSocketAddress.of(path)
+      val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+      channel.connect(address)
+      channel.finishConnect()
+      val out = jnc.Channels.newOutputStream(channel).nn
+      val in = jnc.Channels.newInputStream(channel).nn
+
+      Connection(channel, in, out)
+
+    def transmit(connection: Connection, input: Bytes): Unit =
+      connection.out.write(input.mutable(using Unsafe))
+      connection.out.flush()
+
+    def receive(connection: Connection): LazyList[Bytes] =
+      connection.in.stream[Bytes]
+
+    def close(connection: Connection): Unit = connection.channel.close()
+
+  given tcpEndpoint(using Online, Tactic[StreamError]): Connectable[Endpoint[TcpPort]] with
+    type Output = Bytes
+    type Connection = jn.Socket
+
+    def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
+      jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
+
+    def transmit(socket: jn.Socket, input: Bytes): Unit =
+      val out = socket.getOutputStream.nn
+      out.write(input.mutable(using Unsafe))
+      out.flush()
+
+    def close(socket: jn.Socket): Unit = socket.close()
+
+    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+
+  given tcpPort(using Tactic[StreamError]): Connectable[TcpPort] with
+    type Output = Bytes
+    type Connection = jn.Socket
+
+    def connect(port: TcpPort): jn.Socket = jn.Socket(jn.InetAddress.getLocalHost.nn, port.number)
+    def close(socket: jn.Socket): Unit = socket.close()
+    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+
+    def transmit(socket: jn.Socket, input: Bytes): Unit =
+      val out = socket.getOutputStream.nn
+      out.write(input.mutable(using Unsafe))
+      out.flush()
+
+trait Connectable[EndpointType] extends Addressable[EndpointType]:
+  def receive(connection: Connection): LazyList[Bytes]
+  def close(connection: Connection): Unit
