@@ -14,7 +14,7 @@ project caesura
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core turbulence/core wisteria/core spectacular/core hieroglyph/core escritoire/core
+    include   turbulence/core escritoire/core
   
   module test
     compiler  scala
