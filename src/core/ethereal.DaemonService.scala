@@ -19,6 +19,8 @@ package ethereal
 import galilei.*
 import anticipation.*
 import rudiments.*
+import prepositional.*
+import serpentine.*
 import exoskeleton.*
 
 import language.experimental.pureFunctions
@@ -27,7 +29,7 @@ case class DaemonService[BusType <: Matchable]
     (pid:        Pid,
      shutdown:   () => Unit,
      cliInput:   CliInput,
-     script:     Unix.Path,
+     script:     Path on Linux,
      deliver:    BusType => Unit,
      bus:        LazyList[BusType],
      scriptName: Text)

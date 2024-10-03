@@ -16,12 +16,11 @@
 
 package ethereal
 
-import serpentine.*, pathHierarchies.unix
+import language.experimental.pureFunctions
 
-import galilei.*, filesystemOptions.{dereferenceSymlinks, createNonexistent, createNonexistentParents,
-    deleteRecursively}
-
-import anticipation.*, filesystemApi.galileiPath
+import galilei.*
+import serpentine.*
+import anticipation.*
 import rudiments.*, homeDirectories.default
 import vacuous.*
 import contingency.*
@@ -31,8 +30,10 @@ import eucalyptus.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
 import parasite.*
 import profanity.*
+import prepositional.*
 import symbolism.*
 import digression.*
+import nomenclature.*
 import escapade.*
 import fulminate.*
 import gossamer.*
@@ -45,7 +46,13 @@ import spectacular.*
 
 import scala.compiletime.*
 
-import language.experimental.pureFunctions
+import pathNavigation.linux
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
 
 given Message transcribes DaemonLogEvent = _.communicate
 
@@ -76,27 +83,33 @@ def cliService[BusType <: Matchable](using executive: Executive)
     mend:
       case SystemPropertyError(_) =>
         val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
-          safely(jarFile.decodeAs[Unix.Path]).or(workingDirectory + jarFile.decodeAs[Unix.Relative])
+          safely(jarFile.decodeAs[Path on Linux]).or:
+            val work: Path on Linux = workingDirectory
+            work + jarFile.decodeAs[Relative by Name[Linux]]
 
         safely(Properties.build.executable[Text]()) match
           case Unset =>
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
             Out.println(e"To build an Ethereal executable, run:")
-            val relativeJar = jarFile.relativeTo(workingDirectory)
+            val work: Path on Linux = workingDirectory
+            val relativeJar: Relative by Name[Linux] = jarFile.relativeTo(work)
             Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
             ExitStatus.Fail(1).terminate()
 
           case destination: Text =>
-            val path = safely(destination.decodeAs[Unix.Path]).or:
-              workingDirectory + destination.decodeAs[Unix.Relative]
+            val path = safely(destination.decodeAs[Path on Linux]).or:
+              val work: Path on Linux = workingDirectory
+              work + destination.decodeAs[Relative by Name[Linux]]
 
-            val file = path.as[File]
-            val buildIdPath = Classpath / p"build.id"
-            val buildId = if buildIdPath.exists() then buildIdPath.read[Text].trim else t"0"
-            val prefix = (Classpath / p"ethereal" / p"prefix").read[Text]
-            prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(file)
-            jarFile.as[File].stream[Bytes].appendTo(file)
-            file.executable() = true
+            val buildIdPath: Path on Classpath = Classpath / n"build.id"
+            val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
+            val prefix = (Classpath / n"ethereal" / n"prefix").read[Text]
+            path.open(prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(_))
+            
+            jarFile.open: jarFile =>
+              Eof(path).open(jarFile.stream[Bytes].writeTo(_))
+
+            path.executable() = true
 
             Out.println(t"Built executable file $destination")
 
@@ -104,9 +117,11 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
     .within(Properties.ethereal.name[Text]())
 
-  val baseDir: Directory = (Xdg.runtimeDir.or(Xdg.stateHome) / Name(name)).as[Directory]
-  val portFile: Path = baseDir / p"port"
-  val pidFile: Path = baseDir / p"pid"
+  val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
+  val stateHome: Path on Linux = Xdg.stateHome
+  val baseDir: Path on Linux = runtimeDir.or(stateHome) / Name(name)
+  val portFile: Path on Linux = baseDir / n"port"
+  val pidFile: Path on Linux = baseDir / n"pid"
   val clients: Mutex[Map[Pid, ClientConnection[BusType]]] = Mutex(Map())
   val terminatePid: Promise[Pid] = Promise()
 
@@ -233,19 +248,17 @@ def cliService[BusType <: Matchable](using executive: Executive)
              (pid,
               () => shutdown(pid),
               shellInput,
-              scriptName.decodeAs[Unix.Path],
+              scriptName.decodeAs[Path on Linux],
               deliver(pid, _),
               connection.bus.stream,
               name)
-
-          val workingDirectory: WorkingDirectory = () => directory
 
           Log.fine(DaemonLogEvent.NewCli)
 
           try
             val cli: executive.CliType =
               executive.cli
-               (textArguments, environment, workingDirectory, stdio, connection.signals)
+               (textArguments, environment, () => directory, stdio, connection.signals)
 
             val result = block(using service)(using cli)
             val exitStatus: ExitStatus = executive.process(cli)(result)
@@ -278,14 +291,15 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath / p"build.id")().read[Text].trim.decodeAs[Int]).or(0)
+      val buildId = safely((Classpath / n"build.id").read[Text].trim.decodeAs[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
-      t"$port $buildId $stderr".writeTo(portFile.as[File])
-      OsProcess().pid.value.show.writeTo(pidFile.as[File])
+      portFile.open(t"$port $buildId $stderr".writeTo(_))
+      val pidValue = OsProcess().pid.value.show
+      pidFile.open(pidValue.writeTo(_))
 
       task(t"pid-watcher"):
         safely:
-          List(portFile, pidFile).watch: watcher =>
+          List[Path on Linux](portFile, pidFile).watch: watcher =>
             watcher.stream.each:
               case Delete(_, _) | Modify(_, _) =>
                 Log.warn(DaemonLogEvent.Termination)

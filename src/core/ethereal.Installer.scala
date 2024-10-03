@@ -16,22 +16,34 @@
 
 package ethereal
 
-import anticipation.*, filesystemApi.galileiPath
-import galilei.*, filesystemOptions.{createNonexistent, dereferenceSymlinks, overwritePreexisting,
-    deleteRecursively, createNonexistentParents}
-import serpentine.*, pathHierarchies.unix
+import anticipation.*
+import galilei.*
+
+import serpentine.*
 import rudiments.*
 import vacuous.*
 import guillotine.*
 import hypotenuse.*
 import gossamer.*
+import nomenclature.*
 import exoskeleton.*
 import eucalyptus.*
 import turbulence.*
 import contingency.*
 import spectacular.*
+import prepositional.*
 import ambience.*
 import fulminate.*
+
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.deleteRecursively.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
+
+import pathNavigation.linux
 
 object Installer:
   given Realm = realm"ethereal"
@@ -49,30 +61,30 @@ object Installer:
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
       (using Environment, HomeDirectory, SystemProperties)
-          : List[Directory] logs DaemonLogEvent raises InstallError =
+          : List[Path on Linux] logs DaemonLogEvent raises InstallError =
     tend:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
       case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
-      case IoError(_)          => InstallError(InstallError.Reason.Io)
+      case IoError(_, _, _)    => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
     .within:
-      val paths: List[Unix.Path] = Environment.path
+      val paths: List[Path on Linux] = Environment.path
 
-      val preferences: List[Unix.Path] = List
-       (Xdg.bin[Unix.Path],
-        % / p"usr" / p"local" / p"bin",
-        % / p"usr" / p"bin",
-        % / p"usr" / p"local" / p"sbin",
-        % / p"opt" / p"bin",
-        % / p"bin",
-        % / p"bin")
+      val preferences: List[Path on Linux] = List
+       (Xdg.bin[Path on Linux],
+        % / n"usr" / n"local" / n"bin",
+        % / n"usr" / n"bin",
+        % / n"usr" / n"local" / n"sbin",
+        % / n"opt" / n"bin",
+        % / n"bin",
+        % / n"bin")
 
-      paths.filter(_.exists()).map(_.as[Directory]).filter(_.writable()).sortBy: directory =>
-        preferences.indexOf(directory.path) match
+      paths.filter(_.exists()).filter(_.writable()).sortBy: directory =>
+        preferences.indexOf(directory) match
           case -1    => Int.MaxValue
           case index => index
 
-
-  def install(force: Boolean = false, target: Optional[Unix.Path] = Unset)
+  def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
       (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
       (using Effectful, Diagnostics)
         : Result logs DaemonLogEvent raises InstallError =
@@ -83,36 +95,40 @@ object Installer:
       case PathError(_, _)        => InstallError(InstallError.Reason.Environment)
       case SystemPropertyError(_) => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _)      => InstallError(InstallError.Reason.Environment)
-      case IoError(_)             => InstallError(InstallError.Reason.Io)
+      case IoError(_, _, _)       => InstallError(InstallError.Reason.Io)
+      case NameError(_, _, _)     => InstallError(InstallError.Reason.Io)
       case ExecError(_, _, _)     => InstallError(InstallError.Reason.Io)
       case StreamError(_)         => InstallError(InstallError.Reason.Io)
     .within:
       val command: Text = service.scriptName
       val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
-      if safely(scriptPath.decodeAs[Unix.Path]) == service.script && !force
-      then Result.AlreadyOnPath(command, service.script.show)
+      if safely(scriptPath.decodeAs[Path on Linux]) == service.script && !force
+      then Result.AlreadyOnPath(command, service.script.text)
       else
         val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
         val jarSize: ByteSize = ByteSize(Properties.ethereal.jarSize[Int]())
-        val scriptFile: File = service.script.as[File]
+        val scriptFile: Path on Linux = service.script
         val fileSize = scriptFile.size()
         val prefixSize = fileSize - payloadSize - jarSize
-        val stream = scriptFile.stream[Bytes]
-        val installDirectory = target.let(_.as[Directory]).or(candidateTargets().prim)
+        val installDirectory: Path on Linux = target.or(candidateTargets().prim).or:
+          abort(InstallError(InstallError.Reason.Environment))
 
-        val installFile = installDirectory.let: directory =>
-          (directory / Name(command)).make[File]()
+        val installFile: Optional[Path on Linux] = installDirectory.let: directory =>
+          (directory / Name(command)).create[File]().on[Linux]
 
         installFile.let: file =>
           val filename: Text = file.inspect
           Log.info(DaemonLogEvent.WriteExecutable(filename))
 
-          if prefixSize > 0.b
-          then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
-          else stream.writeTo(file)
+          scriptFile.open: file =>
+            val stream = file.stream[Bytes]
+
+            if prefixSize > 0.b
+            then (stream.take(prefixSize) ++ stream.discard(fileSize - jarSize)).writeTo(file)
+            else stream.writeTo(file)
 
           file.executable() = true
-          Result.Installed(command, file.path.show)
+          Result.Installed(command, file.text)
         .or:
           Result.PathNotWritable
