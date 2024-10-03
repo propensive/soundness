@@ -12,7 +12,7 @@ target tarantula/test
 project tarantula
   module core
     sources  src/core
-    include  jacinta/core telekinesis/client guillotine/core cataclysm/core honeycomb/core hallucination/core diuretic/core
+    include  jacinta/core telekinesis/core guillotine/core cataclysm/core honeycomb/core hallucination/core diuretic/core
   
   module test
     compiler  scala
