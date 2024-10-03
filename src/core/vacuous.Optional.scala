@@ -25,7 +25,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 
-import exceptionDiagnostics.stackTraces
+import errorDiagnostics.stackTraces
 
 object Unset:
   override def toString(): String = "∅"
