@@ -66,7 +66,6 @@ object Decoder:
   //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Tactic[EnumCaseError]): Decoder[EnumType] = text =>
   //  Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
 
-@capability
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
   def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
   def decode(text: Text): ValueType

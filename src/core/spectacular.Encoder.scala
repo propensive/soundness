@@ -36,7 +36,6 @@ object Encoder:
   given Encoder[Pid] as pid = long.contramap(_.value)
   given Encoder[Fqcn] as fqcn = _.text
 
-@capability
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
   def unapply(value: ValueType): Text = encode(value)
   def encode(value: ValueType): Text
