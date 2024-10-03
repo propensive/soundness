@@ -25,7 +25,7 @@ import contingency.*
 import gossamer.*
 import spectacular.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object XmlInterpolation:
 
