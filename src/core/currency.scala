@@ -21,6 +21,7 @@ import anticipation.*
 import hieroglyph.*, textMetrics.uniform
 import spectacular.*
 import hypotenuse.*
+import prepositional.*
 import rudiments.*
 import symbolism.*
 
