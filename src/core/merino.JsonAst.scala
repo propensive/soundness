@@ -21,146 +21,60 @@ import annotation.*
 import rudiments.*
 import contingency.*
 import anticipation.*
-import fulminate.*
 import prepositional.*
 import turbulence.*
 import scala.collection.mutable.ArrayBuffer
 
-//import language.experimental.captureChecking
-
-object AsciiByte:
-  inline final val Tab:          9   = 9   // '\t'
-  inline final val Newline:      10  = 10  // '\n'
-  inline final val Return:       13  = 13  // '\r'
-  inline final val Space:        32  = 32  // ' '
-  inline final val Comma:        44  = 44  // ','
-  inline final val Quote:        34  = 34  // '"'
-  inline final val Minus:        45  = 45  // '-'
-  inline final val Plus:         43  = 43  // '+'
-  inline final val Slash:        47  = 47  // '/'
-  inline final val Period:       46  = 46  // '.'
-  inline final val Num0:         48  = 48  //'0'
-  inline final val Num1:         49  = 49  //'1'
-  inline final val Num2:         50  = 50  //'2'
-  inline final val Num3:         51  = 51  //'3'
-  inline final val Num4:         52  = 52  //'4'
-  inline final val Num5:         53  = 53  //'5'
-  inline final val Num6:         54  = 54  //'6'
-  inline final val Num7:         55  = 55  //'7'
-  inline final val Num8:         56  = 56  //'8'
-  inline final val Num9:         57  = 57  //'9'
-  inline final val Colon:        58  = 58  // ':'
-  inline final val UpperA:       65  = 65  // 'A'
-  inline final val UpperB:       66  = 66  // 'B'
-  inline final val UpperC:       67  = 67  // 'C'
-  inline final val UpperD:       68  = 68  // 'D'
-  inline final val UpperE:       69  = 69  // 'E'
-  inline final val UpperF:       70  = 70  // 'F'
-  inline final val OpenBracket:  91  = 91  // '['
-  inline final val CloseBracket: 93  = 93  // ']'
-  inline final val Backslash:    92  = 92  // '\\'
-  inline final val LowerA:       97  = 97  // 'a'
-  inline final val LowerB:       98  = 98  // 'b'
-  inline final val LowerC:       99  = 99  // 'c'
-  inline final val LowerD:       100 = 100 // 'd'
-  inline final val LowerE:       101 = 101 // 'e'
-  inline final val LowerF:       102 = 102 // 'f'
-  inline final val LowerL:       108 = 108 // 'l'
-  inline final val LowerN:       110 = 110 // 'n'
-  inline final val LowerR:       114 = 114 // 'r'
-  inline final val LowerS:       115 = 115 // 's'
-  inline final val LowerT:       116 = 116 // 't'
-  inline final val LowerU:       117 = 117 // 'u'
-  inline final val OpenBrace:    123 = 123 // '{'
-  inline final val CloseBrace:   125 = 125 // '}'
-
-import AsciiByte.*
-
-object JsonParseError:
-  enum Reason:
-    case EmptyInput
-    case UnexpectedChar(found: Char)
-    case ExpectedTrue
-    case ExpectedFalse
-    case ExpectedNull
-    case ExpectedSomeValue(char: Char)
-    case ExpectedColon(found: Char)
-    case InvalidWhitespace
-    case ExpectedString(found: Char)
-    case ExpectedHexDigit(found: Char)
-    case PrematureEnd
-    case NumberHasLeadingZero
-    case SpuriousContent(found: Char)
-    case LeadingDecimalPoint
-    case NotEscaped(char: Char)
-    case IncorrectEscape(char: Char)
-    case MultipleDecimalPoints
-    case ExpectedDigit(found: Char)
-
-  given Reason is Communicable =
-    case Reason.EmptyInput =>
-      m"the input was empty"
-
-    case Reason.UnexpectedChar(found) =>
-      m"the character $found was not expected"
-
-    case Reason.ExpectedTrue =>
-      m"true was expected"
-
-    case Reason.ExpectedFalse =>
-      m"false was expected"
-
-    case Reason.ExpectedNull =>
-      m"null was expected"
-
-    case Reason.ExpectedSomeValue(char) =>
-      m"a value was expected but instead found $char"
-
-    case Reason.ExpectedColon(found) =>
-      m"a colon was expected but instead found $found"
-
-    case Reason.InvalidWhitespace =>
-      m"invalid whitespace was found"
-
-    case Reason.ExpectedString(found) =>
-      m"expected a string but instead found $found"
-
-    case Reason.ExpectedHexDigit(found) =>
-      m"expected a hexadecimal digit"
-
-    case Reason.PrematureEnd =>
-      m"the stream was ended prematurely"
-
-    case Reason.NumberHasLeadingZero =>
-      m"a number cannot start with a zero except when followed by a decimal point"
-
-    case Reason.SpuriousContent(found) =>
-      m"$found was found after the full JSON value was read"
-
-    case Reason.LeadingDecimalPoint =>
-      m"a number cannot start with a decimal point"
-
-    case Reason.NotEscaped(char) =>
-      m"the character $char must be escaped with a backslash"
-
-    case Reason.IncorrectEscape(char) =>
-      m"the character $char was escaped with a backslash unnecessarily"
-
-    case Reason.MultipleDecimalPoints =>
-      m"the number cannot contain more than one decimal point"
-
-    case Reason.ExpectedDigit(found) =>
-      m"expected a digit but instead found $found"
-
-
+import JsonAst.AsciiByte.*
 import JsonParseError.Reason
 
-case class JsonParseError(line: Int, col: Int, reason: Reason)(using Diagnostics)
-extends Error(m"Could not parse JSON because $reason at ${line + 1}:${col + 1}")
-
-export JsonAst.RawJson as JsonAst
-
 object JsonAst:
+  object AsciiByte:
+    inline final val Tab:          9   = 9   // '\t'
+    inline final val Newline:      10  = 10  // '\n'
+    inline final val Return:       13  = 13  // '\r'
+    inline final val Space:        32  = 32  // ' '
+    inline final val Comma:        44  = 44  // ','
+    inline final val Quote:        34  = 34  // '"'
+    inline final val Minus:        45  = 45  // '-'
+    inline final val Plus:         43  = 43  // '+'
+    inline final val Slash:        47  = 47  // '/'
+    inline final val Period:       46  = 46  // '.'
+    inline final val Num0:         48  = 48  //'0'
+    inline final val Num1:         49  = 49  //'1'
+    inline final val Num2:         50  = 50  //'2'
+    inline final val Num3:         51  = 51  //'3'
+    inline final val Num4:         52  = 52  //'4'
+    inline final val Num5:         53  = 53  //'5'
+    inline final val Num6:         54  = 54  //'6'
+    inline final val Num7:         55  = 55  //'7'
+    inline final val Num8:         56  = 56  //'8'
+    inline final val Num9:         57  = 57  //'9'
+    inline final val Colon:        58  = 58  // ':'
+    inline final val UpperA:       65  = 65  // 'A'
+    inline final val UpperB:       66  = 66  // 'B'
+    inline final val UpperC:       67  = 67  // 'C'
+    inline final val UpperD:       68  = 68  // 'D'
+    inline final val UpperE:       69  = 69  // 'E'
+    inline final val UpperF:       70  = 70  // 'F'
+    inline final val OpenBracket:  91  = 91  // '['
+    inline final val CloseBracket: 93  = 93  // ']'
+    inline final val Backslash:    92  = 92  // '\\'
+    inline final val LowerA:       97  = 97  // 'a'
+    inline final val LowerB:       98  = 98  // 'b'
+    inline final val LowerC:       99  = 99  // 'c'
+    inline final val LowerD:       100 = 100 // 'd'
+    inline final val LowerE:       101 = 101 // 'e'
+    inline final val LowerF:       102 = 102 // 'f'
+    inline final val LowerL:       108 = 108 // 'l'
+    inline final val LowerN:       110 = 110 // 'n'
+    inline final val LowerR:       114 = 114 // 'r'
+    inline final val LowerS:       115 = 115 // 's'
+    inline final val LowerT:       116 = 116 // 't'
+    inline final val LowerU:       117 = 117 // 'u'
+    inline final val OpenBrace:    123 = 123 // '{'
+    inline final val CloseBrace:   125 = 125 // '}'
+
   opaque type RawJson =
       Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
 
