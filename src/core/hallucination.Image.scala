@@ -21,7 +21,6 @@ import turbulence.*
 import rudiments.*
 import prepositional.*
 import anticipation.*
-import gesticulate.*
 import spectacular.*
 import iridescence.*
 import gossamer.*
@@ -30,42 +29,7 @@ import java.awt.image as jai
 import java.awt as ja
 import javax.imageio as ji
 
-abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
-  inline def codec: ImageCodec[ImageFormatType] = this
-  protected def mediaType: MediaType
-  protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
-  protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
-
-  given (Image in ImageFormatType) is GenericHttpResponseStream as response:
-    def mediaType = mediaType.show
-    def content(image: Image in ImageFormatType): LazyList[Bytes] = image.serialize(using codec)
-
-  def read[InputType: Readable by Bytes](inputType: InputType): Image in ImageFormatType =
-    reader.synchronized:
-      reader.setInput(ji.ImageIO.createImageInputStream(inputType.read[Bytes].javaInputStream).nn)
-
-      (new Image(reader.read(0).nn) { type Format = ImageFormatType }).also:
-        reader.dispose()
-
-erased trait ImageFormat
-erased trait Bmp extends ImageFormat
-erased trait Jpeg extends ImageFormat
-erased trait Gif extends ImageFormat
-erased trait Png extends ImageFormat
-
-object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
-  def mediaType = media"image/jpeg"
-
-object Bmp extends ImageCodec[Bmp]("BMP".tt):
-  def mediaType = media"image/bmp"
-
-object Gif extends ImageCodec[Gif]("GIF".tt):
-  def mediaType = media"image/gif"
-
-object Png extends ImageCodec[Png]("PNG".tt):
-  def mediaType = media"image/png"
-
-case class Image(private[hallucination] val image: jai.BufferedImage):
+open case class Image(private[hallucination] val image: jai.BufferedImage):
   type Format <: ImageFormat
   def width: Int = image.getWidth
   def height: Int = image.getHeight
