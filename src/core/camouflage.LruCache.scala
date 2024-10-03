@@ -21,8 +21,6 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-//import scala.language.experimental.captureChecking
-
 import java.util.concurrent.atomic as juca
 
 class LruCache[KeyType, ValueType](maxSize: Int):
