@@ -15,8 +15,8 @@ import scala.compiletime.*
 object Path:
   given Encoder[Path] as encoder = _.text
   given [PlatformType: Navigable] => Decoder[Path on PlatformType] as decoder = Path.parse(_)
-  given Path is Showable as showable = _.text
-  given Path is GenericPath = _.text
+  given [PlatformType] => (Path on PlatformType) is Showable as showable = _.text
+  given [PlatformType] => (Path on PlatformType) is GenericPath = _.text
   
   given [PlatformType: Navigable] => Path on PlatformType is SpecificPath =
     _.decodeAs[Path on PlatformType]
@@ -125,7 +125,7 @@ extends Pathlike:
       false
 
   override def hashCode: Int =
-    separator.hashCode + textRoot.toString.hashCode*31 + textDescent.hashCode
+    separator.hashCode + textRoot.toString.hashCode*31 + caseSensitivity.hash(textDescent)
 
   def parent: Optional[Path on Platform] =
     if textDescent == Nil then Unset

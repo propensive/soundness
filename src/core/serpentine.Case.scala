@@ -20,3 +20,7 @@ enum Case:
     case head :: tail => right match
       case Nil            => false
       case head2 :: tail2 => equal(head, head2) && equal(tail, tail2)
+
+  def hash(descent: List[Text]): Int = descent match
+    case Nil          => 1
+    case head :: tail => hash(tail)*31 + apply(head).hashCode

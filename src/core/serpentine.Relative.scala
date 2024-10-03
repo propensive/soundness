@@ -22,6 +22,13 @@ object Relative:
        .reverse
        .join(RootType.ascent*relative.ascent, RootType.separator, t"")
 
+  given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
+    _.encode
+
+  given [ElementType](using Navigable by ElementType)
+      => Decoder[Relative by ElementType] as decoder =
+    parse(_)
+
   def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
           : Relative by ElementType =
     def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
