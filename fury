@@ -3,7 +3,6 @@
 
 repo propensive/digression
 repo propensive/serpentine
-repo propensive/imperial
 repo propensive/probably
 repo propensive/guillotine
 repo propensive/larceny
@@ -21,5 +20,5 @@ project galilei
   module test
     compiler  scala
     sources   src/test
-    include   galilei/core probably/cli imperial/core larceny/plugin aviation/core diuretic/core
+    include   galilei/core probably/cli larceny/plugin aviation/core diuretic/core
     main      galilei.Tests
