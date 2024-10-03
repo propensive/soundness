@@ -16,7 +16,7 @@
 
 package soundness
 
-export turbulence.{Aggregable, Appendable, Compression, CompressionAlgorithm, Err, Spool, Gzip, In, Io,
+export turbulence.{Aggregable, Appendable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io,
     LazyListInputStream, LazyListOutputStream, Line, LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable,
     SimpleAppendable, SimpleWritable, Stdio, StreamError, Tap, Writable, Zlib, stream, read, writeTo, appendTo,
     deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer, pulsar,
