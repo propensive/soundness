@@ -14,7 +14,7 @@ project hallucination
   module core
     compiler  scala
     sources   src/core
-    include   turbulence/core escapade/core iridescence/core gesticulate/core
+    include   escapade/core gesticulate/core
 
   module test
     compiler  scala
