@@ -37,10 +37,10 @@ object Teletype:
     type Result = Teletype
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
-  given (using Stdio) => SimpleAppendable[Out.type, Teletype] as appendableOut =
+  given (using Stdio) => SimpleWritable[Out.type, Teletype] as writableOut =
     (_, output) => Out.print(output)
 
-  given (using Stdio) => SimpleAppendable[Err.type, Teletype] as appendableErr =
+  given (using Stdio) => SimpleWritable[Err.type, Teletype] as writableErr =
     (_, output) => Err.print(output)
 
   given Teletype is Textual:
