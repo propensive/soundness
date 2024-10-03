@@ -60,7 +60,7 @@ object Html extends Node["html"]:
 object TagType:
   given TagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
-case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
+open case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
     (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
 extends Node[NameType], Dynamic:
   def attributes: Attributes = Map()
