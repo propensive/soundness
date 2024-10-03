@@ -25,7 +25,7 @@ import contextual.*
 import fulminate.*
 import rudiments.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
   def initial: Option[Rgb24] = None
