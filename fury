@@ -7,7 +7,7 @@ target scintillate/test
 project scintillate
   module server
     sources  src/server
-    include  telekinesis/client
+    include  telekinesis/core
 
   module servlet
     sources  src/servlet
