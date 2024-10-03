@@ -17,8 +17,8 @@ project serpentine
   module test
     compiler  scala
     sources   src/test
-    include   serpentine/core probably/cli larceny/plugin
-    main      galilei.Tests
+    include   serpentine/core probably/cli larceny/plugin galilei/core
+    main      serpentine.Tests
   
   module bench
     compiler   scala
