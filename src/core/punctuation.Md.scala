@@ -25,7 +25,7 @@ import anticipation.*
 
 import scala.compiletime.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 type Md = Markdown[Markdown.Ast.Block]
 
