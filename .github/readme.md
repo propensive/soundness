@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/denominative/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/denominative/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Denominative
@@ -17,17 +17,9 @@ ambitious goal of avoiding off-by-one errors, without compromising performance.
 - conversions between `Ordinal`s and `Int`s may be made only by specifying zero- or one-indexing
 - introduces a distinct namespace for the first ten ordinals
 
-## Availability Plan
+## Availability
 
-Denominative has not yet been published. The medium-term plan is to build Denominative
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Denominative.
 
-Subsequently, Denominative will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -131,7 +123,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Denominative is designed to be _small_. Its entire source code currently consists
-of 148 lines of code.
+of 154 lines of code.
 
 ## Building
 
