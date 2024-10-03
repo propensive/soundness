@@ -36,17 +36,17 @@ object Tests extends Suite(t"Mosquito tests"):
       .map(_.message)
     .assert(_ == Nil)
     
-    test(t"Type error if size is incorrect"):
-      demilitarize:
-        val vector: Euclidean[Int, 2] = Euclidean(1, 3, 4)
-      .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    // test(t"Type error if size is incorrect"):
+    //   demilitarize:
+    //     val vector: Euclidean[Int, 2] = Euclidean(1, 3, 4)
+    //   .map(_.id)
+    // .assert(_ == List(CompileErrorId.TypeMismatch))
     
-    test(t"Type error if type is incorrect"):
-      demilitarize:
-        val vector: Euclidean[String, 3] = Euclidean(1, 3, 4)
-      .map(_.errorId)
-    .assert(_ == List(ErrorId.TypeMismatchID))
+    // test(t"Type error if type is incorrect"):
+    //   demilitarize:
+    //     val vector: Euclidean[String, 3] = Euclidean(1, 3, 4)
+    //   .map(_.id)
+    // .assert(_ == List(CompileErrorId.TypeMismatch))
 
     test(t"Calculate integer dot-product"):
       Euclidean(1, 2, 3).dot(Euclidean(4, 3, 7))

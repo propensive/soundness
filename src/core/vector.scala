@@ -21,6 +21,7 @@ import anticipation.*
 import spectacular.*
 import symbolism.*
 import gossamer.*
+import prepositional.*
 import hieroglyph.*
 import vacuous.*
 
@@ -40,7 +41,8 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   override def toString(): String = t"[${elements.inspect}]".s
 
   @targetName("scalarMul")
-  def * [RightType](right: RightType)(using multiplication: ElementType is Multiplicable[RightType])
+  def * [RightType](right: RightType)
+      (using multiplication: ElementType is Multiplicable by RightType)
       (using ClassTag[multiplication.Result])
           : Matrix[multiplication.Result, RowsType, ColumnsType] =
 
@@ -51,7 +53,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns, elements2)
 
   @targetName("scalarDiv")
-  def / [RightType](right: RightType)(using div: ElementType is Divisible[RightType])
+  def / [RightType](right: RightType)(using div: ElementType is Divisible by RightType)
       (using ClassTag[div.Result])
           : Matrix[div.Result, RowsType, ColumnsType] =
 
@@ -62,9 +64,10 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns, elements2)
 
   @targetName("mul")
-  def * [RightType, RightColumnsType <: Int: ValueOf](right: Matrix[RightType, ColumnsType, RightColumnsType])
-      (using multiplication: ElementType is Multiplicable[RightType],
-             addition:       multiplication.Result is Addable[multiplication.Result],
+  def * [RightType, RightColumnsType <: Int: ValueOf]
+      (right: Matrix[RightType, ColumnsType, RightColumnsType])
+      (using multiplication: ElementType is Multiplicable by RightType,
+             addition:       multiplication.Result is Addable by multiplication.Result,
              equality:       addition.Result =:= multiplication.Result,
              rowValue:       ValueOf[RowsType],
              columnValue:    ValueOf[ColumnsType],
@@ -99,7 +102,9 @@ object Matrix:
       .join(before, t" ", after)
     .join(t"\n")
 
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased DummyImplicit)[ElementType]
+  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf]
+      (using erased DummyImplicit)
+      [ElementType]
       (rows: Tuple)
       (using Tuple.Union[Tuple.Fold[
                rows.type,
@@ -114,14 +119,14 @@ object Matrix:
     val rowCount: Int = valueOf[Rows]
     val columnCount = valueOf[Columns]
 
-    new Matrix[ElementType, Rows, Columns](rowCount, columnCount,
+    new Matrix[ElementType, Rows, Columns]
+     (rowCount,
+      columnCount,
       IArray.create[ElementType](columnCount*rowCount): array =>
         for row <- 0 until rowCount; column <- 0 until columnCount
         do (rows.productElement(row).asMatchable: @unchecked) match
           case tuple: Tuple =>
-            array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType]
-    )
-
+            array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType])
 
 object Mosquito:
   opaque type Euclidean[ValueType, SizeType <: Int] = Tuple
@@ -148,9 +153,9 @@ object Mosquito:
 
   extension [LeftType](left: Euclidean[LeftType, 3])
     def cross[RightType](right: Euclidean[RightType, 3])
-        (using multiplication: LeftType is Multiplicable[RightType],
-               addition:       multiplication.Result is Addable[multiplication.Result],
-               subtraction:    multiplication.Result is Subtractable[multiplication.Result])
+        (using multiplication: LeftType is Multiplicable by RightType,
+               addition:       multiplication.Result is Addable by multiplication.Result,
+               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
             : Euclidean[addition.Result, 3] =
 
       (left(1)*right(2) - left(2)*right(1)) *:
@@ -172,7 +177,8 @@ object Mosquito:
       recur(left)
 
     @targetName("add")
-    def + [RightType](right: Euclidean[RightType, SizeType])(using addition: LeftType is Addable[RightType])
+    def + [RightType](right: Euclidean[RightType, SizeType])
+        (using addition: LeftType is Addable by RightType)
             : Euclidean[addition.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
@@ -189,7 +195,7 @@ object Mosquito:
       recur(left, right)
 
     @targetName("sub")
-    def - [RightType](right: Euclidean[RightType, SizeType])(using sub: LeftType is Subtractable[RightType])
+    def - [RightType](right: Euclidean[RightType, SizeType])(using sub: LeftType is Subtractable by RightType)
             : Euclidean[sub.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
@@ -204,21 +210,21 @@ object Mosquito:
       recur(left, right)
 
     @targetName("scalarMul")
-    def * [RightType](right: RightType)(using multiplication: LeftType is Multiplicable[RightType])
+    def * [RightType](right: RightType)(using multiplication: LeftType is Multiplicable by RightType)
             : Euclidean[multiplication.Result, SizeType] =
 
       map(_*right)
 
     @targetName("scalarDiv")
-    def * [RightType](right: RightType)(using div: LeftType is Divisible[RightType])
+    def * [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
             : Euclidean[div.Result, SizeType] =
 
       map(_/right)
 
     def dot[RightType](right: Euclidean[RightType, SizeType])
-        (using multiply: LeftType is Multiplicable[RightType],
+        (using multiply: LeftType is Multiplicable by RightType,
                size:     ValueOf[SizeType],
-               addition:      multiply.Result is Addable[multiply.Result],
+               addition:      multiply.Result is Addable by multiply.Result,
                equality: addition.Result =:= multiply.Result)
             : multiply.Result =
 
