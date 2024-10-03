@@ -50,7 +50,7 @@ package charEncoders:
   given CharEncoder as iso88591 = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strict(using charDecode: Tactic[CharDecodeError]): (TextSanitizer^{charDecode}) =
+  given strict(using charDecode: Tactic[CharDecodeError]): TextSanitizer =
     new TextSanitizer:
       def sanitize(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding), '?')
 
