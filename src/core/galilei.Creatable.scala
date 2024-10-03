@@ -100,7 +100,7 @@ object Creatable:
           overwritePreexisting(path):
             tend:
               case ExecError(_, _, _) =>
-                import exceptionDiagnostics.stackTraces
+                import errorDiagnostics.stackTraces
                 IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
             .within:
               sh"mkfifo $path"() match
