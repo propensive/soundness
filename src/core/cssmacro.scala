@@ -19,7 +19,6 @@ package cataclysm
 import rudiments.*
 import fulminate.*
 import gossamer.*
-import serpentine.*
 import anticipation.*
 import spectacular.*
 
@@ -130,7 +129,7 @@ object PropertyDef:
   erased given [PathType](using erased PathType is GenericPath)
       => ("backgroundImage" is PropertyDef[PathType]) as backgroundImage3 = ###
 
-  erased given ("backgroundImage" is PropertyDef[SimplePath]) as backgroundImage4 = ###
+  //erased given ("backgroundImage" is PropertyDef[SimplePath]) as backgroundImage4 = ###
   erased given ("backgroundOrigin" is PropertyDef[Text]) as backgroundOrigin = ###
   erased given ("backgroundPosition" is PropertyDef[Text]) as backgroundPosition = ###
   erased given ("backgroundPosition" is PropertyDef[Dimension]) as backgroundPosition2 = ###
@@ -449,7 +448,7 @@ object ShowProperty:
     if f.contains(t" ") then t"'$f'" else f
   .join(t", ")
 
-  given ShowProperty[SimplePath] = path => t"url('${path}')"
+  //given ShowProperty[SimplePath] = path => t"url('${path}')"
 
   given [PathType: GenericPath]: ShowProperty[PathType] =
     path => t"url('${path.pathText}')"
