@@ -30,7 +30,7 @@ import scala.io.*
 import language.dynamics
 //import language.experimental.captureChecking
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 object Media:
   given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
