@@ -49,12 +49,16 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given Int is Debufferable = Debufferable(4)(B32(_, _).s32.int)
   given Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Debufferable =
-    new:
-      def debuffer(buffer: Buffer): DerivationType =
-        construct { [FieldType] => context => context.debuffer(buffer) }
+  class Join[DerivationType <: Product: ProductReflection]
+      (val width: Int, debuffer0: Buffer => DerivationType)
+  extends Debufferable:
+    type Self = DerivationType
+    def debuffer(buffer: Buffer): DerivationType = debuffer0(buffer)
 
-      def width = contexts { [FieldType] => _.width }.sum
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Debufferable =
+    Join[DerivationType]
+     (contexts { [FieldType] => _.width }.sum,
+      buffer => construct { [FieldType] => context => context.debuffer(buffer) })
 
 trait Debufferable:
   type Self
