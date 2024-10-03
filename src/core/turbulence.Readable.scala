@@ -108,7 +108,6 @@ object Readable:
 
     LazyList.defer(recur(0))
 
-@capability
 trait Readable:
   type Self
   type Operand

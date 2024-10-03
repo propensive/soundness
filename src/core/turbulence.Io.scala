@@ -19,9 +19,7 @@ package turbulence
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
 
-@capability
 trait Io:
   def write(bytes: Bytes): Unit
   def print(text: Text): Unit

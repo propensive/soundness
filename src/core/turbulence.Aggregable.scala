@@ -45,7 +45,6 @@ object Aggregable:
       => LazyList[ElementType2] is Aggregable by ElementType as lazyList =
     element => LazyList(aggregable.aggregate(element))
 
-@capability
 trait Aggregable:
   aggregable =>
   type Self
