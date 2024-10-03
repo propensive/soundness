@@ -17,4 +17,7 @@
 package soundness
 
 export fulminate.{Communicable, communicate, Error, Panic, abandon, warn, Message, m, realm,
-    EscapeError, TextEscapes, Expressible, express}
+    EscapeError, TextEscapes, Expressible, express, Diagnostics}
+
+package errorDiagnostics:
+  export fulminate.errorDiagnostics.{empty, stackTraces}

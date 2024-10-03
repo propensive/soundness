@@ -25,7 +25,7 @@ import anticipation.*
 
 export Fulminate.Diagnostics
 
-package exceptionDiagnostics:
+package errorDiagnostics:
   given Diagnostics as empty = Diagnostics.omit
   given Diagnostics as stackTraces = Diagnostics.capture
 
