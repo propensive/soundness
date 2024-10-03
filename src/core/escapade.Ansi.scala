@@ -29,7 +29,7 @@ import symbolism.*
 import contextual.*
 import spectacular.*
 
-import exceptionDiagnostics.empty
+import errorDiagnostics.empty
 
 trait Ansi2:
 
@@ -104,7 +104,7 @@ object Ansi extends Ansi2:
 
     private def closures(state: State, text: Text): State =
       try state.stack.headOption.fold(state.copy(text = state.text+TextEscapes.escape(text))): frame =>
-        safely(text.where(_ == frame.bracket)) match
+        safely(text.where(_ == frame.bracket)).let(_.n0) match
           case Unset =>
             state.copy(text = state.text+text)
 
