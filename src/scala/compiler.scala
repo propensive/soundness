@@ -129,7 +129,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
       (using SystemProperties, Monitor, Codicil)
-          : CompileProcess logs CompileEvent raises CompileError =
+          : CompileProcess logs CompileEvent raises CompilerError =
 
     val scalacProcess: CompileProcess = CompileProcess()
 
