@@ -177,7 +177,7 @@ object Json extends Json2, Dynamic:
       val (keys, values) = value.root.obj
 
       keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
-        focus(prior.or(JsonPath()) / keys(index)):
+        focus(prior.or(JsonPath()) / keys(index).tt):
           acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
   given Encoder[Json] as encoder = json => MinimalJsonPrinter.print(json.root)
