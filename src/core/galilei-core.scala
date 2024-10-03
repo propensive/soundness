@@ -2,7 +2,6 @@ package galilei
 
 import java.io as ji
 import java.nio.file as jnf
-import java.nio.channels as jnc
 import jnf.attribute as jnfa
 
 import scala.jdk.StreamConverters.*
@@ -13,7 +12,6 @@ import rudiments.*
 import nomenclature.*
 import fulminate.*
 import serpentine.*
-import turbulence.*
 import spectacular.*
 import anticipation.*
 import vacuous.*
@@ -39,7 +37,8 @@ final val `%`: Linux.Root = Linux.RootSingleton
 final val `$`: MacOs.Root = MacOs.RootSingleton
 
 extension [ValueType: Openable](value: ValueType)
-  def open[ResultType](lambda: Handle => ResultType, options: List[ValueType.Operand] = Nil)
+  def open[ResultType]
+      (lambda: ValueType.Result => ResultType, options: List[ValueType.Operand] = Nil)
           : ResultType =
     ValueType.open(value, lambda, options)
 

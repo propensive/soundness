@@ -18,38 +18,39 @@ object Openable:
              create:      CreateNonexistent on PlatformType,
              streamError: Tactic[StreamError],
              ioError:     Tactic[IoError])
-      => (Path on PlatformType) is Openable by jnf.OpenOption over jnc.FileChannel = new Openable:
+      => (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
 
     type Self = Path on PlatformType
     type Operand = jnf.OpenOption
-    type Carrier = jnc.FileChannel
+    type Result = Handle
+    protected type Carrier = jnc.FileChannel
   
     def init(path: Path on PlatformType, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options = read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
           extraOptions
 
       path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options*).nn)
-
-    def readable(channel: jnc.FileChannel): () => LazyList[Bytes] =
-      () => Readable.channel.stream(channel).stream[Bytes]
     
-    def writable(channel: jnc.FileChannel): LazyList[Bytes] => Unit =
-      Writable.channel.write(channel, _)
+    def handle(channel: jnc.FileChannel): Handle =
+      Handle
+       (() => Readable.channel.stream(channel).stream[Bytes],
+        Writable.channel.write(channel, _))
+        
 
     def close(channel: jnc.FileChannel): Unit = channel.close()
 
 trait Openable:
   type Self
   type Operand
-  type Carrier
+  type Result
+  protected type Carrier
 
   def init(value: Self, options: List[Operand]): Carrier
-  def readable(carrier: Carrier): () => LazyList[Bytes]
-  def writable(carrier: Carrier): LazyList[Bytes] => Unit
+  def handle(carrier: Carrier): Result
 
-  def open[ResultType](value: Self, lambda: Handle => ResultType, options: List[Operand])
+  def open[ResultType](value: Self, lambda: Result => ResultType, options: List[Operand])
           : ResultType =
     val carrier = init(value, options)
-    try lambda(Handle(readable(carrier), writable(carrier))) finally close(carrier)
+    try lambda(handle(carrier)) finally close(carrier)
 
   def close(carrier: Carrier): Unit
