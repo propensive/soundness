@@ -20,13 +20,22 @@ import java.net as jn
 
 import anticipation.*
 import fulminate.*
+import gossamer.*
 import rudiments.*
+import prepositional.*
+import turbulence.*
+import contingency.*
 import serpentine.*
+import nomenclature.*
 import vacuous.*
 
 object Classpath:
+  type Rules = MustNotContain["/"]
+
   @targetName("child")
-  infix def / (child: Name[ClasspathRef.Forbidden]): ClasspathRef = ClasspathRef(List(child))
+  infix def / (child: Name[Classpath])(using classloader: Classloader)
+          : Path on Classpath raises NameError =
+    Path(classloader, List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
     val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
@@ -40,6 +49,31 @@ object Classpath:
         case directory: ClasspathEntry.Directory      => directory
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
+
+  given (using Tactic[ClasspathError], Classpath is Navigable from Classloader)
+      => (Path on Classpath) is Readable by Bytes as readableBytes =
+    unsafely:
+      Readable.inputStream.contramap: resource =>
+        resource.root.inputStream(resource.text)
+
+  given (using Classloader, Tactic[NameError])
+      => Classpath is Navigable by Name[Classpath] from Classloader under Rules =
+    new Navigable:
+      type Self = Classpath
+      type Operand = Name[Classpath]
+      type Source = Classloader
+      type Constraint = Rules
+
+      val separator: Text = t"/"
+      val parentElement: Text = t".."
+      val selfText: Text = t".."
+
+      def root(path: Text): Classloader = summon[Classloader]
+      def rootLength(path: Text): Int = 0
+      def rootText(root: Classloader): Text = t""
+      def elementText(element: Name[Classpath]): Text = element.text
+      def element(text: Text): Name[Classpath] = Name(text)
+      def caseSensitivity: Case = Case.Sensitive
 
 trait Classpath:
   def entries: List[ClasspathEntry]

@@ -19,27 +19,27 @@ package hellenism
 import ambience.*
 import anticipation.*
 import contingency.*
-import galilei.*, filesystemOptions.{dereferenceSymlinks}
+import nomenclature.*
+import galilei.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import symbolism.*
-import vacuous.*
 
 object LocalClasspath:
   def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type])
           : LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
-  given [PathType: GenericPath](using Tactic[PathError], Tactic[IoError])
+  given [PathType: GenericPath]
+      (using Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
       => LocalClasspath is Addable by PathType into LocalClasspath =
     (classpath, path) =>
-      Path(path).pipe: path =>
-        val entry: ClasspathEntry.Directory | ClasspathEntry.Jar =
-          path.entryType() match
-            case PathStatus.Directory => ClasspathEntry.Directory(path.fullname)
-            case _                    => ClasspathEntry.Jar(path.fullname)
+      Path.parse[Filesystem](path.pathText).pipe: path =>
+        val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
+          case Directory => ClasspathEntry.Directory(path.text)
+          case _         => ClasspathEntry.Jar(path.text)
 
         if classpath.entrySet.contains(entry) then classpath
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)

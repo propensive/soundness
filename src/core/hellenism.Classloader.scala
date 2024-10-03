@@ -22,6 +22,7 @@ import java.io as ji
 import anticipation.*
 import contingency.*
 import fulminate.*
+import serpentine.*
 import rudiments.*
 import vacuous.*
 
@@ -29,8 +30,9 @@ object Classloader:
   def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
   inline def apply[ClassType <: AnyKind]: Classloader = ClassRef[ClassType].classloader
 
-class Classloader(val java: ClassLoader):
-  def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
+class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensitive):
+  type Platform = Classpath
+  override def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
 
   protected def urlClassloader: Optional[jn.URLClassLoader] = java match
     case java: jn.URLClassLoader => java

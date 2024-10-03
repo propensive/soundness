@@ -16,8 +16,8 @@
 
 package soundness
 
-export hellenism.{Classloader, Classpath, ClasspathEntry, ClasspathError, ClasspathRef,
-    LocalClasspath, OnlineClasspath, Resource}
+export hellenism.{Classloader, Classpath, ClasspathEntry, ClasspathError,
+    LocalClasspath, OnlineClasspath}
 
 package classloaders:
   export hellenism.classloaders.{threadContext, system, platform, scala}
