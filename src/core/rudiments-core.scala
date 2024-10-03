@@ -129,8 +129,8 @@ extension (value: Any)
 
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
-  transparent inline def sift[FilterType <: ValueType]: Iterable[FilterType] =
-    iterable.collect { case value: FilterType => value }
+  transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =
+    iterable.flatMap(FilterType.unapply(_))
 
   inline def has(value: ValueType): Boolean = iterable.exists(_ == value)
 
