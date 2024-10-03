@@ -19,7 +19,6 @@ package ambience
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 trait SystemProperties:

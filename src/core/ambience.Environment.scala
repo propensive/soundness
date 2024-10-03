@@ -16,7 +16,6 @@
 
 package ambience
 
-import language.experimental.captureChecking
 import language.dynamics
 
 import anticipation.*
@@ -36,7 +35,7 @@ object Environment extends Dynamic:
       (using environment:      Environment,
              reader:           EnvironmentVariable[Label, VariableType],
              environmentError: Tactic[EnvironmentError])
-          : VariableType^{environment, reader, environmentError} =
+          : VariableType =
 
     environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable), reader.read(Text(""))))
 
@@ -44,7 +43,7 @@ object Environment extends Dynamic:
       (using environment:      Environment,
              reader:           EnvironmentVariable[key.type, VariableType],
              environmentError: Tactic[EnvironmentError])
-          : VariableType^{environment, reader, environmentError} =
+          : VariableType =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
       raise(EnvironmentError(reader.defaultName), reader.read(Text("")))

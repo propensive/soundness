@@ -25,38 +25,28 @@ import rudiments.*
 import vacuous.*
 
 object Xdg:
-  def dataHome[PathType: SpecificPath]
-      (using environment: Environment, home: HomeDirectory)
-          : PathType/*^{PathType, environment, home}*/ =
-
+  def dataHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+          : PathType =
     safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
 
-  def configHome[PathType: SpecificPath]
-      (using environment: Environment, home: HomeDirectory)
-          : PathType/*^{PathType, environment, home}*/ =
-
+  def configHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+          : PathType =
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
 
-  def cacheHome[PathType: SpecificPath]
-      (using environment: Environment, home: HomeDirectory)
-          : PathType/*^{PathType, environment, home}*/ =
+  def cacheHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+          : PathType =
 
     safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
 
-  def stateHome[PathType: SpecificPath]
-      (using environment: Environment, home: HomeDirectory)
-          : PathType/*^{PathType, environment, home}*/ =
+  def stateHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+          : PathType =
 
     safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
 
-  def runtimeDir[PathType: SpecificPath](using environment: Environment)
-          : Optional[PathType/*^{PathType, environment}*/] =
-
+  def runtimeDir[PathType: SpecificPath](using environment: Environment): Optional[PathType] =
     safely(Environment.xdgRuntimeDir[PathType])
 
-  def bin[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-          : PathType/*^{PathType, environment, home}*/ =
-
+  def bin[PathType: SpecificPath](using environment: Environment, home: HomeDirectory): PathType =
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/bin"))
 
   def dataDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =

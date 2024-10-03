@@ -34,7 +34,7 @@ object Properties extends Dynamic:
       (using properties:     SystemProperties,
              reader:         SystemProperty[String, PropertyType],
              systemProperty: Tactic[SystemPropertyError])
-          : PropertyType^{properties, reader, systemProperty} =
+          : PropertyType =
 
     properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
 
