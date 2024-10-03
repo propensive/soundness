@@ -1,7 +1,7 @@
 package soundness
 
 export galilei.{CopyAttributes, Makable, CreateNonexistent, CreateNonexistentParents,
-    DeleteRecursively, DereferenceSymlinks, Dos, DosDrive, Entry, Eof, Filesystem,
+    DeleteRecursively, DereferenceSymlinks, Dos, DosDrive, Entry, Filesystem,
     FilesystemAttribute, Handle, IoError, IoEvent, Linux, MacOs, MoveAtomically, Openable,
     OverwritePreexisting, Posix, ReadAccess, Socket, Symlink, TraversalOrder, Volume, Windows,
     WindowsDrive, WriteAccess, WriteSynchronously, C, D, %, $, open, javaPath, javaFile, exists,
