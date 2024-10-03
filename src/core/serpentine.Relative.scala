@@ -11,16 +11,15 @@ import vacuous.*
 import scala.compiletime.*
 
 object Relative:
-  given [ElementType, RootType: Navigable by ElementType] => Encoder[Relative by ElementType] =
-    relative =>
-      if relative.textDescent.isEmpty
-      then
-        if relative.ascent == 0 then RootType.selfText
-        else List.fill(relative.ascent)(RootType.parentElement).join(RootType.separator)
-      else relative
-       .textDescent
-       .reverse
-       .join(RootType.ascent*relative.ascent, RootType.separator, t"")
+  given (using navigable: Navigable) => Encoder[Relative] = relative =>
+    if relative.textDescent.isEmpty
+    then
+      if relative.ascent == 0 then navigable.selfText
+      else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
+    else relative
+      .textDescent
+      .reverse
+      .join(navigable.ascent*relative.ascent, navigable.separator, t"")
 
   given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
     _.encode
