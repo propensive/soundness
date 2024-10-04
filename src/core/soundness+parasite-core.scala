@@ -26,6 +26,9 @@ package threadModels:
 package orphanDisposal:
   export parasite.orphanDisposal.{await, cancel, fail}
 
+package supervisors:
+  export parasite.supervisors.global
+
 package retryTenacities:
   export parasite.retryTenacities.{exponentialForever, exponentialFiveTimes, exponentialTenTimes,
       fixedNoDelayForever, fixedNoDelayFiveTimes, fixedNoDelayTenTimes}
