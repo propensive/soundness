@@ -38,7 +38,7 @@ open case class Image(private[hallucination] val image: jai.BufferedImage):
     val color: ja.Color = ja.Color(image.getRGB(x, y), true)
     Rgb24(color.getRed, color.getGreen, color.getBlue)
 
-  def render(using termcap: Termcap): Text = Text.construct:
+  def rasterize(using termcap: Termcap): Text = Text.construct:
     for y <- 0 until (height - 1) by 2 do
       for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
       append('\n')
