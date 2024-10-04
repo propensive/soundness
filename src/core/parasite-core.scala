@@ -39,6 +39,9 @@ package orphanDisposal:
   given (using Tactic[ConcurrencyError]) => Codicil as fail = _.delegate: child =>
     if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete), ())
 
+package supervisors:
+  given Supervisor as global = PlatformSupervisor.supervisor
+
 package retryTenacities:
   given Tenacity as exponentialForever = Tenacity.exponential(10L, 1.2)
   given Tenacity as exponentialFiveTimes = Tenacity.exponential(10L, 1.2).limit(5)
