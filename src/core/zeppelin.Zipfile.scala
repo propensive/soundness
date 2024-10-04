@@ -25,7 +25,7 @@ object Zip:
       MustNotContain[":"] & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] &
       MustNotContain[">"] & MustNotContain["|"]
 
-  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"/", t"/", Case.Sensitive):
+  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
   
   given (using Tactic[NameError]) => Zip is Navigable by Name[Zip] from Zip.ZipRoot under Rules =
@@ -40,10 +40,10 @@ object Zip:
       val selfText: Text = t"."
   
       def element(element: Text): Name[Zip] = Name(element)
-      def rootLength(path: Text): Int = 1
+      def rootLength(path: Text): Int = 0
       def elementText(element: Name[Zip]): Text = element.text
-      def rootText(root: Source): Text = t"/"
-      def root(path: Text): Source = ???
+      def rootText(root: Source): Text = t""
+      def root(path: Text): Source = ZipRoot()
       def caseSensitivity: Case = Case.Sensitive
 
 erased trait Zip

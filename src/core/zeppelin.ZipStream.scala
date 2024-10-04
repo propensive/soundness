@@ -4,6 +4,8 @@ import anticipation.*
 import fulminate.*
 import contingency.*
 import prepositional.*
+import gossamer.*
+import eucalyptus.*
 import rudiments.*
 import serpentine.*
 import nomenclature.*
@@ -12,18 +14,26 @@ import vacuous.*
 
 import java.util.zip as juz
 
+given Realm = realm"zeppelin"
+
 object ZipStream:
-  def apply[SourceType: Readable by Bytes](source: SourceType): ZipStream =
+  def apply[SourceType: Readable by Bytes](source: SourceType): ZipStream logs Text =
+    Log.info(t"Constrictung new zip stream")
     new ZipStream(() => source.stream[Bytes], { _ => true })
 
 class ZipStream(stream: () => LazyList[Bytes], filter: (Path on Zip) => Boolean):
   def keep(predicate: (Path on Zip) => Boolean): ZipStream =
     new ZipStream(stream, { (ref: Path on Zip) => filter(ref) && predicate(ref) })
 
-  def extract(ref: Zip.ZipRoot => Path on Zip): ZipEntry raises ZipError =
+  def extract(ref: Zip.ZipRoot => Path on Zip): ZipEntry raises ZipError logs Text =
+    Log.info(t"EXTRACTING")
     val root = Zip.ZipRoot()
-    safely(keep(_ == ref(root)).map(identity(_)).headOption.getOrElse(Unset)).or:
-      abort(ZipError())
+    unsafely:
+      keep: path =>
+        Log.info(t"Comparing ${path.descent} with ${ref(root).descent}")
+        path.descent == ref(root).descent
+      .map(identity(_)).headOption.get
+    ////abort(ZipError())
 
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
