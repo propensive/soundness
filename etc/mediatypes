@@ -1,8 +1,0 @@
-#!/bin/sh
-rm -f media.csv.tmp
-for GROUP in application audio image message multipart text video font model; do
-  curl "https://www.iana.org/assignments/media-types/$GROUP.csv" | tail -n+2 | cut -d, -f1 | sed "s/^/$GROUP\//" | grep -v '^$' >> media.csv.tmp
-done
-sed -i 's/ (.*$//' media.csv.tmp
-sed -i 's/ - .*$//' media.csv.tmp
-mv media.csv.tmp res/gesticulate/media.types
