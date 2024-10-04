@@ -2,7 +2,7 @@
 
 repo propensive/probably
 
-target gesticulate/test
+target gesticulate/core
 
 project gesticulate
   module core
