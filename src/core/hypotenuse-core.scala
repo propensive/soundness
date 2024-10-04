@@ -353,8 +353,7 @@ def erf(value: Double): Double =
 
 final val π = math.Pi
 final val pi = math.Pi
-final val e = math.E
-final val eulerNumber = math.E
+final val euler = math.E
 final val φ = (1.0 + 5.sqrt)/2.0
 final val goldenRatio = φ
 
