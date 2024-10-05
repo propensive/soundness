@@ -52,6 +52,8 @@ extension [ValueType](value: ValueType)
     writable.write(target, readable.stream(value))
 
 package stdioSources:
+  given Stdio as mute = Stdio(null, null, null, termcapDefinitions.basic)
+
   package virtualMachine:
     given Stdio as textOnly =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
@@ -59,7 +61,6 @@ package stdioSources:
     given Stdio as ansi =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
 
-    given Stdio as mute = Stdio(null, null, null, termcapDefinitions.basic)
 
 extension [ElementType](stream: LazyList[ElementType])
   def deduplicate: LazyList[ElementType] =

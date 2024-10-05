@@ -23,8 +23,9 @@ export turbulence.{Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spoo
     gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool, strict}
 
 package stdioSources:
+  export turbulence.stdioSources.mute
   package virtualMachine:
-    export turbulence.stdioSources.virtualMachine.{ansi, textOnly, mute}
+    export turbulence.stdioSources.virtualMachine.{ansi, textOnly}
 
 package lineSeparation:
   export turbulence.lineSeparation.{carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds,
