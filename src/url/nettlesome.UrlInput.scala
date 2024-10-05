@@ -18,11 +18,15 @@ package nettlesome
 
 import anticipation.*
 import contextual.*
+import spectacular.*
 
 object UrlInput:
   given Substitution[UrlInput, Text, "x"] = UrlInput.Textual(_)
   given Substitution[UrlInput, Raw, "x"] = raw => UrlInput.RawTextual(raw.text)
   given Substitution[UrlInput, Int, "80"] = UrlInput.Integral(_)
+  
+  given [ValueType](using encoder: Encoder[ValueType]) => Substitution[UrlInput, ValueType, "x"] =
+    value => UrlInput.Textual(encoder.encode(value))
 
 enum UrlInput:
   case Integral(value: Int)
