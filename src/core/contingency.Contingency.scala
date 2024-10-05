@@ -294,7 +294,7 @@ object Contingency:
           : Expr[ResultType] =
 
     '{  val foci: Foci[FocusType] = TrackFoci()
-        val result = boundary[Option[ResultType]]: label ?=>
+        val result: Option[ResultType] = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 
               val cases = unwrap(track.asTerm) match
