@@ -20,11 +20,11 @@ export turbulence.{Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spoo
     LazyListInputStream, LazyListOutputStream, Line, LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable,
     SimpleWritable, Stdio, StreamError, Tap, Writable, Zlib, stream, read, writeTo,
     deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer, pulsar,
-    gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool}
+    gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool, strict}
 
 package stdioSources:
   package virtualMachine:
-    export turbulence.stdioSources.virtualMachine.{ansi, textOnly}
+    export turbulence.stdioSources.virtualMachine.{ansi, textOnly, mute}
 
 package lineSeparation:
   export turbulence.lineSeparation.{carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds,

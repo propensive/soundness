@@ -59,6 +59,8 @@ package stdioSources:
     given Stdio as ansi =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
 
+    given Stdio as mute = Stdio(null, null, null, termcapDefinitions.basic)
+
 extension [ElementType](stream: LazyList[ElementType])
   def deduplicate: LazyList[ElementType] =
     def recur(last: ElementType, stream: LazyList[ElementType]): LazyList[ElementType] =
@@ -69,6 +71,8 @@ extension [ElementType](stream: LazyList[ElementType])
     stream match
       case head #:: tail => head #:: recur(head, tail)
       case _             => LazyList()
+
+  def strict: LazyList[ElementType] = stream.length yet stream
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
       (using Monitor, Tactic[ConcurrencyError])
