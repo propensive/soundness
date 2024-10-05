@@ -22,6 +22,8 @@ import scala.compiletime.*
 
 import anticipation.*
 
+import scala.annotation.targetName
+
 object Message:
   def apply(value: Text): Message = Message(List(value))
   given Message is Printable = (message, termcap) => message.text
@@ -39,6 +41,12 @@ object Message:
         done.reverse
 
 case class Message(textParts: List[Text], subs: List[Message] = Nil):
+  @targetName("append")
+  infix def + (right: Message): Message =
+    Message
+     (textParts.init ++ ((textParts.last+right.textParts.head) :: right.textParts.tail),
+      subs ++ right.subs)
+
   def fold[RenderType](initial: RenderType)(append: (RenderType, Text, Int) -> RenderType): RenderType =
     def recur(done: RenderType, textTodo: List[Text], subsTodo: List[Message], level: Int): RenderType =
       subsTodo match
