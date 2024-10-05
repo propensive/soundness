@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/camouflage/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/camouflage/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Camouflage
@@ -16,17 +16,9 @@ cache which will be appropriate for some (but not all) applications: a least-rec
 - cache requires only a _size_ parameter to initialize
 - serves as a simple drop-in memoization wrapper around expensive method calls
 
-## Availability Plan
+## Availability
 
-Camouflage has not yet been published. The medium-term plan is to build Camouflage
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Camouflage.
 
-Subsequently, Camouflage will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -124,7 +116,7 @@ index, it is retrieved instead.
 
 ## Status
 
-Camouflage is classified as __embryotic__. For reference, Scala One projects are
+Camouflage is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -138,7 +130,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Camouflage is designed to be _small_. Its entire source code currently consists
-of 75 lines of code.
+of 77 lines of code.
 
 ## Building
 
@@ -207,7 +199,7 @@ O&Uuml;](https://propensive.com/).
 
 Camouflage is used for hiding something, which is the original meaning of _caching_.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
