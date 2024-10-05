@@ -17,6 +17,7 @@
 package gossamer
 
 import rudiments.*
+import fulminate.*
 
 import language.experimental.pureFunctions
 import language.experimental.into
@@ -26,6 +27,8 @@ object Joinable:
     val buffer = TextType.buffer(elements.sumBy(_.length))
     elements.each(buffer.append(_))
     buffer()
+
+  given Message is Joinable = _.foldLeft(m"")(_+_)
 
 trait Joinable:
   type Self
