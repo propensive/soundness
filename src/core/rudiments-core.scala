@@ -195,6 +195,7 @@ extension [ElemType](array: Array[ElemType])
 
 extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
   inline def has(key: KeyType): Boolean = map.contains(key)
+  inline def bijection: Bijection[KeyType, ValueType] = Bijection(map.to(Map))
 
 extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =

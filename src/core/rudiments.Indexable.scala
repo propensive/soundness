@@ -69,6 +69,16 @@ object Indexable:
       def access(value: Self, index: KeyType): ValueType = value(index)
 
   given [KeyType, ValueType]
+      => Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType as bijection =
+    new Indexable:
+      type Self = Bijection[KeyType, ValueType]
+      type Operand = KeyType
+      type Result = ValueType
+
+      def contains(value: Self, index: KeyType): Boolean = value.map.contains(index)
+      def access(value: Self, index: KeyType): ValueType = value.map(index)
+
+  given [KeyType, ValueType]
       => scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType as hashMap =
 
     new Indexable:
