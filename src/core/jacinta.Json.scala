@@ -60,7 +60,7 @@ object Json extends Json2, Dynamic:
     inline def join[DerivationType <: Product: ProductReflection]
             : DerivationType is Decodable in Json =
       (json, omit) =>
-        summonInline[Foci[List[Text]]].give:
+        summonInline[Foci[JsonPath]].give:
           summonInline[Tactic[JsonError]].give:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
@@ -69,7 +69,7 @@ object Json extends Json2, Dynamic:
               context =>
                 val omit = !values.contains(label.s)
                 val value = if omit then JsonAst(0L) else values(label.s)
-                focus(label :: prior.or(Nil)):
+                focus(prior.or(JsonPath()) / label):
                   context.decode(new Json(value), omit)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
@@ -307,5 +307,5 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType: Decodable in Json]: ValueType raises JsonError traces List[Text] =
+  def as[ValueType: Decodable in Json]: ValueType raises JsonError tracks JsonPath =
     ValueType.decode(this, false)

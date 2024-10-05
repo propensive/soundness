@@ -16,7 +16,7 @@ object Jacinta:
         case (index: Int) :: tail => recur(tail, t"[$index]$result")
         case (key: Text) :: tail  => recur(tail, t".$key$result")
 
-      recur(jsonPath, t"")
+      recur(jsonPath.reverse, t"")
 
     def apply(elements: List[Text | Int] = Nil): JsonPath = elements
 
