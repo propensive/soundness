@@ -16,22 +16,8 @@
 
 package contingency
 
-import language.experimental.pureFunctions
+import vacuous.*
 
-import fulminate.*
-import rudiments.*
-
-class TraceTactic
-    [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
-    (label: boundary.Label[Option[ResultType]],
-     initial: AccrualType,
-     foci: Foci[SupplementType])
-    (using Diagnostics)
-extends Tactic[ErrorType]:
-  def diagnostics: Diagnostics = summon[Diagnostics]
-  def record(error: Diagnostics ?=> ErrorType): Unit = foci.register(error)
-  def finish(): Unit = ()
-
-  def abort(error: Diagnostics ?=> ErrorType): Nothing =
-    foci.register(error)
-    boundary.break(None)(using label)
+class Track[AccrualType <: Exception, LambdaType[_], FocusType]
+    (val initial: AccrualType,
+     val lambda: (Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType])

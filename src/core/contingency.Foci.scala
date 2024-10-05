@@ -45,7 +45,7 @@ trait Foci[FocusType]:
 
   def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit
 
-class TraceFoci[FocusType]() extends Foci[FocusType]:
+class TrackFoci[FocusType]() extends Foci[FocusType]:
   private val errors: scm.ArrayBuffer[Exception] = scm.ArrayBuffer()
   private val focuses: scm.ArrayBuffer[Optional[FocusType]] = scm.ArrayBuffer()
 

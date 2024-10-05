@@ -125,7 +125,7 @@ object Contingency:
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
-  def trace[AccrualType <: Exception: Type, FocusType: Type]
+  def track[AccrualType <: Exception: Type, FocusType: Type]
       (accrual: Expr[AccrualType],
        handler: Expr[(Optional[FocusType], AccrualType) ?=>
                     PartialFunction[Exception, AccrualType]])
@@ -146,7 +146,7 @@ object Contingency:
 
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Trace[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+        '{Track[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
@@ -284,28 +284,28 @@ object Contingency:
             case error       => $tactic.abort(error)
     }
 
-  def traceWithin
+  def trackWithin
       [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-      (trace:       Expr[Trace[AccrualType, ContextType, FocusType]],
+      (track:       Expr[Track[AccrualType, ContextType, FocusType]],
        lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
        tactic:      Expr[Tactic[AccrualType]],
        diagnostics: Expr[Diagnostics])
       (using Quotes)
           : Expr[ResultType] =
 
-    '{  val foci: Foci[FocusType] = TraceFoci()
+    '{  val foci: Foci[FocusType] = TrackFoci()
         val result = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 
-              val cases = unwrap(trace.asTerm) match
+              val cases = unwrap(track.asTerm) match
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
                 case other => abandon:
-                  m"argument to `trace` should be a partial function implemented as match cases"
+                  m"argument to `track` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{TraceTactic(label, $trace.initial, foci)(using $diagnostics)}.asTerm
+                '{TrackTactic(label, $track.initial, foci)(using $diagnostics)}.asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
@@ -318,9 +318,9 @@ object Contingency:
               '{Some($expr)}  }
 
         result match
-          case None        => $tactic.abort($trace.initial)
+          case None        => $tactic.abort($track.initial)
           case Some(value) =>
             if foci.success then value
-            else $tactic.abort(foci.fold[AccrualType]($trace.initial)($trace.lambda(using _, _)))
+            else $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))
 
     }
