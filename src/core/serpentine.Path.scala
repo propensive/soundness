@@ -16,9 +16,9 @@ object Path:
   given Encoder[Path] as encoder = _.text
   given [PlatformType: Navigable] => Decoder[Path on PlatformType] as decoder = Path.parse(_)
   given [PlatformType] => (Path on PlatformType) is Showable as showable = _.text
-  given [PlatformType] => (Path on PlatformType) is GenericPath = _.text
+  given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
   
-  given [PlatformType: Navigable] => Path on PlatformType is SpecificPath =
+  given [PlatformType: Navigable] => Path on PlatformType is SpecificPath as specific =
     _.decodeAs[Path on PlatformType]
   
   given Path is Communicable as communicable = path =>
@@ -26,7 +26,7 @@ object Path:
     
   given [PlatformType: Navigable](using Tactic[PathError])
       => (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
-          (Path on PlatformType) =
+          (Path on PlatformType) as addable =
     (left, right) =>
       def recur(descent: List[Text], ascent: Int): Path on PlatformType =
         if ascent > 0 then
