@@ -16,5 +16,34 @@
 
 package aviation
 
+import spectacular.*
+import kaleidoscope.*
+import fulminate.*
+import contingency.*
+
+import errorDiagnostics.stackTraces
+
+object Timestamp:
+  import calendars.gregorian
+
+  given (using Tactic[TimestampError]) => Decoder[Timestamp] = text =>
+    text match
+      case r"$year([0-9]{4})-$month([0-9]{2})-$day([0-9]{2})T$hour([0-9]{2}):$minute([0-9]{2}):$second([0-9]{2})" =>
+        tend:
+          case NumberError(_, _) => TimestampError(text)
+          case DateError(_)      => TimestampError(text)
+        .within:
+          Timestamp
+           (Date(year.decodeAs[Int],
+            MonthName(month.decodeAs[Int]),
+            day.decodeAs[Int]),
+            Clockface(Base24(hour.decodeAs[Int]),
+            Base60(minute.decodeAs[Int]),
+            Base60(second.decodeAs[Int])))
+
+      case value =>
+        raise(TimestampError(value))
+        Timestamp(2000-Jan-1, Clockface(0, 0, 0))
+
 case class Timestamp(date: Date, time: Clockface):
   def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
