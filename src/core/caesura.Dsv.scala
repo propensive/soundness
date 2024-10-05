@@ -36,7 +36,7 @@ case class Dsv
      format:  Optional[DsvFormat]    = Unset,
      columns: Optional[IArray[Text]] = Unset):
 
-  def as[ValueType: DsvDecodable]: LazyList[ValueType] traces CellRef = rows.map(_.as[ValueType])
+  def as[ValueType: DsvDecodable]: LazyList[ValueType] tracks CellRef = rows.map(_.as[ValueType])
 
   override def hashCode: Int =
     (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
