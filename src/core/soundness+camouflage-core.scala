@@ -1,3 +1,3 @@
 package soundness
 
-export camouflage.LruCache
+export camouflage.{Cache, LruCache}

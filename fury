@@ -3,7 +3,7 @@
 
 repo propensive/contextual
 repo propensive/larceny
-repo propensive/kaleidoscope
+repo propensive/parasite
 
 target camouflage/test
 
@@ -11,7 +11,7 @@ project camouflage
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core
+    include   parasite/core
 
   module test
     compiler  scala
