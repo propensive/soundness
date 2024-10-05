@@ -59,6 +59,10 @@ object Geolocation:
           case other =>
             raise(GeolocationError(UnexpectedSuffix))
             Geolocation(location)
+          
+        case other =>
+          raise(GeolocationError(UnexpectedSuffix))
+          Geolocation(location)
 
     case r"geo:.*" =>
       raise(GeolocationError(ExpectedCoordinates))
