@@ -2,6 +2,7 @@ package nomenclature
 
 import anticipation.*
 import rudiments.*
+import fulminate.*
 import contingency.*
 import spectacular.*
 
@@ -11,6 +12,8 @@ object Nomenclature:
   opaque type Name[-PlatformType] = Text
 
   object Name:
+    given [PlatformType] => Name[PlatformType] is Communicable = name => Message(name.text)
+
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
         case _: EmptyTuple     => ()
