@@ -31,7 +31,7 @@ object Flag:
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-  given Flag is Communicable = _.name match
+  given Flag is Communicable = flag => (flag.name: @unchecked) match
     case name: Text => Message(t"--$name")
     case name: Char => Message(t"-$name")
 

@@ -29,7 +29,7 @@ def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execut
     case completion: CliCompletion => Execution(Exit.Ok)
     case invocation: CliInvocation => Execution(block(using ###)(using invocation))
 
-def explain(explanation: (previous: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
+def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)
 
 package executives:

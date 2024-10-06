@@ -44,5 +44,5 @@ trait Cli extends ProcessContext:
 
   def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
   def present(flag: Flag): Unit = ()
-  def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit = ()
-  def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) = ()
+  def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit = ()
+  def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) = ()

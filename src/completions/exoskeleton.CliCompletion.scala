@@ -67,10 +67,10 @@ extends Cli:
     if !flag.secret then flags(flag) = suggestions
 
   override def present(flag: Flag): Unit = if !flag.repeatable then seenFlags += flag
-  override def explain(update: (previous: Optional[Text]) ?=> Optional[Text]): Unit =
+  override def explain(update: (prior: Optional[Text]) ?=> Optional[Text]): Unit =
     explanation = update(using explanation)
 
-  override def suggest(argument: Argument, update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
+  override def suggest(argument: Argument, update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
     if argument == focus then cursorSuggestions = update(using cursorSuggestions)
 
   def flagSuggestions(longOnly: Boolean): List[Suggestion] =

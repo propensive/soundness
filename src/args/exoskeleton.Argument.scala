@@ -29,7 +29,7 @@ case class Argument(position: Int, value: Text, cursor: Optional[Int]):
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
 
-  def suggest(using cli: Cli)(update: (previous: List[Suggestion]) ?=> List[Suggestion]) =
+  def suggest(using cli: Cli)(update: (prior: List[Suggestion]) ?=> List[Suggestion]) =
     cli.suggest(this, update)
 
   def select[OperandType](options: Seq[OperandType])
