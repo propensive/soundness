@@ -83,9 +83,9 @@ def cliService[BusType <: Matchable](using executive: Executive)
     mend:
       case SystemPropertyError(_) =>
         val jarFile = Properties.java.`class`.path[Text]().pipe: jarFile =>
-          safely(jarFile.decodeAs[Path on Linux]).or:
+          safely(jarFile.decode[Path on Linux]).or:
             val work: Path on Linux = workingDirectory
-            work + jarFile.decodeAs[Relative by Name[Linux]]
+            work + jarFile.decode[Relative by Name[Linux]]
 
         safely(Properties.build.executable[Text]()) match
           case Unset =>
@@ -97,9 +97,9 @@ def cliService[BusType <: Matchable](using executive: Executive)
             Exit.Fail(1).terminate()
 
           case destination: Text =>
-            val path = safely(destination.decodeAs[Path on Linux]).or:
+            val path = safely(destination.decode[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
-              work + destination.decodeAs[Relative by Name[Linux]]
+              work + destination.decode[Relative by Name[Linux]]
 
             val buildIdPath: Path on Classpath = Classpath / n"build.id"
             val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
@@ -163,23 +163,23 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       val message: Optional[DaemonEvent] = line() match
         case t"e" =>
-          val pid: Pid = line().decodeAs[Pid]
+          val pid: Pid = line().decode[Pid]
           DaemonEvent.Stderr(pid)
 
         case t"s" =>
-          val pid: Pid = line().decodeAs[Pid]
-          val signal: Signal = line().decodeAs[Signal]
+          val pid: Pid = line().decode[Pid]
+          val signal: Signal = line().decode[Signal]
           DaemonEvent.Trap(pid, signal)
 
         case t"x" =>
-          DaemonEvent.Exit(line().decodeAs[Pid])
+          DaemonEvent.Exit(line().decode[Pid])
 
         case t"i" =>
           val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
-          val pid: Pid = Pid(line().decodeAs[Int])
+          val pid: Pid = Pid(line().decode[Int])
           val script: Text = line()
           val pwd: Text = line()
-          val argCount: Int = line().decodeAs[Int]
+          val argCount: Int = line().decode[Int]
           val textArguments: List[Text] = chunk().cut(t"\u0000").take(argCount).to(List)
           val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
@@ -234,7 +234,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
             lazy val color: ColorDepth =
               import workingDirectories.default
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
-              else ColorDepth(safely(mute[ExecEvent](sh"tput colors".exec[Text]().decodeAs[Int])).or(-1))
+              else ColorDepth(safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
 
           val stdio: Stdio =
             Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
@@ -248,7 +248,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
              (pid,
               () => shutdown(pid),
               shellInput,
-              scriptName.decodeAs[Path on Linux],
+              scriptName.decode[Path on Linux],
               deliver(pid, _),
               connection.bus.stream,
               name)
@@ -291,7 +291,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)
       val port: Int = socket.getLocalPort
-      val buildId = safely((Classpath / n"build.id").read[Text].trim.decodeAs[Int]).or(0)
+      val buildId = safely((Classpath / n"build.id").read[Text].trim.decode[Int]).or(0)
       val stderr = if stderrSupport() then 1 else 0
       portFile.open(t"$port $buildId $stderr".writeTo(_))
       val pidValue = OsProcess().pid.value.show
