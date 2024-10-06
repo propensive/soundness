@@ -49,27 +49,27 @@ extension (json: JsonAst)
 
   inline def isArray: Boolean = json.isInstanceOf[Array[?]]
 
-  inline def array: IArray[JsonAst] raises JsonError =
+  def array: IArray[JsonAst] raises JsonError =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
-    else raise(JsonError(Reason.NotType(JsonPrimitive.Array)), IArray[JsonAst]())
+    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Array)), IArray[JsonAst]())
 
-  inline def double: Double raises JsonError = json.asMatchable match
+  def double: Double raises JsonError = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
-    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)), 0.0)
+    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0.0)
 
-  inline def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
+  def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
-    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)), BigDecimal(0))
+    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), BigDecimal(0))
 
-  inline def long: Long raises JsonError = json.asMatchable match
+  def long: Long raises JsonError = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
-    case _                 => raise(JsonError(Reason.NotType(JsonPrimitive.Number)), 0L)
+    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0L)
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number
@@ -79,21 +79,21 @@ extension (json: JsonAst)
     else if isArray then JsonPrimitive.Array
     else JsonPrimitive.Null
 
-  inline def string: Text raises JsonError =
+  def string: Text raises JsonError =
     if isString then json.asInstanceOf[Text]
-    else raise(JsonError(Reason.NotType(JsonPrimitive.String)), "".tt)
+    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.String)), "".tt)
 
-  inline def boolean: Boolean raises JsonError =
+  def boolean: Boolean raises JsonError =
     if isBoolean then json.asInstanceOf[Boolean]
-    else raise(JsonError(Reason.NotType(JsonPrimitive.Boolean)), false)
+    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Boolean)), false)
 
-  inline def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
+  def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
-    else raise(JsonError(Reason.NotType(JsonPrimitive.Object)), IArray[String]() -> IArray[JsonAst]())
+    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Object)), IArray[String]() -> IArray[JsonAst]())
 
-  inline def number: Long | Double | BigDecimal raises JsonError =
+  def number: Long | Double | BigDecimal raises JsonError =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
-    else raise(JsonError(Reason.NotType(JsonPrimitive.Number)), 0L)
+    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0L)
 
 extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)

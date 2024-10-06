@@ -26,13 +26,13 @@ object JsonError:
   enum Reason:
     case Index(value: Int)
     case Label(label: Text)
-    case NotType(primitive: JsonPrimitive)
+    case NotType(found: JsonPrimitive, primitive: JsonPrimitive)
 
   object Reason:
     given Reason is Communicable =
-      case Index(value)       => m"the index $value out of range"
-      case Label(label)       => m"the JSON object does not contain the label $label"
-      case NotType(primitive) => m"the JSON value did not have the type $primitive"
+      case Index(value)              => m"the index $value out of range"
+      case Label(label)              => m"the JSON object does not contain the label $label"
+      case NotType(found, primitive) => m"the JSON value had type $found instead of $primitive"
 
 case class JsonError(reason: JsonError.Reason)(using Diagnostics)
 extends Error(m"could not access the value because $reason")

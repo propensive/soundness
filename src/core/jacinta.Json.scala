@@ -111,8 +111,9 @@ object Json extends Json2, Dynamic:
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
-  inline given [ValueType: Reflection] => ValueType is Decodable in Json as decodable =
-    DecodableDerivation.derived
+  inline given [ValueType] => ValueType is Decodable in Json as decodable = summonFrom:
+    case given Reflection[ValueType] => DecodableDerivation.derived
+    case given Decoder[ValueType]    => summonInline[Tactic[JsonError]].give(text.map[ValueType](_.decode))
 
   inline given [ValueType: Reflection] => ValueType is Encodable in Json as encodable =
     EncodableDerivation.derived
