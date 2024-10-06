@@ -78,11 +78,11 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] as pager = SpecificPath(_)
 
   given (using Tactic[NumberError]) => EnvironmentVariable["sshAgentPid", Pid] as sshAgentPid =
-    text => Pid(text.decodeAs[Int])
+    text => Pid(text.decode[Int])
 
   given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
   given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] = SpecificPath(_)
-  given columns(using Decoder[Int]): EnvironmentVariable["columns", Int] = _.decodeAs[Int]
+  given columns(using Decoder[Int]): EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)
   given display: EnvironmentVariable["display", Text] = identity(_)
   given term: EnvironmentVariable["term", Text] = identity(_)

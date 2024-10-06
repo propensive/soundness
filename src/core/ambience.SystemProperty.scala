@@ -58,8 +58,8 @@ object SystemProperty:
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
-  given fileSeparator: SystemProperty["file.separator", Char] = _.decodeAs[Char]
-  given pathSeparator: SystemProperty["path.separator", Char] = _.decodeAs[Char]
+  given fileSeparator: SystemProperty["file.separator", Char] = _.decode[Char]
+  given pathSeparator: SystemProperty["path.separator", Char] = _.decode[Char]
   given lineSeparator: SystemProperty["line.separator", Text] = identity(_)
 
   given userName: SystemProperty["user.name", Text] = identity(_)
