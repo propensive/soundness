@@ -28,23 +28,26 @@ object Zip:
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
   
-  given (using Tactic[NameError]) => Zip is Navigable by Name[Zip] from Zip.ZipRoot under Rules =
-    new Navigable:
-      type Self = Zip
-      type Operand = Name[Zip]
-      type Source = ZipRoot
-      type Constraint = Rules
-  
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-  
-      def element(element: Text): Name[Zip] = Name(element)
-      def rootLength(path: Text): Int = 0
-      def elementText(element: Name[Zip]): Text = element.text
-      def rootText(root: Source): Text = t""
-      def root(path: Text): Source = ZipRoot()
-      def caseSensitivity: Case = Case.Sensitive
+  given (using Tactic[NameError]) => Zip is Radical from Zip.ZipRoot = new Radical:
+    type Self = Zip
+    type Source = ZipRoot
+
+    def rootLength(path: Text): Int = 0
+    def rootText(root: Source): Text = t""
+    def root(path: Text): Source = ZipRoot()
+
+  given (using Tactic[NameError]) => Zip is Navigable by Name[Zip] under Rules = new Navigable:
+    type Self = Zip
+    type Operand = Name[Zip]
+    type Constraint = Rules
+
+    val separator: Text = t"/"
+    val parentElement: Text = t".."
+    val selfText: Text = t"."
+
+    def element(element: Text): Name[Zip] = Name(element)
+    def elementText(element: Name[Zip]): Text = element.text
+    def caseSensitivity: Case = Case.Sensitive
 
 erased trait Zip
 
