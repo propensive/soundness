@@ -177,13 +177,13 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
     else abandon(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decodeAs[Int])
+    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
     else abandon(m"the UDP port number ${portNumber} is not in the range 1-65535")
