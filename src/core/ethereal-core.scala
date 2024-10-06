@@ -94,7 +94,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
             val work: Path on Linux = workingDirectory
             val relativeJar: Relative by Name[Linux] = jarFile.relativeTo(work)
             Out.println(e"    java -Dbuild.executable=$Italic(<filename>) -jar $relativeJar")
-            ExitStatus.Fail(1).terminate()
+            Exit.Fail(1).terminate()
 
           case destination: Text =>
             val path = safely(destination.decodeAs[Path on Linux]).or:
@@ -113,7 +113,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
             Out.println(t"Built executable file $destination")
 
-            ExitStatus.Ok.terminate()
+            Exit.Ok.terminate()
 
     .within(Properties.ethereal.name[Text]())
 
@@ -200,7 +200,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
         case DaemonEvent.Exit(pid) =>
           Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
-          val exitStatus: ExitStatus = client(pid).exitPromise.await()
+          val exitStatus: Exit = client(pid).exitPromise.await()
 
           socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
           socket.close()
@@ -261,7 +261,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
                (textArguments, environment, () => directory, stdio, connection.signals)
 
             val result = block(using service)(using cli)
-            val exitStatus: ExitStatus = executive.process(cli)(result)
+            val exitStatus: Exit = executive.process(cli)(result)
 
             connection.exitPromise.fulfill(exitStatus)
 
@@ -271,7 +271,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
               //Optional(exception.getStackTrace).let: stackTrace =>
               //  stackTrace.map(_.toString.tt).each(Log.fail(_))
 
-              connection.exitPromise.fulfill(ExitStatus.Fail(1))
+              connection.exitPromise.fulfill(Exit.Fail(1))
 
           finally
             socket.close()
@@ -310,4 +310,4 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
       loop(safely(makeClient(socket.accept().nn))).run()
 
-    ExitStatus.Ok
+    Exit.Ok

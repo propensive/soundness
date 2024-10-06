@@ -33,7 +33,7 @@ case class ClientConnection[BusType <: Matchable](pid: Pid):
   val signals: Spool[Signal] = Spool()
   val bus: Spool[BusType] = Spool()
   val terminatePid: Promise[Pid] = Promise()
-  val exitPromise: Promise[ExitStatus] = Promise()
+  val exitPromise: Promise[Exit] = Promise()
   def receive(message: BusType): Unit = bus.put(message)
   val socket: Promise[jn.Socket] = Promise()
   def close(): Unit = safely(socket.await(1000L).close())

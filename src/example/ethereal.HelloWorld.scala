@@ -25,7 +25,7 @@ import threadModels.platform
 
 @main
 def run(): Unit = cliService:
-  ExitStatus.Ok
+  Exit.Ok
 
 @main
 def run2(): Unit = println("Testing")
