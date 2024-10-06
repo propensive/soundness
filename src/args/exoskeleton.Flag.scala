@@ -18,6 +18,7 @@ package exoskeleton
 
 import rudiments.*
 import vacuous.*
+import fulminate.*
 import gossamer.*
 import spectacular.*
 import denominative.*
@@ -29,6 +30,10 @@ object Flag:
   def serialize(name: Text | Char): Text = (name: @unchecked) match
     case char: Char => t"-$char"
     case text: Text => t"--$text"
+
+  given Flag is Communicable = _.name match
+    case name: Text => Message(t"--$name")
+    case name: Char => Message(t"-$name")
 
 case class Flag
     (name: Text | Char,
