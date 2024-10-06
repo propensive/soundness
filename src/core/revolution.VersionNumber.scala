@@ -23,7 +23,7 @@ import spectacular.*
 
 object VersionNumber:
   def apply(value: Text)(using Decoder[Int]): VersionNumber =
-    VersionNumber(value.cut(t".").to(List).map(_.decodeAs[Int])*)
+    VersionNumber(value.cut(t".").to(List).map(_.decode[Int])*)
 
 case class VersionNumber(digits: Int*):
   def text: Text = digits.map(_.toString.tt).join(".".tt)
