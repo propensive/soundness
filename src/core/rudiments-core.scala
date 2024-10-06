@@ -27,6 +27,7 @@ import scala.collection as sc
 import scala.collection.mutable as scm
 
 import anticipation.*
+import denominative.*
 import vacuous.*
 
 type Nat = Int & Singleton
@@ -141,11 +142,20 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
     iterable.zip(right).flatMap(Iterable(_, _))
 
 extension [ValueType](iterator: Iterator[ValueType])
-  transparent inline def each(predicate: ValueType => Unit): Unit = iterator.foreach(predicate)
+  transparent inline def each(predicate: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
+    var ordinal: Ordinal = Prim
+    iterator.foreach: value =>
+      predicate(using ordinal)(value)
+      ordinal += 1
+
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
-  transparent inline def each(lambda: ValueType => Unit): Unit = iterable.foreach(lambda)
+  transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
+    var ordinal: Ordinal = Prim
+    iterable.foreach: value =>
+      lambda(using ordinal)(value)
+      ordinal += 1
 
   def sumBy[NumberType](lambda: ValueType => NumberType)(using numeric: Numeric[NumberType]): NumberType =
     var count = numeric.zero
