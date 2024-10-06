@@ -22,5 +22,6 @@ import nettlesome.*
 
 import language.dynamics
 
-case class HttpError(url: HttpUrl, status: HttpStatus & FailureCase)(using Diagnostics)
-extends Error(m"HTTP error $status")
+case class HttpError(url: HttpUrl, method: HttpMethod, status: HttpStatus & FailureCase)
+    (using Diagnostics)
+extends Error(m"the HTTP $method request to $url failed with status $status")

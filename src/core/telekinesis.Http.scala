@@ -86,7 +86,7 @@ object Http:
     request(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
 
   private def request[PostType: Postable]
-      (url: HttpUrl, content: PostType, method: HttpMethod,headers: Seq[RequestHeader.Value])
+      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
       (using Online)
           : HttpResponse logs HttpEvent =
 
@@ -133,4 +133,4 @@ object Http:
               case (ResponseHeader(k), v) => List((k, v.asScala.to(List).map(_.tt)))
           .to(Map)
 
-        HttpResponse(url, status, responseHeaders, body)
+        HttpResponse(url, method, status, responseHeaders, body)
