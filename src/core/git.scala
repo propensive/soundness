@@ -79,7 +79,7 @@ object GitRepo:
   def apply[PathType: GenericPath](path: PathType)(using gitError: Tactic[GitError], io: Tactic[IoError])
           : GitRepo raises PathError raises NameError =
 
-    unsafely(path.pathText.decodeAs[Path on Posix]).pipe: path =>
+    unsafely(path.pathText.decode[Path on Posix]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
       if (path / n".git").exists() then GitRepo((path / n".git"), path)
@@ -174,7 +174,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
     val relativePath: Relative =
       workTree.let: workTree =>
-        safely(path.pathText.decodeAs[Path on Posix].relativeTo(workTree)).or:
+        safely(path.pathText.decode[Path on Posix].relativeTo(workTree)).or:
           abort(GitError(AddFailed))
       .or(abort(GitError(NoWorkTree)))
 
@@ -191,7 +191,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     def get[ValueType: Decoder](variable: Text)
         (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
             : ValueType logs GitEvent =
-      sh"$git $repoOptions config --get $variable".exec[Text]().decodeAs[ValueType]
+      sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Tag] logs GitEvent =
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
@@ -347,7 +347,7 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
-        val target: Path on Posix = targetPath.pathText.decodeAs[Path on Posix]
+        val target: Path on Posix = targetPath.pathText.decode[Path on Posix]
         sh"$command init $bareOpt $target".exec[Exit]()
 
         if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
@@ -419,7 +419,7 @@ object Git:
           : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val target: Path on Posix =
-      try targetPath.pathText.decodeAs[Path on Posix] catch case error: PathError => abort(GitError(InvalidRepoPath))
+      try targetPath.pathText.decode[Path on Posix] catch case error: PathError => abort(GitError(InvalidRepoPath))
 
     val bareOption = if bare then sh"--bare" else sh""
     val branchOption = branch.lay(sh"") { branch => sh"--branch=$branch" }
