@@ -33,7 +33,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
 
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
     (value: @unchecked) match
-      case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decodeAs[ValueType]
+      case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[ValueType]
 
   inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] = list =>
     val elements = childElements(list)
