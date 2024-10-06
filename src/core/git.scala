@@ -93,42 +93,42 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   @targetName("checkoutTag")
   def checkout(tag: Tag)(using GitCommand, WorkingDirectory, Tactic[ExecError]): Unit logs GitEvent =
-    sh"$git $repoOptions checkout $tag".exec[ExitStatus]()
+    sh"$git $repoOptions checkout $tag".exec[Exit]()
 
   @targetName("checkoutBranch")
   def checkout(branch: Branch)(using GitCommand, WorkingDirectory, Tactic[ExecError]): Unit logs GitEvent =
-    sh"$git $repoOptions checkout $branch".exec[ExitStatus]()
+    sh"$git $repoOptions checkout $branch".exec[Exit]()
 
   @targetName("checkoutCommitHash")
   def checkout(commit: CommitHash)(using GitCommand, WorkingDirectory, Tactic[ExecError]): Unit logs GitEvent =
-    sh"$git $repoOptions checkout $commit".exec[ExitStatus]()
+    sh"$git $repoOptions checkout $commit".exec[Exit]()
 
   def pushTags()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
           : Unit logs GitEvent =
 
-    sh"$git $repoOptions push --tags".exec[ExitStatus]()
+    sh"$git $repoOptions push --tags".exec[Exit]()
 
   def push()(using Internet, Tactic[GitError], GitCommand, WorkingDirectory, Tactic[ExecError])
           : Unit logs GitEvent =
 
-    sh"$git $repoOptions push".exec[ExitStatus]()
+    sh"$git $repoOptions push".exec[Exit]()
 
   def switch(branch: Branch)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
           : Unit logs GitEvent =
 
-    sh"$git $repoOptions switch $branch".exec[ExitStatus]() match
-      case ExitStatus.Ok => ()
+    sh"$git $repoOptions switch $branch".exec[Exit]() match
+      case Exit.Ok => ()
       case failure       => abort(GitError(CannotSwitchBranch))
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
       (using gitError: Tactic[GitError], exec: Tactic[ExecError])
           : GitProcess[Unit] logs GitEvent =
 
-    val process = sh"$git $repoOptions pull --progress".fork[ExitStatus]()
+    val process = sh"$git $repoOptions pull --progress".fork[Exit]()
 
     GitProcess[Unit](Git.progress(process)):
       process.await() match
-        case ExitStatus.Ok => ()
+        case Exit.Ok => ()
         case failure       => abort(GitError(PullFailed))
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
@@ -138,18 +138,18 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
     val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
     val command = sh"$git $repoOptions fetch $depthOption --progress $repo $refspec"
-    val process = command.fork[ExitStatus]()
+    val process = command.fork[Exit]()
 
     GitProcess[Unit](Git.progress(process)):
       process.await() match
-        case ExitStatus.Ok => ()
+        case Exit.Ok => ()
         case failure       => abort(GitError(PullFailed))
 
   def commit(message: Text)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
           : Unit logs GitEvent =
 
-    sh"$git $repoOptions commit -m $message".exec[ExitStatus]() match
-      case ExitStatus.Ok => ()
+    sh"$git $repoOptions commit -m $message".exec[Exit]() match
+      case Exit.Ok => ()
       case failure       => abort(GitError(CommitFailed))
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Branch] logs GitEvent =
@@ -164,8 +164,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
           : Unit logs GitEvent =
 
-    sh"$git $repoOptions checkout -b $branch".exec[ExitStatus]() match
-      case ExitStatus.Ok => ()
+    sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
+      case Exit.Ok => ()
       case failure       => abort(GitError(BranchFailed))
 
   def add[PathType: GenericPath](path: PathType)
@@ -180,8 +180,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
     val command = sh"$git $repoOptions add $relativePath"
 
-    command.exec[ExitStatus]() match
-      case ExitStatus.Ok => ()
+    command.exec[Exit]() match
+      case Exit.Ok => ()
       case failure       => abort(GitError(AddFailed))
 
   def reset(): Unit = ()
@@ -197,8 +197,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
 
   def tag(name: Tag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError]): Tag logs GitEvent =
-    sh"$git $repoOptions tag $name".exec[ExitStatus]() match
-      case ExitStatus.Ok => name
+    sh"$git $repoOptions tag $name".exec[Exit]() match
+      case Exit.Ok => name
       case failure       => abort(GitError(TagFailed))
 
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
@@ -348,7 +348,7 @@ object Git:
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
         val target: Path on Posix = targetPath.pathText.decodeAs[Path on Posix]
-        sh"$command init $bareOpt $target".exec[ExitStatus]()
+        sh"$command init $bareOpt $target".exec[Exit]()
 
         if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
 
@@ -426,11 +426,11 @@ object Git:
     val recursiveOption = if recursive then sh"--recursive" else sh""
 
     val process =
-      sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[ExitStatus]()
+      sh"$git clone --progress $bareOption $branchOption $recursiveOption $source $target".fork[Exit]()
 
     GitProcess[GitRepo](progress(process)):
       process.await() match
-        case ExitStatus.Ok =>
+        case Exit.Ok =>
           try throwErrors[IoError](GitRepo((target / n".git"), target))
           catch case error: IoError => abort(GitError(CloneFailed))
 
