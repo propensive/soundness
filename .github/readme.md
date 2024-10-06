@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/superlunary/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/superlunary/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Superlunary
@@ -48,17 +48,9 @@ within a single runtime environment.
 
 
 
-## Availability Plan
+## Availability
 
-Superlunary has not yet been published. The medium-term plan is to build Superlunary
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Superlunary.
 
-Subsequently, Superlunary will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
