@@ -28,4 +28,4 @@ trait Receivable[+MessageType]:
 object Receivable:
   given bytes: Receivable[Bytes] = identity(_)
   given text(using CharDecoder): Receivable[Text] = _.text
-  given decoder[MessageType: Decoder](using CharDecoder): Receivable[MessageType] = _.text.decodeAs[MessageType]
+  given decoder[MessageType: Decoder](using CharDecoder): Receivable[MessageType] = _.text.decode[MessageType]
