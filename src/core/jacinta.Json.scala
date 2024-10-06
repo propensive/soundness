@@ -164,10 +164,8 @@ object Json extends Json2, Dynamic:
       => (CollectionType[ElementType] is Decodable in Json) as array =
     (value, omit) =>
       val builder = factory.newBuilder
-      var index: Int = 0
       value.root.array.each: json =>
-        focus(prior.or(JsonPath()) / index)(builder += ElementType.decode(Json.ast(json), false))
-        index += 1
+        focus(prior.or(JsonPath()) / ordinal)(builder += ElementType.decode(Json.ast(json), false))
 
       builder.result()
 
