@@ -26,7 +26,7 @@ extension [ValueType: Showable](value: ValueType)
 extension [ValueType: Inspectable](value: ValueType) def inspect: Text = ValueType.text(value)
 
 extension (text: Text)
-  def decodeAs[ValueType: Decoder]: ValueType = ValueType.decode(text)
+  def decode[ValueType: Decoder]: ValueType = ValueType.decode(text)
 
 extension [ValueType: Encoder](value: ValueType)
   def encode: Text = ValueType.encode(value)
