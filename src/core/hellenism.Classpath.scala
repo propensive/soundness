@@ -50,30 +50,33 @@ object Classpath:
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-  given (using Tactic[ClasspathError], Classpath is Navigable from Classloader)
+  given (using Tactic[ClasspathError], Classpath is Radical from Classloader)
       => (Path on Classpath) is Readable by Bytes as readableBytes =
     unsafely:
       Readable.inputStream.contramap: resource =>
         resource.root.inputStream(resource.text)
 
-  given (using Classloader, Tactic[NameError])
-      => Classpath is Navigable by Name[Classpath] from Classloader under Rules =
+  given (using Tactic[NameError]) => Classpath is Navigable by Name[Classpath] under Rules =
     new Navigable:
       type Self = Classpath
       type Operand = Name[Classpath]
-      type Source = Classloader
       type Constraint = Rules
 
       val separator: Text = t"/"
       val parentElement: Text = t".."
       val selfText: Text = t".."
 
-      def root(path: Text): Classloader = summon[Classloader]
-      def rootLength(path: Text): Int = 0
-      def rootText(root: Classloader): Text = t""
       def elementText(element: Name[Classpath]): Text = element.text
       def element(text: Text): Name[Classpath] = Name(text)
       def caseSensitivity: Case = Case.Sensitive
+  
+  given (using Classloader) => Classpath is Radical from Classloader = new Radical:
+    type Self = Classpath
+    type Source = Classloader
+
+    def root(path: Text): Classloader = summon[Classloader]
+    def rootLength(path: Text): Int = 0
+    def rootText(root: Classloader): Text = t""
 
 trait Classpath:
   def entries: List[ClasspathEntry]
