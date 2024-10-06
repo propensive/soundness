@@ -79,10 +79,10 @@ object Tzdb:
       try throwErrors:
         if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.skip(4).s))
         else if str.skip(3).keep(2) == t">="
-        then MonthDate.After(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decodeAs[Int])
+        then MonthDate.After(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decode[Int])
         else if str.skip(3).keep(2) == t"<="
-        then MonthDate.Before(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decodeAs[Int])
-        else MonthDate.Exact(month, str.decodeAs[Int])
+        then MonthDate.Before(month, Weekday.valueOf(str.keep(3).s), str.skip(5).decode[Int])
+        else MonthDate.Exact(month, str.decode[Int])
       catch case err: NumberError =>
         abort(TzdbError(TzdbError.Reason.UnparsableDate, lineNo))
 
@@ -129,13 +129,13 @@ object Tzdb:
         try throwErrors:
           val end = to match
             case t"max"  => Int.MaxValue
-            case t"only" => from.decodeAs[Int]
-            case other   => to.decodeAs[Int]
+            case t"only" => from.decode[Int]
+            case other   => to.decode[Int]
 
           val d = parseDay(lineNo, parseMonth(month), day)
           val t = parseTime(lineNo, time)
           val s = parseDuration(lineNo, save)
-          Tzdb.Entry.Rule(name, from.decodeAs[Int], end, d, t, s, parseLetters(letters))
+          Tzdb.Entry.Rule(name, from.decode[Int], end, d, t, s, parseLetters(letters))
         catch case err: NumberError =>
           abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 

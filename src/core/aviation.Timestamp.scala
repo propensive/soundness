@@ -34,12 +34,12 @@ object Timestamp:
           case DateError(_)      => TimestampError(text)
         .within:
           Timestamp
-           (Date(year.decodeAs[Int],
-            MonthName(month.decodeAs[Int]),
-            day.decodeAs[Int]),
-            Clockface(Base24(hour.decodeAs[Int]),
-            Base60(minute.decodeAs[Int]),
-            Base60(second.decodeAs[Int])))
+           (Date(year.decode[Int],
+            MonthName(month.decode[Int]),
+            day.decode[Int]),
+            Clockface(Base24(hour.decode[Int]),
+            Base60(minute.decode[Int]),
+            Base60(second.decode[Int])))
 
       case value =>
         raise(TimestampError(value))
