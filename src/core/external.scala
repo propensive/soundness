@@ -117,7 +117,7 @@ trait Dispatcher:
             }.json.encode
           }
 
-          '{ text => $fromList(text.decodeAs[Json].as[List[Json]]) }
+          '{ text => $fromList(text.decode[Json].as[List[Json]]) }
 
         Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
@@ -125,8 +125,8 @@ trait Dispatcher:
     val classpath = (classloaders.threadContext.classpath: @unchecked) match
       case classpath: LocalClasspath => LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
 
-    invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decodeAs[Json].as[OutputType],
-        (fn: Text => Text) => fn(references()).decodeAs[Json].as[OutputType]))
+    invoke[OutputType](Dispatch(out, classpath, () => fn(references()).decode[Json].as[OutputType],
+        (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
 
 case class Dispatch[OutputType]
     (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
