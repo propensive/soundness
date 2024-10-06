@@ -21,4 +21,4 @@ export contingency.{Tactic, Fatal, Recoverable, raise, abort, safely, unsafely, 
     within, Track, Foci, track, focus}
 
 package strategies:
-  export contingency.strategies.{throwUnsafely, throwSafely}
+  export contingency.strategies.{throwUnsafely, throwSafely, uncheckedErrors, mitigation, fatalErrors}
