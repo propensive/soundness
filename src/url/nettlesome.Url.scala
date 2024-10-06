@@ -47,21 +47,26 @@ object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
   given (using Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
-      => HttpUrl is Navigable by Name[HttpUrl] from HttpUrl under Rules as navigable = new Navigable:
-    type Operand = Name[HttpUrl]
+      => HttpUrl is Radical from HttpUrl as radical = new Radical:
     type Self = HttpUrl
     type Source = HttpUrl
+
+    def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
+    def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
+    def rootText(url: HttpUrl): Text = url.show
+
+  given (using Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+      => HttpUrl is Navigable by Name[HttpUrl] under Rules as navigable = new Navigable:
+    type Operand = Name[HttpUrl]
+    type Self = HttpUrl
     type Constraint = Rules
 
     val separator: Text = t"/"
     val parentElement: Text = t".."
     val selfText: Text = t"."
 
-    def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
     def element(element: Text): Name[HttpUrl] = Name(element)
-    def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
     def elementText(element: Name[HttpUrl]): Text = element.text
-    def rootText(url: HttpUrl): Text = url.show
     def caseSensitivity: Case = Case.Sensitive
 
   given HttpUrl is GenericUrl = _.show
