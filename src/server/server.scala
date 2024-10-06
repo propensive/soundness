@@ -223,7 +223,7 @@ case class HttpRequest
      queryParams: Map[Text, List[Text]]):
 
   lazy val path: Path on HttpUrl raises PathError raises UrlError raises HostnameError =
-    pathText.decodeAs[Path on HttpUrl]
+    pathText.decode[Path on HttpUrl]
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -249,7 +249,7 @@ case class HttpRequest
 
   lazy val length: Int raises StreamError =
     try throwErrors:
-      headers.get(RequestHeader.ContentLength).map(_.head).map(_.decodeAs[Int]).getOrElse:
+      headers.get(RequestHeader.ContentLength).map(_.head).map(_.decode[Int]).getOrElse:
         body.stream.map(_.length).sum
     catch case err: NumberError => abort(StreamError(0.b))
 
