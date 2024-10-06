@@ -26,3 +26,6 @@ object Printable:
 trait Printable:
   type Self
   def print(text: Self, termcap: Termcap): Text
+
+  def contramap[SelfType](lambda: Termcap ?=> SelfType => Self): SelfType is Printable =
+    (self, termcap) => print(lambda(using termcap)(self), termcap)
