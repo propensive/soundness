@@ -60,19 +60,19 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_.length == 0)
 
     test(t"a specific exception can be captured"):
-      given ExpectationError[Any] is Fatal = _ => ExitStatus.Ok
+      given ExpectationError[Any] is Fatal = _ => Exit.Ok
       capture[AlphaError]:
         abort(AlphaError())
     .assert(_ == AlphaError())
 
     test(t"an unspecified exception can be captured"):
-      given ExpectationError[Any] is Fatal = _ => ExitStatus.Ok
+      given ExpectationError[Any] is Fatal = _ => Exit.Ok
       capture:
         abort(AlphaError())
     .assert(_ == AlphaError())
 
     test(t"one exception can be tended into another"):
-      given ExpectationError[Any] is Fatal = _ => ExitStatus.Ok
+      given ExpectationError[Any] is Fatal = _ => Exit.Ok
       capture[BetaError]:
         tend:
           case AlphaError() => BetaError()
@@ -96,7 +96,7 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == 17)
 
     test(t"a tended block returns its value"):
-      given BetaError is Fatal = error => ExitStatus.Ok
+      given BetaError is Fatal = error => Exit.Ok
 
       tend:
         case AlphaError() => BetaError()
@@ -105,7 +105,7 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == 17)
 
     test(t"tended block can transform to same type"):
-      given ExpectationError[Any] is Fatal = error => ExitStatus.Ok
+      given ExpectationError[Any] is Fatal = error => Exit.Ok
       capture[GammaError]:
         tend:
           case GammaError(n) => GammaError(n + 1)
@@ -115,7 +115,7 @@ object Tests extends Suite(t"Contingency tests"):
 
     test(t"tended block can transform to different types"):
       import strategies.throwUnsafely
-      given ExpectationError[Any] is Fatal = error => ExitStatus.Ok
+      given ExpectationError[Any] is Fatal = error => Exit.Ok
 
       capture[ZetaError]:
         tend:
@@ -148,7 +148,7 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == 42)
 
     test(t"accrual with two raises"):
-      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      given ExpectationError[?] is Fatal = error => Exit.Fail(1)
       capture[GammaErrors]:
         accrue(GammaErrors()):
           case error: GammaError => accrual + error
@@ -160,7 +160,7 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == GammaErrors(GammaError(2) :: GammaError(1) :: Nil))
 
     test(t"accrual with no raises"):
-      given GammaErrors is Fatal = error => ExitStatus.Fail(1)
+      given GammaErrors is Fatal = error => Exit.Fail(1)
 
       accrue(GammaErrors()):
         case error: GammaError => accrual + error
@@ -193,7 +193,7 @@ object Tests extends Suite(t"Contingency tests"):
     .assert(_ == GammaErrors(GammaError(2) :: Nil))
 
     test(t"accrual with multiple error types"):
-      given ExpectationError[?] is Fatal = error => ExitStatus.Fail(1)
+      given ExpectationError[?] is Fatal = error => Exit.Fail(1)
 
       capture[MiscErrors]:
         accrue(MiscErrors()):

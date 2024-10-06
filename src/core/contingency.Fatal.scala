@@ -20,4 +20,4 @@ import rudiments.*
 
 trait Fatal:
   type Self
-  def status(error: Self): ExitStatus
+  def status(error: Self): Exit
