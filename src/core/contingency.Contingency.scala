@@ -294,6 +294,7 @@ object Contingency:
           : Expr[ResultType] =
 
     '{  val foci: Foci[FocusType] = TrackFoci()
+
         val result: Option[ResultType] = boundary[Option[ResultType]]: label ?=>
           ${  import quotes.reflect.*
 
@@ -318,7 +319,9 @@ object Contingency:
               '{Some($expr)}  }
 
         result match
-          case None        => $tactic.abort($track.initial)
+          case None =>
+            $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))
+
           case Some(value) =>
             if foci.success then value
             else $tactic.abort(foci.fold[AccrualType]($track.initial)($track.lambda(using _, _)))

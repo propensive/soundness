@@ -51,6 +51,7 @@ class TrackFoci[FocusType]() extends Foci[FocusType]:
 
   def length: Int = errors.length
   def success: Boolean = length == 0
+
   def register(error: Exception): Unit =
     errors.append(error)
     focuses.append(Unset)
