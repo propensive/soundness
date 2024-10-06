@@ -297,19 +297,19 @@ object Tests extends Suite(t"Rudiments Tests"):
 
     suite(t"PID & exit status tests"):
       test(t"Zero exit-status is OK"):
-        ExitStatus(0)
-      .assert(_ == ExitStatus.Ok)
+        Exit(0)
+      .assert(_ == Exit.Ok)
       
       test(t"Positive exit-status is a failure"):
-        ExitStatus(1)
-      .assert(_ == ExitStatus.Fail(1))
+        Exit(1)
+      .assert(_ == Exit.Fail(1))
 
       test(t"Ok has exit status 0"):
-        ExitStatus.Ok
+        Exit.Ok
       .assert(_() == 0)
       
       test(t"Failure has non-zero exit status"):
-        ExitStatus.Fail(3)
+        Exit.Fail(3)
       .assert(_() == 3)
     
     suite(t"Bytes tests"):

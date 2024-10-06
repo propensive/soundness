@@ -18,10 +18,10 @@ package rudiments
 
 import language.experimental.captureChecking
 
-object ExitStatus:
-  def apply(value: Int): ExitStatus = if value == 0 then Ok else Fail(value)
+object Exit:
+  def apply(value: Int): Exit = if value == 0 then Ok else Fail(value)
 
-enum ExitStatus:
+enum Exit:
   case Ok
   case Fail(status: Int)
 
