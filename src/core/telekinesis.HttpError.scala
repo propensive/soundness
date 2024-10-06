@@ -21,6 +21,5 @@ import anticipation.*
 
 import language.dynamics
 
-case class HttpError(status: HttpStatus & FailureCase, body: HttpBody)(using Diagnostics)
-extends Error(m"HTTP error $status"):
-  def as[BodyType: HttpReadable as readable]: BodyType = readable.read(status, body)
+case class HttpError(status: HttpStatus & FailureCase)(using Diagnostics)
+extends Error(m"HTTP error $status")

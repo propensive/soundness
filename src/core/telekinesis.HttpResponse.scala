@@ -27,7 +27,7 @@ object HttpResponse:
   given (using Tactic[HttpError]) => HttpResponse is Readable by Bytes as readable = response =>
     val body = response.status match
       case status: (HttpStatus & FailureCase) =>
-        raise(HttpError(status, response.body), response.body)
+        raise(HttpError(status), response.body)
 
       case status =>
         response.body
@@ -38,7 +38,7 @@ case class HttpResponse
     (status: HttpStatus, headers: Map[ResponseHeader[?], List[Text]], body: HttpBody):
 
   def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
-    case status: FailureCase => abort(HttpError(status, body))
+    case status: FailureCase => abort(HttpError(status))
     case status              => readable.read(status, body)
 
   def apply[ValueType](header: ResponseHeader[ValueType])
