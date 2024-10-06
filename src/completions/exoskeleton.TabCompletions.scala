@@ -50,7 +50,7 @@ object TabCompletions:
       val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
       val command: Text = service.scriptName
 
-      if !force && safely(scriptPath.decodeAs[Path on Posix]) != service.script
+      if !force && safely(scriptPath.decode[Path on Posix]) != service.script
       then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
       else
         val zsh: TabCompletionsInstallation.InstallResult =
@@ -62,7 +62,7 @@ object TabCompletions:
 
             val dirs =
               dirNames.filter(_.trim != t"").map: dir =>
-                safely(dir.decodeAs[Path on Posix])
+                safely(dir.decode[Path on Posix])
               .compact
 
             install(Shell.Zsh, command, Name(t"_$command"), dirs)

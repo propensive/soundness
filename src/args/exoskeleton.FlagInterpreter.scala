@@ -29,7 +29,7 @@ object FlagInterpreter:
 
   given [OperandType: Decoder] => FlagInterpreter[OperandType] as decoder = arguments =>
     (arguments.take(1): @unchecked) match
-      case List(value) => value().decodeAs[OperandType]
+      case List(value) => value().decode[OperandType]
 
 trait FlagInterpreter[OperandType]:
   def operand: Boolean = true
