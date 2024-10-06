@@ -20,4 +20,4 @@ import rudiments.*
 import turbulence.*
 
 trait UnhandledErrorHandler:
-  def handle(block: => ExitStatus)(using Stdio): ExitStatus
+  def handle(block: => Exit)(using Stdio): Exit

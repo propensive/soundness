@@ -18,4 +18,4 @@ package exoskeleton
 
 import rudiments.*
 
-case class Execution(exitStatus: ExitStatus)
+case class Execution(exitStatus: Exit)

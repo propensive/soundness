@@ -24,9 +24,9 @@ import profanity.*
 import gossamer.*
 import ambience.*
 
-def execute(block: Effectful ?=> CliInvocation ?=> ExitStatus)(using cli: Cli): Execution =
+def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
   (cli: @unchecked) match
-    case completion: CliCompletion => Execution(ExitStatus.Ok)
+    case completion: CliCompletion => Execution(Exit.Ok)
     case invocation: CliInvocation => Execution(block(using ###)(using invocation))
 
 def explain(explanation: (previous: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
@@ -58,11 +58,11 @@ package executives:
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
 
-    def process(cli: Cli)(execution: Cli ?=> Execution): ExitStatus = (cli: @unchecked) match
+    def process(cli: Cli)(execution: Cli ?=> Execution): Exit = (cli: @unchecked) match
       case completion: CliCompletion =>
         given Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
-        ExitStatus.Ok
+        Exit.Ok
 
       case invocation: CliInvocation =>
         handler.handle(execution(using invocation).exitStatus)(using invocation.stdio)

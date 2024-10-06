@@ -35,4 +35,4 @@ trait Executive:
       (using interpreter: CliInterpreter)
           : CliType
 
-  def process(cli: CliType)(result: CliType ?=> Return): ExitStatus
+  def process(cli: CliType)(result: CliType ?=> Return): Exit

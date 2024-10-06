@@ -30,44 +30,44 @@ import sun.misc as sm
 
 package unhandledErrors:
   given UnhandledErrorHandler as silent:
-    def handle(block: => ExitStatus)(using Stdio): ExitStatus =
+    def handle(block: => Exit)(using Stdio): Exit =
       try block catch
-        case error: Exception => ExitStatus(1)
-        case error: Throwable => ExitStatus(2)
+        case error: Exception => Exit(1)
+        case error: Throwable => Exit(2)
 
   given UnhandledErrorHandler as genericErrorMessage:
-    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+    def handle(block: => Exit)(using Stdio): Exit = try block catch
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
-        ExitStatus(1)
+        Exit(1)
 
       case error: Throwable =>
         Out.println(t"An unexpected error occurred.")
-        ExitStatus(2)
+        Exit(2)
 
   given UnhandledErrorHandler as exceptionMessage:
-    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+    def handle(block: => Exit)(using Stdio): Exit = try block catch
       case error: Exception =>
         Out.println(error.toString.tt)
-        ExitStatus(1)
+        Exit(1)
 
       case error: Throwable =>
         Out.println(error.toString.tt)
-        ExitStatus(2)
+        Exit(2)
 
   given UnhandledErrorHandler as stackTrace:
-    def handle(block: => ExitStatus)(using Stdio): ExitStatus = try block catch
+    def handle(block: => Exit)(using Stdio): Exit = try block catch
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
-        ExitStatus(1)
+        Exit(1)
 
       case error: Throwable =>
         Out.println(StackTrace(error).teletype)
-        ExitStatus(2)
+        Exit(2)
 
 package executives:
   given direct(using handler: UnhandledErrorHandler): Executive with
-    type Return = ExitStatus
+    type Return = Exit
     type CliType = CliInvocation
 
     def cli
@@ -81,7 +81,7 @@ package executives:
 
       CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
-    def process(cli: CliInvocation)(exitStatus: CliType ?=> ExitStatus): ExitStatus =
+    def process(cli: CliInvocation)(exitStatus: CliType ?=> Exit): Exit =
       handler.handle(exitStatus(using cli))(using cli.stdio)
 
 def application(using executive: Executive, interpreter: CliInterpreter)
