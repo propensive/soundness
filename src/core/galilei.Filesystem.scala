@@ -19,9 +19,19 @@ object Filesystem:
       MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"] &
       MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError], Tactic[NameError])
-      => Filesystem is Navigable by Name[Filesystem] from
-          (WindowsDrive | Linux.Root | MacOs.Root) under Rules as navigable =
+  given (using Tactic[PathError])
+      => Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root as radical =
+    val os = System.getProperty("os.name").nn.tt
+        
+    val delegate =
+      if os.starts(t"Windows") then Windows.radical
+      else if os.starts(t"Mac") then MacOs.radical else Linux.radical
+        
+    (delegate: @unchecked) match
+      case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
+  
+  given (using Tactic[NameError])
+      => Filesystem is Navigable by Name[Filesystem] under Rules as navigable =
     val os = System.getProperty("os.name").nn.tt
         
     val delegate =
@@ -29,5 +39,4 @@ object Filesystem:
       else if os.starts(t"Mac") then MacOs.navigable else Linux.navigable
         
     (delegate: @unchecked) match
-      case navigable: (Filesystem is Navigable by Name[Filesystem] from (WindowsDrive | Linux.Root |
-                       MacOs.Root) under Rules) => navigable
+      case navigable: (Filesystem is Navigable by Name[Filesystem] under Rules) => navigable

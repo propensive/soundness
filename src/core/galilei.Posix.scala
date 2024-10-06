@@ -18,12 +18,21 @@ object Posix:
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError], Tactic[NameError]) => Posix is Navigable by Name[Posix] from
-      (Root on Posix) under Rules as navigable =
+  given (using Tactic[PathError]) => Posix is Radical from (Root on Posix) as radical = new Radical:
+    type Self = Posix
+    type Source = Root on Posix
+
+    def rootLength(path: Text): Int = 1
+    def rootText(root: Source): Text = t"/"
+  
+    def root(path: Text): Source =
+      if path.at(Prim) == '/' then Posix.RootSingleton
+      else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
+
+  given (using Tactic[NameError]) => Posix is Navigable by Name[Posix] under Rules as navigable =
     new Navigable:
       type Self = Posix
       type Operand = Name[Posix]
-      type Source = Root on Posix
       type Constraint = Rules
 
       val separator: Text = t"/"
@@ -31,14 +40,7 @@ object Posix:
       val selfText: Text = t"."
 
       def element(element: Text): Name[Posix] = Name(element)
-      def rootLength(path: Text): Int = 1
       def elementText(element: Name[Posix]): Text = element.text
-      def rootText(root: Source): Text = t"/"
-    
-      def root(path: Text): Source =
-        if path.at(Prim) == '/' then Posix.RootSingleton
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
-      
       def caseSensitivity: Case = Case.Sensitive
 
 erased trait Posix extends Filesystem
