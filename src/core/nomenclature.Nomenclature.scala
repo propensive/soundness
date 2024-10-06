@@ -13,6 +13,7 @@ object Nomenclature:
 
   object Name:
     given [PlatformType] => Name[PlatformType] is Communicable = name => Message(name.text)
+    given [PlatformType] => Encoder[Name[PlatformType]] = _.text
 
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
