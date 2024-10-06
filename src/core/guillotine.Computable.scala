@@ -47,9 +47,9 @@ object Computable:
   given (using streamCut: Tactic[StreamError]) => LazyList[Bytes] is Computable as dataStream =
     proc => Readable.inputStream.stream(proc.getInputStream.nn)
 
-  given ExitStatus is Computable as exitStatus = _.waitFor() match
-    case 0     => ExitStatus.Ok
-    case other => ExitStatus.Fail(other)
+  given Exit is Computable as exitStatus = _.waitFor() match
+    case 0     => Exit.Ok
+    case other => Exit.Fail(other)
 
   given Unit is Computable = exitStatus.map(_ => ())
 

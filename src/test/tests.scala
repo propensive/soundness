@@ -229,12 +229,12 @@ object Tests extends Suite(t"Guillotine tests"):
       .assert(_ <= 100L)
 
       test(t"successful exit status"):
-        sh"echo hello".exec[ExitStatus]()
-      .assert(_ == ExitStatus.Ok)
+        sh"echo hello".exec[Exit]()
+      .assert(_ == Exit.Ok)
 
       test(t"failed exit status"):
-        sh"false".exec[ExitStatus]()
-      .assert(_ == ExitStatus.Fail(1))
+        sh"false".exec[Exit]()
+      .assert(_ == Exit.Fail(1))
 
       test(t"nested command"):
         val cmd = sh"echo 'Hello world'"

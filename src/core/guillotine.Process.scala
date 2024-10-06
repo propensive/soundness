@@ -60,9 +60,9 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
   def await()(using computable: ResultType is Computable): ResultType = computable.compute(process)
 
-  def exitStatus(): ExitStatus = process.waitFor() match
-    case 0     => ExitStatus.Ok
-    case other => ExitStatus.Fail(other)
+  def exitStatus(): Exit = process.waitFor() match
+    case 0     => Exit.Ok
+    case other => Exit.Fail(other)
 
   def abort(): Unit logs ExecEvent =
     Log.info(ExecEvent.AbortProcess(pid))
