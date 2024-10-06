@@ -22,7 +22,7 @@ object Path:
   given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
   
   given [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath as specific =
-    _.decodeAs[Path on PlatformType]
+    _.decode[Path on PlatformType]
   
   given Path is Communicable as communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
