@@ -25,7 +25,7 @@ object HttpHeaderDecoder:
   given text: HttpHeaderDecoder[Text] = identity(_)
 
   given byteSize(using Tactic[NumberError]): HttpHeaderDecoder[ByteSize] =
-    value => ByteSize(value.decodeAs[Int])
+    value => ByteSize(value.decode[Int])
 
 trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType
