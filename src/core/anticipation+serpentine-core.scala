@@ -4,7 +4,7 @@ import serpentine.*
 import prepositional.*
 
 package filesystemApi:
-  given [PlatformType: Navigable]
+  given [PlatformType: {Navigable, Radical}]
       => (Path on PlatformType) is GenericPath & SpecificPath as serpentinePath =
     new GenericPath with SpecificPath:
       type Self = Path on PlatformType

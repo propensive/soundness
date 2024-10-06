@@ -14,11 +14,14 @@ import scala.compiletime.*
 
 object Path:
   given Encoder[Path] as encoder = _.text
-  given [PlatformType: Navigable] => Decoder[Path on PlatformType] as decoder = Path.parse(_)
+  
+  given [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] as decoder =
+    Path.parse(_)
+
   given [PlatformType] => (Path on PlatformType) is Showable as showable = _.text
   given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
   
-  given [PlatformType: Navigable] => Path on PlatformType is SpecificPath as specific =
+  given [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath as specific =
     _.decodeAs[Path on PlatformType]
   
   given Path is Communicable as communicable = path =>
@@ -48,7 +51,7 @@ object Path:
   def apply
       [RootType <: Root on PlatformType,
        ElementType,
-       PlatformType: Navigable by ElementType from RootType]
+       PlatformType: {Navigable by ElementType, Radical from RootType}]
       (root0: RootType, elements: List[ElementType])
           : Path on PlatformType =
     if elements.isEmpty then root0 else
@@ -64,7 +67,7 @@ object Path:
     new Path(root0, elements, separator, caseSensitivity):
       type Platform = PlatformType
   
-  def parse[PlatformType: Navigable](path: Text): Path on PlatformType =
+  def parse[PlatformType: {Navigable, Radical}](path: Text): Path on PlatformType =
     val root = PlatformType.root(path)
 
     val descent = path
@@ -99,7 +102,7 @@ extends Pathlike:
   type Platform
   
   def depth: Int = textDescent.length
-  def root(using navigable: Platform is Navigable): navigable.Source = navigable.root(textRoot)
+  def root(using radical: Platform is Radical): radical.Source = radical.root(textRoot)
   def text: Text = textDescent.reverse.join(textRoot, separator, t"")
   
   def name(using navigable: Platform is Navigable): Optional[navigable.Operand] =
@@ -134,7 +137,9 @@ extends Pathlike:
   transparent inline def on [PlatformType]: Path on PlatformType =
     inline erasedValue[PlatformType & Matchable] match
       case _: Platform => this.asInstanceOf[Path on PlatformType]
-      case _           => summonInline[PlatformType is Navigable].give(Path.parse(text))
+      case _ =>
+        summonInline[PlatformType is Navigable].give:
+          summonInline[PlatformType is Radical].give(Path.parse(text))
 
   def conjunction(right: Path on Platform): Path on Platform =
     val difference = depth - right.depth
