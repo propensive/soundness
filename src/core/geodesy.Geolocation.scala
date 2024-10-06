@@ -23,13 +23,13 @@ object Geolocation:
   given (using Tactic[GeolocationError]) => Decoder[Geolocation] as decoder =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
       val location =
-        unsafely(Location(latitude.decodeAs[Double].deg, longitude.decodeAs[Double].deg))
+        unsafely(Location(latitude.decode[Double].deg, longitude.decode[Double].deg))
 
       more match
         case t""           => Geolocation(location)
         case r",$more(.*)" => more match
           case r"$altitude0(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
-            val altitude = unsafely(altitude0.decodeAs[Double])
+            val altitude = unsafely(altitude0.decode[Double])
             more match
               case t"" =>
                 Geolocation(location, altitude)
@@ -41,7 +41,7 @@ object Geolocation:
                 
                 val (uncertainty, params) = params0 match
                   case (t"u", u) :: params =>
-                    val uncertainty = safely(u.decodeAs[Double]).or:
+                    val uncertainty = safely(u.decode[Double]).or:
                       raise(GeolocationError(BadUncertainty))
                       Unset
                 
