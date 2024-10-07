@@ -55,10 +55,10 @@ object Data:
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
     tend:
-      case _: HttpError => InitError(m"There was an HTTP error")
-      case _: ZipError  => InitError(m"There was a problem with the ZIP file")
-      case _: NameError => InitError(m"There was a naming issue")
-      case _: DsvError  => InitError(m"The CSV file was not in the right format")
+      case HttpError(url, _, status) => InitError(m"There was an HTTP $status error accessing $url")
+      case _: ZipError               => InitError(m"There was a problem with the ZIP file")
+      case _: NameError              => InitError(m"There was a naming issue")
+      case _: DsvError               => InitError(m"The CSV file was not in the right format")
     .within:
       Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow]).strict
 
