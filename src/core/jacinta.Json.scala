@@ -115,8 +115,9 @@ object Json extends Json2, Dynamic:
     case given Decoder[ValueType]    => summonInline[Tactic[JsonError]].give(text.map[ValueType](_.decode))
     case given Reflection[ValueType] => DecodableDerivation.derived
 
-  inline given [ValueType: Reflection] => ValueType is Encodable in Json as encodable =
-    EncodableDerivation.derived
+  inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
+    case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
+    case given Reflection[ValueType] => EncodableDerivation.derived
 
   given Json is Decodable in Json as boolean = (value, omit) => value
   given (using Tactic[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
