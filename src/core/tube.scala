@@ -7,6 +7,8 @@ import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import threadModels.platform
 
+val About = Subcommand(t"about")
+
 @main
 def app(): Unit = cli:
   execute:
