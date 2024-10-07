@@ -41,6 +41,12 @@ def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: 
         : Unit =
   buffer.append(TextType.show(value))
 
+def appendln[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+    (using TextType.Show[ValueType])
+        : Unit =
+  buffer.append(TextType.show(value))
+  buffer.append(TextType("\n".tt))
+
 extension (textObject: Text.type)
   def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
     val buffer = TextBuffer()
