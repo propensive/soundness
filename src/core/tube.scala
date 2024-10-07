@@ -37,4 +37,4 @@ def app(): Unit = cli:
 object Data:
   def stations(using Online) =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
-    ZipStream(sourceUrl.get())
+    ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")
