@@ -67,6 +67,7 @@ object Data:
       case _: DsvError               => InitError(m"The CSV file was not in the right format")
       case error: ConcurrencyError   => InitError(error.message)
       case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
+      case error: IoError            => InitError(error.message)
     .within:
       cache.establish:
         import filesystemOptions.readAccess.enabled
