@@ -29,6 +29,7 @@ def app(): Unit = cli:
   mend:
     case _: InitError => execute:
       service.shutdown()
+      Exit.Fail(2)
   .within:
     arguments match
       case About() :: _ => execute:
