@@ -29,7 +29,7 @@ def app(): Unit = cli:
       Exit.Ok
 
     case Trip() :: _ => execute:
-      Out.println(t"Not yet implemented")
+      Out.println(Data.stations)
       Exit.Ok
 
     case _ => execute:
