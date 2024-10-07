@@ -2,7 +2,7 @@ package tube.terminal
 
 import soundness.*
 
-import executives.direct
+import executives.completions
 import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import stdioSources.virtualMachine.ansi
