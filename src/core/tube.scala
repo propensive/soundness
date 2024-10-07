@@ -26,6 +26,10 @@ def app(): Unit = cli:
       Out.println(TabCompletions.install().communicate)
       Exit.Ok
 
+    case Trip() :: _ => execute:
+      Out.println(t"Not yet implemented")
+      Exit.Ok
+
     case _ => execute:
       Out.println(e"$Bold(Unrecognized command!)")
       Exit.Fail(1)
