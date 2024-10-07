@@ -55,6 +55,7 @@ object Data:
     .within:
       Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow]).strict
 
+case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class StationRow(id: Name[Naptan], name: Text)
 
 erased trait Naptan
