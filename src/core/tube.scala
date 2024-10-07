@@ -32,7 +32,7 @@ def app(): Unit = cli:
       Exit.Ok
 
     case Trip() :: _ => execute:
-      Out.println(Data.stations)
+      Out.println(Data.stations.table)
       Exit.Ok
 
     case _ => execute:
