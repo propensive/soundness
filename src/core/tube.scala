@@ -19,6 +19,8 @@ val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
 
 @main
 def app(): Unit = cli:
+  import internetAccess.enabled
+
   arguments match
     case About() :: _ => execute:
       Out.println(e"About this software")
