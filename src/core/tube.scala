@@ -15,6 +15,7 @@ import textSanitizers.skip
 import dsvFormats.csvWithHeader
 import tableStyles.default
 import textMetrics.uniform
+import columnAttenuation.ignore
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
