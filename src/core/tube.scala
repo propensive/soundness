@@ -17,7 +17,7 @@ import textMetrics.uniform
 import columnAttenuation.ignore
 import printableTypes.message
 
-erased given Naptan is Nominative under MustStart["HUB"] = ###
+erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
