@@ -26,22 +26,25 @@ val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
 def app(): Unit = cli:
   import internetAccess.enabled
 
-  arguments match
-    case About() :: _ => execute:
-      Out.println(e"About this software")
-      Exit.Ok
+  mend:
+    case _: InitError => service.shutdown()
+  .within:
+    arguments match
+      case About() :: _ => execute:
+        Out.println(e"About this software")
+        Exit.Ok
 
-    case Install() :: _ => execute:
-      safely(Out.println(TabCompletions.install().communicate))
-      Exit.Ok
+      case Install() :: _ => execute:
+        safely(Out.println(TabCompletions.install().communicate))
+        Exit.Ok
 
-    case Trip() :: _ => execute:
-      val stations = Data.stations
-      Exit.Ok
+      case Trip() :: _ => execute:
+        val stations = Data.stations
+        Exit.Ok
 
-    case _ => execute:
-      Out.println(e"$Bold(Unrecognized command!)")
-      Exit.Fail(1)
+      case _ => execute:
+        Out.println(e"$Bold(Unrecognized command!)")
+        Exit.Fail(1)
 
 object Data:
   def stations(using Online): LazyList[StationRow] raises InitError =
