@@ -79,7 +79,8 @@ object Data:
         val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
         val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
-          ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes]
+          ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
+            file.open(stream.writeTo(_))
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
