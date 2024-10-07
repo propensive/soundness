@@ -28,6 +28,8 @@ def app(): Unit = cli:
 
   mend:
     case error: InitError => execute:
+      Out.println(t"An error occurred during initialization:")
+      Out.println(error.message)
       service.shutdown()
       Exit.Fail(2)
   .within:
