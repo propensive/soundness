@@ -62,6 +62,7 @@ object Data:
       case _: ZipError               => InitError(m"There was a problem with the ZIP file")
       case error: NameError          => InitError(error.message)
       case _: DsvError               => InitError(m"The CSV file was not in the right format")
+      case error: ConcurrencyError   => InitError(error.message)
     .within:
       cache.establish:
         val csv = ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")
