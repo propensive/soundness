@@ -8,6 +8,6 @@ import parameterInterpretation.posix
 import stdioSources.virtualMachine.ansi
 
 @main
-def app(): Unit = application(Nil):
+def app(): Unit = cli:
   Out.println(e"$Bold($Italic(Hello world))")
   Exit.Ok
