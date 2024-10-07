@@ -15,3 +15,7 @@ def app(): Unit = cli:
     case About() :: _ => execute:
       Out.println(e"About this software")
       Exit.Ok
+
+    case _ => execute:
+      Out.println(e"$Bold(Unrecognized command!)")
+      Exit.Fail(1)
