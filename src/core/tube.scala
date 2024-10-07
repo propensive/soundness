@@ -8,6 +8,7 @@ import parameterInterpretation.posix
 import threadModels.platform
 
 val About = Subcommand(t"about")
+val Install = Subcommand(t"install")
 
 @main
 def app(): Unit = cli:
