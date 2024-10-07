@@ -15,6 +15,7 @@ import dsvFormats.csvWithHeader
 import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
+import printableTypes.message
 
 erased given Naptan is Nominative under MustStart["HUB"] = ###
 
