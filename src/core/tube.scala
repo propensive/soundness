@@ -22,7 +22,7 @@ def app(): Unit = cli:
       Exit.Ok
 
     case Install() :: _ => execute:
-      TabCompletions.install()
+      Out.println(TabCompletions.install().communicate)
       Exit.Ok
 
     case _ => execute:
