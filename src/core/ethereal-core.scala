@@ -65,11 +65,12 @@ package daemonConfig:
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
-def cliService[BusType <: Matchable](using executive: Executive)
+def cli[BusType <: Matchable](using executive: Executive)
     (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
     (using interpreter:   CliInterpreter,
            stderrSupport: StderrSupport = daemonConfig.supportStderr,
-           model:         ThreadModel)
+           model:         ThreadModel,
+           handler:       UnhandledErrorHandler)
       : Unit =
 
   given Realm: Realm = realm"ethereal"
@@ -257,7 +258,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
 
           try
             val cli: executive.CliType =
-              executive.cli
+              executive.invocation
                (textArguments, environment, () => directory, stdio, connection.signals)
 
             val result = block(using service)(using cli)
@@ -268,10 +269,7 @@ def cliService[BusType <: Matchable](using executive: Executive)
           catch
             case exception: Exception =>
               Log.warn(DaemonLogEvent.Failure)
-              //Optional(exception.getStackTrace).let: stackTrace =>
-              //  stackTrace.map(_.toString.tt).each(Log.fail(_))
-
-              connection.exitPromise.fulfill(Exit.Fail(1))
+              connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
 
           finally
             socket.close()
