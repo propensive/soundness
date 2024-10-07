@@ -8,6 +8,7 @@ import parameterInterpretation.posix
 import threadModels.platform
 import workingDirectories.daemonClient
 import errorDiagnostics.stackTraces
+import logging.silent
 
 val About = Subcommand(t"about")
 val Install = Subcommand(t"install")
