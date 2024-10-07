@@ -6,6 +6,7 @@ import executives.completions
 import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import threadModels.platform
+import workingDirectories.daemonClient
 
 val About = Subcommand(t"about")
 val Install = Subcommand(t"install")
