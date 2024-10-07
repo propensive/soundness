@@ -8,5 +8,5 @@ import parameterInterpretation.posix
 
 @main
 def app(): Unit = application(Nil):
-  println("Hello world")
+  Out.println(t"Hello world")
   Exit.Ok
