@@ -16,4 +16,12 @@
 
 package aviation
 
+import spectacular.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
+
+object Clockface:
+  given Clockface is Showable = clockface =>
+    t"${(clockface.hour: Int).show.pad(2, Bidi.Rtl, '0')}:${(clockface.minute: Int).show.pad(2, Bidi.Rtl, '0')}"
+
 case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0)
