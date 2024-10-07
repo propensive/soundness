@@ -61,7 +61,8 @@ object Data:
       case error: NameError          => InitError(error.message)
       case _: DsvError               => InitError(m"The CSV file was not in the right format")
     .within:
-      Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow]).strict
+      val csv = ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")
+      Dsv.parse(csv).rows.map(_.as[StationRow])
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class StationRow(id: Name[Naptan], name: Text)
