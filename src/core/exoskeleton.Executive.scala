@@ -26,7 +26,7 @@ trait Executive:
   type Return
   type CliType <: Cli
 
-  def cli
+  def invocation
       (fullArguments:    Iterable[Text],
        environment:      Environment,
        workingDirectory: WorkingDirectory,

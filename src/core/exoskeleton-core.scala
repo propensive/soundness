@@ -30,13 +30,12 @@ import sun.misc as sm
 
 package unhandledErrors:
   given UnhandledErrorHandler as silent:
-    def handle(block: => Exit)(using Stdio): Exit =
-      try block catch
-        case error: Exception => Exit(1)
-        case error: Throwable => Exit(2)
+    def handle(error: Throwable)(using Stdio): Exit = error match
+      case error: Exception => Exit(1)
+      case error: Throwable => Exit(2)
 
   given UnhandledErrorHandler as genericErrorMessage:
-    def handle(block: => Exit)(using Stdio): Exit = try block catch
+    def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
         Exit(1)
@@ -46,7 +45,7 @@ package unhandledErrors:
         Exit(2)
 
   given UnhandledErrorHandler as exceptionMessage:
-    def handle(block: => Exit)(using Stdio): Exit = try block catch
+    def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(error.toString.tt)
         Exit(1)
@@ -56,7 +55,7 @@ package unhandledErrors:
         Exit(2)
 
   given UnhandledErrorHandler as stackTrace:
-    def handle(block: => Exit)(using Stdio): Exit = try block catch
+    def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
         Exit(1)
@@ -66,11 +65,11 @@ package unhandledErrors:
         Exit(2)
 
 package executives:
-  given direct(using handler: UnhandledErrorHandler): Executive with
+  given (using handler: UnhandledErrorHandler) => Executive as direct:
     type Return = Exit
     type CliType = CliInvocation
 
-    def cli
+    def invocation
         (arguments:        Iterable[Text],
          environment:      Environment,
          workingDirectory: WorkingDirectory,
@@ -82,7 +81,9 @@ package executives:
       CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
     def process(cli: CliInvocation)(exitStatus: CliType ?=> Exit): Exit =
-      handler.handle(exitStatus(using cli))(using cli.stdio)
+      try exitStatus(using cli)
+      catch case error: Throwable => handler.handle(error)(using cli.stdio)
+      //handler.handle(exitStatus(using cli))(using cli.stdio)
 
 def application(using executive: Executive, interpreter: CliInterpreter)
     (arguments: Iterable[Text], signals: List[Signal] = Nil)
@@ -93,6 +94,12 @@ def application(using executive: Executive, interpreter: CliInterpreter)
   signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal)) }
 
   // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
-  val cli = executive.cli(arguments, environments.virtualMachine, workingDirectories.default, stdioSources.virtualMachine.ansi, spool)
+  val cli =
+    executive.invocation
+     (arguments,
+      environments.virtualMachine,
+      workingDirectories.default,
+      stdioSources.virtualMachine.ansi,
+      spool)
 
   System.exit(executive.process(cli)(block)())

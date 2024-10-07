@@ -33,11 +33,11 @@ def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: 
   cli.explain(explanation)
 
 package executives:
-  given completions(using handler: UnhandledErrorHandler): Executive with
+  given (using handler: UnhandledErrorHandler) => Executive as completions:
     type CliType = Cli
     type Return = Execution
 
-    def cli
+    def invocation
         (arguments:        Iterable[Text],
          environment:      Environment,
          workingDirectory: WorkingDirectory,
@@ -65,4 +65,5 @@ package executives:
         Exit.Ok
 
       case invocation: CliInvocation =>
-        handler.handle(execution(using invocation).exitStatus)(using invocation.stdio)
+        try execution(using invocation).exitStatus
+        catch case error: Throwable => handler.handle(error)(using invocation.stdio)
