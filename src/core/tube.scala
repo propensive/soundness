@@ -11,7 +11,7 @@ val About = Subcommand(t"about")
 
 @main
 def app(): Unit = cli:
-  execute:
-    Out.println(e"$Bold($Italic(Hello world))")
-    Out.println(arguments.inspect)
-    Exit.Ok
+  arguments match
+    case About() :: _ => execute:
+      Out.println(e"About this software")
+      Exit.Ok
