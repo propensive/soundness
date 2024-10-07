@@ -80,6 +80,7 @@ object Data:
 
         val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
           ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
+            import filesystemOptions.writeAccess.enabled
             file.open(stream.writeTo(_))
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
