@@ -52,7 +52,7 @@ def app(): Unit = cli:
         Exit.Fail(1)
 
 object Data:
-  def stations(using Online): LazyList[StationRow] raises InitError =
+  def stations(using Online): Bijection[Name[Naptan], StationRow] raises InitError =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
     tend:
