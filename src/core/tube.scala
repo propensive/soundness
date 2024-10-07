@@ -35,7 +35,7 @@ def app(): Unit = cli:
       Exit.Ok
 
     case Trip() :: _ => execute:
-      Out.println(Data.stations.table)
+      val stations = Data.stations
       Exit.Ok
 
     case _ => execute:
