@@ -6,6 +6,7 @@ import executives.direct
 import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import stdioSources.virtualMachine.ansi
+import threadModels.platform
 
 @main
 def app(): Unit = cli:
