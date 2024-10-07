@@ -17,6 +17,10 @@ def app(): Unit = cli:
       Out.println(e"About this software")
       Exit.Ok
 
+    case Install() :: _ => execute:
+      TabCompletions.install()
+      Exit.Ok
+
     case _ => execute:
       Out.println(e"$Bold(Unrecognized command!)")
       Exit.Fail(1)
