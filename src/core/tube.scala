@@ -45,4 +45,4 @@ def app(): Unit = cli:
 object Data:
   def stations(using Online): Dsv =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
-    Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").read[Text])
+    Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv"))
