@@ -9,6 +9,7 @@ import threadModels.platform
 import workingDirectories.daemonClient
 import errorDiagnostics.stackTraces
 import logging.silent
+import strategies.throwUnsafely
 
 val About = Subcommand(t"about")
 val Install = Subcommand(t"install")
