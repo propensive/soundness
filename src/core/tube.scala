@@ -64,6 +64,7 @@ object Data:
       case error: NameError          => InitError(error.message)
       case _: DsvError               => InitError(m"The CSV file was not in the right format")
       case error: ConcurrencyError   => InitError(error.message)
+      case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
     .within:
       cache.establish:
         val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
