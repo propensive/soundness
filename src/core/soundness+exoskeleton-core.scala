@@ -24,3 +24,6 @@ package unhandledErrors:
 
 package executives:
   export exoskeleton.executives.direct
+
+package environments:
+  export ambience.environments.daemonClient
