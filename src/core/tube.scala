@@ -49,3 +49,5 @@ object Data:
     Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow])
 
 case class StationRow(id: Text, name: Text)
+
+erased trait Naptan
