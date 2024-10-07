@@ -62,7 +62,7 @@ object Data:
       case _: DsvError               => InitError(m"The CSV file was not in the right format")
     .within:
       val csv = ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")
-      Dsv.parse(csv).rows.map(_.as[StationRow])
+      Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class StationRow(id: Name[Naptan], name: Text)
