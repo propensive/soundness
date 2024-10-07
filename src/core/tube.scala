@@ -13,7 +13,7 @@ import strategies.throwUnsafely
 import charDecoders.utf8
 import textSanitizers.skip
 import dsvFormats.csvWithHeader
-import tableStyles.default
+import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
 
