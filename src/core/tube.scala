@@ -51,6 +51,7 @@ object Data:
       case _: HttpError => LazyList()
       case _: ZipError  => LazyList()
       case _: NameError => LazyList()
+      case _: DsvError  => LazyList()
     .within:
       Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow]).strict
 
