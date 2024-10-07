@@ -26,6 +26,7 @@ val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
 val Start = Flag(t"start", false, List('s'), t"The start of your journey")
+val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
 
 @main
 def app(): Unit = cli:
