@@ -11,6 +11,7 @@ import errorDiagnostics.stackTraces
 import logging.silent
 import strategies.throwUnsafely
 import charDecoders.utf8
+import textSanitizers.skip
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
