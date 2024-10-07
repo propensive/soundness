@@ -7,6 +7,7 @@ import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import threadModels.platform
 import workingDirectories.daemonClient
+import errorDiagnostics.stackTraces
 
 val About = Subcommand(t"about")
 val Install = Subcommand(t"install")
