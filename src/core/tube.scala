@@ -60,6 +60,8 @@ def app(): Unit = cli:
           .within:
             val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
             val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
+
+            Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
             Exit.Ok
 
       case _ => execute:
