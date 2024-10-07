@@ -35,6 +35,6 @@ def app(): Unit = cli:
       Exit.Fail(1)
 
 object Data:
-  def stations =
+  def stations(using Online) =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
     sourceUrl.get()
