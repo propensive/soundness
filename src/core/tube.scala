@@ -12,4 +12,5 @@ import threadModels.platform
 def app(): Unit = cli:
   Out.println(e"$Bold($Italic(Hello world))")
   Out.println(arguments.inspect)
-  Exit.Ok
+  execute:
+    Exit.Ok
