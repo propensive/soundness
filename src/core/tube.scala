@@ -55,8 +55,11 @@ def app(): Unit = cli:
         val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
 
         execute:
-          val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
-          Exit.Ok
+          mend:
+            case error: UserError => Out.println(error.message) yet Exit.Fail(1)
+          .within:
+            val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
+            Exit.Ok
 
       case _ => execute:
         Out.println(e"$Bold(Unrecognized command!)")
