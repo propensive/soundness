@@ -65,7 +65,7 @@ object Data:
       case error: ConcurrencyError   => InitError(error.message)
     .within:
       cache.establish:
-        val file: Path on Posix = Xdg.cacheHome / n"tube.csv"
+        val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
         val csv = ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
