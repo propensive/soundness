@@ -52,6 +52,8 @@ def app(): Unit = cli:
         Exit.Fail(1)
 
 object Data:
+  private val cache: Cache[Bijection[Name[Naptan], StationRow]] = Cache()
+
   def stations(using Online): Bijection[Name[Naptan], StationRow] raises InitError =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
