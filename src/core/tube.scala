@@ -59,6 +59,7 @@ def app(): Unit = cli:
             case error: UserError => Out.println(error.message) yet Exit.Fail(1)
           .within:
             val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
+            val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
             Exit.Ok
 
       case _ => execute:
