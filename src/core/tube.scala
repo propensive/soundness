@@ -68,6 +68,7 @@ object Data:
       case error: ConcurrencyError   => InitError(error.message)
       case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
       case error: IoError            => InitError(error.message)
+      case _: StreamError            => InitError(m"An error occurred when reading the cache file from disk")
     .within:
       cache.establish:
         import filesystemOptions.readAccess.enabled
