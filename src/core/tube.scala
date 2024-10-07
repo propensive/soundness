@@ -27,7 +27,7 @@ def app(): Unit = cli:
   import internetAccess.enabled
 
   mend:
-    case _: InitError => execute:
+    case error: InitError => execute:
       service.shutdown()
       Exit.Fail(2)
   .within:
