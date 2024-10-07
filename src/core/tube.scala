@@ -48,9 +48,12 @@ def app(): Unit = cli:
         safely(Out.println(TabCompletions.install().communicate))
         Exit.Ok
 
-      case Trip() :: _ => execute:
+      case Trip() :: _ =>
         val stations = Data.stations
-        Exit.Ok
+        val start: Optional[StationRow] = Start.select(stations)
+
+        execute:
+          Exit.Ok
 
       case _ => execute:
         Out.println(e"$Bold(Unrecognized command!)")
