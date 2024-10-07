@@ -51,8 +51,8 @@ def app(): Unit = cli:
 
       case Trip() :: _ =>
         val stations = Data.stations
-        val start: Optional[StationRow] = Start.select(stations.values)
-        val destination: Optional[StationRow] = Destination.select(start.lay(stations)(stations - _.id).values)
+        val start0: Optional[StationRow] = Start.select(stations.values)
+        val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
 
         execute:
           Exit.Ok
