@@ -17,6 +17,8 @@ import tableStyles.minimal
 import textMetrics.uniform
 import columnAttenuation.ignore
 
+erased given Naptan is Nominative under MustMatch["[0-9A-Z]{10}"] = ###
+
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
