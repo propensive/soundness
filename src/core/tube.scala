@@ -32,7 +32,7 @@ def app(): Unit = cli:
       Exit.Ok
 
     case Install() :: _ => execute:
-      Out.println(TabCompletions.install().communicate)
+      safely(Out.println(TabCompletions.install().communicate))
       Exit.Ok
 
     case Trip() :: _ => execute:
