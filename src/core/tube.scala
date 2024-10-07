@@ -47,7 +47,7 @@ object Data:
   def stations(using Online): LazyList[StationRow] =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
-    mend:
+    tend:
       case _: HttpError => LazyList()
       case _: ZipError  => LazyList()
       case _: NameError => LazyList()
