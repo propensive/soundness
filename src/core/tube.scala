@@ -43,8 +43,9 @@ def app(): Unit = cli:
       Exit.Fail(1)
 
 object Data:
-  def stations(using Online): Dsv =
+  def stations(using Online): LazyList[StationRow] =
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
-    Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv"))
+
+    Dsv.parse(ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv")).rows.map(_.as[StationRow])
 
 case class StationRow(id: Text, name: Text)
