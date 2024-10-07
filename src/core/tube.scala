@@ -9,5 +9,5 @@ import stdioSources.virtualMachine.ansi
 
 @main
 def app(): Unit = application(Nil):
-  Out.println(t"Hello world")
+  Out.println(e"$Bold($Italic(Hello world))")
   Exit.Ok
