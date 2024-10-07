@@ -17,6 +17,7 @@ import textMetrics.uniform
 import columnAttenuation.ignore
 import printableTypes.message
 import pathNavigation.posix
+import environments.daemonClient
 
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 
