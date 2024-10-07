@@ -11,8 +11,8 @@ import errorDiagnostics.stackTraces
 import logging.silent
 import strategies.throwUnsafely
 
-val About = Subcommand(t"about")
-val Install = Subcommand(t"install")
+val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
+val Install = Subcommand(t"install", e"[re]install the tab-completions")
 
 @main
 def app(): Unit = cli:
