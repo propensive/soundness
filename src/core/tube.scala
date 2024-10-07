@@ -25,6 +25,7 @@ erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
+val Start = Flag(t"start", false, List('s'), t"The start of your journey")
 
 @main
 def app(): Unit = cli:
