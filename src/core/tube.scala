@@ -13,6 +13,7 @@ import strategies.throwUnsafely
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
+val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
 
 @main
 def app(): Unit = cli:
