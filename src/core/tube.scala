@@ -113,7 +113,7 @@ object Data:
     tend:
       case HttpError(url, _, status)       => UserError(m"Attempt to access $url returned $status.")
       case JsonParseError(line, _, reason) => UserError(m"Could not parse JSON response: $reason at line $line")
-      case JsonError(reason)               => UserError(m"Unexpected JSON response from TfL: $reason")
+      case JsonError(reason)               => UserError(m"Unexpected JSON response from TfL: $reason when accessing $sourceUrl")
     .within:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
@@ -123,6 +123,7 @@ case class UserError(messages: Message*)(using Diagnostics) extends Error(messag
 case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
 
-case class Plan()
+case class Plan(journeys: List[Journey])
+case class Journey(duration: Int)
 
 erased trait Naptan
