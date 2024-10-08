@@ -131,7 +131,7 @@ object Output:
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
 
       def renderLeg(leg: Leg): Unit =
-        leg.path.stopPoints.each: stop =>
+        leg.path.stopPoints.dropRight(1).each: stop =>
           Out.println(e"${t" "*25}   ||")
           Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}  =||")
           Out.println(e"${t" "*25}   ||")
