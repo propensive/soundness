@@ -125,7 +125,8 @@ object Data:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
-case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n"))
+case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n")):
+  infix def + (message: Message): UserError = UserError(message +: messages*)
 
 case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
