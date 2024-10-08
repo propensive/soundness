@@ -132,7 +132,9 @@ object Output:
 
       def renderLeg(leg: Leg): Unit =
         leg.path.stopPoints.each: stop =>
-          Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}")
+          Out.println(e"${t" "*25}   ||")
+          Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}  =||")
+          Out.println(e"${t" "*25}   ||")
 
       journey.legs.each(renderLeg(_))
 
