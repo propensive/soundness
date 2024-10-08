@@ -157,9 +157,8 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
           : ResultType2 =
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
-transparent inline def track[AccrualType <: Exception](accrual: AccrualType)[FocusType]
-    (using DummyImplicit)
-    [ResultType]
+transparent inline def track[FocusType](using DummyImplicit)[AccrualType <: Exception, ResultType]
+    (accrual: AccrualType)
     (inline block: (focus: Optional[FocusType], accrual: AccrualType) ?=>
                        PartialFunction[Exception, AccrualType])
         : Any =
