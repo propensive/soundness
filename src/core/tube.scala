@@ -124,7 +124,7 @@ object Data:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 object Output:
-  def render(plan: Plan): Unit =
+  def render(plan: Plan)(using Stdio): Unit =
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
 
