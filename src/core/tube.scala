@@ -113,8 +113,7 @@ object Data:
       case HttpError(url, _, status)       => UserError(m"Attempt to access $url returned $status.")
       case JsonParseError(line, _, reason) => UserError(m"Could not parse JSON response: $reason at line $line")
     .within:
-      val json = Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json")))
-      ???
+      Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n"))
