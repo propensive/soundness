@@ -24,22 +24,7 @@
   <dependencies>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>gossamer-core</artifactId>
-      <version>0.17.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>anticipation-time</artifactId>
-      <version>0.17.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>anticipation-opaque</artifactId>
-      <version>0.17.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>hypotenuse-core</artifactId>
+      <artifactId>quantitative-core</artifactId>
       <version>0.17.0</version>
     </dependency>
   </dependencies>
