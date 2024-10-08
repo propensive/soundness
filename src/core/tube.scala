@@ -134,7 +134,7 @@ case class Plan(journeys: List[Journey])
 case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction)
 case class LegPath(stopPoints: List[Stop])
-case class Instruction()
+case class Instruction(detailed: Text)
 
 case class Stop(name: Text):
   def shortName: Text = name.sub(t" Underground Station", t"")
