@@ -73,6 +73,8 @@ def app(): Unit = cli:
             val plan = Data.plan(start, destination, departure)
             plan.journeys.each: journey =>
               Out.println(e"$Underline(Option ${ordinal.n1})")
+              journey.legs.each: leg =>
+                Out.println(e"  $Underline(Leg ${ordinal.n1})")
             Exit.Ok
 
       case _ => execute:
