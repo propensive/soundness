@@ -130,6 +130,12 @@ object Output:
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
 
+      def renderLeg(leg: Leg): Unit =
+        leg.path.stopPoints.each: stop =>
+          Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}")
+
+      journey.legs.each(renderLeg(_))
+
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.reverse.join(m"\n")):
