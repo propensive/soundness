@@ -112,6 +112,7 @@ object Data:
     tend:
       case HttpError(url, _, status)       => UserError(m"Attempt to access $url returned $status.")
       case JsonParseError(line, _, reason) => UserError(m"Could not parse JSON response: $reason at line $line")
+      case JsonError(reason)               => UserError(m"Unexpected JSON response from TfL: $reason")
     .within:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
