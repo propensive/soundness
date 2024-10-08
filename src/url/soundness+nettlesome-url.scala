@@ -16,4 +16,4 @@
 
 package soundness
 
-export nettlesome.{url, email, host, Authority, Raw, Scheme, Url, UrlError, HttpUrl}
+export nettlesome.{url, email, host, Authority, Raw, Scheme, Url, UrlError, HttpUrl, UrlFragment}

@@ -28,7 +28,7 @@ import scala.quoted.*
 
 import errorDiagnostics.empty
 
-object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label]]:
+object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[Label]]:
 
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
           : Expr[Url[Label]] =
@@ -47,8 +47,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
   def initial: Text = t""
 
-  def insert(state: Text, value: UrlInput): Text = value match
-    case UrlInput.Integral(port) =>
+  def insert(state: Text, value: UrlFragment): Text = value match
+    case UrlFragment.Integral(port) =>
       if !state.ends(t":")
       then throw InterpolationError(m"a port number must be specified after a colon")
 
@@ -58,7 +58,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
       state+port.show
 
-    case UrlInput.Textual(text) =>
+    case UrlFragment.Textual(text) =>
       if !state.ends(t"/")
       then throw InterpolationError(m"a substitution may only be made after a slash")
 
@@ -68,7 +68,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlInput, Text, Url[Label
 
       state+text.urlEncode
 
-    case UrlInput.RawTextual(text) =>
+    case UrlFragment.RawTextual(text) =>
       if !state.ends(t"/")
       then throw InterpolationError(m"a substitution may only be made after a slash")
 

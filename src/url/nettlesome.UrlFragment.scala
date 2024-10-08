@@ -20,15 +20,18 @@ import anticipation.*
 import contextual.*
 import spectacular.*
 
-object UrlInput:
-  given Substitution[UrlInput, Text, "x"] = UrlInput.Textual(_)
-  given Substitution[UrlInput, Raw, "x"] = raw => UrlInput.RawTextual(raw.text)
-  given Substitution[UrlInput, Int, "80"] = UrlInput.Integral(_)
-  
-  given [ValueType](using encoder: Encoder[ValueType]) => Substitution[UrlInput, ValueType, "x"] =
-    value => UrlInput.Textual(encoder.encode(value))
+object UrlFragment:
+  def apply(value: Text): UrlFragment = UrlFragment.Textual(value)
+  def apply(value: Int): UrlFragment = UrlFragment.Integral(value)
 
-enum UrlInput:
+  given Substitution[UrlFragment, Text, "x"] = UrlFragment.Textual(_)
+  given Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
+  given Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
+  
+  given [ValueType](using encoder: Encoder[ValueType]) => Substitution[UrlFragment, ValueType, "x"] =
+    value => UrlFragment.Textual(encoder.encode(value))
+
+enum UrlFragment:
   case Integral(value: Int)
   case Textual(value: Text)
   case RawTextual(value: Text)
