@@ -131,8 +131,8 @@ case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
 
 case class Plan(journeys: List[Journey])
-case class Journey(duration: Int, legs: List[Leg])
-case class Leg(duration: Int, path: LegPath)
+case class Journey(duration: HoursAndMinutes, legs: List[Leg])
+case class Leg(duration: HoursAndMinutes, path: LegPath)
 case class LegPath(stopPoints: List[Stop])
 
 case class Stop(name: Text):
