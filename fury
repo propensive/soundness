@@ -4,7 +4,7 @@ repo propensive/gastronomy
 repo propensive/hypotenuse
 repo propensive/cardinality
 
-target ulysses/test
+target ulysses/core
 
 project ulysses
   module core
