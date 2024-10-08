@@ -67,12 +67,3 @@ extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
   inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[UnitsType]}
-
-extension (value: Double)
-  @targetName("times")
-  infix def * [UnitsType <: Measure](quantity: Quantity[UnitsType]): Quantity[UnitsType] =
-    Quantity(quantity*value)
-
-  @targetName("divide")
-  transparent inline infix def / [UnitsType <: Measure](quantity: Quantity[UnitsType]): Any =
-    ((1.0/value)*quantity).invert
