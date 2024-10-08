@@ -124,6 +124,7 @@ case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
 
 case class Plan(journeys: List[Journey])
-case class Journey(duration: Int)
+case class Journey(duration: Int, legs: List[Leg])
+case class Leg()
 
 erased trait Naptan
