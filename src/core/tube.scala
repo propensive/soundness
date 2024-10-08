@@ -135,7 +135,8 @@ case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption])
 case class LegPath(stopPoints: List[Stop])
 case class Instruction(detailed: Text)
-case class RouteOption()
+case class RouteOption(lineIdentifier: LineIdentifier)
+case class LineIdentifier()
 
 case class Stop(name: Text):
   def shortName: Text = name.sub(t" Underground Station", t"")
