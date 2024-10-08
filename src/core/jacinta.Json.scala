@@ -145,13 +145,12 @@ object Json extends Json2, Dynamic:
         case None        => Json.ast(JsonAst(0L))
         case Some(value) => ValueType.encode(value)
 
-  given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
+  given [IntegralValue: Integral] => IntegralValue is Encodable in Json as integralEncodable =
+    integral => Json.ast(JsonAst(IntegralValue.toLong(integral)))
+
   given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
   given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
   given Double is Encodable in Json as doubleEncodable = double => Json.ast(JsonAst(double))
-  given Long is Encodable in Json as longEncodable = long => Json.ast(JsonAst(long))
-  given Byte is Encodable in Json as byteEncodable = byte => Json.ast(JsonAst(byte.toLong))
-  given Short is Encodable in Json as shortEncodable = short => Json.ast(JsonAst(short.toLong))
   given Boolean is Encodable in Json as booleanEncodable = boolean => Json.ast(JsonAst(boolean))
   given Json is Encodable in Json as jsonEncodable = identity(_)
 
