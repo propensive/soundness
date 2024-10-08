@@ -377,3 +377,17 @@ extension (buf: StringBuilder)
 package decimalFormatters:
   given DecimalConverter as java:
     def decimalize(double: Double): Text = double.toString.tt
+
+package enumIdentification:
+  given [EnumType <: reflect.Enum] => EnumType is Identifiable as kebabCase =
+    Identifiable(_.uncamel.kebab, _.unkebab.pascal)
+
+  given [EnumType <: reflect.Enum] => EnumType is Identifiable as snakeCase =
+    Identifiable(_.uncamel.snake, _.unsnake.pascal)
+
+  given [EnumType <: reflect.Enum] => EnumType is Identifiable as pascalCase =
+    Identifiable(identity(_), identity(_))
+
+  given [EnumType <: reflect.Enum] => EnumType is Identifiable as camelCase =
+    Identifiable(_.uncamel.camel, _.unsnake.pascal)
+

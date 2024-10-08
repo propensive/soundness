@@ -27,3 +27,9 @@ export gossamer.{Bidi, Buffer, Cuttable, Decimalizer, Interpolation, Joinable, N
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java
+
+package enumIdentification:
+  export gossamer.enumIdentification.kebabCase
+  export gossamer.enumIdentification.pascalCase
+  export gossamer.enumIdentification.snakeCase
+  export gossamer.enumIdentification.camelCase
