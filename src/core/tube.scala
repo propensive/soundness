@@ -127,6 +127,9 @@ object Output:
   def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
+      val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
+      val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
+
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.reverse.join(m"\n")):
