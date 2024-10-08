@@ -138,7 +138,7 @@ case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption])
 case class LegPath(stopPoints: List[Stop])
 case class Instruction(detailed: Text)
-case class RouteOption(lineIdentifier: LineIdentifier)
+case class RouteOption(lineIdentifier: Optional[LineIdentifier])
 case class LineIdentifier(id: Text)
 
 case class Stop(name: Text):
