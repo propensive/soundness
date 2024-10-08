@@ -25,6 +25,8 @@ given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
 given StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.text)
 
+type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
+
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
