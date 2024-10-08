@@ -70,7 +70,7 @@ def app(): Unit = cli:
               case _                                                            => t"0800"
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
-            Data.plan(start, destination, departure)
+            Out.println(Data.plan(start, destination, departure).inspect)
             Exit.Ok
 
       case _ => execute:
