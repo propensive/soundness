@@ -125,6 +125,7 @@ case class StationRow(id: Name[Naptan], name: Text):
 
 case class Plan(journeys: List[Journey])
 case class Journey(duration: Int, legs: List[Leg])
-case class Leg(duration: Int)
+case class Leg(duration: Int, path: LegPath)
+case class LegPath()
 
 erased trait Naptan
