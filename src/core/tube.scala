@@ -93,6 +93,8 @@ object Data:
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
-case class StationRow(id: Name[Naptan], name: Text)
+
+case class StationRow(id: Name[Naptan], name: Text):
+  def ref: Text = name.lower.cut(t" ").kebab
 
 erased trait Naptan
