@@ -119,7 +119,7 @@ object Json extends Json2, Dynamic:
     case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
     case given Reflection[ValueType] => EncodableDerivation.derived
 
-  given [IntegralType: Integral](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
+  given [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
     (value, omit) => IntegralType.fromInt(value.root.long.toInt)
 
   given Json is Decodable in Json as boolean = (value, omit) => value
