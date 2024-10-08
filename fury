@@ -5,7 +5,7 @@ repo propensive/contextual
 repo propensive/larceny
 repo propensive/parasite
 
-target camouflage/test
+target camouflage/core
 
 project camouflage
   module core
@@ -16,6 +16,6 @@ project camouflage
   module test
     compiler  scala
     sources   src/test
-    coverage  camouflage/core
+    # coverage  camouflage/core
     include   probably/cli camouflage/core
     main      camouflage.Tests
