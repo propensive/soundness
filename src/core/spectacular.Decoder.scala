@@ -19,8 +19,11 @@ package spectacular
 import rudiments.*
 import contingency.*
 import anticipation.*
+import wisteria.*
+import denominative.*
 import inimitable.*
 import digression.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 
@@ -63,8 +66,11 @@ object Decoder:
   given Decoder[String] as string = _.s
   given (using number: Tactic[NumberError]) => Decoder[Pid] as pid = long.map(Pid(_))
 
-  //given enumDecoder[EnumType <: reflect.Enum & Product](using Mirror.SumOf[EnumType], Tactic[EnumCaseError]): Decoder[EnumType] = text =>
-  //  Unapply.valueOf[EnumType].unapply(text).getOrElse(abort(EnumCaseError(text)))
+  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}](using Tactic[VariantError])
+      => Decoder[EnumType] = value =>
+    EnumType.value(EnumType.encode(value)).or:
+      val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
+      raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
 
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
   def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None

@@ -36,6 +36,9 @@ object Encoder:
   given Encoder[Pid] as pid = long.contramap(_.value)
   given Encoder[Fqcn] as fqcn = _.text
 
+  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Encoder[EnumType] = value =>
+    EnumType.encode(EnumType.name(value))
+
 trait Encoder[-ValueType] extends Irrefutable[ValueType, Text]:
   def unapply(value: ValueType): Text = encode(value)
   def encode(value: ValueType): Text
