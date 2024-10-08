@@ -16,14 +16,9 @@
 
 package abacist
 
-import rudiments.*
-import anticipation.*
 import quantitative.*
-import spectacular.*
-import symbolism.*
 
 import scala.quoted.*
-import scala.compiletime.*, ops.int.*
 
 export Abacist2.Count
 

@@ -32,6 +32,8 @@ object Abacist2:
     erased given [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] as underlying = ###
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
 
+    given [UnitsType <: Tuple] => Integral[Count[UnitsType]] as integral = summon[Integral[Long]]
+
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
 
