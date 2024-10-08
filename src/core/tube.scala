@@ -23,6 +23,7 @@ import homeDirectories.default
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
+given StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.text)
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
