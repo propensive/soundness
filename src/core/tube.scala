@@ -75,6 +75,7 @@ def app(): Unit = cli:
               Out.println(e"$Underline(Option ${ordinal.n1})")
               journey.legs.each: leg =>
                 Out.println(e"  $Underline(Leg ${ordinal.n1})")
+                Out.println(e"    ${leg.path.stopPoints.map(_.name).join(t", ")}  ")
             Exit.Ok
 
       case _ => execute:
