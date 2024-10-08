@@ -18,6 +18,9 @@ package escapade
 
 import language.experimental.pureFunctions
 
+import fulminate.*
+import anticipation.*
+
 export Escapade.CharSpan
 
 object Bold
@@ -32,3 +35,6 @@ extension (inline ctx: StringContext)
 
 extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype =
   ValueType.teletype(value)
+
+package printableTypes:
+  given Message is Printable as message = summon[Teletype is Printable].contramap(_.teletype)
