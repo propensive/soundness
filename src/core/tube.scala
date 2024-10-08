@@ -110,7 +110,8 @@ object Data:
   def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?time=$time"
     tend:
-      case HttpError(url, _, status) => UserError(m"Attempt to access $url returned $status.")
+      case HttpError(url, _, status)       => UserError(m"Attempt to access $url returned $status.")
+      case JsonParseError(line, _, reason) => UserError(m"Could not parse JSON response: $reason at line $line")
     .within:
       val json = Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json")))
       ???
