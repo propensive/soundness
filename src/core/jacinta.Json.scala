@@ -119,11 +119,11 @@ object Json extends Json2, Dynamic:
     case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
     case given Reflection[ValueType] => EncodableDerivation.derived
 
+  given [IntegralType: Integral](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
+    (value, omit) => IntegralType.fromInt(value.root.long.toInt)
+
   given Json is Decodable in Json as boolean = (value, omit) => value
   given (using Tactic[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
-  given (using Tactic[JsonError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
-  given (using Tactic[JsonError]) => Byte is Decodable in Json as byte = (value, omit) => value.root.long.toByte
-  given (using Tactic[JsonError]) => Short is Decodable in Json as short = (value, omit) => value.root.long.toShort
   given (using Tactic[JsonError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
   given (using Tactic[JsonError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
   given (using Tactic[JsonError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
@@ -145,8 +145,8 @@ object Json extends Json2, Dynamic:
         case None        => Json.ast(JsonAst(0L))
         case Some(value) => ValueType.encode(value)
 
-  given [IntegralValue: Integral] => IntegralValue is Encodable in Json as integralEncodable =
-    integral => Json.ast(JsonAst(IntegralValue.toLong(integral)))
+  given [IntegralType: Integral] => IntegralType is Encodable in Json as integralEncodable =
+    integral => Json.ast(JsonAst(IntegralType.toLong(integral)))
 
   given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
   given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
