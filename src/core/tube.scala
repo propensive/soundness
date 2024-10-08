@@ -94,6 +94,7 @@ object Data:
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
+case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n"))
 
 case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
