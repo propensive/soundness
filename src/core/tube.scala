@@ -133,6 +133,10 @@ object Output:
   val dt = u"black small square"
   val st = u"black square for stop"
 
+  def line(leg: Leg): Teletype =
+    if leg.open then e"${leg.color}(${u"left half block"}${u"right half block"})"
+    else e"${Bg(leg.color)}(  )"
+
   def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
@@ -145,20 +149,20 @@ object Output:
 
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
-          val ln = e"${Bg(leg.color)}(  )"
+          val ln = line(leg)
           Out.println(e"${indent(legNo, 28)}$ln")
           Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  ${leg.color}($st)$ln")
           Out.println(e"${indent(legNo, 28)}$ln")
 
       journey.legs.prim.let: leg =>
-        val ln = e"${Bg(leg.color)}(  )"
+        val ln = line(leg)
         val step = t"Take the ${leg.instruction.detailed}"
         Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
         renderLeg(leg, Prim)
 
       journey.legs.slide(2).each: pair =>
-        val ln0 = e"${Bg(pair(0).color)}(  )"
-        val ln1 = e"${Bg(pair(1).color)}(  )"
+        val ln0 = line(pair(0))
+        val ln1 = line(pair(1))
         val interchange = pair(0).path.stopPoints.last.shortName
         val step = t"At $interchange, change to the ${pair(1).instruction.detailed}."
         pair(0).path.stopPoints.lastOption.foreach: stop =>
@@ -171,7 +175,7 @@ object Output:
         renderLeg(pair(1), ordinal + 1)
 
         if ordinal + 1 == last then
-          val ln = e"${Bg(journey.legs.last.color)}(  )"
+          val ln = line(journey.legs.last)
           val step = t"Arrive at ${destination.name}."
           Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
 
@@ -190,6 +194,7 @@ case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 
 case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption]):
   def color: Rgb24 = routeOptions.map(_.lineIdentifier.let(_.id.color)).prim.or(webColors.Coral)
+  def open: Boolean = routeOptions.map(_.lineIdentifier.let(_.id.open)).prim.or(false)
 
 case class LegPath(stopPoints: List[Stop])
 case class Instruction(detailed: Text)
@@ -201,6 +206,10 @@ case class Stop(name: Text):
 
 enum TubeLine:
   case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern, Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
+
+  def open: Boolean = this match
+    case Dlr | Elizabeth | LondonOverground => true
+    case _                                  => false
 
   def color: Rgb24 = this match
     case Bakerloo         => rgb"#B36305"
