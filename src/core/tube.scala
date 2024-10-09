@@ -132,6 +132,8 @@ case class Plan(journeys: List[Journey])
 case class Journey(duration: Int, legs: List[Leg])
 case class Leg(duration: Int, path: LegPath)
 case class LegPath(stopPoints: List[Stop])
-case class Stop(name: Text)
+
+case class Stop(name: Text):
+  def shortName: Text = name.sub(t" Underground Station", t"")
 
 erased trait Naptan
