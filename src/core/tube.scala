@@ -42,7 +42,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
     .within:
       import dynamicJsonAccess.enabled
       val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
-      json.children
+      json.children.as[List[Json]]
       name
 
 @main
