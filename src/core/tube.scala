@@ -133,9 +133,9 @@ object Output:
 
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
-          Out.println(e"${t" "*25}   ||")
-          Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}  =||")
-          Out.println(e"${t" "*25}   ||")
+          Out.println(e"${indent(legNo, 28)}||")
+          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  =||")
+          Out.println(e"${indent(legNo, 28)}||")
 
       journey.legs.prim.let(renderLeg(_, Prim))
       journey.legs.slide(2).each: pair =>
