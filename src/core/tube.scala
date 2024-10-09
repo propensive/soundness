@@ -145,17 +145,17 @@ object Output:
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
           Out.println(e"${indent(legNo, 28)}||")
-          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  =||")
+          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  $st||")
           Out.println(e"${indent(legNo, 28)}||")
 
       journey.legs.prim.let(renderLeg(_, Prim))
       journey.legs.slide(2).each: pair =>
         pair(0).path.stopPoints.lastOption.foreach: stop =>
-          Out.println(e"${indent(ordinal, 26)}+-||---||-+")
-          Out.println(e"${indent(ordinal, 26)}| ||   || |")
-          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} | ||===|| |")
-          Out.println(e"${indent(ordinal, 26)}| ||   || |")
-          Out.println(e"${indent(ordinal, 26)}+-||---||-+")
+          Out.println(e"${indent(ordinal, 26)}$tl$hl||$hl$hl$hl||$hl$tr")
+          Out.println(e"${indent(ordinal, 26)}$vl ||   || $vl")
+          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl ||$dt$dt$dt|| $vl")
+          Out.println(e"${indent(ordinal, 26)}$vl ||   || $vl")
+          Out.println(e"${indent(ordinal, 26)}$bl$hl||$hl$hl$hl||$hl$br")
 
         renderLeg(pair(1), ordinal + 1)
 
