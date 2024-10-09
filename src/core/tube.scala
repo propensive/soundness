@@ -202,6 +202,7 @@ object Output:
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
       val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
+      Out.println(e"\n${journey.duration}, $distance")
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
