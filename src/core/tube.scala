@@ -37,6 +37,7 @@ val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHM
 
 extension (name: Name[Naptan]) def resolve: Name[Naptan] = name.text match
   case r"HUB.*" =>
+    val http = url"https://api.tfl.gov.uk/StopPoint/$name".get()
     name
 
 @main
