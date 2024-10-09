@@ -164,7 +164,7 @@ object Output:
         val ln0 = line(pair(0))
         val ln1 = line(pair(1))
         val interchange = pair(0).path.stopPoints.last.shortName
-        val step = t"At $interchange, change to the ${pair(1).instruction.detailed}."
+        val step = t"At $interchange, change to the ${pair(1).instruction.detailed} at ${pair(1).departureTime}."
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln0")
           Out.println(e"${indent(ordinal, 26)}$tl$hl$ln0$hl$hl$hl$ln1$hl$tr")
