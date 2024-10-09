@@ -41,6 +41,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
       case error: HttpError      => name
       case error: JsonParseError => name
     .within:
+      import dynamicJsonAccess.enabled
       val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
       json.children
       name
