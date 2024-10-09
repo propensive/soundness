@@ -25,6 +25,7 @@ erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
 given (using Online) => StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.resolve.text)
+given Decimalizer = Decimalizer(significantFigures = 2)
 val timezone = tz"Europe/London"
 type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
 
