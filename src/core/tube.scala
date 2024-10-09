@@ -192,7 +192,7 @@ case class StationRow(id: Name[Naptan], name: Text):
 case class Plan(journeys: List[Journey])
 case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 
-case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption], departureTime: Text, arrivalTime: Text):
+case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption], departureTime: Timestamp, arrivalTime: Timestamp):
   def color: Rgb24 = routeOptions.map(_.lineIdentifier.let(_.id.color)).prim.or(webColors.Coral)
   def open: Boolean = routeOptions.map(_.lineIdentifier.let(_.id.open)).prim.or(false)
 
