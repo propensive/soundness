@@ -139,6 +139,7 @@ object Output:
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
+      val last = Ordinal.natural(journey.legs.length)
       def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
       Out.println(e"${indent(Prim, 9)}${startTitle.center(40)}\n")
@@ -149,7 +150,11 @@ object Output:
           Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  $st$ln")
           Out.println(e"${indent(legNo, 28)}$ln")
 
-      journey.legs.prim.let(renderLeg(_, Prim))
+      journey.legs.prim.let: leg =>
+        val step = t"Take the ${leg.instruction.detailed}"
+        Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
+        renderLeg(leg, Prim)
+
       journey.legs.slide(2).each: pair =>
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln")
@@ -160,7 +165,7 @@ object Output:
 
         renderLeg(pair(1), ordinal + 1)
 
-      Out.println(e"\n${indent(Ordinal.natural(journey.legs.length), 9)}${destinationTitle.center(40)}\n")
+      Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
