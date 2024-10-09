@@ -136,7 +136,9 @@ object Output:
           Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}  =||")
           Out.println(e"${t" "*25}   ||")
 
-      journey.legs.each(renderLeg(_))
+      journey.legs.prim.let(renderLeg(_))
+      journey.legs.slide(2).each: pair =>
+        renderLeg(pair(1))
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
