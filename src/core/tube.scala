@@ -176,7 +176,7 @@ object Output:
 
         if ordinal + 1 == last then
           val ln = line(journey.legs.last)
-          val step = t"Arrive at ${destination.name}."
+          val step = t"Arrive at ${destination.name} at ${journey.legs.last.arrivalTime}."
           Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
 
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
