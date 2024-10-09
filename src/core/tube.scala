@@ -120,6 +120,7 @@ object Data:
       case JsonParseError(line, _, reason) => accrual + m"Could not parse JSON response: $reason at line $line"
       case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
       case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
+      case error: TimestampError           => accrual + m"${error.message} at $focus from $sourceUrl"
     .within:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
