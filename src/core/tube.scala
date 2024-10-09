@@ -139,6 +139,11 @@ object Output:
 
       journey.legs.prim.let(renderLeg(_, Prim))
       journey.legs.slide(2).each: pair =>
+        pair(0).path.stopPoints.lastOption.foreach: stop =>
+          Out.println(e"${indent(ordinal, 28)}||   ||")
+          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)}   ||   ||")
+          Out.println(e"${indent(ordinal, 28)}||   ||")
+
         renderLeg(pair(1), ordinal + 1)
 
 
