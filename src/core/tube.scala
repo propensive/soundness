@@ -38,7 +38,8 @@ val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHM
 extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.text match
   case r"HUB.*" =>
     mend:
-      case error: HttpError => name
+      case error: HttpError      => name
+      case error: JsonParseError => name
     .within:
       val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
       name
