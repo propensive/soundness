@@ -156,7 +156,7 @@ object Output:
 
       journey.legs.prim.let: leg =>
         val ln = line(leg)
-        val step = t"Take the ${leg.instruction.detailed}"
+        val step = t"Take the ${leg.instruction.detailed} at ${leg.departureTime}."
         Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
         renderLeg(leg, Prim)
 
