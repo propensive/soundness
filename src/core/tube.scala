@@ -148,6 +148,8 @@ object Output:
 
         renderLeg(pair(1), ordinal + 1)
 
+      Out.println(e"\n${indent(Ordinal.natural(journey.legs.length), 9)}${destinationTitle.center(40)}\n")
+
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.reverse.join(m"\n")):
