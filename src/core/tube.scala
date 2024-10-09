@@ -70,7 +70,7 @@ def app(): Unit = cli:
   .within:
     arguments match
       case About() :: _ => execute:
-        val image = Image(Classpath / n"image.png")
+        val image = unsafely(Image(Classpath / n"image.png"))
         Exit.Ok
 
       case Install() :: _ => execute:
