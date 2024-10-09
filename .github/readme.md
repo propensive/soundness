@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/mosquito/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/mosquito/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Mosquito
@@ -24,17 +24,9 @@ working with matrices and scalar and vector products.
 - results are dependently-typed on inputs
 
 
-## Availability Plan
+## Availability
 
-Mosquito has not yet been published. The medium-term plan is to build Mosquito
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Mosquito.
 
-Subsequently, Mosquito will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -159,7 +151,7 @@ metres per minute.
 
 ## Status
 
-Mosquito is classified as __fledgling__. For reference, Scala One projects are
+Mosquito is classified as __fledgling__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -173,7 +165,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Mosquito is designed to be _small_. Its entire source code currently consists
-of 239 lines of code.
+of 247 lines of code.
 
 ## Building
 
@@ -242,7 +234,7 @@ O&Uuml;](https://propensive.com/).
 
 A mosquito is a typical example of a vector: an animal that transmits a pathogen or disease.
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
