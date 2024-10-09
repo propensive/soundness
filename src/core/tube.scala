@@ -165,6 +165,10 @@ object Output:
 
         renderLeg(pair(1), ordinal + 1)
 
+        if ordinal + 1 == last then
+          val step = t"Arrive at ${destination.name}."
+          Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
+
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
 
