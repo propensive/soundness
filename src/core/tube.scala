@@ -35,6 +35,8 @@ val Start = Flag(t"start", false, List('s'), t"The start of your journey")
 val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
 val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHMM format")
 
+extension (name: Name[Naptan]) def resolve: Name[Naptan] = name
+
 @main
 def app(): Unit = cli:
   import internetAccess.enabled
