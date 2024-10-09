@@ -210,7 +210,8 @@ case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instructio
   def color: Rgb24 = routeOptions.map(_.lineIdentifier.let(_.id.color)).prim.or(webColors.Coral)
   def open: Boolean = routeOptions.map(_.lineIdentifier.let(_.id.open)).prim.or(false)
 
-case class LegPath(stopPoints: List[Stop], lineString: Text)
+case class LegPath(stopPoints: List[Stop], lineString: Route)
+case class Route(points: List[Location])
 case class Instruction(detailed: Text)
 case class RouteOption(lineIdentifier: Optional[LineIdentifier])
 case class LineIdentifier(id: TubeLine)
