@@ -42,6 +42,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
       case error: JsonParseError => name
     .within:
       val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
+      json.children
       name
 
 @main
