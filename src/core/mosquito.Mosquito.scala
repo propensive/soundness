@@ -112,7 +112,7 @@ object Mosquito:
       map(_*right)
 
     @targetName("scalarDiv")
-    def * [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
+    def / [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
             : Euclidean[div.Result, SizeType] =
 
       map(_/right)
