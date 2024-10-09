@@ -161,7 +161,7 @@ object Output:
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln")
           Out.println(e"${indent(ordinal, 26)}$tl$hl$ln$hl$hl$hl$ln$hl$tr")
-          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln$dt$dt$dt$ln $vl")
+          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln$dt$dt$dt$ln $vl  $Italic($step)")
           Out.println(e"${indent(ordinal, 26)}$bl$hl$ln$hl$hl$hl$ln$hl$br")
           Out.println(e"${indent(ordinal, 26)}       $ln")
 
