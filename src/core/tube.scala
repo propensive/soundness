@@ -28,7 +28,7 @@ given (using Online) => StationRow is Embeddable in HttpUrl by UrlFragment = row
 val timezone = tz"Europe/London"
 type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
 
-given (using Tactic[JsonError]) => Route is Decodable in Json =
+given (using Tactic[JsonParseError], Tactic[JsonError]) => Route is Decodable in Json =
   summon[Text is Decodable in Json].map: points =>
     Route:
       Json.parse(points).as[List[List[Double]]]
