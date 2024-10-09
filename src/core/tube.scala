@@ -131,15 +131,15 @@ object Output:
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
       def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
-      def renderLeg(leg: Leg): Unit =
+      def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
           Out.println(e"${t" "*25}   ||")
           Out.println(e"${stop.shortName.fit(25, Bidi.Rtl)}  =||")
           Out.println(e"${t" "*25}   ||")
 
-      journey.legs.prim.let(renderLeg(_))
+      journey.legs.prim.let(renderLeg(_, Prim))
       journey.legs.slide(2).each: pair =>
-        renderLeg(pair(1))
+        renderLeg(pair(1), ordinal + 1)
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
