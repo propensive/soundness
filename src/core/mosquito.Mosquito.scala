@@ -23,12 +23,18 @@ import symbolism.*
 import gossamer.*
 import prepositional.*
 import hieroglyph.*
+import vacuous.*
 
 object Mosquito:
   opaque type Euclidean[ValueType, SizeType <: Int] = Tuple
 
   object Euclidean:
     def apply(elems: Tuple): Euclidean[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
+
+    def take[ElementType](list: List[ElementType], size: Int): Optional[Euclidean[ElementType, size.type]] =
+      if size == 0 then EmptyTuple else list match
+        case Nil          => Unset
+        case head :: tail => take(tail, size - 1).let(head *: _)
 
     given [SizeType <: Int: ValueOf, ElemType: Showable](using TextMetrics)
         => Euclidean[ElemType, SizeType] is Showable as showable =
@@ -129,3 +135,8 @@ object Mosquito:
 
       val start = size.value - 1
       recur(start - 1, left(start)*right(start))
+
+extension [ElementType](list: List[ElementType])
+  def slide(size: Int): LazyList[Euclidean[ElementType, size.type]] = list match
+    case Nil          => LazyList()
+    case head :: tail => Euclidean.take(list, size).lay(LazyList())(_ #:: tail.slide(size))
