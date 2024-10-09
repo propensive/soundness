@@ -217,7 +217,11 @@ case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instructio
   def open: Boolean = routeOptions.map(_.lineIdentifier.let(_.id.open)).prim.or(false)
 
 case class LegPath(stopPoints: List[Stop], lineString: Route)
-case class Route(points: List[Location])
+
+case class Route(points: List[Location]):
+  def length: Quantity[Metres[1]] = points.slide(2).sumBy: point =>
+    6371.0*Kilo(Metre)*point(0).surfaceDistance(point(1)).value
+
 case class Instruction(detailed: Text)
 case class RouteOption(lineIdentifier: Optional[LineIdentifier])
 case class LineIdentifier(id: TubeLine)
