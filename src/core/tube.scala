@@ -35,7 +35,9 @@ val Start = Flag(t"start", false, List('s'), t"The start of your journey")
 val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
 val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHMM format")
 
-extension (name: Name[Naptan]) def resolve: Name[Naptan] = name
+extension (name: Name[Naptan]) def resolve: Name[Naptan] = name.text match
+  case r"HUB.*" =>
+    name
 
 @main
 def app(): Unit = cli:
