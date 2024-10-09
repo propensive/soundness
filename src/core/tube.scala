@@ -28,6 +28,8 @@ given (using Online) => StationRow is Embeddable in HttpUrl by UrlFragment = row
 val timezone = tz"Europe/London"
 type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
 
+given Route is Decodable in Json = ???
+
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
