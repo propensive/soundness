@@ -31,8 +31,8 @@ type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
 given (using Tactic[JsonParseError], Tactic[JsonError]) => Route is Decodable in Json =
   summon[Text is Decodable in Json].map: points =>
     Route:
-      Json.parse(points).as[List[List[Double]]]
-      Nil
+      Json.parse(points).as[List[List[Double]]].filter(_.length == 2).map: point =>
+        Location(point(0).deg, point(1).deg)
 
 val About = Subcommand(t"about", e"find out about the $Underline(tube) tool")
 val Install = Subcommand(t"install", e"[re]install the tab-completions")
