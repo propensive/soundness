@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target mosquito/test
+target mosquito/core
 
 repo propensive/probably
 repo propensive/larceny
@@ -10,7 +10,7 @@ project mosquito
   module core
     compiler  scala
     sources   src/core
-    include   rudiments/core spectacular/core gossamer/core
+    include   gossamer/core
 
   module test
     compiler  scala
