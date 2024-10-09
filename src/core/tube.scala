@@ -124,6 +124,15 @@ object Data:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 object Output:
+  val tl = u"box drawings light arc down and right"
+  val bl = u"box drawings light arc up and right"
+  val br = u"box drawings light arc up and left"
+  val tr = u"box drawings light arc down and left"
+  val hl = u"box drawings light horizontal"
+  val vl = u"box drawings light vertical"
+  val dt = u"black small square"
+  val st = u"black square for stop"
+
   def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
