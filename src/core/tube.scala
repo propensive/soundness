@@ -129,6 +129,7 @@ object Output:
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
+      def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
       def renderLeg(leg: Leg): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
