@@ -131,6 +131,8 @@ object Output:
       val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
       def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
+      Out.println(e"${indent(Prim, 9)}${startTitle.center(40)}\n")
+
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
           Out.println(e"${indent(legNo, 28)}||")
