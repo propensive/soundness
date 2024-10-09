@@ -178,6 +178,7 @@ object Output:
       journey.legs.prim.let: leg =>
         val ln = line(leg)
         val step = t"Take the ${leg.instruction.detailed} at ${leg.departureTime.in(timezone).time}."
+        appendln(step)
         Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
         renderLeg(leg, Prim)
 
@@ -186,6 +187,7 @@ object Output:
         val ln1 = line(pair(1))
         val interchange = pair(0).path.stopPoints.last.shortName
         val step = t"At $interchange, change to the ${pair(1).instruction.detailed} at ${pair(1).departureTime.in(timezone).time}."
+        appendln(step)
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln0")
           Out.println(e"${indent(ordinal, 26)}$tl$hl$ln0$hl$hl$hl$ln1$hl$tr")
@@ -198,6 +200,7 @@ object Output:
         if ordinal + 1 == last then
           val ln = line(journey.legs.last)
           val step = t"Arrive at ${destination.name} at ${journey.legs.last.arrivalTime.in(timezone).time}."
+          appendln(step)
           Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
 
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
