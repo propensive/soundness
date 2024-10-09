@@ -158,7 +158,7 @@ object Output:
     if leg.open then e"${leg.color}(${u"left half block"}${u"right half block"})"
     else e"${Bg(leg.color)}(  )"
 
-  def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
+  def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Text = Text.construct:
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
@@ -204,8 +204,8 @@ object Output:
 
       val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
       import quantitative./
-      val speed = distance/journey.duration.quantity
-      Out.println(e"\n${journey.duration}, $distance")
+      val speed = (distance/journey.duration.quantity).in[Miles].in[Hours]
+      Out.println(e"\n${journey.duration}, $distance; average speed: $speed")
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
