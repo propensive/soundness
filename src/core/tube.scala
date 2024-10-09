@@ -43,7 +43,10 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
       import dynamicJsonAccess.enabled
       val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
       json.children.as[List[Json]]
-      name
+       .filter(_.modes(0).as[Text] == t"tube")
+       .map(_.stationNaptan.as[Name[Naptan]]).prim.or(name)
+
+  case _ => name
 
 @main
 def app(): Unit = cli:
