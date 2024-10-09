@@ -132,7 +132,6 @@ object Output:
   val vl = u"box drawings light vertical"
   val dt = u"black small square"
   val st = u"black square for stop"
-  val ln = e"$Reverse(  )"
 
   def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
