@@ -132,6 +132,7 @@ object Output:
   val vl = u"box drawings light vertical"
   val dt = u"black small square"
   val st = u"black square for stop"
+  val ln = e"$Reverse(  )"
 
   def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
@@ -144,18 +145,18 @@ object Output:
 
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
-          Out.println(e"${indent(legNo, 28)}||")
-          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  $st||")
-          Out.println(e"${indent(legNo, 28)}||")
+          Out.println(e"${indent(legNo, 28)}$ln")
+          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  $st$ln")
+          Out.println(e"${indent(legNo, 28)}$ln")
 
       journey.legs.prim.let(renderLeg(_, Prim))
       journey.legs.slide(2).each: pair =>
         pair(0).path.stopPoints.lastOption.foreach: stop =>
-          Out.println(e"${indent(ordinal, 26)}$tl$hl||$hl$hl$hl||$hl$tr")
-          Out.println(e"${indent(ordinal, 26)}$vl ||   || $vl")
-          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl ||$dt$dt$dt|| $vl")
-          Out.println(e"${indent(ordinal, 26)}$vl ||   || $vl")
-          Out.println(e"${indent(ordinal, 26)}$bl$hl||$hl$hl$hl||$hl$br")
+          Out.println(e"${indent(ordinal, 26)}  $ln")
+          Out.println(e"${indent(ordinal, 26)}$tl$hl$ln$hl$hl$hl$ln$hl$tr")
+          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln$dt$dt$dt$ln $vl")
+          Out.println(e"${indent(ordinal, 26)}$bl$hl$ln$hl$hl$hl$ln$hl$br")
+          Out.println(e"${indent(ordinal, 26)}       $ln")
 
         renderLeg(pair(1), ordinal + 1)
 
