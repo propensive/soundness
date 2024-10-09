@@ -203,6 +203,8 @@ object Output:
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
       val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
+      import quantitative./
+      val speed = distance/journey.duration.quantity
       Out.println(e"\n${journey.duration}, $distance")
 
 
