@@ -145,28 +145,33 @@ object Output:
 
       def renderLeg(leg: Leg, legNo: Ordinal): Unit =
         leg.path.stopPoints.dropRight(1).each: stop =>
+          val ln = e"${Bg(leg.color)}(  )"
           Out.println(e"${indent(legNo, 28)}$ln")
-          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  $st$ln")
+          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  ${leg.color}($st)$ln")
           Out.println(e"${indent(legNo, 28)}$ln")
 
       journey.legs.prim.let: leg =>
+        val ln = e"${Bg(leg.color)}(  )"
         val step = t"Take the ${leg.instruction.detailed}"
         Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
         renderLeg(leg, Prim)
 
       journey.legs.slide(2).each: pair =>
+        val ln0 = e"${Bg(pair(0).color)}(  )"
+        val ln1 = e"${Bg(pair(1).color)}(  )"
         val interchange = pair(0).path.stopPoints.last.shortName
         val step = t"At $interchange, change to the ${pair(1).instruction.detailed}."
         pair(0).path.stopPoints.lastOption.foreach: stop =>
-          Out.println(e"${indent(ordinal, 26)}  $ln")
-          Out.println(e"${indent(ordinal, 26)}$tl$hl$ln$hl$hl$hl$ln$hl$tr")
-          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln$dt$dt$dt$ln $vl  $Italic($step)")
-          Out.println(e"${indent(ordinal, 26)}$bl$hl$ln$hl$hl$hl$ln$hl$br")
-          Out.println(e"${indent(ordinal, 26)}       $ln")
+          Out.println(e"${indent(ordinal, 26)}  $ln0")
+          Out.println(e"${indent(ordinal, 26)}$tl$hl$ln0$hl$hl$hl$ln1$hl$tr")
+          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln0$dt$dt$dt$ln1 $vl  $Italic($step)")
+          Out.println(e"${indent(ordinal, 26)}$bl$hl$ln0$hl$hl$hl$ln1$hl$br")
+          Out.println(e"${indent(ordinal, 26)}       $ln1")
 
         renderLeg(pair(1), ordinal + 1)
 
         if ordinal + 1 == last then
+          val ln = e"${Bg(journey.legs.last.color)}(  )"
           val step = t"Arrive at ${destination.name}."
           Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
 
