@@ -156,6 +156,8 @@ object Output:
         renderLeg(leg, Prim)
 
       journey.legs.slide(2).each: pair =>
+        val interchange = pair(0).path.stopPoints.last.shortName
+        val step = t"At $interchange, change to the ${pair(1).instruction.detailed}."
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln")
           Out.println(e"${indent(ordinal, 26)}$tl$hl$ln$hl$hl$hl$ln$hl$tr")
