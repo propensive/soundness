@@ -73,6 +73,7 @@ object Data:
         import filesystemOptions.writeAccess.disabled
         import filesystemOptions.dereferenceSymlinks.enabled
         import filesystemOptions.createNonexistent.enabled
+        import filesystemOptions.createNonexistentParents.enabled
         val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
         val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
