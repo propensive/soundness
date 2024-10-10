@@ -70,6 +70,7 @@ object Data:
     .within:
       cache.establish:
         import filesystemOptions.readAccess.enabled
+        import filesystemOptions.writeAccess.disabled
         val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
         val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
