@@ -12,9 +12,7 @@ import logging.silent
 import charDecoders.utf8
 import textSanitizers.skip
 import dsvFormats.csvWithHeader
-import tableStyles.minimal
 import textMetrics.uniform
-import columnAttenuation.ignore
 import printableTypes.message
 import pathNavigation.posix
 import environments.daemonClient
