@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>telekinesis-core</artifactId>
-  <version>0.19.0</version>
+  <version>0.20.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,17 +25,17 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>monotonous-core</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>gesticulate-core</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>nettlesome-url</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
   </dependencies>
   <organization>
