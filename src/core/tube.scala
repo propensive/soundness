@@ -106,7 +106,9 @@ object Data:
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text): Plan = ???
+  def plan(start: StationRow, destination: StationRow, time: Text): Plan =
+    val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?time=$time"
+    ???
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n"))
