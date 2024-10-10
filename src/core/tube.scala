@@ -55,6 +55,7 @@ def app(): Unit = cli:
         val stations = Data.stations
         val start0: Optional[StationRow] = Start.select(stations.values)
         val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
+        val departure0: Optional[Text] = Departure[Text]()
 
         execute:
           mend:
