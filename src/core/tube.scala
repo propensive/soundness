@@ -144,4 +144,7 @@ case class LineIdentifier(id: Text)
 case class Stop(name: Text):
   def shortName: Text = name.sub(t" Underground Station", t"")
 
+enum TubeLine:
+  case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern, Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
+
 erased trait Naptan
