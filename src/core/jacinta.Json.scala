@@ -182,8 +182,12 @@ object Json extends Json2, Dynamic:
 
   given Encoder[Json] as encoder = json => MinimalJsonPrinter.print(json.root)
 
-  def parse[SourceType: Readable by Bytes](value: SourceType): Json raises JsonParseError =
-    Json(JsonAst.parse(value))
+  inline def parse[SourceType](value: SourceType): Json raises JsonParseError =
+    summonFrom:
+      case given (SourceType is Readable by Bytes) => Json(JsonAst.parse(value))
+      case given (SourceType is Readable by Text)  =>
+        import charEncoders.utf8
+        Json(JsonAst.parse(value.read[Bytes]))
 
   given (using JsonPrinter) => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
@@ -201,7 +205,7 @@ object Json extends Json2, Dynamic:
 
   given [SourceType: Readable by Bytes](using Tactic[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
     Json.parse(_)
-
+  
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
