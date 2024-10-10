@@ -109,7 +109,7 @@ object Data:
 
   def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?time=$time"
-    val response = sourceUrl.get()
+    val response = sourceUrl.get(RequestHeader.Accept(media"text/json"))
     ???
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
