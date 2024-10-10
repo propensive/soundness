@@ -106,12 +106,14 @@ object Data:
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text) = ???
+  def plan(start: StationRow, destination: StationRow, time: Text): Plan = ???
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
 case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.join(m"\n"))
 
 case class StationRow(id: Name[Naptan], name: Text):
   def ref: Text = name.lower.cut(t" ").kebab
+
+case class Plan()
 
 erased trait Naptan
