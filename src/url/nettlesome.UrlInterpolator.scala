@@ -59,8 +59,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       state+port.show
 
     case UrlFragment.Textual(text) =>
-      if !state.ends(t"/")
-      then throw InterpolationError(m"a substitution may only be made after a slash")
+      // if !state.ends(t"/")
+      // then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -69,8 +69,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
       state+text.urlEncode
 
     case UrlFragment.RawTextual(text) =>
-      if !state.ends(t"/")
-      then throw InterpolationError(m"a substitution may only be made after a slash")
+      // if !state.ends(t"/")
+      // then throw InterpolationError(m"a substitution may only be made after a slash")
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
@@ -81,8 +81,8 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
   override def substitute(state: Text, sub: Text): Text = state+sub
 
   def parse(state: Text, next: Text): Text =
-    if !state.empty && !(next.starts(t"/") || next.empty)
-    then throw InterpolationError(m"a substitution must be followed by a slash")
+    //if !state.empty && !(next.starts(t"/") || next.empty)
+    //then throw InterpolationError(m"a substitution must be followed by a slash")
 
     state+next
 
