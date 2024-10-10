@@ -29,6 +29,7 @@ val Install = Subcommand(t"install", e"[re]install the tab-completions")
 val Trip = Subcommand(t"trip", e"plan a trip on the London Underground")
 val Start = Flag(t"start", false, List('s'), t"The start of your journey")
 val Destination = Flag(t"destination", false, List('d'), t"The end of your journey")
+val Departure = Flag(t"departure", false, List('D'), t"The departure time in HHMM format")
 
 @main
 def app(): Unit = cli:
