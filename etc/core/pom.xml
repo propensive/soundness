@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>rudiments-core</artifactId>
-  <version>0.19.0</version>
+  <version>0.20.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,27 +25,27 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-http</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-path</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-codec</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>vacuous-core</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>denominative-core</artifactId>
-      <version>0.19.0</version>
+      <version>0.20.0</version>
     </dependency>
   </dependencies>
   <organization>
