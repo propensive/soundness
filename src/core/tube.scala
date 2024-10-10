@@ -65,7 +65,7 @@ def app(): Unit = cli:
             val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
 
             val departure = departure0 match
-              case r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" => ???
+              case r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" if 0 <= hh && hh < 24 => ???
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
             Exit.Ok
