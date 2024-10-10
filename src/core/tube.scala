@@ -71,6 +71,8 @@ def app(): Unit = cli:
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
             val plan = Data.plan(start, destination, departure)
+            plan.journeys.each: journey =>
+              Out.println(e"$Underline(Option)")
             Exit.Ok
 
       case _ => execute:
