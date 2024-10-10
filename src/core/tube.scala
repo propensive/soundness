@@ -107,7 +107,7 @@ object Data:
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text): Plan =
+  def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?time=$time"
     val response = sourceUrl.get()
     ???
