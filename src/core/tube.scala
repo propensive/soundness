@@ -69,6 +69,7 @@ object Data:
       case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
     .within:
       cache.establish:
+        import filesystemOptions.readAccess.enabled
         val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
         val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
