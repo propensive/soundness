@@ -94,7 +94,7 @@ def app(): Unit = cli:
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
             val summary = Output.render(Data.plan(start, destination, departure), start, destination)
-            sh"say $summary".exec[Unit]()
+            safely(sh"say $summary".exec[Unit]())
             Exit.Ok
 
       case _ => execute:
