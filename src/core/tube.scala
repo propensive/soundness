@@ -73,7 +73,7 @@ def app(): Unit = cli:
               case _                                                            => t"0800"
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
-            Output.render(Data.plan(start, destination, departure))
+            Output.render(Data.plan(start, destination, departure), start, destination)
             Exit.Ok
 
       case _ => execute:
@@ -124,7 +124,7 @@ object Data:
       Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 object Output:
-  def render(plan: Plan)(using Stdio): Unit =
+  def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Unit =
     plan.journeys.each: journey =>
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
 
