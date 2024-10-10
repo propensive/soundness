@@ -66,6 +66,7 @@ def app(): Unit = cli:
 
             val departure = departure0 match
               case time@r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" if 0 <= hh < 24 => time
+              case _                                                            => t"0800"
 
             Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
             Exit.Ok
