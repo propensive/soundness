@@ -195,4 +195,20 @@ case class Stop(name: Text):
 enum TubeLine:
   case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern, Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
 
+  def color: Rgb24 = this match
+    case Bakerloo         => rgb"#B36305"
+    case Central          => rgb"#E32017"
+    case Circle           => rgb"#FFD300"
+    case District         => rgb"#00782A"
+    case HammersmithCity  => rgb"#F3A9BB"
+    case Jubilee          => rgb"#A0A5A9"
+    case Metropolitan     => rgb"#9B0056"
+    case Northern         => rgb"#000000"
+    case Piccadilly       => rgb"#003688"
+    case Victoria         => rgb"#0098D4"
+    case WaterlooCity     => rgb"#95CDBA"
+    case Dlr              => rgb"#00AFAD"
+    case LondonOverground => rgb"#FA7B05"
+    case Elizabeth        => rgb"#60399E"
+
 erased trait Naptan
