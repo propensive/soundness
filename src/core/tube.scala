@@ -107,7 +107,7 @@ object Data:
 
         Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan =
+  def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan raises UserError =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?time=$time"
     tend:
       case HttpError(url, _, status)       => UserError(m"Attempt to access $url returned $status.")
