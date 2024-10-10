@@ -20,6 +20,7 @@ import pathNavigation.posix
 import environments.daemonClient
 import homeDirectories.default
 import enumIdentification.kebabCase
+import supervisors.global
 
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
