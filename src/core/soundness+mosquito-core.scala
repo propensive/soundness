@@ -16,4 +16,4 @@
 
 package soundness
 
-export mosquito.{Euclidean, Matrix}
+export mosquito.{Euclidean, Matrix, slide}
