@@ -17,15 +17,15 @@
 package revolution
 
 import java.util.jar as juj
+import java.io as ji
 
 import anticipation.*
 import denominative.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
 import rudiments.*
 import prepositional.*
 import turbulence.*
 import vacuous.*
+import symbolism.*
 
 object Manifest:
   protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =
@@ -37,12 +37,18 @@ object Manifest:
       .to(Map)
 
   given Manifest is Readable by Bytes as readable = manifest => LazyList(manifest.serialize)
-  given [SourceType: Readable by Bytes] => Manifest is Aggregable by Bytes as aggregable = parse(_)
+  given Manifest is Aggregable by Bytes as aggregable = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
       (entry.key, entry.value)
     .to(Map)
+
+  given Manifest is Addable by ManifestEntry into Manifest = (manifest, entry) =>
+    Manifest(manifest.entries.updated(entry.key, entry.value))
+
+  given [KeyType <: Label] => Manifest is Subtractable by ManifestAttribute[KeyType] into Manifest =
+    (manifest, attribute) => Manifest(manifest.entries - attribute.key)
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
@@ -51,19 +57,10 @@ case class Manifest(entries: Map[Text, Text]):
     if entries.contains(attribute.key) then KeyType.decode(entries(attribute.key)) else Unset
 
   def serialize: Bytes =
-    Text.construct:
-      entries.each: (key, value) =>
-        buffer.append(key)
-        buffer.append(t": ")
-        val used = key.length + 2
-
-        def putValue(index: Int, space: Int): Unit =
-          buffer.append(value.slice(Ordinal.zerary(index) ~ Ordinal.natural(index + space)))
-          buffer.append(t"\r\n")
-
-          if index + space > 70 then
-            buffer.append(t" ")
-            putValue(index + space, 69)
-
-        putValue(0, 68 - key.length)
-    .bytes
+    val manifest = juj.Manifest()
+    entries.each: (key, value) =>
+      manifest.getMainAttributes.nn.putValue(key.s, value.s)
+    
+    val out = ji.ByteArrayOutputStream()
+    manifest.write(out)
+    out.toByteArray().nn.immutable(using Unsafe)
