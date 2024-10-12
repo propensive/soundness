@@ -134,6 +134,13 @@ extends Pathlike:
     if textDescent == Nil then Unset
     else Path.from(textRoot, textDescent.tail, separator, caseSensitivity)
 
+  def ancestor(n: Int): Optional[Path on Platform] =
+    def recur(n: Int, current: Optional[Path on Platform]): Optional[Path on Platform] =
+      current.let: current =>
+        if n == 0 then current else recur(n - 1, current.parent)
+
+    recur(n, this)
+
   transparent inline def on [PlatformType]: Path on PlatformType =
     inline erasedValue[PlatformType & Matchable] match
       case _: Platform => this.asInstanceOf[Path on PlatformType]
@@ -166,3 +173,9 @@ extends Pathlike:
     if textRoot != right.textRoot then raise(PathError(PathError.Reason.DifferentRoots, right.text))
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
+  
+  def resolve(text: Text)(using Platform is Navigable, Platform is Radical)
+          : Path on Platform raises PathError =
+    safely(Path.parse(text)).or(safely(this + Relative.parse(text))).or:
+      abort(PathError(PathError.Reason.InvalidRoot))
+

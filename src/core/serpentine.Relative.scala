@@ -11,7 +11,7 @@ import vacuous.*
 import scala.compiletime.*
 
 object Relative:
-  given (using navigable: Navigable) => Encoder[Relative] = relative =>
+  given (using navigable: Navigable) => Encoder[Relative] as encoder = relative =>
     if relative.textDescent.isEmpty
     then
       if relative.ascent == 0 then navigable.selfText
@@ -80,6 +80,9 @@ extends Pathlike:
     case _              => false
   
   override def hashCode: Int = ascent*31 + textDescent.hashCode
+  
+  def on[PlatformType: Navigable]: Relative by PlatformType.Operand =
+    Relative.parse(Relative.encoder.encode(this))
 
   @targetName("child")
   infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
