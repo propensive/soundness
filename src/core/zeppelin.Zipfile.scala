@@ -5,6 +5,7 @@ import java.nio.file as jnf
 import java.net as jn
 import java.util.zip as juz
 import scala.collection.concurrent as scc
+import scala.collection.mutable as scm
 
 import anticipation.*
 import galilei.*
@@ -67,6 +68,33 @@ object Zipfile:
     def close(carrier: Carrier): Unit = carrier.close()
 
   private val cache: scc.TrieMap[Text, Semaphore] = scc.TrieMap()
+
+  def write[PathType: GenericPath](path: PathType)(stream: LazyList[ZipEntry]): Unit =
+    val filename = path.pathText
+    val out: juz.ZipOutputStream = juz.ZipOutputStream(ji.FileOutputStream(ji.File(filename.s)))
+    val directories: scm.HashSet[Path on Zip] = scm.HashSet()
+
+    def addEntry(path: Path on Zip): Boolean = directories(path) || {
+      directories += path
+      out.putNextEntry(juz.ZipEntry(path.text.s))
+      out.closeEntry()
+      false
+    }
+
+    for entry <- stream do
+      entry.ref.ancestors.reverse.exists: path =>
+        directories(path) || addEntry(path)
+      
+      out.putNextEntry(juz.ZipEntry(entry.ref.text.s))
+      
+      entry.content().each: bytes =>
+        out.write(bytes.mutable(using Unsafe))
+
+      out.closeEntry()
+
+    out.close()
+      
+      
   
 
 case class Zipfile(path: Text):
