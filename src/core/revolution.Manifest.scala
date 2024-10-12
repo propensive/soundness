@@ -37,6 +37,7 @@ object Manifest:
       .to(Map)
 
   given Manifest is Readable by Bytes as readable = manifest => LazyList(manifest.serialize)
+  given [SourceType: Readable by Bytes] => Manifest is Aggregable by Bytes as aggregable = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
