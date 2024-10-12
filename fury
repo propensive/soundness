@@ -10,5 +10,5 @@ project revolution
   module core
     compiler  scala
     sources   src/core
-    include   vacuous/core gossamer/core serpentine/core turbulence/core
+    include   serpentine/core turbulence/core
 
