@@ -31,8 +31,7 @@ import pathNavigation.posix
 import workingDirectories.virtualMachine
 import systemProperties.virtualMachine
 import internetAccess.enabled
-import logging.stderr
-import logFormats.ansiStandard
+import logging.silent
 import alphabets.hex.lowerCase
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.disabled
@@ -78,6 +77,9 @@ object Bootstrapper:
         val data = url.get().read[Bytes]
         val digest = data.digest[Sha2[256]].serialize[Hex]
 
+        def filter(name: Text): Boolean =
+          name == t"burdock/Bootstrap.class" || name != t"META-INF/MANIFEST.MF"
+
         ZipStream(data).keep(_.text != t"META-INF/MANIFEST.MF").map: entry =>
           (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
       .to(Map)
@@ -86,6 +88,8 @@ object Bootstrapper:
       val todo: List[Requirement | Entry | Manifest] = jarfile.open: handle =>
         ZipStream(handle.read[Bytes]).map: entry =>
           if entry.ref.show == t"META-INF/MANIFEST.MF" then entry.read[Bytes].read[Manifest]
+          else if entry.ref.show == t"burdock/Bootstrap.class"
+          then Entry(entry.ref.show, entry.read[Bytes])
           else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
             Entry(entry.ref.show, entry.read[Bytes])
         .to(List)
@@ -106,18 +110,17 @@ object Bootstrapper:
       
       val tmpFile = jarfile.parent.vouch(using Unsafe) / Name(jarfile.name.vouch(using Unsafe).text+t".tmp")
       
-      Zipfile.write(tmpFile)
-       (ZipEntry
-         (Path.parse[Zip](t"META-INF/MANIFEST.MF"),
-          manifest2.serialize) #:: todo.sift[Entry].to(LazyList).map: entry =>
-            ZipEntry(Path.parse[Zip](entry.name), () => LazyList(entry.data)))
+      Zipfile.write(tmpFile):
+        ZipEntry(Path.parse[Zip](t"META-INF/MANIFEST.MF"), manifest2.serialize) #::
+          todo.sift[Entry].to(LazyList).map: entry =>
+            ZipEntry(Path.parse[Zip](entry.name), () => LazyList(entry.data))
       
       import filesystemOptions.overwritePreexisting.enabled
       import filesystemOptions.deleteRecursively.disabled
       import filesystemOptions.moveAtomically.enabled
       import filesystemOptions.createNonexistentParents.disabled
+
       tmpFile.moveTo(jarfile)
       
       Exit.Ok
-
 
