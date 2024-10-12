@@ -9,7 +9,7 @@ target gastronomy/test
 project gastronomy
   module core
     sources src/core
-    include monotonous/core turbulence/core hieroglyph/core wisteria/core anticipation/codec
+    include monotonous/core turbulence/core
 
   module test
     sources   src/test
