@@ -38,14 +38,17 @@ package logFormats:
     case Level.Warn => t"WARN"
     case Level.Fail => t"FAIL"
 
-  given Message is Inscribable in Text as standard = (event, level, realm, timestamp) =>
-    t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > $event\n"
+  given [EventType: Communicable] => EventType is Inscribable in Text as standard =
+    (event, level, realm, timestamp) =>
+      t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given Message is Inscribable in Text as untimestamped = (event, level, realm, timestamp) =>
-    t"[$level] ${realm.name.fit(10)} > $event\n"
+  given [EventType: Communicable] => EventType is Inscribable in Text as untimestamped =
+    (event, level, realm, timestamp) =>
+      t"[$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given Message is Inscribable in Text as lightweight = (event, level, realm, timestamp) =>
-    t"[$level] $event\n"
+  given [EventType: Communicable] => EventType is Inscribable in Text as lightweight =
+    (event, level, realm, timestamp) =>
+      t"[$level] ${event.communicate}\n"
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
@@ -94,3 +97,13 @@ extension (logObject: Log.type)
 
 package logging:
   given [FormatType] => FormatType is Loggable as silent = Log.silent[FormatType]
+  
+  given [FormatType: Printable, EventType: Inscribable in FormatType](using Stdio)
+      => EventType is Loggable as stdout =
+    (level, realm, timestamp, event) =>
+      Out.println(EventType.formatter(event, level, realm, timestamp))
+  
+  given [EventType: Inscribable in FormatType, FormatType: Printable](using Stdio)
+      => EventType is Loggable as stderr =
+    (level, realm, timestamp, event) =>
+      Err.println(EventType.formatter(event, level, realm, timestamp))
