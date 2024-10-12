@@ -54,12 +54,27 @@ extension [ValueType](value: ValueType)
 package stdioSources:
   given Stdio as mute = Stdio(null, null, null, termcapDefinitions.basic)
 
-  package virtualMachine:
+  package system:
     given Stdio as textOnly =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
 
     given Stdio as ansi =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
+
+  package virtualMachine:
+    given Stdio as textOnly =
+      val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
+      val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
+      val stdin = ji.FileInputStream(ji.FileDescriptor.in)
+      
+      Stdio(stdout, stderr, stdin, termcapDefinitions.basic)
+
+    given Stdio as ansi =
+      val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
+      val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
+      val stdin = ji.FileInputStream(ji.FileDescriptor.in)
+      
+      Stdio(stdout, stderr, stdin, termcapDefinitions.xterm256)
 
 
 extension [ElementType](stream: LazyList[ElementType])
