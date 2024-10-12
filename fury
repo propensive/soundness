@@ -5,9 +5,16 @@ target burdock/build
 repo propensive/zeppelin
 repo propensive/hellenism
 repo propensive/galilei
+repo propensive/nettlesome
+repo propensive/revolution
+repo propensive/exoskeleton
+repo propensive/gastronomy
+repo propensive/telekinesis
 
 project burdock
   module build
     compiler  scala
     sources   src/build
-    include   galilei/core hellenism/core zeppelin/core
+    include   galilei/core hellenism/core zeppelin/core exoskeleton/core revolution/core nettlesome/url telekinesis/core eucalyptus/ansi gastronomy/core
+    main      burdock.Bootstrapper
+    artifact  burdock.jar

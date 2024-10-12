@@ -1,9 +1,0 @@
-verbosity error
-require https://repo1.maven.org/maven2/org/scala-lang/modules/scala-asm/9.6.0-scala-1/scala-asm-9.6.0-scala-1.jar        bf16f8b69e89cadab550bce266a052780af7f1eb29dd1c04c3bd014113752c12
-require https://repo1.maven.org/maven2/org/scala-lang/scala-library/2.13.14/scala-library-2.13.14.jar                    43e0ca1583df1966eaf02f0fbddcfb3784b995dd06bfc907209347758ce4b7e3
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-compiler_3/3.5.0/scala3-compiler_3-3.5.0.jar                54842fab4554c10d857b5617a7855107c8b0134a49d298c6b4e2d9f1584e7049
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-interfaces/3.5.0/scala3-interfaces-3.5.0.jar                2cb0d101eef1d9d21e74177d419dfaa8e84515ab0a07f6c5f650d61d22e3c9cb
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-library_3/3.5.0/scala3-library_3-3.5.0.jar                  242c9a005b356c9554c6e5f33c2b40eb015f62755e1ea5c5613d80c488d40860
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-sbt-bridge/3.5.0/scala3-sbt-bridge-3.5.0.jar                74d17236d7c7b7617f71d386e0d8f74805ac785f6e75836858763b63e6ae3885
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-staging_3/3.5.0/scala3-staging_3-3.5.0.jar                  b67548ca308d4e269f002ae0d4f14f383babcf7ac40772de7738820b17fd356e
-require https://repo1.maven.org/maven2/org/scala-lang/scala3-tasty-inspector_3/3.5.0/scala3-tasty-inspector_3-3.5.0.jar  8c5f915c7e707a06f78110087888a00b5152450218ba0425758efa3cb828dd80

@@ -1,7 +1,7 @@
 SOURCES := $(wildcard src/core/**/*.java)
 
-burdock.jar: compile etc/manifest res/META-INF
-	jar cvmf etc/manifest burdock.jar -C .wrath/bin burdock -C res META-INF
+burdock.jar: compile etc/manifest
+	jar cvmf etc/manifest burdock.jar -C .wrath/bin burdock
 
 .wrath/bin:
 	mkdir -p .wrath/bin
