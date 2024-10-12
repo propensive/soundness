@@ -1,6 +1,6 @@
 # This is a buildfile for Fury or Wrath.
 # More information is available at: https://github.com/propensive/wrath/
-target burdock/build
+target burdock/core
 
 repo propensive/zeppelin
 repo propensive/hellenism
@@ -12,9 +12,9 @@ repo propensive/gastronomy
 repo propensive/telekinesis
 
 project burdock
-  module build
+  module core
     compiler  scala
-    sources   src/build
-    include   galilei/core hellenism/core zeppelin/core exoskeleton/core revolution/core nettlesome/url telekinesis/core eucalyptus/ansi gastronomy/core
+    sources   src/core
+    include   zeppelin/core exoskeleton/core revolution/core telekinesis/core gastronomy/core
     main      burdock.Bootstrapper
     artifact  burdock.jar
