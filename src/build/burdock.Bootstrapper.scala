@@ -1,9 +1,6 @@
 package burdock
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import hellenism.*
 import prepositional.*
 import gossamer.*
 import turbulence.*
@@ -59,11 +56,12 @@ object Bootstrapper:
     def text = t"$digest:$url"
   
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
+  case class Entry(name: Text, data: Bytes)
 
   def main(args: IArray[Text]): Unit = application(args):
     mend:
       case error: Error =>
-        Out.println(error.message)
+        Err.println(error.message)
         Exit.Fail(1)
     .within:
       val jarfile = args.prim.let(workingDirectory[Path on Posix].resolve(_)).or:
@@ -84,7 +82,6 @@ object Bootstrapper:
           (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
       .to(Map)
 
-      case class Entry(name: Text, data: Bytes)
 
       val todo: List[Requirement | Entry | Manifest] = jarfile.open: handle =>
         ZipStream(handle.read[Bytes]).map: entry =>
@@ -100,10 +97,8 @@ object Bootstrapper:
         import manifestAttributes.*
         val require = BurdockRequire(todo.sift[Requirement].to(Set).to(List))
 
-        Out.println(t"Main class = ${manifest(MainClass).inspect}")
         val burdockMain = manifest(MainClass).let(BurdockMain(_)).or:
           abort(UserError(m"Manifest file did not contain a Main-Class entry"))
-        Out.println(t"Burdock Main class = ${burdockMain.inspect}")
 
         val verbosity = BurdockVerbosity(t"silent")
 
@@ -116,6 +111,12 @@ object Bootstrapper:
          (Path.parse[Zip](t"META-INF/MANIFEST.MF"),
           manifest2.serialize) #:: todo.sift[Entry].to(LazyList).map: entry =>
             ZipEntry(Path.parse[Zip](entry.name), () => LazyList(entry.data)))
+      
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.disabled
+      import filesystemOptions.moveAtomically.enabled
+      import filesystemOptions.createNonexistentParents.disabled
+      tmpFile.moveTo(jarfile)
       
       Exit.Ok
 
