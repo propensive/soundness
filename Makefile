@@ -1,9 +1,6 @@
 SOURCES := $(wildcard src/java/**/*.java)
 
-compile: .wrath/bin $(SOURCES)
-	javac -d .wrath/bin -Xlint:deprecation src/java/burdock/*.java
-
-.wrath/bin:
-	mkdir -p .wrath/bin
+compile: $(SOURCES)
+	javac -d res -Xlint:deprecation src/java/burdock/*.java
 
 .PHONY: compile
