@@ -15,4 +15,4 @@ project gastronomy
     sources   src/test
     main      gastronomy.Tests
     include   gastronomy/core probably/cli
-    coverage  gastronomy/core
+    # coverage  gastronomy/core
