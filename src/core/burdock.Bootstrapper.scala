@@ -11,6 +11,7 @@ import rudiments.*
 import serpentine.*
 import galilei.*
 import contingency.*
+import parasite.*
 import gastronomy.*
 import nettlesome.*
 import spectacular.*
@@ -19,6 +20,7 @@ import monotonous.*
 import revolution.*
 import telekinesis.*
 import ambience.*
+import hellenism.*
 import digression.*
 import eucalyptus.*
 import vacuous.*
@@ -39,7 +41,6 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.disabled
 
 object Bootstrapper:
-
   object BurdockMain extends ManifestAttribute["Burdock-Main"]
   object BurdockVerbosity extends ManifestAttribute["Burdock-Verbosity"]
   object BurdockRequire extends ManifestAttribute["Burdock-Require"]
@@ -54,8 +55,9 @@ object Bootstrapper:
   case class Requirement(url: HttpUrl, digest: Text):
     def text = t"$digest:$url"
   
-  case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
   case class Entry(name: Text, data: Bytes)
+  
+  case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
 
   def main(args: IArray[Text]): Unit = application(args):
     mend:
@@ -63,17 +65,31 @@ object Bootstrapper:
         Err.println(error.message)
         Exit.Fail(1)
     .within:
-      val jarfile = args.prim.let(workingDirectory[Path on Posix].resolve(_)).or:
-        abort(UserError(m"Please specify the JAR file to update as the first parameter"))
+      val jarfile: Path on Posix =
+        ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
+          case ClasspathEntry.Jar(file) =>
+            Path.parse(file)
+
+          case other =>
+            abort(UserError(m"Could not determine location of bootstrap class"))
       
+      Out.println(m"Bootstrapping JAR file $jarfile")
+
       if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
       val classpath = arguments.drop(1).map(_()).map(workingDirectory[Path on Posix].resolve(_))
       
       val urls = classpath.map: entry =>
         entry.ancestor(6).let: base =>
-          (url"https://repo1.maven.org/" + entry.relativeTo(base).on[HttpUrl]).show.decode[HttpUrl]
+          if base.name == n"repo1.maven.org" && base.parent.let(_.name) == n"https"
+          then
+            val urlPath = url"https://repo1.maven.org/" + entry.relativeTo(base).on[HttpUrl]
+            urlPath.show.decode[HttpUrl]
+          else
+            Out.println(m"Cannot resolve online location of $entry")
+            Unset
       
       val entries: Map[(Text, Text), Requirement] = urls.compact.flatMap: url =>
+        Out.println(m"Downloading $url")
         val data = url.get().read[Bytes]
         val digest = data.digest[Sha2[256]].serialize[Hex]
 
@@ -84,34 +100,36 @@ object Bootstrapper:
           (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
       .to(Map)
 
+      val manifest: Promise[Manifest] = Promise()
 
-      val todo: List[Requirement | Entry | Manifest] = jarfile.open: handle =>
+      val todo: List[Requirement | Entry] = jarfile.open: handle =>
         ZipStream(handle.read[Bytes]).map: entry =>
-          if entry.ref.show == t"META-INF/MANIFEST.MF" then entry.read[Bytes].read[Manifest]
+          if entry.ref.show == t"META-INF/MANIFEST.MF"
+          then manifest.fulfill(entry.read[Bytes].read[Manifest]) yet Unset
           else if entry.ref.show == t"burdock/Bootstrap.class"
           then Entry(entry.ref.show, entry.read[Bytes])
           else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
             Entry(entry.ref.show, entry.read[Bytes])
-        .to(List)
+        .to(List).compact
       
-      val manifest = todo.sift[Manifest].prim.or:
+      val manifest2 = manifest().or:
         abort(UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file"))
 
-      val manifest2 =
+      val manifest3 =
         import manifestAttributes.*
         val require = BurdockRequire(todo.sift[Requirement].to(Set).to(List))
 
-        val burdockMain = manifest(MainClass).let(BurdockMain(_)).or:
+        val burdockMain = manifest2(MainClass).let(BurdockMain(_)).or:
           abort(UserError(m"Manifest file did not contain a Main-Class entry"))
 
         val verbosity = BurdockVerbosity(t"silent")
 
-        manifest - MainClass + require + burdockMain + verbosity + MainClass(fqcn"burdock.Bootstrap")
+        manifest2 - MainClass + require + burdockMain + verbosity + MainClass(fqcn"burdock.Bootstrap")
       
       val tmpFile = jarfile.parent.vouch(using Unsafe) / Name(jarfile.name.vouch(using Unsafe).text+t".tmp")
       
       Zipfile.write(tmpFile):
-        ZipEntry(Path.parse[Zip](t"META-INF/MANIFEST.MF"), manifest2.serialize) #::
+        ZipEntry(Path.parse[Zip](t"META-INF/MANIFEST.MF"), manifest3.serialize) #::
           todo.sift[Entry].to(LazyList).map: entry =>
             ZipEntry(Path.parse[Zip](entry.name), () => LazyList(entry.data))
       
