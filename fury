@@ -15,6 +15,6 @@ project burdock
   module core
     compiler  scala
     sources   src/core
-    include   zeppelin/core exoskeleton/core revolution/core telekinesis/core gastronomy/core
+    include   zeppelin/core exoskeleton/core revolution/core telekinesis/core gastronomy/core hellenism/core
     main      burdock.Bootstrapper
     artifact  burdock.jar
