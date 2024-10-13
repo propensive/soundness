@@ -34,7 +34,7 @@ object Path:
       def recur(descent: List[Text], ascent: Int): Path on PlatformType =
         if ascent > 0 then
           if descent.isEmpty then
-            raise(PathError(PathError.Reason.RootParent))
+            abort(PathError(PathError.Reason.RootParent))
             
             Path.from[PlatformType]
              (left.textRoot, Nil, left.separator, left.caseSensitivity)
@@ -172,7 +172,7 @@ extends Pathlike:
 
   def relativeTo(right: Path on Platform)(using navigable: Platform is Navigable)
           : Relative by navigable.Operand raises PathError =
-    if textRoot != right.textRoot then raise(PathError(PathError.Reason.DifferentRoots, right.text))
+    if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
   
