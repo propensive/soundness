@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>spectacular-core</artifactId>
-  <version>0.21.0</version>
+  <version>0.22.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,17 +25,17 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>inimitable-core</artifactId>
-      <version>0.21.0</version>
+      <version>0.22.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>digression-core</artifactId>
-      <version>0.21.0</version>
+      <version>0.22.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>wisteria-core</artifactId>
-      <version>0.21.0</version>
+      <version>0.22.0</version>
     </dependency>
   </dependencies>
   <organization>
