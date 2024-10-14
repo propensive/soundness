@@ -16,8 +16,15 @@
 
 package hellenism
 
+import prepositional.*
+import serpentine.*
+
 package classloaders:
   given Classloader as threadContext = Classloader.threadContext
   given Classloader as system = new Classloader(ClassLoader.getSystemClassLoader.nn)
   given Classloader as platform = new Classloader(ClassLoader.getPlatformClassLoader.nn)
   given Classloader as scala = Classloader[List]
+
+extension (path: Path on Classpath)
+  def exists()(using classloader: Classloader): Unit =
+    classloader.java.getResourceAsStream(path.text.s) != null
