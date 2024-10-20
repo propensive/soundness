@@ -22,4 +22,4 @@ package logFormats:
   export eucalyptus.logFormats.{standard, untimestamped, lightweight}
 
 package logging:
-  export eucalyptus.logging.silent
+  export eucalyptus.logging.{silent, stderr, stdout}
