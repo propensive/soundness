@@ -49,7 +49,7 @@ case class Promise[ValueType]():
 
   def offer(supplied: -> ValueType): Unit = synchronized { if !ready then set(supplied) }
 
-  def await(): ValueType raises ConcurrencyError = synchronized:
+  def await(): ValueType = synchronized:
     while !ready do wait()
     get()
 
