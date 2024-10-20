@@ -116,7 +116,7 @@ object Input extends TagType["input", Nothing, Global | "accept" | "alt" | "auto
     "checked" | "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
     "formnovalidate" | "formtarget" | "height" | "list" | "max" | "maxlength" | "min" |
     "minlength" | "multiple" | "name" | "pattern" | "placeholder" | "readonly" | "required" |
-    "size" | "src" | "step" | "type" | "value" | "width"]("input", block = false, unclosed = true)
+    "size" | "src" | "step" | "type" | "value" | "width" | "capture"]("input", block = false, unclosed = true)
 
 val Ins = ClearTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", block = false)

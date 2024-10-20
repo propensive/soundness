@@ -287,6 +287,7 @@ object HtmlAttribute:
   given target[T]: HtmlAttribute["target", Target, T] = _.show
   given title[T]: HtmlAttribute["title", Text, T] = identity(_)
   given translate[T]: HtmlAttribute["translate", Boolean, T] = _ => Unset
+  given capture[T]: HtmlAttribute["capture", Capture, T] = _.show
 
   given htype[T]: HtmlAttribute["type", Type, T] with
     override def rename: Option[Text] = Some(t"type")
@@ -297,6 +298,12 @@ object HtmlAttribute:
   given valueInt[T]: HtmlAttribute["value", Int, T] = _.show
   given width[T]: HtmlAttribute["width", Int, T] = _.show
   given wrap[T]: HtmlAttribute["wrap", Wrap, T] = _.show
+
+object Capture:
+  given Capture is Showable = _.toString.tt.lower
+
+enum Capture:
+  case Environment, User
 
 extension (sc: StringContext)
   def cls(): CssClass = CssClass(Text(sc.parts.head))
