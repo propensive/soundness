@@ -20,7 +20,6 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
-import nettlesome.*
 import turbulence.*
 import vacuous.*
 
@@ -28,7 +27,7 @@ object HttpResponse:
   given (using Tactic[HttpError]) => HttpResponse is Readable by Bytes as readable = response =>
     val body = response.status match
       case status: (HttpStatus & FailureCase) =>
-        raise(HttpError(response.url, response.method, status), response.body)
+        raise(HttpError(status, response.headers), response.body)
 
       case status =>
         response.body
@@ -36,14 +35,12 @@ object HttpResponse:
     body.stream
 
 case class HttpResponse
-    (url:     HttpUrl,
-     method:  HttpMethod,
-     status:  HttpStatus,
+    (status:  HttpStatus,
      headers: Map[ResponseHeader[?], List[Text]],
      body:    LazyList[Bytes]):
 
   def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
-    case status: FailureCase => abort(HttpError(url, method, status))
+    case status: FailureCase => abort(HttpError(status, headers: Map[ResponseHeader[?], List[Text]]))
     case status              => readable.read(status, body)
 
   def apply[ValueType](header: ResponseHeader[ValueType])

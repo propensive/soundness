@@ -132,4 +132,4 @@ object Http:
               case (ResponseHeader(k), v) => List((k, v.asScala.to(List).map(_.tt)))
           .to(Map)
 
-        HttpResponse(url, method, status, responseHeaders, body)
+        HttpResponse(status, responseHeaders, body)

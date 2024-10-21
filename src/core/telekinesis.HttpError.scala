@@ -18,10 +18,9 @@ package telekinesis
 
 import fulminate.*
 import anticipation.*
-import nettlesome.*
 
 import language.dynamics
 
-case class HttpError(url: HttpUrl, method: HttpMethod, status: HttpStatus & FailureCase)
+case class HttpError(status: HttpStatus & FailureCase, headers: Map[ResponseHeader[?], List[Text]])
     (using Diagnostics)
-extends Error(m"the HTTP $method request to $url failed with status $status")
+extends Error(m"the HTTP request failed with status $status")
