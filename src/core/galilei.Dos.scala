@@ -21,10 +21,10 @@ object Dos:
   given (using Tactic[PathError]) => Dos is Radical from DosDrive as radical = new Radical:
     type Self = Dos
     type Source = DosDrive
-      
+
     def rootLength(path: Text): Int = 3
     def rootText(drive: Source): Text = t"${drive.letter}:\\"
-    
+
     def root(path: Text): DosDrive =
       if path.length < 3
       then raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
@@ -42,7 +42,7 @@ object Dos:
       val separator: Text = t"\\"
       val parentElement: Text = t".."
       val selfText: Text = t"."
-      
+
       def element(element: Text): Name[Dos] = Name(element)
       def elementText(element: Name[Dos]): Text = element.text
       def caseSensitivity: Case = Case.Upper

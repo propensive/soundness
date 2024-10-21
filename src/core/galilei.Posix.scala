@@ -13,7 +13,7 @@ import anticipation.*
 object Posix:
   abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
     type Platform = Posix
-  
+
   object RootSingleton extends Root()
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
@@ -24,7 +24,7 @@ object Posix:
 
     def rootLength(path: Text): Int = 1
     def rootText(root: Source): Text = t"/"
-  
+
     def root(path: Text): Source =
       if path.at(Prim) == '/' then Posix.RootSingleton
       else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton

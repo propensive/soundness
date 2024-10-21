@@ -62,11 +62,10 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
 
   def javaPath: jnf.Path = jnf.Path.of(path.encode.s).nn
   def javaFile: ji.File = javaPath.toFile.nn
-  def exists(): Boolean = jnf.Files.exists(javaPath)
 
   def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] raises IoError =
     val list = safely(jnf.Files.list(path.javaPath).nn.toScala(LazyList)).or(LazyList())
-    
+
     list.map: child =>
       unsafely(path.child(child.getFileName.nn.toString.nn.tt))
 
@@ -74,14 +73,14 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
       : LazyList[Path on PlatformType] raises IoError =
     children.flatMap: child =>
       summon[TraversalOrder] match
-        case TraversalOrder.PreOrder  => child #:: child.descendants 
+        case TraversalOrder.PreOrder  => child #:: child.descendants
         case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
-  
+
   def size(): ByteSize raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
     descendants.foldLeft(jnf.Files.size(path.javaPath).b)(_ + _.size())
-  
+
   def delete()(using deleteRecursively: DeleteRecursively on PlatformType)
           : Path on PlatformType raises IoError =
     protect(Operation.Delete):
@@ -93,11 +92,11 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
           : Path on PlatformType raises IoError =
     deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
     path
-  
+
   def volume(): Volume =
     val fileStore = jnf.Files.getFileStore(path.javaPath).nn
     Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
-  
+
   def hardLinkTo(destination: Path on PlatformType)
       (using overwritePreexisting: OverwritePreexisting on PlatformType,
              createNonexistentParents: CreateNonexistentParents on PlatformType)
@@ -122,7 +121,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
           case 24576 => BlockDevice
           case 49152 => Socket
           case _     => throw Panic(m"an unexpected POSIX mode value was returned")
-  
+
   def copyTo(destination: Path on PlatformType)
       (using overwritePreexisting:     OverwritePreexisting on PlatformType,
              dereferenceSymlinks:      DereferenceSymlinks,
@@ -134,11 +133,12 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
         jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
 
     destination
-  
+
   def copyInto
       (destination: Path on PlatformType)
       (using overwritePreexisting: OverwritePreexisting on PlatformType,
-             dereferenceSymlinks:  DereferenceSymlinks)
+             dereferenceSymlinks:  DereferenceSymlinks,
+             substantiable: (Path on PlatformType) is Substantiable)
           : Path on PlatformType raises IoError =
 
     given CreateNonexistentParents on PlatformType =
@@ -173,11 +173,12 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
         jnf.Files.move(path.javaPath, destination.javaPath, options*)
 
     destination
-  
+
   def moveInto
       (destination: Path on PlatformType)
       (using overwritePreexisting: OverwritePreexisting on PlatformType,
              moveAtomically:       MoveAtomically,
+             substantiable:        (Path on PlatformType) is Substantiable,
              dereferenceSymlinks:  DereferenceSymlinks)
           : Path on PlatformType raises IoError =
 
@@ -199,6 +200,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
       (destination: Path on PlatformType)
       (using overwritePreexisting: OverwritePreexisting on PlatformType,
              moveAtomically:       MoveAtomically,
+             substantiable:        (Path on PlatformType) is Substantiable,
              dereferenceSymlinks:  DereferenceSymlinks)
           : Path on PlatformType raises IoError =
 
@@ -207,21 +209,21 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
 
   def modified[InstantType: SpecificInstant](): InstantType =
     SpecificInstant(jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli)
-  
+
   def accessed[InstantType: SpecificInstant](): InstantType =
     val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
     SpecificInstant(attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli)
 
   def readable: FilesystemAttribute.Readable[PlatformType] = FilesystemAttribute.Readable(path)
   def writable: FilesystemAttribute.Writable[PlatformType] = FilesystemAttribute.Writable(path)
-  
+
   def hidden(): Boolean raises IoError =
     protect(Operation.Metadata)(jnf.Files.isHidden(path.javaPath))
 
   def touch(): Unit raises IoError = protect(Operation.Metadata):
     jnf.Files.setLastModifiedTime
      (path.javaPath, jnfa.FileTime.fromMillis(System.currentTimeMillis))
-  
+
   def make[EntryType: Makable on PlatformType](): EntryType.Result = EntryType.make(path)
 
 extension [PlatformType <: Windows](path: Path on PlatformType)
@@ -239,7 +241,7 @@ extension [PlatformType <: Posix](path: Path on PlatformType)
       jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
         case count: Int => count
         case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported), 1)
-  
+
 package filesystemOptions:
   object readAccess:
     given ReadAccess as enabled:
@@ -249,7 +251,7 @@ package filesystemOptions:
     given ReadAccess as disabled:
       type Transform[HandleType] = HandleType
       def options(): List[jnf.OpenOption] = Nil
-  
+
   object writeAccess:
     given WriteAccess as enabled:
       type Transform[HandleType] = HandleType & WriteAccess.Ability
@@ -263,7 +265,7 @@ package filesystemOptions:
     given DereferenceSymlinks as enabled:
       def dereference = true
       def options() = Nil
-    
+
     given DereferenceSymlinks as disabled:
       def dereference = false
       def options() = List(jnf.LinkOption.NOFOLLOW_LINKS)
@@ -281,27 +283,27 @@ package filesystemOptions:
         => DeleteRecursively on PlatformType as enabled:
 
       import filesystemOptions.dereferenceSymlinks.disabled
-    
+
       type Platform = PlatformType
 
       def recur(path: Path on PlatformType): Unit =
         path.children.each(recur(_))
         jnf.Files.delete(path.javaPath)
-      
+
       def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
         path.children.each(recur(_)) yet operation
-      
+
     given [PlatformType <: Filesystem](using Tactic[IoError])
         => DeleteRecursively on PlatformType as disabled:
 
       type Platform = PlatformType
-      
+
       def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
         import filesystemOptions.dereferenceSymlinks.disabled
         if !path.children.isEmpty
         then abort(IoError(path, IoError.Operation.Delete, Reason.DirectoryNotEmpty))
         else operation
-  
+
   object overwritePreexisting:
     given [PlatformType <: Filesystem](using deleteRecursively: DeleteRecursively on PlatformType)
         => OverwritePreexisting on PlatformType as enabled:
@@ -321,6 +323,7 @@ package filesystemOptions:
 
   object createNonexistentParents:
     given [PlatformType <: Filesystem](using Tactic[IoError])
+        (using (Path on PlatformType) is Substantiable)
         => CreateNonexistentParents on PlatformType as enabled:
 
       def apply[ResultType](path: Path on PlatformType)(operation: => ResultType): ResultType =
@@ -341,16 +344,17 @@ package filesystemOptions:
 
   object createNonexistent:
     given [PlatformType <: Filesystem](using create: CreateNonexistentParents on PlatformType)
+        (using (Path on PlatformType) is Substantiable)
         => CreateNonexistent on PlatformType as enabled:
       type Platform = PlatformType
 
       def error(path: Path on Platform, operation: IoError.Operation): Nothing =
         import strategies.throwUnsafely
         abort(IoError(path, operation, Reason.Nonexistent))
-      
+
       def apply(path: Path on Platform)(operation: => Unit): Unit =
         if !path.exists() then create(path)(operation)
-      
+
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
     given [PlatformType <: Filesystem](using Tactic[IoError])

@@ -15,7 +15,7 @@ object MacOs:
 
   abstract class Root() extends serpentine.Root(t"/", t"/", Case.Preserving):
     type Platform = MacOs
-  
+
   object RootSingleton extends Root()
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
@@ -26,10 +26,10 @@ object MacOs:
 
     def rootLength(path: Text): Int = 1
     def rootText(root: Source): Text = t"/"
-  
+
     def root(path: Text): Source = if path.at(Prim) == '/' then $ else
       raise(PathError(PathError.Reason.InvalidRoot, path)) yet $
-      
+
   given (using Tactic[NameError]) => MacOs is Navigable by Name[MacOs] under Rules as navigable =
     new Navigable:
       type Self = MacOs
