@@ -30,34 +30,31 @@ case class HttpRequest
      host:          Hostname,
      requestTarget: Text,
      headers:       List[RequestHeader.Value],
-     body:          HttpBody):
+     body:          LazyList[Bytes])
 
-  def serialize: LazyList[Bytes] =
-    import charEncoders.ascii
-    val buffer = StringBuffer()
-    buffer.append(method.show.upper)
-    buffer.append(t" ")
-    buffer.append(requestTarget)
-    buffer.append(t" HTTP/1.0\nhost: ")
-    buffer.append(host.show)
+  // def serialize: LazyList[Bytes] =
+  //   import charEncoders.ascii
+  //   val buffer = StringBuffer()
+  //   buffer.append(method.show.upper)
+  //   buffer.append(t" ")
+  //   buffer.append(requestTarget)
+  //   buffer.append(t" HTTP/1.0\nhost: ")
+  //   buffer.append(host.show)
 
-    body match
-      case HttpBody.Chunked(_) => ()
-      case HttpBody.Empty      => buffer.append(t"\ncontent-length: 0")
+  //   body match
+  //     case HttpBody.Chunked(_) => ()
+  //     case HttpBody.Empty      => buffer.append(t"\ncontent-length: 0")
 
-      case HttpBody.Data(data) =>
-        buffer.append(t"\ncontent-length: ")
-        buffer.append(data.length.show)
+  //     case HttpBody.Data(data) =>
+  //       buffer.append(t"\ncontent-length: ")
+  //       buffer.append(data.length.show)
 
-    headers.map: parameter =>
-      buffer.append(t"\n")
-      buffer.append(parameter.header.header)
-      buffer.append(t": ")
-      buffer.append(parameter.value)
+  //   headers.map: parameter =>
+  //     buffer.append(t"\n")
+  //     buffer.append(parameter.header.header)
+  //     buffer.append(t": ")
+  //     buffer.append(parameter.value)
 
-    buffer.append(t"\n\n")
+  //   buffer.append(t"\n\n")
 
-    body match
-      case HttpBody.Chunked(data) => buffer.toString.tt.bytes #:: data
-      case HttpBody.Empty         => LazyList(buffer.toString.tt.bytes)
-      case HttpBody.Data(data)    => LazyList(buffer.toString.tt.bytes, data)
+  //   buffer.toString.tt.bytes #:: data

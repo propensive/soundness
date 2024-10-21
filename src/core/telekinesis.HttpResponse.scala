@@ -40,7 +40,7 @@ case class HttpResponse
      method:  HttpMethod,
      status:  HttpStatus,
      headers: Map[ResponseHeader[?], List[Text]],
-     body:    HttpBody):
+     body:    LazyList[Bytes]):
 
   def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
     case status: FailureCase => abort(HttpError(url, method, status))

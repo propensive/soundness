@@ -110,16 +110,15 @@ object Http:
 
         val buf = new Array[Byte](65536)
 
-        def read(in: InputStream): HttpBody.Chunked =
+        def read(in: InputStream): LazyList[Bytes] =
           val len = in.read(buf, 0, buf.length)
 
-          HttpBody.Chunked:
-            if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #:: read(in).stream
+          if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #:: read(in)
 
 
-        def body: HttpBody =
+        def body: LazyList[Bytes] =
           try read(conn.getInputStream.nn) catch case _: Exception =>
-            try read(conn.getErrorStream.nn) catch case _: Exception => HttpBody.Empty
+            try read(conn.getErrorStream.nn) catch case _: Exception => LazyList()
 
         val HttpStatus(status) = conn.getResponseCode: @unchecked
         Log.fine(HttpEvent.Response(status))
