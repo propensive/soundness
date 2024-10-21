@@ -76,7 +76,7 @@ object Bootstrapper:
       Out.println(m"Bootstrapping JAR file $jarfile")
 
       if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
-      val classpath = arguments.drop(1).map(_()).map(workingDirectory[Path on Posix].resolve(_))
+      val classpath = arguments.map(_()).map(workingDirectory[Path on Posix].resolve(_))
       
       val urls = classpath.map: entry =>
         entry.ancestor(6).let: base =>
