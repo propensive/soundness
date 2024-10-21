@@ -32,6 +32,9 @@ import vacuous.*
 object Classpath:
   type Rules = MustNotContain["/"]
 
+  given (using classloader: Classloader) => (Path on Classpath) is Substantiable =
+    path => classloader.java.getResourceAsStream(path.text.s) != null
+
   @targetName("child")
   infix def / (child: Name[Classpath])(using classloader: Classloader)
           : Path on Classpath raises NameError =
@@ -69,7 +72,7 @@ object Classpath:
       def elementText(element: Name[Classpath]): Text = element.text
       def element(text: Text): Name[Classpath] = Name(text)
       def caseSensitivity: Case = Case.Sensitive
-  
+
   given (using Classloader) => Classpath is Radical from Classloader = new Radical:
     type Self = Classpath
     type Source = Classloader
