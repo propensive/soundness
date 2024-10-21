@@ -31,22 +31,22 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
   protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
 
-    def sendBody(status: Int, body: HttpBody): Unit =
+    def sendBody(status: Int, body: LazyList[Bytes]): Unit =
       response.setStatus(status)
       val out = response.getOutputStream.nn
 
       body match
-        case HttpBody.Empty         => addHeader(ResponseHeader.ContentLength.header, t"0")
-        case HttpBody.Data(body)    => addHeader(ResponseHeader.ContentLength.header, body.length.show)
-                                       out.write(body.mutable(using Unsafe))
-        case HttpBody.Chunked(body) => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
-                                       unsafely(body.map(_.mutable(using Unsafe)).each(out.write(_)))
+        case LazyList()     => addHeader(ResponseHeader.ContentLength.header, t"0")
+        case LazyList(data) => addHeader(ResponseHeader.ContentLength.header, data.length.show)
+                               out.write(data.mutable(using Unsafe))
+        case body           => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
+                               body.map(_.mutable(using Unsafe)).each(out.write(_))
 
-  protected def streamBody(request: jsh.HttpServletRequest): HttpBody.Chunked raises StreamError =
+  protected def streamBody(request: jsh.HttpServletRequest): LazyList[Bytes] raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
-    HttpBody.Chunked(Readable.inputStream.stream(request.getInputStream.nn))
+    Readable.inputStream.stream(request.getInputStream.nn)
 
   protected def makeRequest(request: jsh.HttpServletRequest): HttpRequest raises StreamError =
     val query = Option(request.getQueryString)

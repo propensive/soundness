@@ -43,7 +43,7 @@ case class MissingParamError(key: Text)(using Diagnostics)
 extends Error(m"the parameter $key was not sent in the request")
 
 trait Responder:
-  def sendBody(status: Int, body: HttpBody): Unit
+  def sendBody(status: Int, body: LazyList[Bytes]): Unit
   def addHeader(key: Text, value: Text): Unit
 
 case class Content(media: MediaType, stream: LazyList[Bytes])
@@ -52,7 +52,7 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
 
   type Self
 
-  def stream(response: Self): HttpBody
+  def stream(response: Self): LazyList[Bytes]
 
   final def process
       (content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
@@ -64,7 +64,7 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
 
 object Servable:
 
-  def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => HttpBody)
+  def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => LazyList[Bytes])
           : ResponseType is Servable =
     new Servable:
       type Self = ResponseType
@@ -78,17 +78,17 @@ object Servable:
     def process(content: Content, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.ContentType.header, content.media.show)
       headers.each(responder.addHeader)
-      responder.sendBody(200, HttpBody.Chunked(content.stream))
+      responder.sendBody(200, content.stream)
 
   given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
     Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
-      HttpBody.Chunked(ResponseType.content(value).map(identity))
+      ResponseType.content(value)//.map(identity)
 
   given Redirect is Servable as redirect:
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location.show)
       headers.each(responder.addHeader)
-      responder.sendBody(301, HttpBody.Empty)
+      responder.sendBody(301, LazyList())
 
   given [ResponseType] => NotFound[ResponseType] is Servable as notFound:
     def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
@@ -103,7 +103,7 @@ object Servable:
       headers.each(responder.addHeader)
       responder.sendBody(500, ResponseType.stream(notFound.content))
 
-  given Bytes is Servable as data = Servable(media"application/octet-stream")(HttpBody.Data(_))
+  given Bytes is Servable as data = Servable(media"application/octet-stream")(LazyList(_))
 
   inline given [ValueType: Media] => ValueType is Servable as media =
     summonFrom:
@@ -111,12 +111,12 @@ object Servable:
         (value, status, headers, responder) =>
           responder.addHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show)
           headers.each(responder.addHeader)
-          responder.sendBody(200, HttpBody.Data(encodable.encode(value)))
+          responder.sendBody(200, LazyList(encodable.encode(value)))
       case readable: (ValueType is Readable by Bytes) =>
         (value, status, headers, responder) =>
           responder.addHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show)
           headers.each(responder.addHeader)
-          responder.sendBody(200, HttpBody.Chunked(value.stream[Bytes]))
+          responder.sendBody(200, value.stream[Bytes])
 
 object Redirect:
   def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType): Redirect =
@@ -213,7 +213,7 @@ object HttpRequest:
 
 case class HttpRequest
     (method: HttpMethod,
-     body: HttpBody.Chunked,
+     body: LazyList[Bytes],
      query: Text,
      ssl: Boolean,
      hostname: Text,
@@ -222,8 +222,8 @@ case class HttpRequest
      rawHeaders: Map[Text, List[Text]],
      queryParams: Map[Text, List[Text]]):
 
-  lazy val path: Path on HttpUrl raises PathError raises UrlError raises HostnameError =
-    pathText.decode[Path on HttpUrl]
+  lazy val path: HttpUrl raises PathError raises UrlError raises HostnameError =
+    Url.parse(t"${if ssl then t"https" else t"http"}://$hostname$pathText")
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -306,24 +306,16 @@ case class HttpServer(port: Int) extends RequestServable:
           def addHeader(key: Text, value: Text): Unit =
             exchange.nn.getResponseHeaders.nn.add(key.s, value.s)
 
-          def sendBody(status: Int, body: HttpBody): Unit =
+          def sendBody(status: Int, body: LazyList[Bytes]): Unit =
             val length = body match
-              case HttpBody.Empty      => -1
-              case HttpBody.Data(body) => body.length
-              case HttpBody.Chunked(_) => 0
+              case LazyList()     => 0
+              case LazyList(data) => data.length
+              case _              => -1
 
             exchange.nn.sendResponseHeaders(status, length)
 
-            body match
-              case HttpBody.Empty =>
-                ()
-
-              case HttpBody.Data(body) =>
-                exchange.nn.getResponseBody.nn.write(body.mutable(using Unsafe))
-
-              case HttpBody.Chunked(body) =>
-                try body.map(_.mutable(using Unsafe)).each(exchange.nn.getResponseBody.nn.write(_))
-                catch case e: StreamError => () // FIXME: Should this be ignored?
+              try body.map(_.mutable(using Unsafe)).each(exchange.nn.getResponseBody.nn.write(_))
+              catch case e: StreamError => () // FIXME: Should this be ignored?
 
             exchange.nn.getResponseBody.nn.flush()
             exchange.nn.close()
@@ -348,7 +340,7 @@ case class HttpServer(port: Int) extends RequestServable:
 
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
-  private def streamBody(exchange: csnh.HttpExchange): HttpBody.Chunked =
+  private def streamBody(exchange: csnh.HttpExchange): LazyList[Bytes] =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
 
@@ -356,7 +348,7 @@ case class HttpServer(port: Int) extends RequestServable:
       val len = in.read(buffer)
       if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
 
-    HttpBody.Chunked(recur())
+    recur()
 
   private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
@@ -389,7 +381,7 @@ case class HttpServer(port: Int) extends RequestServable:
 case class Ttf(content: Bytes)
 object Ttf:
   given Ttf is Servable = Servable(media"application/octet-stream"): ttf =>
-    HttpBody.Data(ttf.content)
+    LazyList(ttf.content)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
     (using HttpRequest)
