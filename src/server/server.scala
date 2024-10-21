@@ -213,10 +213,10 @@ object HttpRequest:
 
 case class HttpRequest
     (method: HttpMethod,
+     hostname: Hostname,
      body: LazyList[Bytes],
      query: Text,
      ssl: Boolean,
-     hostname: Text,
      port: Int,
      pathText: Text,
      rawHeaders: Map[Text, List[Text]],
@@ -237,7 +237,7 @@ case class HttpRequest
           Map[Text, Text](body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
             case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                         => throw Panic(m"key/value pair does not match")
+            case _                           => throw Panic(m"key/value pair does not match")
           )*)
         else Map[Text, Text]()
       }
@@ -368,7 +368,7 @@ case class HttpServer(port: Int) extends RequestServable:
         body        = streamBody(exchange),
         query       = Text(query.getOrElse("").nn),
         ssl         = false,
-        hostname    = Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName).nn.tt,
+        hostname    = unsafely(Hostname.parse(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName).nn.tt)),
         port        = Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
         pathText    = Text(uri.getPath.nn),
         rawHeaders  = headers.map { case (k, v) => Text(k) -> v.map(Text(_)) },

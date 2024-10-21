@@ -21,6 +21,7 @@ import contingency.*
 import vacuous.*
 import anticipation.*
 import turbulence.*
+import nettlesome.*
 import spectacular.*
 import gossamer.*
 import telekinesis.{HttpRequest as _, HttpResponse as _, *}
@@ -66,10 +67,10 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
 
     HttpRequest(
       method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
+      hostname = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       body = streamBody(request),
       query = query.getOrElse("").nn.tt,
       ssl = false,
-      request.getServerName.nn.tt,
       request.getServerPort,
       request.getRequestURI.nn.tt,
       headers,
@@ -80,7 +81,6 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
     try throwErrors(handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse)))
     catch case error: StreamError =>
       () // FIXME
-
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)
