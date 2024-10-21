@@ -20,6 +20,8 @@ object Path:
 
   given [PlatformType] => (Path on PlatformType) is Showable as showable = _.text
   given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
+  given [PlatformType] => (Path on PlatformType) is Nominable as nominable = path =>
+    path.textDescent.prim.or(path.textRoot)
   
   given [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath as specific =
     _.decode[Path on PlatformType]
