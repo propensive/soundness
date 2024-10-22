@@ -84,8 +84,8 @@ extension [ElementType](stream: LazyList[ElementType])
 
     stream.flow(LazyList())(head #:: recur(head, tail))
 
-  def flow[ResultType](termination: => ResultType)
-      (proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
+  inline def flow[ResultType](inline termination: => ResultType)
+      (inline proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
           : ResultType =
     stream match
       case head #:: tail => proceed(using head, tail)

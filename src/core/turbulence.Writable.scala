@@ -57,15 +57,12 @@ object Writable:
   given (using Tactic[StreamError])
       => jn.channels.WritableByteChannel is Writable by Bytes as channel = (channel, stream) =>
     @tailrec
-    def recur(total: ByteSize, todo: LazyList[jn.ByteBuffer]): Unit = todo match
-      case head #:: tail =>
+    def recur(total: ByteSize, todo: LazyList[jn.ByteBuffer]): Unit =
+      todo.flow(()):
         val count = try channel.write(head) catch case e: Exception => -1
         
         if count == -1 then raise(StreamError(total))
         else recur(total + count.b, if head.hasRemaining then todo else tail)
-
-      case _ =>
-        ()
 
     recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
 

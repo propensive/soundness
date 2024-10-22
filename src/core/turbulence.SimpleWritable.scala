@@ -16,11 +16,13 @@
 
 package turbulence
 
+import rudiments.*
+
 trait SimpleWritable[TargetType, ElementType] extends Writable:
   type Operand = ElementType
   type Self = TargetType
-  def write(target: Self, stream: LazyList[ElementType]): Unit = stream match
-    case head #:: tail => writeElement(target, head); write(target, tail)
-    case _             =>
+
+  def write(target: Self, stream: LazyList[ElementType]): Unit =
+    stream.flow(())(writeElement(target, head) yet write(target, tail))
 
   def writeElement(target: Self, element: ElementType): Unit

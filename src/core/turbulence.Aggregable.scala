@@ -26,9 +26,9 @@ import vacuous.*
 
 object Aggregable:
   given Bytes is Aggregable by Bytes as bytesBytes = source =>
-    def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes = source match
-      case head #:: tail => buf.write(head.mutable(using Unsafe)); recur(buf, tail)
-      case _             => buf.toByteArray().nn.immutable(using Unsafe)
+    def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes =
+      source.flow(buf.toByteArray().nn.immutable(using Unsafe)):
+        buf.write(head.mutable(using Unsafe)); recur(buf, tail)
 
     recur(ji.ByteArrayOutputStream(), source)
 
