@@ -16,7 +16,7 @@
 
 package telekinesis
 
-import gossamer.{slice as _, *}
+import gossamer.*
 import rudiments.*
 import wisteria.*
 import spectacular.*
