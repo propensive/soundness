@@ -66,27 +66,23 @@ package stdioSources:
       val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
       val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
       val stdin = ji.FileInputStream(ji.FileDescriptor.in)
-      
+
       Stdio(stdout, stderr, stdin, termcapDefinitions.basic)
 
     given Stdio as ansi =
       val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
       val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
       val stdin = ji.FileInputStream(ji.FileDescriptor.in)
-      
+
       Stdio(stdout, stderr, stdin, termcapDefinitions.xterm256)
 
 
 extension [ElementType](stream: LazyList[ElementType])
   def deduplicate: LazyList[ElementType] =
     def recur(last: ElementType, stream: LazyList[ElementType]): LazyList[ElementType] =
-      stream match
-        case head #:: tail => if last == head then recur(last, tail) else head #:: recur(head, tail)
-        case _             => LazyList()
+      stream.flow(LazyList())(if last == head then recur(last, tail) else head #:: recur(head, tail))
 
-    stream match
-      case head #:: tail => head #:: recur(head, tail)
-      case _             => LazyList()
+    stream.flow(LazyList())(head #:: recur(head, tail))
 
   def flow[ResultType](termination: => ResultType)
       (proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
@@ -101,14 +97,11 @@ extension [ElementType](stream: LazyList[ElementType])
       (using Monitor, Tactic[ConcurrencyError])
           : LazyList[ElementType] =
 
-    def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] = stream match
-      case head #:: tail =>
+    def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] =
+      stream.flow(LazyList()):
         val delay = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
         if delay.milliseconds > 0 then sleep(delay)
         stream
-
-      case _ =>
-        LazyList()
 
     async(recur(stream, System.currentTimeMillis)).await()
 
@@ -252,13 +245,9 @@ extension (bytes: Bytes)
 
 extension (lazyList: LazyList[Bytes])
   def discard(byteSize: ByteSize): LazyList[Bytes] =
-    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream match
-      case head #:: tail =>
-        if head.byteSize < count
-        then recur(tail, count - head.byteSize) else head.drop(count.long.toInt) #:: tail
-
-      case _ =>
-        LazyList()
+    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream.flow(LazyList()):
+      if head.byteSize < count
+      then recur(tail, count - head.byteSize) else head.drop(count.long.toInt) #:: tail
 
     recur(lazyList, byteSize)
 
@@ -327,13 +316,10 @@ extension (lazyList: LazyList[Bytes])
     recur(lazyList, 0, newArray(), 0)
 
   def take(byteSize: ByteSize): LazyList[Bytes] =
-    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream match
-      case head #:: tail =>
+    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] =
+      stream.flow(LazyList()):
         if head.byteSize < count then head #:: recur(tail, count - head.byteSize)
         else LazyList(head.take(count.long.toInt))
-
-      case _ =>
-        LazyList()
 
     recur(lazyList, byteSize)
 
