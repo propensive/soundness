@@ -140,7 +140,7 @@ object Url:
         val (pathStart, auth) =
           if value.after(colon).keep(2) == t"//" then
             val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
-            (authEnd, Authority.parse(value.slice((colon + 3) ~ authEnd.previous)))
+            (authEnd, Authority.parse(value.segment((colon + 3) ~ authEnd.previous)))
           else (colon + 1, Unset)
 
         safely(value.where(_ == '?', pathStart)).asMatchable match
@@ -150,21 +150,20 @@ object Url:
                 Url
                  (scheme,
                   auth,
-                  value.slice(pathStart ~ qmark.previous),
-                  value.slice((qmark + 1) ~ hash.previous),
+                  value.segment(pathStart ~ qmark.previous),
+                  value.segment((qmark + 1) ~ hash.previous),
                   value.after(hash))
-              
+
               case _ =>
                 Url
-                 (scheme, auth, value.slice(pathStart ~ qmark.previous), value.after(qmark), Unset)
+                 (scheme, auth, value.segment(pathStart ~ qmark.previous), value.after(qmark), Unset)
 
           case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
             case Zerary(hash) =>
-              Url(scheme, auth, value.slice(pathStart ~ hash.previous), Unset, value.after(hash))
-            
+              Url(scheme, auth, value.segment(pathStart ~ hash.previous), Unset, value.after(hash))
+
             case _ =>
               Url(scheme, auth, value.from(pathStart), Unset, Unset)
 
       case _ =>
         abort(UrlError(value, Ult.of(value), Colon))
-

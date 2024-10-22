@@ -46,7 +46,7 @@ object Authority:
 
             case _ =>
               raise(UrlError(value, colon + 1, Number), 0)
-          .pipe(Authority(Hostname.parse(value.slice((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _))
+          .pipe(Authority(Hostname.parse(value.segment((arobase + 1) ~ (colon - 1))), value.keep(arobase.n0), _))
 
         case _ =>
           Authority(Hostname.parse(value.after(arobase)), value.before(arobase))

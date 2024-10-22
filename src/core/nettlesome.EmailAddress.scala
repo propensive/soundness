@@ -106,7 +106,7 @@ object EmailAddress:
         try
           if text.at(text.ult) != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import strategies.throwUnsafely
-          val ipAddress = text.slice(index.next ~ Pen.of(text))
+          val ipAddress = text.segment(index.next ~ Pen.of(text))
 
           if ipAddress.starts(t"IPv6:") then Ipv6.parse(ipAddress.skip(5))
           else Ipv4.parse(ipAddress)
