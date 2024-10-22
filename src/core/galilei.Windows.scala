@@ -45,7 +45,7 @@ object Windows:
       if path.length < 3
       then raise(PathError(PathError.Reason.InvalidRoot, path)) yet WindowsDrive('Z')
       else unsafely(path.at(Prim).vouch).upper.pipe: letter =>
-        if path.slice(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then WindowsDrive(letter)
+        if path.segment(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then WindowsDrive(letter)
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet WindowsDrive('Z')
 
     def rootLength(path: Text): Int = 3

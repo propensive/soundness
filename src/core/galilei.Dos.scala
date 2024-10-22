@@ -29,7 +29,7 @@ object Dos:
       if path.length < 3
       then raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
       else unsafely(path.at(Prim).vouch).upper.pipe: letter =>
-        if path.slice(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then DosDrive(letter)
+        if path.segment(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then DosDrive(letter)
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
 
 
