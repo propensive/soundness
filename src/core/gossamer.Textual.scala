@@ -23,18 +23,18 @@ import denominative.*
 
 import language.experimental.captureChecking
 
-trait Textual extends Presentational, Countable:
+trait Textual extends Presentational, Countable, Segmentable:
   type Self
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
   def map(text: Self, lambda: Char => Char): Self
-  def range(text: Self, interval: Interval): Self
   def empty: Self
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Ordinal): Char
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
   def buffer(size: Optional[Int] = Unset): Buffer[Self]
+  def segment(text: Self, interval: Interval): Self
 
   extension (left: Self)
     @targetName("mul")

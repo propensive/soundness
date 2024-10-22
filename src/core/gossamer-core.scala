@@ -113,7 +113,7 @@ extension [TextType: Textual](text: TextType)
           if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
           then recur(from, index + 1)
           else
-            buffer.append(text.slice(from ~ index.previous))
+            buffer.append(text.segment(from ~ index.previous))
             buffer.append(breakText)
             recur(index, index + 1)
 
@@ -131,18 +131,18 @@ extension [TextType: Textual](text: TextType)
 
     recur(Prim, extra, words(0))
 
-  def before(ordinal: Ordinal): TextType = text.slice(Prim ~ (ordinal - 1))
-  def after(ordinal: Ordinal): TextType = text.slice((ordinal + 1) ~ Ult.of(text))
-  def upto(ordinal: Ordinal): TextType = text.slice(Prim ~ ordinal)
-  def from(ordinal: Ordinal): TextType = text.slice(ordinal ~ Ult.of(text))
+  def before(ordinal: Ordinal): TextType = text.segment(Prim ~ (ordinal - 1))
+  def after(ordinal: Ordinal): TextType = text.segment((ordinal + 1) ~ Ult.of(text))
+  def upto(ordinal: Ordinal): TextType = text.segment(Prim ~ ordinal)
+  def from(ordinal: Ordinal): TextType = text.segment(ordinal ~ Ult.of(text))
 
   def skip(count: Int, bidi: Bidi = Ltr): TextType = bidi match
-    case Ltr => text.slice(Ordinal.zerary(count) ~ Ult.of(text))
-    case Rtl => text.slice(Prim ~ Countback(count).of(text))
+    case Ltr => text.segment(Ordinal.zerary(count) ~ Ult.of(text))
+    case Rtl => text.segment(Prim ~ Countback(count).of(text))
 
   def keep(count: Int, bidi: Bidi = Ltr): TextType = bidi match
-    case Ltr => text.slice(Interval.initial(count))
-    case Rtl => text.slice(Countback(count - 1).of(text) ~ Ult.of(text))
+    case Ltr => text.segment(Interval.initial(count))
+    case Rtl => text.segment(Countback(count - 1).of(text) ~ Ult.of(text))
 
   def capitalize: TextType = TextType.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: TextType = TextType.concat(text.keep(1).lower, text.after(Prim))
@@ -153,21 +153,18 @@ extension [TextType: Textual](text: TextType)
 
   def chars: IArray[Char] = TextType.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
-  def slice(interval: Interval): TextType =
-    if interval.end <= interval.start then TextType.empty else TextType.range(text, interval)
-
   def snip(n: Int): (TextType, TextType) =
-    (text.slice(Prim ~ Ordinal.zerary(n - 1)), text.slice(Ordinal.zerary(n) ~ Ult.of(text)))
+    (text.segment(Prim ~ Ordinal.zerary(n - 1)), text.segment(Ordinal.zerary(n) ~ Ult.of(text)))
 
   def punch(n: Ordinal): (TextType, TextType) =
-    (text.slice(Prim ~ (n - 1)), text.slice((n + 1) ~ Ult.of(text)))
+    (text.segment(Prim ~ (n - 1)), text.segment((n + 1) ~ Ult.of(text)))
 
   // def char(index: Ordinal): Optional[Char] =
   //   if index >= Prim && index <= Ult.of(text) then TextType.unsafeChar(text, index) else Unset
 
   inline def reverse: TextType =
     def recur(index: Ordinal, result: TextType): TextType =
-      if index <= Ult.of(text) then recur(index + 1, TextType.concat(text.slice(index ~ index), result))
+      if index <= Ult.of(text) then recur(index + 1, TextType.concat(text.segment(index ~ index), result))
       else result
 
     recur(Prim, TextType.empty)
@@ -179,7 +176,7 @@ extension [TextType: Textual](text: TextType)
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(Ult.of(text))
     val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
-    text.slice(start ~ end)
+    text.segment(start ~ end)
 
   def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
           : Optional[Ordinal] =
@@ -208,7 +205,7 @@ extension [TextType: Textual](text: TextType)
 
   def dropWhile(pred: Char => Boolean): TextType =
     text.where(!pred(_)).lay(TextType.empty): ordinal =>
-      text.slice(ordinal ~ Ult.of(text))
+      text.segment(ordinal ~ Ult.of(text))
 
   def whilst(pred: Char => Boolean): TextType =
     text.where(!pred(_)).lay(TextType.empty): ordinal =>
@@ -390,4 +387,3 @@ package enumIdentification:
 
   given [EnumType <: reflect.Enum] => EnumType is Identifiable as camelCase =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
-

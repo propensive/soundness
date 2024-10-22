@@ -33,7 +33,7 @@ object Presentational:
     def apply(text: Text): Text = text
     def map(text: Text, lambda: Char => Char): Text = Text(text.s.map(lambda))
 
-    def range(text: Text, interval: Interval): Text =
+    def segment(text: Text, interval: Interval): Text =
       val limit = length(text)
       val start = interval.start.n0.max(0).min(limit)
       val end = interval.end.n0.max(start).min(limit)

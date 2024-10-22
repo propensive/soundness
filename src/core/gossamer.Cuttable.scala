@@ -38,8 +38,8 @@ object Cuttable:
 
       @tailrec
       def recur(start: Ordinal, results: List[TextType]): List[TextType] =
-        TextType.indexOf(text, delimiter, start).lay(text.slice(start ~ Ult.of(text)) :: results):
-          index => recur(index + dLength, text.slice(start ~ (index - 1)) :: results)
+        TextType.indexOf(text, delimiter, start).lay(text.segment(start ~ Ult.of(text)) :: results):
+          index => recur(index + dLength, text.segment(start ~ (index - 1)) :: results)
 
       recur(Prim, Nil).reverse
 
@@ -52,7 +52,7 @@ object Cuttable:
       if matcher.find(start.n0)
       then
         val interval = Ordinal.zerary(matcher.start) ~ Ordinal.zerary(matcher.end)
-        recur(Ordinal.zerary(matcher.end), text.slice(interval) :: results)
+        recur(Ordinal.zerary(matcher.end), text.segment(interval) :: results)
       else results
 
     recur(Prim, Nil).reverse
