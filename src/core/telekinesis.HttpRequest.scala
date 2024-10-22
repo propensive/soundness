@@ -27,6 +27,7 @@ import language.dynamics
 
 case class HttpRequest
     (method:        HttpMethod,
+     version:       Text,
      host:          Hostname,
      requestTarget: Text,
      headers:       List[RequestHeader.Value],
@@ -34,24 +35,30 @@ case class HttpRequest
 
   def serialize: LazyList[Bytes] =
     import charEncoders.ascii
-    val buffer = StringBuffer()
-    buffer.append(method.show.upper)
-    buffer.append(t" ")
-    buffer.append(requestTarget)
-    buffer.append(t" HTTP/1.0\nhost: ")
-    buffer.append(host.show)
+    val text: Text = Text.construct:
+      def newline(): Unit = append(t"\r\n")
+      append(method.show.upper)
+      append(t" ")
+      append(requestTarget)
+      append(t" HTTP/")
+      append(version)
+      newline()
+      append(t"Host: ")
+      append(host.show)
+      newline()
 
-    body match
-      case LazyList()     => buffer.append(t"\nContent-Length: 0")
-      case LazyList(data) => buffer.append(t"\nContent-Length: ${data.length}")
-      case _              => buffer.append(t"\nTransfer-Encoding: chunked")
+      body match
+        case LazyList()     => append(t"Content-Length: 0")
+        case LazyList(data) => append(t"Content-Length: ${data.length}")
+        case _              => append(t"Transfer-Encoding: chunked")
 
-    headers.map: parameter =>
-      buffer.append(t"\n")
-      buffer.append(parameter.header.header)
-      buffer.append(t": ")
-      buffer.append(parameter.value)
+      headers.map: parameter =>
+        newline()
+        append(parameter.header.header)
+        append(t": ")
+        append(parameter.value)
 
-    buffer.append(t"\n\n")
+      newline()
+      newline()
 
-    buffer.toString.tt.bytes #:: body
+    text.bytes #:: body
