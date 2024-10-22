@@ -24,7 +24,7 @@ import vacuous.*
 import parasite.*
 import turbulence.*
 import contingency.*
-import gossamer.{slice as _, *}
+import gossamer.*
 import nettlesome.*
 import monotonous.*, alphabets.base64.standard
 import gesticulate.*
@@ -202,7 +202,6 @@ object HttpRequest:
       t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
       t"method"   -> request.method.show,
       t"query"    -> request.query.show,
-      t"ssl"      -> request.ssl.show,
       t"hostname" -> request.hostname.show,
       t"port"     -> request.port.show,
       t"path"     -> request.pathText,
@@ -211,19 +210,20 @@ object HttpRequest:
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
+case class HttpConnection(ssl: Boolean)
+
 case class HttpRequest
     (method: HttpMethod,
      hostname: Hostname,
      body: LazyList[Bytes],
      query: Text,
-     ssl: Boolean,
      port: Int,
      pathText: Text,
      rawHeaders: Map[Text, List[Text]],
      queryParams: Map[Text, List[Text]]):
 
-  lazy val path: HttpUrl raises PathError raises UrlError raises HostnameError =
-    Url.parse(t"${if ssl then t"https" else t"http"}://$hostname$pathText")
+  def path(using connection: HttpConnection): HttpUrl raises PathError raises UrlError raises HostnameError =
+    Url.parse(t"${if connection.ssl then t"https" else t"http"}://$hostname$pathText")
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -257,10 +257,10 @@ case class HttpRequest
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
 trait RequestServable:
-  def listen(handle: (request: HttpRequest) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
+  def listen(handle: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (request: HttpRequest) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handle: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
 inline def request(using inline request: HttpRequest): HttpRequest = request
@@ -297,7 +297,8 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: HttpRequest) ?=> HttpResponse)(using Monitor, Codicil)
+  def listen(handler: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)
+      (using Monitor, Codicil)
           : HttpService logs HttpServerEvent =
 
     def handle(exchange: csnh.HttpExchange | Null) =
@@ -320,7 +321,7 @@ case class HttpServer(port: Int) extends RequestServable:
             exchange.nn.getResponseBody.nn.flush()
             exchange.nn.close()
 
-        handler(using makeRequest(exchange.nn)).respond(responder)
+        handler(using makeRequest(exchange.nn), makeConnection(exchange.nn)).respond(responder)
       catch case NonFatal(exception) => exception.printStackTrace()
 
     def startServer(): com.sun.net.httpserver.HttpServer =
@@ -350,6 +351,9 @@ case class HttpServer(port: Int) extends RequestServable:
 
     recur()
 
+  private def makeConnection(exchange: csnh.HttpExchange): HttpConnection =
+    HttpConnection(false)
+
   private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
     val query = Option(uri.getQuery)
@@ -367,7 +371,6 @@ case class HttpServer(port: Int) extends RequestServable:
        (method      = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
         body        = streamBody(exchange),
         query       = Text(query.getOrElse("").nn),
-        ssl         = false,
         hostname    = unsafely(Hostname.parse(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName).nn.tt)),
         port        = Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
         pathText    = Text(uri.getPath.nn),
@@ -415,9 +418,10 @@ erased trait Http
 object Http:
   given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
     type Carrier = TcpPort
-    type Request = HttpRequest
+    type Request = (HttpRequest, HttpConnection)
     type Response = HttpResponse
     type Server = HttpService
 
-    def server(port: TcpPort)(handler: HttpRequest ?=> HttpResponse): HttpService =
-      HttpServer(port.number).listen(handler)
+    def server(port: TcpPort)(handler: Request ?=> HttpResponse): HttpService =
+      HttpServer(port.number).listen:
+        (request: HttpRequest, connection: HttpConnection) ?=> handler(using (request, connection))

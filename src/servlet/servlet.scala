@@ -70,7 +70,6 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
       hostname = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       body = streamBody(request),
       query = query.getOrElse("").nn.tt,
-      ssl = false,
       request.getServerPort,
       request.getRequestURI.nn.tt,
       headers,
