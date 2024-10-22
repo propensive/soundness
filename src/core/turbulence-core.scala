@@ -88,6 +88,13 @@ extension [ElementType](stream: LazyList[ElementType])
       case head #:: tail => head #:: recur(head, tail)
       case _             => LazyList()
 
+  def flow[ResultType](termination: => ResultType)
+      (proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
+          : ResultType =
+    stream match
+      case head #:: tail => proceed(using head, tail)
+      case _             => termination
+
   def strict: LazyList[ElementType] = stream.length yet stream
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
