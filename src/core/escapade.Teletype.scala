@@ -54,7 +54,7 @@ object Teletype:
     def map(text: Teletype, lambda: Char => Char): Teletype =
       Teletype(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
 
-    def range(text: Teletype, interval: Interval): Teletype =
+    def segment(text: Teletype, interval: Interval): Teletype =
       text.dropChars(interval.start.n0).takeChars(interval.size)
 
     val empty: Teletype = Teletype.empty
@@ -160,14 +160,14 @@ case class Teletype
       @tailrec
       def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
         if insertions.isEmpty then
-          buf.add(plain.slice(Ordinal.zerary(from) ~ Ordinal.natural(to)))
+          buf.add(plain.segment(Ordinal.zerary(from) ~ Ordinal.natural(to)))
           insertions
         else if insertions.head(0) < to then
-          buf.add(plain.slice(Ordinal.zerary(pos) ~ Ordinal.natural(insertions.head(0))))
+          buf.add(plain.segment(Ordinal.zerary(pos) ~ Ordinal.natural(insertions.head(0))))
           buf.add(insertions.head(1))
           addText(insertions.head(0), to, insertions.tail)
         else
-          buf.add(plain.slice(Ordinal.zerary(from) ~ Ordinal.natural(to)))
+          buf.add(plain.segment(Ordinal.zerary(from) ~ Ordinal.natural(to)))
           insertions
 
       if stack.isEmpty then
