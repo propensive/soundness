@@ -52,6 +52,9 @@ extension [ValueType](value: ValueType)
 
   def give[ResultType](block: ValueType ?=> ResultType): ResultType = block(using value)
 
+extension [InputType, ResultType](inline lambda: (=> InputType) => ResultType)
+  inline def upon(inline value: => InputType): ResultType = lambda(value)
+
 extension [ValueType](inline value: => ValueType)
   inline def pipe[ResultType](inline lambda: ValueType => ResultType): ResultType = lambda(value)
 
@@ -293,6 +296,9 @@ extension [ValueType: Indexable](inline value: ValueType)
   inline def at(index: ValueType.Operand): Optional[ValueType.Result] =
     optimizable[ValueType.Result]: default =>
       if ValueType.contains(value, index) then ValueType.access(value, index) else default
+
+extension [ValueType: Segmentable as segmentable](inline value: ValueType)
+  inline def segment(interval: Interval): ValueType = segmentable.segment(value, interval)
 
 extension (bs: Int)
   def b: ByteSize = ByteSize(bs)
