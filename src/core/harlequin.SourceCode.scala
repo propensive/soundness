@@ -18,7 +18,7 @@ package harlequin
 
 import rudiments.*
 import anticipation.*
-import gossamer.{slice as _, *}
+import gossamer.*
 import vacuous.*
 import denominative.*
 
@@ -37,7 +37,7 @@ case class SourceCode
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
           : SourceCode =
-    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
+    SourceCode(language, startLine, lines.segment(startLine - offset, endLine - offset + 1), focus)
 
 object SourceCode:
   private def accent(token: Int): Accent =
@@ -84,17 +84,15 @@ object SourceCode:
 
     def stream(lastEnd: Int = 0): LazyList[SourceToken] = scanner.token match
       case Tokens.EOF =>
-        import gossamer.slice
-        untab(text.slice(Ordinal.zerary(lastEnd) ~ Ult.of(text))).filter(_.length > 0)
+        untab(text.segment(Ordinal.zerary(lastEnd) ~ Ult.of(text))).filter(_.length > 0)
 
       case token =>
-        import gossamer.slice
         val start = scanner.offset max lastEnd
 
         val unparsed: LazyList[SourceToken] =
           if lastEnd != start
           then
-            text.slice(Ordinal.zerary(lastEnd) ~ Ordinal.natural(start))
+            text.segment(Ordinal.zerary(lastEnd) ~ Ordinal.natural(start))
              .cut(t"\n")
              .to(LazyList)
              .flatMap(untab(_).filter(_.length > 0))
@@ -108,7 +106,7 @@ object SourceCode:
         val content: LazyList[SourceToken] =
           if start == end then LazyList()
           else
-            text.slice(Ordinal.zerary(start) ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
+            text.segment(Ordinal.zerary(start) ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             .init
