@@ -19,6 +19,7 @@ package escritoire
 import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import vacuous.*
 import denominative.*
 
@@ -80,11 +81,11 @@ package columnar:
               position + 1,
               lastSpace + 1,
               lastSpace,
-              text.slice(Ordinal.zerary(lineStart) ~ Ordinal.natural(lastSpace)) :: lines)
+              text.segment(Ordinal.zerary(lineStart) ~ Ordinal.natural(lastSpace)) :: lines)
 
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines
-        else text.slice(Ordinal.zerary(lineStart) ~ Ordinal.natural(position)) :: lines
+        else text.segment(Ordinal.zerary(lineStart) ~ Ordinal.natural(position)) :: lines
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
