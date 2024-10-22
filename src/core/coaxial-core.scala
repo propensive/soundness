@@ -52,8 +52,8 @@ extension [EndpointType](endpoint: EndpointType)
 
     val connection = serviceable.connect(endpoint)
 
-    def recur(input: LazyList[Bytes], state: StateType): StateType = input match
-      case head #:: tail => handle(using state)(receivable.deserialize(head)) match
+    def recur(input: LazyList[Bytes], state: StateType): StateType = input.flow(state):
+      handle(using state)(receivable.deserialize(head)) match
         case Continue(state2) => recur(tail, state2.or(state))
         case Terminate        => state
 
@@ -64,8 +64,6 @@ extension [EndpointType](endpoint: EndpointType)
         case Conclude(message, state2) =>
           serviceable.transmit(connection, message)
           state2.or(state)
-
-      case _ => state
 
     recur(serviceable.receive(connection), initialState).also:
       serviceable.close(connection)
