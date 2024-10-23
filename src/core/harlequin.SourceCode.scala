@@ -37,7 +37,7 @@ case class SourceCode
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
           : SourceCode =
-    SourceCode(language, startLine, lines.segment(startLine - offset, endLine - offset + 1), focus)
+    SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
 
 object SourceCode:
   private def accent(token: Int): Accent =

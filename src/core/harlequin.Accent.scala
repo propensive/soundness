@@ -17,7 +17,7 @@
 package harlequin
 
 import anticipation.*
-import gossamer.{slice as _, *}
+import gossamer.*
 import spectacular.*
 
 enum Accent:
