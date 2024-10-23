@@ -28,7 +28,7 @@ import telekinesis.{HttpRequest as _, HttpResponse as _, *}
 
 import jakarta.servlet as js, js.http as jsh
 
-open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpServlet:
+open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.HttpServlet:
   protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
     def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
 
@@ -49,7 +49,7 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
 
     Readable.inputStream.stream(request.getInputStream.nn)
 
-  protected def makeRequest(request: jsh.HttpServletRequest): HttpRequest raises StreamError =
+  protected def makeConnection(request: jsh.HttpServletRequest): HttpConnection raises StreamError =
     val query = Option(request.getQueryString)
 
     val params: Map[Text, List[Text]] = query.fold(Map()): query =>
@@ -65,7 +65,7 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
       key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
     .to(Map)
 
-    HttpRequest(
+    val httpRequest = HttpRequest(
       method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
       hostname = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       body = streamBody(request),
@@ -76,13 +76,15 @@ open class JavaServlet(handle: HttpRequest ?=> HttpResponse) extends jsh.HttpSer
       params
     )
 
+    HttpConnection(false, httpRequest)
+
   def handle(servletRequest: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse): Unit =
-    try throwErrors(handle(using makeRequest(servletRequest)).respond(ServletResponseWriter(servletResponse)))
+    try throwErrors(handle(using makeConnection(servletRequest)).respond(ServletResponseWriter(servletResponse)))
     catch case error: StreamError =>
       () // FIXME
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)
 
-open class JavaServletFn(handle: HttpRequest => HttpResponse)
+open class JavaServletFn(handle: HttpConnection => HttpResponse)
 extends JavaServlet(request ?=> handle(request))

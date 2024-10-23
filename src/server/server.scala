@@ -31,11 +31,11 @@ import gesticulate.*
 import telekinesis.*
 import anticipation.*
 import serpentine.*
-import spectacular.*, booleanStyles.trueFalse
+import spectacular.*
 
 import scala.compiletime.*
 
-import java.net.InetSocketAddress
+import java.net as jn
 import java.text as jt
 import com.sun.net.httpserver as csnh
 
@@ -95,9 +95,9 @@ object Servable:
             : Unit =
       notFound.serve(headers, responder)
 
-  given [ResponseType: Retrievable] => ServerError[ResponseType] is Servable as retrievable:
+  given [ResponseType: Retrievable] => ServeFailure[ResponseType] is Servable as retrievable:
     def process
-        (notFound: ServerError[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+        (notFound: ServeFailure[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
             : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
       headers.each(responder.addHeader)
@@ -132,7 +132,7 @@ case class NotFound[ContentType: Servable](content: ContentType):
   def serve(headers: Map[Text, Text], responder: Responder) =
     ContentType.process(content, 404, headers, responder)
 
-case class ServerError[ContentType: Servable](content: ContentType)
+case class ServeFailure[ContentType: Servable](content: ContentType)
 
 object Cookie:
   given ("set-cookie" is GenericHttpRequestParam[Cookie]) as setCookie = _.serialize
@@ -210,7 +210,7 @@ object HttpRequest:
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-case class HttpConnection(ssl: Boolean)
+case class HttpConnection(ssl: Boolean, request: HttpRequest)
 
 case class HttpRequest
     (method: HttpMethod,
@@ -257,15 +257,15 @@ case class HttpRequest
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
 trait RequestServable:
-  def listen(handle: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
+  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
-inline def request(using inline request: HttpRequest): HttpRequest = request
+inline def request(using inline connection: HttpConnection): HttpRequest = connection.request
 
-inline def param(using HttpRequest)(key: Text): Text raises MissingParamError =
+inline def param(using HttpConnection)(key: Text): Text raises MissingParamError =
   request.params.get(key).getOrElse:
     abort(MissingParamError(key))
 
@@ -296,8 +296,11 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
 
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
-case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (request: HttpRequest, connection: HttpConnection) ?=> HttpResponse)
+case class ServerError(port: Int)(using Diagnostics)
+extends Error(m"Could not start an HTTP server on port $port")
+
+case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServable:
+  def listen(handler: (connection: HttpConnection) ?=> HttpResponse)
       (using Monitor, Codicil)
           : HttpService logs HttpServerEvent =
 
@@ -309,35 +312,38 @@ case class HttpServer(port: Int) extends RequestServable:
 
           def sendBody(status: Int, body: LazyList[Bytes]): Unit =
             val length = body match
-              case LazyList()     => 0
+              case LazyList()     => -1
               case LazyList(data) => data.length
-              case _              => -1
+              case _              => 0
 
             exchange.nn.sendResponseHeaders(status, length)
 
-              try body.map(_.mutable(using Unsafe)).each(exchange.nn.getResponseBody.nn.write(_))
-              catch case e: StreamError => () // FIXME: Should this be ignored?
+            try
+              body.map(_.mutable(using Unsafe)).each: bytes =>
+                exchange.nn.getResponseBody.nn.write(bytes)
+            catch case e: StreamError => () // FIXME: Should this be ignored?
 
             exchange.nn.getResponseBody.nn.flush()
             exchange.nn.close()
 
-        handler(using makeRequest(exchange.nn), makeConnection(exchange.nn)).respond(responder)
+        handler(using makeConnection(exchange.nn)).respond(responder)
       catch case NonFatal(exception) => exception.printStackTrace()
 
-    def startServer(): com.sun.net.httpserver.HttpServer =
-      val httpServer = csnh.HttpServer.create(InetSocketAddress("localhost", port), 0).nn
-      val context = httpServer.createContext("/").nn
-      context.setHandler(handle(_))
-      httpServer.setExecutor(null)
-      httpServer.start()
-      httpServer
+    def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
+      try
+        val httpServer = csnh.HttpServer.create(jn.InetSocketAddress("localhost", port), 0).nn
+        val context = httpServer.createContext("/").nn
+        context.setHandler(handle(_))
+        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+        httpServer.start()
+        httpServer
+      catch
+        case error: jn.BindException => abort(ServerError(port))
 
     val cancel: Promise[Unit] = Promise[Unit]()
+    val server = startServer()
 
-    val asyncTask = async:
-      val server = startServer()
-      try throwErrors(cancel.await()) catch case err: ConcurrencyError => ()
-      server.stop(1)
+    val asyncTask = async(cancel.await() yet server.stop(1))
 
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
@@ -351,8 +357,8 @@ case class HttpServer(port: Int) extends RequestServable:
 
     recur()
 
-  private def makeConnection(exchange: csnh.HttpExchange): HttpConnection =
-    HttpConnection(false)
+  private def makeConnection(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
+    HttpConnection(false, makeRequest(exchange))
 
   private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
@@ -387,7 +393,7 @@ object Ttf:
     LazyList(ttf.content)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
-    (using HttpRequest)
+    (using HttpConnection)
         : HttpResponse =
   request.headers.get(RequestHeader.Authorization) match
     case Some(List(s"Basic $credentials")) =>
@@ -416,12 +422,12 @@ object HttpServerEvent:
 erased trait Http
 
 object Http:
-  given (using Monitor, Codicil, HttpServerEvent is Loggable) => Http is Protocolic:
+  given (using Monitor, Codicil, HttpServerEvent is Loggable, Tactic[ServerError])
+      => Http is Protocolic:
     type Carrier = TcpPort
-    type Request = (HttpRequest, HttpConnection)
+    type Request = HttpConnection
     type Response = HttpResponse
     type Server = HttpService
 
-    def server(port: TcpPort)(handler: Request ?=> HttpResponse): HttpService =
-      HttpServer(port.number).listen:
-        (request: HttpRequest, connection: HttpConnection) ?=> handler(using (request, connection))
+    def server(port: TcpPort)(handler: HttpConnection ?=> HttpResponse): HttpService =
+      HttpServer(port.number).listen(handler)
