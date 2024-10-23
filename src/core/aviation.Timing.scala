@@ -22,6 +22,7 @@ import symbolism.*
 import contingency.*
 import anticipation.*
 import quantitative.*
+import prepositional.*
 
 import java.time as jt
 
@@ -54,12 +55,14 @@ object Timing:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given Instant is Addable as plus:
+    given Instant is Addable by Duration into Instant as plus = new Addable:
+      type Self = Instant
       type Result = Instant
       type Operand = Duration
       def add(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
 
-    given Instant is Subtractable as minus:
+    given Instant is Subtractable by Instant into Duration as minus = new Subtractable:
+      type Self = Instant
       type Result = Duration
       type Operand = Instant
       def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
@@ -94,4 +97,3 @@ object Timing:
 
   extension (duration: Duration)
     def from(instant: Instant): Interval = Interval(instant, Instant.plus.add(instant, duration))
-
