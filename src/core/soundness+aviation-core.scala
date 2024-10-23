@@ -8,5 +8,5 @@ export aviation.{Base24, Base60, Calendar, Clock, Clockface, DateError, Denomina
     seconds, tz, TimestampError, Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul,
     Aug, Sep, Oct, Nov, Dec}
 
-package calendares:
+package calendars:
   export aviation.calendars.{gregorian, julian}
