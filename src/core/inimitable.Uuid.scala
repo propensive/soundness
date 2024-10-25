@@ -38,7 +38,7 @@ object Uuid extends Extractor[Text, Uuid]:
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def text: Text = this.java.toString.tt
-  def bytes: Bytes = unsafely((Bytes(msb).mutable ++ Bytes(lsb).mutable).immutable)
+  def bytes: Bytes = unsafely((msb.bytes.mutable ++ lsb.bytes.mutable).immutable)
 
   @targetName("invert")
   def `unary_~`: Uuid = Uuid(~msb, ~lsb)
