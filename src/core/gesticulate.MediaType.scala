@@ -18,7 +18,7 @@ package gesticulate
 
 import rudiments.*
 import vacuous.*
-import gossamer.*
+import gossamer.{where as _, *}
 import contextual.*
 import contingency.*
 import anticipation.*
@@ -36,6 +36,9 @@ extends Dynamic:
 
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
+  def base: MediaType = MediaType(group, subtype, suffixes)
+
+  def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
 
   def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
