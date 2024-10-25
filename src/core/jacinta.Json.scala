@@ -127,6 +127,7 @@ object Json extends Json2, Dynamic:
   given (using Tactic[JsonError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
   given (using Tactic[JsonError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
   given (using Tactic[JsonError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
+  given (using Tactic[JsonError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
   given (using Tactic[JsonError]) => Text is Decodable in Json as text = (value, omit) => value.root.string
   given (using Tactic[JsonError]) => String is Decodable in Json as string = (value, omit) => value.root.string.s
 
@@ -205,7 +206,7 @@ object Json extends Json2, Dynamic:
 
   given [SourceType: Readable by Bytes](using Tactic[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
     Json.parse(_)
-  
+
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
