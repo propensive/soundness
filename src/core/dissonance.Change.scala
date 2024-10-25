@@ -18,8 +18,6 @@ package dissonance
 
 import language.experimental.captureChecking
 
-import anticipation.*
-import fulminate.*
 import vacuous.*
 
 sealed trait Change[+ElemType] extends Product:
