@@ -23,7 +23,6 @@ import scala.compiletime.ops.string.*
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import rudiments.*
 import vacuous.*
 
