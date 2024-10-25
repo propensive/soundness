@@ -21,7 +21,6 @@ import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import gossamer.*
 import rudiments.*
 import prepositional.*
