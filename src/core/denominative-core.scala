@@ -38,11 +38,8 @@ extension (inline cardinal: Int)
   inline infix def + (inline ordinal: Ordinal): Ordinal =
     Ordinal.zerary(cardinal + ordinal.n0)
 
-extension [ValueType: Countable](inline value: ValueType)
-  inline def ult: Ordinal = ValueType.ult(value)
-  inline def pen: Ordinal = ValueType.ult(value).previous
-  inline def ant: Ordinal = ValueType.ult(value).previous.previous
-  inline def full: Interval = Interval(Prim, ult)
+extension [ValueType: Countable](value: ValueType)
+  inline def full: Interval = Interval(Prim, Ordinal.zerary(ValueType.size(value) - 1))
 
 export Denominative.{Ordinal, Interval}
 export Denominative2.{Countback, Bounds}

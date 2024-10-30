@@ -20,10 +20,10 @@ import anticipation.*
 
 object Countable:
   given [ElementType] => Seq[ElementType] is Countable = _.length
+  given [ElementType] => IArray[ElementType] is Countable = _.length
   given Text is Countable = _.s.length
   given Int is Countable = identity(_)
 
 trait Countable:
   type Self
   def size(self: Self): Int
-  inline def ult(self: Self): Ordinal = Ordinal.natural(size(self))
