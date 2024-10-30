@@ -23,7 +23,6 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import feudalism.*
-import fulminate.*
 import parasite.*, threadModels.platform
 import rudiments.*
 import spectacular.*
