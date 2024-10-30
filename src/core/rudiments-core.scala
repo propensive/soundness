@@ -203,8 +203,8 @@ extension [ElemType](array: Array[ElemType])
     System.arraycopy(array, 0, newArray, 0, array.length)
     newArray.immutable(using Unsafe)
 
-  inline def place(value: IArray[ElemType], index: Int = 0): Unit =
-    System.arraycopy(value.asInstanceOf[Array[ElemType]], 0, array, index, value.length)
+  inline def place(value: IArray[ElemType], ordinal: Ordinal = Prim): Unit =
+    System.arraycopy(value.asInstanceOf[Array[ElemType]], 0, array, ordinal.n0, value.length)
 
 extension [KeyType, ValueType](map: sc.Map[KeyType, ValueType])
   inline def has(key: KeyType): Boolean = map.contains(key)
@@ -279,7 +279,6 @@ extension [ElemType](seq: IndexedSeq[ElemType])
     Cursor.curse(seq)(block)
 
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
-  inline def ult: Optional[ElemType] = if seq.length > 0 then seq(seq.length - 1) else Unset
 
 extension (iarray: IArray.type)
   def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
@@ -326,6 +325,16 @@ def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPa
         : PathType =
 
   directory.path[PathType]
+
+extension [ValueType: Countable](inline value: ValueType)
+  inline def ult: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 1) else Unset
+
+  inline def pen: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 2) else Unset
+
+  inline def ant: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 3) else Unset
 
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
