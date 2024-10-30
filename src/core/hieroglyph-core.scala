@@ -17,7 +17,6 @@
 package hieroglyph
 
 import vacuous.*
-import fulminate.*
 import contingency.*
 import anticipation.*
 

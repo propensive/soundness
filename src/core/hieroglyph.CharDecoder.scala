@@ -18,7 +18,6 @@ package hieroglyph
 
 import vacuous.*
 import rudiments.*
-import fulminate.*
 import anticipation.*
 
 import scala.collection.mutable as scm
