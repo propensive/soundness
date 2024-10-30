@@ -22,7 +22,6 @@ import gossamer.{where as _, *}
 import spectacular.*
 import turbulence.*
 import anticipation.*
-import fulminate.*
 
 trait Interaction[ResultType, QuestionType]:
   def before(): Unit = ()
