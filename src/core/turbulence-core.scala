@@ -76,7 +76,6 @@ package stdioSources:
 
       Stdio(stdout, stderr, stdin, termcapDefinitions.xterm256)
 
-
 extension [ElementType](stream: LazyList[ElementType])
   def deduplicate: LazyList[ElementType] =
     def recur(last: ElementType, stream: LazyList[ElementType]): LazyList[ElementType] =
