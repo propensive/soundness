@@ -19,8 +19,6 @@ package exoskeleton
 import rudiments.*
 import vacuous.*
 import contingency.*
-import fulminate.*
-import anticipation.*
 
 import language.experimental.pureFunctions
 

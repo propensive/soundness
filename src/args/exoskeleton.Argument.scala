@@ -17,7 +17,6 @@
 package exoskeleton
 
 import vacuous.*
-import fulminate.*
 import anticipation.*
 import gossamer.*
 import rudiments.*
