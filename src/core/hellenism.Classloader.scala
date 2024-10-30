@@ -21,7 +21,6 @@ import java.io as ji
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import serpentine.*
 import rudiments.*
 import vacuous.*
