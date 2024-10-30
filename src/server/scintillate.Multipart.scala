@@ -6,54 +6,144 @@ import denominative.*
 import fulminate.*
 import gossamer.*
 import rudiments.*
+import spectacular.*
+import hieroglyph.*
+import prepositional.*
+import vacuous.*
 import turbulence.*
 
-case class MultipartError()(using Diagnostics)
-extends Error(m"The multipart data could not be read")
+import scala.reflect.*
+import scala.collection.mutable as scm
+
+object MultipartError:
+  enum Reason:
+    case Expected(char: Char)
+    case StreamContinues, BadBoundaryEnding, MediaType, BadDisposition
+
+  given Reason is Communicable =
+    case Reason.Expected(char: Char) => m"the character '$char' was expected"
+    case Reason.StreamContinues      => m"the stream continues"
+    case Reason.BadBoundaryEnding    => m"unexpected content followed the boundary"
+    case Reason.MediaType            => m"the media type is invalid"
+    case Reason.BadDisposition       => m"the `Content-Disposition` header has the wrong format"
+
+import MultipartError.Reason
+
+case class MultipartError(reason: MultipartError.Reason)(using Diagnostics)
+extends Error(m"The multipart data could not be read because $reason")
 
 object Multipart:
-  private def check
-      (boundary: Bytes, current: Bytes, stream: LazyList[Bytes], index: Int, matched: Int)
-          : Boolean =
-    if matched >= boundary.length then true else
-      if index < current.length
-      then current(index) == boundary(matched) && check(boundary, current, stream, index + 1, matched + 1)
-      else stream.flow(false)(check(boundary, head, tail, index - current.length, matched))
 
-  def parts(boundary: Bytes, current: Bytes, stream: LazyList[Bytes], start: Int, index: Int)
-          : LazyList[Part] raises MultipartError =
-    val part: Part = Part(parsePart(boundary, current, stream, start, index))
-    part #:: skip(boundary, part.length + boundary.length, current #:: stream, index)
+  enum Disposition:
+    case Inline, Attachment, FormData
 
-  @tailrec
-  def skip(boundary: Bytes, count: Int, stream: LazyList[Bytes], index: Int): LazyList[Part] raises MultipartError =
-    stream match
-      case head #:: tail =>
-        if head.length < count then skip(boundary, count - head.length, tail, 0)
-        else parts(boundary, head, tail, count, count)
+  def parse(stream: LazyList[Bytes], boundary0: Optional[Text] = Unset)
+          : Multipart raises MultipartError =
+    val conduit = Conduit(stream)
+    conduit.mark()
+    conduit.next()
+    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
+    conduit.next()
+    if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
+    conduit.seek('\r')
+    val boundary = conduit.save()
+    conduit.next()
+    if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+    conduit.next()
 
-      case _ =>
-        throw Panic(m"This should never be possible")
+    def headers(list: List[(Text, Text)]): Map[Text, Text] =
+      conduit.datum match
+        case '\r' =>
+          conduit.next()
+          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          conduit.break()
+          conduit.cue()
+          list.to(Map)
 
-  def parsePart(boundary: Bytes, current: Bytes, stream: LazyList[Bytes], start: Int, index: Int)
-          : LazyList[Bytes] raises MultipartError =
-    stream.flow(abort(MultipartError())):
-      if index < current.length then current(index) match
-        case '\r' if check(boundary, head, tail, index, 0) =>
-          val range = Ordinal.zerary(start) ~ Ordinal.zerary(index)
-          LazyList(current.segment(range))
+        case other =>
+          conduit.mark()
+          conduit.seek(':')
+          val key = Text.ascii(conduit.save())
+          conduit.next()
+          if conduit.datum != ' ' then raise(MultipartError(Reason.Expected(' ')))
+          conduit.next()
+          conduit.mark()
+          conduit.seek('\r')
+          val value = Text.ascii(conduit.save())
+          conduit.next()
+          if conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          conduit.next()
+          headers((key, value) :: list)
 
-        case _ =>
-          parsePart(boundary, current, stream, start, index + 1)
+    def body(): LazyList[Bytes] = conduit.step() match
+      case Conduit.State.Clutch => conduit.block #:: body()
+      case Conduit.State.Data   => conduit.datum match
+        case '\r' =>
+          if conduit.lookahead:
+            conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
+              conduit.next() && conduit.datum == char
+          then
+            conduit.breakBefore()
+            LazyList(conduit.block).also:
+              conduit.skip(boundary.length + 3)
+          else body()
+        case other =>
+          body()
 
-      else
-        val range = Ordinal.zerary(start) ~ Ordinal.zerary(index)
-        current.segment(range) #:: parsePart(boundary, stream.head, stream.tail, 0, 0)
+    def parsePart(headers: Map[Text, Text], stream: LazyList[Bytes]): Part =
+      headers.at(t"Content-Disposition").let: disposition =>
+        val parts = disposition.cut(t";").map(_.trim)
 
-  def parse(boundary: Text, stream: LazyList[Bytes]): Multipart raises MultipartError =
-    Multipart(parts(t"\r\n$boundary".sysBytes, stream.head, stream.tail, 0, 0))
+        val params: Map[Text, Text] =
+          parts.drop(1).map: param =>
+            param.cut(t"=", 2) match
+              case List(key, value) => key -> value
+              case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
+          .to(Map)
 
-case class Multipart(parts: LazyList[Part])
+        val dispositionValue = parts.prim match
+          case t"inline"     => Multipart.Disposition.Inline
+          case t"form-data"  => Multipart.Disposition.FormData
+          case t"attachment" => Multipart.Disposition.Attachment
+          case _ =>
+            raise(MultipartError(Reason.BadDisposition)) yet Multipart.Disposition.FormData
 
-case class Part(body: LazyList[Bytes]):
-  def length: Int = body.sumBy(_.length)
+        val filename = params.at(t"filename")
+        val name = params.at(t"name")
+
+        Part(dispositionValue, headers, name, filename, stream)
+      .or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
+
+    def parts(): LazyList[Part] =
+      val part = parsePart(headers(Nil), body())
+
+      conduit.datum match
+        case '\r' =>
+          if !conduit.next() || conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          part #:: { part.body.strict; conduit.next(); parts() }
+
+        case '-' =>
+          if !conduit.next() || conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
+          if !conduit.next() || conduit.datum != '\r' then raise(MultipartError(Reason.Expected('\r')))
+          if !conduit.next() || conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
+          LazyList(part)
+        case other =>
+          raise(MultipartError(Reason.Expected('-')))
+          LazyList()
+
+    Multipart(parts())
+
+case class Multipart(parts: LazyList[Part]):
+  def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)
+
+
+object Part:
+  given Part is Readable by Bytes as readable = _.body
+
+case class Part
+    (disposition: Multipart.Disposition,
+     headers:     Map[Text, Text],
+     name:        Optional[Text],
+     filename:    Optional[Text],
+     body:        LazyList[Bytes])

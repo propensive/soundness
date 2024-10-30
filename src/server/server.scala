@@ -33,6 +33,8 @@ import anticipation.*
 import serpentine.*
 import spectacular.*
 
+import errorDiagnostics.stackTraces
+
 import scala.compiletime.*
 
 import java.net as jn
@@ -86,7 +88,7 @@ object Servable:
 
   given Redirect is Servable as redirect:
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
-      responder.addHeader(ResponseHeader.Location.header, content.location.show)
+      responder.addHeader(ResponseHeader.Location.header, content.location)
       headers.each(responder.addHeader)
       responder.sendBody(301, LazyList())
 
@@ -120,13 +122,32 @@ object Servable:
 
 object Redirect:
   def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType): Redirect =
-    new Redirect(HyperlinkType.hyperlink(location))
+    new Redirect(HyperlinkType.hyperlink(location).show)
 
-case class Redirect(location: Url["http" | "https"])
+case class Redirect(location: Text)
 
 trait Servable:
   type Self
   def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder): Unit
+
+object Acceptable:
+  given (using Tactic[MultipartError]) => Multipart is Acceptable = request =>
+    tend:
+      case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
+    .within:
+      given HttpRequest = request
+      val contentType = header(RequestHeader.ContentType).let(_.prim).let(Media.parse(_)).or:
+        abort(MultipartError(MultipartError.Reason.MediaType))
+
+      if contentType.base == media"multipart/form-data" then
+        val boundary = contentType.at(t"boundary").or(abort(MultipartError(MultipartError.Reason.MediaType)))
+        println(t"boundary = '$boundary'")
+        Multipart.parse(request.body, boundary)
+      else abort(MultipartError(MultipartError.Reason.MediaType))
+
+trait Acceptable:
+  type Self
+  def accept(request: HttpRequest): Self
 
 case class NotFound[ContentType: Servable](content: ContentType):
   def serve(headers: Map[Text, Text], responder: Responder) =
@@ -135,40 +156,70 @@ case class NotFound[ContentType: Servable](content: ContentType):
 case class ServeFailure[ContentType: Servable](content: ContentType)
 
 object Cookie:
-  given ("set-cookie" is GenericHttpRequestParam[Cookie]) as setCookie = _.serialize
-  given ("cookie" is GenericHttpRequestParam[Cookie]) as cookie = _.serialize
+  given ("set-cookie" is GenericHttpRequestParam[CookieValue]) as setCookie = _.serialize
+  given ("cookie" is GenericHttpRequestParam[CookieValue]) as cookie = _.serialize
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
-case class Cookie
-    (name:   Text,
-     value:  Text,
-     domain: Optional[Text] = Unset,
-     path:   Optional[Text] = Unset,
-     expiry: Optional[Long] = Unset,
-     ssl:    Boolean        = false):
+  def apply[ValueType: {Encoder, Decoder}](using DummyImplicit)[DurationType: GenericDuration]
+    (name:     Text,
+     domain:   Optional[Hostname]     = Unset,
+     expiry:   Optional[DurationType] = Unset,
+     secure:   Boolean                = false,
+     httpOnly: Boolean                = false) =
+  new Cookie[ValueType, DurationType](name, domain, expiry, secure, httpOnly)
+
+case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
+    (name:     Text,
+     domain:   Optional[Hostname],
+     expiry:   Optional[DurationType],
+     secure:   Boolean,
+     httpOnly: Boolean):
+
+  def apply(value: ValueType): CookieValue =
+    CookieValue(name, value.encode, domain.let(_.show), Unset, expiry.let(_.milliseconds/1000), secure, httpOnly)
+
+  def apply()(using request: HttpRequest): Optional[ValueType] = request.cookies.at(name).let(_.decode)
+
+case class CookieValue
+    (name:     Text,
+     value:    Text,
+     domain:   Optional[Text] = Unset,
+     path:     Optional[Text] = Unset,
+     expiry:   Optional[Long] = Unset,
+     secure:   Boolean        = false,
+     httpOnly: Boolean        = false):
 
   def serialize: Text =
     List(
       name        -> Some(value),
-      t"Expires"  -> expiry.option.map { t => t"${Cookie.dateFormat.format(t).nn} GMT" },
+      t"MaxAge"   -> expiry.option.map(_.show),
       t"Domain"   -> domain.option,
       t"Path"     -> path.option,
-      t"Secure"   -> ssl,
-      t"HttpOnly" -> false
-    ).collect:
+      t"Secure"   -> secure,
+      t"HttpOnly" -> httpOnly).collect:
       case (k, true)    => k
       case (k, Some(v)) => t"$k=$v"
     .join(t"; ")
 
-
 object HttpResponse:
-  def apply[FormatType: Servable](content0: FormatType, status0: HttpStatus = HttpStatus.Found, headers0: Map[ResponseHeader[?], Text] = Map(), cookies0: List[Cookie] = Nil): HttpResponse in FormatType = new HttpResponse:
-    type Format = FormatType
-    def servable: Format is Servable = summon[FormatType is Servable]
-    def content: Format = content0
-    def status: HttpStatus = status0
-    def headers: Map[ResponseHeader[?], Text] = headers0
-    def cookies: List[Cookie] = cookies0
+  def apply[FormatType: Servable]
+      (content: FormatType,
+       status: HttpStatus = HttpStatus.Found,
+       headers: Map[ResponseHeader[?], Text] = Map(),
+       cookies: List[CookieValue] = Nil)
+          : HttpResponse in FormatType =
+    inline def content0: FormatType = content
+    inline def status0: HttpStatus = status
+    inline def headers0: Map[ResponseHeader[?], Text] = headers
+    inline def cookies0: List[CookieValue] = cookies
+
+    new HttpResponse:
+      type Format = FormatType
+      def servable: Format is Servable = summon[FormatType is Servable]
+      def content: Format = content0
+      def status: HttpStatus = status0
+      def headers: Map[ResponseHeader[?], Text] = headers0
+      def cookies: List[CookieValue] = cookies0
 
 trait HttpResponse:
   type Format
@@ -176,14 +227,22 @@ trait HttpResponse:
   def content: Format
   def status: HttpStatus
   def headers: Map[ResponseHeader[?], Text]
-  def cookies: List[Cookie]
+  def cookies: List[CookieValue]
+
+  def allHeaders: List[(ResponseHeader[?], Text)] =
+    headers.to(List) ++ cookies.map(ResponseHeader.SetCookie -> _.serialize)
 
   def respond(responder: Responder): Unit =
-    val cookieHeaders: List[(ResponseHeader[?], Text)] = cookies.map(ResponseHeader.SetCookie -> _.serialize)
+    servable.process(content, status.code, allHeaders.map { case (k, v) => k.header -> v }.to(Map), responder)
 
-    servable.process(content, status.code, (headers ++ cookieHeaders).map { case (k, v) => k.header -> v }, responder)
+  def serialize: Text = Text.construct:
+    for (key, value) <- allHeaders do append(t"${key.header}: $value\r\n")
+    append(t"\r\n")
 
 object HttpRequest:
+
+  given (using connection: HttpConnection) => HttpRequest = connection.request
+
   given HttpRequest is Showable = request =>
     val bodySample: Text =
       try request.body.stream.read[Bytes].utf8 catch
@@ -210,7 +269,7 @@ object HttpRequest:
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-case class HttpConnection(ssl: Boolean, request: HttpRequest)
+case class HttpConnection(secure: Boolean, request: HttpRequest)
 
 case class HttpRequest
     (method: HttpMethod,
@@ -222,8 +281,10 @@ case class HttpRequest
      rawHeaders: Map[Text, List[Text]],
      queryParams: Map[Text, List[Text]]):
 
+  def as[BodyType: Acceptable]: BodyType = BodyType.accept(this)
+
   def path(using connection: HttpConnection): HttpUrl raises PathError raises UrlError raises HostnameError =
-    Url.parse(t"${if connection.ssl then t"https" else t"http"}://$hostname$pathText")
+    Url.parse(t"${if connection.secure then t"https" else t"http"}://$hostname$pathText")
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -256,6 +317,13 @@ case class HttpRequest
   lazy val contentType: Optional[MediaType] =
     headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
 
+  lazy val cookies: Map[Text, Text] =
+    headers.at(RequestHeader.Cookie).or(Nil).flatMap(_.cut(t"; ")).flatMap: cookie =>
+      cookie.cut(t"=", 2) match
+      case List(key, value) => List((key.urlDecode, value.urlDecode))
+      case _                => Nil
+    .to(Map)
+
 trait RequestServable:
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
 
@@ -263,11 +331,12 @@ extension (value: Http.type)
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
-inline def request(using inline connection: HttpConnection): HttpRequest = connection.request
+inline def param(using request: HttpRequest)(key: Text): Optional[Text] =
+  request.params.get(key).getOrElse(Unset)
 
-inline def param(using HttpConnection)(key: Text): Text raises MissingParamError =
-  request.params.get(key).getOrElse:
-    abort(MissingParamError(key))
+def request(using request: HttpRequest): HttpRequest = request
+
+def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
 
 def header(using HttpRequest)(header: RequestHeader[?]): Optional[List[Text]] =
   summon[HttpRequest].headers.get(header).getOrElse(Unset)
@@ -334,7 +403,8 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress("localhost", port), 0).nn
         val context = httpServer.createContext("/").nn
         context.setHandler(handle(_))
-        httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+        //httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
+        httpServer.setExecutor(null)
         httpServer.start()
         httpServer
       catch
