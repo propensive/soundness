@@ -104,7 +104,7 @@ object EmailAddress:
       if index > Ult.of(text.length) then abort(EmailAddressError(MissingDomain))
       else if text.at(index) == '[' then
         try
-          if text.at(text.ult) != ']' then abort(EmailAddressError(UnclosedIpAddress))
+          if text.ult.let(text.at(_)) != ']' then abort(EmailAddressError(UnclosedIpAddress))
           import strategies.throwUnsafely
           val ipAddress = text.segment(index.next ~ Pen.of(text))
 
