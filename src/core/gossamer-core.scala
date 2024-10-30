@@ -53,6 +53,8 @@ extension (textObject: Text.type)
     block(using buffer)
     buffer()
 
+  def ascii(bytes: Bytes): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
+
   def fill(length: Int)(lambda: Int => Char): Text =
     val array = new Array[Char](length)
     (0 until length).each { index => array(index) = lambda(index) }
