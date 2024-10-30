@@ -21,6 +21,7 @@ import anticipation.*
 import hypotenuse.*
 import gossamer.*
 import iridescence.*
+import vacuous.*
 import denominative.*
 
 import language.experimental.pureFunctions
@@ -116,7 +117,7 @@ case class Teletype2(plain: Text, ansi: IArray[Escapade.AnsiStyle]):
     import Escapade.indexes.*
     Text.construct:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
-        if index <= plain.ult then
+        if index <= plain.ult.or(Prim - 1) then
           val style = ansi(index.n0)
 
           if style.changed then
