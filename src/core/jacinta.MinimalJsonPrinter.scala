@@ -44,13 +44,16 @@ object MinimalJsonPrinter extends JsonPrinter:
           case values: Array[JsonAst] @unchecked =>
             append('{')
             val last = keys.length - 1
+
             keys.indices.each: i =>
               append('"')
               appendString(keys(i))
               append('"')
               append(':')
               recur(values(i))
-              append(if i == last then '}' else ',')
+              if i != last then append(',')
+
+            append('}')
 
       case array: Array[JsonAst] @unchecked =>
         append('[')

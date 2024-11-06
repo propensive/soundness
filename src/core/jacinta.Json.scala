@@ -194,7 +194,7 @@ object Json extends Json2, Dynamic:
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
   given (using encoder: CharEncoder, printer: JsonPrinter)
-      => ((Json is GenericHttpResponseStream)) = new:
+      => (Json is GenericHttpResponseStream) = new:
     def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
     def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
