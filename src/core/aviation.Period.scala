@@ -16,5 +16,5 @@
 
 package aviation
 
-case class Interval(from: Instant, to: Instant):
+case class Period(from: Instant, to: Instant):
   def duration: Duration = to - from

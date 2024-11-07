@@ -80,7 +80,7 @@ object Timing:
 
   extension (instant: Instant)
     @targetName("to")
-    infix def ~ (that: Instant): Interval = Interval(instant, that)
+    infix def ~ (that: Instant): Period = Period(instant, that)
 
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
@@ -96,4 +96,4 @@ object Timing:
       LocalTime(date, time, timezone)
 
   extension (duration: Duration)
-    def from(instant: Instant): Interval = Interval(instant, Instant.plus.add(instant, duration))
+    def from(instant: Instant): Period = Period(instant, Instant.plus.add(instant, duration))
