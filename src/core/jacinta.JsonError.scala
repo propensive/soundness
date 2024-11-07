@@ -24,15 +24,15 @@ import fulminate.*
 
 object JsonError:
   enum Reason:
-    case Index(value: Int)
-    case Label(label: Text)
+    case OutOfRange
     case NotType(found: JsonPrimitive, primitive: JsonPrimitive)
+    case Absent
 
   object Reason:
     given Reason is Communicable =
-      case Index(value)              => m"the index $value out of range"
-      case Label(label)              => m"the JSON object does not contain the label $label"
+      case OutOfRange                => m"the array index is out of range"
       case NotType(found, primitive) => m"the JSON value had type $found instead of $primitive"
+      case Absent                    => m"the JSON value was not present"
 
 case class JsonError(reason: JsonError.Reason)(using Diagnostics)
 extends Error(m"could not access the value because $reason")

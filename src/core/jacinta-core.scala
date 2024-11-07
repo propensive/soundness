@@ -24,6 +24,7 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import merino.*
+import vacuous.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -36,6 +37,7 @@ given (using js: JsonPrinter) => JsonAst is Showable = js.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
+  inline def isAbsent: Boolean = json == Unset
   inline def isLong: Boolean = json.isInstanceOf[Long]
   inline def isDouble: Boolean = json.isInstanceOf[Double]
   inline def isBigDecimal: Boolean = json.isInstanceOf[BigDecimal]
@@ -49,27 +51,30 @@ extension (json: JsonAst)
 
   inline def isArray: Boolean = json.isInstanceOf[Array[?]]
 
+  private def expected(jsonPrimitive: JsonPrimitive): Unit raises JsonError =
+    raise(JsonError(if isAbsent then Reason.Absent else Reason.NotType(primitive, jsonPrimitive)))
+
   def array: IArray[JsonAst] raises JsonError =
     if isArray then json.asInstanceOf[IArray[JsonAst]]
-    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Array)), IArray[JsonAst]())
+    else expected(JsonPrimitive.Array) yet IArray[JsonAst]()
 
   def double: Double raises JsonError = json.asMatchable match
     case value: Double     => value
     case value: Long       => value.toDouble
     case value: BigDecimal => value.toDouble
-    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0.0)
+    case _                 => expected(JsonPrimitive.Number) yet 0.0
 
   def bigDecimal: BigDecimal raises JsonError = json.asMatchable match
     case value: BigDecimal => value
     case value: Long       => BigDecimal(value)
     case value: Double     => BigDecimal(value)
-    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), BigDecimal(0))
+    case _                 => expected(JsonPrimitive.Number) yet BigDecimal(0L)
 
   def long: Long raises JsonError = json.asMatchable match
     case value: Long       => value
     case value: Double     => value.toLong
     case value: BigDecimal => value.toLong
-    case _                 => raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0L)
+    case _                 => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number
@@ -81,19 +86,19 @@ extension (json: JsonAst)
 
   def string: Text raises JsonError =
     if isString then json.asInstanceOf[Text]
-    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.String)), "".tt)
+    else expected(JsonPrimitive.String) yet "".tt
 
   def boolean: Boolean raises JsonError =
     if isBoolean then json.asInstanceOf[Boolean]
-    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Boolean)), false)
+    else expected(JsonPrimitive.Boolean) yet false
 
   def obj: (IArray[String], IArray[JsonAst]) raises JsonError =
     if isObject then json.asInstanceOf[(IArray[String], IArray[JsonAst])]
-    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Object)), IArray[String]() -> IArray[JsonAst]())
+    else expected(JsonPrimitive.Object) yet (IArray[String]() -> IArray[JsonAst]())
 
   def number: Long | Double | BigDecimal raises JsonError =
     if isLong then long else if isDouble then double else if isBigDecimal then bigDecimal
-    else raise(JsonError(Reason.NotType(primitive, JsonPrimitive.Number)), 0L)
+    else expected(JsonPrimitive.Number) yet 0L
 
 extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)

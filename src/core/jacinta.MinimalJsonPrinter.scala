@@ -83,6 +83,7 @@ object MinimalJsonPrinter extends JsonPrinter:
 
       case boolean: Boolean =>
         append(boolean.toString)
+
       case _ =>
         append("null")
 

@@ -24,7 +24,6 @@ import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import prepositional.*
 import gossamer.*
 import hieroglyph.*
@@ -38,6 +37,7 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
+  this: Json.type =>
   given [ValueType: Encodable in Json]
       => Optional[ValueType] is Encodable in Json as optionalEncodable =
     new Encodable:
@@ -47,14 +47,19 @@ trait Json2:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
 
       def encode(value: Optional[ValueType]): Json =
-        value.let(ValueType.encode(_)).or(Json.ast(JsonAst(0L)))
+        value.let(ValueType.encode(_)).or(Json.ast(JsonAst(Unset)))
 
   given [ValueType: Decodable in Json](using Tactic[JsonError])
       => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)
 
-object Json extends Json2, Dynamic:
-  def ast(value: JsonAst): Json = new Json(value)
+  inline given [ValueType] => ValueType is Decodable in Json as decodable = summonFrom:
+    case given Decoder[ValueType]    => summonInline[Tactic[JsonError]].give(text.map[ValueType](_.decode))
+    case given Reflection[ValueType] => DecodableDerivation.derived
+
+  inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
+    case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
+    case given Reflection[ValueType] => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
@@ -68,7 +73,7 @@ object Json extends Json2, Dynamic:
             construct: [FieldType] =>
               context =>
                 val omit = !values.contains(label.s)
-                val value = if omit then JsonAst(0L) else values(label.s)
+                val value = if omit then JsonAst(Unset) else values(label.s)
                 focus(prior.or(JsonPath()) / label):
                   context.decode(new Json(value), omit)
 
@@ -80,7 +85,8 @@ object Json extends Json2, Dynamic:
 
             values(0).indexOf("_type") match
               case -1 =>
-                abort(JsonError(Reason.Label(t"_type")))
+                focus(prior.or(JsonPath()) / t"_type"):
+                  abort(JsonError(Reason.Absent))
 
               case index =>
                 delegate(values(1)(index).string): [VariantType <: DerivationType] =>
@@ -111,16 +117,11 @@ object Json extends Json2, Dynamic:
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
-  inline given [ValueType] => ValueType is Decodable in Json as decodable = summonFrom:
-    case given Decoder[ValueType]    => summonInline[Tactic[JsonError]].give(text.map[ValueType](_.decode))
-    case given Reflection[ValueType] => DecodableDerivation.derived
+  // given [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
+  //   (value, omit) => IntegralType.fromInt(value.root.long.toInt)
 
-  inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
-    case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
-    case given Reflection[ValueType] => EncodableDerivation.derived
-
-  given [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
-    (value, omit) => IntegralType.fromInt(value.root.long.toInt)
+object Json extends Json2, Dynamic:
+  def ast(value: JsonAst): Json = new Json(value)
 
   given Json is Decodable in Json as boolean = (value, omit) => value
   given (using Tactic[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
@@ -143,7 +144,7 @@ object Json extends Json2, Dynamic:
       override def omit(value: Option[ValueType]): Boolean = value.isEmpty
 
       def encode(value: Option[ValueType]): Json = value match
-        case None        => Json.ast(JsonAst(0L))
+        case None        => Json.ast(JsonAst(Unset))
         case Some(value) => ValueType.encode(value)
 
   given [IntegralType: Integral] => IntegralType is Encodable in Json as integralEncodable =
@@ -152,6 +153,8 @@ object Json extends Json2, Dynamic:
   given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
   given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
   given Double is Encodable in Json as doubleEncodable = double => Json.ast(JsonAst(double))
+  given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
+  given Long is Encodable in Json as longEncodable = long => Json.ast(JsonAst(long))
   given Boolean is Encodable in Json as booleanEncodable = boolean => Json.ast(JsonAst(boolean))
   given Json is Encodable in Json as jsonEncodable = identity(_)
 
@@ -225,7 +228,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
-      case -1    => raise(JsonError(Reason.Label(field)), this)
+      case -1    => focus(prior.or(JsonPath()) / field)(raise(JsonError(Reason.Absent)) yet this)
       case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =
