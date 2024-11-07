@@ -3,43 +3,23 @@ package scintillate
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
 import gossamer.*
 import rudiments.*
-import spectacular.*
-import hieroglyph.*
 import prepositional.*
 import vacuous.*
 import turbulence.*
 
 import scala.reflect.*
-import scala.collection.mutable as scm
-
-object MultipartError:
-  enum Reason:
-    case Expected(char: Char)
-    case StreamContinues, BadBoundaryEnding, MediaType, BadDisposition
-
-  given Reason is Communicable =
-    case Reason.Expected(char: Char) => m"the character '$char' was expected"
-    case Reason.StreamContinues      => m"the stream continues"
-    case Reason.BadBoundaryEnding    => m"unexpected content followed the boundary"
-    case Reason.MediaType            => m"the media type is invalid"
-    case Reason.BadDisposition       => m"the `Content-Disposition` header has the wrong format"
 
 import MultipartError.Reason
 
-case class MultipartError(reason: MultipartError.Reason)(using Diagnostics)
-extends Error(m"The multipart data could not be read because $reason")
-
 object Multipart:
-
   enum Disposition:
     case Inline, Attachment, FormData
 
-  def parse(stream: LazyList[Bytes], boundary0: Optional[Text] = Unset)
+  def parse[InputType: Readable by Bytes](input: InputType, boundary0: Optional[Text] = Unset)
           : Multipart raises MultipartError =
-    val conduit = Conduit(stream)
+    val conduit = Conduit(input.stream)
     conduit.mark()
     conduit.next()
     if conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
@@ -76,7 +56,12 @@ object Multipart:
           headers((key, value) :: list)
 
     def body(): LazyList[Bytes] = conduit.step() match
-      case Conduit.State.Clutch => conduit.block #:: body()
+      case Conduit.State.Clutch =>
+        val block = conduit.block
+        conduit.cue()
+        block #:: body()
+      case Conduit.State.End =>
+        LazyList()
       case Conduit.State.Data   => conduit.datum match
         case '\r' =>
           if conduit.lookahead:
@@ -97,7 +82,9 @@ object Multipart:
         val params: Map[Text, Text] =
           parts.drop(1).map: param =>
             param.cut(t"=", 2) match
-              case List(key, value) => key -> value
+              case List(key, value) => if value.starts(t"\"") && value.ends(t"\"")
+                                       then key -> value.segment(Sec ~ Pen.of(value))
+                                       else key -> value
               case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
           .to(Map)
 
@@ -128,6 +115,7 @@ object Multipart:
           if !conduit.next() || conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
           //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
           LazyList(part)
+
         case other =>
           raise(MultipartError(Reason.Expected('-')))
           LazyList()
@@ -136,14 +124,3 @@ object Multipart:
 
 case class Multipart(parts: LazyList[Part]):
   def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)
-
-
-object Part:
-  given Part is Readable by Bytes as readable = _.body
-
-case class Part
-    (disposition: Multipart.Disposition,
-     headers:     Map[Text, Text],
-     name:        Optional[Text],
-     filename:    Optional[Text],
-     body:        LazyList[Bytes])
