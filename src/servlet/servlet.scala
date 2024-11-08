@@ -50,33 +50,35 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     Readable.inputStream.stream(request.getInputStream.nn)
 
   protected def makeConnection(request: jsh.HttpServletRequest): HttpConnection raises StreamError =
-    val query = Option(request.getQueryString)
+    val uri = request.getRequestURI.nn.tt
+    val query = Optional(request.getQueryString).let(_.tt)
+    val target = uri+query.let(t"?"+_).or(t"")
 
-    val params: Map[Text, List[Text]] = query.fold(Map()): query =>
-      val paramStrings = query.nn.show.cut(t"&")
+    // val params: Map[Text, List[Text]] = query.fold(Map()): query =>
+    //   val paramStrings = query.nn.show.cut(t"&")
 
-      paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-        elem.cut(t"=", 2).to(Seq) match
-          case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
-          case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
-          case _                           => map
+    //   paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
+    //     elem.cut(t"=", 2).to(Seq) match
+    //       case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
+    //       case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
+    //       case _                           => map
 
-    val headers = request.getHeaderNames.nn.asScala.to(List).map: key =>
-      key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
-    .to(Map)
+    val headers: List[RequestHeader.Value] =
+      request.getHeaderNames.nn.asScala.to(List).map: key =>
+        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+      .flatMap:
+        case (RequestHeader(header), values) => values.map(header(_))
+      .to(List)
 
-    val httpRequest = HttpRequest(
-      method = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
-      hostname = unsafely(Hostname.parse(request.getServerName.nn.tt)),
-      body = streamBody(request),
-      query = query.getOrElse("").nn.tt,
-      request.getServerPort,
-      request.getRequestURI.nn.tt,
-      headers,
-      params
-    )
+    val httpRequest = HttpRequest
+     (method  = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
+      version = HttpVersion.parse(request.getProtocol.nn.tt),
+      host    = unsafely(Hostname.parse(request.getServerName.nn.tt)),
+      target  = target,
+      body    = streamBody(request),
+      headers = headers)
 
-    HttpConnection(false, httpRequest)
+    HttpConnection(false, request.getServerPort, httpRequest)
 
   def handle(servletRequest: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse): Unit =
     try throwErrors(handle(using makeConnection(servletRequest)).respond(ServletResponseWriter(servletResponse)))

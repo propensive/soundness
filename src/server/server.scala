@@ -249,8 +249,8 @@ object HttpRequest:
         case err: StreamError  => t"[-/-]"
 
     val headers: Text =
-      request.rawHeaders.map:
-        case (key, values) => t"$key: ${values.join(t"; ")}"
+      request.headers.map: header =>
+        t"${header.header}: ${header.value}"
       .join(t"\n          ")
 
     val params: Text = request.params.map:
@@ -261,30 +261,41 @@ object HttpRequest:
       t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
       t"method"   -> request.method.show,
       t"query"    -> request.query.show,
-      t"hostname" -> request.hostname.show,
-      t"port"     -> request.port.show,
+      t"hostname" -> request.host.show,
       t"path"     -> request.pathText,
       t"body"     -> bodySample,
       t"headers"  -> headers,
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-case class HttpConnection(secure: Boolean, request: HttpRequest)
+case class HttpConnection(secure: Boolean, port: Int, request: HttpRequest)
 
 case class HttpRequest
-    (method: HttpMethod,
-     hostname: Hostname,
-     body: LazyList[Bytes],
-     query: Text,
-     port: Int,
-     pathText: Text,
-     rawHeaders: Map[Text, List[Text]],
-     queryParams: Map[Text, List[Text]]):
+    (method:  HttpMethod,
+     version: HttpVersion,
+     host:    Hostname,
+     target:  Text,
+     body:    LazyList[Bytes],
+     headers: List[RequestHeader.Value]):
+
+  lazy val query: Text = target.s.indexOf('?') match
+    case -1    => t""
+    case index => target.skip(index + 1)
+
+  lazy val pathText: Text = target.s.indexOf('?') match
+    case -1    => target
+    case index => target.keep(index)
 
   def as[BodyType: Acceptable]: BodyType = BodyType.accept(this)
 
+  lazy val queryParams: Map[Text, List[Text]] =
+    val items = query.nn.show.cut(t"&")
+    items.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
+      val kv: List[Text] = elem.cut(t"=", 2)
+      map.updated(kv(0), safely(kv(1)).or(t"") :: map.getOrElse(kv(0), Nil))
+
   def path(using connection: HttpConnection): HttpUrl raises PathError raises UrlError raises HostnameError =
-    Url.parse(t"${if connection.secure then t"https" else t"http"}://$hostname$pathText")
+    Url.parse(t"${if connection.secure then t"https" else t"http"}://$host$pathText")
 
   // FIXME: The exception in here needs to be handled elsewhere
   val params: Map[Text, Text] =
@@ -304,21 +315,20 @@ case class HttpRequest
       }
     catch case e: StreamError  => Map()
 
-
-  lazy val headers: Map[RequestHeader[?], List[Text]] = rawHeaders.map:
-    case (RequestHeader(header), values) => header -> values
+  def header(header: RequestHeader[?]): List[RequestHeader.Value] =
+    headers.filter(_.header == header)
 
   lazy val length: Int raises StreamError =
     try throwErrors:
-      headers.get(RequestHeader.ContentLength).map(_.head).map(_.decode[Int]).getOrElse:
+      header(RequestHeader.ContentLength).headOption.map(_.value.decode[Int]).getOrElse:
         body.stream.map(_.length).sum
     catch case err: NumberError => abort(StreamError(0.b))
 
   lazy val contentType: Optional[MediaType] =
-    headers.at(RequestHeader.ContentType).let(_.prim).let(MediaType.unapply(_).optional)
+    headers.find(_.header == RequestHeader.ContentType).map(_.value).flatMap(MediaType.unapply(_)).optional
 
   lazy val cookies: Map[Text, Text] =
-    headers.at(RequestHeader.Cookie).or(Nil).flatMap(_.cut(t"; ")).flatMap: cookie =>
+    header(RequestHeader.Cookie).map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>
       cookie.cut(t"=", 2) match
       case List(key, value) => List((key.urlDecode, value.urlDecode))
       case _                => Nil
@@ -338,8 +348,8 @@ def request(using request: HttpRequest): HttpRequest = request
 
 def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
 
-def header(using HttpRequest)(header: RequestHeader[?]): Optional[List[Text]] =
-  summon[HttpRequest].headers.get(header).getOrElse(Unset)
+def header(using request: HttpRequest)(header: RequestHeader[?]): Optional[List[Text]] =
+  request.header(header).map(_.value)
 
 object ParamReader:
   given [ParamType](using ext: Unapply[Text, ParamType]): ParamReader[ParamType] = ext.unapply(_)
@@ -428,45 +438,47 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
     recur()
 
   private def makeConnection(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
-    HttpConnection(false, makeRequest(exchange))
+    val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
+      exchange.getLocalAddress.nn.getPort
+
+    HttpConnection(false, port, makeRequest(exchange))
 
   private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
     val uri = exchange.getRequestURI.nn
-    val query = Option(uri.getQuery)
+    val query = Optional(uri.getQuery)
+    val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
+    val method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s)
 
-    val queryParams: Map[Text, List[Text]] = query.fold(Map()): query =>
-      query.nn.show.cut(t"&").foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-        val kv = elem.cut(t"=", 2)
-        map.updated(kv(0), kv(1) :: map.getOrElse(kv(0), Nil))
+    val headers: List[RequestHeader.Value] =
+      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap:
+        case (RequestHeader(header), values) => values.map: value =>
+          header(value.tt)
+      .to(List)
 
-    val headers =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).to(Map)
+    val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
+
+    val host = unsafely:
+       Hostname.parse:
+         Optional(uri.getHost).or(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn).tt
 
     val request =
       HttpRequest
-       (method      = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s),
-        body        = streamBody(exchange),
-        query       = Text(query.getOrElse("").nn),
-        hostname    = unsafely(Hostname.parse(Option(uri.getHost).getOrElse(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName).nn.tt)),
-        port        = Option(uri.getPort).filter(_ > 0).getOrElse(exchange.getLocalAddress.nn.getPort),
-        pathText    = Text(uri.getPath.nn),
-        rawHeaders  = headers.map { case (k, v) => Text(k) -> v.map(Text(_)) },
-        queryParams = queryParams)
+       (method  = method,
+        version = version,
+        host    = host,
+        target  = target,
+        body    = streamBody(exchange),
+        headers = headers)
 
     Log.fine(HttpServerEvent.Received(request))
 
     request
 
-case class Ttf(content: Bytes)
-object Ttf:
-  given Ttf is Servable = Servable(media"application/octet-stream"): ttf =>
-    LazyList(ttf.content)
-
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
     (using HttpConnection)
         : HttpResponse =
-  request.headers.get(RequestHeader.Authorization) match
-    case Some(List(s"Basic $credentials")) =>
+  request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
+    case List(s"Basic $credentials") =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
         case List(username: Text, password: Text) if validate(username, password) =>
           response
