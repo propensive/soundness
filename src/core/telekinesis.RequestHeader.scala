@@ -18,6 +18,7 @@ package telekinesis
 
 import rudiments.*
 import anticipation.*
+import vacuous.*
 import gossamer.*
 import spectacular.*
 
@@ -37,6 +38,8 @@ object RequestHeader:
       IfModifiedSince, IfNoneMatch, IfRange, IfUnmodifiedSince, MaxForwards, Origin, Pragma, Prefer,
       ProxyAuthorization, Range, Referer, Te, Trailer, TransferEncoding, UserAgent, Upgrade, Via,
       Warning).bi.map(_.header -> _).to(Map)
+
+  def parse(text: Text): RequestHeader[?] = standard.at(text.lower).or(RequestHeader(text.s))
 
   def unapply(str: Text): Some[RequestHeader[?]] =
     Some(standard.get(str.lower).getOrElse(RequestHeader(str.s)))

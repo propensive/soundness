@@ -26,12 +26,12 @@ import nettlesome.*
 import language.dynamics
 
 case class HttpRequest
-    (method:        HttpMethod,
-     version:       Text,
-     host:          Hostname,
-     requestTarget: Text,
-     headers:       List[RequestHeader.Value],
-     body:          LazyList[Bytes]):
+    (method:  HttpMethod,
+     version: HttpVersion,
+     host:    Hostname,
+     target:  Text,
+     headers: List[RequestHeader.Value],
+     body:    LazyList[Bytes]):
 
   def serialize: LazyList[Bytes] =
     import charEncoders.ascii
@@ -39,9 +39,9 @@ case class HttpRequest
       def newline(): Unit = append(t"\r\n")
       append(method.show.upper)
       append(t" ")
-      append(requestTarget)
-      append(t" HTTP/")
-      append(version)
+      append(target)
+      append(t" ")
+      append(HttpVersion.showable.text(version))
       newline()
       append(t"Host: ")
       append(host.show)
