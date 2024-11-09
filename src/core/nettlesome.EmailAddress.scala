@@ -20,6 +20,7 @@ import gossamer.*
 import rudiments.*
 import hypotenuse.*
 import denominative.*
+import spectacular.*
 import vacuous.*
 import fulminate.*
 import contingency.*
@@ -34,6 +35,9 @@ import EmailAddressError.Reason.*
 object EmailAddress:
   given Realm = realm"nettlesome"
 
+  given (using Tactic[EmailAddressError]) => Decoder[EmailAddress] = EmailAddress.parse(_)
+  given Encoder[EmailAddress] = _.text
+
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abandonment:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
@@ -47,7 +51,7 @@ object EmailAddress:
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
       case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
 
-  def parse(text: Text)(using Diagnostics): EmailAddress raises EmailAddressError =
+  def parse(text: Text): EmailAddress raises EmailAddressError =
     val buffer: StringBuilder = StringBuilder()
     if text.empty then abort(EmailAddressError(Empty))
 
@@ -122,4 +126,19 @@ object EmailAddress:
     EmailAddress(Unset, localPart, domain)
 
 case class EmailAddress
-    (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6)
+    (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6):
+
+  def text: Text =
+    val local = localPart match
+      case LocalPart.Quoted(quoted)     => t"\"$quoted\""
+      case LocalPart.Unquoted(unquoted) => unquoted
+ 
+    val remote = domain match
+      case host: Hostname => host.show
+      case ipv4: Ipv4     => ipv4.show
+      case ipv6: Ipv6     => ipv6.show
+
+    val address = t"$local@$remote"
+    
+    displayName.lay(address): name =>
+      t"$name <$address>"

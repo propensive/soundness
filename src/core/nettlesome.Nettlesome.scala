@@ -54,7 +54,7 @@ object Nettlesome:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given Encoder[Ipv4] as encoder = _.show
-      given (using Diagnostics, Tactic[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
+      given (using Tactic[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -63,11 +63,13 @@ object Nettlesome:
       def apply(byte0: Int, byte1: Int, byte2: Int, byte3: Int): Ipv4 =
         ((byte0 & 255) << 24) + ((byte1 & 255) << 16) + ((byte2 & 255) << 8) + (byte3 & 255)
 
-      def parse(text: Text)(using Diagnostics): Ipv4 raises IpAddressError =
+      def parse(text: Text): Ipv4 raises IpAddressError =
         val bytes = text.cut(t".")
         if bytes.length == 4 then
           tend:
-            case NumberError(text, _) => IpAddressError(Ipv4ByteNotNumeric(text))
+            case error@NumberError(text, _) =>
+              given Diagnostics = error.diagnostics
+              IpAddressError(Ipv4ByteNotNumeric(text))
           .within:
             bytes.map(Decoder.int.decode(_)).pipe: bytes =>
               for byte <- bytes
