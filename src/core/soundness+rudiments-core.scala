@@ -27,7 +27,7 @@ export rudiments.{ByteSize, bin, hex, Hex, b, kb, mb, gb, tb, byteSize, sift, ha
     Exit, Pid, Quickstart, Nat, Label, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
-    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable}
+    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable, Digit}
 
 package quickstart:
   export rudiments.quickstart.defaults as defaults

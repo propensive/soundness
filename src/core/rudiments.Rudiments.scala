@@ -24,14 +24,27 @@ import anticipation.*
 import fulminate.*
 import symbolism.*
 import prepositional.*
+import vacuous.*
 
 object Rudiments:
   given Realm = realm"rudiments"
   opaque type ByteSize = Long
+  opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
   @annotation.targetName("And")
   object `&`:
     def unapply[ValueType](value: ValueType): Some[(ValueType, ValueType)] = Some((value, value))
+
+  object Digit:
+    def apply(char: Char): Optional[Digit] = apply(char - '0')
+
+    def apply(int: Int): Optional[Digit] = int match
+      case digit: Digit => digit
+      case _            => Unset
+
+  extension (digit: Digit)
+    def int: Int = digit
+    def char: Char = ('0' + int).toChar
 
   object ByteSize:
     def apply(long: Long): ByteSize = long
@@ -97,4 +110,4 @@ object Rudiments:
 
     '{IArray.from(${Expr(bytes)})}
 
-export Rudiments.ByteSize
+export Rudiments.{ByteSize, Digit}
