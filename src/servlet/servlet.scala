@@ -54,15 +54,6 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
 
-    // val params: Map[Text, List[Text]] = query.fold(Map()): query =>
-    //   val paramStrings = query.nn.show.cut(t"&")
-
-    //   paramStrings.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-    //     elem.cut(t"=", 2).to(Seq) match
-    //       case Seq(key: Text, value: Text) => map.updated(key, value :: map.getOrElse(key, Nil))
-    //       case Seq(key: Text)              => map.updated(key, t"" :: map.getOrElse(key, Nil))
-    //       case _                           => map
-
     val headers: List[RequestHeader.Value] =
       request.getHeaderNames.nn.asScala.to(List).map: key =>
         key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
@@ -80,8 +71,8 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
 
     HttpConnection(false, request.getServerPort, httpRequest)
 
-  def handle(servletRequest: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse): Unit =
-    try throwErrors(handle(using makeConnection(servletRequest)).respond(ServletResponseWriter(servletResponse)))
+  def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
+    try throwErrors(handle(using makeConnection(request)).respond(ServletResponseWriter(response)))
     catch case error: StreamError =>
       () // FIXME
 
@@ -89,4 +80,4 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     handle(request, response)
 
 open class JavaServletFn(handle: HttpConnection => HttpResponse)
-extends JavaServlet(request ?=> handle(request))
+extends JavaServlet({ request ?=> handle(request) })
