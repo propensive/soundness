@@ -23,6 +23,7 @@ import contingency.*
 import anticipation.*
 import prepositional.*
 import turbulence.*
+import vacuous.*
 import scala.collection.mutable.ArrayBuffer
 
 import JsonAst.AsciiByte.*
@@ -76,11 +77,11 @@ object JsonAst:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null
+      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null | Unset.type
 
   def apply
       (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean |
-                  Null)
+                  Null | Unset.type)
           : JsonAst =
 
     value
