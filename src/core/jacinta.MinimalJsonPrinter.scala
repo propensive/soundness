@@ -60,7 +60,9 @@ object MinimalJsonPrinter extends JsonPrinter:
         val last = array.length - 1
         array.indices.each: i =>
           recur(array(i))
-          append(if i == last then ']' else ',')
+          if i != last then append(',')
+
+        append(']')
 
       case long: Long =>
        append(long.toString)

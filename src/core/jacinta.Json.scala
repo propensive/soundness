@@ -37,7 +37,6 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
-  this: Json.type =>
   given [ValueType: Encodable in Json]
       => Optional[ValueType] is Encodable in Json as optionalEncodable =
     new Encodable:
@@ -54,11 +53,15 @@ trait Json2:
     if omit then Unset else ValueType.decode(json, false)
 
   inline given [ValueType] => ValueType is Decodable in Json as decodable = summonFrom:
-    case given Decoder[ValueType]    => summonInline[Tactic[JsonError]].give(text.map[ValueType](_.decode))
-    case given Reflection[ValueType] => DecodableDerivation.derived
+    case given Decoder[ValueType] =>
+      summonInline[Tactic[JsonError]].give:
+        (value, omit) => value.root.string.decode[ValueType]
+
+    case given Reflection[ValueType] =>
+      DecodableDerivation.derived
 
   inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
-    case given Encoder[ValueType]    => textEncodable.contramap[ValueType](_.encode)
+    case given Encoder[ValueType]    => value => Json.ast(JsonAst(value.encode.s))
     case given Reflection[ValueType] => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
