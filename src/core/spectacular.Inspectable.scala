@@ -20,7 +20,6 @@ import rudiments.*
 import vacuous.*
 import wisteria.*
 import anticipation.*
-import fulminate.*
 
 import scala.deriving.*
 
