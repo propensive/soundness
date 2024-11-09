@@ -95,5 +95,7 @@ object Timing:
 
       LocalTime(date, time, timezone)
 
+    def long: Long = instant
+
   extension (duration: Duration)
     def from(instant: Instant): Period = Period(instant, Instant.plus.add(instant, duration))
