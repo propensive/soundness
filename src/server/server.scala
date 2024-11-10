@@ -258,7 +258,7 @@ extension (value: Http.type)
 inline def param(using request: HttpRequest)(key: Text): Optional[Text] =
   request.params.get(key).getOrElse(Unset)
 
-def request(using request: HttpRequest): HttpRequest = request
+def request(using connection: HttpConnection): HttpRequest = connection.request
 
 def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
 
@@ -364,9 +364,10 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
     val method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s)
 
     val headers: List[RequestHeader.Value] =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap:
-        case (RequestHeader(header), values) => values.map: value =>
-          header(value.tt)
+      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
+        (pair: @unchecked) match
+          case (RequestHeader(header), values) => values.map: value =>
+            header(value.tt)
       .to(List)
 
     val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
