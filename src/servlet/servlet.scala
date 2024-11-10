@@ -24,7 +24,7 @@ import turbulence.*
 import nettlesome.*
 import spectacular.*
 import gossamer.*
-import telekinesis.{HttpRequest as _, HttpResponse as _, *}
+import telekinesis.{HttpResponse as _, *}
 
 import jakarta.servlet as js, js.http as jsh
 

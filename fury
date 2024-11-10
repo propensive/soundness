@@ -1,13 +1,15 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
 repo propensive/telekinesis
+repo propensive/galilei
 
-target scintillate/test
+target scintillate/server
 
 project scintillate
   module server
     sources  src/server
-    include  telekinesis/core
+    include  telekinesis/core galilei/core
+    main     scintillate.run
 
   module servlet
     sources  src/servlet

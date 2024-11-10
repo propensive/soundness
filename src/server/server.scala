@@ -239,100 +239,14 @@ trait HttpResponse:
     for (key, value) <- allHeaders do append(t"${key.header}: $value\r\n")
     append(t"\r\n")
 
-object HttpRequest:
-
-  given (using connection: HttpConnection) => HttpRequest = connection.request
-
-  given HttpRequest is Showable = request =>
-    val bodySample: Text =
-      try request.body.stream.read[Bytes].utf8 catch
-        case err: StreamError  => t"[-/-]"
-
-    val headers: Text =
-      request.headers.map: header =>
-        t"${header.header}: ${header.value}"
-      .join(t"\n          ")
-
-    val params: Text = request.params.map:
-      case (k, v) => t"$k=\"$v\""
-    .join(t"\n          ")
-
-    ListMap[Text, Text](
-      t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
-      t"method"   -> request.method.show,
-      t"query"    -> request.query.show,
-      t"hostname" -> request.host.show,
-      t"path"     -> request.pathText,
-      t"body"     -> bodySample,
-      t"headers"  -> headers,
-      t"params"   -> params
-    ).map { case (key, value) => t"$key = $value" }.join(t", ")
-
 case class HttpConnection(secure: Boolean, port: Int, request: HttpRequest)
 
-case class HttpRequest
-    (method:  HttpMethod,
-     version: HttpVersion,
-     host:    Hostname,
-     target:  Text,
-     body:    LazyList[Bytes],
-     headers: List[RequestHeader.Value]):
-
-  lazy val query: Text = target.s.indexOf('?') match
-    case -1    => t""
-    case index => target.skip(index + 1)
-
-  lazy val pathText: Text = target.s.indexOf('?') match
-    case -1    => target
-    case index => target.keep(index)
-
-  def as[BodyType: Acceptable]: BodyType = BodyType.accept(this)
-
-  lazy val queryParams: Map[Text, List[Text]] =
-    val items = query.nn.show.cut(t"&")
-    items.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-      val kv: List[Text] = elem.cut(t"=", 2)
-      map.updated(kv(0), safely(kv(1)).or(t"") :: map.getOrElse(kv(0), Nil))
+extension (request: HttpRequest)
+  def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)
 
   def path(using connection: HttpConnection): HttpUrl raises PathError raises UrlError raises HostnameError =
-    Url.parse(t"${if connection.secure then t"https" else t"http"}://$host$pathText")
-
-  // FIXME: The exception in here needs to be handled elsewhere
-  val params: Map[Text, Text] =
-    try
-      queryParams.map:
-        case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
-      .to(Map) ++ {
-        if (method == HttpMethod.Post || method == HttpMethod.Put) &&
-            (contentType == Some(media"application/x-www-form-urlencoded") || contentType.absent)
-        then
-          Map[Text, Text](body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
-            case Seq(key: Text)              => key.urlDecode.show -> t""
-            case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                           => throw Panic(m"key/value pair does not match")
-          )*)
-        else Map[Text, Text]()
-      }
-    catch case e: StreamError  => Map()
-
-  def header(header: RequestHeader[?]): List[RequestHeader.Value] =
-    headers.filter(_.header == header)
-
-  lazy val length: Int raises StreamError =
-    try throwErrors:
-      header(RequestHeader.ContentLength).headOption.map(_.value.decode[Int]).getOrElse:
-        body.stream.map(_.length).sum
-    catch case err: NumberError => abort(StreamError(0.b))
-
-  lazy val contentType: Optional[MediaType] =
-    headers.find(_.header == RequestHeader.ContentType).map(_.value).flatMap(MediaType.unapply(_)).optional
-
-  lazy val cookies: Map[Text, Text] =
-    header(RequestHeader.Cookie).map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>
-      cookie.cut(t"=", 2) match
-      case List(key, value) => List((key.urlDecode, value.urlDecode))
-      case _                => Nil
-    .to(Map)
+    val scheme = if connection.secure then t"https" else t"http"
+    Url.parse(t"$scheme://${request.host}${request.pathText}")
 
 trait RequestServable:
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
@@ -475,9 +389,9 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
     request
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
-    (using HttpConnection)
+    (using connection: HttpConnection)
         : HttpResponse =
-  request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
+  connection.request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
     case List(s"Basic $credentials") =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
         case List(username: Text, password: Text) if validate(username, password) =>
