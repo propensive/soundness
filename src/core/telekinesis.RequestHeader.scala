@@ -79,8 +79,13 @@ object RequestHeader:
   case object AcceptDatetime extends SimpleRequestHeader["accept-datetime"]()
   case object AcceptEncoding extends SimpleRequestHeader["accept-encoding"]()
   case object AcceptLanguage extends SimpleRequestHeader["accept-language"]()
-  case object AccessControlRequestMethod extends SimpleRequestHeader["access-control-request-method"]()
-  case object AccessControlRequestHeaders extends SimpleRequestHeader["access-control-request-headers"]()
+
+  case object AccessControlRequestMethod
+  extends SimpleRequestHeader["access-control-request-method"]()
+
+  case object AccessControlRequestHeaders
+  extends SimpleRequestHeader["access-control-request-headers"]()
+
   case object Authorization extends SimpleRequestHeader["authorization"]()
   case object CacheControl extends SimpleRequestHeader["cache-control"]()
   case object Connection extends SimpleRequestHeader["connection"]()
