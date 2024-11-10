@@ -3,12 +3,12 @@
 repo propensive/telekinesis
 repo propensive/galilei
 
-target scintillate/server
+target scintillate/test
 
 project scintillate
   module server
     sources  src/server
-    include  telekinesis/core galilei/core
+    include  telekinesis/core
     main     scintillate.run
 
   module servlet
