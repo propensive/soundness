@@ -61,11 +61,11 @@ case class Permutation(factoradic: Factoradic):
       raise(PermutationError(PermutationError.Reason.TooShort(sequence.length, lehmer.length)))
 
     def recur
-        (lehmer:  List[Int],
-         prefix:  List[ElementType],
-         list:    List[ElementType],
-         current: Int,
-         result:  List[ElementType])
+       (lehmer:  List[Int],
+        prefix:  List[ElementType],
+        list:    List[ElementType],
+        current: Int,
+        result:  List[ElementType])
             : List[ElementType] =
 
       lehmer match
