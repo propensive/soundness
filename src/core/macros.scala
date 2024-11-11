@@ -28,13 +28,13 @@ import scala.quoted.*
 
 object Probably:
   protected def general[TestType: Type, ReportType: Type, ResultType: Type]
-      (test:      Expr[Test[TestType]],
-       predicate: Expr[TestType => Boolean],
-       runner:    Expr[Runner[ReportType]],
-       inc:       Expr[Inclusion[ReportType, Outcome]],
-       inc2:      Expr[Inclusion[ReportType, DebugInfo]],
-       action:    Expr[TestRun[TestType] => ResultType])
-      (using Quotes)
+     (test:      Expr[Test[TestType]],
+      predicate: Expr[TestType => Boolean],
+      runner:    Expr[Runner[ReportType]],
+      inc:       Expr[Inclusion[ReportType, Outcome]],
+      inc2:      Expr[Inclusion[ReportType, DebugInfo]],
+      action:    Expr[TestRun[TestType] => ResultType])
+     (using Quotes)
           : Expr[ResultType] =
 
     import quotes.reflect.*
@@ -61,43 +61,43 @@ object Probably:
 
         '{
           assertion[testType, TestType, ReportType, ResultType]
-              ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $inspectable)
+           ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $inspectable)
         }
 
       case _ =>
         '{
           assertion[TestType, TestType, ReportType, ResultType]
-              ($runner, $test, $predicate, $action, Contrastable.nothing[TestType], None, $inc, $inc2,
+           ($runner, $test, $predicate, $action, Contrastable.nothing[TestType], None, $inc, $inc2,
                   _.toString.tt)
         }
 
   def check[TestType: Type, ReportType: Type]
-      (test:      Expr[Test[TestType]],
-       predicate: Expr[TestType => Boolean],
-       runner:    Expr[Runner[ReportType]],
-       inc:       Expr[Inclusion[ReportType, Outcome]],
-       inc2:      Expr[Inclusion[ReportType, DebugInfo]])
-      (using Quotes)
+     (test:      Expr[Test[TestType]],
+      predicate: Expr[TestType => Boolean],
+      runner:    Expr[Runner[ReportType]],
+      inc:       Expr[Inclusion[ReportType, Outcome]],
+      inc2:      Expr[Inclusion[ReportType, DebugInfo]])
+     (using Quotes)
           : Expr[TestType] =
 
     general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => t.get })
 
   def assert[TestType: Type, ReportType: Type]
-      (test:      Expr[Test[TestType]],
-       predicate: Expr[TestType => Boolean],
-       runner:    Expr[Runner[ReportType]],
-       inc:       Expr[Inclusion[ReportType, Outcome]],
-       inc2:      Expr[Inclusion[ReportType, DebugInfo]])
-      (using Quotes)
+     (test:      Expr[Test[TestType]],
+      predicate: Expr[TestType => Boolean],
+      runner:    Expr[Runner[ReportType]],
+      inc:       Expr[Inclusion[ReportType, Outcome]],
+      inc2:      Expr[Inclusion[ReportType, DebugInfo]])
+     (using Quotes)
           : Expr[Unit] =
     general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
 
   def aspire[TestType: Type, ReportType: Type]
-      (test: Expr[Test[TestType]],
-       runner: Expr[Runner[ReportType]],
-       inc: Expr[Inclusion[ReportType, Outcome]],
-       inc2: Expr[Inclusion[ReportType, DebugInfo]])
-      (using Quotes)
+     (test: Expr[Test[TestType]],
+      runner: Expr[Runner[ReportType]],
+      inc: Expr[Inclusion[ReportType, Outcome]],
+      inc2: Expr[Inclusion[ReportType, DebugInfo]])
+     (using Quotes)
           : Expr[Unit] =
 
     general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
@@ -105,15 +105,15 @@ object Probably:
   def succeed: Any => Boolean = (value: Any) => true
 
   def assertion[TestType, TestType2 <: TestType, ReportType, ResultType]
-      (runner: Runner[ReportType],
-       test: Test[TestType2],
-       predicate: TestType2 => Boolean,
-       result: TestRun[TestType2] => ResultType,
-       contrast: TestType is Contrastable,
-       exp: Option[TestType],
-       inc: Inclusion[ReportType, Outcome],
-       inc2: Inclusion[ReportType, DebugInfo],
-       display: TestType is Inspectable)
+     (runner: Runner[ReportType],
+      test: Test[TestType2],
+      predicate: TestType2 => Boolean,
+      result: TestRun[TestType2] => ResultType,
+      contrast: TestType is Contrastable,
+      exp: Option[TestType],
+      inc: Inclusion[ReportType, Outcome],
+      inc2: Inclusion[ReportType, DebugInfo],
+      display: TestType is Inspectable)
           : ResultType =
 
     runner.run(test).pipe: run =>
