@@ -50,7 +50,7 @@ trait Browser(name: Text):
   def stop(server: Server)(using Log[Text]): Unit
 
   def session[ResultType](port: Int = 4444)(block: (session: WebDriver#Session) ?=> ResultType)
-      (using WorkingDirectory, Log[Text], Monitor)
+     (using WorkingDirectory, Log[Text], Monitor)
           : ResultType =
 
     val server = launch(port)
