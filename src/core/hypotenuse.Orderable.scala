@@ -23,10 +23,10 @@ import scala.annotation.*
 object Orderable:
   given [ValueType: Ordering] => ValueType is Orderable:
     inline def compare
-        (inline left:    ValueType,
-         inline right:   ValueType,
-         inline strict:  Boolean,
-         inline greater: Boolean)
+       (inline left:    ValueType,
+        inline right:   ValueType,
+        inline strict:  Boolean,
+        inline greater: Boolean)
             : Boolean =
       val n = ValueType.compare(left, right)
       inline if greater

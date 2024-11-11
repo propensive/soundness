@@ -85,11 +85,11 @@ object Hypotenuse2:
       Expr(int.toByte)
 
   def commensurable
-      (expr: Expr[Boolean],
-       bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
-       strict: Expr[Boolean],
-       greaterThan: Expr[Boolean])
-      (using Quotes)
+     (expr: Expr[Boolean],
+      bound: Expr[Int | Double | Char | Byte | Short | Long | Float],
+      strict: Expr[Boolean],
+      greaterThan: Expr[Boolean])
+     (using Quotes)
           : Expr[Boolean] =
 
     val errorMessage = m"this cannot be written as a range expression"

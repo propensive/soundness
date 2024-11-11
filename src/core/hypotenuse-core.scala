@@ -376,28 +376,28 @@ inline def log1p(f64: into F64): F64 = F64(math.log1p(f64.double))
 extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline infix def < [RightType](inline right: RightType)
-      (using inline commensurable: LeftType is Commensurable by RightType)
+     (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [RightType](inline right: RightType)
-      (using inline commensurable: LeftType is Commensurable by RightType)
+     (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [RightType](inline right: RightType)
-      (using inline commensurable: LeftType is Commensurable by RightType)
+     (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, true, true)
 
   @targetName("gte")
   inline infix def >= [RightType](inline right: RightType)
-      (using inline commensurable: LeftType is Commensurable by RightType)
+    (using inline commensurable: LeftType is Commensurable by RightType)
           : Boolean =
 
     commensurable.compare(left, right, false, true)
