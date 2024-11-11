@@ -38,7 +38,7 @@ extension [RemoteType: Connectable](value: RemoteType)
 
 extension [PortType](port: PortType)
   def serve[ProtocolType: Protocolic over PortType]
-      (handler: ProtocolType.Request ?=> ProtocolType.Response)
+     (handler: ProtocolType.Request ?=> ProtocolType.Response)
           : ProtocolType.Server =
     ProtocolType.server(port)(handler)
 

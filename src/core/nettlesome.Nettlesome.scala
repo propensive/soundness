@@ -225,10 +225,8 @@ object Nettlesome:
       if middleLength < 2 then hex(groups)
       else t"${hex(groups.take(middleIndex))}::${hex(groups.drop(middleIndex + middleLength))}"
 
-    def apply
-        (group0: Int, group1: Int, group2: Int, group3: Int, group4: Int, group5: Int, group6: Int,
-            group7: Int): Ipv6 =
-      Ipv6(pack(List(group0, group1, group2, group3)), pack(List(group4, group5, group6, group7)))
+    def apply(g0: Int, g1: Int, g2: Int, g3: Int, g4: Int, g5: Int, g6: Int, g7: Int): Ipv6 =
+      Ipv6(pack(List(g0, g1, g2, g3)), pack(List(g4, g5, g6, g7)))
 
     def parseGroup(text: Text): Int raises IpAddressError =
       if text.length > 4 then raise(IpAddressError(Ipv6GroupWrongLength(text)))

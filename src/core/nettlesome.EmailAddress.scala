@@ -126,19 +126,19 @@ object EmailAddress:
     EmailAddress(Unset, localPart, domain)
 
 case class EmailAddress
-    (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6):
+   (displayName: Optional[Text], localPart: LocalPart, domain: Hostname | Ipv4 | Ipv6):
 
   def text: Text =
     val local = localPart match
       case LocalPart.Quoted(quoted)     => t"\"$quoted\""
       case LocalPart.Unquoted(unquoted) => unquoted
- 
+
     val remote = domain match
       case host: Hostname => host.show
       case ipv4: Ipv4     => ipv4.show
       case ipv6: Ipv6     => ipv6.show
 
     val address = t"$local@$remote"
-    
+
     displayName.lay(address): name =>
       t"$name <$address>"

@@ -33,11 +33,11 @@ import spectacular.*
 import nomenclature.*
 
 case class Url[+SchemeType <: Label]
-    (scheme:    Scheme[SchemeType],
-     authority: Optional[Authority],
-     pathText:  Text,
-     query:     Optional[Text]      = Unset,
-     fragment:  Optional[Text]      = Unset)
+   (scheme:    Scheme[SchemeType],
+    authority: Optional[Authority],
+    pathText:  Text,
+    query:     Optional[Text]      = Unset,
+    fragment:  Optional[Text]      = Unset)
 extends Root(t"${scheme.name}://${authority.lay(t"")(_.show)}$pathText", t"/", Case.Sensitive):
   type Platform = HttpUrl
 
