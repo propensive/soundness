@@ -71,11 +71,11 @@ object StartTag:
     t"${elem.label}$tail"
 
 case class StartTag[+NameType <: Label, ChildType <: Label]
-    (labelString: NameType,
-     unclosed:    Boolean,
-     block:       Boolean,
-     verbatim:    Boolean,
-     attributes:  Attributes)
+   (labelString: NameType,
+    unclosed:    Boolean,
+    block:       Boolean,
+    verbatim:    Boolean,
+    attributes:  Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.tt
@@ -87,13 +87,13 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-      (className:  Expr[String],
-       name:       Expr[NameType],
-       unclosed:   Expr[Boolean],
-       block:      Expr[Boolean],
-       verbatim:   Expr[Boolean],
-       attributes: Expr[Seq[(Label, Any)]])
-      (using Quotes)
+     (className:  Expr[String],
+      name:       Expr[NameType],
+      unclosed:   Expr[Boolean],
+      block:      Expr[Boolean],
+      verbatim:   Expr[Boolean],
+      attributes: Expr[Seq[(Label, Any)]])
+     (using Quotes)
           : Expr[StartTag[NameType, ReturnType]] =
 
     import quotes.reflect.*

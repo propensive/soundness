@@ -78,8 +78,8 @@ val Em = TagType["em", Phrasing, Global]("em", block = false)
 val Embed = TagType["embed", Nothing, Global | "src" | "type" | "width" | "height"]("embed",
     block = false)
 
-val Fieldset = TagType["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]
-    ("fieldset")
+val Fieldset =
+  TagType["fieldset", "legend" | Flow, Global | "disabled" | "form" | "name"]("fieldset")
 
 val Figcaption = TagType["figcaption", Flow, Global]("figcaption")
 
@@ -198,9 +198,13 @@ val Tbody = TagType["tbody", "tr" | ScriptSupporting, Global]("tbody")
 val Td = TagType["td", Flow, Global | "colspan" | "rowspan" | "headers"]("td")
 val Template = TagType["template", Nothing, Global]("template", unclosed = false, block = false)
 
-val Textarea = TagType["textarea", Nothing, Global | "autocomplete" | "cols" | "dirname" |
-    "disabled" | "form" | "maxlength" | "minlength" | "name" | "readonly" | "placeholder" |
-    "required" | "rows" | "wrap"]("textarea", block = false, verbatim = true)
+val Textarea =
+  TagType
+   ["textarea",
+    Nothing,
+    Global | "autocomplete" | "cols" | "dirname" | "disabled" | "form" | "maxlength" | "minlength" |
+        "name" | "readonly" | "placeholder" | "required" | "rows" | "wrap"]
+   ("textarea", block = false, verbatim = true)
 
 val Tfoot = TagType["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
 val Th = TagType["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th")
@@ -209,8 +213,8 @@ val Time = TagType["time", Phrasing, Global | "datetime"]("time", block = false)
 val Title = TagType["title", Nothing, Global]("title")
 val Tr = TagType["tr", "td" | "th" | ScriptSupporting, Global]("tr")
 
-val Track = TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]
-    ("track")
+val Track =
+  TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]("track")
 
 val U = TagType["u", Phrasing, Global]("u", block = false)
 val Ul = TagType["ul", "li" | ScriptSupporting, Global]("ul")

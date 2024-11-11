@@ -29,12 +29,12 @@ import language.dynamics
 object Element:
   @targetName("make")
   def apply[NodeType <: Label, ChildType <: Label]
-      (labelString: String,
-       unclosed:    Boolean,
-       block:       Boolean,
-       verbatim:    Boolean,
-       attributes:  Attributes,
-       children:    Seq[Html[ChildType] | Seq[Html[ChildType]]] = Nil)
+     (labelString: String,
+      unclosed:    Boolean,
+      block:       Boolean,
+      verbatim:    Boolean,
+      attributes:  Attributes,
+      children:    Seq[Html[ChildType] | Seq[Html[ChildType]]] = Nil)
           : Element[NodeType] =
 
     new Element(labelString, unclosed, block, verbatim, attributes, flatten(children))
@@ -61,7 +61,7 @@ object TagType:
   given TagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 open case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
-    (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
+   (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
 extends Node[NameType], Dynamic:
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
@@ -86,7 +86,7 @@ object ClearTagType:
   given ClearTagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 case class ClearTagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
-    (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
+   (labelString: NameType, unclosed: Boolean = false, block: Boolean = true, verbatim: Boolean = false)
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
@@ -104,12 +104,12 @@ extends Node[NameType], Dynamic:
     Element(labelString, unclosed, block, verbatim, Map(), children)
 
 case class Element[+NameType <: Label]
-    (labelString: String,
-     unclosed:    Boolean,
-     tagBlock:    Boolean,
-     verbatim:    Boolean,
-     attributes:  Map[String, Optional[Text]],
-     children:    Seq[Html[?]])
+   (labelString: String,
+    unclosed:    Boolean,
+    tagBlock:    Boolean,
+    verbatim:    Boolean,
+    attributes:  Map[String, Optional[Text]],
+    children:    Seq[Html[?]])
 extends Node[NameType]:
 
   def label: Text = labelString.show

@@ -34,7 +34,7 @@ object HtmlDoc:
     summon[HtmlSerializer[OutputType]].serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)(content: (Html[Flow] | Seq[Html[Flow]])*)
-      (using att: HtmlAttribute["href", Stylesheet, ?])
+     (using att: HtmlAttribute["href", Stylesheet, ?])
           : HtmlDoc =
 
     val link = (att.convert(stylesheet): @unchecked) match
