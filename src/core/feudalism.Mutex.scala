@@ -32,8 +32,8 @@ class Mutex[ValueType](initial: ValueType):
       notify()
 
   def use[ResultType, ImmutableType]
-      (using immutable: Immutable[ValueType, ImmutableType])
-      (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
+     (using immutable: Immutable[ValueType, ImmutableType])
+     (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
           : ResultType =
 
     synchronized:
