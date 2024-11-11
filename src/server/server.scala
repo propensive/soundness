@@ -71,13 +71,15 @@ object Servable:
     new Servable:
       type Self = ResponseType
 
-      def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+      def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
+              : Unit =
         responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
         headers.each(responder.addHeader)
         responder.sendBody(status, lambda(content))
 
   given Content is Servable as content:
-    def process(content: Content, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+    def process(content: Content, status: Int, headers: Map[Text, Text], responder: Responder)
+            : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, content.media.show)
       headers.each(responder.addHeader)
       responder.sendBody(200, content.stream)
@@ -87,19 +89,27 @@ object Servable:
       ResponseType.content(value)//.map(identity)
 
   given Redirect is Servable as redirect:
-    def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder): Unit =
+    def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder)
+            : Unit =
       responder.addHeader(ResponseHeader.Location.header, content.location)
       headers.each(responder.addHeader)
       responder.sendBody(301, LazyList())
 
   given [ResponseType] => NotFound[ResponseType] is Servable as notFound:
-    def process(notFound: NotFound[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+    def process
+        (notFound:  NotFound[ResponseType],
+         status:    Int,
+         headers:   Map[Text, Text],
+         responder: Responder)
             : Unit =
       notFound.serve(headers, responder)
 
   given [ResponseType: Retrievable] => ServeFailure[ResponseType] is Servable as retrievable:
     def process
-        (notFound: ServeFailure[ResponseType], status: Int, headers: Map[Text, Text], responder: Responder)
+        (notFound:  ServeFailure[ResponseType],
+         status:    Int,
+         headers:   Map[Text, Text],
+         responder: Responder)
             : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
       headers.each(responder.addHeader)
@@ -140,8 +150,9 @@ object Acceptable:
         abort(MultipartError(MultipartError.Reason.MediaType))
 
       if contentType.base == media"multipart/form-data" then
-        val boundary = contentType.at(t"boundary").or(abort(MultipartError(MultipartError.Reason.MediaType)))
-        println(t"boundary = '$boundary'")
+        val boundary = contentType.at(t"boundary").or:
+          abort(MultipartError(MultipartError.Reason.MediaType))
+
         Multipart.parse(request.body, boundary)
       else abort(MultipartError(MultipartError.Reason.MediaType))
 
@@ -199,9 +210,16 @@ case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
      httpOnly: Boolean):
 
   def apply(value: ValueType): Cookie.Value =
-    Cookie.Value(name, value.encode, domain.let(_.show), Unset, expiry.let(_.milliseconds/1000), secure, httpOnly)
+    Cookie.Value
+     (name,
+      value.encode,
+      domain.let(_.show),
+      Unset,
+      expiry.let(_.milliseconds/1000),
+      secure,
+      httpOnly)
 
-  def apply()(using request: HttpRequest): Optional[ValueType] = request.cookies.at(name).let(_.decode)
+  inline def apply(): Optional[ValueType] = request.cookies.at(name).let(_.decode)
 
 object HttpResponse:
   def apply[FormatType: Servable]
@@ -235,7 +253,8 @@ trait HttpResponse:
     headers.to(List) ++ cookies.map(ResponseHeader.SetCookie -> _.show)
 
   def respond(responder: Responder): Unit =
-    servable.process(content, status.code, allHeaders.map { case (k, v) => k.header -> v }.to(Map), responder)
+    servable.process
+     (content, status.code, allHeaders.map { case (k, v) => k.header -> v }.to(Map), responder)
 
   def serialize: Text = Text.construct:
     for (key, value) <- allHeaders do append(t"${key.header}: $value\r\n")
@@ -246,15 +265,19 @@ case class HttpConnection(secure: Boolean, port: Int, request: HttpRequest)
 extension (request: HttpRequest)
   def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)
 
-  def path(using connection: HttpConnection): HttpUrl raises PathError raises UrlError raises HostnameError =
+  def path(using connection: HttpConnection)
+          : HttpUrl raises PathError raises UrlError raises HostnameError =
     val scheme = if connection.secure then t"https" else t"http"
     Url.parse(t"$scheme://${request.host}${request.pathText}")
 
 trait RequestServable:
-  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil): HttpService logs HttpServerEvent
+  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil)
+          : HttpService logs HttpServerEvent
 
 extension (value: Http.type)
-  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
+  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)
+      (using RequestServable, Monitor, Codicil)
+          : HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
@@ -288,7 +311,9 @@ case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
     summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
 
   def unapply(req: HttpRequest): Option[ParamType] = opt(using req)
-  def apply()(using HttpRequest): ParamType raises MissingParamError = opt.getOrElse(abort(MissingParamError(key)))
+
+  def apply()(using HttpRequest): ParamType raises MissingParamError =
+    opt.getOrElse(abort(MissingParamError(key)))
 
 case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
 
@@ -377,7 +402,8 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
 
     val host = unsafely:
        Hostname.parse:
-         Optional(uri.getHost).or(exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn).tt
+         Optional(uri.getHost).let(_.tt).or:
+           exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
 
     val request =
       HttpRequest
