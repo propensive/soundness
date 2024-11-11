@@ -25,8 +25,14 @@ import rudiments.*
 import DagTile.*
 
 case class TextualDagStyle[LineType: Textual]
-    (space: Text, corner: Text, vertical: Text, firstMid: Text, horizontal: Text, midLast: Text,
-        cross: Text, overlap: Text)
+   (space:      Text,
+    corner:     Text,
+    vertical:   Text,
+    firstMid:   Text,
+    horizontal: Text,
+    midLast:    Text,
+    cross:      Text,
+    overlap:    Text)
 extends DagStyle[LineType]:
   def serialize(tiles: List[DagTile], node: LineType): LineType =
     LineType(tiles.map(text(_)).join)+node
@@ -43,4 +49,4 @@ extends DagStyle[LineType]:
 
   def followOnText(tile: DagTile): Text = tile match
     case Space | Horizontal | Corner | MidLast | Overlap => space
-    case _                                                  => vertical
+    case _                                               => vertical
