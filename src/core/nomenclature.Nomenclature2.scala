@@ -18,14 +18,14 @@ object Nomenclature2:
       case next :: todo => (next.asType: @unchecked) match
         case '[next] => (build(todo).asType: @unchecked) match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
-    
+
   def decompose(using Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
 
     repr.dealias.asMatchable match
       case AndType(left, right) => decompose(left) ++ decompose(right)
       case other                => Set(other)
-        
+
   def disintersection[IntersectionType: Type](using Quotes): Expr[Tuple] =
     import quotes.reflect.*
 
@@ -42,7 +42,7 @@ object Nomenclature2:
         throw Panic(m"StringContext did not contains Strings")
 
   def parse2[PlatformType: Type, NameType <: String: Type](scrutinee: Expr[Name[PlatformType]])
-      (using Quotes)
+     (using Quotes)
           : Expr[Boolean] =
     parse[PlatformType, NameType]
     '{${Expr(constant[NameType])}.tt == $scrutinee.text}
@@ -62,7 +62,7 @@ object Nomenclature2:
     import quotes.reflect.*
 
     val name: Text = constant[NameType].tt
-    
+
     Expr.summon[PlatformType is Nominative] match
       case Some('{type constraintType; type nominativeType <: Nominative { type Constraint = constraintType }; $value: nominativeType }) =>
         decompose(TypeRepr.of[constraintType]).to(List).each: repr =>
@@ -77,5 +77,5 @@ object Nomenclature2:
       case _ =>
         abandon(m"Could not access constraint")
 
-    
+
     '{${Expr(name)}.asInstanceOf[Name[PlatformType]]}
