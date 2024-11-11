@@ -34,14 +34,14 @@ object Control:
 
   object Conclude:
     def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
-        (using transmissible: Transmissible[MessageType])
+       (using transmissible: Transmissible[MessageType])
             : Conclude[StateType] =
 
       Conclude(transmissible.serialize(message), state)
 
   object Reply:
     def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
-        (using transmissible: Transmissible[MessageType])
+       (using transmissible: Transmissible[MessageType])
             : Reply[StateType] =
 
       Reply(transmissible.serialize(message), state)
