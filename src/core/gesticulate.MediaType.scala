@@ -28,10 +28,10 @@ import language.dynamics
 //import language.experimental.captureChecking
 
 case class MediaType
-    (group:      Media.Group,
-     subtype:    Media.Subtype,
-     suffixes:   List[Media.Suffix] = Nil,
-     parameters: List[(Text, Text)] = Nil)
+   (group:      Media.Group,
+    subtype:    Media.Subtype,
+    suffixes:   List[Media.Suffix] = Nil,
+    parameters: List[(Text, Text)] = Nil)
 extends Dynamic:
 
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
