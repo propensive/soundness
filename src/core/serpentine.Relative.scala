@@ -41,11 +41,11 @@ object Relative:
           if elements.isEmpty then recur(start2, ascent + 1, Nil)
           else recur(start2, ascent, elements.tail)
         else recur(start2, ascent, navigable.element(element) :: elements)
-    
+
     if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
   def apply[ElementType](using navigable: Navigable by ElementType)
-      (ascent0: Int, descent0: List[ElementType])
+     (ascent0: Int, descent0: List[ElementType])
           : Relative by ElementType =
     Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
 
@@ -64,7 +64,7 @@ object Relative:
         else Relative.from(ascent, right.textDescent ++ descent, left.separator)
 
       recur(left.ascent, left.textDescent, right.ascent)
-        
+
 abstract class Relative(val ascent: Int, val textDescent: List[Text], val separator: Text)
 extends Pathlike:
   type Operand
@@ -78,9 +78,9 @@ extends Pathlike:
   override def equals(that: Any): Boolean = that.asMatchable match
     case that: Relative => that.ascent == ascent && that.textDescent == textDescent
     case _              => false
-  
+
   override def hashCode: Int = ascent*31 + textDescent.hashCode
-  
+
   def on[PlatformType: Navigable]: Relative by PlatformType.Operand =
     Relative.parse(Relative.encoder.encode(this))
 

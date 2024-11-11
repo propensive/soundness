@@ -14,7 +14,7 @@ import scala.compiletime.*
 
 object Path:
   given Encoder[Path] as encoder = _.text
-  
+
   given [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] as decoder =
     Path.parse(_)
 
@@ -22,13 +22,13 @@ object Path:
   given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
   given [PlatformType] => (Path on PlatformType) is Nominable as nominable = path =>
     path.textDescent.prim.or(path.textRoot)
-  
+
   given [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath as specific =
     _.decode[Path on PlatformType]
-  
+
   given Path is Communicable as communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
-    
+
   given [PlatformType: Navigable](using Tactic[PathError])
       => (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
           (Path on PlatformType) as addable =
@@ -37,7 +37,7 @@ object Path:
         if ascent > 0 then
           if descent.isEmpty then
             abort(PathError(PathError.Reason.RootParent))
-            
+
             Path.from[PlatformType]
              (left.textRoot, Nil, left.separator, left.caseSensitivity)
           else recur(descent.tail, ascent - 1)
@@ -51,10 +51,10 @@ object Path:
       recur(left.textDescent, right.ascent)
 
   def apply
-      [RootType <: Root on PlatformType,
-       ElementType,
-       PlatformType: {Navigable by ElementType, Radical from RootType}]
-      (root0: RootType, elements: List[ElementType])
+     [RootType <: Root on PlatformType,
+      ElementType,
+      PlatformType: {Navigable by ElementType, Radical from RootType}]
+     (root0: RootType, elements: List[ElementType])
           : Path on PlatformType =
     if elements.isEmpty then root0 else
       Path.from[PlatformType]
@@ -62,13 +62,13 @@ object Path:
         elements.map(PlatformType.makeElement(_)),
         PlatformType.separator,
         PlatformType.caseSensitivity)
-  
+
   private def from[PlatformType]
-      (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
+     (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
           : Path on PlatformType =
     new Path(root0, elements, separator, caseSensitivity):
       type Platform = PlatformType
-  
+
   def parse[PlatformType: {Navigable, Radical}](path: Text): Path on PlatformType =
     val root = PlatformType.root(path)
 
@@ -96,20 +96,20 @@ object Path:
           PlatformType.caseSensitivity)
 
 open class Path
-    (val textRoot: Text,
-     val textDescent: List[Text],
-     val separator: Text,
-     val caseSensitivity: Case)
+   (val textRoot: Text,
+    val textDescent: List[Text],
+    val separator: Text,
+    val caseSensitivity: Case)
 extends Pathlike:
   type Platform
-  
+
   def depth: Int = textDescent.length
   def root(using radical: Platform is Radical): radical.Source = radical.root(textRoot)
   def text: Text = textDescent.reverse.join(textRoot, separator, t"")
-  
+
   def name(using navigable: Platform is Navigable): Optional[navigable.Operand] =
     textDescent.prim.let(navigable.element(_))
-  
+
   def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
           : Path on Platform raises PathError =
     parent.let(_ / name).or(abort(PathError(PathError.Reason.RootParent)))
@@ -121,11 +121,11 @@ extends Pathlike:
     Path.from(textRoot, filename :: textDescent, separator, caseSensitivity)
 
   override def toString(): String = text.s
-  
+
   override def equals(that: Any): Boolean = that.asMatchable match
     case that: Path =>
       (textRoot == that.textRoot) && caseSensitivity.equal(textDescent, that.textDescent)
-    
+
     case _ =>
       false
 
@@ -163,11 +163,11 @@ extends Pathlike:
       then Path.from(textRoot, left0.drop(size - count), separator, caseSensitivity)
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
       else recur(left.tail, right.tail, size + 1, 0)
-    
+
     recur(left0, right0, 0, 0)
 
   def precedes(path: Path on Platform): Boolean = textDescent == Nil || conjunction(path) == path
-  
+
   def retain(count: Int): Path on Platform =
     Path.from
      (textRoot, textDescent.drop(depth - count), separator, caseSensitivity)
@@ -177,9 +177,8 @@ extends Pathlike:
     if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
-  
+
   def resolve(text: Text)(using Platform is Navigable, Platform is Radical)
           : Path on Platform raises PathError =
     safely(Path.parse(text)).or(safely(this + Relative.parse(text))).or:
       abort(PathError(PathError.Reason.InvalidRoot))
-
