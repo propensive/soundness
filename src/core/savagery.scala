@@ -117,10 +117,10 @@ object PathOp:
       t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep == Sweep.Clockwise)} ${coords.encode}"
 
 case class Path
-    (ops:       List[PathOp]       = Nil,
-     style:     Optional[CssStyle] = Unset,
-     id:        Optional[SvgId]    = Unset,
-     transform: List[Transform]    = Nil)
+   (ops:       List[PathOp]       = Nil,
+    style:     Optional[CssStyle] = Unset,
+    id:        Optional[SvgId]    = Unset,
+    transform: List[Transform]    = Nil)
 extends Shape:
   import PathOp.*
 
@@ -175,12 +175,12 @@ case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) e
       else t"""<ellipse cx="${center.x.toDouble}" cy="${center.y.toDouble}" rx="${xRadius.toDouble}" ry="${yRadius.toDouble}"/>"""
 
 case class Svg
-    (width:      Quantity[Units[1, Length]],
-     height:     Quantity[Units[1, Length]],
-     viewWidth:  Float,
-     viewHeight: Float,
-     defs:       List[SvgDef],
-     shapes:     List[Shape])
+   (width:      Quantity[Units[1, Length]],
+    height:     Quantity[Units[1, Length]],
+    viewWidth:  Float,
+    viewHeight: Float,
+    defs:       List[SvgDef],
+    shapes:     List[Shape])
 
 sealed trait Shape:
   val transforms: List[Transform] = Nil
