@@ -35,7 +35,7 @@ object NumericRange:
   @targetName("Range")
   object `~`:
     given comparable[MinValueType <: Double & Singleton, MaxValueType <: Double & Singleton]
-        (using min: ValueOf[MinValueType], max: ValueOf[MaxValueType])
+       (using min: ValueOf[MinValueType], max: ValueOf[MaxValueType])
             : TypeTest[Double, MinValueType ~ MaxValueType] =
 
       value =>
