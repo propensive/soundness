@@ -32,9 +32,9 @@ import scala.compiletime.*
 import java.util as ju
 
 case class Dsv
-    (rows:    LazyList[Row],
-     format:  Optional[DsvFormat]    = Unset,
-     columns: Optional[IArray[Text]] = Unset):
+   (rows:    LazyList[Row],
+    format:  Optional[DsvFormat]    = Unset,
+    columns: Optional[IArray[Text]] = Unset):
 
   def as[ValueType: DsvDecodable]: LazyList[ValueType] tracks CellRef = rows.map(_.as[ValueType])
 
@@ -77,14 +77,14 @@ object Dsv:
   given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
-      (content:  LazyList[Text],
-       index:    Ordinal                  = Prim,
-       column:   Int                      = 0,
-       cells:    Array[Text]              = new Array[Text](0),
-       buffer:   TextBuffer               = TextBuffer(),
-       state:    State                    = State.Fresh,
-       headings: Optional[Map[Text, Int]] = Unset)
-      (using format: DsvFormat, tactic: Tactic[DsvError])
+     (content:  LazyList[Text],
+      index:    Ordinal                  = Prim,
+      column:   Int                      = 0,
+      cells:    Array[Text]              = new Array[Text](0),
+      buffer:   TextBuffer               = TextBuffer(),
+      state:    State                    = State.Fresh,
+      headings: Optional[Map[Text, Int]] = Unset)
+     (using format: DsvFormat, tactic: Tactic[DsvError])
           : LazyList[Row] =
 
     inline def putCell(): Array[Text] =
@@ -146,4 +146,3 @@ object Dsv:
           case char =>
             buffer.put(char)
             recur(content, index + 1, column, cells, buffer, state, headings)
-
