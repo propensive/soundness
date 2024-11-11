@@ -47,9 +47,9 @@ object Complex:
            Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary) })
 
   inline given [ComponentType]
-      (using multiplication: ComponentType is Multiplicable[ComponentType],
-             addition:       multiplication.Result is Addable[multiplication.Result],
-             subtraction:    multiplication.Result is Subtractable[multiplication.Result])
+     (using multiplication: ComponentType is Multiplicable[ComponentType],
+            addition:       multiplication.Result is Addable[multiplication.Result],
+            subtraction:    multiplication.Result is Subtractable[multiplication.Result])
         => Complex[ComponentType] is Multiplicable[Complex[ComponentType]]:
 
     type Result = Complex[addition.Result | subtraction.Result]
@@ -62,40 +62,40 @@ object Complex:
         left.real*right.imaginary + left.imaginary*right.real)
 
   def polar[ComponentType: Multiplicable[Double] as multiplication]
-      (modulus: ComponentType, argument: Double)
+     (modulus: ComponentType, argument: Double)
           : Complex[multiplication.Result] =
     Complex(modulus*math.cos(argument), modulus*math.sin(argument))
 
 case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType):
   @targetName("add")
   inline infix def + [ComponentType2](right: Complex[ComponentType2])
-      (using addition: ComponentType is Addable[ComponentType2])
+     (using addition: ComponentType is Addable[ComponentType2])
           : Complex[addition.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
   @targetName("sub")
   inline infix def - [ComponentType2](right: Complex[ComponentType2])
-      (using subtraction: ComponentType is Subtractable[ComponentType2])
+     (using subtraction: ComponentType is Subtractable[ComponentType2])
           : Complex[subtraction.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
 
   @targetName("mul")
   inline infix def * [ComponentType2](right: Complex[ComponentType2])
-      (using multiplication: ComponentType is Multiplicable[ComponentType2],
-             addition:       multiplication.Result is Addable[multiplication.Result],
-             subtraction:    multiplication.Result is Subtractable[multiplication.Result])
+     (using multiplication: ComponentType is Multiplicable[ComponentType2],
+            addition:       multiplication.Result is Addable[multiplication.Result],
+            subtraction:    multiplication.Result is Subtractable[multiplication.Result])
           : Complex[subtraction.Result | addition.Result] =
 
     Complex(real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
 
   @targetName("div")
   inline infix def / [ComponentType2](right: Complex[ComponentType2])
-      (using multiplication:  ComponentType is Multiplicable[ComponentType2],
-             multiplication2: ComponentType2 is Multiplicable[ComponentType2],
-             addition:        multiplication.Result is Addable[multiplication.Result],
-             addition2:       multiplication2.Result is Addable[multiplication2.Result],
-             subtraction:     multiplication.Result is Subtractable[multiplication.Result],
-             divisible:       subtraction.Result | addition.Result is Divisible[addition2.Result])
+     (using multiplication:  ComponentType is Multiplicable[ComponentType2],
+            multiplication2: ComponentType2 is Multiplicable[ComponentType2],
+            addition:        multiplication.Result is Addable[multiplication.Result],
+            addition2:       multiplication2.Result is Addable[multiplication2.Result],
+            subtraction:     multiplication.Result is Subtractable[multiplication.Result],
+            divisible:       subtraction.Result | addition.Result is Divisible[addition2.Result])
           : Complex[divisible.Result] =
 
     val divisor = right.real*right.real + right.imaginary*right.imaginary
@@ -105,30 +105,30 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
       (imaginary*right.real - real*right.imaginary)/divisor)
 
   inline def argument
-      (using multiplication: ComponentType is Multiplicable[ComponentType],
-             addition:       multiplication.Result is Addable[multiplication.Result],
-             sqrt:           Rootable[2, addition.Result],
-             division:       ComponentType is Divisible[sqrt.Result],
-             equality:       division.Result =:= Double)
+     (using multiplication: ComponentType is Multiplicable[ComponentType],
+            addition:       multiplication.Result is Addable[multiplication.Result],
+            sqrt:           Rootable[2, addition.Result],
+            division:       ComponentType is Divisible[sqrt.Result],
+            equality:       division.Result =:= Double)
           : Double =
 
     scala.math.atan2(imaginary/modulus, real/modulus)
 
   inline def modulus
-      (using multiplication: ComponentType is Multiplicable[ComponentType],
-             addition:       multiplication.Result is Addable[multiplication.Result],
-             squareRoot:     Rootable[2, addition.Result])
+     (using multiplication: ComponentType is Multiplicable[ComponentType],
+            addition:       multiplication.Result is Addable[multiplication.Result],
+            squareRoot:     Rootable[2, addition.Result])
           : squareRoot.Result =
     squareRoot.root(real*real + imaginary*imaginary)
 
   inline def sqrt
-      (using multiplication:  ComponentType is Multiplicable[ComponentType],
-             addition:        multiplication.Result is Addable[multiplication.Result],
-             sqrt:            Rootable[2, addition.Result],
-             division:        ComponentType is Divisible[sqrt.Result],
-             equality:        division.Result =:= Double,
-             sqrt2:           Rootable[2, sqrt.Result],
-             multiplication2: sqrt2.Result is Multiplicable[Double])
+     (using multiplication:  ComponentType is Multiplicable[ComponentType],
+            addition:        multiplication.Result is Addable[multiplication.Result],
+            sqrt:            Rootable[2, addition.Result],
+            division:        ComponentType is Divisible[sqrt.Result],
+            equality:        division.Result =:= Double,
+            sqrt2:           Rootable[2, sqrt.Result],
+            multiplication2: sqrt2.Result is Multiplicable[Double])
           : Complex[multiplication2.Result] =
     Complex.polar(modulus.sqrt, argument/2.0)
 
