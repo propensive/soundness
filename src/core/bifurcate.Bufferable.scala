@@ -41,7 +41,7 @@ object Bufferable extends ProductDerivable[Bufferable]:
   // given Long is Bufferable = Bufferable(8)(B64(_, _).i64.long)
 
   class Join[DerivationType <: Product: ProductReflection]
-      (val width: Int, buffer0: (Buffer, DerivationType) => Unit)
+     (val width: Int, buffer0: (Buffer, DerivationType) => Unit)
   extends Bufferable:
     type Self = DerivationType
     def buffer(buffer: Buffer, value: DerivationType): Unit = buffer0(buffer, value)

@@ -50,7 +50,7 @@ object Debufferable extends ProductDerivable[Debufferable]:
   given Long is Debufferable = Debufferable(8)(B64(_, _).s64.long)
 
   class Join[DerivationType <: Product: ProductReflection]
-      (val width: Int, debuffer0: Buffer => DerivationType)
+     (val width: Int, debuffer0: Buffer => DerivationType)
   extends Debufferable:
     type Self = DerivationType
     def debuffer(buffer: Buffer): DerivationType = debuffer0(buffer)
