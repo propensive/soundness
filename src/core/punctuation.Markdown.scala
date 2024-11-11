@@ -147,7 +147,7 @@ object Markdown:
 
   @tailrec
   private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
-      (xs: List[MdType], done: List[MdType] = Nil)
+     (xs: List[MdType], done: List[MdType] = Nil)
           : List[MdType] =
 
     xs match
