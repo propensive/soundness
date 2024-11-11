@@ -21,6 +21,6 @@ object CompileError:
     new CompileError(CompileErrorId.fromOrdinal(ordinal + 1), message, code, start, offset)
 
 case class CompileError
-    (id: CompileErrorId, message: String, code: String, start: Int, offset: Int):
+   (id: CompileErrorId, message: String, code: String, start: Int, offset: Int):
 
   def point: Int = start + offset
