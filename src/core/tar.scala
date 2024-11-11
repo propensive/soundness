@@ -30,17 +30,17 @@ import spectacular.*
 import prepositional.*
 
 case class UnixMode
-    (setUid:     Boolean = false,
-     setGid:     Boolean = false,
-     ownerRead:  Boolean = true,
-     ownerWrite: Boolean = true,
-     ownerExec:  Boolean = false,
-     groupRead:  Boolean = true,
-     groupWrite: Boolean = false,
-     groupExec:  Boolean = false,
-     otherRead:  Boolean = true,
-     otherWrite: Boolean = false,
-     otherExec:  Boolean = false):
+   (setUid:     Boolean = false,
+    setGid:     Boolean = false,
+    ownerRead:  Boolean = true,
+    ownerWrite: Boolean = true,
+    ownerExec:  Boolean = false,
+    groupRead:  Boolean = true,
+    groupWrite: Boolean = false,
+    groupExec:  Boolean = false,
+    otherRead:  Boolean = true,
+    otherWrite: Boolean = false,
+    otherExec:  Boolean = false):
 
   def int: Int =
     var sum: Int = 0
@@ -77,10 +77,10 @@ case class TarRef(descent: List[Name[InvalidTarNames]]):
 
 object TarRef:
   def apply(text: Text)
-      (using pathError:  Tactic[PathError],
-             navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
-             rootParser: RootParser[TarRef, Unset.type],
-             creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
+     (using pathError:  Tactic[PathError],
+            navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
+            rootParser: RootParser[TarRef, Unset.type],
+            creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
           : TarRef =
     Navigable.decode[TarRef](text)
 
@@ -126,12 +126,12 @@ enum TypeFlag:
 
 object TarEntry:
   def apply[DataType: Readable by Bytes, InstantType: GenericInstant]
-      (name:  TarRef,
-       data:  DataType,
-       mode:  UnixMode              = UnixMode(),
-       user:  UnixUser              = UnixUser(0),
-       group: UnixGroup             = UnixGroup(0),
-       mtime: Optional[InstantType] = Unset)
+     (name:  TarRef,
+      data:  DataType,
+      mode:  UnixMode              = UnixMode(),
+      user:  UnixUser              = UnixUser(0),
+      group: UnixGroup             = UnixGroup(0),
+      mtime: Optional[InstantType] = Unset)
           : TarEntry =
 
     val mtimeU32: U32 = (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
@@ -151,11 +151,11 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
   extends TarEntry(path, mode, user, group, mtime)
 
   case CharSpecial
-      (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case BlockSpecial
-      (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
