@@ -31,16 +31,16 @@ import hieroglyph.*, textMetrics.uniform
 import scala.collection.mutable as scm
 
 case class CliCompletion
-    (fullArguments:    List[Argument],
-     arguments:        List[Argument],
-     environment:      Environment,
-     workingDirectory: WorkingDirectory,
-     shell:            Shell,
-     currentArgument:  Int,
-     focusPosition:    Int,
-     stdio:            Stdio,
-     signals:          Spool[Signal])
-    (using interpreter: CliInterpreter)
+   (fullArguments:    List[Argument],
+    arguments:        List[Argument],
+    environment:      Environment,
+    workingDirectory: WorkingDirectory,
+    shell:            Shell,
+    currentArgument:  Int,
+    focusPosition:    Int,
+    stdio:            Stdio,
+    signals:          Spool[Signal])
+   (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
 
@@ -50,7 +50,7 @@ extends Cli:
   var cursorSuggestions: List[Suggestion] = Nil
 
   def readParameter[OperandType](flag: Flag)
-      (using FlagInterpreter[OperandType], Suggestions[OperandType])
+     (using FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType] =
 
     given Cli = this

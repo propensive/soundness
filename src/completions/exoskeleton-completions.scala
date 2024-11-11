@@ -38,12 +38,12 @@ package executives:
     type Return = Execution
 
     def invocation
-        (arguments:        Iterable[Text],
-         environment:      Environment,
-         workingDirectory: WorkingDirectory,
-         stdio:            Stdio,
-         signals:          Spool[Signal])
-        (using interpreter: CliInterpreter)
+       (arguments:        Iterable[Text],
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        signals:          Spool[Signal])
+       (using interpreter: CliInterpreter)
             : Cli =
       arguments match
         case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>

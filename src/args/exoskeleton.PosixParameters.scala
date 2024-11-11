@@ -23,14 +23,14 @@ import contingency.*
 import language.experimental.pureFunctions
 
 case class PosixParameters
-    (positional:     List[Argument]                = Nil,
-     parameters:     Map[Argument, List[Argument]] = Map(),
-     postpositional: List[Argument]                = Nil,
-     focusFlag:      Optional[Argument]            = Unset)
+   (positional:     List[Argument]                = Nil,
+    parameters:     Map[Argument, List[Argument]] = Map(),
+    postpositional: List[Argument]                = Nil,
+    focusFlag:      Optional[Argument]            = Unset)
 extends FlagParameters:
 
   def read[OperandType](flag: Flag)
-      (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
+     (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
           : Optional[OperandType] =
 
     cli.register(flag, suggestions)

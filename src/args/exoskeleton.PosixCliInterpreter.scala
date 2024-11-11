@@ -27,10 +27,10 @@ object PosixCliInterpreter extends CliInterpreter:
   type Parameters = PosixParameters
   def interpret(arguments: List[Argument]): PosixParameters =
     def recur
-        (todo:       List[Argument],
-         arguments:  List[Argument],
-         current:    Optional[Argument],
-         parameters: PosixParameters)
+       (todo:       List[Argument],
+        arguments:  List[Argument],
+        current:    Optional[Argument],
+        parameters: PosixParameters)
             : PosixParameters =
 
       def push(): PosixParameters = current match

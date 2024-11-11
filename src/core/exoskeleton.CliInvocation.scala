@@ -24,12 +24,12 @@ import anticipation.*
 import turbulence.*
 
 case class CliInvocation
-    (arguments:        List[Argument],
-     environment:      Environment,
-     workingDirectory: WorkingDirectory,
-     stdio:            Stdio,
-     signals:          Spool[Signal])
-    (using interpreter: CliInterpreter)
+   (arguments:        List[Argument],
+    environment:      Environment,
+    workingDirectory: WorkingDirectory,
+    stdio:            Stdio,
+    signals:          Spool[Signal])
+   (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 
   export stdio.{termcap, out, err, in}

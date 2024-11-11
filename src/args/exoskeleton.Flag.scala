@@ -36,11 +36,11 @@ object Flag:
     case name: Char => Message(t"-$name")
 
 case class Flag
-    (name: Text | Char,
-     repeatable: Boolean         = false,
-     aliases: List[Text | Char]  = Nil,
-     description: Optional[Text] = Unset,
-     secret: Boolean             = false):
+   (name: Text | Char,
+    repeatable: Boolean         = false,
+    aliases: List[Text | Char]  = Nil,
+    description: Optional[Text] = Unset,
+    secret: Boolean             = false):
 
   def suggest[OperandType: FlagInterpreter](suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
     cli.register(this, suggestions)
@@ -50,17 +50,17 @@ case class Flag
     flag == name || aliases.contains(flag)
 
   def apply[OperandType]()
-      (using cli:             Cli,
-             interpreter:     CliInterpreter,
-             flagInterpreter: FlagInterpreter[OperandType],
-             suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
+     (using cli:             Cli,
+            interpreter:     CliInterpreter,
+            flagInterpreter: FlagInterpreter[OperandType],
+            suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
           : Optional[OperandType] =
 
     cli.register(this, suggestions)
     cli.readParameter(this)
 
   def select[OperandType](options: Iterable[OperandType])
-      (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
+     (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
           : Optional[OperandType] =
 
     val mapping: Map[Text, OperandType] =

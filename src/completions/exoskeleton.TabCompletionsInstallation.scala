@@ -22,9 +22,9 @@ import fulminate.*
 enum TabCompletionsInstallation:
   case CommandNotOnPath(script: Text)
   case Shells
-      (zsh:  TabCompletionsInstallation.InstallResult,
-       bash: TabCompletionsInstallation.InstallResult,
-       fish: TabCompletionsInstallation.InstallResult)
+     (zsh:  TabCompletionsInstallation.InstallResult,
+      bash: TabCompletionsInstallation.InstallResult,
+      fish: TabCompletionsInstallation.InstallResult)
 
 object TabCompletionsInstallation:
   given TabCompletionsInstallation is Communicable =

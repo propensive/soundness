@@ -22,7 +22,7 @@ import language.experimental.captureChecking
 
 trait FlagParameters:
   def read[OperandType](flag: Flag)
-      (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
+     (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType]
 
   def focusFlag: Optional[Argument]

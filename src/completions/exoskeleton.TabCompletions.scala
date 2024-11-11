@@ -40,7 +40,7 @@ import pathNavigation.posix
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)
-      (using WorkingDirectory, Effectful, Diagnostics)
+     (using WorkingDirectory, Effectful, Diagnostics)
           : TabCompletionsInstallation raises InstallError logs CliEvent =
     tend:
       case PathError(_, _)    => InstallError(InstallError.Reason.Environment)
@@ -87,7 +87,7 @@ object TabCompletions:
         TabCompletionsInstallation.Shells(zsh, bash, fish)
 
   def install(shell: Shell, command: Text, scriptName: Name[Posix], dirs: List[Path on Posix])
-      (using Effectful, Diagnostics)
+     (using Effectful, Diagnostics)
           : TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 
     tend:

@@ -22,7 +22,7 @@ import language.experimental.captureChecking
 
 case class Arguments(sequence: Argument*) extends FlagParameters:
   def read[OperandType](flag: Flag)
-      (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
+     (using Cli, FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType] =
     Unset // FIXME
 

@@ -21,7 +21,7 @@ import rudiments.*
 import vacuous.*
 
 case class SuggestionsState
-    (suggestions: Map[Argument, () => List[Suggestion]],
-     explanation: Optional[Text],
-     known:       Set[Flag],
-     present:     Set[Flag])
+   (suggestions: Map[Argument, () => List[Suggestion]],
+    explanation: Optional[Text],
+    known:       Set[Flag],
+    present:     Set[Flag])

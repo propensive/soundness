@@ -27,7 +27,7 @@ import language.experimental.captureChecking
 
 object Cli:
   def arguments
-      (textArguments: Iterable[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset)
+     (textArguments: Iterable[Text], focus: Optional[Int] = Unset, position: Optional[Int] = Unset)
           : List[Argument] =
 
     textArguments.to(List).padTo(focus.or(0) + 1, t"").zipWithIndex.map: (text, index) =>
@@ -39,7 +39,7 @@ trait Cli extends ProcessContext:
   def workingDirectory: WorkingDirectory
 
   def readParameter[OperandType](flag: Flag)
-      (using FlagInterpreter[OperandType], Suggestions[OperandType])
+     (using FlagInterpreter[OperandType], Suggestions[OperandType])
           : Optional[OperandType]
 
   def register(flag: Flag, suggestions: Suggestions[?]): Unit = ()
