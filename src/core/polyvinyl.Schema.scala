@@ -29,7 +29,7 @@ trait Schema[DataType, RecordType <: Record in DataType]:
   def access(name: String, value: DataType): DataType
 
   def build(value: Expr[DataType])(using Quotes, Type[RecordType], Type[DataType])
-      (using thisType: Type[this.type])
+     (using thisType: Type[this.type])
           : Expr[RecordType] =
 
     import quotes.reflect.*
@@ -41,10 +41,10 @@ trait Schema[DataType, RecordType <: Record in DataType]:
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[DataType, RecordType]]
 
     def refine
-        (value:       Expr[DataType],
-         fields:      List[(String, RecordField)],
-         refinedType: TypeRepr,
-         caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
+       (value:       Expr[DataType],
+        fields:      List[(String, RecordField)],
+        refinedType: TypeRepr,
+        caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
             : (TypeRepr, List[CaseDef]) =
       fields match
         case Nil =>
