@@ -130,7 +130,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
   given Text is Contrastable = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
   def compareSeq[ValueType: Contrastable: Similarity]
-      (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
+     (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
           : Semblance =
     if left == right then Semblance.Identical(leftDebug) else
       val comparison = IArray.from:
