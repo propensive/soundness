@@ -99,34 +99,34 @@ case class Ttf(data: Bytes):
     .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
 
   case class HeadTable
-      (majorVersion:       U16,
-       minorVersion:       U16,
-       fontRevisionHigh:   U16,
-       fontRevisionLow:    U16,
-       checksumAdjustment: B32,
-       magicNumber:        B32,
-       flags:              B16,
-       unitsPerEm:         U16)
+     (majorVersion:       U16,
+      minorVersion:       U16,
+      fontRevisionHigh:   U16,
+      fontRevisionLow:    U16,
+      checksumAdjustment: B32,
+      magicNumber:        B32,
+      flags:              B16,
+      unitsPerEm:         U16)
 
   case class HheaTable
-      (majorVersion:        U16,
-       minorVersion:        U16,
-       ascender:            S16,
-       descender:           S16,
-       lineGap:             S16,
-       advanceWidthMax:     U16,
-       minLeftSideBearing:  S16,
-       minRightSideBearing: S16,
-       xMaxExtent:          S16,
-       caretSlopeRise:      S16,
-       caretSlopeRun:       S16,
-       caretOffset:         S16,
-       reserved0:           U16,
-       reserved1:           U16,
-       reserved2:           U16,
-       reserved4:           U16,
-       metricDataFormat:    S16,
-       numberOfHMetrics:    U16)
+     (majorVersion:        U16,
+      minorVersion:        U16,
+      ascender:            S16,
+      descender:           S16,
+      lineGap:             S16,
+      advanceWidthMax:     U16,
+      minLeftSideBearing:  S16,
+      minRightSideBearing: S16,
+      xMaxExtent:          S16,
+      caretSlopeRise:      S16,
+      caretSlopeRun:       S16,
+      caretOffset:         S16,
+      reserved0:           U16,
+      reserved1:           U16,
+      reserved2:           U16,
+      reserved4:           U16,
+      metricDataFormat:    S16,
+      numberOfHMetrics:    U16)
 
   case class HmtxTable(offset: Int, count: Int):
     lazy val metrics: IArray[HMetrics] =
@@ -199,13 +199,13 @@ case class Ttf(data: Bytes):
         def glyph(char: Char): Glyph[ttf.type] = ???
 
       case class Format4
-          (length:        Int,
-           language:      Int,
-           segCount:      Int,
-           searchRange:   Int,
-           entrySelector: Int,
-           rangeShift:    Int,
-           segments:      IArray[Segment])
+         (length:        Int,
+          language:      Int,
+          segCount:      Int,
+          searchRange:   Int,
+          entrySelector: Int,
+          rangeShift:    Int,
+          segments:      IArray[Segment])
       extends Format:
 
         def glyph(char: Char): Glyph[ttf.type] =
