@@ -27,7 +27,7 @@ import scala.collection.mutable as scm
 
 object BloomFilter:
   def apply[ElementType: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
-      [HashType <: HashScheme[?]: HashFunction]
+     [HashType <: HashScheme[?]: HashFunction]
           : BloomFilter[ElementType, HashType] =
 
     val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
@@ -35,18 +35,18 @@ object BloomFilter:
     new BloomFilter(bitSize, hashCount, sci.BitSet())
 
 case class BloomFilter[ElementType: Digestible, HashType <: HashScheme[?]: HashFunction]
-    (bitSize: Int, hashCount: Int, bits: sci.BitSet):
+   (bitSize: Int, hashCount: Int, bits: sci.BitSet):
 
   private val requiredEntropyBits = ln(bitSize ** hashCount).double.toInt + 1
-  
+
   private def hash(value: ElementType): BigInt =
     def recur(count: Int = 0, bytes: List[Array[Byte]] = Nil): BigInt =
       if bytes.map(_.length).sum*8 < requiredEntropyBits
       then recur(count + 1, (count, value).digest[HashType].bytes.mutable(using Unsafe) :: bytes)
       else BigInt(bytes.to(Array).flatten).abs
-    
+
     recur()
-  
+
   private def additions(value: ElementType, bitSet: scm.BitSet): Unit =
     @tailrec
     def recur(hash: BigInt, count: Int): Unit =
@@ -55,7 +55,7 @@ case class BloomFilter[ElementType: Digestible, HashType <: HashScheme[?]: HashF
         recur(hash/bitSize, count + 1)
 
     recur(hash(value), 0)
-  
+
   @targetName("add")
   infix def + (value: ElementType): BloomFilter[ElementType, HashType] =
     val bitSet = scm.BitSet()
@@ -72,4 +72,3 @@ case class BloomFilter[ElementType: Digestible, HashType <: HashScheme[?]: HashF
     val bitSet = scm.BitSet()
     additions(value, bitSet)
     bitSet.subsetOf(bits)
-
