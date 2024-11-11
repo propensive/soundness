@@ -21,6 +21,6 @@ import anticipation.*
 
 import language.dynamics
 
-case class HttpError(status: HttpStatus & FailureCase, headers: Map[ResponseHeader[?], List[Text]])
+case class HttpError(status: HttpStatus & FailureCase, headers: List[(Text, Text)])
     (using Diagnostics)
 extends Error(m"the HTTP request failed with status $status")

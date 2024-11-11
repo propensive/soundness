@@ -36,15 +36,19 @@ object HttpResponse:
 
 case class HttpResponse
     (status:  HttpStatus,
-     headers: Map[ResponseHeader[?], List[Text]],
+     headers: List[(Text, Text)],
      body:    LazyList[Bytes]):
 
+  lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
+    case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
+
+
   def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
-    case status: FailureCase => abort(HttpError(status, headers: Map[ResponseHeader[?], List[Text]]))
+    case status: FailureCase => abort(HttpError(status, headers: List[(Text, Text)]))
     case status              => readable.read(status, body)
 
   def apply[ValueType](header: ResponseHeader[ValueType])
       (using decoder: HttpHeaderDecoder[ValueType])
           : List[ValueType] =
 
-    headers.at(header).or(Nil).map(decoder.decode(_))
+    headersMap.at(header).or(Nil).map(decoder.decode(_))

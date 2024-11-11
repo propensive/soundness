@@ -25,7 +25,6 @@ import nettlesome.*
 
 import java.net.*
 import java.io.*
-import java.util as ju
 
 import language.dynamics
 
@@ -94,17 +93,18 @@ object Http:
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
-      case conn: HttpURLConnection =>
-        conn.setRequestMethod(method.toString.show.upper.s)
-        conn.setRequestProperty(RequestHeader.ContentType.header.s, PostType.contentType.show.s)
-        conn.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
+      case connection: HttpURLConnection =>
+        connection.setRequestMethod(method.toString.show.upper.s)
+        connection.setRequestProperty(RequestHeader.ContentType.header.s, PostType.contentType.show.s)
+        connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
         headers.each:
-          case RequestHeader.Value(key, value) => conn.setRequestProperty(key.header.s, value.s)
+          case RequestHeader.Value(key, value) =>
+            connection.setRequestProperty(key.header.s, value.s)
 
         if method == HttpMethod.Post || method == HttpMethod.Put then
-          conn.setDoOutput(true)
-          val out = conn.getOutputStream().nn
+          connection.setDoOutput(true)
+          val out = connection.getOutputStream().nn
           PostType.content(content).map(_.to(Array)).each(out.write(_))
           out.close()
 
@@ -117,19 +117,14 @@ object Http:
 
 
         def body: LazyList[Bytes] =
-          try read(conn.getInputStream.nn) catch case _: Exception =>
-            try read(conn.getErrorStream.nn) catch case _: Exception => LazyList()
+          try read(connection.getInputStream.nn) catch case _: Exception =>
+            try read(connection.getErrorStream.nn) catch case _: Exception => LazyList()
 
-        val HttpStatus(status) = conn.getResponseCode: @unchecked
+        val HttpStatus(status) = connection.getResponseCode: @unchecked
         Log.fine(HttpEvent.Response(status))
 
-        val responseHeaders: Map[ResponseHeader[?], List[Text]] =
-          val scalaMap: Map[String | Null, ju.List[String]] = conn.getHeaderFields.nn.asScala.toMap
-
-          scalaMap.flatMap: value =>
-            (value: @unchecked) match
-              case (null, v)              => Nil
-              case (ResponseHeader(k), v) => List((k, v.asScala.to(List).map(_.tt)))
-          .to(Map)
+        val responseHeaders: List[(Text, Text)] =
+          connection.getHeaderFields.nn.asScala.to(List).flatMap:
+            case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
 
         HttpResponse(status, responseHeaders, body)

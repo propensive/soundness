@@ -34,10 +34,15 @@ object ResponseHeader:
   def unapply(str: Text): Some[ResponseHeader[?]] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
 
+  case class Value(header: RequestHeader[?], value: Text)
+
 enum ResponseHeader[ValueType](val header: Text):
   case AcceptCharset extends ResponseHeader[Text](t"accept-charset")
   case AccessControlAllowOrigin extends ResponseHeader[Text](t"access-control-allow-origin")
-  case AccessControlAllowCredentials extends ResponseHeader[Text](t"access-control-allow-credentials")
+
+  case AccessControlAllowCredentials
+  extends ResponseHeader[Text](t"access-control-allow-credentials")
+
   case AccessControlExposeHeaders extends ResponseHeader[Text](t"access-control-expose-headers")
   case AccessControlMaxAge extends ResponseHeader[Text](t"access-control-max-age")
   case AccessControlAllowMethods extends ResponseHeader[Text](t"access-control-allow-methods")
