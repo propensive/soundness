@@ -53,14 +53,14 @@ package logFormats:
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
 def mute[FormatType](using erased DummyImplicit)[ResultType]
-    (lambda: (FormatType is Loggable) ?=> ResultType)
+   (lambda: (FormatType is Loggable) ?=> ResultType)
         : ResultType =
   lambda(using Log.silent[FormatType])
 
 extension (logObject: Log.type)
   def envelop[TagType, EventType: {Taggable by TagType, Loggable as loggable}](value: TagType)
-      [ResultType]
-      (lambda: (EventType is Loggable) ?=> ResultType)
+     [ResultType]
+     (lambda: (EventType is Loggable) ?=> ResultType)
           : ResultType =
     lambda(using loggable.contramap(_.tag(value)))
 
@@ -76,9 +76,9 @@ extension (logObject: Log.type)
     def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
   def route[FormatType](using DummyImplicit)
-      [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
-      (target: TargetType)
-      (using Monitor)
+     [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
+     (target: TargetType)
+     (using Monitor)
           : EntryType is Loggable =
 
     new:
@@ -97,12 +97,12 @@ extension (logObject: Log.type)
 
 package logging:
   given [FormatType] => FormatType is Loggable as silent = Log.silent[FormatType]
-  
+
   given [FormatType: Printable, EventType: Inscribable in FormatType](using Stdio)
       => EventType is Loggable as stdout =
     (level, realm, timestamp, event) =>
       Out.println(EventType.formatter(event, level, realm, timestamp))
-  
+
   given [EventType: Inscribable in FormatType, FormatType: Printable](using Stdio)
       => EventType is Loggable as stderr =
     (level, realm, timestamp, event) =>
