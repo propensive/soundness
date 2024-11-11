@@ -22,7 +22,8 @@ import gossamer.*
 import rudiments.*
 
 case class Alphabet[EncodingType <: Serialization]
-    (chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map()):
+   (chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map()):
+
   def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises SerializationError =
