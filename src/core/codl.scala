@@ -57,19 +57,19 @@ erased trait Codl
 
 object Codl:
   def read
-      [ValueType: CodlDecoder]
-      (source: Any)
-      (using readable:  source.type is Readable by Text)
-        : ValueType raises CodlError raises CodlReadError =
+     [ValueType: CodlDecoder]
+     (source: Any)
+     (using readable:  source.type is Readable by Text)
+          : ValueType raises CodlError raises CodlReadError =
 
     summon[CodlDecoder[ValueType]].schema.parse(readable.stream(source)).as[ValueType]
 
   def parse[SourceType]
-      (source:    SourceType,
-       schema:    CodlSchema = CodlSchema.Free,
-       subs:      List[Data] = Nil,
-       fromStart: Boolean    = false)
-      (using readable: SourceType is Readable by Text, aggregate: Tactic[CodlError])
+     (source:    SourceType,
+      schema:    CodlSchema = CodlSchema.Free,
+      subs:      List[Data] = Nil,
+      fromStart: Boolean    = false)
+     (using readable: SourceType is Readable by Text, aggregate: Tactic[CodlError])
           : CodlDoc =
 
     val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
@@ -108,29 +108,29 @@ object Codl:
 
     @tailrec
     def recur
-        (tokens:  LazyList[CodlToken],
-         focus:   Proto,
-         peers:   List[CodlNode],
-         peerIds: Map[Text, (Int, Int)],
-         stack:   List[(Proto, List[CodlNode])],
-         lines:   Int,
-         subs:    List[Data],
-         body:    LazyList[Char],
-         tabs:    List[Int])
+       (tokens:  LazyList[CodlToken],
+        focus:   Proto,
+        peers:   List[CodlNode],
+        peerIds: Map[Text, (Int, Int)],
+        stack:   List[(Proto, List[CodlNode])],
+        lines:   Int,
+        subs:    List[Data],
+        body:    LazyList[Char],
+        tabs:    List[Int])
             : CodlDoc =
 
       def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema.option.get)
 
       inline def go
-          (tokens:  LazyList[CodlToken]           = tokens.tail,
-           focus:   Proto                         = focus,
-           peers:   List[CodlNode]                = peers,
-           peerIds: Map[Text, (Int, Int)]         = peerIds,
-           stack:   List[(Proto, List[CodlNode])] = stack,
-           lines:   Int                           = lines,
-           subs:    List[Data]                    = subs,
-           body:    LazyList[Char]                = LazyList(),
-           tabs:    List[Int]                     = Nil)
+         (tokens:  LazyList[CodlToken]           = tokens.tail,
+          focus:   Proto                         = focus,
+          peers:   List[CodlNode]                = peers,
+          peerIds: Map[Text, (Int, Int)]         = peerIds,
+          stack:   List[(Proto, List[CodlNode])] = stack,
+          lines:   Int                           = lines,
+          subs:    List[Data]                    = subs,
+          body:    LazyList[Char]                = LazyList(),
+          tabs:    List[Int]                     = Nil)
               : CodlDoc =
         recur(tokens, focus, peers, peerIds, stack, lines, subs, body, tabs)
 
@@ -287,7 +287,7 @@ object Codl:
 
     @tailrec
     def stream
-        (char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
+       (char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
             : LazyList[CodlToken] =
 
       inline def next(): Character =

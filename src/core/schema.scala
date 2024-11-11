@@ -62,7 +62,7 @@ extends Dynamic:
   def entry(n: Int): Entry = subschemas(n)
 
   def parse[SourceType](source: SourceType)
-      (using aggregate: Tactic[CodlError], readable: SourceType is Readable by Text)
+     (using aggregate: Tactic[CodlError], readable: SourceType is Readable by Text)
           : CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
 
