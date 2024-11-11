@@ -38,13 +38,13 @@ object SystemProperty:
   given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] = SpecificPath(_)
 
   given javaLibraryPath[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
           : SystemProperty["java.library.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given javaClassPath[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
           : SystemProperty["java.class.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
@@ -53,7 +53,7 @@ object SystemProperty:
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
 
   given javaExtDirs[PathType: SpecificPath]
-      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
+     (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
           : SystemProperty["java.ext.dirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
