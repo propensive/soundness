@@ -268,13 +268,13 @@ inline def postcursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], in
 inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
 
 inline def cursorOffset[ElemType](offset: Int)
-    (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
         : Optional[ElemType] =
   cursor.of(seq, offset)
 
 extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def curse[ElemType2]
-      (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
+     (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
           : IndexedSeq[ElemType2] =
     Cursor.curse(seq)(block)
 
