@@ -68,7 +68,7 @@ package columnar:
             : IndexedSeq[TextType] =
 
       def format
-          (text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
+         (text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
               : List[TextType] =
 
         if position < text.length then

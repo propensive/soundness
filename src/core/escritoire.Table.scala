@@ -25,13 +25,13 @@ import scala.collection.immutable as sci
 object Table:
   @targetName("make")
   def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual]
-      (columns0: Column[RowType, TextType]*)
+     (columns0: Column[RowType, TextType]*)
           : Table[RowType, TextType] =
 
     new Table(columns0*)
 
 case class Table[RowType, TextType: {ClassTag, Textual as textual}]
-    (columns0: Column[RowType, TextType]*):
+   (columns0: Column[RowType, TextType]*):
   table =>
 
   val columns: IArray[Column[RowType, TextType]] = IArray.from(columns0)

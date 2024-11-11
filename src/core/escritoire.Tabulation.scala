@@ -29,7 +29,7 @@ import language.experimental.pureFunctions
 
 object Tabulation:
   given [TextType: {Textual as textual, Printable as printable}]
-      (using TextMetrics, TableStyle, Attenuation) => Tabulation[TextType] is Printable =
+     (using TextMetrics, TableStyle, Attenuation) => Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
 
@@ -42,7 +42,7 @@ abstract class Tabulation[TextType: ClassTag]():
   def dataLength: Int
 
   def grid(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: TextType is Textual)
-      (using attenuation: Attenuation)
+     (using attenuation: Attenuation)
           : Grid[TextType] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):

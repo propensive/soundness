@@ -17,5 +17,5 @@
 package escritoire
 
 case class TableCell[TextType]
-    (width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int, textAlign: TextAlignment):
+   (width: Int, span: Int, lines: IndexedSeq[TextType], minHeight: Int, textAlign: TextAlignment):
   def apply(line: Int): TextType = lines(line)
