@@ -38,8 +38,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
     case _                                 => false
 
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
-      (using variantIndex: Int & VariantIndex[VariantType],
-             reflection:   SumReflection[DerivationType])
+     (using variantIndex: Int & VariantIndex[VariantType],
+            reflection:   SumReflection[DerivationType])
           : Optional[VariantType] =
 
     type Labels = reflection.MirroredElemLabels
@@ -51,20 +51,20 @@ trait SumDerivationMethods[TypeclassType[_]]:
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
   protected inline def variantLabels[DerivationType]
-      (using reflection: SumReflection[DerivationType])
+     (using reflection: SumReflection[DerivationType])
           : List[Text] =
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
   protected transparent inline def delegate[DerivationType](label: Text)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          requirement.Optionality[TypeclassType[VariantType]] =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         requirement.Optionality[TypeclassType[VariantType]] =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -79,14 +79,14 @@ trait SumDerivationMethods[TypeclassType[_]]:
     .vouch(using Unsafe)
 
   protected transparent inline def variant[DerivationType](sum: DerivationType)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          VariantType =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         VariantType =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -99,16 +99,16 @@ trait SumDerivationMethods[TypeclassType[_]]:
     .vouch(using Unsafe)
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          requirement.Optionality[TypeclassType[VariantType]] =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         requirement.Optionality[TypeclassType[VariantType]] =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : Optional[ResultType] =
 
     inline erasedValue[VariantsType] match
@@ -138,16 +138,16 @@ trait SumDerivationMethods[TypeclassType[_]]:
         else throw Panic(m"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          VariantType =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label: Text,
-                               index: Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         VariantType =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label: Text,
+                              index: Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : Optional[ResultType] =
 
     inline erasedValue[VariantsType] match
