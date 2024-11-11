@@ -121,7 +121,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case failure       => abort(GitError(CannotSwitchBranch))
 
   def pull()(using GitCommand, Internet, WorkingDirectory)
-      (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+     (using gitError: Tactic[GitError], exec: Tactic[ExecError])
           : GitProcess[Unit] logs GitEvent =
 
     val process = sh"$git $repoOptions pull --progress".fork[Exit]()
@@ -132,8 +132,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
         case failure       => abort(GitError(PullFailed))
 
   def fetch(depth: Optional[Int] = Unset, repo: Text, refspec: Refspec)
-      (using GitCommand, Internet, WorkingDirectory)
-      (using gitError: Tactic[GitError], exec: Tactic[ExecError])
+     (using GitCommand, Internet, WorkingDirectory)
+     (using gitError: Tactic[GitError], exec: Tactic[ExecError])
           : GitProcess[Unit] logs GitEvent /*^{gitError, exec}*/ =
 
     val depthOption = depth.lay(sh"") { depth => sh"--depth=$depth" }
@@ -161,7 +161,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
 
   def makeBranch(branch: Branch)
-      (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+     (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
           : Unit logs GitEvent =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
@@ -169,7 +169,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case failure       => abort(GitError(BranchFailed))
 
   def add[PathType: GenericPath](path: PathType)
-      (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
+     (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
           : Unit logs GitEvent raises PathError raises NameError =
 
     val relativePath: Relative =
@@ -189,7 +189,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   object config:
     def get[ValueType: Decoder](variable: Text)
-        (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+       (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
             : ValueType logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
 
@@ -205,14 +205,14 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): LazyList[Commit] logs GitEvent =
     def recur
-        (stream:    LazyList[Text],
-         hash:      Optional[CommitHash] = Unset,
-         tree:      Optional[CommitHash] = Unset,
-         parents:   List[CommitHash]     = Nil,
-         author:    Optional[Text]       = Unset,
-         committer: Optional[Text]       = Unset,
-         signature: List[Text]           = Nil,
-         lines:     List[Text]           = Nil)
+       (stream:    LazyList[Text],
+        hash:      Optional[CommitHash] = Unset,
+        tree:      Optional[CommitHash] = Unset,
+        parents:   List[CommitHash]     = Nil,
+        author:    Optional[Text]       = Unset,
+        committer: Optional[Text]       = Unset,
+        signature: List[Text]           = Nil,
+        lines:     List[Text]           = Nil)
             : LazyList[Commit] =
 
       def commit(): LazyList[Commit] =
@@ -339,10 +339,10 @@ object Git:
     .or(LazyList()).deduplicate
 
   def init
-      [PathType: GenericPath]
-      (targetPath: PathType, bare: Boolean = false)
-      (using WorkingDirectory, Tactic[GitError], Decoder[Path on Posix], Tactic[ExecError])
-      (using command: GitCommand)
+     [PathType: GenericPath]
+     (targetPath: PathType, bare: Boolean = false)
+     (using WorkingDirectory, Tactic[GitError], Decoder[Path on Posix], Tactic[ExecError])
+     (using command: GitCommand)
           : GitRepo logs GitEvent raises NameError =
     try
       throwErrors[PathError | IoError]:
@@ -357,13 +357,13 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
   inline def cloneCommit[SourceType <: Matchable, PathType: GenericPath]
-      (source: SourceType, targetPath: PathType, commit: CommitHash)
-      (using Internet,
-             Decoder[Path on Posix],
-             GitCommand,
-             Tactic[GitError],
-             Tactic[ExecError],
-             WorkingDirectory)
+     (source: SourceType, targetPath: PathType, commit: CommitHash)
+     (using Internet,
+            Decoder[Path on Posix],
+            GitCommand,
+            Tactic[GitError],
+            Tactic[ExecError],
+            WorkingDirectory)
           : GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val sourceText = inline source match
@@ -375,13 +375,13 @@ object Git:
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone[SourceType <: Matchable, PathType: GenericPath]
-      (source:     SourceType,
-       targetPath: PathType,
-       bare:       Boolean          = false,
-       branch:     Optional[Branch] = Unset,
-       recursive:  Boolean          = false)
-      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
-      (using gitError: Tactic[GitError])
+     (source:     SourceType,
+      targetPath: PathType,
+      bare:       Boolean          = false,
+      branch:     Optional[Branch] = Unset,
+      recursive:  Boolean          = false)
+     (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
+     (using gitError: Tactic[GitError])
           : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val sourceText = inline source match
@@ -393,11 +393,11 @@ object Git:
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
   private def uncheckedCloneCommit[PathType: GenericPath]
-      (source: Text, targetPath: PathType, commit: CommitHash)
-      (using Internet, Decoder[Path on Posix], GitCommand)
-      (using gitError:         Tactic[GitError],
-             exec:             Tactic[ExecError],
-             workingDirectory: WorkingDirectory)
+     (source: Text, targetPath: PathType, commit: CommitHash)
+     (using Internet, Decoder[Path on Posix], GitCommand)
+     (using gitError:         Tactic[GitError],
+            exec:             Tactic[ExecError],
+            workingDirectory: WorkingDirectory)
           : GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val gitRepo = init(targetPath)
@@ -409,13 +409,13 @@ object Git:
       gitRepo
 
   private def uncheckedClone[PathType: GenericPath]
-      (source:     Text,
-       targetPath: PathType,
-       bare:       Boolean          = false,
-       branch:     Optional[Branch] = Unset,
-       recursive:  Boolean          = false)
-      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
-      (using gitError: Tactic[GitError])
+     (source:     Text,
+      targetPath: PathType,
+      bare:       Boolean          = false,
+      branch:     Optional[Branch] = Unset,
+      recursive:  Boolean          = false)
+     (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
+     (using gitError: Tactic[GitError])
           : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val target: Path on Posix =
@@ -496,17 +496,17 @@ object GitCommand:
 case class GitCommand(path: Path)
 
 case class Commit
-    (commit: CommitHash,
-     tree: CommitHash,
-     parent: List[CommitHash],
-     author: Text,
-     committer: Text,
-     signature: Optional[Pem],
-     message: List[Text])
+   (commit: CommitHash,
+    tree: CommitHash,
+    parent: List[CommitHash],
+    author: Text,
+    committer: Text,
+    signature: Optional[Pem],
+    message: List[Text])
 
 package gitCommands:
   given environmentDefault
-      (using WorkingDirectory, Tactic[NameError], Tactic[PathError], Tactic[IoError], Tactic[ExecError], GitEvent is Loggable)
+     (using WorkingDirectory, Tactic[NameError], Tactic[PathError], Tactic[IoError], Tactic[ExecError], GitEvent is Loggable)
           : GitCommand =
 
     val path: Path on Posix = sh"which git"()
