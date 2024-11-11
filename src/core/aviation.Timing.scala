@@ -49,7 +49,7 @@ object Timing:
 
     inline given Instant is Orderable as orderable:
       inline def compare
-          (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
+         (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
