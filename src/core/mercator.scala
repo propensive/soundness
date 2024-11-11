@@ -105,7 +105,7 @@ object Mercator:
         def point[ValueType](value: ValueType): FunctorType[ValueType] = ${pointExpr}.point(value)
 
         def map[ValueType, ValueType2](value: FunctorType[ValueType])
-            (lambda: ValueType => ValueType2)
+           (lambda: ValueType => ValueType2)
                 : FunctorType[ValueType2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
               .appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
@@ -132,14 +132,14 @@ object Mercator:
         def point[ValueType](value: ValueType): MonadType[ValueType] = ${functorExpr}.point(value)
 
         def map
-            [ValueType, ValueType2]
-            (value: MonadType[ValueType])(lambda: ValueType => ValueType2): MonadType[ValueType2] =
+           [ValueType, ValueType2]
+           (value: MonadType[ValueType])(lambda: ValueType => ValueType2): MonadType[ValueType2] =
           ${functorExpr}.map(value)(lambda)
 
         def flatMap
-            [ValueType, ValueType2]
-            (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
-            : MonadType[ValueType2] =
+           [ValueType, ValueType2]
+           (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
+                : MonadType[ValueType2] =
           ${'value.asTerm
               .select(flatMapMethods(0))
               .appliedToType(TypeRepr.of[ValueType2])
@@ -160,8 +160,8 @@ extension [ValueType, MonadType[_]](using monad: Monad[MonadType])(value: MonadT
     monad.flatMap(value)(lambda)
 
 extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemType]
-    (elems: CollectionType[MonadType[ElemType]])
-    (using monad: Monad[MonadType])
+   (elems: CollectionType[MonadType[ElemType]])
+   (using monad: Monad[MonadType])
 
   def sequence(using buildFrom: BuildFrom[List[ElemType], ElemType, CollectionType[ElemType]])
           : MonadType[CollectionType[ElemType]] =
@@ -176,8 +176,8 @@ extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemTyp
 extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType](elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
-      (using monad:     Monad[MonadType],
-             buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
+     (using monad:     Monad[MonadType],
+            buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
           : MonadType[CollectionType[ElemType2]] =
 
     def recur(todo: Iterable[ElemType], accumulator: MonadType[List[ElemType2]]): MonadType[List[ElemType2]] =
