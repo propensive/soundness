@@ -43,5 +43,5 @@ case class Par[+ElemType](left: Int, right: Int, value: Optional[ElemType] = Uns
 extends Edit[ElemType]
 
 case class Sub[+ElemType]
-    (left: Int, right: Int, leftValue: Optional[ElemType], rightValue: Optional[ElemType])
+   (left: Int, right: Int, leftValue: Optional[ElemType], rightValue: Optional[ElemType])
 extends Change[ElemType]

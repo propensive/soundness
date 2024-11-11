@@ -24,9 +24,9 @@ import fulminate.*
 import anticipation.*
 
 def diff[ElemType]
-    (left:    IndexedSeq[ElemType],
-     right:   IndexedSeq[ElemType],
-     compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
+   (left:    IndexedSeq[ElemType],
+    right:   IndexedSeq[ElemType],
+    compare: (ElemType, ElemType) -> Boolean = { (a: ElemType, b: ElemType) => a == b })
         : Diff[ElemType] =
 
   type Edits = List[Edit[ElemType]]
