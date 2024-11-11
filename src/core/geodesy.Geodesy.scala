@@ -23,12 +23,12 @@ object Geodesy:
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 
     private def encodeLatitude(latitude: Radians): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
-    
+
     private def encodeLongitude(longitude: Radians): Int =
       ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
 
     def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
-    
+
     @targetName("applyDegrees")
     def apply(latitude: Degrees, longitude: Degrees): Location =
       fromRadians(latitude.radians, longitude.radians)
@@ -53,7 +53,7 @@ object Geodesy:
 
   extension (degrees: Degrees)
     def radians: Radians = degrees*math.Pi/180
-    
+
     @targetName("degreesValue")
     def value: Double = degrees
 
@@ -66,27 +66,27 @@ object Geodesy:
 
       val bits = length*5
       val lat: Int = ((left >>> 32)&0xffffffffL).toInt
-      
+
       val long: Int =
         val long0 = left&0xffffffffL
         if long0 < 0 then (long0 + Int.MaxValue).toInt else (long0 - Int.MaxValue).toInt
-      
+
       def recur
-          (value:   Long,
-           latMin:  Long,
-           latMax:  Long,
-           longMin: Long,
-           longMax: Long,
-           count: Int)
+         (value:   Long,
+          latMin:  Long,
+          latMax:  Long,
+          longMin: Long,
+          longMax: Long,
+          count: Int)
               : Long =
-        
+
         if count >= bits then value else (count%2: @unchecked) match
           case 0 =>
             val midpoint = (longMin + longMax)/2
             if long < midpoint
             then recur(value << 1, latMin, latMax, longMin, midpoint, count + 1)
             else recur((value << 1) | 1L, latMin, latMax, midpoint, longMax, count + 1)
-          
+
           case 1 =>
             val midpoint = (latMin + latMax)/2
             if lat < midpoint
@@ -105,7 +105,7 @@ object Geodesy:
 
       val a = math.pow(math.sin(dLat/2), 2) +
           math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
-      
+
       2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
     def bearing[CompassType](right: Location)(using compass: Bearing[CompassType]): CompassType =
@@ -116,5 +116,5 @@ object Geodesy:
          (math.sin(dLng)*math.cos(right.latitude),
           math.cos(left.latitude)*math.sin(right.latitude) -
               math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
-      
+
       compass.from(result.rad)

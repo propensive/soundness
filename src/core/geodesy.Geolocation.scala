@@ -38,20 +38,20 @@ object Geolocation:
                 val (crs, params0) = parseParams(more) match
                   case (t"crs", crs) :: params => (crs, params)
                   case params                  => (Unset, params)
-                
+
                 val (uncertainty, params) = params0 match
                   case (t"u", u) :: params =>
                     val uncertainty = safely(u.decode[Double]).or:
                       raise(GeolocationError(BadUncertainty))
                       Unset
-                
+
                     (uncertainty, params)
 
                   case params =>
                     (Unset, params)
-                  
+
                 Geolocation(location, altitude, crs, uncertainty, params.to(Map))
-            
+
               case other =>
                 raise(GeolocationError(ExpectedSemicolon))
                 Geolocation(location, altitude)
@@ -59,7 +59,7 @@ object Geolocation:
           case other =>
             raise(GeolocationError(UnexpectedSuffix))
             Geolocation(location)
-          
+
         case other =>
           raise(GeolocationError(UnexpectedSuffix))
           Geolocation(location)
@@ -71,14 +71,14 @@ object Geolocation:
     case value =>
       raise(GeolocationError(BadScheme))
       Geolocation(Location(0.deg, 0.deg))
-            
+
   given Encoder[Geolocation] as encoder = geolocation =>
     import geolocation.{location, altitude, uncertainty}
     t"geo:$location${altitude.lay(t"") { a => t",$a" }}${uncertainty.lay(t"") { u => t";u=$u" }}"
 
 case class Geolocation
-    (location:    Location,
-     altitude:    Optional[Double] = Unset,
-     crs:         Optional[Text]   = Unset,
-     uncertainty: Optional[Double] = Unset,
-     parameters:  Map[Text, Text]  = Map())
+   (location:    Location,
+    altitude:    Optional[Double] = Unset,
+    crs:         Optional[Text]   = Unset,
+    uncertainty: Optional[Double] = Unset,
+    parameters:  Map[Text, Text]  = Map())
