@@ -166,7 +166,7 @@ object Json extends Json2, Dynamic:
     values => Json.ast(JsonAst(IArray.from(values.map(ElementType.encode(_).root))))
 
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
-      (using factory:    Factory[ElementType, CollectionType[ElementType]],
+     (using factory:    Factory[ElementType, CollectionType[ElementType]],
              jsonAccess: Tactic[JsonError],
              foci:       Foci[JsonPath])
       => (CollectionType[ElementType] is Decodable in Json) as array =

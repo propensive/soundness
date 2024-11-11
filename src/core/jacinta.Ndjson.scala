@@ -24,7 +24,7 @@ import turbulence.*
 
 object Ndjson:
   def parse[SourceType: Readable by Line](value: SourceType)
-      (using Text is Readable by Bytes): Ndjson raises JsonParseError =
+     (using Text is Readable by Bytes): Ndjson raises JsonParseError =
 
     Ndjson(value.stream[Line].map { line => Json.parse(line.content) })
 
