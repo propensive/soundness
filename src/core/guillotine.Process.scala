@@ -32,7 +32,7 @@ import vacuous.*
 
 object Process:
   given [ChunkType, CommandType <: Label, ResultType]
-      (using ji.OutputStream is Writable by ChunkType)
+     (using ji.OutputStream is Writable by ChunkType)
       => Process[CommandType, ResultType] is Writable by ChunkType as writable =
 
     (process, stream) => process.stdin(stream)
@@ -53,7 +53,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
     Readable.inputStream.stream(process.getErrorStream.nn)
 
   def stdin[ChunkType](stream: LazyList[ChunkType])
-      (using writable: ji.OutputStream is Writable by ChunkType)
+     (using writable: ji.OutputStream is Writable by ChunkType)
           : Unit =
 
     writable.write(process.getOutputStream.nn, stream)
