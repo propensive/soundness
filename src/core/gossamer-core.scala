@@ -38,12 +38,12 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
-    (using TextType.Show[ValueType])
+   (using TextType.Show[ValueType])
         : Unit =
   buffer.append(TextType.show(value))
 
 def appendln[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
-    (using TextType.Show[ValueType])
+   (using TextType.Show[ValueType])
         : Unit =
   buffer.append(TextType.show(value))
   buffer.append(TextType("\n".tt))
@@ -85,7 +85,7 @@ extension (bytes: Bytes)
 
 extension [TextType](text: TextType)
   def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
-      (using cuttable: TextType is Cuttable by DelimiterType)
+     (using cuttable: TextType is Cuttable by DelimiterType)
           : List[TextType] =
 
     cuttable.cut(text, delimiter, limit)
