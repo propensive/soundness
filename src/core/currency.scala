@@ -37,7 +37,7 @@ open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
   def zero: Money[this.type] = apply(0.00)
 
 case class Price[CurrencyType <: Currency & Singleton: ValueOf]
-    (principal: Money[CurrencyType], tax: Money[CurrencyType]):
+   (principal: Money[CurrencyType], tax: Money[CurrencyType]):
 
   def effectiveTaxRate: Double = tax/principal
 
