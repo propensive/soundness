@@ -52,8 +52,8 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   catch case e: RangeError => this
 
   def ask(using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
-      [ResultType]
-      (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
+     [ResultType]
+     (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
           : ResultType raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>

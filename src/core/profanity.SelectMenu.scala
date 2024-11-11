@@ -36,10 +36,10 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
   catch case e: RangeError => this
 
   def ask
-      (using interactivity: Interactivity[TerminalEvent],
-             interaction: Interaction[ItemType, SelectMenu[ItemType]])
-      [ResultType]
-      (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
+     (using interactivity: Interactivity[TerminalEvent],
+            interaction: Interaction[ItemType, SelectMenu[ItemType]])
+     [ResultType]
+     (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
           : ResultType raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>

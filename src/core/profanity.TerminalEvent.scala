@@ -66,14 +66,16 @@ object Keypress:
       Down.type
 
 enum Keypress extends TerminalEvent:
-  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up, Down
+  case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
+      Down
   case CharKey(char: Char)
   case FunctionKey(number: Int)
   case EscapeSeq(id: Char, content: Char*)
   case Shift(keypress: Keypress.EditKey | FunctionKey)
   case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
-  case Ctrl
-      (keypress: Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' |
-                   'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' |
-                   'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@')
+
+  case Ctrl(keypress: Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' |
+           'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' |
+           'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@')
+
   case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)
