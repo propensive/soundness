@@ -60,7 +60,7 @@ object Installer:
     case PathNotWritable
 
   def candidateTargets()(using service: DaemonService[?], diagnostics: Diagnostics)
-      (using Environment, HomeDirectory, SystemProperties)
+     (using Environment, HomeDirectory, SystemProperties)
           : List[Path on Linux] logs DaemonLogEvent raises InstallError =
     tend:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
@@ -85,8 +85,8 @@ object Installer:
           case index => index
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
-      (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
-      (using Effectful, Diagnostics)
+     (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
+     (using Effectful, Diagnostics)
         : Result logs DaemonLogEvent raises InstallError =
     import workingDirectories.default
     import systemProperties.virtualMachine

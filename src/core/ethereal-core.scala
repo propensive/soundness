@@ -66,11 +66,11 @@ package daemonConfig:
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
 def cli[BusType <: Matchable](using executive: Executive)
-    (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
-    (using interpreter:   CliInterpreter,
-           stderrSupport: StderrSupport = daemonConfig.supportStderr,
-           model:         ThreadModel,
-           handler:       UnhandledErrorHandler)
+   (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
+   (using interpreter:   CliInterpreter,
+          stderrSupport: StderrSupport = daemonConfig.supportStderr,
+          model:         ThreadModel,
+          handler:       UnhandledErrorHandler)
       : Unit =
 
   given Realm: Realm = realm"ethereal"
@@ -106,7 +106,7 @@ def cli[BusType <: Matchable](using executive: Executive)
             val buildId = safely(buildIdPath.read[Text].trim).or(t"0")
             val prefix = (Classpath / n"ethereal" / n"prefix").read[Text]
             path.open(prefix.sub(t"%%BUILD_ID%%", buildId).writeTo(_))
-            
+
             jarFile.open: jarFile =>
               Eof(path).open(jarFile.stream[Bytes].writeTo(_))
 
@@ -142,7 +142,7 @@ def cli[BusType <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
   def makeClient(socket: jn.Socket)
-      (using Monitor, Stdio, Codicil)
+     (using Monitor, Stdio, Codicil)
         : Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:

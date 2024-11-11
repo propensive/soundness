@@ -26,13 +26,13 @@ import exoskeleton.*
 import language.experimental.pureFunctions
 
 case class DaemonService[BusType <: Matchable]
-    (pid:        Pid,
-     shutdown:   () => Unit,
-     cliInput:   CliInput,
-     script:     Path on Linux,
-     deliver:    BusType => Unit,
-     bus:        LazyList[BusType],
-     scriptName: Text)
+   (pid:        Pid,
+    shutdown:   () => Unit,
+    cliInput:   CliInput,
+    script:     Path on Linux,
+    deliver:    BusType => Unit,
+    bus:        LazyList[BusType],
+    scriptName: Text)
 extends ShellContext:
 
   def broadcast(message: BusType): Unit = deliver(message)

@@ -24,12 +24,12 @@ import language.experimental.pureFunctions
 
 enum DaemonEvent:
   case Init
-      (pid:         Pid,
-       work:        Text,
-       script:      Text,
-       cliInput:    CliInput,
-       arguments:   List[Text],
-       environment: List[Text])
+     (pid:         Pid,
+      work:        Text,
+      script:      Text,
+      cliInput:    CliInput,
+      arguments:   List[Text],
+      environment: List[Text])
 
   case Trap(pid: Pid, signal: Signal)
   case Exit(pid: Pid)
