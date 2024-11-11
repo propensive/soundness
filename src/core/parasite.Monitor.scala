@@ -122,7 +122,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
     async(lambda(await()))
 
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
-      (using Monitor, Codicil)
+     (using Monitor, Codicil)
           : Task[ResultType2] raises ConcurrencyError =
 
     async(lambda(await()).await())

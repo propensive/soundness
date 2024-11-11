@@ -26,8 +26,8 @@ import vacuous.*
 
 object Task:
   def apply[ResultType]
-      (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
-      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
+     (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
+     (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
           : Task[ResultType] =
     inline def evaluate0: Subordinate => ResultType = evaluate
     inline def name0: Optional[Text] = name

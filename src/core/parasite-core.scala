@@ -61,13 +61,12 @@ def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)(usi
   Task(evaluate(using _), daemon = false, name = Unset)
 
 def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=> ResultType)
-    (using Monitor, Codicil)
+   (using Monitor, Codicil)
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = name)
 
-def intercept(lambda: (chain: Chain) ?=> PartialFunction[Throwable, Transgression])
-    (using Monitor)
+def intercept(lambda: (chain: Chain) ?=> PartialFunction[Throwable, Transgression])(using Monitor)
         : Unit =
 
   monitor.interceptor { chain => lambda(using chain) }
@@ -97,12 +96,12 @@ extension [ResultType](stream: LazyList[ResultType])
     if async(stream.isEmpty).await() then LazyList() else stream.head #:: stream.tail.concurrent
 
 def supervise[ResultType](block: Monitor ?=> ResultType)
-    (using model: ThreadModel, codepoint: Codepoint)
+   (using model: ThreadModel, codepoint: Codepoint)
         : ResultType raises ConcurrencyError =
   block(using model.supervisor())
 
 def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> ValueType)
-    (using Tenacity, Monitor)
+   (using Tenacity, Monitor)
         : ValueType raises RetryError =
 
   @tailrec
