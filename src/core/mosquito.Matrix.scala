@@ -28,7 +28,7 @@ import vacuous.*
 import scala.compiletime.*, ops.int.*
 
 class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
-    (val rows: Int, val columns: Int, val elements: IArray[ElementType]):
+   (val rows: Int, val columns: Int, val elements: IArray[ElementType]):
 
   def apply(row: Int, column: Int): ElementType = elements(columns*row + column)
 
@@ -42,8 +42,8 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
 
   @targetName("scalarMul")
   def * [RightType](right: RightType)
-      (using multiplication: ElementType is Multiplicable by RightType)
-      (using ClassTag[multiplication.Result])
+     (using multiplication: ElementType is Multiplicable by RightType)
+     (using ClassTag[multiplication.Result])
           : Matrix[multiplication.Result, RowsType, ColumnsType] =
 
     val elements2 = IArray.create[multiplication.Result](elements.length): array =>
@@ -54,7 +54,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
 
   @targetName("scalarDiv")
   def / [RightType](right: RightType)(using div: ElementType is Divisible by RightType)
-      (using ClassTag[div.Result])
+     (using ClassTag[div.Result])
           : Matrix[div.Result, RowsType, ColumnsType] =
 
     val elements2 = IArray.create[div.Result](elements.length): array =>
@@ -65,13 +65,13 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
 
   @targetName("mul")
   def * [RightType, RightColumnsType <: Int: ValueOf]
-      (right: Matrix[RightType, ColumnsType, RightColumnsType])
-      (using multiplication: ElementType is Multiplicable by RightType,
-             addition:       multiplication.Result is Addable by multiplication.Result,
-             equality:       addition.Result =:= multiplication.Result,
-             rowValue:       ValueOf[RowsType],
-             columnValue:    ValueOf[ColumnsType],
-             classTag:       ClassTag[multiplication.Result])
+     (right: Matrix[RightType, ColumnsType, RightColumnsType])
+     (using multiplication: ElementType is Multiplicable by RightType,
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            equality:       addition.Result =:= multiplication.Result,
+            rowValue:       ValueOf[RowsType],
+            columnValue:    ValueOf[ColumnsType],
+            classTag:       ClassTag[multiplication.Result])
           : Matrix[multiplication.Result, RowsType, RightColumnsType] =
 
     val columns2 = valueOf[RightColumnsType]
@@ -103,17 +103,18 @@ object Matrix:
     .join(t"\n")
 
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf]
-      (using erased DummyImplicit)
-      [ElementType]
-      (rows: Tuple)
-      (using Tuple.Union[Tuple.Fold[
-               rows.type,
-               EmptyTuple,
-               [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]
-             ] & Tuple] <:< ElementType,
-             Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
-             Rows =:= Tuple.Size[rows.type],
-             ClassTag[ElementType])
+     (using erased DummyImplicit)
+     [ElementType]
+     (rows: Tuple)
+     (using Tuple.Union
+             [Tuple.Fold
+               [rows.type,
+                EmptyTuple,
+                [left, right] =>>
+                  Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< ElementType,
+            Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
+            Rows =:= Tuple.Size[rows.type],
+            ClassTag[ElementType])
       : Any =
 
     val rowCount: Int = valueOf[Rows]

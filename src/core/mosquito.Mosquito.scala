@@ -55,9 +55,9 @@ object Mosquito:
 
   extension [LeftType](left: Euclidean[LeftType, 3])
     def cross[RightType](right: Euclidean[RightType, 3])
-        (using multiplication: LeftType is Multiplicable by RightType,
-               addition:       multiplication.Result is Addable by multiplication.Result,
-               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+       (using multiplication: LeftType is Multiplicable by RightType,
+              addition:       multiplication.Result is Addable by multiplication.Result,
+              subtraction:    multiplication.Result is Subtractable by multiplication.Result)
             : Euclidean[addition.Result, 3] =
 
       (left(1)*right(2) - left(2)*right(1)) *:
@@ -80,7 +80,7 @@ object Mosquito:
 
     @targetName("add")
     def + [RightType](right: Euclidean[RightType, SizeType])
-        (using addition: LeftType is Addable by RightType)
+       (using addition: LeftType is Addable by RightType)
             : Euclidean[addition.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
@@ -124,10 +124,10 @@ object Mosquito:
       map(_/right)
 
     def dot[RightType](right: Euclidean[RightType, SizeType])
-        (using multiply: LeftType is Multiplicable by RightType,
-               size:     ValueOf[SizeType],
-               addition:      multiply.Result is Addable by multiply.Result,
-               equality: addition.Result =:= multiply.Result)
+       (using multiply: LeftType is Multiplicable by RightType,
+              size:     ValueOf[SizeType],
+              addition:      multiply.Result is Addable by multiply.Result,
+              equality: addition.Result =:= multiply.Result)
             : multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =
