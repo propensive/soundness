@@ -34,27 +34,27 @@ object reflection:
     import quotes.reflect.*
 
     def init = expr.asTerm.pos.startColumn
-    
+
     def source(tree: Tree): Display = tree.pos match
       case pos: dtdu.SourcePosition =>
         ((t" "*(pos.startColumn - init))+pos.lineContent.show.slice(pos.startColumn, pos.endColumn)).display
-      
+
       case _ =>
         e""
 
     case class TastyTree
-        (name: Text, expr: Text, source: Text, children: List[TastyTree], param: Optional[Text]):
+       (name: Text, expr: Text, source: Text, children: List[TastyTree], param: Optional[Text]):
 
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
         if c.length != expr.length then t"$c..." else expr
-   
+
     object TastyTree:
       def apply(name: Text, tree: Tree, children: List[TastyTree], parameter: Optional[Text] = Unset)
               : TastyTree =
 
         TastyTree(name, tree.show.show, source(tree).plain, children, parameter)
-    
+
       def expand(tree: Tree): TastyTree = tree match
         case PackageClause(ref, chs)    => TastyTree(t"PackageClause", tree, expand(ref) :: chs.map(expand))
         case Bind(name, term)           => TastyTree(t"Bind", tree, List(expand(term)), name.show)
@@ -76,15 +76,15 @@ object reflection:
         case Unapply(fn, _, tts)        => TastyTree(t"UnApply", tree, expand(fn) :: tts.map(expand))
         case tree: TypeTree             => TastyTree(t"TypeTree", tree, Nil)
         case DefDef(name, ps, typs, ch) => TastyTree(t"DefDef", tree, ch.to(List).map(expand))
-        
+
         case CaseDef(focus, t1, t2) =>
           TastyTree(t"CaseDef", tree, expand(focus) +: t1.to(List).map(expand) :+ expand(t2))
-        
+
         case _ =>
           TastyTree(t"?${tree.toString}: ${tree.getClass.toString}", tree, Nil)
 
     val tree: TastyTree = TastyTree.expand(expr.asTerm)
-    
+
     val seq: Seq[Expansion] = TreeDiagram.by[TastyTree](_.children)(tree).map: node =>
       Expansion(tiles.drop(1).map(treeStyles.default.text(_)).join+t"▪ "+node.name, node.param, node.shortCode, node.source)
 
