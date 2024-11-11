@@ -80,14 +80,14 @@ object JsonAst:
       Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null | Unset.type
 
   def apply
-      (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean |
-                  Null | Unset.type)
+     (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] |
+              Boolean | Null | Unset.type)
           : JsonAst =
 
     value
 
   def parse[SourceType: Readable by Bytes](source: SourceType)
-      (using jsonParse: Tactic[JsonParseError])
+     (using jsonParse: Tactic[JsonParseError])
           : JsonAst/*^{readable, jsonParse}*/ =
 
     // FIXME: This is a horrible hack to avoid the problems with streaming
