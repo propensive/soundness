@@ -156,8 +156,8 @@ case class NotFound[ContentType: Servable](content: ContentType):
 case class ServeFailure[ContentType: Servable](content: ContentType)
 
 object Cookie:
-  given ("set-cookie" is GenericHttpRequestParam[CookieValue]) as setCookie = _.serialize
-  given ("cookie" is GenericHttpRequestParam[CookieValue]) as cookie = _.serialize
+  given ("set-cookie" is GenericHttpRequestParam[Cookie.Value]) as setCookie = _.show
+  given ("cookie" is GenericHttpRequestParam[Cookie.Value]) as cookie = _.show
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   def apply[ValueType: {Encoder, Decoder}](using DummyImplicit)[DurationType: GenericDuration]
@@ -168,6 +168,29 @@ object Cookie:
      httpOnly: Boolean                = false) =
   new Cookie[ValueType, DurationType](name, domain, expiry, secure, httpOnly)
 
+  object Value:
+    given Value is Showable = cookie =>
+      List
+       (cookie.name -> Some(cookie.value),
+        t"MaxAge"   -> cookie.expiry.option.map(_.show),
+        t"Domain"   -> cookie.domain.option,
+        t"Path"     -> cookie.path.option,
+        t"Secure"   -> cookie.secure,
+        t"HttpOnly" -> cookie.httpOnly)
+       .collect:
+        case (k, true)    => k
+        case (k, Some(v)) => t"$k=$v"
+      .join(t"; ")
+
+  case class Value
+      (name:     Text,
+       value:    Text,
+       domain:   Optional[Text] = Unset,
+       path:     Optional[Text] = Unset,
+       expiry:   Optional[Long] = Unset,
+       secure:   Boolean        = false,
+       httpOnly: Boolean        = false)
+
 case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
     (name:     Text,
      domain:   Optional[Hostname],
@@ -175,43 +198,22 @@ case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
      secure:   Boolean,
      httpOnly: Boolean):
 
-  def apply(value: ValueType): CookieValue =
-    CookieValue(name, value.encode, domain.let(_.show), Unset, expiry.let(_.milliseconds/1000), secure, httpOnly)
+  def apply(value: ValueType): Cookie.Value =
+    Cookie.Value(name, value.encode, domain.let(_.show), Unset, expiry.let(_.milliseconds/1000), secure, httpOnly)
 
   def apply()(using request: HttpRequest): Optional[ValueType] = request.cookies.at(name).let(_.decode)
-
-case class CookieValue
-    (name:     Text,
-     value:    Text,
-     domain:   Optional[Text] = Unset,
-     path:     Optional[Text] = Unset,
-     expiry:   Optional[Long] = Unset,
-     secure:   Boolean        = false,
-     httpOnly: Boolean        = false):
-
-  def serialize: Text =
-    List(
-      name        -> Some(value),
-      t"MaxAge"   -> expiry.option.map(_.show),
-      t"Domain"   -> domain.option,
-      t"Path"     -> path.option,
-      t"Secure"   -> secure,
-      t"HttpOnly" -> httpOnly).collect:
-      case (k, true)    => k
-      case (k, Some(v)) => t"$k=$v"
-    .join(t"; ")
 
 object HttpResponse:
   def apply[FormatType: Servable]
       (content: FormatType,
        status: HttpStatus = HttpStatus.Found,
        headers: Map[ResponseHeader[?], Text] = Map(),
-       cookies: List[CookieValue] = Nil)
+       cookies: List[Cookie.Value] = Nil)
           : HttpResponse in FormatType =
     inline def content0: FormatType = content
     inline def status0: HttpStatus = status
     inline def headers0: Map[ResponseHeader[?], Text] = headers
-    inline def cookies0: List[CookieValue] = cookies
+    inline def cookies0: List[Cookie.Value] = cookies
 
     new HttpResponse:
       type Format = FormatType
@@ -219,7 +221,7 @@ object HttpResponse:
       def content: Format = content0
       def status: HttpStatus = status0
       def headers: Map[ResponseHeader[?], Text] = headers0
-      def cookies: List[CookieValue] = cookies0
+      def cookies: List[Cookie.Value] = cookies0
 
 trait HttpResponse:
   type Format
@@ -227,10 +229,10 @@ trait HttpResponse:
   def content: Format
   def status: HttpStatus
   def headers: Map[ResponseHeader[?], Text]
-  def cookies: List[CookieValue]
+  def cookies: List[Cookie.Value]
 
   def allHeaders: List[(ResponseHeader[?], Text)] =
-    headers.to(List) ++ cookies.map(ResponseHeader.SetCookie -> _.serialize)
+    headers.to(List) ++ cookies.map(ResponseHeader.SetCookie -> _.show)
 
   def respond(responder: Responder): Unit =
     servable.process(content, status.code, allHeaders.map { case (k, v) => k.header -> v }.to(Map), responder)
@@ -255,10 +257,11 @@ extension (value: Http.type)
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using RequestServable, Monitor, Codicil): HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
-inline def param(using request: HttpRequest)(key: Text): Optional[Text] =
-  request.params.get(key).getOrElse(Unset)
+inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
 
-def request(using connection: HttpConnection): HttpRequest = connection.request
+inline def request: HttpRequest = summonFrom:
+   case request: HttpRequest       => request
+   case connection: HttpConnection => connection.request
 
 def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
 
