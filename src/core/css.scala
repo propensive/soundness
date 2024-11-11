@@ -54,12 +54,18 @@ object To extends Dynamic:
     ${Cataclysm.keyframe('{"to"}, 'properties)}
 
 case class FontFace
-    (ascentOverride: Optional[Text] = Unset, descentOverride: Optional[Text] = Unset,
-        fontDisplay: Optional[Text] = Unset, fontFamily: Optional[Text] = Unset,
-        fontStretch: Optional[Text] = Unset, fontStyle: Optional[Text] = Unset,
-        fontWeight: Optional[Text] = Unset, fontVariationSettings: Optional[Text] = Unset,
-        lineGapOverride: Optional[Text] = Unset, sizeAdjust: Optional[Text] = Unset,
-        src: Optional[Text] = Unset, unicodeRange: Optional[Text] = Unset)
+   (ascentOverride:        Optional[Text] = Unset,
+    descentOverride:       Optional[Text] = Unset,
+    fontDisplay:           Optional[Text] = Unset,
+    fontFamily:            Optional[Text] = Unset,
+    fontStretch:           Optional[Text] = Unset,
+    fontStyle:             Optional[Text] = Unset,
+    fontWeight:            Optional[Text] = Unset,
+    fontVariationSettings: Optional[Text] = Unset,
+    lineGapOverride:       Optional[Text] = Unset,
+    sizeAdjust:            Optional[Text] = Unset,
+    src:                   Optional[Text] = Unset,
+    unicodeRange:          Optional[Text] = Unset)
 extends CssStylesheet.Item:
 
   def text: Text =
