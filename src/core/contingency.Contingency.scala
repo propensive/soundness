@@ -49,7 +49,7 @@ object Contingency:
         abandon(m"unexpected AST: ${other.toString}")
 
   private def mapping[ErrorType <: Exception: Type](using Quotes)
-      (handler: quotes.reflect.Term)
+     (handler: quotes.reflect.Term)
           : Map[quotes.reflect.Symbol, quotes.reflect.Symbol] =
 
     import quotes.reflect.*
@@ -107,7 +107,7 @@ object Contingency:
 
 
   def tend[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
-      (using Quotes)
+     (using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -126,10 +126,9 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
   def track[AccrualType <: Exception: Type, FocusType: Type]
-      (accrual: Expr[AccrualType],
-       handler: Expr[(Optional[FocusType], AccrualType) ?=>
-                    PartialFunction[Exception, AccrualType]])
-      (using Quotes)
+     (accrual: Expr[AccrualType],
+      handler: Expr[(Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType]])
+     (using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -150,9 +149,9 @@ object Contingency:
             focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
-      (accrual: Expr[AccrualType],
-       handler: Expr[AccrualType ?=> PartialFunction[Exception, AccrualType]])
-      (using Quotes)
+     (accrual: Expr[AccrualType],
+      handler: Expr[AccrualType ?=> PartialFunction[Exception, AccrualType]])
+     (using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -215,8 +214,8 @@ object Contingency:
       lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
 
   def mendWithin[ContextType[_]: Type, ResultType: Type]
-      (mend: Expr[Mend[?, ContextType]], lambda: Expr[ContextType[ResultType]])
-      (using Quotes)
+     (mend: Expr[Mend[?, ContextType]], lambda: Expr[ContextType[ResultType]])
+     (using Quotes)
           : Expr[ResultType] =
 
     type ContextResult = ContextType[ResultType]
@@ -246,11 +245,11 @@ object Contingency:
     }
 
   def accrueWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type]
-      (accrue:      Expr[Accrue[AccrualType, ContextType]],
-       lambda:      Expr[ContextType[ResultType]],
-       tactic:      Expr[Tactic[AccrualType]],
-       diagnostics: Expr[Diagnostics])
-      (using Quotes)
+     (accrue:      Expr[Accrue[AccrualType, ContextType]],
+      lambda:      Expr[ContextType[ResultType]],
+      tactic:      Expr[Tactic[AccrualType]],
+      diagnostics: Expr[Diagnostics])
+     (using Quotes)
           : Expr[ResultType] =
 
     '{  val ref: juca.AtomicReference[AccrualType] = juca.AtomicReference(null)
@@ -285,12 +284,12 @@ object Contingency:
     }
 
   def trackWithin
-      [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-      (track:       Expr[Track[AccrualType, ContextType, FocusType]],
-       lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
-       tactic:      Expr[Tactic[AccrualType]],
-       diagnostics: Expr[Diagnostics])
-      (using Quotes)
+     [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
+     (track:       Expr[Track[AccrualType, ContextType, FocusType]],
+      lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
+      tactic:      Expr[Tactic[AccrualType]],
+      diagnostics: Expr[Diagnostics])
+     (using Quotes)
           : Expr[ResultType] =
 
     '{  val foci: Foci[FocusType] = TrackFoci()

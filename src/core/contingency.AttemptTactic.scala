@@ -22,8 +22,8 @@ import fulminate.*
 import rudiments.*
 
 class AttemptTactic[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[Attempt[SuccessType, ErrorType]])
-    (using Diagnostics)
+   (label: boundary.Label[Attempt[SuccessType, ErrorType]])
+   (using Diagnostics)
 extends Tactic[ErrorType]:
   type Result = Attempt[SuccessType, ErrorType]
   type Return = Attempt[SuccessType, ErrorType]

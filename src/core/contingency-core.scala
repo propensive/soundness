@@ -54,14 +54,14 @@ package strategies:
 given realm: Realm = realm"contingency"
 
 def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType]
-    (error: Diagnostics ?=> ErrorType)
-    (using tactic: Tactic[ErrorType])
+   (error: Diagnostics ?=> ErrorType)
+   (using tactic: Tactic[ErrorType])
         : SuccessType =
   tactic.record(error)
   ErrorType.recover(error(using tactic.diagnostics))
 
 def raise[SuccessType, ErrorType <: Exception: Tactic]
-    (error: Diagnostics ?=> ErrorType, ersatz: => SuccessType)
+   (error: Diagnostics ?=> ErrorType, ersatz: => SuccessType)
         : SuccessType =
   ErrorType.record(error)
   ersatz
@@ -70,7 +70,7 @@ def abort[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> Er
   ErrorType.abort(error)
 
 def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
+   (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                 SuccessType)
         : Optional[SuccessType] =
 
@@ -79,8 +79,7 @@ def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
   catch case error: Exception => Unset
 
 def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: Unsafe ?=> ThrowTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=>
-              SuccessType)
+   (block: Unsafe ?=> ThrowTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
         : SuccessType =
 
   boundary: label ?=>
@@ -88,14 +87,14 @@ def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     block(using Unsafe)(using ThrowTactic())
 
 def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
-    (block: ThrowTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (block: ThrowTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
   block(using ThrowTactic())
 
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
-    (using Tactic[ExpectationError[SuccessType]], Diagnostics)
+   (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (using Tactic[ExpectationError[SuccessType]], Diagnostics)
         : ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherTactic(label)))
@@ -105,22 +104,22 @@ def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     case Right(value) => abort(ExpectationError(value))
 
 def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
-    (using Diagnostics)
+   (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (using Diagnostics)
         : Attempt[SuccessType, ErrorType] =
 
   boundary: label ?=>
     Attempt.Success(block(using AttemptTactic(label)))
 
 def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
-    (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
-    (using Diagnostics)
+   (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (using Diagnostics)
         : SuccessType | ErrorType =
   boundary: label ?=>
     block(using AmalgamateTactic(label))
 
 def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
-    (block: Diagnostics ?=> AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (block: Diagnostics ?=> AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
   given AbandonTactic[ErrorType, SuccessType]()
@@ -135,8 +134,8 @@ infix type mitigates [ErrorType <: Exception, ErrorType2 <: Exception] =
 infix type tracks [ResultType, FocusType] = Foci[FocusType] ?=> ResultType
 
 inline def focus[FocusType, ResultType](using inline track: Foci[FocusType])
-    (transform: (prior: Optional[FocusType]) ?=> FocusType)
-    (block: => ResultType)
+   (transform: (prior: Optional[FocusType]) ?=> FocusType)
+   (block: => ResultType)
         : ResultType =
   val length = track.length
   block.also:
@@ -158,29 +157,29 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
 transparent inline def track[FocusType](using DummyImplicit)[AccrualType <: Exception, ResultType]
-    (accrual: AccrualType)
-    (inline block: (focus: Optional[FocusType], accrual: AccrualType) ?=>
-                       PartialFunction[Exception, AccrualType])
+   (accrual: AccrualType)
+   (inline block: (focus:   Optional[FocusType],
+                   accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
         : Any =
   ${Contingency.track[AccrualType, FocusType]('accrual, 'block)}
 
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
-    (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
         : Any =
   ${Contingency.accrue[AccrualType]('accrual, 'block)}
 
 extension [AccrualType <: Exception,  LambdaType[_]]
-    (inline accrue: Accrue[AccrualType, LambdaType])
+   (inline accrue: Accrue[AccrualType, LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType])
-      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
+     (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =
     ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic,
         'diagnostics)}
 
 extension [AccrualType <: Exception,  LambdaType[_], FocusType]
-    (inline track: Track[AccrualType, LambdaType, FocusType])
+   (inline track: Track[AccrualType, LambdaType, FocusType])
   inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
-      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
+     (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =
     ${Contingency.trackWithin[AccrualType, LambdaType, ResultType, FocusType]('track, 'lambda,
         'tactic, 'diagnostics)}

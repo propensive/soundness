@@ -24,12 +24,12 @@ import fulminate.*
 import rudiments.*
 
 class AccrueTactic
-    [ErrorType <: Exception, AccrualType, ResultType]
-    (label: boundary.Label[Option[ResultType]],
-     ref: juca.AtomicReference[AccrualType],
-     initial: AccrualType)
-    (lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
-    (using val diagnostics: Diagnostics)
+   [ErrorType <: Exception, AccrualType, ResultType]
+   (label: boundary.Label[Option[ResultType]],
+    ref: juca.AtomicReference[AccrualType],
+    initial: AccrualType)
+   (lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (using val diagnostics: Diagnostics)
 extends Tactic[ErrorType]:
 
   def record(error: Diagnostics ?=> ErrorType): Unit = ref.getAndUpdate: accrual =>

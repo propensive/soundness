@@ -22,8 +22,8 @@ import fulminate.*
 import rudiments.*
 
 class EitherTactic[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[Either[ErrorType, SuccessType]])
-    (using Diagnostics)
+   (label: boundary.Label[Either[ErrorType, SuccessType]])
+   (using Diagnostics)
 extends Tactic[ErrorType]:
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> ErrorType): Unit = boundary.break(Left(error))(using label)

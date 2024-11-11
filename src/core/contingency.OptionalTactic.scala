@@ -23,7 +23,7 @@ import vacuous.*
 import rudiments.*
 
 class OptionalTactic[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[Optional[SuccessType]])
+   (label: boundary.Label[Optional[SuccessType]])
 extends Tactic[ErrorType]:
   type Result = Optional[SuccessType]
   type Return = Optional[SuccessType]

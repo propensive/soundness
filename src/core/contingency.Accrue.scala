@@ -17,5 +17,5 @@
 package contingency
 
 class Accrue[AccrualType <: Exception, LambdaType[_]]
-    (val initial: AccrualType,
-     val lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (val initial: AccrualType,
+    val lambda:  (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])

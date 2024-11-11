@@ -22,11 +22,11 @@ import fulminate.*
 import rudiments.*
 
 class TrackTactic
-    [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
-    (label: boundary.Label[Option[ResultType]],
-     initial: AccrualType,
-     foci: Foci[SupplementType])
-    (using Diagnostics)
+   [ErrorType <: Exception, AccrualType, ResultType, SupplementType]
+   (label: boundary.Label[Option[ResultType]],
+    initial: AccrualType,
+    foci: Foci[SupplementType])
+   (using Diagnostics)
 extends Tactic[ErrorType]:
   def diagnostics: Diagnostics = summon[Diagnostics]
   def record(error: Diagnostics ?=> ErrorType): Unit = foci.register(error)

@@ -21,7 +21,7 @@ import language.experimental.pureFunctions
 import fulminate.*
 
 class ThrowTactic[ErrorType <: Exception, SuccessType]()
-    (using @annotation.constructorOnly error: CanThrow[ErrorType])
+   (using @annotation.constructorOnly error: CanThrow[ErrorType])
 extends Tactic[ErrorType]:
 
   def diagnostics: Diagnostics = Diagnostics.capture

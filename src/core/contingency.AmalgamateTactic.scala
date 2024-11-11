@@ -22,8 +22,8 @@ import fulminate.*
 import rudiments.*
 
 class AmalgamateTactic[ErrorType <: Exception, SuccessType]
-    (label: boundary.Label[SuccessType | ErrorType])
-    (using Diagnostics)
+   (label: boundary.Label[SuccessType | ErrorType])
+   (using Diagnostics)
 extends Tactic[ErrorType]:
   type Result = SuccessType | ErrorType
   type Return = SuccessType | ErrorType

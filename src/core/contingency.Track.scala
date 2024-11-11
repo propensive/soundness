@@ -19,5 +19,5 @@ package contingency
 import vacuous.*
 
 class Track[AccrualType <: Exception, LambdaType[_], FocusType]
-    (val initial: AccrualType,
-     val lambda: (Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (val initial: AccrualType,
+    val lambda: (Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType])
