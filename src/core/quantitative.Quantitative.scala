@@ -82,7 +82,7 @@ object Quantitative extends Quantitative2:
         type Self = Quantity[LeftType]
         type Operand = Double
         type Result = Quantity[LeftType]
-        
+
         inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] =
           left*right
 
@@ -90,7 +90,7 @@ object Quantitative extends Quantitative2:
         => Double is Multiplicable by Quantity[RightType] into
             Quantity[RightType] as multiplicable3 =
       _*_
-    
+
     transparent inline given [LeftType <: Measure, RightType <: Measure]
         => Quantity[LeftType] is Divisible by Quantity[RightType] as divisible =
       ${Quantitative.divTypeclass[LeftType, RightType]}
@@ -124,22 +124,22 @@ object Quantitative extends Quantitative2:
       type Operand = Quantity[UnitsType2]
 
       inline def compare
-          (inline left:        Quantity[UnitsType],
-           inline right:       Quantity[UnitsType2],
-           inline strict:      Boolean,
-           inline greaterThan: Boolean)
+         (inline left:        Quantity[UnitsType],
+          inline right:       Quantity[UnitsType2],
+          inline strict:      Boolean,
+          inline greaterThan: Boolean)
               : Boolean =
 
         ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
 
     class ShowableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
-        (using Decimalizer)
+       (using Decimalizer)
     extends Showable:
       type Self = Quantity[UnitsType]
       def text(value: Quantity[UnitsType]): Text = fn(value)
 
     class InspectableQuantity[UnitsType <: Measure](fn: Quantity[UnitsType] => Text)
-        (using Decimalizer)
+       (using Decimalizer)
     extends Inspectable:
       type Self = Quantity[UnitsType]
       def text(value: Quantity[UnitsType]): Text = fn(value)

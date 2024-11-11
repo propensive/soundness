@@ -201,7 +201,7 @@ trait Quantitative2:
     override def toString(): String = name
 
   def ratio(using Quotes)
-      (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
+     (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
           : Expr[Double] =
 
     import quotes.reflect.*
@@ -237,7 +237,7 @@ trait Quantitative2:
                 case DoubleConstant(double) => Expr(double**power)
 
   private def normalize(using Quotes)
-      (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
+     (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
           : (UnitsMap, Expr[Double]) =
 
     def recur(dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
@@ -282,8 +282,8 @@ trait Quantitative2:
         recur('{Map[Text, Int]()}, UnitsMap[UnitsType].map.values.to(List))
 
   def multiply[LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
-      (using Quotes)
+     (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
+     (using Quotes)
           : Expr[Any] =
 
     val left: UnitsMap = UnitsMap[LeftType]
@@ -390,11 +390,11 @@ trait Quantitative2:
           '{Rootable.Basic[3, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def greaterThan[LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr:  Expr[Quantity[LeftType]],
-       rightExpr: Expr[Quantity[RightType]],
-       strict:    Expr[Boolean],
-       invert:    Expr[Boolean])
-      (using Quotes)
+     (leftExpr:  Expr[Quantity[LeftType]],
+      rightExpr: Expr[Quantity[RightType]],
+      strict:    Expr[Boolean],
+      invert:    Expr[Boolean])
+     (using Quotes)
           : Expr[Boolean] =
 
     val left: UnitsMap = UnitsMap[LeftType]
@@ -411,8 +411,8 @@ trait Quantitative2:
     else if closed then '{$leftValue >= $rightValue} else '{$leftValue > $rightValue}
 
   def add[LeftType <: Measure: Type, RightType <: Measure: Type]
-      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Expr[Boolean])
-      (using Quotes)
+     (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Expr[Boolean])
+     (using Quotes)
           : Expr[Any] =
 
     val left: UnitsMap = UnitsMap[LeftType]
@@ -454,8 +454,8 @@ trait Quantitative2:
               ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} } }
 
   def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
-      (expr: Expr[Quantity[UnitsType]])
-      (using Quotes)
+     (expr: Expr[Quantity[UnitsType]])
+     (using Quotes)
           : Expr[Any] =
 
     val units: UnitsMap = UnitsMap[UnitsType]
