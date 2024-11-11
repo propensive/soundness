@@ -33,7 +33,7 @@ object LocalClasspath:
     new LocalClasspath(entries, entries.to(Set))
 
   given [PathType: GenericPath]
-      (using Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
+     (using Tactic[PathError], Tactic[IoError], Tactic[NameError], Navigable, DereferenceSymlinks)
       => LocalClasspath is Addable by PathType into LocalClasspath =
     (classpath, path) =>
       Path.parse[Filesystem](path.pathText).pipe: path =>
@@ -45,8 +45,11 @@ object LocalClasspath:
         else new LocalClasspath(entry :: classpath.entries, classpath.entrySet + entry)
 
 class LocalClasspath private
-    (val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type],
-     val entrySet: Set[ClasspathEntry])
+   (val entries: List
+                  [ClasspathEntry.Directory |
+                   ClasspathEntry.Jar |
+                   ClasspathEntry.JavaRuntime.type],
+    val entrySet: Set[ClasspathEntry])
 extends Classpath:
 
   def apply()(using SystemProperties): Text =
