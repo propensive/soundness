@@ -32,7 +32,7 @@ extends PrivateKey[CipherType](bytes):
     public.encrypt(value)
 
   def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
-      (using CipherType & Signing)
+     (using CipherType & Signing)
           : Boolean =
 
     public.verify(value, signature)
