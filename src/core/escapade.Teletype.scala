@@ -94,8 +94,9 @@ object Teletype:
     Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
 case class Teletype
-    (plain: Text, spans: TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
-        insertions: TreeMap[Int, Text] = TreeMap()):
+   (plain:      Text,
+    spans:      TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
+    insertions: TreeMap[Int, Text] = TreeMap()):
 
   def explicit: Text = render(termcapDefinitions.xtermTrueColor).flatMap: char =>
     if char.toInt == 27 then t"\\e" else char.show
@@ -143,11 +144,11 @@ case class Teletype
 
     @tailrec
     def recur
-        (spans:      TreeMap[CharSpan, Ansi.Transform],
-         pos:        Int                               = 0,
-         style:      TextStyle                         = TextStyle(),
-         stack:      List[(CharSpan, TextStyle)]       = Nil,
-         insertions: TreeMap[Int, Text]                = TreeMap())
+       (spans:      TreeMap[CharSpan, Ansi.Transform],
+        pos:        Int                               = 0,
+        style:      TextStyle                         = TextStyle(),
+        stack:      List[(CharSpan, TextStyle)]       = Nil,
+        insertions: TreeMap[Int, Text]                = TreeMap())
             : Text =
 
       inline def addSpan(): Text =

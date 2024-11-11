@@ -72,11 +72,11 @@ object Ansi extends Ansi2:
   case class Frame(bracket: Char, start: Int, transform: Transform)
 
   case class State
-      (text:       Text                         = t"",
-       last:       Option[Transform]            = None,
-       stack:      List[Frame]                  = Nil,
-       spans:      TreeMap[CharSpan, Transform] = TreeMap(),
-       insertions: TreeMap[Int, Text]           = TreeMap()):
+     (text:       Text                         = t"",
+      last:       Option[Transform]            = None,
+      stack:      List[Frame]                  = Nil,
+      spans:      TreeMap[CharSpan, Transform] = TreeMap(),
+      insertions: TreeMap[Int, Text]           = TreeMap()):
 
     def add(span: CharSpan, transform: Transform): State =
       copy(spans = spans.updated(span, spans.get(span).fold(transform)(transform.andThen(_))))
