@@ -34,5 +34,5 @@ object IoError:
     case Operation.Metadata => m"metadata"
 
 case class IoError(path: Path, operation: IoError.Operation, reason: IoError.Reason)
-    (using Diagnostics)
+   (using Diagnostics)
 extends Error(m"the $operation operation on $path failed because $reason")

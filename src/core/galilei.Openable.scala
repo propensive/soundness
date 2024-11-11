@@ -12,42 +12,41 @@ import java.nio.file as jnf
 
 object Openable:
   given [PlatformType <: Filesystem]
-      (using read:        ReadAccess,
-             write:       WriteAccess,
-             dereference: DereferenceSymlinks,
-             create:      CreateNonexistent on PlatformType,
-             streamError: Tactic[StreamError],
-             ioError:     Tactic[IoError])
+     (using read:        ReadAccess,
+            write:       WriteAccess,
+            dereference: DereferenceSymlinks,
+            create:      CreateNonexistent on PlatformType,
+            streamError: Tactic[StreamError],
+            ioError:     Tactic[IoError])
       => (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
 
     type Self = Path on PlatformType
     type Operand = jnf.OpenOption
     type Result = Handle
     protected type Carrier = jnc.FileChannel
-  
+
     def init(path: Path on PlatformType, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options = read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
           extraOptions
 
       import jnf.StandardOpenOption as jnfsoo
-      
+
       val options2 =
         if options.contains(jnfsoo.READ) && options.contains(jnfsoo.APPEND)
         then options.filter(_ != jnfsoo.READ)
         else options
 
       path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options2*).nn)
-    
+
     def handle(channel: jnc.FileChannel): Handle =
       Handle
        (() => Readable.channel.stream(channel).stream[Bytes],
         Writable.channel.write(channel, _))
-        
+
 
     def close(channel: jnc.FileChannel): Unit = channel.close()
 
-  given [FileType]
-      (using openable: FileType is Openable by jnf.OpenOption)
+  given [FileType](using openable: FileType is Openable by jnf.OpenOption)
       => Eof[FileType] is Openable by jnf.OpenOption into openable.Result as openable =
     new Openable:
       type Self = Eof[FileType]
@@ -57,7 +56,7 @@ object Openable:
 
       def init(eof: Eof[FileType], options: List[Operand]): Carrier =
         openable.init(eof.file, jnf.StandardOpenOption.APPEND :: options)
-    
+
       def handle(carrier: Carrier): Result = openable.handle(carrier)
       def close(carrier: Carrier): Unit = openable.close(carrier)
 
