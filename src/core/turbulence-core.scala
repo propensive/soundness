@@ -46,7 +46,7 @@ extension [ValueType](value: ValueType)
           aggregable.aggregate(value.stream[Text])
 
   def writeTo[TargetType](target: TargetType)[ElementType]
-      (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
+     (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
           : Unit =
 
     writable.write(target, readable.stream(value))
@@ -84,7 +84,7 @@ extension [ElementType](stream: LazyList[ElementType])
     stream.flow(LazyList())(head #:: recur(head, tail))
 
   inline def flow[ResultType](inline termination: => ResultType)
-      (inline proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
+     (inline proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
           : ResultType =
     stream match
       case head #:: tail => proceed(using head, tail)
@@ -93,7 +93,7 @@ extension [ElementType](stream: LazyList[ElementType])
   def strict: LazyList[ElementType] = stream.length yet stream
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-      (using Monitor, Tactic[ConcurrencyError])
+     (using Monitor, Tactic[ConcurrencyError])
           : LazyList[ElementType] =
 
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] =
@@ -109,18 +109,18 @@ extension [ElementType](stream: LazyList[ElementType])
 
   def regulate(tap: Tap)(using Monitor): LazyList[ElementType] =
     def defer
-        (active: Boolean,
-         stream: LazyList[Some[ElementType] | Tap.Regulation],
-         buffer: List[ElementType])
+       (active: Boolean,
+        stream: LazyList[Some[ElementType] | Tap.Regulation],
+        buffer: List[ElementType])
             : LazyList[ElementType] =
 
       recur(active, stream, buffer)
 
     @tailrec
     def recur
-        (active: Boolean,
-         stream: LazyList[Some[ElementType] | Tap.Regulation],
-         buffer: List[ElementType])
+       (active: Boolean,
+        stream: LazyList[Some[ElementType] | Tap.Regulation],
+        buffer: List[ElementType])
             : LazyList[ElementType] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
@@ -139,7 +139,7 @@ extension [ElementType](stream: LazyList[ElementType])
     LazyList.defer(recur(true, stream.map(Some(_)).multiplexWith(tap.stream), Nil))
 
   def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
-      (using Monitor)
+     (using Monitor)
           : LazyList[List[ElementType]] =
 
     val Limit = maxSize.or(Int.MaxValue)

@@ -41,7 +41,7 @@ object Aggregable:
     buffer.toString.tt
 
   given [ElementType, ElementType2]
-      (using aggregable: ElementType2 is Aggregable by ElementType)
+     (using aggregable: ElementType2 is Aggregable by ElementType)
       => LazyList[ElementType2] is Aggregable by ElementType as lazyList =
     element => LazyList(aggregable.aggregate(element))
 
