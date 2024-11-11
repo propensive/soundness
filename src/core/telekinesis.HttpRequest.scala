@@ -57,12 +57,12 @@ object HttpRequest:
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
 case class HttpRequest
-    (method:  HttpMethod,
-     version: HttpVersion,
-     host:    Hostname,
-     target:  Text,
-     headers: List[RequestHeader.Value],
-     body:    LazyList[Bytes]):
+   (method:  HttpMethod,
+    version: HttpVersion,
+    host:    Hostname,
+    target:  Text,
+    headers: List[RequestHeader.Value],
+    body:    LazyList[Bytes]):
 
   def serialize: LazyList[Bytes] =
     import charEncoders.ascii

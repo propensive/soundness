@@ -35,9 +35,9 @@ object HttpResponse:
     body.stream
 
 case class HttpResponse
-    (status:  HttpStatus,
-     headers: List[(Text, Text)],
-     body:    LazyList[Bytes]):
+   (status:  HttpStatus,
+    headers: List[(Text, Text)],
+    body:    LazyList[Bytes]):
 
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
@@ -48,7 +48,7 @@ case class HttpResponse
     case status              => readable.read(status, body)
 
   def apply[ValueType](header: ResponseHeader[ValueType])
-      (using decoder: HttpHeaderDecoder[ValueType])
+     (using decoder: HttpHeaderDecoder[ValueType])
           : List[ValueType] =
 
     headersMap.at(header).or(Nil).map(decoder.decode(_))

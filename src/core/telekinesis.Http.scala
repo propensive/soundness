@@ -30,15 +30,15 @@ import language.dynamics
 
 object Http:
   def post[PostType: Postable, UrlType: Hyperlinkable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
-      (using Online)
+     (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
+     (using Online)
           : HttpResponse logs HttpEvent =
 
     request[PostType](UrlType.hyperlink(url), content, HttpMethod.Post, headers)
 
   def put[PostType: Postable, UrlType: Hyperlinkable]
-      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
-      (using Online)
+     (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
+     (using Online)
           : HttpResponse logs HttpEvent =
 
     request[PostType](UrlType.hyperlink(url), content, HttpMethod.Put, headers)
@@ -48,45 +48,39 @@ object Http:
 
     request(UrlType.hyperlink(url), (), HttpMethod.Get, headers)
 
-  def options[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def options[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Options, headers)
 
-  def head[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def head[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Head, headers)
 
-  def delete[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def delete[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Delete, headers)
 
-  def connect[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def connect[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Connect, headers)
 
-  def trace[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def trace[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Trace, headers)
 
-  def patch[UrlType: Hyperlinkable]
-      (url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def patch[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
     request(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
 
   private def request[PostType: Postable]
-      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
-      (using Online)
+     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
+     (using Online)
           : HttpResponse logs HttpEvent =
 
     Log.info(HttpEvent.Send(method, url, headers))
