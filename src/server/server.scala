@@ -57,7 +57,7 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
   def stream(response: Self): LazyList[Bytes]
 
   final def process
-      (content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
+     (content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
           : Unit =
 
     responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
@@ -97,19 +97,19 @@ object Servable:
 
   given [ResponseType] => NotFound[ResponseType] is Servable as notFound:
     def process
-        (notFound:  NotFound[ResponseType],
-         status:    Int,
-         headers:   Map[Text, Text],
-         responder: Responder)
+       (notFound:  NotFound[ResponseType],
+        status:    Int,
+        headers:   Map[Text, Text],
+        responder: Responder)
             : Unit =
       notFound.serve(headers, responder)
 
   given [ResponseType: Retrievable] => ServeFailure[ResponseType] is Servable as retrievable:
     def process
-        (notFound:  ServeFailure[ResponseType],
-         status:    Int,
-         headers:   Map[Text, Text],
-         responder: Responder)
+       (notFound:  ServeFailure[ResponseType],
+        status:    Int,
+        headers:   Map[Text, Text],
+        responder: Responder)
             : Unit =
       responder.addHeader(ResponseHeader.ContentType.header, ResponseType.mediaType.show)
       headers.each(responder.addHeader)
@@ -194,20 +194,20 @@ object Cookie:
       .join(t"; ")
 
   case class Value
-      (name:     Text,
-       value:    Text,
-       domain:   Optional[Text] = Unset,
-       path:     Optional[Text] = Unset,
-       expiry:   Optional[Long] = Unset,
-       secure:   Boolean        = false,
-       httpOnly: Boolean        = false)
+     (name:     Text,
+      value:    Text,
+      domain:   Optional[Text] = Unset,
+      path:     Optional[Text] = Unset,
+      expiry:   Optional[Long] = Unset,
+      secure:   Boolean        = false,
+      httpOnly: Boolean        = false)
 
 case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
-    (name:     Text,
-     domain:   Optional[Hostname],
-     expiry:   Optional[DurationType],
-     secure:   Boolean,
-     httpOnly: Boolean):
+   (name:     Text,
+    domain:   Optional[Hostname],
+    expiry:   Optional[DurationType],
+    secure:   Boolean,
+    httpOnly: Boolean):
 
   def apply(value: ValueType): Cookie.Value =
     Cookie.Value
@@ -223,10 +223,10 @@ case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
 
 object HttpResponse:
   def apply[FormatType: Servable]
-      (content: FormatType,
-       status: HttpStatus = HttpStatus.Found,
-       headers: Map[ResponseHeader[?], Text] = Map(),
-       cookies: List[Cookie.Value] = Nil)
+     (content: FormatType,
+      status: HttpStatus = HttpStatus.Found,
+      headers: Map[ResponseHeader[?], Text] = Map(),
+      cookies: List[Cookie.Value] = Nil)
           : HttpResponse in FormatType =
     inline def content0: FormatType = content
     inline def status0: HttpStatus = status
@@ -276,7 +276,7 @@ trait RequestServable:
 
 extension (value: Http.type)
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)
-      (using RequestServable, Monitor, Codicil)
+     (using RequestServable, Monitor, Codicil)
           : HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
@@ -322,7 +322,7 @@ extends Error(m"Could not start an HTTP server on port $port")
 
 case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServable:
   def listen(handler: (connection: HttpConnection) ?=> HttpResponse)
-      (using Monitor, Codicil)
+     (using Monitor, Codicil)
           : HttpService logs HttpServerEvent =
 
     def handle(exchange: csnh.HttpExchange | Null) =
@@ -419,7 +419,7 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
     request
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
-    (using connection: HttpConnection)
+   (using connection: HttpConnection)
         : HttpResponse =
   connection.request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
     case List(s"Basic $credentials") =>

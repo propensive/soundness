@@ -10,8 +10,8 @@ object Part:
   given Part is Readable by Bytes as readable = _.body
 
 case class Part
-    (disposition: Multipart.Disposition,
-     headers:     Map[Text, Text],
-     name:        Optional[Text],
-     filename:    Optional[Text],
-     body:        LazyList[Bytes])
+   (disposition: Multipart.Disposition,
+    headers:     Map[Text, Text],
+    name:        Optional[Text],
+    filename:    Optional[Text],
+    body:        LazyList[Bytes])
