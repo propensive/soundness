@@ -167,9 +167,9 @@ extends Xml, Dynamic:
     XmlDoc(XmlAst.Root(Xml.normalize(this) ++ Xml.normalize(other)*))
 
   def as
-      [ValueType]
-      (using decoder: XmlDecoder[ValueType])
-      : ValueType raises XmlAccessError raises XmlReadError =
+     [ValueType]
+     (using decoder: XmlDecoder[ValueType])
+         : ValueType raises XmlAccessError raises XmlReadError =
     apply().as[ValueType]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
@@ -205,9 +205,10 @@ case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
 
 case class Attribute(node: XmlNode, attribute: Text):
   def as
-      [ValueType]
-      (using decoder: XmlDecoder[ValueType])
-      (using Tactic[XmlReadError], Tactic[XmlAccessError]): ValueType =
+     [ValueType]
+     (using decoder: XmlDecoder[ValueType])
+     (using Tactic[XmlReadError], Tactic[XmlAccessError])
+          : ValueType =
 
     val attributes = Xml.normalize(node).prim match
       case XmlAst.Element(_, _, attributes, _) => attributes

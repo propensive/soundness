@@ -44,12 +44,12 @@ object XmlInterpolation:
   case class ParseStateNode(name: Text, namespaces: Set[Text])
 
   case class ParseState
-      (offset: Int,
-       context: ContextType,
-       stack: List[ParseStateNode],
-       current: Text,
-       source: Text,
-       ns: Boolean):
+     (offset: Int,
+      context: ContextType,
+      stack: List[ParseStateNode],
+      current: Text,
+      source: Text,
+      ns: Boolean):
 
     def apply(newContext: ContextType, char: Char) =
       copy(context = newContext, current = t"$current$char", offset = offset + 1)
