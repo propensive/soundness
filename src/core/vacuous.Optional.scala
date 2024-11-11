@@ -52,14 +52,14 @@ extension [ValueType](optional: Optional[ValueType])
   def assume(using absentValue: CanThrow[UnsetError]): ValueType = optional.or(throw UnsetError())
 
   inline def lay[ValueType2](inline alternative: => ValueType2)
-      (inline lambda: ValueType => ValueType2)
+     (inline lambda: ValueType => ValueType2)
           : ValueType2 =
 
     if absent then alternative else lambda(vouch(using Unsafe))
 
 
   inline def layGiven[ValueType2](inline alternative: => ValueType2)
-      (inline block: ValueType ?=> ValueType2)
+     (inline block: ValueType ?=> ValueType2)
           : ValueType2 =
 
     if absent then alternative else block(using vouch(using Unsafe))
