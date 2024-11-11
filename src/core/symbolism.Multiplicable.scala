@@ -24,7 +24,7 @@ import scala.annotation.targetName
 
 object Multiplicable:
   class Basic[MultiplicandType, MultiplierType, ResultType]
-      (lambda: (MultiplicandType, MultiplierType) => ResultType)
+     (lambda: (MultiplicandType, MultiplierType) => ResultType)
   extends Multiplicable:
     type Self = MultiplicandType
     type Result = ResultType

@@ -24,7 +24,7 @@ import scala.annotation.targetName
 
 object Subtractable:
   class Basic[MinuendType, SubtrahendType, ResultType]
-      (lambda: (MinuendType, SubtrahendType) => ResultType)
+     (lambda: (MinuendType, SubtrahendType) => ResultType)
   extends Subtractable:
     type Self = MinuendType
     type Result = ResultType

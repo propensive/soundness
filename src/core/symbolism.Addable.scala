@@ -24,7 +24,7 @@ import scala.annotation.targetName
 
 object Addable:
   class Basic[AugendType, AddendType, ResultType]
-      (lambda: (AugendType, AddendType) => ResultType)
+     (lambda: (AugendType, AddendType) => ResultType)
   extends Addable:
     type Self = AugendType
     type Result = ResultType
