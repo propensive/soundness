@@ -48,8 +48,8 @@ case class CompileProgress(complete: Double, stage: Text)
 
 trait Compiler:
   def apply(classpath: LocalClasspath)[PathType: GenericPath]
-      (sources: Map[Text, Text], out: PathType)
-      (using SystemProperties, Monitor)
+     (sources: Map[Text, Text], out: PathType)
+     (using SystemProperties, Monitor)
           : CompileProcess logs CompileEvent raises CompilerError
 
 class CompileProcess():

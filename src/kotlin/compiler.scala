@@ -37,8 +37,8 @@ case class KotlinError() extends Error(m"there was a compilation error")
 type KotlinVersions = 1.0
 
 case class Kotlinc
-    [CompilerType <: KotlinVersions]
-    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
+   [CompilerType <: KotlinVersions]
+   (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
   def apply()(using SystemProperties): List[Diagnostic] raises KotlinError =
     val compiler = K2JVMCompiler()
     val configuration = CompilerConfiguration().apply: _ =>
