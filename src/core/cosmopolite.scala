@@ -38,7 +38,7 @@ case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[St
 
 object Cosmopolite:
   def access[ValueType: Type, LocalizationType <: Localization: Type](value: Expr[Map[String, ValueType]])
-      (using Quotes)
+     (using Quotes)
           : Expr[ValueType] =
 
     import quotes.reflect.*
