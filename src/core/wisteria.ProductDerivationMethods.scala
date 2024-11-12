@@ -142,13 +142,15 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       type Fields = reflection.MirroredElemTypes
       val tuple: Fields = Tuple.fromProductTyped(product)
 
-      IArray.create[ResultType](tuple.size): array =>
-        fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): unit =>
-          [FieldType] => field =>
-            given requirement.Optionality[TypeclassType[FieldType]] as typeclass =
-              requirement.wrap(context)
+      IArray.create[ResultType](tuple.size): 
+        array =>
+          fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): 
+            unit =>
+              [FieldType] => field =>
+                given requirement.Optionality[TypeclassType[FieldType]] as typeclass =
+                  requirement.wrap(context)
 
-            array(index) = lambda[FieldType](field)
+                array(index) = lambda[FieldType](field)
 
   // The two implementations of `fold` are very similar. We would prefer to have a single
   // implementation (closer to the non-erased `fold`), but it's difficult to abstract over the

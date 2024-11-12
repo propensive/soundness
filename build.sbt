@@ -1,6 +1,6 @@
 ThisBuild / version := "0.15.0-SNAPSHOT"
 
-ThisBuild / scalaVersion := "3.5.0"
+ThisBuild / scalaVersion := "3.5.2"
 
 ThisBuild / scalacOptions ++= Seq(
   "-experimental",
@@ -29,7 +29,7 @@ lazy val core = (project in file("src/core"))
   .settings(
     name := "core",
     libraryDependencies ++= Seq(
-        "dev.soundness" % "contingency-core" % "0.14.0",
+        "dev.soundness" % "contingency-core" % "0.15.0",
     ),
     Compile / baseDirectory := baseDirectory.value,
   )

@@ -1,0 +1,57 @@
+package build
+
+import mill._, scalalib._
+
+object `package` extends RootModule {
+
+  object core extends ScalaModule {
+    def scalaVersion = settings.scalaVersion
+
+    def scalacOptions = settings.scalaOptions
+
+    override def sources: T[Seq[PathRef]] = Task.Sources {
+      Seq(PathRef(T.workspace / "src" / "core"))
+    }
+
+    def ivyDeps = Agg(
+      ivy"dev.soundness:contingency-core:0.22.0"
+    )
+  }
+
+  object test extends ScalaModule {
+    def scalaVersion = settings.scalaVersion
+
+    def scalacOptions = settings.scalaOptions
+
+    override def sources: T[Seq[PathRef]] = Task.Sources {
+      Seq(PathRef(T.workspace / "src" / "test"))
+    }
+    def moduleDeps = Seq(core)
+  }
+}
+
+object settings {
+  val scalaVersion = "3.5.2"
+  val scalaOptions = Seq(
+    "-experimental",
+    "-new-syntax",
+    "-feature",
+    "-deprecation",
+    "-Wunused:imports",
+    "-Wimplausible-patterns",
+    "-Wsafe-init",
+    "-Yrequire-targetName",
+    "-Ycc-new",
+    "-Yexplicit-nulls",
+    "-Ycheck-all-patmat",
+    "-language:experimental.clauseInterleaving",
+    "-language:experimental.modularity",
+    "-language:experimental.genericNumberLiterals",
+    "-language:experimental.fewerBraces",
+    "-language:experimental.into",
+    "-language:experimental.erasedDefinitions",
+    "-language:experimental.saferExceptions",
+    "-language:experimental.namedTypeArguments",
+    "-language:implicitConversions"
+  )
+}
