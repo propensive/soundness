@@ -16,4 +16,4 @@
 
 package scintillate
 
-case class ServeFailure[ContentType: Servable](content: ContentType)
+case class Unfulfilled[ContentType: Servable](content: ContentType)
