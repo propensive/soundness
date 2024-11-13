@@ -65,7 +65,6 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
     responder.sendBody(status, stream(content))
 
 object Servable:
-
   def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => LazyList[Bytes])
           : ResponseType is Servable =
     new Servable:
@@ -86,7 +85,7 @@ object Servable:
 
   given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
     Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
-      ResponseType.content(value)//.map(identity)
+      ResponseType.content(value)
 
   given Redirect is Servable as redirect:
     def process(content: Redirect, status: Int, headers: Map[Text, Text], responder: Responder)
@@ -182,16 +181,13 @@ object Cookie:
   object Value:
     given Value is Showable = cookie =>
       List
-       (cookie.name -> Some(cookie.value),
-        t"MaxAge"   -> cookie.expiry.option.map(_.show),
-        t"Domain"   -> cookie.domain.option,
-        t"Path"     -> cookie.path.option,
-        t"Secure"   -> cookie.secure,
-        t"HttpOnly" -> cookie.httpOnly)
-       .collect:
-        case (k, true)    => k
-        case (k, Some(v)) => t"$k=$v"
-      .join(t"; ")
+       (t"${cookie.name}=${cookie.value}",
+        cookie.expiry.let { expiry => t"MaxAge=$expiry" },
+        cookie.domain.let { domain => t"Domain=$domain" },
+        cookie.path.let { path => t"Path=$path" },
+        if cookie.secure then t"Secure" else Unset,
+        if cookie.httpOnly then t"HttpOnly" else Unset)
+      .compact.join(t"; ")
 
   case class Value
      (name:     Text,
