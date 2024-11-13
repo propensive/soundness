@@ -1,0 +1,81 @@
+/*
+    Scintillate, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
+package scintillate
+
+import rudiments.*
+import fulminate.*
+import vacuous.*
+import gossamer.*
+import nettlesome.*
+import anticipation.*
+import spectacular.*
+
+import scala.compiletime.*
+
+import java.text as jt
+
+object Cookie:
+  given ("set-cookie" is GenericHttpRequestParam[Cookie.Value]) as setCookie = _.show
+  given ("cookie" is GenericHttpRequestParam[Cookie.Value]) as cookie = _.show
+  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+
+  def apply[ValueType: {Encoder, Decoder}](using DummyImplicit)[DurationType: GenericDuration]
+    (name:     Text,
+     domain:   Optional[Hostname]     = Unset,
+     expiry:   Optional[DurationType] = Unset,
+     secure:   Boolean                = false,
+     httpOnly: Boolean                = false) =
+  new Cookie[ValueType, DurationType](name, domain, expiry, secure, httpOnly)
+
+  object Value:
+    given Value is Showable = cookie =>
+      List
+       (t"${cookie.name}=${cookie.value}",
+        cookie.expiry.let { expiry => t"MaxAge=$expiry" },
+        cookie.domain.let { domain => t"Domain=$domain" },
+        cookie.path.let { path => t"Path=$path" },
+        if cookie.secure then t"Secure" else Unset,
+        if cookie.httpOnly then t"HttpOnly" else Unset)
+      .compact.join(t"; ")
+
+  case class Value
+     (name:     Text,
+      value:    Text,
+      domain:   Optional[Text] = Unset,
+      path:     Optional[Text] = Unset,
+      expiry:   Optional[Long] = Unset,
+      secure:   Boolean        = false,
+      httpOnly: Boolean        = false)
+
+case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
+   (name:     Text,
+    domain:   Optional[Hostname],
+    expiry:   Optional[DurationType],
+    secure:   Boolean,
+    httpOnly: Boolean):
+
+  def apply(value: ValueType): Cookie.Value =
+    Cookie.Value
+     (name,
+      value.encode,
+      domain.let(_.show),
+      Unset,
+      expiry.let(_.milliseconds/1000),
+      secure,
+      httpOnly)
+
+  inline def apply(): Optional[ValueType] = request.cookies.at(name).let(_.decode)
