@@ -256,6 +256,7 @@ object HtmlAttribute:
   given optimum[T]: HtmlAttribute["optimum", Double, T] = _.toString.show
   given pattern[T]: HtmlAttribute["pattern", Text, T] = identity(_) // Provide with Kaleidoscope
   given placeholder[T]: HtmlAttribute["placeholder", Text, T] = identity(_)
+  given playsinline[T]: HtmlAttribute["playsinline", Boolean, T] = _ => Unset
   given poster[T]: HtmlAttribute["poster", Text, T] = identity(_)
   given preload[T]: HtmlAttribute["preload", Preload, T] = _.show
   given readonly[T]: HtmlAttribute["readonly", Boolean, T] = _ => Unset
