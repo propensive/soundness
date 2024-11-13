@@ -78,6 +78,3 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)
-
-open class JavaServletFn(handle: HttpConnection => HttpResponse)
-extends JavaServlet({ request ?=> handle(request) })

@@ -16,22 +16,5 @@
 
 package scintillate
 
-import rudiments.*
-import contingency.*
-import gossamer.*
-import telekinesis.*
-import anticipation.*
-
-object RequestParam:
-  given ("name" is GenericHtmlAttribute[RequestParam[?]]) as name:
-    def name: Text = t"name"
-    def serialize(value: RequestParam[?]): Text = value.key
-
-case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
-  def opt(using HttpRequest): Option[ParamType] =
-    summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
-
-  def unapply(req: HttpRequest): Option[ParamType] = opt(using req)
-
-  def apply()(using HttpRequest): ParamType raises ParamError =
-    opt.getOrElse(abort(ParamError(key)))
+open class JavaServletFn(handle: HttpConnection => HttpResponse)
+extends JavaServlet({ request ?=> handle(request) })
