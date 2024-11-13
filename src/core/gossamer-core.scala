@@ -95,6 +95,7 @@ extension [TextType: Textual](words: Iterable[TextType])
   def camel: TextType = pascal.uncapitalize
   def snake: TextType = words.join(TextType("_".tt))
   def kebab: TextType = words.join(TextType("-".tt))
+  def spaced: TextType = words.join(TextType(" ".tt))
 
 extension [TextType: Textual](text: TextType)
   inline def length: Int = TextType.length(text)
