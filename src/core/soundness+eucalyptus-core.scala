@@ -16,7 +16,7 @@
 
 package soundness
 
-export eucalyptus.{Inscribable, Taggable, dateFormat, mute, envelop, skip, silent, route}
+export eucalyptus.{Inscribable, Taggable, dateFormat, mute, envelop, silent, route, ignore}
 
 package logFormats:
   export eucalyptus.logFormats.{standard, untimestamped, lightweight}

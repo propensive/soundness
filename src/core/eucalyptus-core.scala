@@ -64,7 +64,7 @@ extension (logObject: Log.type)
           : ResultType =
     lambda(using loggable.contramap(_.tag(value)))
 
-  def skip[EventType, MessageType]: MessageType transcribes EventType = new Transcribable:
+  def ignore[EventType, MessageType]: MessageType transcribes EventType = new Transcribable:
     type Self = EventType
     type Result = MessageType
     override def skip(event: EventType): Boolean = true
