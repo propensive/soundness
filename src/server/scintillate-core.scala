@@ -25,7 +25,7 @@ import contingency.*
 import gossamer.*
 import nettlesome.*
 import monotonous.*, alphabets.base64.standard
-import telekinesis.{HttpResponse as _, *}
+import telekinesis.*
 import anticipation.*
 import serpentine.*
 import spectacular.*
@@ -45,11 +45,13 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
           response
 
         case _ =>
-          HttpResponse(Bytes(), HttpStatus.Forbidden)
+          HttpResponse(HttpStatus.Forbidden, Nil, LazyList())
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
-      HttpResponse(Bytes(), HttpStatus.Unauthorized, Map(ResponseHeader.WwwAuthenticate -> auth))
+
+      HttpResponse
+       (HttpStatus.Unauthorized, List(ResponseHeader.WwwAuthenticate.show -> auth), LazyList())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
 

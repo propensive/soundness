@@ -64,9 +64,9 @@ object Servable:
             : Unit =
       notFound.serve(headers, responder)
 
-  given [ResponseType: Retrievable] => ServeFailure[ResponseType] is Servable as retrievable:
+  given [ResponseType: Retrievable] => Unfulfilled[ResponseType] is Servable as retrievable:
     def process
-       (notFound:  ServeFailure[ResponseType],
+       (notFound:  Unfulfilled[ResponseType],
         status:    Int,
         headers:   Map[Text, Text],
         responder: Responder)

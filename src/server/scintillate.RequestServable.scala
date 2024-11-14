@@ -16,8 +16,9 @@
 
 package scintillate
 
-import parasite.*
 import anticipation.*
+import parasite.*
+import telekinesis.*
 
 trait RequestServable:
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil)

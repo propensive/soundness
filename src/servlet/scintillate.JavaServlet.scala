@@ -16,40 +16,28 @@
 
 package scintillate
 
-import rudiments.*
-import contingency.*
-import vacuous.*
 import anticipation.*
-import turbulence.*
-import nettlesome.*
-import spectacular.*
+import contingency.*
 import gossamer.*
-import telekinesis.{HttpResponse as _, *}
+import nettlesome.*
+import rudiments.*
+import spectacular.*
+import telekinesis.*
+import turbulence.*
+import vacuous.*
 
 import jakarta.servlet as js, js.http as jsh
 
 open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.HttpServlet:
-  protected case class ServletResponseWriter(response: jsh.HttpServletResponse) extends Responder:
-    def addHeader(key: Text, value: Text): Unit = response.addHeader(key.s, value.s)
-
-    def sendBody(status: Int, body: LazyList[Bytes]): Unit =
-      response.setStatus(status)
-      val out = response.getOutputStream.nn
-
-      body match
-        case LazyList()     => addHeader(ResponseHeader.ContentLength.header, t"0")
-        case LazyList(data) => addHeader(ResponseHeader.ContentLength.header, data.length.show)
-                               out.write(data.mutable(using Unsafe))
-        case body           => addHeader(ResponseHeader.TransferEncoding.header, t"chunked")
-                               body.map(_.mutable(using Unsafe)).each(out.write(_))
-
   protected def streamBody(request: jsh.HttpServletRequest): LazyList[Bytes] raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
     Readable.inputStream.stream(request.getInputStream.nn)
 
-  protected def makeConnection(request: jsh.HttpServletRequest): HttpConnection raises StreamError =
+  protected def makeConnection
+     (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
+          : HttpConnection raises StreamError =
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
@@ -69,12 +57,27 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       body    = streamBody(request),
       headers = headers)
 
-    HttpConnection(false, request.getServerPort, httpRequest)
+    def respond(response: HttpResponse): Unit =
+      response.headers.each: (key, value) =>
+        servletResponse.addHeader(key.s, value.s)
+
+      val out = servletResponse.getOutputStream.nn
+
+      response.body match
+        case LazyList()     => servletResponse.addHeader("content-length", "0")
+        case LazyList(data) => servletResponse.addHeader("content-length", data.length.show.s)
+                               out.write(data.mutable(using Unsafe))
+        case body           => servletResponse.addHeader("transfer-encoding", "chunked")
+                               body.map(_.mutable(using Unsafe)).each(out.write(_))
+
+      out.close()
+
+    HttpConnection(false, request.getServerPort, httpRequest, respond)
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    try throwErrors(handle(using makeConnection(request)).respond(ServletResponseWriter(response)))
-    catch case error: StreamError =>
-      () // FIXME
+    safely:
+      val connection = makeConnection(request, response)
+      connection.respond(handle(using connection))
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     handle(request, response)

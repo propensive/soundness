@@ -16,10 +16,11 @@
 
 package scintillate
 
-import parasite.*
+import anticipation.*
 import contingency.*
 import nettlesome.*
-import anticipation.*
+import parasite.*
+import telekinesis.*
 
 erased trait Http
 
@@ -28,7 +29,7 @@ object Http:
       => Http is Protocolic:
     type Carrier = TcpPort
     type Request = HttpConnection
-    type Response = HttpResponse
+    type Response = telekinesis.HttpResponse
     type Server = HttpService
 
     def server(port: TcpPort)(handler: HttpConnection ?=> HttpResponse): HttpService =

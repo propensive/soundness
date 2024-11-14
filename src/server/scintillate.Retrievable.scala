@@ -18,7 +18,7 @@ package scintillate
 
 import rudiments.*
 import gesticulate.*
-import telekinesis.{HttpResponse as _, *}
+import telekinesis.*
 import anticipation.*
 import spectacular.*
 

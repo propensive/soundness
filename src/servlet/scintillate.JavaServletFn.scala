@@ -16,5 +16,7 @@
 
 package scintillate
 
+import telekinesis.*
+
 open class JavaServletFn(handle: HttpConnection => HttpResponse)
 extends JavaServlet({ request ?=> handle(request) })

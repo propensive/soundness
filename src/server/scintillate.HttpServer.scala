@@ -25,7 +25,7 @@ import turbulence.*
 import contingency.*
 import gossamer.*
 import nettlesome.*
-import telekinesis.{HttpResponse as _, *}
+import telekinesis.*
 import anticipation.*
 import spectacular.*
 
@@ -61,14 +61,16 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
             exchange.nn.getResponseBody.nn.flush()
             exchange.nn.close()
 
-        handler(using makeConnection(exchange.nn)).respond(responder)
+        val connection = HttpConnection(exchange.nn)
+
+        connection.respond(handler(using connection))
+
       catch case NonFatal(exception) => exception.printStackTrace()
 
     def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
       try
         val httpServer = csnh.HttpServer.create(jn.InetSocketAddress("localhost", port), 0).nn
-        val context = httpServer.createContext("/").nn
-        context.setHandler(handle(_))
+        httpServer.createContext("/").nn.setHandler(handle(_))
         //httpServer.setExecutor(java.util.concurrent.Executors.newVirtualThreadPerTaskExecutor())
         httpServer.setExecutor(null)
         httpServer.start()
@@ -92,42 +94,3 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
       if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
 
     recur()
-
-  private def makeConnection(exchange: csnh.HttpExchange): HttpConnection logs HttpServerEvent =
-    val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
-      exchange.getLocalAddress.nn.getPort
-
-    HttpConnection(false, port, makeRequest(exchange))
-
-  private def makeRequest(exchange: csnh.HttpExchange): HttpRequest logs HttpServerEvent =
-    val uri = exchange.getRequestURI.nn
-    val query = Optional(uri.getQuery)
-    val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
-    val method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s)
-
-    val headers: List[RequestHeader.Value] =
-      exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
-        (pair: @unchecked) match
-          case (RequestHeader(header), values) => values.map: value =>
-            header(value.tt)
-      .to(List)
-
-    val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
-
-    val host = unsafely:
-       Hostname.parse:
-         Optional(uri.getHost).let(_.tt).or:
-           exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
-
-    val request =
-      HttpRequest
-       (method  = method,
-        version = version,
-        host    = host,
-        target  = target,
-        body    = streamBody(exchange),
-        headers = headers)
-
-    Log.fine(HttpServerEvent.Received(request))
-
-    request

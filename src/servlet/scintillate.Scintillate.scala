@@ -19,6 +19,7 @@ package scintillate
 import scala.quoted.*
 import scala.annotation.*
 
+import telekinesis.*
 import fulminate.*
 
 class servlet extends MacroAnnotation:
