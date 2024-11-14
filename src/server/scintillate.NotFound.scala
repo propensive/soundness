@@ -16,9 +16,10 @@
 
 package scintillate
 
-import rudiments.*
-import anticipation.*
+import telekinesis.*
 
-case class NotFound[ContentType: Servable](content: ContentType):
-  def serve(headers: Map[Text, Text], responder: Responder) =
-    ContentType.process(content, 404, headers, responder)
+object NotFound:
+  given [ContentType: Servable] => NotFound[ContentType] is Servable = notFound =>
+    ContentType.serve(notFound.content).copy(status = HttpStatus.NotFound)
+
+case class NotFound[ContentType](content: ContentType)

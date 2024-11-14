@@ -16,4 +16,10 @@
 
 package scintillate
 
-case class Unfulfilled[ContentType: Servable](content: ContentType)
+import telekinesis.*
+
+object Unfulfilled:
+  given [ContentType: Servable] => Unfulfilled[ContentType] is Servable = unfulfilled =>
+    ContentType.serve(unfulfilled.content).copy(status = HttpStatus.InternalServerError)
+
+case class Unfulfilled[ContentType](content: ContentType)

@@ -58,6 +58,8 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       headers = headers)
 
     def respond(response: HttpResponse): Unit =
+      servletResponse.setStatus(response.status.code)
+
       response.headers.each: (key, value) =>
         servletResponse.addHeader(key.s, value.s)
 

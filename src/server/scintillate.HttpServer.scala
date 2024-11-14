@@ -17,17 +17,13 @@
 package scintillate
 
 import rudiments.*
-import prepositional.*
 import digression.*
 import vacuous.*
 import parasite.*
 import turbulence.*
 import contingency.*
-import gossamer.*
-import nettlesome.*
 import telekinesis.*
 import anticipation.*
-import spectacular.*
 
 import scala.compiletime.*
 

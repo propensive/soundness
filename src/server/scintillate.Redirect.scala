@@ -24,4 +24,8 @@ object Redirect:
   def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType): Redirect =
     new Redirect(HyperlinkType.hyperlink(location).show)
 
+  given Redirect is Servable as redirect = redirect =>
+    val headers = List(ResponseHeader.Location.header -> redirect.location)
+    HttpResponse(HttpStatus.MovedPermanently, headers, LazyList())
+
 case class Redirect(location: Text)

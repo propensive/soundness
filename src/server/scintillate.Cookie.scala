@@ -16,13 +16,16 @@
 
 package scintillate
 
-import rudiments.*
+import anticipation.*
 import fulminate.*
-import vacuous.*
 import gossamer.*
 import nettlesome.*
-import anticipation.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
+import telekinesis.*
+import vacuous.*
 
 import scala.compiletime.*
 
@@ -31,6 +34,7 @@ import java.text as jt
 object Cookie:
   given ("set-cookie" is GenericHttpRequestParam[Cookie.Value]) as setCookie = _.show
   given ("cookie" is GenericHttpRequestParam[Cookie.Value]) as cookie = _.show
+
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   def apply[ValueType: {Encoder, Decoder}](using DummyImplicit)[DurationType: GenericDuration]
@@ -51,6 +55,12 @@ object Cookie:
         if cookie.secure then t"Secure" else Unset,
         if cookie.httpOnly then t"HttpOnly" else Unset)
       .compact.join(t"; ")
+
+    given Cookie.Value is Encodable in ResponseHeader.Value = cookie =>
+      ResponseHeader.SetCookie(cookie.show)
+
+    given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
+      response.copy(headers = (t"set-cookie", cookie.show) :: response.headers)
 
   case class Value
      (name:     Text,
