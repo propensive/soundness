@@ -118,7 +118,9 @@ object Http:
         Log.fine(HttpEvent.Response(status))
 
         val responseHeaders: List[(Text, Text)] =
-          connection.getHeaderFields.nn.asScala.to(List).flatMap:
-            case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
+          connection.getHeaderFields.nn.asScala.to(List).flatMap: pair =>
+            (pair: @unchecked) match
+              case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
+              case _                     => Nil
 
         HttpResponse(status, responseHeaders, body)

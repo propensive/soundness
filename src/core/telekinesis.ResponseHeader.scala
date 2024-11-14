@@ -34,7 +34,7 @@ object ResponseHeader:
   def unapply(str: Text): Some[ResponseHeader[?]] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))
 
-  case class Value(header: RequestHeader[?], value: Text)
+  case class Value(header: ResponseHeader[?], value: Text)
 
 enum ResponseHeader[ValueType](val header: Text):
   case AcceptCharset extends ResponseHeader[Text](t"accept-charset")
@@ -89,3 +89,5 @@ enum ResponseHeader[ValueType](val header: Text):
   case WwwAuthenticate extends ResponseHeader[Text](t"www-authenticate")
   case XFrameOptions extends ResponseHeader[Text](t"x-frame-options")
   case Custom(name: Text) extends ResponseHeader[Text](name.lower)
+
+  def apply(value: Text): ResponseHeader.Value = ResponseHeader.Value(this, value)

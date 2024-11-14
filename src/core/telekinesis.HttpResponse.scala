@@ -34,18 +34,21 @@ object HttpResponse:
 
     body.stream
 
-case class HttpResponse
-   (status:  HttpStatus,
-    headers: List[(Text, Text)],
-    body:    LazyList[Bytes]):
+  def apply[ServableType: Servable](servable: ServableType): HttpResponse =
+    ServableType.serve(servable)
 
+case class HttpResponse(status:  HttpStatus, headers: List[(Text, Text)], body: LazyList[Bytes]):
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
-
 
   def as[BodyType: HttpReadable as readable]: BodyType raises HttpError = (status: @unchecked) match
     case status: FailureCase => abort(HttpError(status, headers: List[(Text, Text)]))
     case status              => readable.read(status, body)
+
+  @targetName("add")
+  infix def + [ValueType: Encodable in ResponseHeader.Value](value: ValueType): HttpResponse =
+    val header = ValueType.encode(value)
+    copy(headers = (header.header.header, header.value) :: headers)
 
   def apply[ValueType](header: ResponseHeader[ValueType])
      (using decoder: HttpHeaderDecoder[ValueType])
