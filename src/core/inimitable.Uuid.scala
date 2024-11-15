@@ -22,6 +22,7 @@ import java.util as ju
 
 import anticipation.*
 import vacuous.*
+import fulminate.*
 import rudiments.*
 import contingency.*
 
@@ -34,6 +35,8 @@ object Uuid extends Extractor[Text, Uuid]:
 
   def apply(): Uuid = ju.UUID.randomUUID().nn.pipe: uuid =>
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
+
+  given Uuid is Communicable = uuid => Message(uuid.text)
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
