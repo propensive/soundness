@@ -115,7 +115,7 @@ case class HttpRequest
         case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
       .to(Map) ++ {
         if (method == HttpMethod.Post || method == HttpMethod.Put) &&
-            (contentType == Some(media"application/x-www-form-urlencoded") || contentType.absent)
+            contentType.lay(true)(_ == media"application/x-www-form-urlencoded")
         then
           Map[Text, Text](body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
             case Seq(key: Text)              => key.urlDecode.show -> t""
