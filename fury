@@ -7,7 +7,7 @@ target gesticulate/core
 project gesticulate
   module core
     sources src/core
-    include gossamer/core anticipation/html
+    include gossamer/core anticipation/html turbulence/core
 
   module test
     sources  src/test
