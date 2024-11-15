@@ -108,23 +108,33 @@ case class HttpRequest
       val kv: List[Text] = elem.cut(t"=", 2)
       map.updated(kv(0), safely(kv(1)).or(t"") :: map.getOrElse(kv(0), Nil))
 
-  // FIXME: The exception in here needs to be handled elsewhere
-  val params: Map[Text, Text] =
-    try
-      queryParams.map:
-        case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
-      .to(Map) ++ {
-        if (method == HttpMethod.Post || method == HttpMethod.Put) &&
-            contentType.lay(true)(_ == media"application/x-www-form-urlencoded")
-        then
-          Map[Text, Text](body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
-            case Seq(key: Text)              => key.urlDecode.show -> t""
-            case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-            case _                           => throw Panic(m"key/value pair does not match")
-          )*)
-        else Map[Text, Text]()
-      }
-    catch case e: StreamError  => Map()
+  lazy val params: Map[Text, Text] =
+    queryParams.map:
+      case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
+    .to(Map) ++ method.match
+      case HttpMethod.Post | HttpMethod.Put =>
+        contentType.or(media"application/x-www-form-urlencoded").show match
+          case t"multipart/form-data" =>
+            mend:
+              case MultipartError(_) => Map()
+            .within:
+              Multipart.parse(body.read[Bytes]).parts.filter(_.filename.absent).map: part =>
+                import charDecoders.utf8
+                import textSanitizers.strict
+                part.name.or(t"") -> safely(part.body.read[Text]).or(t"")
+              .to(Map)
+
+          case t"application/x-www-form-urlencoded" =>
+            body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
+              case Seq(key: Text)              => key.urlDecode.show -> t""
+              case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
+              case _                           => throw Panic(m"key/value pair does not match")
+            ).to(Map)
+
+          case _ =>
+            Map()
+
+      case _ => Map()
 
   def header(header: RequestHeader[?]): List[RequestHeader.Value] =
     headers.filter(_.header == header)
