@@ -26,6 +26,6 @@ object Redirect:
 
   given Redirect is Servable as redirect = redirect =>
     val headers = List(ResponseHeader.Location.header -> redirect.location)
-    HttpResponse(HttpStatus.MovedPermanently, headers, LazyList())
+    HttpResponse(1.1, HttpStatus.MovedPermanently, headers, LazyList())
 
 case class Redirect(location: Text)
