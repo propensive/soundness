@@ -16,4 +16,4 @@
 
 package soundness
 
-export gesticulate.{Extensions, Media, MediaType, MediaTypeError, media}
+export gesticulate.{Extensions, Media, MediaType, MediaTypeError, media, Multipart, MultipartError, Part}
