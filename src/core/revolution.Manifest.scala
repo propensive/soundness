@@ -29,7 +29,7 @@ import symbolism.*
 
 object Manifest:
   protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =
-    val java = juj.Manifest(LazyListInputStream(source.read[LazyList[Bytes]]))
+    val java = juj.Manifest(source.read[LazyList[Bytes]].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
