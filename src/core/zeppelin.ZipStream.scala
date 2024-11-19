@@ -29,7 +29,7 @@ class ZipStream(stream: () => LazyList[Bytes], filter: (Path on Zip) => Boolean)
   def each(lambda: ZipEntry => Unit): Unit raises ZipError = map[Unit](lambda)
 
   def map[ElementType](lambda: ZipEntry => ElementType): LazyList[ElementType] raises ZipError =
-    val zipIn = juz.ZipInputStream(LazyListInputStream(stream()))
+    val zipIn = juz.ZipInputStream(stream().inputStream)
 
     def recur(): LazyList[ZipEntry] =
      zipIn.getNextEntry() match
