@@ -322,6 +322,34 @@ extension (lazyList: LazyList[Bytes])
 
     recur(lazyList, byteSize)
 
+  def inputStream: ji.InputStream = new ji.InputStream:
+    private var stream: LazyList[Bytes] = lazyList
+    private var offset: Int = 0
+    private var focus: Bytes = IArray.empty[Byte]
+
+    override def available(): Int =
+      val diff = focus.length - offset
+      if diff > 0 then diff
+      else if stream.isEmpty then 0
+      else
+        focus = stream.head
+        stream = stream.tail
+        offset = 0
+        available()
+
+    override def close(): Unit = ()
+
+    def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
+
+    override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
+      if length == 0 then 0 else
+        val count = length.min(available())
+
+        if count == 0 then -1 else
+          if count > 0 then System.arraycopy(focus, offset, array, arrayOffset, count)
+          offset += count
+          count
+
 def spool[ItemType](using DummyImplicit)[ResultType](lambda: Spool[ItemType] => ResultType)
         : ResultType =
   val spool: Spool[ItemType] = Spool()

@@ -52,4 +52,4 @@ object Compression:
       recur(lazyList)
 
     def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
-      unsafely(juz.GZIPInputStream(LazyListInputStream(lazyList)).stream[Bytes])
+      unsafely(juz.GZIPInputStream(lazyList.inputStream).stream[Bytes])
