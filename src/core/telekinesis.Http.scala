@@ -34,51 +34,51 @@ object Http:
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    request[PostType](UrlType.hyperlink(url), content, HttpMethod.Post, headers)
+    fetch[PostType](UrlType.hyperlink(url), content, HttpMethod.Post, headers)
 
   def put[PostType: Postable, UrlType: Hyperlinkable]
      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    request[PostType](UrlType.hyperlink(url), content, HttpMethod.Put, headers)
+    fetch[PostType](UrlType.hyperlink(url), content, HttpMethod.Put, headers)
 
   def get[UrlType: Hyperlinkable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Get, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Get, headers)
 
   def options[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Options, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Options, headers)
 
   def head[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Head, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Head, headers)
 
   def delete[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Delete, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Delete, headers)
 
   def connect[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Connect, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Connect, headers)
 
   def trace[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Trace, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Trace, headers)
 
   def patch[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    request(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
+    fetch(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
 
-  private def request[PostType: Postable]
+  private def fetch[PostType: Postable]
      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
      (using Online)
           : HttpResponse logs HttpEvent =
@@ -109,7 +109,6 @@ object Http:
 
           if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #:: read(in)
 
-
         def body: LazyList[Bytes] =
           try read(connection.getInputStream.nn) catch case _: Exception =>
             try read(connection.getErrorStream.nn) catch case _: Exception => LazyList()
@@ -123,4 +122,4 @@ object Http:
               case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
               case _                     => Nil
 
-        HttpResponse(status, responseHeaders, body)
+        HttpResponse(1.1, status, responseHeaders, body)

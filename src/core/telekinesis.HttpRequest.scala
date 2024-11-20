@@ -113,7 +113,7 @@ case class HttpRequest
       case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
     .to(Map) ++ method.match
       case HttpMethod.Post | HttpMethod.Put =>
-        contentType.or(media"application/x-www-form-urlencoded").show match
+        contentType.or(media"application/x-www-form-urlencoded").base.show match
           case t"multipart/form-data" =>
             mend:
               case MultipartError(_) => Map()

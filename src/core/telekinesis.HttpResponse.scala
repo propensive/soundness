@@ -37,7 +37,9 @@ object HttpResponse:
   def apply[ServableType: Servable](servable: ServableType): HttpResponse =
     ServableType.serve(servable)
 
-case class HttpResponse(status:  HttpStatus, headers: List[(Text, Text)], body: LazyList[Bytes]):
+case class HttpResponse
+   (version: HttpVersion, status:  HttpStatus, headers: List[(Text, Text)], body: LazyList[Bytes]):
+
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
 

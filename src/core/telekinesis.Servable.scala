@@ -28,12 +28,12 @@ object Servable:
   def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => LazyList[Bytes])
           : ResponseType is Servable = response =>
     val headers = List(ResponseHeader.ContentType.header -> mediaType.show)
-    HttpResponse(HttpStatus.Ok, headers, lambda(response))
+    HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
 
   given Content is Servable as content:
     def serve(content: Content): HttpResponse =
       val headers = List(ResponseHeader.ContentType.header -> content.media.show)
-      HttpResponse(HttpStatus.Ok, headers, content.stream)
+      HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
 
   given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
     Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
@@ -45,10 +45,10 @@ object Servable:
     scala.compiletime.summonFrom:
       case encodable: (ValueType is Encodable in Bytes) => value =>
         val headers = List(ResponseHeader.ContentType.header -> ValueType.mediaType(value).show)
-        HttpResponse(HttpStatus.Ok, headers, LazyList(encodable.encode(value)))
+        HttpResponse(1.1, HttpStatus.Ok, headers, LazyList(encodable.encode(value)))
       case given (ValueType is Readable by Bytes)       => value =>
         val headers = List(ResponseHeader.ContentType.header -> ValueType.mediaType(value).show)
-        HttpResponse(HttpStatus.Ok, headers, value.stream[Bytes])
+        HttpResponse(1.1, HttpStatus.Ok, headers, value.stream[Bytes])
 
 trait Servable:
   type Self
