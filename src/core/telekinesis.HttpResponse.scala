@@ -34,8 +34,14 @@ object HttpResponse:
 
     body.stream
 
-  def apply[ServableType: Servable](servable: ServableType): HttpResponse =
-    ServableType.serve(servable)
+  def apply[ServableType: Servable](servable: ServableType, headers: ResponseHeader.Value*)
+          : HttpResponse =
+
+    val headers2: List[(Text, Text)] = headers.to(List).map: header =>
+      header.header.header -> header.value
+
+    val response = ServableType.serve(servable)
+    response.copy(headers = headers2 ++ response.headers)
 
 case class HttpResponse
    (version: HttpVersion, status:  HttpStatus, headers: List[(Text, Text)], body: LazyList[Bytes]):

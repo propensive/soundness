@@ -33,6 +33,7 @@ object Servable:
   given Content is Servable as content:
     def serve(content: Content): HttpResponse =
       val headers = List(ResponseHeader.ContentType.header -> content.media.show)
+
       HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
 
   given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
