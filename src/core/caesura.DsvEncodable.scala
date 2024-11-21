@@ -18,7 +18,7 @@ package caesura
 
 import anticipation.*
 import rudiments.*
-import spectacular.*
+import prepositional.*
 import wisteria.*
 
 object DsvEncodable extends ProductDerivable[DsvEncodable]:
@@ -26,7 +26,7 @@ object DsvEncodable extends ProductDerivable[DsvEncodable]:
     val cells = fields(value) { [FieldType] => field => context.encode(field).data }.to(List).flatten
     Row(cells)
 
-  given [ValueType: Encoder] => ValueType is DsvEncodable as encoder =
+  given [ValueType: Encodable in Text] => ValueType is DsvEncodable as encoder =
     value => Row(ValueType.encode(value))
 
 trait DsvEncodable:
