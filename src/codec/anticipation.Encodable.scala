@@ -19,7 +19,15 @@ package anticipation
 import prepositional.*
 
 object Encodable:
-  given Bytes is Encodable in Bytes = identity(_)
+  given Bytes is Encodable in Bytes as bytes = identity(_)
+  given Int is Encodable in Text as int = _.toString.tt
+  given Double is Encodable in Text as double = _.toString.tt
+  given Byte is Encodable in Text as byte = _.toString.tt
+  given Short is Encodable in Text as short = _.toString.tt
+  given Long is Encodable in Text as long = _.toString.tt
+  given Float is Encodable in Text as float = _.toString.tt
+  given Text is Encodable in Text as text = identity(_)
+  given Char is Encodable in Text as char = _.toString.tt
 
 trait Encodable:
   private inline def encodable: this.type = this
