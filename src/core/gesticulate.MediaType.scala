@@ -22,6 +22,7 @@ import gossamer.{where as _, *}
 import contextual.*
 import contingency.*
 import anticipation.*
+import prepositional.*
 import spectacular.*
 
 import language.dynamics
@@ -50,6 +51,9 @@ object MediaType:
 
   given MediaType is Showable as showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
+
+  given MediaType is Encodable in Text = _.show
+  given (using Tactic[MediaTypeError]) => Decoder[MediaType] = Media.parse(_)
 
   given ("formenctype" is GenericHtmlAttribute[MediaType]) as formenctype:
     def name: Text = t"formenctype"
