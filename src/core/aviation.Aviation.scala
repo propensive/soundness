@@ -7,6 +7,7 @@ import contingency.*
 import symbolism.*
 import fulminate.*
 import hypotenuse.*
+import prepositional.*
 import spectacular.*
 
 import scala.quoted.*
@@ -53,7 +54,7 @@ object Aviation:
 
     given (using Tactic[DateError]) => Decoder[Date] as decoder = parse(_)
 
-    given (using RomanCalendar) => Encoder[Date] as encoder = date =>
+    given (using RomanCalendar) => Date is Encodable in Text as encodable = date =>
       import hieroglyph.textMetrics.uniform
       t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
 
