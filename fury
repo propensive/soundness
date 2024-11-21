@@ -44,6 +44,7 @@ project anticipation
   module codec
     compiler  scala
     include   prepositional/core
+    include   anticipation/text
     sources   src/codec
 
   module transport
