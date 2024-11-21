@@ -23,6 +23,7 @@ import spectacular.*
 import contingency.*
 import wisteria.*
 import anticipation.*
+import prepositional.*
 import gossamer.*
 
 import scala.deriving.*
@@ -90,15 +91,15 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
 object CodlEncoder:
 
   inline given derived[ValueType]: CodlEncoder[ValueType] = summonFrom:
-    case given Encoder[ValueType]           => field[ValueType]
-    case given ProductReflection[ValueType] => CodlEncoderDerivation.derived[ValueType]
+    case given (ValueType is Encodable in Text) => field[ValueType]
+    case given ProductReflection[ValueType]     => CodlEncoderDerivation.derived[ValueType]
 
-  def field[ValueType](using encoder: Encoder[ValueType]): CodlEncoder[ValueType]/*^{encoder}*/ =
+  def field[ValueType: Encodable in Text]: CodlEncoder[ValueType]/*^{encoder}*/ =
     new CodlEncoder[ValueType]:
       def schema: CodlSchema = Field(Arity.One)
 
       def encode(value: ValueType): List[IArray[CodlNode]] =
-        List(IArray(CodlNode(Data(encoder.encode(value)))))
+        List(IArray(CodlNode(Data(ValueType.encode(value)))))
 
   given optional[ValueType](using encoder: CodlEncoder[ValueType]): CodlEncoder[Optional[ValueType]] =
     new CodlEncoder[Optional[ValueType]]:

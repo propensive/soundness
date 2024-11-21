@@ -24,6 +24,7 @@ import kaleidoscope.*
 import spectacular.*
 import denominative.*
 import contingency.*
+import prepositional.*
 
 import language.experimental.captureChecking
 
@@ -35,7 +36,9 @@ object Character:
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
 
-  given Encoder[Character] with
+  given Character is Encodable in Text = new Encodable:
+    type Self = Character
+    type Format = Text
     def encode(char: Character): Text =
       if char == End then t"[END]" else t"[${char.char}:${char.line}:${char.column}]"
 
