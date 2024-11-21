@@ -58,7 +58,7 @@ extends CodlDecoder[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
   def decode(nodes: List[Indexed])(using codlError: Tactic[CodlReadError]): ValueType =
-    nodes.prim.or(abort(CodlReadError())).children match
+    nodes.prim.lest(CodlReadError()).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
       case _                                         => abort(CodlReadError())
 
@@ -154,7 +154,7 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
               case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
               case _                                            => label
 
-            context.decode(values.prim.or(abort(CodlReadError(label2))).get(label2))
+            context.decode(values.prim.lest(CodlReadError(label2)).get(label2))
 
 
 object CodlDecoder:

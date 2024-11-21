@@ -71,7 +71,7 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
     case data: Data => data
 
   def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Tactic[MissingValueError]): List[Data] =
-    data.or(abort(MissingValueError(key.show))).selectDynamic(key)
+    data.lest(MissingValueError(key.show)).selectDynamic(key)
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Tactic[MissingValueError]): Data = selectDynamic(key)(idx)
 
@@ -232,7 +232,7 @@ trait Indexed extends Dynamic:
   def ids: Set[Text] = idIndex.keySet
 
   def apply(idx: Int = 0)(using Tactic[MissingIndexValueError]): CodlNode =
-    children.at(Ordinal.zerary(idx)).or(abort(MissingIndexValueError(idx)))
+    children.at(Ordinal.zerary(idx)).lest(MissingIndexValueError(idx))
 
   def apply(key: Text): List[CodlNode] = index.at(key).or(Nil).map(children(_))
 
