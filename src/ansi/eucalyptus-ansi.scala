@@ -38,4 +38,11 @@ package logFormats:
     e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
   given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
-    e"$SlateGray(${dateFormat.format(timestamp).nn.tt}) $level $CadetBlue(${realm.name.fit(10)}) > $event\n"
+    event.teletype.cut(t"\n") match
+      case Nil          => e""
+      case head :: tail =>
+        val date = dateFormat.format(timestamp).nn.tt
+        val first = e"$SlateGray($date) $level $CadetBlue(${realm.name.fit(10)}) > $head"
+        lazy val indent = e" "*43
+
+        (first :: tail.map(indent+_)).join(e"\n")
