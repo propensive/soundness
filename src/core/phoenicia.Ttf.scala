@@ -19,7 +19,6 @@ package phoenicia
 import anticipation.*
 import bifurcate.*
 import contingency.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import hypotenuse.*
@@ -81,22 +80,22 @@ case class Ttf(data: Bytes):
         if table.magicNumber != 0x5f0f3cf5.bits
         then raise(FontError(FontError.Reason.MagicNumber))
 
-    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Head))))
+    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
 
   def cmap: CmapTable raises FontError =
     tables.at(TtfTag.Cmap).let: ref =>
       CmapTable(ref.offset)
-    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Cmap))))
+    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
 
   def hhea: HheaTable raises FontError =
     tables.at(TtfTag.Hhea).let: ref =>
       data.unpackFrom[HheaTable](ref.offset)
-    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hhea))))
+    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
 
   def hmtx: HmtxTable raises FontError =
     tables.at(TtfTag.Hmtx).let: ref =>
       HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    .or(abort(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx))))
+    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
   case class HeadTable
      (majorVersion:       U16,
