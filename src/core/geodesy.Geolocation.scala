@@ -7,6 +7,7 @@ import rudiments.*
 import gossamer.*
 import contingency.*
 import kaleidoscope.*
+import prepositional.*
 
 object Geolocation:
   import GeolocationError.Reason.*
@@ -72,7 +73,7 @@ object Geolocation:
       raise(GeolocationError(BadScheme))
       Geolocation(Location(0.deg, 0.deg))
 
-  given Encoder[Geolocation] as encoder = geolocation =>
+  given Geolocation is Encodable in Text as encodable = geolocation =>
     import geolocation.{location, altitude, uncertainty}
     t"geo:$location${altitude.lay(t"") { a => t",$a" }}${uncertainty.lay(t"") { u => t";u=$u" }}"
 
