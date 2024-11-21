@@ -24,6 +24,7 @@ import anticipation.*
 import vacuous.*
 import fulminate.*
 import rudiments.*
+import prepositional.*
 import contingency.*
 
 object Uuid extends Extractor[Text, Uuid]:
@@ -37,6 +38,7 @@ object Uuid extends Extractor[Text, Uuid]:
     Uuid(uuid.getMostSignificantBits, uuid.getLeastSignificantBits)
 
   given Uuid is Communicable = uuid => Message(uuid.text)
+  given Uuid is Encodable in Text = _.text
 
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
