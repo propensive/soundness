@@ -19,14 +19,15 @@ package exoskeleton
 import rudiments.*
 import fulminate.*
 import anticipation.*
+import prepositional.*
 import spectacular.*
 import gossamer.*
 
 import language.experimental.captureChecking
 
 object Shell:
-  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[Shell] = _.toString.tt.lower
+  given Decoder[Shell] as decoder = text => valueOf(text.lower.capitalize.s)
+  given Shell is Encodable in Text as encodable = _.toString.tt.lower
   given Shell is Communicable as communicable = shell => Message(shell.toString.tt.lower)
 
 enum Shell:
