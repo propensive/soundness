@@ -20,9 +20,11 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
 
 object Pid:
   given Pid is Communicable = pid => Message(pid.toString.tt)
+  given Pid is Encodable in Text = _.toString.tt
 
 case class Pid(value: Long):
   override def toString(): String = "\u21af"+value
