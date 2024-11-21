@@ -24,6 +24,7 @@ import contingency.*
 import quantitative.*
 import anticipation.*
 import spectacular.*
+import prepositional.*
 import hieroglyph.*
 import xylophone.*
 import vacuous.*
@@ -36,10 +37,10 @@ case class Xy(x: Float, y: Float)
 case class DxDy(dx: Float, dy: Float)
 
 object DxDy:
-  given encoder: Encoder[DxDy] = value => t"${value.dx.toString} ${value.dy.toString}"
+  given DxDy is Encodable in Text as encodable = value => t"${value.dx.toString} ${value.dy.toString}"
 
 object Xy:
-  given encoder: Encoder[Xy] = value => t"${value.x.toString} ${value.y.toString}"
+  given Xy is Encodable in Text as encodable = value => t"${value.x.toString} ${value.y.toString}"
 
 object Savagery:
   opaque type Degrees = Double
@@ -51,7 +52,7 @@ object Savagery:
   object Degrees:
     def apply(degrees: Double): Degrees = degrees
 
-    given encoder: Encoder[Degrees] = _.toString.tt
+    given Degrees is Encodable in Text as encodable = _.toString.tt
 
   extension (point: Xy)
     @targetName("plus")
@@ -67,7 +68,7 @@ object Savagery:
 export Savagery.{Degrees, SvgId}
 
 object Coords:
-  given Encoder[Coords] =
+  given Coords is Encodable in Text as encodable =
     case Rel(vector) => vector.encode
     case Abs(point)  => point.encode
 
@@ -102,7 +103,7 @@ case class LineSegment(symbol: Char, parameters: (Double | Boolean)*):
 object PathOp:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
-  given Encoder[PathOp] =
+  given PathOp is Encodable in Text as encodable =
     case Move(coords)                => t"${coords.key('m')} $coords"
     case Line(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
     case Line(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
