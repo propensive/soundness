@@ -18,11 +18,12 @@ package ethereal
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 
 object CliInput:
-  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
-  given encoder: Encoder[CliInput] = _.toString.tt.lower
+  given Decoder[CliInput] as decoder = text => valueOf(text.lower.capitalize.s)
+  given CliInput is Encodable in Text as encodable = _.toString.tt.lower
 
 enum CliInput:
   case Terminal, Pipe
