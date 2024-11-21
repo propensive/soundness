@@ -112,7 +112,7 @@ extends Pathlike:
 
   def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
           : Path on Platform raises PathError =
-    parent.let(_ / name).or(abort(PathError(PathError.Reason.RootParent)))
+    parent.let(_ / name).lest(PathError(PathError.Reason.RootParent))
 
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
     textDescent.reverse.map(navigable.element(_))
