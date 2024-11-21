@@ -20,6 +20,7 @@ import rudiments.*
 import vacuous.*
 import wisteria.*
 import anticipation.*
+import prepositional.*
 
 import scala.deriving.*
 
@@ -27,10 +28,10 @@ import language.experimental.captureChecking
 
 object Inspectable extends Inspectable2:
   inline given [ValueType] => ValueType is Inspectable as derived = compiletime.summonFrom:
-    case encoder: Encoder[ValueType]   => encoder.encode(_)
-    case given Reflection[ValueType]   => InspectableDerivation.derived[ValueType].text(_)
-    case given (ValueType is Showable) => _.show
-    case _                             => value => s"⸉${value.toString.tt}⸊".tt
+    case given (ValueType is Encodable in Text) => _.encode
+    case given Reflection[ValueType]            => InspectableDerivation.derived[ValueType].text(_)
+    case given (ValueType is Showable)          => _.show
+    case _                                      => value => s"⸉${value.toString.tt}⸊".tt
 
   given Char is Inspectable as char = char => ("'"+escape(char).s+"'").tt
   given Long is Inspectable as long = long => (long.toString+"L").tt
