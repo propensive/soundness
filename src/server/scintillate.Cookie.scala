@@ -37,12 +37,13 @@ object Cookie:
 
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
-  def apply[ValueType: {Encoder, Decoder}](using DummyImplicit)[DurationType: GenericDuration]
-    (name:     Text,
-     domain:   Optional[Hostname]     = Unset,
-     expiry:   Optional[DurationType] = Unset,
-     secure:   Boolean                = false,
-     httpOnly: Boolean                = false) =
+  def apply[ValueType: {Encodable in Text, Decoder}](using DummyImplicit)
+     [DurationType: GenericDuration]
+     (name:     Text,
+      domain:   Optional[Hostname]     = Unset,
+      expiry:   Optional[DurationType] = Unset,
+      secure:   Boolean                = false,
+      httpOnly: Boolean                = false) =
   new Cookie[ValueType, DurationType](name, domain, expiry, secure, httpOnly)
 
   object Value:
@@ -71,7 +72,7 @@ object Cookie:
       secure:   Boolean        = false,
       httpOnly: Boolean        = false)
 
-case class Cookie[ValueType: {Encoder, Decoder}, DurationType: GenericDuration]
+case class Cookie[ValueType: {Encodable in Text, Decoder}, DurationType: GenericDuration]
    (name:     Text,
     domain:   Optional[Hostname],
     expiry:   Optional[DurationType],
