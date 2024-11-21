@@ -37,7 +37,7 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
-  given [ValueType: Encodable in Json]
+  given [ValueType: Encodable in Json as encodable]
       => Optional[ValueType] is Encodable in Json as optionalEncodable =
     new Encodable:
       type Self = Optional[ValueType]
@@ -46,7 +46,7 @@ trait Json2:
       override def omit(value: Optional[ValueType]): Boolean = value.absent
 
       def encode(value: Optional[ValueType]): Json =
-        value.let(ValueType.encode(_)).or(Json.ast(JsonAst(Unset)))
+        value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
   given [ValueType: Decodable in Json](using Tactic[JsonError])
       => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
@@ -61,8 +61,8 @@ trait Json2:
       DecodableDerivation.derived
 
   inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
-    case given Encoder[ValueType]    => value => Json.ast(JsonAst(value.encode.s))
-    case given Reflection[ValueType] => EncodableDerivation.derived
+    case given (ValueType is Encodable in Text) => value => Json.ast(JsonAst(value.encode.s))
+    case given Reflection[ValueType]            => EncodableDerivation.derived
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
@@ -139,7 +139,7 @@ object Json extends Json2, Dynamic:
       => Option[ValueType] is Decodable in Json as option = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
-  given [ValueType: Encodable in Json] => Option[ValueType] is Encodable in Json as optionEncodable =
+  given [ValueType: Encodable in Json as encodable] => Option[ValueType] is Encodable in Json as optionEncodable =
     new Encodable:
       type Self = Option[ValueType]
       type Format = Json
@@ -148,7 +148,7 @@ object Json extends Json2, Dynamic:
 
       def encode(value: Option[ValueType]): Json = value match
         case None        => Json.ast(JsonAst(Unset))
-        case Some(value) => ValueType.encode(value)
+        case Some(value) => encodable.encode(value)
 
   given [IntegralType: Integral] => IntegralType is Encodable in Json as integralEncodable =
     integral => Json.ast(JsonAst(IntegralType.toLong(integral)))
@@ -161,9 +161,9 @@ object Json extends Json2, Dynamic:
   given Boolean is Encodable in Json as booleanEncodable = boolean => Json.ast(JsonAst(boolean))
   given Json is Encodable in Json as jsonEncodable = identity(_)
 
-  given [CollectionType <: Iterable, ElementType: Encodable in Json]
+  given [CollectionType <: Iterable, ElementType: Encodable in Json as encodable]
       => CollectionType[ElementType] is Encodable in Json =
-    values => Json.ast(JsonAst(IArray.from(values.map(ElementType.encode(_).root))))
+    values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
 
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
      (using factory:    Factory[ElementType, CollectionType[ElementType]],
@@ -187,7 +187,7 @@ object Json extends Json2, Dynamic:
         focus(prior.or(JsonPath()) / keys(index).tt):
           acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
-  given Encoder[Json] as encoder = json => MinimalJsonPrinter.print(json.root)
+  given Json is Encodable in Text as encodable = json => MinimalJsonPrinter.print(json.root)
 
   inline def parse[SourceType](value: SourceType): Json raises JsonParseError =
     summonFrom:
