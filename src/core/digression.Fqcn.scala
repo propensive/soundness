@@ -19,6 +19,7 @@ package digression
 import rudiments.*
 import anticipation.*
 import contingency.*
+import prepositional.*
 
 import language.experimental.captureChecking
 
@@ -40,6 +41,8 @@ object Fqcn:
       then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)), ())
 
     new Fqcn(parts.map(_.tt))
+
+  given Fqcn is Encodable in Text = _.text
 
 class Fqcn(val parts: IArray[Text]):
   def text: Text = parts.mkString(".").tt
