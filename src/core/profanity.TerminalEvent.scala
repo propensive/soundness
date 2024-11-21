@@ -19,6 +19,7 @@ package profanity
 import anticipation.*
 import gossamer.*
 import fulminate.*
+import prepositional.*
 import spectacular.*
 import rudiments.*
 
@@ -35,7 +36,7 @@ enum TerminalInfo extends TerminalEvent:
 
 object Signal:
   given Decoder[Signal] as decoder = text => Signal.valueOf(text.lower.capitalize.s)
-  given Encoder[Signal] as encoder = _.shortName
+  given Signal is Encodable in Text as encodable = _.shortName
   given Signal is Communicable = signal => Message(signal.shortName)
 
 enum Signal extends TerminalEvent:
