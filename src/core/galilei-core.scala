@@ -12,7 +12,6 @@ import rudiments.*
 import nomenclature.*
 import fulminate.*
 import serpentine.*
-import spectacular.*
 import anticipation.*
 import vacuous.*
 
@@ -60,7 +59,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
         other.printStackTrace()
         abort(IoError(path, operation, Unsupported))
 
-  def javaPath: jnf.Path = jnf.Path.of(path.encode.s).nn
+  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
 
   def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] raises IoError =
