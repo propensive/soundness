@@ -2,6 +2,7 @@ package nomenclature
 
 import anticipation.*
 import rudiments.*
+import prepositional.*
 import fulminate.*
 import contingency.*
 import spectacular.*
@@ -13,8 +14,8 @@ object Nomenclature:
 
   object Name:
     given [PlatformType] => Name[PlatformType] is Communicable = name => Message(name.text)
-    given [PlatformType] => Encoder[Name[PlatformType]] = _.text
-    
+    given [PlatformType] => Name[PlatformType] is Encodable in Text = _.text
+
     inline given [PlatformType](using PlatformType is Nominative, Tactic[NameError])
         => Decoder[Name[PlatformType]] =
       apply(_)
@@ -28,7 +29,7 @@ object Nomenclature:
               case rule: Rule =>
                 if !rule.check(name, constValue[param].tt)
                 then raise(NameError(name, rule, constValue[param].tt))
-              
+
               case other =>
                 error("The companion object was not a subtype of Rule")
 
