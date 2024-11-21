@@ -168,8 +168,7 @@ transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[Re
         : Any =
   ${Contingency.accrue[AccrualType]('accrual, 'block)}
 
-extension [AccrualType <: Exception,  LambdaType[_]]
-   (inline accrue: Accrue[AccrualType, LambdaType])
+extension [AccrualType <: Exception,  LambdaType[_]](inline accrue: Accrue[AccrualType, LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType])
      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =
@@ -183,3 +182,8 @@ extension [AccrualType <: Exception,  LambdaType[_], FocusType]
           : ResultType =
     ${Contingency.trackWithin[AccrualType, LambdaType, ResultType, FocusType]('track, 'lambda,
         'tactic, 'diagnostics)}
+
+extension [ValueType](optional: Optional[ValueType])
+  def lest[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType)
+          : ValueType =
+    optional.or(abort(error))
