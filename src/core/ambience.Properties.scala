@@ -19,8 +19,6 @@ package ambience
 import language.experimental.captureChecking
 import language.dynamics
 
-import scala.compiletime.ops.string.*
-
 import anticipation.*
 import contingency.*
 import rudiments.*
@@ -35,6 +33,6 @@ object Properties extends Dynamic:
             systemProperty: Tactic[SystemPropertyError])
           : PropertyType =
 
-    properties(property).let(reader.read).or(abort(SystemPropertyError(property)))
+    properties(property).let(reader.read).lest(SystemPropertyError(property))
 
   def selectDynamic(key: String): PropertyAccess[key.type] = PropertyAccess[key.type](key)
