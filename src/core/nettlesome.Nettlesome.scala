@@ -21,6 +21,7 @@ import hypotenuse.*
 import spectacular.*
 import gossamer.*
 import contingency.*
+import prepositional.*
 import fulminate.*
 import anticipation.*
 import hieroglyph.*, textMetrics.uniform
@@ -53,7 +54,7 @@ object Nettlesome:
       given Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
-      given Encoder[Ipv4] as encoder = _.show
+      given Ipv4 is Encodable in Text as encodable = _.show
       given (using Tactic[IpAddressError]) => Decoder[Ipv4] as decoder = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
@@ -83,7 +84,7 @@ object Nettlesome:
       import MacAddressError.Reason.*
       erased given Underlying[MacAddress, Long] as underlying = ###
       given MacAddress is Showable = _.text
-      given Encoder[MacAddress] as encoder = _.text
+      given MacAddress is Encodable in Text as encodable = _.text
       given (using Tactic[MacAddressError]) => Decoder[MacAddress] as decoder = parse(_)
 
       def apply(value: Long): MacAddress = value
@@ -121,7 +122,7 @@ object Nettlesome:
     object TcpPort:
       erased given Underlying[TcpPort, Int] as underlying = ###
       given TcpPort is Showable = port => TextConversion.int.text(port.number)
-      given Encoder[TcpPort] as encoder = port => TextConversion.int.text(port.number)
+      given TcpPort is Encodable in Text as encodable = port => TextConversion.int.text(port.number)
 
       given (using Tactic[NumberError], Tactic[PortError]) => Decoder[TcpPort] as decoder =
         text => apply(Decoder.int.decode(text))
@@ -134,7 +135,7 @@ object Nettlesome:
     object UdpPort:
       erased given Underlying[UdpPort, Int] as underlying = ###
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
-      given Encoder[UdpPort] as encoder = port => TextConversion.int.text(port.number)
+      given UdpPort is Encodable in Text as encodable = port => TextConversion.int.text(port.number)
 
       given (using Tactic[NumberError], Tactic[PortError]) => Decoder[UdpPort] as decoder =
         text => apply(Decoder.int.decode(text))

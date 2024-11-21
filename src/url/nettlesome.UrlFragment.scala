@@ -18,7 +18,7 @@ package nettlesome
 
 import anticipation.*
 import contextual.*
-import spectacular.*
+import prepositional.*
 
 object UrlFragment:
   def apply(value: Text): UrlFragment = UrlFragment.Textual(value)
@@ -27,9 +27,9 @@ object UrlFragment:
   given Substitution[UrlFragment, Text, "x"] = UrlFragment.Textual(_)
   given Substitution[UrlFragment, Raw, "x"] = raw => UrlFragment.RawTextual(raw.text)
   given Substitution[UrlFragment, Int, "80"] = UrlFragment.Integral(_)
-  
-  given [ValueType](using encoder: Encoder[ValueType]) => Substitution[UrlFragment, ValueType, "x"] =
-    value => UrlFragment.Textual(encoder.encode(value))
+
+  given [ValueType: Encodable in Text] => Substitution[UrlFragment, ValueType, "x"] =
+    value => UrlFragment.Textual(ValueType.encode(value))
 
 enum UrlFragment:
   case Integral(value: Int)

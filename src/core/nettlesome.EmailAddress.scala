@@ -23,6 +23,7 @@ import denominative.*
 import spectacular.*
 import vacuous.*
 import fulminate.*
+import prepositional.*
 import contingency.*
 import anticipation.*
 import contextual.*
@@ -36,7 +37,7 @@ object EmailAddress:
   given Realm = realm"nettlesome"
 
   given (using Tactic[EmailAddressError]) => Decoder[EmailAddress] = EmailAddress.parse(_)
-  given Encoder[EmailAddress] = _.text
+  given EmailAddress is Encodable in Text = _.text
 
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abandonment:
     val text: Text = context.valueOrAbort.parts.head.tt

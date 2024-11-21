@@ -83,7 +83,7 @@ object Url:
       => Decoder[Url[SchemeType]] =
     parse(_)
 
-  given [SchemeType <: Label]: Encoder[Url[SchemeType]] = _.show
+  given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show
 
   given [SchemeType <: Label] => Url[SchemeType] is Teletypeable as teletype =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
