@@ -13,7 +13,7 @@ import vacuous.*
 import scala.compiletime.*
 
 object Path:
-  given Encoder[Path] as encoder = _.text
+  given Path is Encodable in Text as encodable = _.text
 
   given [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] as decoder =
     Path.parse(_)

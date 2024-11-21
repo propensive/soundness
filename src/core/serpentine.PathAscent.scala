@@ -4,7 +4,6 @@ import rudiments.*
 import prepositional.*
 import anticipation.*
 import gossamer.*
-import spectacular.*
 import symbolism.*
 
 object PathAscent:
@@ -18,7 +17,7 @@ object PathAscent:
       def divide(path: PathAscent, child: ElementType): Relative by ElementType =
         Relative(path.ascent, List(child))
 
-  given [ElementType, RootType: Navigable by ElementType] => Encoder[PathAscent] =
+  given [ElementType, RootType: Navigable by ElementType] => PathAscent is Encodable in Text =
     pathAscent =>
       if pathAscent.textDescent.isEmpty
       then
