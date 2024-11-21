@@ -19,6 +19,7 @@ package guillotine
 import language.experimental.pureFunctions
 
 import anticipation.*
+import prepositional.*
 import spectacular.*
 
 object Parameterizable:
@@ -26,9 +27,9 @@ object Parameterizable:
 
   given Int is Parameterizable = _.show
 
-  given [ValueType](using encoder: Encoder[ValueType]) => ValueType is Parameterizable:
+  given [ValueType: Encodable in Text] => ValueType is Parameterizable:
     type Self = ValueType
-    def show(value: ValueType): Text = encoder.encode(value)
+    def show(value: ValueType): Text = value.encode
 
 trait Parameterizable:
   type Self
