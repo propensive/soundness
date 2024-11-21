@@ -28,7 +28,7 @@ object HttpMethod:
     def serialize(method: HttpMethod): Text = method.show
 
   given ("method" is GenericHtmlAttribute[HttpMethod]) as method:
-    def name: Text = t"formmethod"
+    def name: Text = t"method"
     def serialize(method: HttpMethod): Text = method.show
 
   given HttpMethod is Communicable as communicable = method => Message(method.show.upper)
