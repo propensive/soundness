@@ -21,6 +21,7 @@ import iridescence.*, webColors.*
 import anticipation.*
 import prepositional.*
 import gossamer.*
+import digression.*
 import fulminate.*
 import spectacular.*
 import hieroglyph.*, textMetrics.uniform
@@ -37,12 +38,15 @@ package logFormats:
 
     e"${Bg(color)}[$Black($Bold( ${level.show} ))]"
 
+  private val indent = e" "*46
+
   given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
-    event.teletype.cut(t"\n") match
+    try event.teletype.cut(t"\n").flatMap(_.slices(66)) match
       case Nil          => e""
       case head :: tail =>
         val date = dateFormat.format(timestamp).nn.tt
         val first = e"$SlateGray($date) $level $CadetBlue(${realm.name.fit(10)}) > $head"
-        lazy val indent = e" "*43
 
+        (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
         (first :: tail.map(indent+_)).join(e"\n")
+    catch case error: Throwable => e"${error.stackTrace.show}"
