@@ -140,6 +140,11 @@ extension [TextType: Textual](text: TextType)
   def upto(ordinal: Ordinal): TextType = text.segment(Prim ~ ordinal)
   def from(ordinal: Ordinal): TextType = text.segment(ordinal ~ Ult.of(text))
 
+  def slices(size: Int): List[TextType] =
+    val length = text.length
+    List.tabulate[TextType]((length - 1)/size + 1): i =>
+      text.segment(Ordinal.zerary(i*size) ~ Ordinal.natural(((i + 1)*size).min(length)))
+
   def skip(count: Int, bidi: Bidi = Ltr): TextType = bidi match
     case Ltr => text.segment(Ordinal.zerary(count) ~ Ult.of(text))
     case Rtl => text.segment(Prim ~ Countback(count).of(text))
