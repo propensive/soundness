@@ -161,7 +161,7 @@ case class Teletype
       @tailrec
       def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
         if insertions.isEmpty then
-          buf.add(plain.segment(Ordinal.zerary(from) ~ Ordinal.natural(to)))
+          buf.add(plain.segment(Ordinal.zerary(from.max(0)) ~ Ordinal.natural(to.max(0))))
           insertions
         else if insertions.head(0) < to then
           buf.add(plain.segment(Ordinal.zerary(pos) ~ Ordinal.natural(insertions.head(0))))
