@@ -43,8 +43,9 @@ object Cookie:
       domain:   Optional[Hostname]     = Unset,
       expiry:   Optional[DurationType] = Unset,
       secure:   Boolean                = false,
-      httpOnly: Boolean                = false) =
-  new Cookie[ValueType, DurationType](name, domain, expiry, secure, httpOnly)
+      httpOnly: Boolean                = false,
+      path:     Optional[Text]         = Unset) =
+  new Cookie[ValueType](name, domain, expiry.let(_.milliseconds), secure, httpOnly, path)
 
   object Value:
     given Value is Showable = cookie =>
@@ -72,20 +73,21 @@ object Cookie:
       secure:   Boolean        = false,
       httpOnly: Boolean        = false)
 
-case class Cookie[ValueType: {Encodable in Text, Decoder}, DurationType: GenericDuration]
+case class Cookie[ValueType: {Encodable in Text, Decoder}]
    (name:     Text,
     domain:   Optional[Hostname],
-    expiry:   Optional[DurationType],
+    expiry:   Optional[Long],
     secure:   Boolean,
-    httpOnly: Boolean):
+    httpOnly: Boolean,
+    path:     Optional[Text]):
 
   def apply(value: ValueType): Cookie.Value =
     Cookie.Value
      (name,
       value.encode,
       domain.let(_.show),
-      Unset,
-      expiry.let(_.milliseconds/1000),
+      path,
+      expiry.let(_/1000),
       secure,
       httpOnly)
 
