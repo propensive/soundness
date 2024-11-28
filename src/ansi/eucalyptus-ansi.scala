@@ -41,7 +41,7 @@ package logFormats:
   private val indent = e" "*46
 
   given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
-    try event.teletype.cut(t"\n").flatMap(_.slices(66)) match
+    try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
       case Nil          => e""
       case head :: tail =>
         val date = dateFormat.format(timestamp).nn.tt
