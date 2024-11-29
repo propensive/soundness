@@ -106,8 +106,8 @@ object Installer:
       if safely(scriptPath.decode[Path on Linux]) == service.script && !force
       then Result.AlreadyOnPath(command, service.script.text)
       else
-        val payloadSize: ByteSize = ByteSize(Properties.ethereal.payloadSize[Int]())
-        val jarSize: ByteSize = ByteSize(Properties.ethereal.jarSize[Int]())
+        val payloadSize: Memory = Memory(Properties.ethereal.payloadSize[Int]())
+        val jarSize: Memory = Memory(Properties.ethereal.jarSize[Int]())
         val scriptFile: Path on Linux = service.script
         val fileSize = scriptFile.size()
         val prefixSize = fileSize - payloadSize - jarSize
