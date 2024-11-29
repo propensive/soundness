@@ -75,7 +75,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
         case TraversalOrder.PreOrder  => child #:: child.descendants
         case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
 
-  def size(): ByteSize raises IoError =
+  def size(): Memory raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
     descendants.foldLeft(jnf.Files.size(path.javaPath).b)(_ + _.size())
