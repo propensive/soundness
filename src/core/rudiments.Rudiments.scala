@@ -28,7 +28,7 @@ import vacuous.*
 
 object Rudiments:
   given Realm = realm"rudiments"
-  opaque type ByteSize = Long
+  opaque type Memory = Long
   opaque type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
   @annotation.targetName("And")
@@ -46,18 +46,18 @@ object Rudiments:
     def int: Int = digit
     def char: Char = ('0' + int).toChar
 
-  object ByteSize:
-    def apply(long: Long): ByteSize = long
-    given ("content-length" is GenericHttpRequestParam[ByteSize]) = _.long.toString.tt
-    given ordering: Ordering[ByteSize] = Ordering.Long.on(_.long)
-    given communicable[ByteSizeType <: ByteSize]: (Communicable { type Self = ByteSizeType }) = byteSize => Message(byteSize.text)
+  object Memory:
+    def apply(long: Long): Memory = long
+    given ("content-length" is GenericHttpRequestParam[Memory]) = _.long.toString.tt
+    given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
+    given communicable[MemoryType <: Memory]: (Communicable { type Self = MemoryType }) = memory => Message(memory.text)
 
-    given ByteSize is Addable by ByteSize into ByteSize as addable = _ + _
-    given ByteSize is Subtractable by ByteSize into ByteSize as subtractable = _ - _
-    given ByteSize is Multiplicable by Int into ByteSize as multiplicable = _*_
-    given ByteSize is Divisible by Int into ByteSize as divisible = _/_
+    given Memory is Addable by Memory into Memory as addable = _ + _
+    given Memory is Subtractable by Memory into Memory as subtractable = _ - _
+    given Memory is Multiplicable by Int into Memory as multiplicable = _*_
+    given Memory is Divisible by Int into Memory as divisible = _/_
 
-    extension (left: ByteSize)
+    extension (left: Memory)
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
 
@@ -110,4 +110,4 @@ object Rudiments:
 
     '{IArray.from(${Expr(bytes)})}
 
-export Rudiments.{ByteSize, Digit}
+export Rudiments.{Memory, Digit}

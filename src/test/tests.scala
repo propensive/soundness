@@ -326,25 +326,25 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_.length == 0)
 
     suite(t"Byte Size tests"):
-      test(t"Construct a simple ByteSize"):
-        4.b: ByteSize
-      .assert(_ == ByteSize(4))
+      test(t"Construct a simple Memory"):
+        4.b: Memory
+      .assert(_ == Memory(4))
       
-      test(t"Construct a simple ByteSize in kB"):
-        4.kb: ByteSize
-      .assert(_ == ByteSize(4096))
+      test(t"Construct a simple Memory in kB"):
+        4.kb: Memory
+      .assert(_ == Memory(4096))
       
-      test(t"Construct a simple ByteSize in MB"):
-        4.mb: ByteSize
-      .assert(_ == ByteSize(4096*1024L))
+      test(t"Construct a simple Memory in MB"):
+        4.mb: Memory
+      .assert(_ == Memory(4096*1024L))
       
-      test(t"Construct a simple ByteSize in GB"):
-        4.gb: ByteSize
-      .assert(_ == ByteSize(4096*1024L*1024L))
+      test(t"Construct a simple Memory in GB"):
+        4.gb: Memory
+      .assert(_ == Memory(4096*1024L*1024L))
 
-      test(t"Construct a simple ByteSize in TB"):
-        4.tb: ByteSize
-      .assert(_ == ByteSize(4096*1024L*1024L*1024L))
+      test(t"Construct a simple Memory in TB"):
+        4.tb: Memory
+      .assert(_ == Memory(4096*1024L*1024L*1024L))
 
       /*test(t"Compare bytes with >"):
         4.gb > 4.mb

@@ -16,7 +16,7 @@
 
 package soundness
 
-export rudiments.{ByteSize, bin, hex, Hex, b, kb, mb, gb, tb, byteSize, sift, has, //where,
+export rudiments.{Memory, bin, hex, Hex, b, kb, mb, gb, tb, memory, sift, has, //where,
     interleave, each, all, sumBy, bi, tri, indexBy, longestTrain, mutable, immutable, snapshot,
     place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as, Irrefutable,
