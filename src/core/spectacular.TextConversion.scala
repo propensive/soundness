@@ -40,7 +40,7 @@ object TextConversion:
     _.fold("none".tt)(ValueType.text(_))
 
   given Uuid is Showable as uuid = _.text
-  given ByteSize is Showable as byteSize = _.text
+  given Memory is Showable as memory = _.text
   given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.tt
 
   given [ElemType: Showable] => Set[ElemType] is Showable as set =
