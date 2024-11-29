@@ -57,7 +57,7 @@ enum ResponseHeader[ValueType](val header: Text):
   case ContentDisposition extends ResponseHeader[Text](t"content-disposition")
   case ContentEncoding extends ResponseHeader[Text](t"content-encoding")
   case ContentLanguage extends ResponseHeader[Text](t"content-language")
-  case ContentLength extends ResponseHeader[ByteSize](t"content-length")
+  case ContentLength extends ResponseHeader[Memory](t"content-length")
   case ContentLocation extends ResponseHeader[Text](t"content-location")
   case ContentMd5 extends ResponseHeader[Text](t"content-md5")
   case ContentRange extends ResponseHeader[Text](t"content-range")

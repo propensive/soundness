@@ -22,10 +22,10 @@ import anticipation.*
 import spectacular.*
 
 object HttpHeaderDecoder:
-  given text: HttpHeaderDecoder[Text] = identity(_)
+  given HttpHeaderDecoder[Text] as text = identity(_)
 
-  given byteSize(using Tactic[NumberError]): HttpHeaderDecoder[ByteSize] =
-    value => ByteSize(value.decode[Int])
+  given (using Tactic[NumberError]) => HttpHeaderDecoder[Memory] as memory =
+    value => Memory(value.decode[Int])
 
 trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType
