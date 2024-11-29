@@ -21,5 +21,5 @@ import language.experimental.captureChecking
 import fulminate.*
 import rudiments.*
 
-case class StreamError(total: ByteSize)(using Diagnostics)
+case class StreamError(total: Memory)(using Diagnostics)
 extends Error(m"the stream was cut prematurely after $total bytes")

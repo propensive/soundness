@@ -243,12 +243,12 @@ extension (bytes: Bytes)
     out.toByteArray.nn.immutable(using Unsafe)
 
 extension (lazyList: LazyList[Bytes])
-  def discard(byteSize: ByteSize): LazyList[Bytes] =
-    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] = stream.flow(LazyList()):
-      if head.byteSize < count
-      then recur(tail, count - head.byteSize) else head.drop(count.long.toInt) #:: tail
+  def discard(memory: Memory): LazyList[Bytes] =
+    def recur(stream: LazyList[Bytes], count: Memory): LazyList[Bytes] = stream.flow(LazyList()):
+      if head.memory < count
+      then recur(tail, count - head.memory) else head.drop(count.long.toInt) #:: tail
 
-    recur(lazyList, byteSize)
+    recur(lazyList, memory)
 
   def compress[CompressionType <: CompressionAlgorithm: Compression]: LazyList[Bytes] =
     summon[Compression].compress(lazyList)
@@ -314,13 +314,13 @@ extension (lazyList: LazyList[Bytes])
 
     recur(lazyList, 0, newArray(), 0)
 
-  def take(byteSize: ByteSize): LazyList[Bytes] =
-    def recur(stream: LazyList[Bytes], count: ByteSize): LazyList[Bytes] =
+  def take(memory: Memory): LazyList[Bytes] =
+    def recur(stream: LazyList[Bytes], count: Memory): LazyList[Bytes] =
       stream.flow(LazyList()):
-        if head.byteSize < count then head #:: recur(tail, count - head.byteSize)
+        if head.memory < count then head #:: recur(tail, count - head.memory)
         else LazyList(head.take(count.long.toInt))
 
-    recur(lazyList, byteSize)
+    recur(lazyList, memory)
 
   def inputStream: ji.InputStream = new ji.InputStream:
     private var stream: LazyList[Bytes] = lazyList

@@ -43,7 +43,7 @@ object Readable:
   given [ElementType] => LazyList[ElementType] is Readable by ElementType as lazyList = identity(_)
 
   given (using stdio: Stdio) => In.type is Readable by Char as inCharReader = in =>
-    def recur(count: ByteSize): LazyList[Char] =
+    def recur(count: Memory): LazyList[Char] =
       stdio.reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
@@ -51,7 +51,7 @@ object Readable:
     LazyList.defer(recur(0L.b))
 
   given (using stdio: Stdio) => In.type is Readable by Byte as inByteReader = in =>
-    def recur(count: ByteSize): LazyList[Byte] =
+    def recur(count: Memory): LazyList[Byte] =
       stdio.in.read() match
         case -1  => LazyList()
         case int => int.toByte #:: recur(count + 1.b)
@@ -59,7 +59,7 @@ object Readable:
     LazyList.defer(recur(0L.b))
 
   given [InType <: ji.Reader](using Tactic[StreamError]) => InType is Readable by Char as reader = reader =>
-    def recur(count: ByteSize): LazyList[Char] =
+    def recur(count: Memory): LazyList[Char] =
       try reader.read() match
         case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
@@ -72,7 +72,7 @@ object Readable:
   given [InType <: ji.BufferedReader](using Tactic[StreamError])
       => InType is Readable by Line as bufferedReader =
     reader =>
-      def recur(count: ByteSize): LazyList[Line] =
+      def recur(count: Memory): LazyList[Line] =
         try reader.readLine() match
           case null         => LazyList()
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
