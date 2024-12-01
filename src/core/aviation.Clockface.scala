@@ -22,6 +22,9 @@ import hieroglyph.*, textMetrics.uniform
 
 object Clockface:
   given Clockface is Showable = clockface =>
-    t"${(clockface.hour: Int).show.pad(2, Bidi.Rtl, '0')}:${(clockface.minute: Int).show.pad(2, Bidi.Rtl, '0')}"
+    val hour = (clockface.hour: Int).show.pad(2, Bidi.Rtl, '0')
+    val minute = (clockface.minute: Int).show.pad(2, Bidi.Rtl, '0')
+
+    t"$hour:$minute"
 
 case class Clockface(hour: Base24, minute: Base60, second: Base60 = 0)

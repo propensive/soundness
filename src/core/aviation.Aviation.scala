@@ -45,7 +45,8 @@ object Aviation:
     erased given Underlying[Date, Int] as underlying = ###
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day): Date raises DateError =
+    def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day)
+            : Date raises DateError =
       cal.julianDay(year, month, day)
 
     given Date is Showable as show = d =>
@@ -56,10 +57,19 @@ object Aviation:
 
     given (using RomanCalendar) => Date is Encodable in Text as encodable = date =>
       import hieroglyph.textMetrics.uniform
-      t"${date.year.toString.tt}-${date.month.numerical.toString.tt.pad(2, Rtl, '0')}-${date.day.toString.tt.pad(2, Rtl, '0')}"
+      List
+       (date.year.toString.tt,
+        date.month.numerical.toString.tt.pad(2, Rtl, '0'),
+        date.day.toString.tt.pad(2, Rtl, '0'))
+      .join(t"-")
 
     inline given Date is Orderable as orderable:
-      inline def compare(inline left: Date, inline right: Date, inline strict: Boolean, inline greaterThan: Boolean): Boolean =
+      inline def compare
+         (inline left:        Date,
+          inline right:       Date,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean)
+              : Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
     given ordering: Ordering[Date] = Ordering.Int
@@ -90,7 +100,10 @@ object Aviation:
     def day(using calendar: Calendar): calendar.Day = calendar.getDay(date)
     def month(using calendar: Calendar): calendar.Month = calendar.getMonth(date)
     def year(using calendar: Calendar): calendar.Year = calendar.getYear(date)
-    def yearDay(using calendar: Calendar): Int = date - calendar.zerothDayOfYear(calendar.getYear(date))
+
+    def yearDay(using calendar: Calendar): Int =
+      date - calendar.zerothDayOfYear(calendar.getYear(date))
+
     def julianDay: Int = date
     def addDays(count: Int): Date = date + count
 
