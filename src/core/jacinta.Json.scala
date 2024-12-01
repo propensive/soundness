@@ -68,7 +68,7 @@ trait Json2:
     inline def join[DerivationType <: Product: ProductReflection]
             : DerivationType is Decodable in Json =
       (json, omit) =>
-        summonInline[Foci[JsonPath]].give:
+        summonInline[Foci[JsonPointer]].give:
           summonInline[Tactic[JsonError]].give:
             val keyValues = json.root.obj
             val values = keyValues(0).zip(keyValues(1)).to(Map)
@@ -77,7 +77,7 @@ trait Json2:
               context =>
                 val omit = !values.contains(label.s)
                 val value = if omit then JsonAst(Unset) else values(label.s)
-                focus(prior.or(JsonPath()) / label):
+                focus(prior.or(JsonPointer()) / label):
                   context.decode(new Json(value), omit)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
@@ -88,7 +88,7 @@ trait Json2:
 
             values(0).indexOf("_type") match
               case -1 =>
-                focus(prior.or(JsonPath()) / t"_type"):
+                focus(prior.or(JsonPointer()) / t"_type"):
                   abort(JsonError(Reason.Absent))
 
               case index =>
@@ -99,13 +99,13 @@ trait Json2:
     inline def join[DerivationType <: Product: ProductReflection]
             : DerivationType is Encodable in Json =
       value =>
-        summonInline[Foci[JsonPath]].give:
+        summonInline[Foci[JsonPointer]].give:
           val labels = fields(value): [FieldType] =>
             field => if context.omit(field) then "" else label.s
 
           val values = fields(value): [FieldType] =>
             field =>
-              focus(prior.or(JsonPath()) / label):
+              focus(prior.or(JsonPointer()) / label):
                 if context.omit(field) then null else context.encode(field).root
 
           Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
@@ -167,13 +167,14 @@ object Json extends Json2, Dynamic:
 
   given [CollectionType <: Iterable, ElementType: Decodable in Json]
      (using factory:    Factory[ElementType, CollectionType[ElementType]],
-             jsonAccess: Tactic[JsonError],
-             foci:       Foci[JsonPath])
+            jsonAccess: Tactic[JsonError],
+            foci:       Foci[JsonPointer])
       => (CollectionType[ElementType] is Decodable in Json) as array =
     (value, omit) =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
-        focus(prior.or(JsonPath()) / ordinal)(builder += ElementType.decode(Json.ast(json), false))
+        focus(prior.or(JsonPointer()) / ordinal)
+         (builder += ElementType.decode(Json.ast(json), false))
 
       builder.result()
 
@@ -184,7 +185,7 @@ object Json extends Json2, Dynamic:
       val (keys, values) = value.root.obj
 
       keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
-        focus(prior.or(JsonPath()) / keys(index).tt):
+        focus(prior.or(JsonPointer()) / keys(index).tt):
           acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
   given Json is Encodable in Text as encodable = json => JsonPrinter.print(json.root, false)
@@ -230,7 +231,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
 
   def apply(field: Text): Json raises JsonError =
     root.obj(0).indexWhere(_ == field.s) match
-      case -1    => focus(prior.or(JsonPath()) / field)(raise(JsonError(Reason.Absent)) yet this)
+      case -1    => focus(prior.or(JsonPointer()) / field)(raise(JsonError(Reason.Absent)) yet this)
       case index => Json(root.obj(1)(index))
 
   override def hashCode: Int =
@@ -315,5 +316,5 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     case _ =>
       false
 
-  def as[ValueType: Decodable in Json]: ValueType raises JsonError tracks JsonPath =
+  def as[ValueType: Decodable in Json]: ValueType raises JsonError tracks JsonPointer =
     ValueType.decode(this, false)

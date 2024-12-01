@@ -10,22 +10,22 @@ import spectacular.*
 import vacuous.*
 
 object Jacinta:
-  opaque type JsonPath = List[Text | Ordinal]
+  opaque type JsonPointer = List[Text | Ordinal]
 
-  object JsonPath:
-    given JsonPath is Showable = jsonPath =>
+  object JsonPointer:
+    given JsonPointer is Showable = pointer =>
       def recur(elements: List[Ordinal | Text], result: Text): Text =
         (elements.asMatchable: @unchecked) match
           case Nil                   => if result.empty then t"." else result
           case Zerary(index) :: tail => recur(tail, t"[${index.n0}]$result")
           case (key: Text) :: tail   => recur(tail, t".$key$result")
 
-      recur(jsonPath.reverse, t"")
+      recur(pointer.reverse, t"")
 
-    def apply(elements: List[Text | Ordinal] = Nil): JsonPath = elements
+    def apply(elements: List[Text | Ordinal] = Nil): JsonPointer = elements
 
-  extension (path: JsonPath)
+  extension (path: JsonPointer)
     @targetName("child")
-    infix def / (child: Text | Ordinal): JsonPath = child :: path
+    infix def / (child: Text | Ordinal): JsonPointer = child :: path
 
-    def parent: Optional[JsonPath] = if path.isEmpty then Unset else JsonPath(path.tail)
+    def parent: Optional[JsonPointer] = if path.isEmpty then Unset else JsonPointer(path.tail)
