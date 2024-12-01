@@ -55,10 +55,8 @@ object Quantitative extends Quantitative2:
 
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
 
-    inline given [UnitsType <: Units[1, Time]]
-        => Quantity[UnitsType] is GenericDuration as genericDuration = quantity =>
-      inline quantity.in[Seconds] match
-        case quantity: Quantity[Seconds[1]] => (quantity*1000).toLong
+    given Quantity[Seconds[1]] is GenericDuration as genericDuration =
+      quantity => (quantity*1000.0).toLong
 
     given [UnitsType <: Measure] => Numeric[Quantity[UnitsType]] as numeric =
       summon[Numeric[Double]]
