@@ -104,5 +104,5 @@ extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)
 
 package jsonPrinters:
-  given JsonPrinter as indented = IndentedJsonPrinter
-  given JsonPrinter as minimal = MinimalJsonPrinter
+  given JsonPrinter as indented = JsonPrinter.print(_, true)
+  given JsonPrinter as minimal = JsonPrinter.print(_, false)
