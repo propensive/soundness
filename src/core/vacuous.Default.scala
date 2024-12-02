@@ -16,6 +16,8 @@
 
 package vacuous
 
+import scala.collection.immutable as sci
+
 import anticipation.*
 
 object Default:
@@ -27,7 +29,7 @@ object Default:
   given string: Default[String] = () => ""
   given list[ElemType]: Default[List[ElemType]] = () => Nil
   given set[ElemType]: Default[Set[ElemType]] = () => Set()
-  given vector[ElemType]: Default[Vector[ElemType]] = () => Vector()
+  given vector[ElemType]: Default[sci.Vector[ElemType]] = () => sci.Vector()
 
 trait Default[+ValueType]:
   def apply(): ValueType
