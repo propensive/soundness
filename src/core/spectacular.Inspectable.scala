@@ -78,7 +78,7 @@ object Inspectable extends Inspectable2:
   given [ElemType: Inspectable] => Set[ElemType] is Inspectable as set =
     _.map(_.inspect).mkString("{", ", ", "}").tt
 
-  given [ElemType: Inspectable] => Vector[ElemType] is Inspectable as vector =
+  given [ElemType: Inspectable] => Trie[ElemType] is Inspectable as vector =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
 
   given [ElemType: Inspectable] => IndexedSeq[ElemType] is Inspectable as indexedSeq =

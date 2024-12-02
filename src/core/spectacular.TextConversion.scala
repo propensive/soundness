@@ -49,7 +49,7 @@ object TextConversion:
   given [ElemType: Showable] => List[ElemType] is Showable as list =
     _.map(_.show).mkString("[", ", ", "]").tt
 
-  given [ElemType: Showable] => Vector[ElemType] is Showable as vector =
+  given [ElemType: Showable] => Trie[ElemType] is Showable as trie =
     _.map(_.show).mkString("[ ", " ", " ]").tt
 
   given None.type is Showable as none = none => "none".tt
