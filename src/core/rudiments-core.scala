@@ -336,6 +336,8 @@ extension [ValueType: Countable](inline value: ValueType)
   inline def ant: Optional[Ordinal] =
     if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 3) else Unset
 
+export scala.collection.immutable.Vector as Trie
+
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
   //given none(using Tactic[WorkingDirectoryError]): WorkingDirectory = () => abort(WorkingDirectoryError())
