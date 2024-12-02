@@ -164,8 +164,8 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
     def apply(left: List[ValueType], right: List[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  given [ValueType: {Contrastable, Similarity}] => Vector[ValueType] is Contrastable as vector:
-    def apply(left: Vector[ValueType], right: Vector[ValueType]): Semblance =
+  given [ValueType: {Contrastable, Similarity}] => Trie[ValueType] is Contrastable as trie:
+    def apply(left: Trie[ValueType], right: Trie[ValueType]): Semblance =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable =
