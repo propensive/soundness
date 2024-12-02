@@ -34,7 +34,7 @@ object Tzdb:
     case Rule(name: Text, from: Int, end: Int, change: MonthDate, time: Time,
                   save: Duration, letters: Option[Text])
     case Leap(year: Int, month: MonthName, day: Int, time: Time, addition: Boolean)
-    case Zone(area: Text, location: Option[Text], info: Vector[ZoneInfo])
+    case Zone(area: Text, location: Option[Text], info: Trie[ZoneInfo])
     case Link(from: Text, to: Text)
 
   case class ZoneInfo(stdoff: Duration, rules: Text, format: Text => Text,
@@ -99,10 +99,10 @@ object Tzdb:
       case name :: rest =>
         name.cut(t"/", 2).to(List) match
           case area :: location :: Nil =>
-            Tzdb.Entry.Zone(area, Some(location), Vector(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(area, Some(location), Trie(parseZoneInfo(lineNo, rest)))
 
           case simple :: Nil =>
-            Tzdb.Entry.Zone(simple, None, Vector(parseZoneInfo(lineNo, rest)))
+            Tzdb.Entry.Zone(simple, None, Trie(parseZoneInfo(lineNo, rest)))
 
           case _ =>
             abort(TzdbError(TzdbError.Reason.BadName(name), lineNo))
