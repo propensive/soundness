@@ -75,10 +75,10 @@ trait Json2:
 
             construct: [FieldType] =>
               context =>
-                val omit = !values.contains(label.s)
-                val value = if omit then JsonAst(Unset) else values(label.s)
                 focus(prior.or(JsonPointer()) / label):
-                  context.decode(new Json(value), omit)
+                  if !values.contains(label.s)
+                  then default().or(context.decode(new Json(JsonAst(Unset)), true))
+                  else context.decode(new Json(values(label.s)), false)
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
       (json, omit) =>
