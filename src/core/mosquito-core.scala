@@ -16,4 +16,4 @@
 
 package mosquito
 
-export Mosquito.Euclidean
+export Mosquito.Vector

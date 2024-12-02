@@ -26,21 +26,21 @@ import hieroglyph.*
 import vacuous.*
 
 object Mosquito:
-  opaque type Euclidean[ValueType, SizeType <: Int] = Tuple
+  opaque type Vector[ValueType, SizeType <: Int] = Tuple
 
-  object Euclidean:
-    def apply(elems: Tuple): Euclidean[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
+  object Vector:
+    def apply(elems: Tuple): Vector[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    def take[ElementType](list: List[ElementType], size: Int): Optional[Euclidean[ElementType, size.type]] =
+    def take[ElementType](list: List[ElementType], size: Int): Optional[Vector[ElementType, size.type]] =
       if size == 0 then EmptyTuple else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
 
     given [SizeType <: Int: ValueOf, ElemType: Showable](using TextMetrics)
-        => Euclidean[ElemType, SizeType] is Showable as showable =
+        => Vector[ElemType, SizeType] is Showable as showable =
 
-      euclidean =>
-        val items = euclidean.list.map(_.show)
+      vector =>
+        val items = vector.list.map(_.show)
         val width = items.maxBy(_.length).length
         val size = valueOf[SizeType]
         if size == 1 then t"( ${items(0)} )"
@@ -53,12 +53,12 @@ object Mosquito:
 
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
-  extension [LeftType](left: Euclidean[LeftType, 3])
-    def cross[RightType](right: Euclidean[RightType, 3])
+  extension [LeftType](left: Vector[LeftType, 3])
+    def cross[RightType](right: Vector[RightType, 3])
        (using multiplication: LeftType is Multiplicable by RightType,
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-            : Euclidean[addition.Result, 3] =
+            : Vector[addition.Result, 3] =
 
       (left(1)*right(2) - left(2)*right(1)) *:
           (left(2)*right(0) - left(0)*right(2)) *:
@@ -66,12 +66,12 @@ object Mosquito:
           EmptyTuple
 
 
-  extension [SizeType <: Int, LeftType](left: Euclidean[LeftType, SizeType])
+  extension [SizeType <: Int, LeftType](left: Vector[LeftType, SizeType])
     def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
     def list: List[LeftType] = left.toList.asInstanceOf[List[LeftType]]
     def iarray: IArray[LeftType] = left.toIArray.asInstanceOf[IArray[LeftType]]
 
-    def map[LeftType2](fn: LeftType => LeftType2): Euclidean[LeftType2, SizeType] =
+    def map[LeftType2](fn: LeftType => LeftType2): Vector[LeftType2, SizeType] =
       def recur(tuple: Tuple): Tuple = tuple match
         case head *: tail => fn(head.asInstanceOf[LeftType]) *: recur(tail)
         case _            => EmptyTuple
@@ -79,9 +79,9 @@ object Mosquito:
       recur(left)
 
     @targetName("add")
-    def + [RightType](right: Euclidean[RightType, SizeType])
+      def + [RightType](right: Vector[RightType, SizeType])
        (using addition: LeftType is Addable by RightType)
-            : Euclidean[addition.Result, SizeType] =
+            : Vector[addition.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
@@ -97,8 +97,8 @@ object Mosquito:
       recur(left, right)
 
     @targetName("sub")
-    def - [RightType](right: Euclidean[RightType, SizeType])(using sub: LeftType is Subtractable by RightType)
-            : Euclidean[sub.Result, SizeType] =
+    def - [RightType](right: Vector[RightType, SizeType])(using sub: LeftType is Subtractable by RightType)
+            : Vector[sub.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
@@ -113,17 +113,17 @@ object Mosquito:
 
     @targetName("scalarMul")
     def * [RightType](right: RightType)(using multiplication: LeftType is Multiplicable by RightType)
-            : Euclidean[multiplication.Result, SizeType] =
+            : Vector[multiplication.Result, SizeType] =
 
       map(_*right)
 
     @targetName("scalarDiv")
     def / [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
-            : Euclidean[div.Result, SizeType] =
+            : Vector[div.Result, SizeType] =
 
       map(_/right)
 
-    def dot[RightType](right: Euclidean[RightType, SizeType])
+    def dot[RightType](right: Vector[RightType, SizeType])
        (using multiply: LeftType is Multiplicable by RightType,
               size:     ValueOf[SizeType],
               addition:      multiply.Result is Addable by multiply.Result,
@@ -137,6 +137,6 @@ object Mosquito:
       recur(start - 1, left(start)*right(start))
 
 extension [ElementType](list: List[ElementType])
-  def slide(size: Int): LazyList[Euclidean[ElementType, size.type]] = list match
+  def slide(size: Int): LazyList[Vector[ElementType, size.type]] = list match
     case Nil          => LazyList()
-    case head :: tail => Euclidean.take(list, size).lay(LazyList())(_ #:: tail.slide(size))
+    case head :: tail => Vector.take(list, size).lay(LazyList())(_ #:: tail.slide(size))
