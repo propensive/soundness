@@ -27,7 +27,8 @@ object LocalTime:
 
 case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
-    val ldt = jt.LocalDateTime.of(date.year, date.month.numerical, date.day, time.hour, time.minute,
-        time.second)
+    val ldt =
+      jt.LocalDateTime.of
+       (date.year, date.month.numerical, date.day, time.hour, time.minute, time.second)
 
     Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)

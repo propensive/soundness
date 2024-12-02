@@ -59,7 +59,8 @@ object Timing:
       type Self = Instant
       type Result = Instant
       type Operand = Duration
-      def add(instant: Instant, duration: Duration): Instant = instant + (duration.value/1000.0).toLong
+      def add(instant: Instant, duration: Duration): Instant =
+        instant + (duration.value/1000.0).toLong
 
     given Instant is Subtractable by Instant into Duration as minus = new Subtractable:
       type Self = Instant

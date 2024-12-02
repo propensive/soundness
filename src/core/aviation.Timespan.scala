@@ -55,16 +55,26 @@ object Timespan:
     type Result = Timespan
     type Operand = Timespan
     def add(left: Timespan, right: Timespan): Timespan =
-      Timespan(left.years + right.years, left.months + right.months, left.days + right.days, left.hours +
-          right.hours, left.minutes + right.minutes, left.seconds + right.seconds)
+      Timespan
+       (left.years + right.years,
+        left.months + right.months,
+        left.days + right.days,
+        left.hours + right.hours,
+        left.minutes + right.minutes,
+        left.seconds + right.seconds)
 
   given (using TimeSystem[StandardTime]) => Timespan is Subtractable as minus:
     type Result = Timespan
     type Operand = Timespan
 
     def subtract(left: Timespan, right: Timespan): Timespan =
-      Timespan(left.years - right.years, left.months - right.months, left.days - right.days, left.hours -
-          right.hours, left.minutes - right.minutes, left.seconds - right.seconds)
+      Timespan
+       (left.years - right.years,
+        left.months - right.months,
+        left.days - right.days,
+        left.hours - right.hours,
+        left.minutes - right.minutes,
+        left.seconds - right.seconds)
 
 case class Timespan
    (override val years:  Int,
@@ -77,7 +87,8 @@ extends DiurnalTimespan, TemporalTimespan:
   def simplify(using timeSys: TimeSystem[StandardTime]): Timespan = timeSys.simplify(this)
 
   @targetName("times")
-  infix def * (n: Int): Timespan = Timespan(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
+  infix def * (n: Int): Timespan =
+    Timespan(years*n, months*n, days*n, hours*n, minutes*n, seconds*n)
 
   @targetName("plus")
   infix def + (right: Timespan): Timespan = Timespan.plus.add(this, right)
