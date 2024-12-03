@@ -14,7 +14,7 @@
     and limitations under the License.
 */
 
-package cosmopolite
+/*package cosmopolite
 
 import rudiments.*
 import gossamer.*
@@ -47,7 +47,7 @@ object Cosmopolite:
 
     def recur(
 
-
+*/
 // case class Language[+L <: String](value: String)
 
 // object Language:

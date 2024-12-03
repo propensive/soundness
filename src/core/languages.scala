@@ -16,7 +16,7 @@
 
 package cosmopolite
 
-import rudiments.*
+/*import rudiments.*
 
 erased trait Localization
 erased trait Language extends Localization
@@ -466,3 +466,4 @@ package languages:
    type za = "za" & Language
    type zh = "zh" & Language
    type zu = "zu" & Language
+*/
