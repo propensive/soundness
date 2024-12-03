@@ -19,6 +19,7 @@ package monotonous
 import anticipation.*
 import gossamer.*
 import prepositional.*
+import hypotenuse.*
 
 package alphabets:
   package binary:
@@ -107,6 +108,12 @@ package alphabets:
 
     given Alphabet[Base64] as uuencoding =
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
+
+  package base256:
+    given Alphabet[Base256] as modular =
+      def char(i: Int): Char = (if i <= 32 || 126 < i < 161 || i == 173 then i + 256 else i).toChar
+
+      Alphabet(Text(IArray.tabulate(256)(char)), false)
 
 extension (value: Text)
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)

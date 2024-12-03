@@ -76,6 +76,7 @@ object Deserializable:
 
           recur(index0 = index0)
 
+  given (using Alphabet[Base256], Tactic[SerializationError]) => Deserializable in Base256 = base(8)
   given (using Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
   given (using Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)
   given (using Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)

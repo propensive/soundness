@@ -54,6 +54,7 @@ object Serializable:
   given (using Alphabet[Hex]) => Serializable in Hex = base(4)
   given (using Alphabet[Base32]) => Serializable in Base32 = base(5)
   given (using Alphabet[Base64]) => Serializable in Base64 = base(6)
+  given (using Alphabet[Base256]) => Serializable in Base256 = base(8)
 
 trait Serializable:
   type Format <: Serialization
