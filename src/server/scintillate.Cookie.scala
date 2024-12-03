@@ -51,7 +51,7 @@ object Cookie:
     given Value is Showable = cookie =>
       List
        (t"${cookie.name}=${cookie.value}",
-        cookie.expiry.let { expiry => t"MaxAge=$expiry" },
+        cookie.expiry.let { expiry => t"Max-Age=$expiry" },
         cookie.domain.let { domain => t"Domain=$domain" },
         cookie.path.let { path => t"Path=$path" },
         if cookie.secure then t"Secure" else Unset,
