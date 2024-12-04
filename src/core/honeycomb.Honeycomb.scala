@@ -19,69 +19,9 @@ package honeycomb
 import rudiments.*
 import vacuous.*
 import fulminate.*
-import gossamer.*
 import anticipation.*
-import spectacular.*
-import xylophone.*
 
 import scala.quoted.*
-
-type Attributes = Map[String, Unset.type | Text]
-type Html[+ChildType <: Label] = Node[ChildType] | Text | Int | HtmlXml
-
-case class HtmlXml(xml: XmlDoc)
-
-object Node:
-  given [HtmlType <: Html[?]] => HtmlType is Showable as html = html => (html: @unchecked) match
-    case text: Text    => text
-    case int: Int      => int.show
-    case node: Node[?] => node.show
-
-  given Seq[Html[?]] is Showable as seq = _.map(_.show).join
-
-  given [NodeType <: Node[?]] => NodeType is Showable as node = item =>
-    val filling =
-      item.attributes.map: keyValue =>
-        (keyValue: @unchecked) match
-          case (key, Unset)       => t" $key"
-          case (key, value: Text) => t""" $key="$value""""
-      .join
-
-    if item.children.isEmpty && !item.verbatim
-    then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"
-    else t"<${item.label}$filling>${item.children.map(_.show).join}</${item.label}>"
-
-trait Node[+NameType <: Label]:
-  node =>
-  def label: Text
-  def attributes: Attributes
-  def children: Seq[Html[?]]
-  def block: Boolean
-  def unclosed: Boolean
-  def verbatim: Boolean
-
-object StartTag:
-  given StartTag[?, ?] is GenericCssSelection = elem =>
-    val tail = elem.attributes.map: (key, value) =>
-      ((key, value): @unchecked) match
-        case (key, value: Text) => t"[$key=$value]"
-        case (key, Unset)       => t"[$key]"
-    .join
-
-    t"${elem.label}$tail"
-
-case class StartTag[+NameType <: Label, ChildType <: Label]
-   (labelString: NameType,
-    unclosed:    Boolean,
-    block:       Boolean,
-    verbatim:    Boolean,
-    attributes:  Attributes)
-extends Node[NameType]:
-  def children = Nil
-  def label: Text = labelString.tt
-
-  def apply(children: (Html[ChildType] | Seq[Html[ChildType]])*): Element[NameType] =
-    Element(labelString, unclosed, block, verbatim, attributes, children)
 
 object Honeycomb:
   given Realm = realm"honeycomb"

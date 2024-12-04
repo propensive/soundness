@@ -30,10 +30,13 @@ object HtmlDoc:
     def mediaType: Text = t"text/html; charset=${encoder.encoding.name}"
     def content(value: HtmlDoc): LazyList[Bytes] = LazyList(HtmlDoc.serialize(value).bytes)
 
-  def serialize[OutputType](doc: HtmlDoc, maxWidth: Int = -1)(using HtmlSerializer[OutputType]): OutputType =
-    summon[HtmlSerializer[OutputType]].serialize(doc, maxWidth)
+  def serialize[OutputType](doc: HtmlDoc, maxWidth: Int = -1)
+     (using serializer: HtmlSerializer[OutputType])
+          : OutputType =
+    serializer.serialize(doc, maxWidth)
 
-  def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)(content: (Html[Flow] | Seq[Html[Flow]])*)
+  def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
+     (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
      (using att: HtmlAttribute["href", Stylesheet, ?])
           : HtmlDoc =
 

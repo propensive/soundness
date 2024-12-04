@@ -16,9 +16,14 @@
 
 package honeycomb
 
+import anticipation.*
 import rudiments.*
 
 import language.dynamics
+
+extension (sc: StringContext)
+  def cls(): CssClass = CssClass(Text(sc.parts.head))
+  def id(): DomId = DomId(Text(sc.parts.head))
 
 val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
     "hreflang" | "type" | "referrerpolicy"]("a", block = false)
@@ -224,6 +229,3 @@ val Video = TagType["video", Label, Global | "src" | "crossorigin" | "poster" | 
     "autoplay" | "playsinline" | "muted" | "controls" | "width" | "height"]("video", block = false)
 
 val Wbr = TagType["wbr", Nothing, Global]("wbr", block = false)
-
-trait ToHtml[-SourceType, +NodeType <: Label]:
-  def convert(value: SourceType): Seq[Html[NodeType]]
