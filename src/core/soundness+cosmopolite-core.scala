@@ -1,3 +1,3 @@
 package soundness
 
-export cosmopolite.{Language, Locale, Polyglot, en, pl}
+export cosmopolite.{Language, Locale, Polyglot, en, pl, speaks}
