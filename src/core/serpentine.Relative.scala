@@ -11,7 +11,8 @@ import vacuous.*
 import scala.compiletime.*
 
 object Relative:
-  given (using navigable: Navigable) => Relative is Encodable in Text as encodable = relative =>
+  given [RelativeType <: Relative](using navigable: Navigable)
+      => RelativeType is Encodable in Text as encodable = relative =>
     if relative.textDescent.isEmpty
     then
       if relative.ascent == 0 then navigable.selfText
