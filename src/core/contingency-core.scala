@@ -176,7 +176,7 @@ extension [AccrualType <: Exception,  LambdaType[_]](inline accrue: Accrue[Accru
         'diagnostics)}
 
 extension [AccrualType <: Exception,  LambdaType[_], FocusType]
-   (inline track: Track[AccrualType, LambdaType, FocusType])
+   (inline track: Tracking[AccrualType, LambdaType, FocusType])
   inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
           : ResultType =

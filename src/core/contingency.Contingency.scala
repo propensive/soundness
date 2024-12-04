@@ -145,7 +145,7 @@ object Contingency:
 
     (typeLambda.asType: @unchecked) match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Track[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
+        '{Tracking[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
 
   def accrue[AccrualType <: Exception: Type]
@@ -285,7 +285,7 @@ object Contingency:
 
   def trackWithin
      [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-     (track:       Expr[Track[AccrualType, ContextType, FocusType]],
+     (track:       Expr[Tracking[AccrualType, ContextType, FocusType]],
       lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
       tactic:      Expr[Tactic[AccrualType]],
       diagnostics: Expr[Diagnostics])
