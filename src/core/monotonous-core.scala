@@ -119,7 +119,7 @@ package alphabets:
       Alphabet(Text(IArray.tabulate(256)(char)), false)
 
     given Alphabet[Base256] as braille =
-      Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }, false)
+      Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
 
 extension (value: Text)
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
