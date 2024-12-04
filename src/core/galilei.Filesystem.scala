@@ -16,10 +16,8 @@ object Filesystem:
   type Rules = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
       MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
       MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-      MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotEqual["(?i)PRN(\\.[^.]+)?"] &
-      MustNotEqual["(?i)AUX(\\.[^.]+)?"] & MustNotEqual["(?i)NUL(\\.[^.]+)?"] &
-      MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"] &
-      MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+      MustNotMatch["(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\\.[^.]+)?"] & MustNotEqual["."] &
+      MustNotEqual[".."] & MustNotEqual[""]
 
   given [FilesystemType <: Filesystem] => (Path on FilesystemType) is Substantiable =
     path => jnf.Files.exists(path.javaPath)
