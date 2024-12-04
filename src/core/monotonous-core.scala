@@ -111,9 +111,15 @@ package alphabets:
 
   package base256:
     given Alphabet[Base256] as modular =
-      def char(i: Int): Char = (if i <= 32 || 126 < i < 161 || i == 173 then i + 256 else i).toChar
+      def char(i: Int): Char =
+        if i == 34 || i == 39 || i == 92 then (i + 8192).toChar
+        else if i <= 32 || 126 < i < 161 || i == 173 then (i + 256).toChar
+        else i.toChar
 
       Alphabet(Text(IArray.tabulate(256)(char)), false)
+
+    given Alphabet[Base256] as braille =
+      Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }, false)
 
 extension (value: Text)
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
