@@ -42,6 +42,7 @@ extension [ValueType](value: ValueType)
     (partial.orElse { _ => Unset })(value)
 
   def unless(predicate: => Boolean) = if predicate then Unset else value
+  def provided(predicate: => Boolean) = if predicate then value else Unset
 
 extension [ValueType](java: ju.Optional[ValueType])
   def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn
