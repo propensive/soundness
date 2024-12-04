@@ -36,7 +36,8 @@ object Element:
 
     new Element(labelString, unclosed, block, verbatim, attributes, flatten(children))
 
-  private def flatten[ChildType <: Label](nodes: Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]])
+  private def flatten[ChildType <: Label]
+     (nodes: Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]])
           : Seq[Html[ChildType]] =
 
     nodes.flatMap:

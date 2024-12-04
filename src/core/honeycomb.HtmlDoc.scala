@@ -37,7 +37,7 @@ object HtmlDoc:
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
      (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
-     (using att: HtmlAttribute["href", Stylesheet, ?])
+     (using att: "href" is HtmlAttribute[Stylesheet, ?])
           : HtmlDoc =
 
     val link = (att.convert(stylesheet): @unchecked) match

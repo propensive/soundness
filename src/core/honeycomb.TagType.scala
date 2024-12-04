@@ -47,9 +47,7 @@ extends Node[NameType], Dynamic:
   inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
 
-    ${
-        Honeycomb.read[NameType, ChildType, ChildType]
-         ('method, 'labelString, 'unclosed, 'block, 'verbatim, 'attributes)  }
+    ${  Honeycomb.read[NameType, ChildType, ChildType]('this, 'method, 'labelString, 'attributes)  }
 
   def applyDynamic(method: String)(children: (Optional[Html[ChildType]] | Seq[Html[ChildType]])*)
           : Element[NameType] =

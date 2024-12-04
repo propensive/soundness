@@ -27,11 +27,9 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-     (className:  Expr[String],
+     (node:       Expr[Node[NameType]],
+      className:  Expr[String],
       name:       Expr[NameType],
-      unclosed:   Expr[Boolean],
-      block:      Expr[Boolean],
-      verbatim:   Expr[Boolean],
       attributes: Expr[Seq[(Label, Any)]])
      (using Quotes)
           : Expr[StartTag[NameType, ReturnType]] =
@@ -41,8 +39,9 @@ object Honeycomb:
     def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Optional[Text])]] = exprs match
       case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
         val att: String = key.value.get
-        val expr: Expr[HtmlAttribute[keyType, valueType, NameType]] =
-          Expr.summon[HtmlAttribute[keyType, valueType, NameType]].getOrElse:
+
+        val expr: Expr[keyType is HtmlAttribute[valueType, NameType]] =
+          Expr.summon[keyType is HtmlAttribute[valueType, NameType]].getOrElse:
             val typeName = TypeRepr.of[valueType].show
             abandon(m"""the attribute $att cannot take a value of type $typeName""")
 
@@ -54,4 +53,10 @@ object Honeycomb:
 
     (attributes: @unchecked) match
       case Varargs(exprs) =>
-        '{StartTag($name, $unclosed, $block, $verbatim, ${Expr.ofSeq(recur(exprs))}.to(Map))}
+        '{
+            StartTag
+             ($name,
+              $node.unclosed,
+              $node.block,
+              $node.verbatim,
+              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.to(Map))  }
