@@ -42,6 +42,6 @@ object HtmlDoc:
 
     val link = (att.convert(stylesheet): @unchecked) match
       case Unset      => Nil
-      case text: Text => Seq(Link(rel = Text("stylesheet"), href = text))
+      case text: Text => Seq(Link.Stylesheet(href = text))
 
     HtmlDoc(Html(Head(Title(title), link), Body(content*)))

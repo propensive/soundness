@@ -176,11 +176,6 @@ object HtmlAttribute:
   given title[T]: HtmlAttribute["title", Text, T] = identity(_)
   given translate[T]: HtmlAttribute["translate", Boolean, T] = _ => Unset
   given capture[T]: HtmlAttribute["capture", Capture, T] = _.show
-
-  given htype[T]: HtmlAttribute["type", Type, T] with
-    override def rename: Option[Text] = Some(t"type")
-    def convert(value: Type): Text = value.show
-
   given usemap[T]: HtmlAttribute["usemap", Text, T] = identity(_) // This needs a representation of HTML names
   given value[T]: HtmlAttribute["value", Double, T] = _.toString.show
   given valueInt[T]: HtmlAttribute["value", Int, T] = _.show

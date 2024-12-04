@@ -17,13 +17,14 @@
 package honeycomb
 
 import anticipation.*
+import gossamer.*
 import rudiments.*
 
 import language.dynamics
 
 extension (sc: StringContext)
-  def cls(): CssClass = CssClass(Text(sc.parts.head))
-  def id(): DomId = DomId(Text(sc.parts.head))
+  def cls(): CssClass = CssClass(sc.parts.head.tt)
+  def id(): DomId = DomId(sc.parts.head.tt)
 
 val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download" | "ping" | "rel" |
     "hreflang" | "type" | "referrerpolicy"]("a", block = false)
@@ -31,8 +32,13 @@ val A = ClearTagType["a", NonInteractive, Global | "href" | "target" | "download
 val Abbr = TagType["abbr", Phrasing, Global]("abbr", block = false)
 val Address = TagType["address", Flow | Palpable, Global]("address")
 
-val Area = TagType["area", Nothing, Global | "alt" | "coords" | "shape" | "href" | "target" |
-    "download" | "ping" | "rel" | "referrerpolicy"]("area", block = false)
+object Area
+extends TagType["area", Nothing, Global | "alt" | "coords" | "shape" | "href" | "target" |
+    "download" | "ping" | "rel" | "referrerpolicy"]("area", block = false):
+  val Default = preset("shape" -> t"default")
+  val Rect = preset("shape" -> t"rect")
+  val Circle = preset("shape" -> t"circle")
+  val Poly = preset("shape" -> t"poly")
 
 val Article = TagType["article", Flow, Global]("article") // further constraints on descendants
 val Aside = TagType["aside", Flow, Global]("aside")
@@ -121,7 +127,30 @@ object Input extends TagType["input", Nothing, Global | "accept" | "alt" | "auto
     "checked" | "dirname" | "disabled" | "form" | "formaction" | "formenctype" | "formmethod" |
     "formnovalidate" | "formtarget" | "height" | "list" | "max" | "maxlength" | "min" |
     "minlength" | "multiple" | "name" | "pattern" | "placeholder" | "readonly" | "required" |
-    "size" | "src" | "step" | "type" | "value" | "width" | "capture"]("input", block = false, unclosed = true)
+    "size" | "src" | "step" | "value" | "width" | "capture"]("input", block = false,
+    unclosed = true):
+  val Button = preset("type" -> t"button")
+  val Checkbox = preset("type" -> t"checkbox")
+  val Color = preset("type" -> t"color")
+  val Date = preset("type" -> t"date")
+  val DatetimeLocal = preset("type" -> t"datetime-local")
+  val Email = preset("type" -> t"email")
+  val File = preset("type" -> t"file")
+  val Hidden = preset("type" -> t"hidden")
+  val Image = preset("type" -> t"image")
+  val Month = preset("type" -> t"month")
+  val Number = preset("type" -> t"number")
+  val Password = preset("type" -> t"password")
+  val Radio = preset("type" -> t"radio")
+  val Range = preset("type" -> t"range")
+  val Reset = preset("type" -> t"reset")
+  val Search = preset("type" -> t"search")
+  val Submit = preset("type" -> t"submit")
+  val Tel = preset("type" -> t"tel")
+  val Text = preset("type" -> t"text")
+  val Time = preset("type" -> t"time")
+  val Url = preset("type" -> t"url")
+  val Week = preset("type" -> t"week")
 
 val Ins = ClearTagType["ins", Label, Global | "cite" | "datetime"]("ins", block = false)
 val Kbd = TagType["kbd", Phrasing, Global]("kbd", block = false)
@@ -129,9 +158,37 @@ val Label = TagType["label", Phrasing, Global | "for" | "for"]("label", block = 
 val Legend = TagType["legend", Phrasing | Heading, Global]("legend")
 val Li = TagType["li", Flow, Global | "value"]("li")
 
-val Link = TagType["link", Nothing, Global | "href" | "crossorigin" | "rel" | "media" |
+object Link extends TagType["link", Nothing, Global | "href" | "crossorigin" | "media" |
     "integrity" | "hreflang" | "type" | "referrerpolicy" | "sizes" | "imagesrcset" | "imagesizes" |
-    "as" | "color" | "disabled"]("link", block = false, unclosed = true)
+    "as" | "color" | "disabled"]("link", block = false, unclosed = true):
+  val Stylesheet = preset("rel" -> t"stylesheet")
+  val Icon = preset("rel" -> t"icon")
+  val Manifest = preset("rel" -> t"manifest")
+  val Alternate = preset("rel" -> t"alternate")
+  val Prev = preset("rel" -> t"prev")
+  val Next = preset("rel" -> t"next")
+  val Canonical = preset("rel" -> t"canonical")
+  val Nofollow = preset("rel" -> t"nofollow")
+  val Noreferrer = preset("rel" -> t"noreferrer")
+  val Noopener = preset("rel" -> t"noopener")
+  val Tag = preset("rel" -> t"tag")
+  val Preload = preset("rel" -> t"preload")
+  val Prefetch = preset("rel" -> t"prefetch")
+  val DnsPrefetch = preset("rel" -> t"dns-prefetch")
+  val Preconnect = preset("rel" -> t"preconnect")
+  val Prerender = preset("rel" -> t"prerender")
+  val Author = preset("rel" -> t"author")
+  val Help = preset("rel" -> t"help")
+  val License = preset("rel" -> t"license")
+  val Bookmark = preset("rel" -> t"bookmark")
+  val Ugc = preset("rel" -> t"ugc")
+  val Hub = preset("rel" -> t"hub")
+  val Modulepreload = preset("rel" -> t"modulepreload")
+  val Archives = preset("rel" -> t"archives")
+  val Feed = preset("rel" -> t"feed")
+  val Pingback = preset("rel" -> t"pingback")
+  val Shortlink = preset("rel" -> t"shortlink")
+  val Sidebar = preset("rel" -> t"sidebar")
 
 val Main = TagType["main", Flow, Global]("main")
 val Mark = TagType["mark", Phrasing, Global]("mark", block = false)
@@ -212,14 +269,27 @@ val Textarea =
    ("textarea", block = false, verbatim = true)
 
 val Tfoot = TagType["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
-val Th = TagType["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th")
+
+object Th
+extends TagType["th", Flow, Global | "colspan" | "rowspan" | "headers" | "scope" | "abbr"]("th"):
+  val Col = preset("scope" -> t"col")
+  val Colgroup = preset("scope" -> t"colgroup")
+  val Row = preset("scope" -> t"row")
+  val Rowgroup = preset("scope" -> t"rowgroup")
+
 val Thead = TagType["thead", "tr" | ScriptSupporting, Global]("thead")
 val Time = TagType["time", Phrasing, Global | "datetime"]("time", block = false)
 val Title = TagType["title", Nothing, Global]("title")
 val Tr = TagType["tr", "td" | "th" | ScriptSupporting, Global]("tr")
 
-val Track =
-  TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]("track")
+object Track
+extends TagType["track", Nothing, Global | "kind" | "src" | "srclang" | "label" | "default"]
+   ("track"):
+  val Captions = preset("kind" -> t"captions")
+  val Chapters = preset("kind" -> t"chapters")
+  val Descriptions = preset("kind" -> t"descriptions")
+  val Metadata = preset("kind" -> t"metadata")
+  val Subtitles = preset("kind" -> t"subtitles")
 
 val U = TagType["u", Phrasing, Global]("u", block = false)
 val Ul = TagType["ul", "li" | ScriptSupporting, Global]("ul")
