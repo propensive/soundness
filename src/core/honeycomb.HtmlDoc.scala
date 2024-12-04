@@ -18,7 +18,6 @@ package honeycomb
 
 import hieroglyph.*
 import vacuous.*
-import rudiments.*
 import anticipation.*
 import spectacular.*
 import gossamer.*
@@ -37,7 +36,7 @@ object HtmlDoc:
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
      (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
-     (using att: "href" is HtmlAttribute[Stylesheet, ?])
+     (using att: "href" is HtmlAttribute[Stylesheet])
           : HtmlDoc =
 
     val link = (att.convert(stylesheet): @unchecked) match

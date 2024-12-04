@@ -19,6 +19,7 @@ package honeycomb
 import rudiments.*
 import vacuous.*
 import fulminate.*
+import prepositional.*
 import anticipation.*
 
 import scala.quoted.*
@@ -36,20 +37,23 @@ object Honeycomb:
 
     import quotes.reflect.*
 
-    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(String, Optional[Text])]] = exprs match
-      case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-        val att: String = key.value.get
+    def recur(exprs: Seq[Expr[(Label, Any)]])
+            : List[Expr[(String, Optional[HtmlAttribute.NotShown.type | Text])]] =
+      exprs match
+        case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
+          val att: String = key.value.get
 
-        val expr: Expr[keyType is HtmlAttribute[valueType, NameType]] =
-          Expr.summon[keyType is HtmlAttribute[valueType, NameType]].getOrElse:
-            val typeName = TypeRepr.of[valueType].show
-            abandon(m"""the attribute $att cannot take a value of type $typeName""")
+          val expr: Expr[keyType is HtmlAttribute[valueType]] =
+            Expr.summon[keyType is HtmlAttribute[valueType] onto NameType]
+             .orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
+             .getOrElse:
+              val typeName = TypeRepr.of[valueType].show
+              abandon(m"""the attribute $att cannot take a value of type $typeName""")
 
-        '{($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))} :: recur(tail)
+          '{  ($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))  } :: recur(tail)
 
-      case _ =>
-        if className.value == Some("apply") then Nil
-        else List('{("class", $className.tt)})
+        case _ =>
+          if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
 
     (attributes: @unchecked) match
       case Varargs(exprs) =>
@@ -59,4 +63,6 @@ object Honeycomb:
               $node.unclosed,
               $node.block,
               $node.verbatim,
-              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.to(Map))  }
+              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.collect:
+                case (key, value: Text) => (key, value)
+                case (key, Unset)       => (key, Unset))  }
