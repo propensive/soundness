@@ -20,56 +20,107 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
+import rudiments.*
 import vacuous.*
+
+import java.util as ju
+import ju.concurrent as juc
+import juc.locks as jucl
+import juc.atomic as juca
 
 import Completion.*
 
 object Promise:
-  enum State:
-    case Incomplete, Cancelled, Complete
+  enum State[+ValueType]:
+    case Incomplete(waiting: Set[Thread])
+    case Complete(value: ValueType)
+    case Cancelled
 
-case class Promise[ValueType]():
-  private var state: Promise.State = Promise.State.Incomplete
-  private var value: Optional[ValueType] = Unset
-  private[parasite] def get(): ValueType = value.asInstanceOf[ValueType]
+final case class Promise[ValueType]():
+  import Promise.State, State.{Incomplete, Complete, Cancelled}
 
-  def cancelled: Boolean = state == Promise.State.Cancelled
-  def apply(): Optional[ValueType] = if ready then value else Unset
-  def ready: Boolean = state != Promise.State.Incomplete
-  def complete: Boolean = state == Promise.State.Complete
+  private val state: juca.AtomicReference[State[ValueType]] =
+    juca.AtomicReference(Incomplete(Set()))
 
-  private def set(supplied: ValueType): Unit =
-    value = supplied
-    state = Promise.State.Complete
-    notifyAll()
+  def cancelled: Boolean = state.get() == Cancelled
 
-  def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError = synchronized:
-    if ready then raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete), ())
-    else set(supplied)
+  def apply(): Optional[ValueType] = state.get() match
+     case Complete(value) => value
+     case _               => Unset
 
-  def offer(supplied: -> ValueType): Unit = synchronized { if !ready then set(supplied) }
+  def ready: Boolean = state.get() match
+    case Incomplete(_) => false
+    case _             => true
 
-  def await(): ValueType = synchronized:
-    while !ready do wait()
-    get()
+  def complete: Boolean = state.get() match
+    case Complete(_) => true
+    case _           => false
 
-  def attend(): Unit = synchronized { while !ready do wait() }
+  private def completeIncomplete(supplied: ValueType)(current: State[ValueType] | Null)
+          : State[ValueType] =
+    current.nn match
+      case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
+      case current             => current
 
-  def cancel(): Unit = synchronized:
-    if !ready then
-      state = Promise.State.Cancelled
-      notifyAll()
+  def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError =
+    state.updateAndGet(completeIncomplete(supplied)).nn match
+      case Cancelled           => raise(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+      case Complete(_)         => raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))
+      case Incomplete(waiting) => ()
+
+  def offer(supplied: -> ValueType): Unit = state.updateAndGet(completeIncomplete(supplied))
+
+  private def enqueue(thread: Thread)(current: State[ValueType] | Null): State[ValueType] =
+    current.nn match
+      case Incomplete(waiting) => Incomplete(waiting + thread)
+      case Complete(value)     => Complete(value)
+      case Cancelled           => Cancelled
+
+  @tailrec
+  def await(): ValueType raises ConcurrencyError =
+    state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
+      case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
+      case Complete(value) => value
+      case Cancelled       => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+
+  @tailrec
+  def attend(): Unit = state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
+    case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
+    case _             => ()
+
+  private def cancelIncomplete(current: State[ValueType] | Null): State[ValueType] = current match
+    case Incomplete(_) => Cancelled
+    case current       => current.nn
+
+  def cancel(): Unit = state.getAndUpdate(cancelIncomplete) match
+    case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
+    case _                   => ()
 
   def await[DurationType: GenericDuration](duration: DurationType)
           : ValueType raises ConcurrencyError =
+    val deadline = System.nanoTime() + duration.milliseconds*1000000L
 
-    synchronized:
-      if ready then get() else
-        wait(duration.milliseconds)
-        if ready then get() else abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))
+    @tailrec
+    def recur(): ValueType =
+      if deadline < System.nanoTime then abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))
+      else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
+        case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
+                                recur()
+        case Complete(value) => value
+        case Cancelled       => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
 
-  def attend[DurationType: GenericDuration](duration: DurationType): Unit raises ConcurrencyError =
-    synchronized:
-      if ready then get() else
-        wait(duration.milliseconds)
-        if ready then get() else abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))
+    recur()
+
+  def attend[DurationType: GenericDuration](duration: DurationType): Unit =
+    val deadline = System.nanoTime() + duration.milliseconds*1000000L
+
+    @tailrec
+    def recur(): Unit =
+      if deadline > System.nanoTime
+      then state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
+        case Incomplete(_) => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
+                              recur()
+        case Cancelled     => ()
+        case Complete(_)   => ()
+
+    recur()

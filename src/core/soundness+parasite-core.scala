@@ -18,7 +18,7 @@ package soundness
 
 export parasite.{Codicil, Completion, ConcurrencyError, Daemon, Hook, Monitor, Promise, Task,
     ThreadModel, Chain, Transgression, monitor, daemon, async, task, intercept, relent, cancel,
-    sleep, snooze, sequence, race, supervise, Tenacity, retry}
+    sleep, snooze, sequence, race, supervise, Tenacity, retry, Stale}
 
 package threadModels:
   export parasite.threadModels.{platform, virtual}

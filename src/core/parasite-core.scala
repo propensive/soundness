@@ -117,3 +117,5 @@ def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothi
       case Perseverance.Persevere      => recur(attempt + 1)
 
   recur(Prim)
+
+export Parasite.Stale
