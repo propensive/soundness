@@ -26,6 +26,7 @@ import contingency.*
 import gesticulate.*
 import spectacular.*
 import anticipation.*
+import monotonous.*, alphabets.base256.modular
 
 import language.dynamics
 
@@ -53,6 +54,6 @@ object Postable extends FallbackPostable:
 
 class Postable[PostType](val contentType: MediaType, val content: PostType => LazyList[Bytes]):
   def preview(value: PostType): Text = content(value).prim.lay(t""): bytes =>
-    val sample = bytes.take(256)
-    val string: Text = if sample.all(32.toByte <= _ <= 127.toByte) then sample.utf8 else sample.hex
+    val sample = bytes.take(1024)
+    val string: Text = sample.serialize[Base256]
     if bytes.length > 128 then t"$string..." else string
