@@ -28,7 +28,7 @@ object Zip:
 
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
-  
+
   given (using Tactic[NameError]) => Zip is Radical from Zip.ZipRoot = new Radical:
     type Self = Zip
     type Source = ZipRoot
@@ -58,12 +58,12 @@ object Zipfile:
     type Operand = Unit
     type Result = Root
     protected type Carrier = jnf.FileSystem
-    
+
     def init(value: Zipfile, options: List[Operand]): Carrier =
       try jnf.FileSystems.newFileSystem(value.uri, Map("zipinfo-time" -> "false").asJava).nn
       catch case exception: jnf.ProviderNotFoundException =>
-        throw Panic(m"There was unexpectedly no filesystem provider for ZIP files")
-      
+        panic(m"There was unexpectedly no filesystem provider for ZIP files")
+
     def handle(carrier: jnf.FileSystem): Zip.ZipRoot = Zip.ZipRoot(carrier: jnf.FileSystem)
     def close(carrier: Carrier): Unit = carrier.close()
 
@@ -84,18 +84,18 @@ object Zipfile:
     for entry <- stream do
       entry.ref.ancestors.reverse.exists: path =>
         directories(path) || addEntry(path)
-      
+
       out.putNextEntry(juz.ZipEntry(entry.ref.text.s))
-      
+
       entry.content().each: bytes =>
         out.write(bytes.mutable(using Unsafe))
 
       out.closeEntry()
 
     out.close()
-      
-      
-  
+
+
+
 
 case class Zipfile(path: Text):
   protected lazy val zipFile: juz.ZipFile = juz.ZipFile(ji.File(path.s)).nn
