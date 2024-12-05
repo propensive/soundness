@@ -38,7 +38,7 @@ object Crc32:
 
     def name: Text = t"CRC32"
     def hmacName: Text = t"HMAC-CRC32"
-    def hmac0: jc.Mac = throw Panic(m"this has not been implemented")
+    def hmac0: jc.Mac = panic(m"this has not been implemented")
 
 sealed trait Crc32 extends Algorithm:
   type Bits = 32
