@@ -41,16 +41,16 @@ object Honeycomb:
             : List[Expr[(String, Optional[HtmlAttribute.NotShown.type | Text])]] =
       exprs match
         case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
-          val att: String = key.value.get
+          val attribute: String = key.value.get
 
           val expr: Expr[keyType is HtmlAttribute[valueType]] =
             Expr.summon[keyType is HtmlAttribute[valueType] onto NameType]
              .orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
              .getOrElse:
               val typeName = TypeRepr.of[valueType].show
-              abandon(m"""the attribute $att cannot take a value of type $typeName""")
+              abandon(m"""the attribute $attribute cannot take a value of type $typeName""")
 
-          '{  ($expr.rename.getOrElse(Text($key)).s, $expr.convert($value))  } :: recur(tail)
+          '{  ($expr.rename.or($key.tt).s, $expr.convert($value))  } :: recur(tail)
 
         case _ =>
           if className.value == Some("apply") then Nil else List('{("class", $className.tt)})

@@ -33,19 +33,19 @@ object Tests extends Suite(t"Honeycomb Tests"):
       .check(_ == t"<br>")
   
       test(t"tag with one attribute"):
-        P(id = t"abc").show
+        P(id = id"abc").show
       .check(_ == t"""<p id="abc"/>""")
       
       test(t"tag with two attributes"):
-        P(id = t"abc", style = t"def").show
+        P(id = id"abc", style = t"def").show
       .check(_ == t"""<p id="abc" style="def"/>""")
   
       test(t"unclosed tag with one attribute"):
-        Hr(id = t"foo").show
+        Hr(id = id"foo").show
       .check(_ == t"""<hr id="foo">""")
       
       test(t"unclosed tag with two attributes"):
-        Hr(id = t"foo", style = t"bar").show
+        Hr(id = id"foo", style = t"bar").show
       .check(_ == t"""<hr id="foo" style="bar">""")
       
       test(t"non-self-closing tag"):

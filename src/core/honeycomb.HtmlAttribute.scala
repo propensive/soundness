@@ -28,7 +28,7 @@ trait HtmlAttribute[-ValueType]:
   type Self <: Label
   type Target
   def convert(value: ValueType): Optional[Text | HtmlAttribute.NotShown.type]
-  def rename: Option[Text] = None
+  def rename: Optional[Text] = Unset
 
 object HtmlAttribute:
   object NotShown
@@ -37,16 +37,17 @@ object HtmlAttribute:
       => LabelType is HtmlAttribute[ValueType]:
 
     def convert(value: ValueType): Optional[Text] = LabelType.serialize(value).show
-    override def rename: Option[Text] = Some(LabelType.name.show)
+    override def rename: Optional[Text] = LabelType.name.show
 
-  given [LabelType <: Label] => LabelType is HtmlAttribute[Text] as any = identity(_)
+  //given [LabelType <: Label] => LabelType is HtmlAttribute[Text] as any = identity(_)
   given ("accept" is HtmlAttribute[List[Text]]) as accept = _.join(t",")
 
   given ("acceptCharset" is HtmlAttribute[Encoding]) as acceptCharset:
-    override def rename: Option[Text] = Some(t"accept-charset")
+    override def rename: Optional[Text] = t"accept-charset"
     def convert(value: Encoding): Text = value.name
 
   given ("accesskey" is HtmlAttribute[Char]) as accesskey = _.show
+  given ("action" is HtmlAttribute[Text]) as action = identity(_)
   given ("allowfullscreen" is HtmlAttribute[Boolean]) as allowfullscreen = _ => Unset
   given ("allowpaymentrequest" is HtmlAttribute[Boolean]) as allowpaymentrequest = _ => Unset
   given ("alt" is HtmlAttribute[Text]) as alt = identity(_)
@@ -61,11 +62,11 @@ object HtmlAttribute:
   given ("cite" is HtmlAttribute[Text]) as cite = identity(_)
 
   given ("class" is HtmlAttribute[List[CssClass]]) as `class`:
-    override def rename: Option[Text] = Some(t"class")
+    override def rename: Optional[Text] = t"class"
     def convert(value: List[CssClass]): Text = value.map(_.name).join(t" ")
 
   given HtmlAttribute[CssClass] as class2:
-    override def rename: Option[Text] = Some(t"class")
+    override def rename: Optional[Text] = t"class"
     def convert(value: CssClass): Text = value.name
 
   given ("code" is HtmlAttribute[Text]) as code = identity(_) // MediaError
@@ -95,11 +96,11 @@ object HtmlAttribute:
   given ("enctype" is HtmlAttribute[Text]) as enctype = identity(_) // provided by Gesticulate
 
   given ("hfor" is HtmlAttribute[DomId]) as hfor:
-    override def rename: Option[Text] = Some(t"for")
+    override def rename: Optional[Text] = t"for"
     def convert(value: DomId): Text = value.name
 
   given ("hfor" is HtmlAttribute[Seq[DomId]]) as hfors:
-    override def rename: Option[Text] = Some(t"for")
+    override def rename: Optional[Text] = t"for"
     def convert(value: Seq[DomId]): Text = value.map(_.name).join(t" ")
 
   given ("for" is HtmlAttribute[DomId]) as `for`:
@@ -124,7 +125,7 @@ object HtmlAttribute:
   given ("hreflang" is HtmlAttribute[Text]) as hreflang = identity(_) // Needs to be provided by Cosmopolite
 
   given ("httpEquiv" is HtmlAttribute[HttpEquiv]) as httpEquiv:
-    override def rename: Option[Text] = Some(t"http-equiv")
+    override def rename: Optional[Text] = t"http-equiv"
     def convert(value: HttpEquiv): Text = value.show
 
   given ("id" is HtmlAttribute[DomId]) as id = _.name
@@ -190,5 +191,6 @@ object HtmlAttribute:
   given ("usemap" is HtmlAttribute[Text]) as usemap = identity(_) // This needs a representation of HTML names
   given ("value" is HtmlAttribute[Double]) as value = _.toString.show
   given ("value" is HtmlAttribute[Int]) as valueInt = _.show
+  given ("value" is HtmlAttribute[Text]) as valueText = identity(_)
   given ("width" is HtmlAttribute[Int]) as width = _.show
   given ("wrap" is HtmlAttribute[Wrap]) as wrap = _.show
