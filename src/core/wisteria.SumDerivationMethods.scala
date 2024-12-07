@@ -27,7 +27,11 @@ import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
 
+  @deprecated("This method has been renamed to `choice`")
   transparent inline def allSingletons[DerivationType: SumReflection]: Boolean =
+    choice[DerivationType]
+
+  transparent inline def choice[DerivationType: SumReflection]: Boolean =
     inline erasedValue[DerivationType.MirroredElemTypes] match
       case _: (variantType *: variantTypes) => all[variantType, variantTypes]
 
@@ -135,7 +139,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType](inputLabel), Unset)(using summonInline[Tactic[VariantError]])
-        else throw Panic(m"Should be unreachable")
+        else panic(m"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
      (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
@@ -175,6 +179,6 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType]("".tt), Unset)(using summonInline[Tactic[VariantError]])
-        else throw Panic(m"Should be unreachable")
+        else panic(m"Should be unreachable")
 
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]

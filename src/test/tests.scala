@@ -161,7 +161,7 @@ object Show extends Derivation[Show] {
     typeName.s
 
   inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-    inline if allSingletons then
+    inline if choice then
       variant(value): [VariantType <: DerivationType] =>
         variant => typeName.s+"."+variant.show
     else
