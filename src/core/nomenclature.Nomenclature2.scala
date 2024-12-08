@@ -39,7 +39,7 @@ object Nomenclature2:
     ConstantType(StringConstant(string)).asType match
       case '[type stringType <: Label; stringType] => '{NameExtractor[stringType]()}
       case _ =>
-        throw Panic(m"StringContext did not contains Strings")
+        panic(m"StringContext did not contains Strings")
 
   def parse2[PlatformType: Type, NameType <: String: Type](scrutinee: Expr[Name[PlatformType]])
      (using Quotes)
