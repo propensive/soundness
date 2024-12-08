@@ -4,11 +4,12 @@ target honeycomb/test
 repo propensive/gossamer
 repo propensive/serpentine
 repo propensive/xylophone
+repo propensive/gesticulate
 
 project honeycomb
   module core
     sources  src/core
-    include  gossamer/core anticipation/html anticipation/css anticipation/path serpentine/core xylophone/core anticipation/url
+    include  gossamer/core anticipation/html anticipation/css anticipation/path serpentine/core xylophone/core anticipation/url gesticulate/core
 
   module test
     sources   src/test
