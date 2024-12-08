@@ -58,7 +58,7 @@ object Unicode:
   lazy val unicodeData: Map[Text, Char | Text] =
     val in: ji.InputStream =
       Option(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).map(_.nn).getOrElse:
-        throw Panic(m"could not find hieroglyph/UnicodeData.txt on the classpath")
+        panic(m"could not find hieroglyph/UnicodeData.txt on the classpath")
     
     scala.io.Source.fromInputStream(in).getLines.map(_.split(";").nn.to(List)).flatMap:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
@@ -99,7 +99,7 @@ object Unicode:
 
     val in: ji.InputStream =
       Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
-        throw Panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
+        panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
 
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
 

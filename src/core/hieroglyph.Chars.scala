@@ -18,8 +18,10 @@ package hieroglyph
 
 import language.experimental.captureChecking
 
+import rudiments.*
+
 object Chars:
-  val superscript: PartialFunction[Char, Char] =
+  val superscript: Char ~> Char =
     case '0' => '⁰'
     case '1' => '¹'
     case '2' => '²'
@@ -36,7 +38,7 @@ object Chars:
     case '-' => '₋'
     case '=' => '₌'
 
-  val subscript: PartialFunction[Char, Char] =
+  val subscript: Char ~> Char =
     case '0' => '₀'
     case '1' => '₁'
     case '2' => '₂'
