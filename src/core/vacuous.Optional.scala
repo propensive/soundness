@@ -39,7 +39,7 @@ extension [ValueType](optional: Optional[ValueType])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
   inline def vouch(using Unsafe): ValueType =
-    optional.or(throw Panic(m"a value was vouched but was absent"))
+    optional.or(panic(m"a value was vouched but was absent"))
 
   inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
     optional.let { value => if predicate(value) then Unset else value }
