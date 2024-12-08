@@ -258,7 +258,7 @@ case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Spool[Text]):
       case 13 => Rgb24(255,   0, 255)
       case 14 => Rgb24(  0, 255, 255)
       case 15 => Rgb24(255, 255, 255)
-      case _  => throw Panic(m"tried to access non-existent palette color")
+      case _  => panic(m"tried to access non-existent palette color")
 
     def color8(n: Int): Rgb24 = n match
       case n if 0 <= n <= 15 => palette(n)
