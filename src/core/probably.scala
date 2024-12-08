@@ -184,7 +184,7 @@ extension [TestType](test: Test[TestType])
 
     ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
 
-  inline def matches[ReportType](inline pf: PartialFunction[TestType, Any])
+  inline def matches[ReportType](inline pf: TestType ~> Any)
      (using runner: Runner[ReportType],
             inc:    Inclusion[ReportType, Outcome],
             inc2:   Inclusion[ReportType, DebugInfo])
