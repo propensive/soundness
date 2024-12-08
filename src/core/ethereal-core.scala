@@ -241,7 +241,7 @@ def cli[BusType <: Matchable](using executive: Executive)
             Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
 
           def deliver(sourcePid: Pid, message: BusType): Unit = clients.use: clients =>
-            clients().each: (pid, client) =>
+            clients.each: (pid, client) =>
               if sourcePid != pid then client.receive(message)
 
           val service: DaemonService[BusType] =
