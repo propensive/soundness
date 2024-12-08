@@ -53,7 +53,7 @@ object Watch:
       case key: jnf.WatchKey =>
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
           watches.use: ref =>
-            ref()(key)
+            ref(key)
           .each(_.put(event))
 
         key.reset()
