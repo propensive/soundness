@@ -119,7 +119,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
           case  8192 => CharDevice
           case 24576 => BlockDevice
           case 49152 => Socket
-          case _     => throw Panic(m"an unexpected POSIX mode value was returned")
+          case _     => panic(m"an unexpected POSIX mode value was returned")
 
   def copyTo(destination: Path on PlatformType)
      (using overwritePreexisting:     OverwritePreexisting on PlatformType,
