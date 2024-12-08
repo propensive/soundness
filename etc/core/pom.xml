@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>dev.soundness</groupId>
+  <artifactId>vicarious-core</artifactId>
+  <version>0.22.0</version>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <name>Rudiments</name>
+  <description>Rudimentary utilities for writing everyday Scala</description>
+  <url>https://soundness.dev/vicarious</url>
+  <packaging>jar</packaging>
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>anticipation-http</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>anticipation-path</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>anticipation-codec</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>vacuous-core</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>denominative-core</artifactId>
+      <version>0.22.0</version>
+    </dependency>
+  </dependencies>
+  <organization>
+    <name>Propensive</name>
+    <url>https://propensive.com/</url>
+  </organization>
+  <scm>
+    <url>https://github.com/propensive/vicarious</url>
+    <connection>scm:git@github.com:propensive/vicarious.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>propensive</id>
+      <name>Jon Pretty</name>
+      <email>jon.pretty@propensive.com</email>
+      <url>https://propensive.com/</url>
+    </developer>
+  </developers>
+</project>
