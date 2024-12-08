@@ -16,4 +16,4 @@
 
 package soundness
 
-export feudalism.{Immutable, Mutex, MutexRef, Semaphore}
+export feudalism.{Mutex, Semaphore}

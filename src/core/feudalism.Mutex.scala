@@ -16,61 +16,97 @@
 
 package feudalism
 
+import fulminate.*
+import rudiments.*
+
 import language.experimental.captureChecking
 
-class Mutex[ValueType](initial: ValueType):
-  private var count: Int = 0
-  private var value: ValueType = initial
+import java.util.concurrent.atomic as juca
+import java.util.concurrent.locks as jucl
 
-  def apply(): ValueType =
-    synchronized:
-      while count == -1 do wait()
-      count += 1
+object Feudalism:
+  import State.{Inactive, Reading, Writing}
 
-    try value finally synchronized:
-      count -= 1
-      notify()
+  private enum State[ValueType]:
+    case Inactive(value: ValueType)
+    case Reading(value: ValueType, waitingToWrite: Set[Thread], waitingToRead: Set[Thread])
+    case Writing(value: ValueType, waitingToWrite: Set[Thread], waitingToRead: Set[Thread])
 
-  def use[ResultType, ImmutableType]
-     (using immutable: Immutable[ValueType, ImmutableType])
-     (lambda: (ref: MutexRef[ImmutableType]) => ResultType)
-          : ResultType =
+    def release(): State[ValueType] = this match
+      case Inactive(value) => Inactive(value)
 
-    synchronized:
-      while count == -1 do wait()
-      count += 1
+      case Reading(value, writers, readers) =>
+        if writers.isEmpty then
+          if readers.isEmpty then Inactive(value)
+          else jucl.LockSupport.unpark(readers.head) yet Reading(value, writers, readers.tail)
+        else jucl.LockSupport.unpark(writers.head) yet Reading(value, writers.tail, readers)
 
-    try lambda(MutexRef(immutable.make(value), immutable.snapshot(_))) finally synchronized:
-      count -= 1
-      notify()
+      case Writing(value, writers, readers) =>
+        if writers.isEmpty then
+          if readers.isEmpty then Inactive(value)
+          else jucl.LockSupport.unpark(readers.head) yet Writing(value, writers, readers.tail)
+        else jucl.LockSupport.unpark(writers.head) yet Writing(value, writers.tail, readers)
 
-  def isolate[ResultType](lambda: ValueType => ResultType): ResultType =
-    synchronized:
-      while count != 0 do wait()
-      count = -1
+    def read(thread: Thread): State[ValueType] = this match
+      case Inactive(value)                  => Reading(value, Set(), Set())
+      case Reading(value, writers, readers) => Reading(value, writers, readers + thread)
+      case Writing(value, writers, readers) => Writing(value, writers, readers + thread)
 
-    try lambda(value) finally synchronized:
-      count = 0
-      notify()
+    def write(thread: Thread): State[ValueType] = this match
+      case Inactive(value)                  => Writing(value, Set(), Set())
+      case Reading(value, writers, readers) => Reading(value, writers + thread, readers)
+      case Writing(value, writers, readers) => Writing(value, writers + thread, readers)
 
-  def replace(lambda: ValueType => ValueType): ValueType =
-    synchronized:
-      while count != 0 do wait()
-      count = -1
+  opaque type Mutex[ValueType] = juca.AtomicReference[State[ValueType]]
 
-    try
-      value = lambda(value)
-      value
-    finally
-      synchronized:
-        count = 0
-        notify()
+  object Mutex:
+    def apply[ValueType](value: ValueType): Mutex[ValueType] =
+      juca.AtomicReference[State[ValueType]](Inactive(value))
 
-  def update(value2: => ValueType): Unit =
-    synchronized:
-      while count != 0 do wait()
-      count = -1
+  extension [ValueType](mutex: Mutex[ValueType])
+    def isolate[ResultType](lambda: ValueType => ResultType): ResultType =
+      @tailrec
+      def recur(): ResultType = mutex.getAndUpdate(_.nn.write(Thread.currentThread.nn)) match
+        case Inactive(value) => lambda(value)
+        case _               => jucl.LockSupport.park(mutex) yet recur()
 
-    try value = value2 finally synchronized:
-      count = 0
-      notify()
+      recur().also:
+        mutex.getAndUpdate:
+          case state@Writing(_, _, _) => state.release()
+          case _                      => panic(m"Status should be Writing")
+
+    def use[ResultType](lambda: ValueType => ResultType): ResultType =
+      @tailrec
+      def recur(): ResultType = mutex.getAndUpdate(_.nn.read(Thread.currentThread.nn)).nn match
+        case Inactive(value)                  => lambda(value)
+        case Reading(value, writers, readers) => lambda(value)
+        case Writing(value, writers, readers) => jucl.LockSupport.park(mutex) yet recur()
+
+      recur().also:
+        mutex.getAndUpdate:
+          case state@Reading(_, _, _) => state.release()
+          case _                      => panic(m"Expected status to be Reading")
+
+    def replace(lambda: ValueType => ValueType): ValueType =
+      @tailrec
+      def recur(): ValueType = mutex.getAndUpdate(_.nn.write(Thread.currentThread.nn)) match
+        case Inactive(value) => lambda(value)
+        case _               => jucl.LockSupport.park(mutex) yet recur()
+
+      recur().tap: value2 =>
+        mutex.getAndUpdate:
+          case state@Writing(_, _, _) => Inactive(value2)
+          case _                      => panic(m"Status should be Writing")
+
+    def update(block: => ValueType): ValueType =
+      @tailrec
+      def recur(): ValueType = mutex.getAndUpdate(_.nn.write(Thread.currentThread.nn)) match
+        case Inactive(_) => block
+        case _           => jucl.LockSupport.park(mutex) yet recur()
+
+      recur().tap: value2 =>
+        mutex.getAndUpdate:
+          case state@Writing(_, _, _) => Inactive(value2)
+          case _                      => panic(m"Status should be Writing")
+
+export Feudalism.Mutex
