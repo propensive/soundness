@@ -38,7 +38,7 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signi
 
     val pubKey = keyPair.getPublic.nn match
       case key: jsi.DSAPublicKey => key
-      case key: js.PublicKey     => throw Panic(m"unexpected public key type")
+      case key: js.PublicKey     => panic(m"unexpected public key type")
 
     keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
 
@@ -59,7 +59,7 @@ class Dsa[BitsType <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signi
   def privateToPublic(keyBytes: Bytes): Bytes =
     val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyBytes.to(Array))).nn match
       case key: jsi.DSAPrivateKey => key
-      case key: js.PrivateKey     => throw Panic(m"unexpected private key type")
+      case key: js.PrivateKey     => panic(m"unexpected private key type")
 
     val params = key.getParams.nn
     val y = params.getG.nn.modPow(key.getX, params.getP.nn)

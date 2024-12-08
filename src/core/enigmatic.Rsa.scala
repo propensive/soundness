@@ -35,7 +35,7 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   def privateToPublic(bytes: Bytes): Bytes =
     val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn match
       case key: jsi.RSAPrivateCrtKey => key
-      case key: js.PrivateKey        => throw Panic(m"unexpected private key type")
+      case key: js.PrivateKey        => panic(m"unexpected private key type")
 
     val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
     keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
