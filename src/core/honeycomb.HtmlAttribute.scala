@@ -22,6 +22,7 @@ import gossamer.*
 import anticipation.*
 import hieroglyph.*
 import prepositional.*
+import gesticulate.*
 import spectacular.*
 
 trait HtmlAttribute[-ValueType]:
@@ -93,7 +94,7 @@ object HtmlAttribute:
   given ("download" is HtmlAttribute[Text]) as download = identity(_)
 
   given ("draggable" is HtmlAttribute[Boolean]) as draggable = _.toString.tt
-  given ("enctype" is HtmlAttribute[Text]) as enctype = identity(_) // provided by Gesticulate
+  given ("enctype" is HtmlAttribute[MediaType]) as enctype = _.show
 
   given ("hfor" is HtmlAttribute[DomId]) as hfor:
     override def rename: Optional[Text] = t"for"
@@ -187,6 +188,7 @@ object HtmlAttribute:
   given ("target" is HtmlAttribute[Target]) as target = _.show
   given ("title" is HtmlAttribute[Text]) as title = identity(_)
   given ("translate" is HtmlAttribute[Boolean]) as translate = _ => Unset
+  given ("type" is HtmlAttribute[MediaType] onto "link") as linkType = _.show
   given ("capture" is HtmlAttribute[Capture]) as capture = _.show
   given ("usemap" is HtmlAttribute[Text]) as usemap = identity(_) // This needs a representation of HTML names
   given ("value" is HtmlAttribute[Double]) as value = _.toString.show
