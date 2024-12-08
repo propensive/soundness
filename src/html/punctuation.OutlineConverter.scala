@@ -54,7 +54,7 @@ object OutlineConverter extends HtmlConverter():
 
         if level > depth then structure(minimum2, nodes, Nil :: stack) else stack match
           case Nil =>
-            throw Panic(m"Stack should always be non-empty")
+            panic(m"Stack should always be non-empty")
 
           case head :: next :: stack2 =>
             if level < depth then next match

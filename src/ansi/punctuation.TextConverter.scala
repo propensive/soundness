@@ -53,7 +53,7 @@ open class TextConverter():
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
 
               case _ =>
-                throw Panic(m"unexpected non-paragraph node found while folding inline nodes")
+                panic(m"unexpected non-paragraph node found while folding inline nodes")
             (false, content)
     .apply(1).reverse
 
