@@ -77,9 +77,12 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     HttpConnection(false, request.getServerPort, httpRequest, respond)
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    safely:
+    unsafely:
       val connection = makeConnection(request, response)
       connection.respond(handle(using connection))
 
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    handle(request, response)
+    try handle(request, response) catch
+      case error: Throwable =>
+        println("An error occurred while processing a request: "+error)
+        error.printStackTrace(System.out)

@@ -77,7 +77,7 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
     val cancel: Promise[Unit] = Promise[Unit]()
     val server = startServer()
 
-    val asyncTask = async(cancel.await() yet server.stop(1))
+    val asyncTask = async(cancel.attend() yet server.stop(1))
 
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
