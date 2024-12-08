@@ -28,7 +28,7 @@ class AccrueTactic
    (label: boundary.Label[Option[ResultType]],
     ref: juca.AtomicReference[AccrualType],
     initial: AccrualType)
-   (lambda: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (lambda: (accrual: AccrualType) ?=> Exception ~> AccrualType)
    (using val diagnostics: Diagnostics)
 extends Tactic[ErrorType]:
 

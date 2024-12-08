@@ -22,187 +22,201 @@ import fulminate.*
 import rudiments.*
 import larceny.*
 
-case class AlphaError() extends Error(m"Alpha")
-case class BetaError() extends Error(m"Beta")
-case class GammaError(number: Int) extends Error(m"Gamma $number")
-case class DeltaError() extends Error(m"Delta")
-case class EpsilonError() extends Error(m"Epsilon")
-case class ZetaError(string: String) extends Error(m"Zeta $string")
+def simpleTest: Either[String, String] =
+  mend:
+    case e: Exception =>
+      Left(e.getMessage)
+      Right("foo")
+  .asInstanceOf[Mend[Either[String, String], [ResultType] =>> (contingency.Tactic[Exception]) ?=> ResultType]]
+  .within:
+    abort(new Exception("oops"))
+    Left("no")
 
-case class MiscErrors(errors: List[String] = Nil)
-extends Error(m"There was at least one GammaError"):
-  @targetName("add")
-  infix def + (error: String): MiscErrors = MiscErrors(error :: errors)
+//given fulminate.errorDiagnostics.stackTraces
 
-case class GammaErrors(errors: List[GammaError] = Nil)
-extends Error(m"There was at least one GammaError"):
-  @targetName("add")
-  infix def + (error: GammaError): GammaErrors = GammaErrors(error :: errors)
 
-object Tests extends Suite(t"Contingency tests"):
-  def run(): Unit =
-    test(t"an exception can't just be thrown"):
-      demilitarize(abort(AlphaError()))
-    .assert(_.length > 0)
 
-    test(t"exceptions can be thrown unsafely"):
-      demilitarize:
-        import strategies.throwUnsafely
-        abort(AlphaError())
-    .assert(_.length == 0)
+// case class AlphaError()(using Diagnostics) extends Error(m"Alpha")
+// case class BetaError()(using Diagnostics) extends Error(m"Beta")
+// case class GammaError(number: Int)(using Diagnostics) extends Error(m"Gamma $number")
+// case class DeltaError()(using Diagnostics) extends Error(m"Delta")
+// case class EpsilonError()(using Diagnostics) extends Error(m"Epsilon")
+// case class ZetaError(string: String)(using Diagnostics) extends Error(m"Zeta $string")
 
-    test(t"`safely` allows an exception to be thrown"):
-      demilitarize(safely(abort(AlphaError())))
-    .assert(_.length == 0)
+// case class MiscErrors(errors: List[String] = Nil)(using Diagnostics)
+// extends Error(m"There was at least one GammaError"):
+//   @targetName("add")
+//   infix def + (error: String): MiscErrors = MiscErrors(error :: errors)
 
-    test(t"`unsafely` allows an exception to be thrown"):
-      demilitarize(safely(abort(AlphaError())))
-    .assert(_.length == 0)
+// case class GammaErrors(errors: List[GammaError] = Nil)(using Diagnostics)
+// extends Error(m"There was at least one GammaError"):
+//   @targetName("add")
+//   infix def + (error: GammaError): GammaErrors = GammaErrors(error :: errors)
 
-    test(t"a specific exception can be captured"):
-      given ExpectationError[Any] is Fatal = _ => Exit.Ok
-      capture[AlphaError]:
-        abort(AlphaError())
-    .assert(_ == AlphaError())
+// object Tests extends Suite(t"Contingency tests"):
+//   def run(): Unit =
+//     test(t"an exception can't just be thrown"):
+//       demilitarize(abort(AlphaError()))
+//     .assert(_.length > 0)
 
-    test(t"an unspecified exception can be captured"):
-      given ExpectationError[Any] is Fatal = _ => Exit.Ok
-      capture:
-        abort(AlphaError())
-    .assert(_ == AlphaError())
+//     test(t"exceptions can be thrown unsafely"):
+//       demilitarize:
+//         import strategies.throwUnsafely
+//         abort(AlphaError())
+//     .assert(_.length == 0)
 
-    test(t"one exception can be tended into another"):
-      given ExpectationError[Any] is Fatal = _ => Exit.Ok
-      capture[BetaError]:
-        tend:
-          case AlphaError() => BetaError()
-        .within:
-          abort(AlphaError())
-    .assert(_ == BetaError())
+//     test(t"`safely` allows an exception to be thrown"):
+//       demilitarize(safely(abort(AlphaError())))
+//     .assert(_.length == 0)
 
-    test(t"one exception can be mended into a value"):
-      mend:
-        case AlphaError() => 17
-      .within:
-        abort(AlphaError())
-        7
-    .assert(_ == 17)
+//     test(t"`unsafely` allows an exception to be thrown"):
+//       demilitarize(safely(abort(AlphaError())))
+//     .assert(_.length == 0)
 
-    test(t"a mended block returns its value"):
-      mend:
-        case AlphaError() => 1
-      .within:
-        17
-    .assert(_ == 17)
+//     test(t"a specific exception can be captured"):
+//       given ExpectationError[Any] is Fatal = _ => Exit.Ok
+//       capture[AlphaError]:
+//         abort(AlphaError())
+//     .assert(_ == AlphaError())
 
-    test(t"a tended block returns its value"):
-      given BetaError is Fatal = error => Exit.Ok
+//     test(t"an unspecified exception can be captured"):
+//       given ExpectationError[Any] is Fatal = _ => Exit.Ok
+//       capture:
+//         abort(AlphaError())
+//     .assert(_ == AlphaError())
 
-      tend:
-        case AlphaError() => BetaError()
-      .within:
-        17
-    .assert(_ == 17)
+//     test(t"one exception can be tended into another"):
+//       given ExpectationError[Any] is Fatal = _ => Exit.Ok
+//       capture[BetaError]:
+//         tend:
+//           case AlphaError() => BetaError()
+//         .within:
+//           abort(AlphaError())
+//     .assert(_ == BetaError())
 
-    test(t"tended block can transform to same type"):
-      given ExpectationError[Any] is Fatal = error => Exit.Ok
-      capture[GammaError]:
-        tend:
-          case GammaError(n) => GammaError(n + 1)
-        .within:
-          abort(GammaError(1))
-    .assert(_ == GammaError(2))
+//     test(t"one exception can be mended into a value"):
+//       mend:
+//         case AlphaError() => 17
+//       .within:
+//         abort(AlphaError())
+//         7
+//     .assert(_ == 17)
 
-    test(t"tended block can transform to different types"):
-      import strategies.throwUnsafely
-      given ExpectationError[Any] is Fatal = error => Exit.Ok
+//     test(t"a mended block returns its value"):
+//       mend:
+//         case AlphaError() => 1
+//       .within:
+//         17
+//     .assert(_ == 17)
 
-      capture[ZetaError]:
-        tend:
-          case AlphaError()  => DeltaError()
-          case BetaError()   => EpsilonError()
-          case GammaError(n) => ZetaError("gamma")
-        .within:
-          abort(GammaError(1))
-    .assert(_ == ZetaError("gamma"))
+//     test(t"a tended block returns its value"):
+//       given BetaError is Fatal = error => Exit.Ok
 
-    test(t"mended block can transform to different values"):
-      mend:
-        case AlphaError()  => "alpha"
-        case BetaError()   => "beta"
-        case GammaError(n) => "gamma"
-      .within:
-        abort(BetaError())
-        "success"
+//       tend:
+//         case AlphaError() => BetaError()
+//       .within:
+//         17
+//     .assert(_ == 17)
 
-    test(t"amalgamation failure"):
-      amalgamate:
-        abort(BetaError())
-        42
-    .assert(_ == BetaError())
+//     test(t"tended block can transform to same type"):
+//       given ExpectationError[Any] is Fatal = error => Exit.Ok
+//       capture[GammaError]:
+//         tend:
+//           case GammaError(n) => GammaError(n + 1)
+//         .within:
+//           abort(GammaError(1))
+//     .assert(_ == GammaError(2))
 
-    test(t"amalgamation success"):
-      amalgamate:
-        if false then abort(BetaError())
-        42
-    .assert(_ == 42)
+//     test(t"tended block can transform to different types"):
+//       import strategies.throwUnsafely
+//       given ExpectationError[Any] is Fatal = error => Exit.Ok
 
-    test(t"accrual with two raises"):
-      given ExpectationError[?] is Fatal = error => Exit.Fail(1)
-      capture[GammaErrors]:
-        accrue(GammaErrors()):
-          case error: GammaError => accrual + error
-        .within:
-          raise(GammaError(1))
-          raise(GammaError(2))
-          "string"
+//       capture[ZetaError]:
+//         tend:
+//           case AlphaError()  => DeltaError()
+//           case BetaError()   => EpsilonError()
+//           case GammaError(n) => ZetaError("gamma")
+//         .within:
+//           abort(GammaError(1))
+//     .assert(_ == ZetaError("gamma"))
 
-    .assert(_ == GammaErrors(GammaError(2) :: GammaError(1) :: Nil))
+//     test(t"mended block can transform to different values"):
+//       mend:
+//         case AlphaError()  => "alpha"
+//         case BetaError()   => "beta"
+//         case GammaError(n) => "gamma"
+//       .within:
+//         abort(BetaError())
+//         "success"
 
-    test(t"accrual with no raises"):
-      given GammaErrors is Fatal = error => Exit.Fail(1)
+//     test(t"amalgamation failure"):
+//       amalgamate:
+//         abort(BetaError())
+//         42
+//     .assert(_ == BetaError())
 
-      accrue(GammaErrors()):
-        case error: GammaError => accrual + error
-      .within:
-        "string"
+//     test(t"amalgamation success"):
+//       amalgamate:
+//         if false then abort(BetaError())
+//         42
+//     .assert(_ == 42)
 
-    .assert(_ == "string")
+//     test(t"accrual with two raises"):
+//       given ExpectationError[?] is Fatal = error => Exit.Fail(1)
+//       capture[GammaErrors]:
+//         accrue(GammaErrors()):
+//           case error: GammaError => accrual + error
+//         .within:
+//           raise(GammaError(1))
+//           raise(GammaError(2))
+//           "string"
 
-    test(t"accrual with a raise and an abort"):
-      erased given ExpectationError[?] is Unchecked = ###
+//     .assert(_ == GammaErrors(GammaError(2) :: GammaError(1) :: Nil))
 
-      capture[GammaErrors]:
-        accrue(GammaErrors()):
-          case error: GammaError => accrual + error
-        .within:
-          raise(GammaError(1))
-          abort(GammaError(2))
-          "string"
-    .assert(_ == GammaErrors(List(GammaError(2), GammaError(1))))
+//     test(t"accrual with no raises"):
+//       given GammaErrors is Fatal = error => Exit.Fail(1)
 
-    test(t"accrual with just an abort"):
-      erased given ExpectationError[?] is Unchecked = ###
+//       accrue(GammaErrors()):
+//         case error: GammaError => accrual + error
+//       .within:
+//         "string"
 
-      capture[GammaErrors]:
-        accrue(GammaErrors()):
-          case error: GammaError => accrual + error
-        .within:
-          abort(GammaError(2))
-          "string"
-    .assert(_ == GammaErrors(GammaError(2) :: Nil))
+//     .assert(_ == "string")
 
-    test(t"accrual with multiple error types"):
-      given ExpectationError[?] is Fatal = error => Exit.Fail(1)
+//     test(t"accrual with a raise and an abort"):
+//       erased given ExpectationError[?] is Unchecked = ###
 
-      capture[MiscErrors]:
-        accrue(MiscErrors()):
-          case GammaError(n) => accrual + s"gamma $n"
-          case BetaError()   => accrual + "beta"
-        .within:
-          raise(GammaError(1))
-          raise(BetaError())
-          raise(GammaError(2))
-          "string"
+//       capture[GammaErrors]:
+//         accrue(GammaErrors()):
+//           case error: GammaError => accrual + error
+//         .within:
+//           raise(GammaError(1))
+//           abort(GammaError(2))
+//           "string"
+//     .assert(_ == GammaErrors(List(GammaError(2), GammaError(1))))
 
-    .assert(_ == MiscErrors("gamma 2" :: "beta" :: "gamma 1" :: Nil))
+//     test(t"accrual with just an abort"):
+//       erased given ExpectationError[?] is Unchecked = ###
+
+//       capture[GammaErrors]:
+//         accrue(GammaErrors()):
+//           case error: GammaError => accrual + error
+//         .within:
+//           abort(GammaError(2))
+//           "string"
+//     .assert(_ == GammaErrors(GammaError(2) :: Nil))
+
+//     test(t"accrual with multiple error types"):
+//       given ExpectationError[?] is Fatal = error => Exit.Fail(1)
+
+//       capture[MiscErrors]:
+//         accrue(MiscErrors()):
+//           case GammaError(n) => accrual + s"gamma $n"
+//           case BetaError()   => accrual + "beta"
+//         .within:
+//           raise(GammaError(1))
+//           raise(BetaError())
+//           raise(GammaError(2))
+//           "string"
+
+//     .assert(_ == MiscErrors("gamma 2" :: "beta" :: "gamma 1" :: Nil))

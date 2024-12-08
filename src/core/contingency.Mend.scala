@@ -16,4 +16,6 @@
 
 package contingency
 
-class Mend[ResultType, LambdaType[_]](val lambda: PartialFunction[Exception, ResultType])
+import rudiments.*
+
+class Mend[ResultType, LambdaType[_]](val lambda: Exception ~> ResultType)

@@ -16,6 +16,8 @@
 
 package contingency
 
+import rudiments.*
+
 import language.experimental.pureFunctions
 
 enum Attempt[+SuccessType, +ErrorType <: Exception]:
@@ -33,12 +35,12 @@ enum Attempt[+SuccessType, +ErrorType <: Exception]:
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
 
-  def handle(block: PartialFunction[ErrorType, Exception]): Attempt[SuccessType, Exception] =
+  def handle(block: ErrorType ~> Exception): Attempt[SuccessType, Exception] =
     this match
       case Success(value) => Success(value)
       case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)
 
-  def acknowledge(block: PartialFunction[ErrorType, Unit]): Attempt[SuccessType, ErrorType] =
+  def acknowledge(block: ErrorType ~> Unit): Attempt[SuccessType, ErrorType] =
     this match
       case Failure(value) => if block.isDefinedAt(value) then block(value)
       case _              => ()
@@ -49,7 +51,7 @@ enum Attempt[+SuccessType, +ErrorType <: Exception]:
     case Success(value) => value
     case Failure(error) => abort(error)
 
-  def recover[SuccessType2 >: SuccessType](block: PartialFunction[ErrorType, SuccessType2])
+  def recover[SuccessType2 >: SuccessType](block: ErrorType ~> SuccessType2)
           : SuccessType2 =
 
     this match

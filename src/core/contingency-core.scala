@@ -141,14 +141,14 @@ inline def focus[FocusType, ResultType](using inline track: Foci[FocusType])
   block.also:
     track.supplement(track.length - length, transform(using _))
 
-transparent inline def tend(inline block: PartialFunction[Exception, Exception]): Any =
+transparent inline def tend(inline block: Exception ~> Exception): Any =
   ${Contingency.tend('block)}
 
 extension [LambdaType[_]](inline tend: Tend[LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType]): ResultType =
     ${Contingency.tendWithin[LambdaType, ResultType]('tend, 'lambda)}
 
-transparent inline def mend[ResultType](inline block: PartialFunction[Exception, ResultType]): Any =
+transparent inline def mend[ResultType](inline block: Exception ~> ResultType): Any =
   ${Contingency.mend[ResultType]('block)}
 
 extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
@@ -159,12 +159,12 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
 transparent inline def track[FocusType](using DummyImplicit)[AccrualType <: Exception, ResultType]
    (accrual: AccrualType)
    (inline block: (focus:   Optional[FocusType],
-                   accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+                   accrual: AccrualType) ?=> Exception ~> AccrualType)
         : Any =
   ${Contingency.track[AccrualType, FocusType]('accrual, 'block)}
 
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
-   (inline block: (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
+   (inline block: (accrual: AccrualType) ?=> Exception ~> AccrualType)
         : Any =
   ${Contingency.accrue[AccrualType]('accrual, 'block)}
 

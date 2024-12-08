@@ -16,4 +16,6 @@
 
 package contingency
 
-class Tend[LambdaType[_]](val lambda: PartialFunction[Exception, Exception])
+import rudiments.*
+
+class Tend[LambdaType[_]](val lambda: Exception ~> Exception)

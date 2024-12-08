@@ -28,7 +28,7 @@ object Foci:
     def register(error: Exception): Unit = ()
 
     def fold[AccrualType](initial: AccrualType)
-       (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
+       (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
             : AccrualType =
       initial
 
@@ -40,7 +40,7 @@ trait Foci[FocusType]:
   def register(error: Exception): Unit
 
   def fold[AccrualType](initial: AccrualType)
-     (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
+     (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
           : AccrualType
 
   def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit
@@ -57,7 +57,7 @@ class TrackFoci[FocusType]() extends Foci[FocusType]:
     focuses.append(Unset)
 
   def fold[AccrualType](initial: AccrualType)
-     (lambda: (Optional[FocusType], AccrualType) => PartialFunction[Exception, AccrualType])
+     (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
           : AccrualType =
     (0 until errors.length).foldLeft(initial): (accrual, index) =>
       lambda(focuses(index), accrual)(errors(index))

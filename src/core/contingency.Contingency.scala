@@ -106,7 +106,7 @@ object Contingency:
       case other                              => List(other)
 
 
-  def tend[ErrorTypes <: Exception: Type](handler: Expr[PartialFunction[Exception, ErrorTypes]])
+  def tend[ErrorTypes <: Exception: Type](handler: Expr[Exception ~> ErrorTypes])
      (using Quotes)
           : Expr[Any] =
 
@@ -127,7 +127,7 @@ object Contingency:
 
   def track[AccrualType <: Exception: Type, FocusType: Type]
      (accrual: Expr[AccrualType],
-      handler: Expr[(Optional[FocusType], AccrualType) ?=> PartialFunction[Exception, AccrualType]])
+      handler: Expr[(Optional[FocusType], AccrualType) ?=> Exception ~> AccrualType])
      (using Quotes)
           : Expr[Any] =
 
@@ -150,7 +150,7 @@ object Contingency:
 
   def accrue[AccrualType <: Exception: Type]
      (accrual: Expr[AccrualType],
-      handler: Expr[AccrualType ?=> PartialFunction[Exception, AccrualType]])
+      handler: Expr[AccrualType ?=> Exception ~> AccrualType])
      (using Quotes)
           : Expr[Any] =
 
@@ -170,7 +170,7 @@ object Contingency:
       case '[type typeLambda[_]; typeLambda] =>
         '{Accrue[AccrualType, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
-  def mend[ResultType: Type](handler: Expr[PartialFunction[Exception, ResultType]])(using Quotes)
+  def mend[ResultType: Type](handler: Expr[Exception ~> ResultType])(using Quotes)
           : Expr[Any] =
 
     import quotes.reflect.*
@@ -196,7 +196,7 @@ object Contingency:
 
       val tactics = unwrap(tend.asTerm) match
         case Apply(_, List(Inlined(_, _, matches))) =>
-          val partialFunction = matches.asExprOf[PartialFunction[Exception, Exception]]
+          val partialFunction = matches.asExprOf[Exception ~> Exception]
 
           mapping(partialFunction.asTerm).values.map: errorType =>
             (errorType.typeRef.asType: @unchecked) match
@@ -232,7 +232,7 @@ object Contingency:
                   abandon
                    (m"argument to `mend` should be a partial function implemented as match cases")
 
-              val pfExpr = partialFunction.asExprOf[PartialFunction[Exception, ResultType]]
+              val pfExpr = partialFunction.asExprOf[Exception ~> ResultType]
 
               val tactics = mapping(partialFunction).map: (_, _) =>
                 '{
