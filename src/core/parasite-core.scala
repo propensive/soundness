@@ -66,10 +66,8 @@ def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=>
 
   Task(evaluate(using _), daemon = false, name = name)
 
-def intercept(lambda: (chain: Chain) ?=> PartialFunction[Throwable, Transgression])(using Monitor)
-        : Unit =
-
-  monitor.interceptor { chain => lambda(using chain) }
+def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap =
+  Trap(lambda, monitor)
 
 def relent[ResultType]()(using Subordinate): Unit = monitor.relent()
 def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()

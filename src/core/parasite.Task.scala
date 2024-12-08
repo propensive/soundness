@@ -32,7 +32,7 @@ object Task:
     inline def evaluate0: Subordinate => ResultType = evaluate
     inline def name0: Optional[Text] = name
 
-    new Subordinate(codepoint, monitor, codicil) with Task[ResultType]:
+    new Subordinate(codepoint, monitor, codicil, Unset) with Task[ResultType]:
       type Result = ResultType
       def name: Optional[Text] = name0
       def daemon: Boolean = false

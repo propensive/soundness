@@ -24,11 +24,12 @@ import digression.*
 import vacuous.*
 
 object Daemon:
-  def apply(evaluate: Subordinate => Unit)(using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
+  def apply(evaluate: Subordinate => Unit)
+     (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
           : Daemon =
     inline def evaluate0: Subordinate => Unit = evaluate
 
-    new Subordinate(codepoint, monitor, codicil) with Daemon:
+    new Subordinate(codepoint, monitor, codicil, Unset) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true

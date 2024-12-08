@@ -36,9 +36,6 @@ sealed trait Monitor:
   val promise: Promise[Result]
   protected[parasite] var subordinates: Set[Subordinate] = Set()
 
-  protected[parasite] val interception: Mutex[Chain => PartialFunction[Throwable, Transgression]] =
-    Mutex({ chain => { case _ => Transgression.Escalate } })
-
   def name: Optional[Text]
   def chain: Optional[Chain]
   def stack: Text
@@ -48,15 +45,14 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def intercept(chain: Chain, error: Throwable): Unit
   def sleep(duration: Long): Unit = Thread.sleep(duration)
+  def handle(throwable: Throwable): Transgression
 
-  def interceptor(lambda: Chain => PartialFunction[Throwable, Transgression]): Unit =
-    interception.replace: interception =>
-      chain => lambda(chain).orElse(interception(chain))
+  def intercept(handler: Throwable ~> Transgression): Monitor
 
 sealed abstract class Supervisor() extends Monitor:
   type Result = Unit
+
   def chain: Optional[Chain] = Unset
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
@@ -66,7 +62,17 @@ sealed abstract class Supervisor() extends Monitor:
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = subordinates.each(_.cancel())
-  def intercept(chain: Chain, error: Throwable): Unit = interception()(chain)(error)
+
+  def handle(throwable: Throwable): Transgression =
+    println("Throwable reached the supervisor")
+    println(throwable)
+    throwable.printStackTrace()
+
+    throwable match
+      case break: scala.util.boundary.Break[?] => throw break
+      case _                                   => Transgression.Absorb
+
+  def intercept(handler: Throwable ~> Transgression): Supervisor = this
 
 object VirtualSupervisor extends Supervisor():
   def name: Text = "virtual".tt
@@ -81,7 +87,13 @@ object PlatformSupervisor extends Supervisor():
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
 
-abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
+abstract class Subordinate
+   (frame:   Codepoint,
+    parent:  Monitor,
+    codicil: Codicil,
+    handler: Optional[Throwable => Transgression])
+extends Monitor:
+  self =>
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
 
   def chain: Chain = Chain(frame, parent.chain)
@@ -89,6 +101,14 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
   val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
+  def handle(throwable: Throwable): Transgression = handler.or(parent.handle)(throwable)
+
+  def intercept(handler: Throwable ~> Transgression): Subordinate =
+    new Subordinate(frame, parent, codicil, handler):
+      type Result = self.Result
+      def name: Optional[Text] = self.name
+      def daemon: Boolean = self.daemon
+      def evaluate(subordinate: Subordinate): Result = self.evaluate(subordinate)
 
   def delegate(lambda: Monitor -> Unit): Unit = state.replace: state =>
     subordinates.each { child => if child.daemon then child.cancel() else lambda(child) }
@@ -101,20 +121,14 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
       case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
 
-  def intercept(chain: Chain, error: Throwable): Unit =
-    interception()(chain)(error) match
-      case Transgression.Escalate => parent.intercept(chain, error)
-      case Transgression.Cancel   => cancel()
-      case Transgression.Absorb   => ()
-
-  def relent(): Unit = state() match
+  def relent(): Unit = state.use:
     case Initializing    => ()
     case Active(_)       => ()
     case Suspended(_, _) => synchronized(wait())
-    case Completed(_, _) => throw Panic(m"should not be relenting after completion")
-    case Delivered(_, _) => throw Panic(m"should not be relenting after completion")
-    case Failed(_)       => throw Panic(m"should not be relenting after failure")
-    case Cancelled       => throw Panic(m"should not be relenting after cancellation")
+    case Completed(_, _) => panic(m"should not be relenting after completion")
+    case Delivered(_, _) => panic(m"should not be relenting after completion")
+    case Failed(_)       => panic(m"should not be relenting after failure")
+    case Cancelled       => panic(m"should not be relenting after cancellation")
 
   def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
           : Task[ResultType2] raises ConcurrencyError =
@@ -139,7 +153,6 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
 
     if state2 == Cancelled then thread.join()
 
-
   def result()(using cancel: Tactic[ConcurrencyError]): Result =
     state.replace:
       case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
@@ -152,7 +165,7 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
 
     .match
       case Delivered(_, result) => result
-      case other                => throw Panic(m"impossible state")
+      case other                => panic(m"impossible state")
 
 
   def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =
@@ -209,9 +222,11 @@ abstract class Subordinate(frame: Codepoint, parent: Monitor, codicil: Codicil) 
             case _         => ()
 
         case error: Throwable =>
-          intercept(chain, error)
           state() = Failed(error)
-          subordinates.each { child => if child.daemon then child.cancel() }
+          handle(error) match
+            case Transgression.Absorb   => ()
+            case Transgression.Cancel   => subordinates.each(_.cancel())
+            case Transgression.Escalate => parent.handle(error)
 
       finally
         codicil.cleanup(this)
