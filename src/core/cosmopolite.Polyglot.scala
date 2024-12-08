@@ -4,7 +4,7 @@ import rudiments.*
 
 case class Polyglot[+ValueType, LanguageType](values: Map[Language, ValueType]):
   @targetName("or")
-  transparent inline infix def \ [ValueType2 >: ValueType, LanguageType2]
+  transparent inline infix def | [ValueType2 >: ValueType, LanguageType2]
     (polyglot: Polyglot[ValueType2, LanguageType2])
           : Polyglot[ValueType2, LanguageType & LanguageType2] | ValueType2 =
     compiletime.summonFrom:
