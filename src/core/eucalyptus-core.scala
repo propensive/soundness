@@ -69,7 +69,7 @@ extension (logObject: Log.type)
     type Result = MessageType
     override def skip(event: EventType): Boolean = true
     def record(event: EventType): MessageType =
-      throw Panic(m"`skip` should prevent this from ever running")
+      panic(m"`skip` should prevent this from ever running")
 
   def silent[FormatType]: FormatType is Loggable = new Loggable:
     type Self = FormatType
