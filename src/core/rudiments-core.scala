@@ -33,6 +33,17 @@ import vacuous.*
 type Nat = Int & Singleton
 type Label = String & Singleton
 
+infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
+
+def fixpoint[ValueType](initial: ValueType)
+   (fn: (recur: (ValueType => ValueType)) ?=> (ValueType => ValueType)): ValueType =
+
+  def recurrence(fn: (recur: ValueType => ValueType) ?=> ValueType => ValueType)
+          : ValueType => ValueType =
+    fn(using recurrence(fn(_)))
+
+  recurrence(fn)(initial)
+
 extension [ValueType](value: ValueType)
   def unit: Unit = ()
   def waive: Any => ValueType = _ => value
@@ -42,7 +53,8 @@ extension [ValueType](value: ValueType)
   inline def iff(inline predicate: Boolean)(inline lambda: ValueType => ValueType): ValueType =
     if predicate then lambda(value) else value
 
-  inline def iff(inline predicate: ValueType => Boolean)(inline lambda: ValueType => ValueType): ValueType =
+  inline def iff(inline predicate: ValueType => Boolean)(inline lambda: ValueType => ValueType)
+          : ValueType =
     if predicate(value) then lambda(value) else value
 
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
