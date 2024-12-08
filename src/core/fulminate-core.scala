@@ -29,6 +29,8 @@ package errorDiagnostics:
   given Diagnostics as empty = Diagnostics.omit
   given Diagnostics as stackTraces = Diagnostics.capture
 
+def panic(message: Message): Nothing = throw Panic(message)
+
 def abandon(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
         : Nothing =
   import quotes.reflect.*
