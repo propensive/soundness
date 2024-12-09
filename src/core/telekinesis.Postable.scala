@@ -25,7 +25,7 @@ import contingency.*
 import gesticulate.*
 import spectacular.*
 import anticipation.*
-import monotonous.*, alphabets.base256.modular
+import monotonous.*, alphabets.base256.alphanumericOrBraille
 
 import language.dynamics
 
