@@ -61,6 +61,8 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
 
   def text: Text = unwrap(fold[String]("") { (acc, next, level) => acc+next })
 
+  override def toString(): String = text.s
+
   def colorText: Text = unwrap:
     fold[String](""): (acc, next, level) =>
       val esc = 27.toChar
