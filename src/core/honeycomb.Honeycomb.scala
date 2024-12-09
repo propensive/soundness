@@ -38,7 +38,7 @@ object Honeycomb:
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]])
-            : List[Expr[(String, Optional[HtmlAttribute.NotShown.type | Text])]] =
+            : List[Expr[Optional[(String, Optional[Text])]]] =
       exprs match
         case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
           val attribute: String = key.value.get
@@ -50,7 +50,11 @@ object Honeycomb:
               val typeName = TypeRepr.of[valueType].show
               abandon(m"""the attribute $attribute cannot take a value of type $typeName""")
 
-          '{  ($expr.rename.or($key.tt).s, $expr.convert($value))  } :: recur(tail)
+          '{  $expr.convert($value) match
+                case HtmlAttribute.NotShown => Unset
+                case Unset                  => ($expr.rename.or($key.tt).s, Unset)
+                case attribute: Text        => ($expr.rename.or($key.tt).s, attribute)
+           } :: recur(tail)
 
         case _ =>
           if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
@@ -63,6 +67,6 @@ object Honeycomb:
               $node.unclosed,
               $node.block,
               $node.verbatim,
-              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.collect:
+              $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.compact.collect:
                 case (key, value: Text) => (key, value)
                 case (key, Unset)       => (key, Unset))  }
