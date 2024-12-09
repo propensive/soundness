@@ -118,6 +118,13 @@ package alphabets:
 
       Alphabet(Text(IArray.tabulate(256)(char)), false)
 
+    given Alphabet[Base256] as alphanumericOrBraille =
+      def char(i: Int): Char =
+        if i <= 32 || i == 34 || i == 39 || i == 92 || i >= 127 then (i + '\u2800').toChar
+        else i.toChar
+
+      Alphabet(Text(IArray.tabulate(256)(char)), false)
+
     given Alphabet[Base256] as braille =
       Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
 
