@@ -35,3 +35,5 @@ object HttpMethod:
 
 enum HttpMethod:
   case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
+
+  def unapply(request: HttpRequest): Boolean = request.method == this
