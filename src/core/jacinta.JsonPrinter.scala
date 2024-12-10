@@ -32,6 +32,7 @@ object JsonPrinter:
       append('"')
 
       string.each:
+        case '\"' => append(t"\\\"")
         case '\t' => append(t"\\t")
         case '\n' => append(t"\\n")
         case '\r' => append(t"\\r")
