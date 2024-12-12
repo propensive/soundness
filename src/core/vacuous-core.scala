@@ -30,7 +30,8 @@ inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueT
   lambda(Unset)
 
 extension [ValueType](iterable: Iterable[Optional[ValueType]])
-  transparent inline def compact: Iterable[ValueType] = iterable.filter(!_.absent).map(_.vouch(using Unsafe))
+  transparent inline def compact: Iterable[ValueType] =
+    iterable.filter(!_.absent).map(_.vouch(using Unsafe))
 
 extension [ValueType](option: Option[ValueType])
   inline def optional: Unset.type | ValueType = option.getOrElse(Unset)

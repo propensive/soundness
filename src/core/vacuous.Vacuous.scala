@@ -19,28 +19,30 @@ package vacuous
 import scala.quoted.*
 
 object Vacuous:
-  def optimizeOr[ValueType: Type](optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
+  def optimizeOr[ValueType: Type]
+     (optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
           : Expr[ValueType] =
 
     import quotes.reflect.*
 
     def optimize(term: Term): Term = term match
-      case inlined@Inlined(call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
+      case inlined@Inlined
+            (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
         term match
           case Typed(Apply(select, List(_)), typeTree) =>
             Inlined(call, bindings, Typed(Apply(select, List(default.asTerm)), typeTree))
 
           case term =>
-           '{ $optional match
-                case Unset => $default
-                case term  => term.asInstanceOf[ValueType] }.asTerm
+            ' { $optional match
+                  case Unset => $default
+                  case term  => term.asInstanceOf[ValueType] } . asTerm
 
       case Inlined(call, bindings, term) =>
         Inlined(call, bindings, optimize(term))
 
       case term =>
-       '{ $optional match
-            case Unset => $default
-            case term  => term.asInstanceOf[ValueType] }.asTerm
+        ' { $optional match
+              case Unset => $default
+              case term  => term.asInstanceOf[ValueType] } . asTerm
 
     '{${optimize(optional.asTerm).asExpr}.asInstanceOf[ValueType]}.asExprOf[ValueType]
