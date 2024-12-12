@@ -26,6 +26,23 @@ import scala.util.Try
 //object Month:
   //given Presentation[Month] = _.toString.tt
 
+object SumOnly extends SumDerivation[SumOnly]:
+
+  given SumOnly[SumOnlyEnum.Alpha] = alpha => println(s"$alpha is an alpha")
+  given SumOnly[SumOnlyEnum.Beta] = beta => println(s"$beta is a beta")
+
+  inline def split[DerivationType: SumReflection]: SumOnly[DerivationType] =
+    value => variant(value):
+      [VariantType <: DerivationType] => value =>
+        context.applyTo(value)
+
+trait SumOnly[Type]:
+  def applyTo(value: Type): Unit
+
+enum SumOnlyEnum:
+  case Alpha(n: Int)
+  case Beta(n: String)
+
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
@@ -228,3 +245,7 @@ def main(): Unit =
   println(showForSimple.show(Simple.Second))
   // TODO: remove or adjust
   //val compilationError = summon[Show[Adt]]
+
+  val sumOnly = summon[SumOnly[SumOnlyEnum]]
+  sumOnly.applyTo(SumOnlyEnum.Alpha(1))
+  sumOnly.applyTo(SumOnlyEnum.Beta("two"))
