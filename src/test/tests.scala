@@ -75,14 +75,14 @@ object Readable extends Derivation[Readable]:
   given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    IArray.from(text.s.split(",")).pipe: array =>
+    IArray.from(text.s.split(",").nn.map(_.nn)).pipe: array =>
       construct: [FieldType] =>
         readable =>
           if index < array.length then readable.read(array(index).tt) else default().or:
             ???
 
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
-    text.s.split(":").to(List).map(_.tt) match
+    text.s.split(":").nn.map(_.nn).to(List).map(_.tt) match
       case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
         context => context.read(text2)
 
@@ -227,4 +227,4 @@ def main(): Unit =
   val showForSimple = summon[Show[Simple]]
   println(showForSimple.show(Simple.Second))
   // TODO: remove or adjust
-  val compilationError = summon[Show[Adt]]
+  //val compilationError = summon[Show[Adt]]
