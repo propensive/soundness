@@ -24,49 +24,6 @@ import scala.quoted.*
 
 import language.experimental.captureChecking
 
-case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotations: AnnotationType*)
-
-object Annotations:
-  inline given[AnnotationType <: StaticAnnotation, TargetType]
-          : Annotations[AnnotationType, TargetType] =
-
-    ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
-
-  transparent inline def field[TargetType](inline lambda: TargetType => Any): List[StaticAnnotation] =
-    ${Adversaria.fieldAnnotations[TargetType]('lambda)}
-
-  transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : List[CaseField[TargetType, AnnotationType]] =
-
-    ${Adversaria.fields[TargetType, AnnotationType]}
-
-  transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : CaseField[TargetType, AnnotationType] =
-
-    ${Adversaria.firstField[TargetType, AnnotationType]}
-
-object CaseField:
-  def apply[TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
-     (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
-          : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
-
-    inline def annotation0 = annotation
-
-    new CaseField[TargetType, AnnotationType](name):
-      type FieldType = InitFieldType
-      def apply(value: TargetType) = access(value)
-      def annotation: AnnotationType = annotation0
-
-  transparent inline given[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : CaseField[TargetType, AnnotationType] =
-
-    Annotations.firstField[TargetType, AnnotationType]
-
-trait CaseField[TargetType <: Product, AnnotationType <: StaticAnnotation](val name: Text):
-  type FieldType
-  def apply(value: TargetType): FieldType
-  def annotation: AnnotationType
-
 object Adversaria:
   def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
           : Expr[CaseField[TargetType, AnnotationType]] =
@@ -114,10 +71,10 @@ object Adversaria:
     val field = lambda.asTerm match
       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Select(_, term)))), _)) =>
         targetType.typeSymbol.caseFields.find(_.name == term).getOrElse:
-          fail(m"the member $term is not a case class field")
+          panic(m"the member $term is not a case class field")
 
       case _ =>
-        fail(m"the lambda must be a simple reference to a case class field")
+        panic(m"the lambda must be a simple reference to a case class field")
 
     Expr.ofList:
       field.annotations.map(_.asExpr).collect:
@@ -135,5 +92,5 @@ object Adversaria:
     if annotations.isEmpty
     then
       val typeName = TypeRepr.of[AnnotationType].show
-      fail(m"the type ${targetType.show} did not have the annotation $typeName")
+      panic(m"the type ${targetType.show} did not have the annotation $typeName")
     else '{Annotations[AnnotationType, TargetType](${Expr.ofList(annotations)}*)}
