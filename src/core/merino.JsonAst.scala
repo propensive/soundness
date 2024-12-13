@@ -386,7 +386,38 @@ object JsonAst:
         next()
         null
 
-      def parseNumber(first: Long, negative: Boolean): Double | Long | BigDecimal =
+      def parseNumber(first: Int, negative: Boolean): Double | Long | BigDecimal =
+        var str: StringBuilder = StringBuilder((if negative then "-" else "")+first)
+        var ch: Byte = 0
+        var decimalPoint: Boolean = false
+        continue = true
+
+        try
+          while continue do
+            ch = current
+            ch match
+              case Period =>
+                decimalPoint = true
+                str.append('.')
+                next()
+
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus |
+                  UpperE | LowerE | Period | Plus =>
+                str.append(ch.toChar)
+                next()
+
+              case _ =>
+                continue = false
+
+          if decimalPoint then java.lang.Double.parseDouble(str.toString)
+          else java.lang.Long.parseLong(str.toString)
+
+        catch
+          case err: ArrayIndexOutOfBoundsException =>
+            if decimalPoint then java.lang.Double.parseDouble(str.toString)
+            else java.lang.Long.parseLong(str.toString)
+
+      def parseNumberOld(first: Long, negative: Boolean): Double | Long | BigDecimal =
         var mantissa: Long = first
         var exponent: Long = 0
         var decimalPosition: Int = 0
