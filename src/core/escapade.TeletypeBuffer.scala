@@ -16,10 +16,10 @@
 
 package escapade
 
-import gossamer.*
-import vacuous.*
-import rudiments.*
 import anticipation.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
 import scala.collection.mutable as scm
 

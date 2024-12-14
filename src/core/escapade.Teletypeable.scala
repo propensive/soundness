@@ -16,14 +16,14 @@
 
 package escapade
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
 import anticipation.*
 import digression.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

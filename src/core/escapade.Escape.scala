@@ -16,9 +16,9 @@
 
 package escapade
 
-import vacuous.*
 import anticipation.*
 import gossamer.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

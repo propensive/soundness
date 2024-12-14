@@ -16,13 +16,13 @@
 
 package escapade
 
-import rudiments.*
 import anticipation.*
-import hypotenuse.*
-import gossamer.*
-import iridescence.*
-import vacuous.*
 import denominative.*
+import gossamer.*
+import hypotenuse.*
+import iridescence.*
+import rudiments.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 

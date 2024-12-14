@@ -16,12 +16,10 @@
 
 package escapade
 
+import anticipation.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
-import gossamer.*
-import anticipation.*
-
-//import language.experimental.captureChecking
 
 object Ribbon:
   def apply[ColorType: Chromatic](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)

@@ -16,11 +16,11 @@
 
 package escapade
 
-import gossamer.*
-import vacuous.*
 import anticipation.*
 import contextual.*
+import gossamer.*
 import spectacular.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 

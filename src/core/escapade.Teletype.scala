@@ -16,16 +16,16 @@
 
 package escapade
 
-import gossamer.*
-import rudiments.*
-import denominative.*
 import anticipation.*
+import contextual.*
+import denominative.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
 import symbolism.*
 import turbulence.*
-import contextual.*
-import prepositional.*
 import vacuous.*
-import spectacular.*
 
 import scala.util.*
 

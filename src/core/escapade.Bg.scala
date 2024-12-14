@@ -16,9 +16,9 @@
 
 package escapade
 
-import gossamer.*
 import anticipation.*
 import contextual.*
+import gossamer.*
 import spectacular.*
 
 import language.experimental.pureFunctions

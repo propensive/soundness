@@ -16,14 +16,14 @@
 
 package escapade
 
-import probably.*
-import yossarian.*
-import iridescence.*, colors.{Red, Yellow}
-import spectacular.*
-import rudiments.*
-import vacuous.*
 import contingency.*
 import gossamer.*
+import iridescence.*, colors.{Red, Yellow}
+import probably.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
+import yossarian.*
 
 import escapes.*
 

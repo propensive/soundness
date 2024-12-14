@@ -18,8 +18,8 @@ package escapade
 
 import language.experimental.pureFunctions
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 export Escapade.CharSpan
 

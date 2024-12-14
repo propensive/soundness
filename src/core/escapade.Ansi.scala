@@ -18,16 +18,16 @@ package escapade
 
 import language.experimental.pureFunctions
 
+import anticipation.*
+import contextual.*
+import contingency.*
+import denominative.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
-import vacuous.*
-import fulminate.*
-import denominative.*
-import anticipation.*
-import contingency.*
-import symbolism.*
-import contextual.*
 import spectacular.*
+import symbolism.*
+import vacuous.*
 
 import errorDiagnostics.empty
 
