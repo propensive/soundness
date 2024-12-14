@@ -16,9 +16,9 @@
 
 package punctuation
 
+import anticipation.*
 import honeycomb.*
 import vacuous.*
-import anticipation.*
 
 abstract class Renderer(val language: Optional[Text]):
   def render(meta: Optional[Text], content: Text): Seq[Html[Flow]]

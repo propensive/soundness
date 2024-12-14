@@ -18,15 +18,15 @@ package punctuation
 
 import scala.annotation.tailrec
 
-import rudiments.*
-import fulminate.*
 import anticipation.*
-import prepositional.*
-import gossamer.*
-import vacuous.*
 import contingency.*
+import fulminate.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
 import turbulence.*
+import vacuous.*
 
 import com.vladsch.flexmark as cvf
 import cvf.ast as cvfa, cvf.parser.*, cvf.util.options.*, cvf.ext.tables, cvf.util.ast as cvfua

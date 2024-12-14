@@ -16,12 +16,12 @@
 
 package punctuation
 
-import honeycomb.*
+import anticipation.*
 import fulminate.*
+import gossamer.*
+import honeycomb.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
-import gossamer.*
 
 open class HtmlConverter(renderers: Renderer*):
   def slug(str: Text): Text =

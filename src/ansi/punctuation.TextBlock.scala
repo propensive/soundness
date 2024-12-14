@@ -16,10 +16,10 @@
 
 package punctuation
 
-import rudiments.*
-import gossamer.*
-import escapade.*, escapes.*
 import denominative.*
+import escapade.*, escapes.*
+import gossamer.*
+import rudiments.*
 import vacuous.*
 
 case class BodyText(blocks: TextBlock*):

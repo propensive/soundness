@@ -16,15 +16,15 @@
 
 package punctuation
 
-import rudiments.*
-import gossamer.*
 import escapade.*, escapes.*
-import iridescence.*
-import harlequin.*
 import fulminate.*
-import vacuous.*
-import spectacular.*
+import gossamer.*
+import harlequin.*
 import hieroglyph.*, textMetrics.eastAsianScripts
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 open class TextConverter():
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]): TextBlock =

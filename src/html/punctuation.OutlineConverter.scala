@@ -16,12 +16,12 @@
 
 package punctuation
 
-import honeycomb.*
+import anticipation.*
 import fulminate.*
+import gossamer.*
+import honeycomb.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
-import gossamer.*
 
 object OutlineConverter extends HtmlConverter():
   case class Entry(label: Text, children: List[Entry])

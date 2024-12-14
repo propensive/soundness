@@ -16,12 +16,12 @@
 
 package punctuation
 
-import probably.*
-import gossamer.*
-import spectacular.*
-import contingency.*
-import rudiments.*
 import anticipation.*
+import contingency.*
+import gossamer.*
+import probably.*
+import rudiments.*
+import spectacular.*
 import vacuous.*
 
 import strategies.throwUnsafely

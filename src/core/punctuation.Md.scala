@@ -16,12 +16,12 @@
 
 package punctuation
 
-import vacuous.*
-import fulminate.*
+import anticipation.*
 import contextual.*
 import contingency.*
+import fulminate.*
 import gossamer.*
-import anticipation.*
+import vacuous.*
 
 import scala.compiletime.*
 
