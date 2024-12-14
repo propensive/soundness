@@ -16,10 +16,10 @@
 
 package escritoire
 
-import rudiments.*
-import gossamer.*
 import anticipation.*
+import gossamer.*
 import hieroglyph.*
+import rudiments.*
 
 object TextAlignment:
   object Right extends TextAlignment:

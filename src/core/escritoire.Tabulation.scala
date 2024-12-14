@@ -16,12 +16,12 @@
 
 package escritoire
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
-import hieroglyph.*
 import anticipation.*
 import fulminate.*
+import gossamer.*
+import hieroglyph.*
+import rudiments.*
+import vacuous.*
 
 import scala.collection.immutable as sci
 

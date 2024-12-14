@@ -16,15 +16,15 @@
 
 package escritoire
 
-import gossamer.*
-import rudiments.*
-import escapade.*
-import iridescence.*
-import spectacular.*
-import contingency.*, strategies.throwUnsafely
-import turbulence.*, stdioSources.virtualMachine.ansi
 import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import escapade.*
+import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import turbulence.*, stdioSources.virtualMachine.ansi
 
 given Decimalizer = Decimalizer(3)
 

@@ -16,9 +16,9 @@
 
 package escritoire
 
-import probably.*
 import gossamer.*
 import hieroglyph.*
+import probably.*
 
 import textMetrics.uniform
 

@@ -16,11 +16,11 @@
 
 package escritoire
 
-import gossamer.*
-import wisteria.*, derivationContext.required
 import anticipation.*
-import vacuous.*
+import gossamer.*
 import spectacular.*
+import vacuous.*
+import wisteria.*, derivationContext.required
 
 trait Tabulable[TextType]:
   type Self

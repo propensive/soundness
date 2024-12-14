@@ -16,8 +16,8 @@
 
 package escritoire
 
-import vacuous.*
 import gossamer.*
+import vacuous.*
 
 object Column:
   def apply[RowType, CellType, TextType: Textual]

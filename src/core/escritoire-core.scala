@@ -18,10 +18,10 @@ package escritoire
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
-import denominative.*
 
 extension [RowType](data: Seq[RowType])
   def table[TextType: Textual](using tabulable: RowType is Tabulable[TextType])
