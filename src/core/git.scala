@@ -176,7 +176,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       workTree.let: workTree =>
         safely(path.pathText.decode[Path on Posix].relativeTo(workTree)).or:
           abort(GitError(AddFailed))
-      .or(abort(GitError(NoWorkTree)))
+
+      . or(abort(GitError(NoWorkTree)))
 
     val command = sh"$git $repoOptions add $relativePath"
 
@@ -336,7 +337,8 @@ object Git:
         case r"Unpacking objects: *${pc}([0-9]+)\%.*"            => Progress.Unpacking(pc.s.toInt/100.0)
         case r"remote: *Compressing objects: *${pc}([0-9]+)\%.*" => Progress.RemoteCompressing(pc.s.toInt/100.0)
         case r"remote: *Counting objects: *${pc}([0-9]+)\%.*"    => Progress.RemoteCounting(pc.s.toInt/100.0)
-    .or(LazyList()).deduplicate
+
+    . or(LazyList()).deduplicate
 
   def init
      [PathType: GenericPath]
