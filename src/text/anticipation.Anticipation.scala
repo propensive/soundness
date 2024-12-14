@@ -19,10 +19,10 @@ package anticipation
 import prepositional.*
 import symbolism.*
 
-import scala.quoted.*
 import scala.compiletime.*
-import scala.util.*
+import scala.quoted.*
 import scala.reflect.*
+import scala.util.*
 
 import language.experimental.captureChecking
 

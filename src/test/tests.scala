@@ -16,8 +16,8 @@
 
 package anticipation
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Anticipation Tests"):
   def run(): Unit =
