@@ -16,9 +16,9 @@
 
 package aviation
 
-import rudiments.*
 import anticipation.*
 import fulminate.*
+import rudiments.*
 
 export Timing.{Instant, Duration}
 export Aviation.Date

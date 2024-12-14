@@ -16,9 +16,9 @@
 
 package aviation
 
+import anticipation.*
 import rudiments.*
 import symbolism.*
-import anticipation.*
 
 object Timespan:
   given Timespan & FixedDuration is GenericDuration & SpecificDuration as genericDuration =

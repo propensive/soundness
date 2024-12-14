@@ -16,10 +16,10 @@
 
 package aviation
 
-import rudiments.*
-import symbolism.*
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import symbolism.*
 
 object MonthName:
   def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)

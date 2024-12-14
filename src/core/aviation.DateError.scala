@@ -16,8 +16,8 @@
 
 package aviation
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 case class DateError(text: Text)(using Diagnostics)
 extends Error(m"the value $text is not a valid date")

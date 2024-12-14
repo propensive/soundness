@@ -1,14 +1,14 @@
 package aviation
 
-import rudiments.*
 import anticipation.*
-import gossamer.*
 import contingency.*
-import symbolism.*
 import fulminate.*
+import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
 
 import scala.quoted.*
 

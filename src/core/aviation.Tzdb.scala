@@ -16,13 +16,13 @@
 
 package aviation
 
+import anticipation.*
+import contingency.*
 import gossamer.*
 import kaleidoscope.*
-import anticipation.*
-import spectacular.*
 import rudiments.*
+import spectacular.*
 import vacuous.*
-import contingency.*
 
 import scala.io.*
 

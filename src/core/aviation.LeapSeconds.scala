@@ -16,8 +16,8 @@
 
 package aviation
 
-import rudiments.*
 import hypotenuse.*
+import rudiments.*
 
 object LeapSeconds:
   // Bits represent leap seconds in years from 1972 (MSB) to 2035 (LSB). Leap seconds will be

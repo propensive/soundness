@@ -16,13 +16,13 @@
 
 package aviation
 
-import rudiments.*
-import hypotenuse.*
-import symbolism.*
-import contingency.*
 import anticipation.*
-import quantitative.*
+import contingency.*
+import hypotenuse.*
 import prepositional.*
+import quantitative.*
+import rudiments.*
+import symbolism.*
 
 import java.time as jt
 

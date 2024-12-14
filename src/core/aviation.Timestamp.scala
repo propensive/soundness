@@ -16,10 +16,10 @@
 
 package aviation
 
-import spectacular.*
-import kaleidoscope.*
-import fulminate.*
 import contingency.*
+import fulminate.*
+import kaleidoscope.*
+import spectacular.*
 
 import errorDiagnostics.stackTraces
 

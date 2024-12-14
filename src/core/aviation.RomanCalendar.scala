@@ -16,13 +16,13 @@
 
 package aviation
 
-import vacuous.*
-import fulminate.*
-import spectacular.*
-import contingency.*
 import anticipation.*
-import gossamer.*
 import contextual.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import spectacular.*
+import vacuous.*
 
 abstract class RomanCalendar() extends Calendar:
   type Year = Int

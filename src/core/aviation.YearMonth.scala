@@ -16,11 +16,11 @@
 
 package aviation
 
-import vacuous.*
+import anticipation.*
+import contingency.*
 import fulminate.*
 import symbolism.*
-import contingency.*
-import anticipation.*
+import vacuous.*
 
 case class YearMonth(year: Int, month: MonthName):
   import compiletime.ops.int.*

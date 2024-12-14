@@ -16,11 +16,11 @@
 
 package aviation
 
-import rudiments.*
-import fulminate.*
-import contingency.*
 import anticipation.*
 import contextual.*
+import contingency.*
+import fulminate.*
+import rudiments.*
 
 import java.util as ju
 

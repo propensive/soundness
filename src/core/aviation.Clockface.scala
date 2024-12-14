@@ -16,9 +16,9 @@
 
 package aviation
 
-import spectacular.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import spectacular.*
 
 object Clockface:
   given Clockface is Showable = clockface =>

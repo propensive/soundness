@@ -16,10 +16,10 @@
 
 package aviation
 
+import contingency.*
+import gossamer.*
 import probably.*
 import rudiments.*
-import gossamer.*
-import contingency.*
 import spectacular.*
 
 import strategies.throwUnsafely
