@@ -16,8 +16,8 @@
 
 package adversaria
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 
 import language.experimental.captureChecking
 

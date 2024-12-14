@@ -16,12 +16,13 @@
 
 package adversaria
 
+import annotation.StaticAnnotation
+
+import anticipation.*
+import gossamer.*
+import larceny.*
 import probably.*
 import rudiments.*
-import anticipation.*
-import larceny.*
-import gossamer.*
-import annotation.StaticAnnotation
 
 final case class id() extends StaticAnnotation
 final case class unique() extends StaticAnnotation
