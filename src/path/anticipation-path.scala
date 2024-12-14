@@ -16,7 +16,7 @@
 
 package anticipation
 
-import annotation.*
+import scala.annotation.*
 
 import language.experimental.captureChecking
 
