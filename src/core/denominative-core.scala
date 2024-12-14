@@ -16,7 +16,7 @@
 
 package denominative
 
-import annotation.targetName
+import scala.annotation.targetName
 
 final val Prim: Ordinal = Ordinal.natural(1)
 final val Sec: Ordinal  = Ordinal.natural(2)

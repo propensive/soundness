@@ -18,7 +18,7 @@ package denominative
 
 import anticipation.*
 
-import annotation.targetName
+import scala.annotation.targetName
 
 object Denominative:
   opaque type Ordinal = Int

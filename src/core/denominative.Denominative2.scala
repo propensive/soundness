@@ -16,7 +16,7 @@
 
 package denominative
 
-import annotation.targetName
+import scala.annotation.targetName
 
 object Denominative2:
   opaque type Countback = Int
