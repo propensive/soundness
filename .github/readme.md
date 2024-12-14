@@ -1,5 +1,5 @@
 [<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/charisma/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/charisma/actions)
-[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.gg/7b6mpF6Qcf)
+[<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
 # Charisma
@@ -15,17 +15,9 @@ __Charisma__ provides a simple representation of chemical elements and formulas 
 - serialization to Unicode strings
 
 
-## Availability Plan
+## Availability
 
-Charisma has not yet been published. The medium-term plan is to build Charisma
-with [Fury](https://github.com/propensive/fury) and to publish it as a source build on
-[Vent](https://github.com/propensive/vent). This will enable ordinary users to write and build
-software which depends on Charisma.
 
-Subsequently, Charisma will also be made available as a binary in the Maven
-Central repository. This will enable users of other build tools to use it.
-
-For the overeager, curious and impatient, see [building](#building).
 
 ## Getting Started
 
@@ -140,7 +132,7 @@ System](https://en.wikipedia.org/wiki/Chemical_formula#Hill_system).
 
 ## Status
 
-Charisma is classified as __embryotic__. For reference, Scala One projects are
+Charisma is classified as __embryotic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -227,7 +219,7 @@ One person's charisma may lead to figurative _chemistry_ with another.
 
 `/kəˈɹɪzmə/`
 
-In general, Scala One project names are always chosen with some rationale,
+In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
 _uniqueness_ and _intrigue_ than its concision or catchiness, and there is no
 bias towards names with positive or "nice" meanings—since many of the libraries
