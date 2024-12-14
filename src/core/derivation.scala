@@ -84,9 +84,10 @@ object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
 
               context.encode(field).map: value =>
                 CodlNode(Data(label2, value, Layout.empty, context.schema))
-              .filter(!_.empty)
 
-          .to(List).flatten
+              . filter(!_.empty)
+
+          . to(List).flatten
 
 object CodlEncoder:
 
@@ -213,7 +214,8 @@ object CodlDecoder:
           case Field(_, validator) =>
             value.flatMap(_.children).map: node =>
               decoder.decode(List(CodlDoc(node)))
-            .to(Set)
+
+            . to(Set)
 
           case struct: Struct =>
             value.map { v => decoder.decode(List(v)) }.to(Set)

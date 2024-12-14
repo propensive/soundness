@@ -178,7 +178,8 @@ extends Indexed:
   lazy val paramIndex: Map[Text, Int] =
     (0 until layout.params.min(schema.paramCount)).map: idx =>
       schema.subschemas(idx).key -> idx
-    .to(Map)
+
+    . to(Map)
 
   def uniqueId: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique).let:
     case CodlSchema.Entry(name: Text, schema) => paramIndex.at(name).let(children(_).fieldValue)
@@ -221,7 +222,8 @@ trait Indexed extends Dynamic:
           acc.upsert(entry.key, _.lay(List(idx))(idx :: _))
         else acc.upsert(data.key, _.lay(List(idx))(idx :: _))
       case (acc, _) => acc
-    .view.mapValues(_.reverse).to(Map)
+
+    . view.mapValues(_.reverse).to(Map)
 
   protected lazy val idIndex: Map[Text, Int] =
     def recur(idx: Int, map: Map[Text, Int] = Map()): Map[Text, Int] =
