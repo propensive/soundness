@@ -187,3 +187,12 @@ extension [ValueType](optional: Optional[ValueType])
   def lest[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType)
           : ValueType =
     optional.or(abort(error))
+
+  def lead[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+     (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
+                  ValueType => SuccessType)
+        : Optional[SuccessType] =
+    
+    try boundary: label ?=>
+      optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
+    catch case error: Exception => Unset

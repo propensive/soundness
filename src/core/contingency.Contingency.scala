@@ -98,7 +98,7 @@ object Contingency:
         case '{$rhs: rhsType} =>
           patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
 
-    .to(Map)
+    . to(Map)
 
   def unpack(using Quotes)(repr: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
     repr.asMatchable match
