@@ -19,8 +19,8 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import vacuous.*
 import rudiments.*
+import vacuous.*
 
 class OptionalTactic[ErrorType <: Exception, SuccessType]
    (label: boundary.Label[Optional[SuccessType]])

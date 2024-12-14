@@ -18,14 +18,14 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import scala.quoted.*
 import scala.compiletime.*
+import scala.quoted.*
 
-import fulminate.*
-import vacuous.*
-import rudiments.*
-import prepositional.*
 import anticipation.*
+import fulminate.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
 package strategies:
   given throwUnsafely[SuccessType]: ThrowTactic[Exception, SuccessType] =

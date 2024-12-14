@@ -16,11 +16,11 @@
 
 package contingency
 
-import probably.*
-import gossamer.*
 import fulminate.*
-import rudiments.*
+import gossamer.*
 import larceny.*
+import probably.*
+import rudiments.*
 
 def simpleTest: Either[String, String] =
   mend:
