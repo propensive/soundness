@@ -16,18 +16,18 @@
 
 package guillotine
 
-import contextual.*
-import rudiments.*, workingDirectories.virtualMachine
-import gossamer.*
-import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
-import serpentine.*, pathHierarchies.unix
-import anticipation.*
-import turbulence.*
 import ambience.*, systemProperties.virtualMachine
-import spectacular.*
-import probably.*
-import eucalyptus.*
+import anticipation.*
+import contextual.*
 import contingency.*, strategies.throwUnsafely
+import eucalyptus.*
+import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
+import gossamer.*
+import probably.*
+import rudiments.*, workingDirectories.virtualMachine
+import serpentine.*, pathHierarchies.unix
+import spectacular.*
+import turbulence.*
 
 import unsafeExceptions.canThrowAny
 

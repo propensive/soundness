@@ -25,8 +25,8 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 

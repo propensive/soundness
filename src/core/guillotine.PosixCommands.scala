@@ -19,8 +19,8 @@ package guillotine
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 trait PosixCommands:
   erased given ("alias" is Intelligible into Text) as alias = ###
