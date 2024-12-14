@@ -16,7 +16,7 @@
 
 package adversaria
 
-import annotation.StaticAnnotation
+import scala.annotation.StaticAnnotation
 
 import anticipation.*
 import gossamer.*
