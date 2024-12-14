@@ -76,7 +76,8 @@ object Command:
       else if argument.contains(t" ") || argument.contains(t"\t") || argument.contains(t"\\")
       then t"'$argument'"
       else argument
-    .join(t" ")
+
+    . join(t" ")
 
   given Command is Inspectable = command =>
     val commandText: Text = formattedArguments(command.arguments)
