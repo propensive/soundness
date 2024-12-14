@@ -16,10 +16,10 @@
 
 package spectacular
 
+import anticipation.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
-import anticipation.*
 
 import scala.deriving.*
 

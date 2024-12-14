@@ -16,8 +16,8 @@
 
 package spectacular
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 import language.experimental.pureFunctions
 

@@ -16,10 +16,10 @@
 
 package spectacular
 
+import anticipation.*
+import gossamer.*
 import probably.*
 import rudiments.*
-import gossamer.*
-import anticipation.*
 import spectacular.*
 
 case class Person(name: Text, age: Int)

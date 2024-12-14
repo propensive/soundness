@@ -16,12 +16,12 @@
 
 package spectacular
 
-import rudiments.*
-import vacuous.*
 import anticipation.*
+import denominative.*
 import digression.*
 import fulminate.*
-import denominative.*
+import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

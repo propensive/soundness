@@ -1,9 +1,9 @@
 package spectacular
 
-import vacuous.*
-import rudiments.*
-import denominative.*
 import anticipation.*
+import denominative.*
+import rudiments.*
+import vacuous.*
 
 object Enumerable:
   inline given [EnumType <: reflect.Enum] => EnumType is Enumerable as derived =

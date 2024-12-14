@@ -16,14 +16,14 @@
 
 package spectacular
 
-import rudiments.*
-import contingency.*
 import anticipation.*
-import wisteria.*
+import contingency.*
 import denominative.*
-import inimitable.*
 import digression.*
+import inimitable.*
+import rudiments.*
 import vacuous.*
+import wisteria.*
 
 import language.experimental.pureFunctions
 

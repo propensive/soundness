@@ -16,11 +16,11 @@
 
 package spectacular
 
+import anticipation.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
-import anticipation.*
-import prepositional.*
 
 import scala.deriving.*
 
