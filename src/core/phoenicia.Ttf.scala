@@ -72,7 +72,8 @@ case class Ttf(data: Bytes):
         case OtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case TtfTag(tag) => Some(tag -> TableOffset(tag, checksum, offset, length))
         case _           => None
-    .to(Map)
+
+    . to(Map)
 
   def head: HeadTable raises FontError =
     tables.at(TtfTag.Head).let: ref =>
@@ -80,22 +81,25 @@ case class Ttf(data: Bytes):
         if table.magicNumber != 0x5f0f3cf5.bits
         then raise(FontError(FontError.Reason.MagicNumber))
 
-    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Head)))
 
   def cmap: CmapTable raises FontError =
     tables.at(TtfTag.Cmap).let: ref =>
       CmapTable(ref.offset)
-    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Cmap)))
 
   def hhea: HheaTable raises FontError =
     tables.at(TtfTag.Hhea).let: ref =>
       data.unpackFrom[HheaTable](ref.offset)
-    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hhea)))
 
   def hmtx: HmtxTable raises FontError =
     tables.at(TtfTag.Hmtx).let: ref =>
       HmtxTable(ref.offset, hhea.numberOfHMetrics.int)
-    .lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
+
+    . lest(FontError(FontError.Reason.MissingTable(TtfTag.Hmtx)))
 
   case class HeadTable
      (majorVersion:       U16,
