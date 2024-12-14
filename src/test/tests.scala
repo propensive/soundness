@@ -16,8 +16,8 @@
 
 package feudalism
 
-import probably.*
 import gossamer.*
+import probably.*
 
 import language.experimental.captureChecking
 
