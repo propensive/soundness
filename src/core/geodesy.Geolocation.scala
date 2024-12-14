@@ -1,13 +1,13 @@
 package geodesy
 
-import vacuous.*
 import anticipation.*
-import spectacular.*
-import rudiments.*
-import gossamer.*
 import contingency.*
+import gossamer.*
 import kaleidoscope.*
 import prepositional.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 object Geolocation:
   import GeolocationError.Reason.*

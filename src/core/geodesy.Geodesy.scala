@@ -1,11 +1,11 @@
 package geodesy
 
-import gossamer.*
-import rudiments.*
 import anticipation.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
-import prepositional.*
 
 object Geodesy:
   private val range = math.pow(2, 32) - 2

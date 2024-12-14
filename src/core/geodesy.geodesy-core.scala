@@ -1,8 +1,8 @@
 package geodesy
 
+import prepositional.*
 import rudiments.*
 import symbolism.*
-import prepositional.*
 
 export Geodesy.{Location, Radians, Degrees}
 
