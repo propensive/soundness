@@ -16,8 +16,8 @@
 
 package diuretic
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Diuretic Tests"):
   def run(): Unit =
