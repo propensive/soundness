@@ -55,7 +55,7 @@ open class TextConverter():
               case _ =>
                 panic(m"unexpected non-paragraph node found while folding inline nodes")
             (false, content)
-    .apply(1).reverse
+    . apply(1).reverse
 
   def convert(nodes: Seq[Markdown.Ast.Node], indent: Int): BodyText =
     BodyText(blockify(nodes).foldLeft(List[TextBlock]()) {
@@ -88,7 +88,8 @@ open class TextConverter():
                     case Accent.Number            => e"${solarized.Violet}(${code.trim})"
                     case Accent.String            => e"${solarized.Violet}(${code.trim})"
                     case other                   => e"${code.trim}"
-                .join
+
+                . join
 
             acc :+ TextBlock(indent, highlightedLines.join(e"\n"))
           else acc :+ TextBlock(indent, e"${foreground.BrightGreen}($value)")
@@ -137,7 +138,8 @@ open class TextConverter():
     case Markdown.Ast.Block.FencedCode(_, _, code)  => e"${webColors.YellowGreen}($code)"
     case Markdown.Ast.Block.Cell(content*)          => text(content)
     case _                                          => e""
-  .join
+
+  . join
 
   def phrasing(node: Markdown.Ast.Inline): Teletype = node match
     case Markdown.Ast.Inline.Image(altText, location) => e"[ $altText ]"

@@ -77,5 +77,6 @@ object Md:
         safely:
           Markdown.parse(t"$state$next")
           Input.Block(t"$state$next")
-        .or:
-          throw InterpolationError(m"the markdown could not be parsed")
+
+        . or:
+            throw InterpolationError(m"the markdown could not be parsed")

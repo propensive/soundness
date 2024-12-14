@@ -159,12 +159,12 @@ object Markdown:
 
   def format(str: Text): Text =
     str.s
-      .replaceAll("--", "—").nn
-      .replaceAll(" \"", " “").nn
-      .replaceAll("\"", "”").nn
-      .replaceAll(" '", " ‘").nn
-      .replaceAll("'", "’").nn
-      .tt
+    . replaceAll("--", "—").nn
+    . replaceAll(" \"", " “").nn
+    . replaceAll("\"", "”").nn
+    . replaceAll(" '", " ‘").nn
+    . replaceAll("'", "’").nn
+    . tt
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
           : Text raises MarkdownError =
