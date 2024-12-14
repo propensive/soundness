@@ -16,12 +16,12 @@
 
 package yossarian
 
-import rudiments.*
-import vacuous.*
-import iridescence.*
-import spectacular.*
 import anticipation.*
 import gossamer.*
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 object Yossarian:
   opaque type Style = Long

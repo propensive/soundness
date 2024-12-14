@@ -17,15 +17,15 @@
 package yossarian
 
 import anticipation.*
-import gossamer.*
-import fulminate.*
-import spectacular.*
 import contingency.*
-import rudiments.*
-import turbulence.*
-import kaleidoscope.*
-import iridescence.*
+import fulminate.*
+import gossamer.*
 import hypotenuse.*
+import iridescence.*
+import kaleidoscope.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
 
 import scala.compiletime.*
 
