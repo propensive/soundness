@@ -16,25 +16,25 @@
 
 package tarantula
 
-import guillotine.*
-import gossamer.*
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
-import telekinesis.*
-import cataclysm.*
-import honeycomb.*
-import contingency.*
-import gastronomy.*
-import hallucination.*
-import eucalyptus.*
-import spectacular.*
-import rudiments.*
-import fulminate.*
-import turbulence.*
-import nettlesome.*
-import hieroglyph.*, charEncoders.utf8
-import gesticulate.*
-import parasite.*
 import anticipation.*, durationApi.javaLong
+import cataclysm.*
+import contingency.*
+import eucalyptus.*
+import fulminate.*
+import gastronomy.*
+import gesticulate.*
+import gossamer.*
+import guillotine.*
+import hallucination.*
+import hieroglyph.*, charEncoders.utf8
+import honeycomb.*
+import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
+import nettlesome.*
+import parasite.*
+import rudiments.*
+import spectacular.*
+import telekinesis.*
+import turbulence.*
 
 import strategies.throwUnsafely
 
