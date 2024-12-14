@@ -16,16 +16,16 @@
 
 package cellulose
 
-import rudiments.*
-import vacuous.*
-import contingency.*
-import gossamer.{where as _, *}
 import anticipation.*
+import chiaroscuro.*
 import contextual.*
-import spectacular.*
+import contingency.*
 import denominative.*
 import dissonance.*
-import chiaroscuro.*
+import gossamer.{where as _, *}
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 import java.io as ji
 

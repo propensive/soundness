@@ -16,11 +16,11 @@
 
 package cellulose
 
-import nettlesome.*
 import anticipation.*
-import gossamer.*
-import spectacular.*
 import contingency.*, strategies.throwUnsafely
+import gossamer.*
+import nettlesome.*
+import spectacular.*
 import turbulence.*, stdioSources.virtualMachine.ansi
 
 case class Network(address: MacAddress)

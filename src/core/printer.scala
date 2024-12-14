@@ -16,10 +16,10 @@
 
 package cellulose
 
-import rudiments.*
-import vacuous.*
 import anticipation.*
 import gossamer.*
+import rudiments.*
+import vacuous.*
 
 import java.io as ji
 

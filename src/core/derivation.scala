@@ -16,15 +16,15 @@
 
 package cellulose
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import spectacular.*
-import contingency.*
-import wisteria.*
 import anticipation.*
-import prepositional.*
+import contingency.*
+import fulminate.*
 import gossamer.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
+import wisteria.*
 
 import scala.deriving.*
 import scala.compiletime.*

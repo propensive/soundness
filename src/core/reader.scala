@@ -16,15 +16,15 @@
 
 package cellulose
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
 import anticipation.*
-import kaleidoscope.*
-import spectacular.*
-import denominative.*
 import contingency.*
+import denominative.*
+import gossamer.*
+import kaleidoscope.*
 import prepositional.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

@@ -16,15 +16,14 @@
 
 package cellulose
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
 import contingency.*
 import gossamer.*
-import anticipation.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
+import vacuous.*
 
-//import language.experimental.captureChecking
 import language.dynamics
 
 object CodlSchema:

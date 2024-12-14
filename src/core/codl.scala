@@ -16,18 +16,16 @@
 
 package cellulose
 
-import gossamer.*
-import fulminate.*
-import rudiments.*
-import prepositional.*
-import vacuous.*
 import anticipation.*
-import spectacular.*, booleanStyles.trueFalse
-import contingency.*
 import contextual.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import spectacular.*, booleanStyles.trueFalse
 import turbulence.*
-
-//import language.experimental.captureChecking
+import vacuous.*
 
 given Realm = realm"cellulose"
 
