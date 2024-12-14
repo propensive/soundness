@@ -94,7 +94,8 @@ object Inspectable extends Inspectable2:
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.inspect.s).tt
-    .mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
+
+    . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
   given [ElemType: Inspectable] => LazyList[ElemType] is Inspectable as lazyList = lazyList =>
     def recur(lazyList: LazyList[ElemType], todo: Int): Text =
@@ -109,7 +110,8 @@ object Inspectable extends Inspectable2:
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.inspect.s.tt
-    .mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
+
+    . mkString(arrayPrefix(iarray.toString)+"⁅", "╱", "⁆").tt
 
   private def arrayPrefix(str: String): String =
     val brackets = str.count(_ == '[')

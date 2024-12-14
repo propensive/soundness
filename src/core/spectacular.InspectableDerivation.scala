@@ -31,7 +31,8 @@ object InspectableDerivation extends Derivable[Inspectable]:
       [FieldType] => field =>
         val text = context.text(field)
         if tuple then text else s"$label:$text"
-    .mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+
+    . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
   inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
     variant(value):
