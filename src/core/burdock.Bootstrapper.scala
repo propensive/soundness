@@ -64,14 +64,15 @@ object Bootstrapper:
       case error: Error =>
         Err.println(error.message)
         Exit.Fail(1)
-    .within:
-      val jarfile: Path on Posix =
-        ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
-          case ClasspathEntry.Jar(file) =>
-            Path.parse(file)
 
-          case other =>
-            abort(UserError(m"Could not determine location of bootstrap class"))
+    . within:
+        val jarfile: Path on Posix =
+          ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
+            case ClasspathEntry.Jar(file) =>
+              Path.parse(file)
+
+            case other =>
+              abort(UserError(m"Could not determine location of bootstrap class"))
       
       Out.println(m"Bootstrapping JAR file $jarfile")
 
@@ -98,7 +99,8 @@ object Bootstrapper:
 
         ZipStream(data).keep(_.text != t"META-INF/MANIFEST.MF").map: entry =>
           (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url, digest)
-      .to(Map)
+
+      . to(Map)
 
       val manifest: Promise[Manifest] = Promise()
 
@@ -110,7 +112,8 @@ object Bootstrapper:
           then Entry(entry.ref.show, entry.read[Bytes])
           else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
             Entry(entry.ref.show, entry.read[Bytes])
-        .to(List).compact
+
+        . to(List).compact
       
       val manifest2 = manifest().or:
         abort(UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file"))
