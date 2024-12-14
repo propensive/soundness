@@ -16,11 +16,11 @@
 
 package scintillate
 
-import rudiments.*
+import anticipation.*
 import contingency.*
 import gossamer.*
+import rudiments.*
 import telekinesis.*
-import anticipation.*
 
 object RequestParam:
   given ("name" is GenericHtmlAttribute[RequestParam[?]]) as name:

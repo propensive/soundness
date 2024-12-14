@@ -16,11 +16,11 @@
 
 package scintillate
 
-import scala.quoted.*
 import scala.annotation.*
+import scala.quoted.*
 
-import telekinesis.*
 import fulminate.*
+import telekinesis.*
 
 class servlet extends MacroAnnotation:
   override def transform(using Quotes)

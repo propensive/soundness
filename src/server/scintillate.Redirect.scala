@@ -17,8 +17,8 @@
 package scintillate
 
 import anticipation.*
-import telekinesis.*
 import spectacular.*
+import telekinesis.*
 
 object Redirect:
   def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType, permanent: Boolean): Redirect =

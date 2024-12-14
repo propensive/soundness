@@ -16,15 +16,15 @@
 
 package scintillate
 
-import rudiments.*
-import fulminate.*
-import vacuous.*
-import turbulence.*
-import contingency.*
-import gossamer.*
-import gesticulate.*
-import telekinesis.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import gossamer.*
+import rudiments.*
+import telekinesis.*
+import turbulence.*
+import vacuous.*
 
 import errorDiagnostics.stackTraces
 

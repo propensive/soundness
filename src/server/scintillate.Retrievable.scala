@@ -16,11 +16,11 @@
 
 package scintillate
 
-import rudiments.*
-import gesticulate.*
-import telekinesis.*
 import anticipation.*
+import gesticulate.*
+import rudiments.*
 import spectacular.*
+import telekinesis.*
 
 trait Retrievable(val mediaType: MediaType) extends Servable:
   type Self

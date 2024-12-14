@@ -16,19 +16,19 @@
 
 package scintillate
 
-import rudiments.*
-import fulminate.*
-import prepositional.*
-import vacuous.*
-import parasite.*
-import contingency.*
-import gossamer.*
-import nettlesome.*
-import monotonous.*, alphabets.base64.standard
-import telekinesis.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import monotonous.*, alphabets.base64.standard
+import nettlesome.*
+import parasite.*
+import prepositional.*
+import rudiments.*
 import serpentine.*
 import spectacular.*
+import telekinesis.*
+import vacuous.*
 
 def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
 

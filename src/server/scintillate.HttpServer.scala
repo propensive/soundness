@@ -16,14 +16,14 @@
 
 package scintillate
 
-import rudiments.*
-import digression.*
-import vacuous.*
-import parasite.*
-import turbulence.*
-import contingency.*
-import telekinesis.*
 import anticipation.*
+import contingency.*
+import digression.*
+import parasite.*
+import rudiments.*
+import telekinesis.*
+import turbulence.*
+import vacuous.*
 
 import scala.compiletime.*
 

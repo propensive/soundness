@@ -17,8 +17,8 @@
 package scintillate
 
 import fulminate.*
-import telekinesis.*
 import spectacular.*
+import telekinesis.*
 
 enum HttpServerEvent:
   case Received(request: HttpRequest)
