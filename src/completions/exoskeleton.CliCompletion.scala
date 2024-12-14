@@ -132,7 +132,8 @@ extends Cli:
       case Shell.Bash =>
         items.filter(!_.hidden).flatMap: suggestion =>
           suggestion.text :: suggestion.aliases
-        .filter(_.starts(focus()))
+
+        . filter(_.starts(focus()))
 
       case Shell.Fish =>
         items.flatMap:
