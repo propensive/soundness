@@ -58,7 +58,8 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
                  (cell(lineNumber), widths(index), lineNumber == cell.minHeight - 1)
 
               else Textual((t" "*widths(index)))
-            .join(leftEdge, midEdge, rightEdge)
+
+            . join(leftEdge, midEdge, rightEdge)
 
           lines.to(LazyList) #::: recur(widths, tail)
 

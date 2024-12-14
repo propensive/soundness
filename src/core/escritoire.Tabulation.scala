@@ -60,12 +60,14 @@ abstract class Tabulation[TextType: ClassTag]():
             val dataMax =
               if !include(index) then 0 else rows.map: cells =>
                 columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
-              .maxOption.getOrElse(0)
+
+              . maxOption.getOrElse(0)
 
             val titleMax =
               if !include(index) then 0 else titles.map: cells =>
                 columns(index).sizing.width[TextType](cells(index), width, slack).or(0)
-              .maxOption.getOrElse(0)
+
+              . maxOption.getOrElse(0)
 
             dataMax.max(titleMax).puncture(0)
 
