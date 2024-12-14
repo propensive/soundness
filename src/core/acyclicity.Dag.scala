@@ -90,7 +90,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
     edgeMap.flatMap:
       case (k, v) => lambda(k).edgeMap.map:
         case (h, w) => (h, (w ++ v.flatMap(lambda(_).keys)))
-  .reduction
+  . reduction
 
   def reduction: Dag[NodeType] =
     val allEdges = closure.edgeMap
@@ -113,7 +113,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def remove(elem: NodeType): Dag[NodeType] = Dag:
     (edgeMap - elem).view.mapValues:
       map => if map(elem) then map ++ edgeMap(elem) - elem else map
-    .to(Map)
+    . to(Map)
 
   private def sort(todo: Map[NodeType, Set[NodeType]], done: List[NodeType]): List[NodeType] =
     if todo.isEmpty then done
