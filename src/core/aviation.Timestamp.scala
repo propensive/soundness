@@ -32,14 +32,15 @@ object Timestamp:
         tend:
           case NumberError(_, _) => TimestampError(text)
           case DateError(_)      => TimestampError(text)
-        .within:
-          Timestamp
-           (Date(year.decode[Int],
-            MonthName(month.decode[Int]),
-            day.decode[Int]),
-            Clockface(Base24(hour.decode[Int]),
-            Base60(minute.decode[Int]),
-            Base60(second.decode[Int])))
+
+        . within:
+            Timestamp
+             (Date(year.decode[Int],
+              MonthName(month.decode[Int]),
+              day.decode[Int]),
+              Clockface(Base24(hour.decode[Int]),
+              Base60(minute.decode[Int]),
+              Base60(second.decode[Int])))
 
       case value =>
         raise(TimestampError(value))

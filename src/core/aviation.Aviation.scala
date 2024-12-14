@@ -61,7 +61,8 @@ object Aviation:
        (date.year.toString.tt,
         date.month.numerical.toString.tt.pad(2, Rtl, '0'),
         date.day.toString.tt.pad(2, Rtl, '0'))
-      .join(t"-")
+
+      . join(t"-")
 
     inline given Date is Orderable as orderable:
       inline def compare
