@@ -16,18 +16,18 @@
 
 package chiaroscuro
 
-import rudiments.*
-import gossamer.*
-import dissonance.*
-import wisteria.*
-import escapade.*
-import iridescence.*
-import vacuous.*
-import dendrology.*
-import escritoire.*, columnAttenuation.ignore
-import spectacular.*
-import hieroglyph.*
 import anticipation.*
+import dendrology.*
+import dissonance.*
+import escapade.*
+import escritoire.*, columnAttenuation.ignore
+import gossamer.*
+import hieroglyph.*
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
+import wisteria.*
 
 import scala.deriving.*
 

@@ -16,12 +16,12 @@
 
 package chiaroscuro
 
-import probably.*
-import gossamer.*
-import dissonance.*
-import rudiments.*
 import anticipation.*
 import contingency.*
+import dissonance.*
+import gossamer.*
+import probably.*
+import rudiments.*
 
 import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely
