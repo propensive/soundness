@@ -99,8 +99,9 @@ object Matrix:
 
       (0 until matrix.columns).map: column =>
         textElements(matrix.columns*row + column).pad(columnWidths(column), Rtl)
-      .join(before, t" ", after)
-    .join(t"\n")
+
+      . join(before, t" ", after)
+    . join(t"\n")
 
   transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf]
      (using erased DummyImplicit)
