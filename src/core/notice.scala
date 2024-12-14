@@ -16,17 +16,17 @@
 
 package anthology
 
-import anticipation.*
-import vacuous.*
-import digression.*
-import parasite.*
-import turbulence.*
-import gossamer.*
-import fulminate.*
-import contingency.*
-import rudiments.*
-import hellenism.*
 import ambience.*
+import anticipation.*
+import contingency.*
+import digression.*
+import fulminate.*
+import gossamer.*
+import hellenism.*
+import parasite.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
 given realm: Realm = realm"anthology"
 

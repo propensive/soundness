@@ -16,13 +16,13 @@
 
 package anthology
 
-import anticipation.*
-import parasite.*
-import digression.*
 import ambience.*
-import hellenism.*
-import gossamer.*
+import anticipation.*
 import contingency.*
+import digression.*
+import gossamer.*
+import hellenism.*
+import parasite.*
 import vacuous.*
 
 import scala.jdk.CollectionConverters.*

@@ -16,15 +16,15 @@
 
 package anthology
 
+import ambience.*
 import anticipation.*
-import galilei.*
 import contingency.*
 import fulminate.*
-import ambience.*
+import galilei.*
 import gossamer.*
+import hellenism.*
 import rudiments.*
 import spectacular.*
-import hellenism.*
 
 import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
 import org.jetbrains.kotlin.cli.common.messages.MessageCollector

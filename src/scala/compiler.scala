@@ -16,16 +16,16 @@
 
 package anthology
 
+import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
-import ambience.*
-import parasite.*
-import vacuous.*
 import gossamer.*
+import hellenism.*
+import parasite.*
 import rudiments.*
 import spectacular.*
-import hellenism.*
+import vacuous.*
 
 import dotty.tools.dotc as dtd, dtd.reporting.*, dtd.interfaces as dtdi, dtd.util as dtdu, dtd.core as dtdc
 import dotty.tools.dotc.sbt.interfaces as dtdsi

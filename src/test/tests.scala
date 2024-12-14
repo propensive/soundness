@@ -16,8 +16,8 @@
 
 package anthology
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Anthology Tests"):
   def run(): Unit =
