@@ -116,7 +116,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
             Exit.Ok.terminate()
 
-    .within(Properties.ethereal.name[Text]())
+    . within(Properties.ethereal.name[Text]())
 
   val runtimeDir: Optional[Path on Linux] = Xdg.runtimeDir
   val stateHome: Path on Linux = Xdg.stateHome

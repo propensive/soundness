@@ -25,6 +25,7 @@ class LazyEnvironment(variables: List[Text]) extends Environment:
   private lazy val map: Map[Text, Text] =
     variables.map(_.cut(t"=", 2).to(List)).collect:
       case List(key, value) => (key, value)
-    .to(Map)
+
+    . to(Map)
 
   def variable(key: Text): Optional[Text] = map.get(key).getOrElse(Unset)
