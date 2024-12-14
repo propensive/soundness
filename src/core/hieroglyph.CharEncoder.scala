@@ -16,9 +16,9 @@
 
 package hieroglyph
 
-import vacuous.*
-import rudiments.*
 import anticipation.*
+import rudiments.*
+import vacuous.*
 
 import java.nio as jn, jn.charset as jnc
 

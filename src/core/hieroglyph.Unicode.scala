@@ -16,11 +16,11 @@
 
 package hieroglyph
 
-import vacuous.*
-import rudiments.*
+import anticipation.*
 import fulminate.*
 import kaleidoscope.*
-import anticipation.*
+import rudiments.*
+import vacuous.*
 
 import scala.collection.immutable.TreeMap
 

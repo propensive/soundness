@@ -16,9 +16,9 @@
 
 package hieroglyph
 
-import vacuous.*
-import contingency.*
 import anticipation.*
+import contingency.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

@@ -16,9 +16,9 @@
 
 package hieroglyph
 
-import rudiments.*
-import fulminate.*
 import anticipation.*
+import fulminate.*
+import rudiments.*
 
 import scala.jdk.CollectionConverters.SetHasAsScala
 

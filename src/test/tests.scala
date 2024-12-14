@@ -16,13 +16,12 @@
 
 package hieroglyph
 
+import contingency.*, strategies.throwUnsafely
+import gossamer.{displayWidth as _, *}
+import larceny.*
 import probably.*
 import rudiments.*
 import vacuous.*
-import contingency.*, strategies.throwUnsafely
-import larceny.*
-// FIXME: resolution of overloaded `displayWidth` does not work
-import gossamer.{displayWidth as _, *}
 
 import textMetrics.eastAsianScripts
 

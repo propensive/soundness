@@ -20,9 +20,9 @@ import language.experimental.captureChecking
 
 import scala.quoted.*
 
-import rudiments.*
-import fulminate.*
 import anticipation.*
+import fulminate.*
+import rudiments.*
 
 object Hieroglyph:
   given Realm = realm"hieroglyph"
