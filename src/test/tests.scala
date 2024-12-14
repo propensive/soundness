@@ -16,16 +16,16 @@
 
 package jacinta
 
-import gossamer.*
 import anticipation.*
 import contingency.*
+import gossamer.*
+import hieroglyph.*, charEncoders.utf8
+import prepositional.*
 import probably.*
 import rudiments.*
-import prepositional.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
-import spectacular.*
-import hieroglyph.*, charEncoders.utf8
 
 import strategies.throwUnsafely
 

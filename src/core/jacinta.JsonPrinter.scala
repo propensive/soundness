@@ -17,9 +17,9 @@
 package jacinta
 
 import anticipation.*
+import gossamer.*
 import merino.*
 import rudiments.*
-import gossamer.*
 
 import scala.compiletime.*
 

@@ -3,9 +3,9 @@ package jacinta
 import compiletime.*
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
-import denominative.*
 import spectacular.*
 import vacuous.*
 

@@ -24,10 +24,10 @@ import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
-import prepositional.*
 import gossamer.*
 import hieroglyph.*
 import merino.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

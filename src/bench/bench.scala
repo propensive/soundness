@@ -17,10 +17,10 @@
 package jacinta
 
 import gossamer.*
+import hieroglyph.*, charEncoders.utf8
 import probably.*
 import rudiments.*
 import turbulence.*
-import hieroglyph.*, charEncoders.utf8
 
 import unsafeExceptions.canThrowAny
 

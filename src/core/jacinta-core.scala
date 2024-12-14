@@ -24,10 +24,10 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import merino.*
-import vacuous.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import JsonError.Reason
 
