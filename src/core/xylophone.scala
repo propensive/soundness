@@ -24,7 +24,8 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import annotation.targetName
+import scala.annotation.targetName
+
 import language.dynamics
 import scala.util.NotGiven
 
