@@ -16,11 +16,11 @@
 
 package coaxial
 
-import hieroglyph.*
-import spectacular.*
-import gossamer.*
-import rudiments.*
 import anticipation.*
+import gossamer.*
+import hieroglyph.*
+import rudiments.*
+import spectacular.*
 
 trait Receivable[+MessageType]:
   def deserialize(message: Bytes): MessageType

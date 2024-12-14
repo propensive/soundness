@@ -16,10 +16,10 @@
 
 package coaxial
 
+import anticipation.*
 import nettlesome.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
 
 import java.net as jn
 

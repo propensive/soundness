@@ -16,15 +16,15 @@
 
 package coaxial
 
-import nettlesome.*
-import turbulence.*
-import rudiments.*
-import vacuous.*
 import anticipation.*
 import contingency.*
+import nettlesome.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
-import java.net as jn
 import java.io as ji
+import java.net as jn
 import java.nio.channels as jnc
 import java.nio.file as jnf
 

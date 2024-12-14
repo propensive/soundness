@@ -16,19 +16,19 @@
 
 package coaxial
 
-import probably.*
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
 import gossamer.*
-import vacuous.*
+import hieroglyph.*, charEncoders.utf8
+import inimitable.*
+import jacinta.*, jsonPrinters.minimal
+import nettlesome.*
+import parasite.*, threadModels.platform
+import probably.*
 import rudiments.*
 import spectacular.*
-import parasite.*, threadModels.platform
 import superlunary.*
-import contingency.*, strategies.throwUnsafely
-import inimitable.*
-import nettlesome.*
-import jacinta.*, jsonPrinters.minimal
-import anticipation.*
-import hieroglyph.*, charEncoders.utf8
+import vacuous.*
 
 object Tests extends Suite(t"Coaxial tests"):
   def run(): Unit = unsafely:

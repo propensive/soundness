@@ -16,12 +16,12 @@
 
 package coaxial
 
-import parasite.*
-import turbulence.*
-import rudiments.*
-import vacuous.*
 import anticipation.*
 import contingency.*
+import parasite.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
 import Control.*
 

@@ -16,8 +16,8 @@
 
 package coaxial
 
-import vacuous.*
 import anticipation.*
+import vacuous.*
 
 sealed trait Control[+StateType]
 

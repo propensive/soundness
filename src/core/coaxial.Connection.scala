@@ -16,9 +16,9 @@
 
 package coaxial
 
-import turbulence.*
 import anticipation.*
 import contingency.*
+import turbulence.*
 
 import java.io as ji
 
