@@ -105,8 +105,9 @@ case class WebDriver(server: Browser#Server):
 
       private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
         given Online = Online
+
         url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
-          .post(content).as[Json]
+        . post(content).as[Json]
 
       def click()(using Log[Text]): Unit = post(t"click", Json.parse(t"{}"))
       def clear()(using Log[Text]): Unit = post(t"clear", Json.parse(t"{}"))
@@ -122,10 +123,10 @@ case class WebDriver(server: Browser#Server):
         case class Data(`using`: Text, value: Text)
 
         post(t"elements", Data(locator.strategy, locator.value(value)).json)
-          .value
-          .as[List[Json]]
-          .map(_(Wei).as[Text])
-          .map(Element(_))
+        . value
+        . as[List[Json]]
+        . map(_(Wei).as[Text])
+        . map(Element(_))
 
       def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
               : Element =
@@ -135,8 +136,9 @@ case class WebDriver(server: Browser#Server):
 
     private def get(address: Text)(using Log[Text]): Json = safe:
       given Online = Online
+
       url"http://localhost:${server.port}/session/$sessionId/$address"
-        .get(RequestHeader.ContentType(media"application/json")).as[Json]
+      . get(RequestHeader.ContentType(media"application/json")).as[Json]
 
     private def post(address: Text, content: Json)(using Log[Text]): Json = safe:
       given Online = Online
@@ -157,11 +159,12 @@ case class WebDriver(server: Browser#Server):
             : List[Element] =
 
       case class Data(`using`: Text, value: Text)
+
       post(t"elements", Data(locator.strategy, locator.value(value)).json)
-        .value
-        .as[List[Json]]
-        .map(_(Wei).as[Text])
-        .map(Element(_))
+      . value
+      . as[List[Json]]
+      . map(_(Wei).as[Text])
+      . map(Element(_))
 
     def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
             : Element =
