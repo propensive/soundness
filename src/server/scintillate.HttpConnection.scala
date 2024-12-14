@@ -39,7 +39,8 @@ object HttpConnection:
         (pair: @unchecked) match
           case (RequestHeader(header), values) => values.map: value =>
             header(value.tt)
-      .to(List)
+
+      . to(List)
 
     val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
 

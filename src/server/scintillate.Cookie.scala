@@ -56,7 +56,8 @@ object Cookie:
         cookie.path.let { path => t"Path=$path" },
         if cookie.secure then t"Secure" else Unset,
         if cookie.httpOnly then t"HttpOnly" else Unset)
-      .compact.join(t"; ")
+
+      . compact.join(t"; ")
 
     given Cookie.Value is Encodable in ResponseHeader.Value = cookie =>
       ResponseHeader.SetCookie(cookie.show)

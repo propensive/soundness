@@ -33,17 +33,18 @@ object Acceptable:
   given (using Tactic[MultipartError]) => Multipart is Acceptable = request =>
     tend:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
-    .within:
-      given HttpRequest = request
-      val contentType = header(RequestHeader.ContentType).let(_.prim).let(Media.parse(_)).or:
-        abort(MultipartError(MultipartError.Reason.MediaType))
 
-      if contentType.base == media"multipart/form-data" then
-        val boundary = contentType.at(t"boundary").or:
+    . within:
+        given HttpRequest = request
+        val contentType = header(RequestHeader.ContentType).let(_.prim).let(Media.parse(_)).or:
           abort(MultipartError(MultipartError.Reason.MediaType))
 
-        Multipart.parse(request.body, boundary)
-      else abort(MultipartError(MultipartError.Reason.MediaType))
+        if contentType.base == media"multipart/form-data" then
+          val boundary = contentType.at(t"boundary").or:
+            abort(MultipartError(MultipartError.Reason.MediaType))
+
+          Multipart.parse(request.body, boundary)
+        else abort(MultipartError(MultipartError.Reason.MediaType))
 
 trait Acceptable:
   type Self

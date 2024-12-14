@@ -45,9 +45,11 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     val headers: List[RequestHeader.Value] =
       request.getHeaderNames.nn.asScala.to(List).map: key =>
         key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
-      .flatMap:
-        case (RequestHeader(header), values) => values.map(header(_))
-      .to(List)
+
+      . flatMap:
+          case (RequestHeader(header), values) => values.map(header(_))
+
+      . to(List)
 
     val httpRequest = HttpRequest
      (method  = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
