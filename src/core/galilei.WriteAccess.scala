@@ -18,7 +18,6 @@ package galilei
 
 import java.nio.file as jnf
 
-
 object WriteAccess:
   erased trait Ability
 

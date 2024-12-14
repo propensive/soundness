@@ -1,9 +1,9 @@
 package galilei
 
+import anticipation.*
+import contingency.*
 import prepositional.*
 import turbulence.*
-import contingency.*
-import anticipation.*
 
 object Handle:
   given (using Tactic[StreamError]) => Handle is Readable by Bytes as readable = _.reader()

@@ -2,8 +2,8 @@ package galilei
 
 import java.nio.file as jnf
 
-import serpentine.*
 import prepositional.*
+import serpentine.*
 
 object FilesystemAttribute:
   class Readable[PlatformType <: Filesystem](path: Path on PlatformType):

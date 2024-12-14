@@ -6,13 +6,13 @@ import jnf.attribute as jnfa
 
 import scala.jdk.StreamConverters.*
 
+import anticipation.*
 import contingency.*
+import fulminate.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
-import nomenclature.*
-import fulminate.*
 import serpentine.*
-import anticipation.*
 import vacuous.*
 
 import language.experimental.captureChecking

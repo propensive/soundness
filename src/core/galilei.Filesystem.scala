@@ -2,13 +2,13 @@ package galilei
 
 import java.nio.file as jnf
 
+import anticipation.*
 import contingency.*
+import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
-import nomenclature.*
 import serpentine.*
-import gossamer.*
-import anticipation.*
 
 erased trait Filesystem
 

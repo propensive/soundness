@@ -1,14 +1,14 @@
 package galilei
 
+import anticipation.*
 import contingency.*
-import prepositional.*
-import rudiments.*
-import nomenclature.*
-import serpentine.*
 import denominative.*
 import gossamer.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
 import vacuous.*
-import anticipation.*
 
 object Linux:
   object Root

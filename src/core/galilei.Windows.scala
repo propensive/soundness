@@ -1,17 +1,17 @@
 package galilei
 
+import anticipation.*
 import contingency.*
-import prepositional.*
-import rudiments.*
-import nomenclature.*
-import serpentine.*
 import denominative.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
-import vacuous.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
 import spectacular.*
-import anticipation.*
+import vacuous.*
 
 erased trait Windows extends Filesystem
 

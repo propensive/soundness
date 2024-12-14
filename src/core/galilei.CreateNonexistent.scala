@@ -18,8 +18,8 @@ package galilei
 
 import java.nio.file as jnf
 
-import serpentine.*
 import prepositional.*
+import serpentine.*
 
 trait CreateNonexistent:
   type Platform <: Filesystem

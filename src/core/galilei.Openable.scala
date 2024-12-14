@@ -1,11 +1,11 @@
 package galilei
 
+import anticipation.*
+import contingency.*
 import prepositional.*
-import turbulence.*
 import rudiments.*
 import serpentine.*
-import contingency.*
-import anticipation.*
+import turbulence.*
 
 import java.nio.channels as jnc
 import java.nio.file as jnf

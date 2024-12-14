@@ -18,8 +18,8 @@ package galilei
 
 import anticipation.*
 import contextual.*
-import prepositional.*
 import gossamer.*
+import prepositional.*
 import serpentine.*
 import spectacular.*
 

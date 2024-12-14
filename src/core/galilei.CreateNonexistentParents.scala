@@ -16,8 +16,8 @@
 
 package galilei
 
-import serpentine.*
 import prepositional.*
+import serpentine.*
 
 trait CreateNonexistentParents:
   type Platform <: Filesystem

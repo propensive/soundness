@@ -19,11 +19,11 @@ package galilei
 import anticipation.*
 import contextual.*
 import contingency.*
-import prepositional.*
 import fulminate.*
 import guillotine.*
-import serpentine.*
+import prepositional.*
 import rudiments.*
+import serpentine.*
 
 import scala.jdk.StreamConverters.*
 

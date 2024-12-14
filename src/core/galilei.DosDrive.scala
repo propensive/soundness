@@ -2,11 +2,11 @@ package galilei
 
 import anticipation.*
 import contingency.*
-import nomenclature.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
-import spectacular.*
 import serpentine.*
+import spectacular.*
 
 object DosDrive:
   export Dos.navigable
