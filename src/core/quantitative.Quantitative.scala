@@ -170,6 +170,7 @@ object Quantitative extends Quantitative2:
               case _   => ' '
 
           t"$unit$exponent"
-      .join(t"·")
+
+      . join(t"·")
 
 export Quantitative.{Quantity, MetricUnit}

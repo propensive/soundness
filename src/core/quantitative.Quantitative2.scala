@@ -95,7 +95,8 @@ trait Quantitative2:
        ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
           val dimUnit = unit(dim).orElse(that.unit(dim)).get
           dim -> UnitPower(dimUnit, (unitPower(dim) + that.unitPower(dim)))
-        .to(Map).filter(_(1).power != 0))
+
+        . to(Map).filter(_(1).power != 0))
 
     @targetName("divide")
     infix def / (that: UnitsMap): UnitsMap =
@@ -103,7 +104,8 @@ trait Quantitative2:
        ((dimensions ++ that.dimensions).to(Set).to(List).map: dim =>
           val dimUnit = unit(dim).orElse(that.unit(dim)).get
           dim -> UnitPower(dimUnit, (unitPower(dim) - that.unitPower(dim)))
-        .to(Map).filter(_(1).power != 0))
+
+        . to(Map).filter(_(1).power != 0))
 
     def construct(using Quotes)(types: List[UnitPower]): Option[quotes.reflect.TypeRepr] =
       import quotes.reflect.*
@@ -176,7 +178,8 @@ trait Quantitative2:
               val dimensionName =
                 dimensionality.quantityName.map: name =>
                   "the physical quantity "+name
-                .getOrElse("the same quantity")
+
+                . getOrElse("the same quantity")
 
               abandon:
                 m"""the operands both represent ${dimensionName}, but there is no principal unit
@@ -359,7 +362,8 @@ trait Quantitative2:
       val unitsType =
         UnitsMap:
           units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/2) }.toMap
-        .repr.get.asType
+
+        . repr.get.asType
 
       (unitsType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
@@ -380,7 +384,8 @@ trait Quantitative2:
       val unitsType =
         UnitsMap:
           units.map.view.mapValues { case UnitPower(unit, power) => UnitPower(unit, power/3) }.toMap
-        .repr.get.asType
+
+        . repr.get.asType
 
       (unitsType: @unchecked) match
         case '[type resultType <: Measure; resultType] =>
