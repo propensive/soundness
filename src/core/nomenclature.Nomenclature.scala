@@ -1,10 +1,10 @@
 package nomenclature
 
 import anticipation.*
-import rudiments.*
-import prepositional.*
-import fulminate.*
 import contingency.*
+import fulminate.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
 
 import scala.compiletime.*

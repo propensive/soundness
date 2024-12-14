@@ -1,8 +1,8 @@
 package nomenclature
 
-import rudiments.*
 import anticipation.*
 import fulminate.*
+import rudiments.*
 
 object MustMatch extends Rule
    ({ text => m"must match $text" }, { (text, param) => text.s.matches(param.s) })

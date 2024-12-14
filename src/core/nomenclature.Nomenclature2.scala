@@ -1,8 +1,8 @@
 package nomenclature
 
 import anticipation.*
-import rudiments.*
 import fulminate.*
+import rudiments.*
 
 import scala.quoted.*
 import scala.compiletime.*
