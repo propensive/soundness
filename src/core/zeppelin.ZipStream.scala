@@ -41,8 +41,9 @@ class ZipStream(stream: () => LazyList[Bytes], filter: (Path on Zip) => Boolean)
           tend:
             case PathError(reason, path) => ZipError()
             case NameError(_, _, _)      => ZipError()
-          .within:
-            Path.parse[Zip](entry.getName().nn.tt)
+
+          . within:
+              Path.parse[Zip](entry.getName().nn.tt)
 
         if !filter(ref) then recur() else
           def read(): LazyList[Bytes] =
