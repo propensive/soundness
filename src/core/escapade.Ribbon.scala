@@ -35,4 +35,5 @@ case class Ribbon(colors: Bg*):
         e"${background.fg}($color())"
 
       e"$background( ${background.highContrast}($text) )$arrow"
-    .join
+
+    . join

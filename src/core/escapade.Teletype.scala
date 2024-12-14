@@ -121,7 +121,8 @@ case class Teletype
           case (span, transform) =>
             val charSpan: CharSpan = span.trimLeft(n)
             charSpan -> transform
-        .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+
+        . view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
       Teletype(plain.skip(n), newSpans)
 
@@ -135,7 +136,8 @@ case class Teletype
           case (span, tf) =>
             val charSpan: CharSpan = span.takeLeft(n)
             charSpan -> tf
-        .view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
+
+        . view.filterKeys { k => k.isEmpty || k != CharSpan.Nowhere }.to(TreeMap)
 
       Teletype(plain.keep(n), newSpans)
 
