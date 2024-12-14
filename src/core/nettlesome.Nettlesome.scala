@@ -71,12 +71,13 @@ object Nettlesome:
             case error@NumberError(text, _) =>
               given Diagnostics = error.diagnostics
               IpAddressError(Ipv4ByteNotNumeric(text))
-          .within:
-            bytes.map(Decoder.int.decode(_)).pipe: bytes =>
-              for byte <- bytes
-              do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
 
-              Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
+          . within:
+              bytes.map(Decoder.int.decode(_)).pipe: bytes =>
+                for byte <- bytes
+                do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
+
+                Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
         else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)), 0)
 
