@@ -16,15 +16,15 @@
 
 package hyperbole
 
-import escapade.*
-import rudiments.*
-import vacuous.*
-import gossamer.*
-import spectacular.*
 import anticipation.*
-import hieroglyph.*, textMetrics.uniform
-import escritoire.*, tableStyles.minimal, insufficientSpaceHandling.ignore
 import dendrology.*
+import escapade.*
+import escritoire.*, tableStyles.minimal, insufficientSpaceHandling.ignore
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
