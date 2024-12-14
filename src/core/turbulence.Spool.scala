@@ -30,4 +30,4 @@ class Spool[ItemType]():
 
   def stream: LazyList[ItemType] =
     LazyList.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-     .asInstanceOf[LazyList[ItemType]]
+    . asInstanceOf[LazyList[ItemType]]
