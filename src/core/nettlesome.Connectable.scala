@@ -16,8 +16,8 @@
 
 package nettlesome
 
-import spectacular.*
 import anticipation.*
+import spectacular.*
 
 object Connectable:
   given Ipv4 is Connectable as ipv4 = _.show

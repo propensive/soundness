@@ -16,15 +16,15 @@
 
 package nettlesome
 
+import anticipation.*
+import contingency.*
+import denominative.*
+import gossamer.*
+import larceny.*
 import probably.*
 import rudiments.*
-import gossamer.*
-import anticipation.*
 import serpentine.*, pathHierarchies.urls
 import spectacular.*
-import denominative.*
-import contingency.*
-import larceny.*
 
 import strategies.throwUnsafely
 

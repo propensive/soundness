@@ -16,8 +16,8 @@
 
 package nettlesome
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 object IpAddressError:
   enum Reason:

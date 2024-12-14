@@ -18,19 +18,19 @@ package nettlesome
 
 import scala.compiletime.*
 
-import serpentine.*
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import contingency.*
-import prepositional.*
-import denominative.*
-import escapade.*
 import anticipation.*
 import contextual.*
-import spectacular.*
+import contingency.*
+import denominative.*
+import escapade.*
+import fulminate.*
+import gossamer.*
 import nomenclature.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import vacuous.*
 
 case class Url[+SchemeType <: Label]
    (scheme:    Scheme[SchemeType],

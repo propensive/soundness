@@ -16,8 +16,8 @@
 
 package nettlesome
 
-import language.experimental.captureChecking
 import language.adhocExtensions
+import language.experimental.captureChecking
 
 class Online() extends Internet(true)
 object Online extends Online()

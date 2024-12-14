@@ -16,16 +16,16 @@
 
 package nettlesome
 
-import gossamer.*
-import rudiments.*
-import hypotenuse.*
-import vacuous.*
-import fulminate.*
-import contingency.*
 import anticipation.*
 import contextual.*
+import contingency.*
 import denominative.*
+import fulminate.*
+import gossamer.*
+import hypotenuse.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import scala.quoted.*
 

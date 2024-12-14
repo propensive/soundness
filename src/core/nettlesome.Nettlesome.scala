@@ -16,15 +16,15 @@
 
 package nettlesome
 
-import rudiments.*
-import hypotenuse.*
-import spectacular.*
-import gossamer.*
-import contingency.*
-import prepositional.*
-import fulminate.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
 import hieroglyph.*, textMetrics.uniform
+import hypotenuse.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
 
 import scala.quoted.*
 

@@ -16,10 +16,10 @@
 
 package nettlesome
 
-import gossamer.*
-import rudiments.*
 import anticipation.*
 import contextual.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
 
 object Scheme:

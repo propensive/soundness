@@ -18,15 +18,15 @@ package nettlesome
 
 import scala.compiletime.*
 
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import contingency.*
-import denominative.*
 import anticipation.*
 import contextual.*
+import contingency.*
+import denominative.*
+import fulminate.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 object Authority:
   given Authority is Showable = auth =>
