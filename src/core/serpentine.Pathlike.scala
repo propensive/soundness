@@ -1,7 +1,7 @@
 package serpentine
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 
 import scala.reflect.*
 

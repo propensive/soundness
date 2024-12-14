@@ -16,10 +16,10 @@
 
 package serpentine
 
-import probably.*
-import rudiments.*
 import digression.*
 import gossamer.*
+import probably.*
+import rudiments.*
 
 object Benchmarks extends Suite(t"Serpentine Benchmarks"):
   def run(): Unit =

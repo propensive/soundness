@@ -1,9 +1,9 @@
 package serpentine
 
-import rudiments.*
-import prepositional.*
 import anticipation.*
 import gossamer.*
+import prepositional.*
+import rudiments.*
 import symbolism.*
 
 object PathAscent:

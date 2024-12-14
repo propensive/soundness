@@ -1,8 +1,8 @@
 package serpentine
 
-import rudiments.*
-import prepositional.*
 import contingency.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Serpentine:

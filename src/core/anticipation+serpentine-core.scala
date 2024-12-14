@@ -1,7 +1,7 @@
 package anticipation
 
-import serpentine.*
 import prepositional.*
+import serpentine.*
 
 package filesystemApi:
   given [PlatformType: {Navigable, Radical}]

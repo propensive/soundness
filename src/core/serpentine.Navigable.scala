@@ -1,8 +1,8 @@
 package serpentine
 
 import anticipation.*
-import prepositional.*
 import nomenclature.*
+import prepositional.*
 
 trait Navigable extends Nominative:
   type Self

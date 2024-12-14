@@ -1,13 +1,13 @@
 package serpentine
 
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gossamer.*
 import prepositional.*
-import contingency.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import fulminate.*
 import vacuous.*
 
 import scala.compiletime.*
