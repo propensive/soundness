@@ -16,10 +16,10 @@
 
 package baroque
 
-import gossamer.*
-import spectacular.*
-import quantitative.*
 import anticipation.*
+import gossamer.*
+import quantitative.*
+import spectacular.*
 import symbolism.*
 
 import scala.annotation.*
