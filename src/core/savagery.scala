@@ -98,7 +98,8 @@ case class LineSegment(symbol: Char, parameters: (Double | Boolean)*):
     parameters.map:
       case double: Double   => double.toString.tt
       case boolean: Boolean => if boolean then t"1" else t"0"
-    .join(t"$symbol ", t" ", t"")
+
+    . join(t"$symbol ", t" ", t"")
 
 object PathOp:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
