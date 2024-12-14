@@ -16,8 +16,8 @@
 
 package symbolism
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Symbolism Tests"):
   def run(): Unit =
