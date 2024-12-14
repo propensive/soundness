@@ -19,8 +19,8 @@ package revolution
 import anticipation.*
 import contingency.*
 import digression.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 object DecodableManifest:
   given (using Tactic[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)

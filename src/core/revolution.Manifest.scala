@@ -16,16 +16,16 @@
 
 package revolution
 
-import java.util.jar as juj
 import java.io as ji
+import java.util.jar as juj
 
 import anticipation.*
 import denominative.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
-import symbolism.*
 
 object Manifest:
   protected def parse[SourceType: Readable by Bytes](source: SourceType): Manifest =

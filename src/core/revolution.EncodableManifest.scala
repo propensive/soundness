@@ -18,8 +18,8 @@ package revolution
 
 import anticipation.*
 import digression.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 object EncodableManifest:
   given ("Main-Class" is EncodableManifest of Fqcn) as mainClass = _.text
