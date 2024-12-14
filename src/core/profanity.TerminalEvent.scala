@@ -17,11 +17,11 @@
 package profanity
 
 import anticipation.*
-import gossamer.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
-import spectacular.*
 import rudiments.*
+import spectacular.*
 
 import language.experimental.captureChecking
 

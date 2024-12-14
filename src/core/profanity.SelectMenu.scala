@@ -16,12 +16,12 @@
 
 package profanity
 
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.{where as _, *}
 import rudiments.*
 import vacuous.*
-import gossamer.{where as _, *}
-import contingency.*
-import anticipation.*
-import fulminate.*
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) extends Question[ItemType]:
   import Keypress.*

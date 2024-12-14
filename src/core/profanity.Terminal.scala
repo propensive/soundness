@@ -16,13 +16,13 @@
 
 package profanity
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
-import contingency.*
-import parasite.*
-import turbulence.*
 import anticipation.*, durationApi.javaLong
+import contingency.*
+import gossamer.*
+import parasite.*
+import rudiments.*
+import turbulence.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

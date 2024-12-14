@@ -16,12 +16,12 @@
 
 package profanity
 
-import rudiments.*
-import fulminate.*
-import contingency.*
-import parasite.*
-import turbulence.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import parasite.*
+import rudiments.*
+import turbulence.*
 
 import language.experimental.captureChecking
 

@@ -16,12 +16,12 @@
 
 package profanity
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
 import gossamer.{where as _, *}
+import rudiments.*
 import spectacular.*
 import turbulence.*
-import anticipation.*
+import vacuous.*
 
 trait Interaction[ResultType, QuestionType]:
   def before(): Unit = ()

@@ -16,14 +16,14 @@
 
 package profanity
 
-import rudiments.*
-import vacuous.*
-import gossamer.{where as _, *}
-import spectacular.*
+import anticipation.*
 import contingency.*
 import denominative.*
-import anticipation.*
 import fulminate.*
+import gossamer.{where as _, *}
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) extends Question[Text]:
   val position = position0.or(value.length)
