@@ -16,8 +16,8 @@
 
 package ambience
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Ambience Tests"):
   def run(): Unit =
