@@ -29,7 +29,8 @@ object ResponseHeader:
       Expires, Im, LastModified, Link, Location, P3p, Pragma, PreferenceApplied, ProxyAuthenticate,
       PublicKeyPins, RetryAfter, Server, SetCookie, StrictTransportSecurity, Trailer,
       TransferEncoding, Tk, Upgrade, Vary, Via, Warning, WwwAuthenticate, XFrameOptions)
-    .bi.map(_.header -> _).to(Map)
+
+    . bi.map(_.header -> _).to(Map)
 
   def unapply(str: Text): Some[ResponseHeader[?]] =
     Some(standard.get(str.lower).getOrElse(Custom(str)))

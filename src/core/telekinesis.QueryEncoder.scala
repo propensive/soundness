@@ -28,7 +28,8 @@ object QueryEncoder extends ProductDerivation[QueryEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: QueryEncoder[DerivationType] =
     fields(_):
       [FieldType] => field => context.params(field).prefix(label)
-    .reduce(_.append(_))
+
+    . reduce(_.append(_))
 
   given text: QueryEncoder[Text] = string => Params(List((t"", string)))
   given int: QueryEncoder[Int] = int => Params(List((t"", int.show)))

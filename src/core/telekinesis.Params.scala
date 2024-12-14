@@ -30,6 +30,8 @@ case class Params(values: List[(Text, Text)]):
   def prefix(str: Text): Params = Params:
     values.map { (k, v) => if k.length == 0 then str -> v else t"$str.$k" -> v }
 
-  def queryString: Text = values.map: (k, v) =>
-    if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
-  .join(t"&")
+  def queryString: Text =
+    values.map: (k, v) =>
+      if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
+
+    . join(t"&")

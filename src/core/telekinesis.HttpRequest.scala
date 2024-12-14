@@ -39,11 +39,13 @@ object HttpRequest:
     val headers: Text =
       request.headers.map: header =>
         t"${header.header}: ${header.value}"
-      .join(t"\n          ")
+
+      . join(t"\n          ")
 
     val params: Text = request.params.map:
       case (k, v) => t"$k=\"$v\""
-    .join(t"\n          ")
+
+    . join(t"\n          ")
 
     ListMap[Text, Text](
       t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
@@ -111,18 +113,20 @@ case class HttpRequest
   lazy val params: Map[Text, Text] =
     queryParams.map:
       case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
-    .to(Map) ++ method.match
+
+    . to(Map) ++ method.match
       case HttpMethod.Post | HttpMethod.Put =>
         contentType.or(media"application/x-www-form-urlencoded").base.show match
           case t"multipart/form-data" =>
             mend:
               case MultipartError(_) => Map()
-            .within:
-              Multipart.parse(body.read[Bytes]).parts.filter(_.filename.absent).map: part =>
-                import charDecoders.utf8
-                import textSanitizers.strict
-                part.name.or(t"") -> safely(part.body.read[Text]).or(t"")
-              .to(Map)
+
+            . within:
+                Multipart.parse(body.read[Bytes]).parts.filter(_.filename.absent).map: part =>
+                  import charDecoders.utf8
+                  import textSanitizers.strict
+                  part.name.or(t"") -> safely(part.body.read[Text]).or(t"")
+                . to(Map)
 
           case t"application/x-www-form-urlencoded" =>
             body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
@@ -153,4 +157,5 @@ case class HttpRequest
       cookie.cut(t"=", 2) match
       case List(key, value) => List((key.urlDecode, value.urlDecode))
       case _                => Nil
-    .to(Map)
+
+    . to(Map)
