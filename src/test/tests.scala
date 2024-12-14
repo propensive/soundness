@@ -17,8 +17,8 @@
 package wisteria
 
 import anticipation.*
-import rudiments.*
 import contingency.*
+import rudiments.*
 import vacuous.*
 
 import scala.util.Try

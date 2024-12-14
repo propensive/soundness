@@ -17,10 +17,10 @@
 package wisteria
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 import contingency.*
 import fulminate.*
+import rudiments.*
+import vacuous.*
 
 import scala.deriving.*
 import scala.compiletime.*
