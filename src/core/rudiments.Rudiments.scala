@@ -94,12 +94,13 @@ object Rudiments:
 
     nibbles2.indexWhere: char =>
       !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
-    .match
-      case -1  => ()
 
-      case idx =>
-        val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        abandon(m"${nibbles(idx)} is not a valid hexadecimal character", pos)
+    . match
+        case -1  => ()
+
+        case idx =>
+          val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
+          abandon(m"${nibbles(idx)} is not a valid hexadecimal character", pos)
 
     val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
 

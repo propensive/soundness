@@ -187,7 +187,8 @@ extension [ValueType](iterable: Iterable[ValueType])
   def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] =
     iterable.map: value =>
       (lambda(value), value)
-    .to(Map)
+
+    . to(Map)
 
   def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
     @tailrec
