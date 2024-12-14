@@ -23,10 +23,11 @@ object PathAscent:
       then
         if pathAscent.ascent == 0 then RootType.selfText
         else List.fill(pathAscent.ascent)(RootType.parentElement).join(RootType.separator)
-      else pathAscent
-       .textDescent
-       .reverse
-       .join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
+      else
+        pathAscent
+        . textDescent
+        . reverse
+        . join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
 
 case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
   type Operand = Nothing

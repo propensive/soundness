@@ -72,12 +72,13 @@ object Path:
   def parse[PlatformType: {Navigable, Radical}](path: Text): Path on PlatformType =
     val root = PlatformType.root(path)
 
-    val descent = path
-     .skip(PlatformType.rootLength(path))
-     .cut(PlatformType.separator)
-     .filter(_ != t"")
-     .reverse
-     .map(PlatformType.element(_))
+    val descent =
+      path
+      . skip(PlatformType.rootLength(path))
+      . cut(PlatformType.separator)
+      . filter(_ != t"")
+      . reverse
+      . map(PlatformType.element(_))
 
     Path(root, descent)
 

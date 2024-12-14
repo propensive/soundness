@@ -17,10 +17,11 @@ object Relative:
     then
       if relative.ascent == 0 then navigable.selfText
       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
-    else relative
-      .textDescent
-      .reverse
-      .join(navigable.ascent*relative.ascent, navigable.separator, t"")
+    else
+      relative
+      . textDescent
+      . reverse
+      . join(navigable.ascent*relative.ascent, navigable.separator, t"")
 
   given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
     encodable.encode(_)
