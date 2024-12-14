@@ -17,7 +17,8 @@ jawn, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
 package merino
 
-import annotation.*
+import scala.annotation.*
+
 import anticipation.*
 import contingency.*
 import prepositional.*
