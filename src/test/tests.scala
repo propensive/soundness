@@ -16,12 +16,12 @@
 
 package dissonance
 
-import probably.*
-import gossamer.*
-import rudiments.*
 import anticipation.*
-import eucalyptus.*
 import contingency.*
+import eucalyptus.*
+import gossamer.*
+import probably.*
+import rudiments.*
 
 import strategies.throwUnsafely
 

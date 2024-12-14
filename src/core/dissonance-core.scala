@@ -18,10 +18,10 @@ package dissonance
 
 import language.experimental.captureChecking
 
+import anticipation.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
-import fulminate.*
-import anticipation.*
 
 def diff[ElemType]
    (left:    IndexedSeq[ElemType],
