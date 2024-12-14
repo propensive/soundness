@@ -66,4 +66,5 @@ object Row:
             append(char)
 
           append(format.quote)
-    .join(format.delimiter.show)
+
+    . join(format.delimiter.show)

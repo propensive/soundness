@@ -63,7 +63,8 @@ object Dsv:
         dsv.columns.let(_.to(List)).or:
           dsv.rows.prim.let: head =>
             (1 to head.data.length).to(List).map(_.toString.tt)
-        .or(Nil)
+
+        . or(Nil)
 
       Table[Row]
        ((columns.map: name =>
