@@ -40,7 +40,8 @@ object Unicode:
         case "H"  => HalfWidth
         case "F"  => FullWidth
         case "Na" => Narrow
-      .option
+
+      . option
 
   enum EaWidth:
     case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
@@ -69,7 +70,8 @@ object Unicode:
       
       case _ =>
         Nil
-    .to(Map)
+
+    . to(Map)
   
   lazy val unicodeNames: Map[Char | Text, Text] = unicodeData.map: (key, value) =>
     value -> key.s.split(" ").nn.map(_.nn.toLowerCase.nn.capitalize).mkString(" ").tt

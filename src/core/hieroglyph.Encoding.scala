@@ -37,13 +37,15 @@ object Encoding:
     allCharsets.filter(_.canEncode).flatMap: charset =>
       (charset.aliases.nn.asScala.to(Set) + charset.displayName.nn).map: name =>
         name.toLowerCase.nn.tt -> Encoding(name.tt, true)
-    .to(Map)
+
+    . to(Map)
 
   private[hieroglyph] val decodeOnly: Map[Text, Encoding { type CanEncode = false }] =
     allCharsets.filter(!_.canEncode).flatMap: charset =>
       (charset.aliases.nn.asScala.to(Set) + charset.displayName.nn).map: name =>
         name.toLowerCase.nn.tt -> Encoding(name.tt, false)
-    .to(Map)
+
+    . to(Map)
 
   def unapply(name: Text): Option[Encoding] =
     codecs.get(name.s.toLowerCase.nn.tt).orElse(decodeOnly.get(name.s.toLowerCase.nn.tt))
