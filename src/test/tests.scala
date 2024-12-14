@@ -16,8 +16,8 @@
 
 package typonym
 
-import probably.*
 import gossamer.*
+import probably.*
 import rudiments.*
 
 object Tests extends Suite(t"Typonym tests"):
