@@ -19,8 +19,8 @@ package caesura
 import anticipation.*
 import contingency.*
 import denominative.*
-import gossamer.*
 import escritoire.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*

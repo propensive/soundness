@@ -16,12 +16,12 @@
 
 package caesura
 
-import probably.*
-import gossamer.*
-import rudiments.*
 import anticipation.*
-import spectacular.*
 import contingency.*, strategies.throwUnsafely
+import gossamer.*
+import probably.*
+import rudiments.*
+import spectacular.*
 
 given decimalizer: Decimalizer = Decimalizer(1)
 

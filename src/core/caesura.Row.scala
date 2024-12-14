@@ -17,11 +17,11 @@
 package caesura
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
-import denominative.*
-import vacuous.*
 import spectacular.*
+import vacuous.*
 
 import scala.compiletime.*
 
