@@ -18,9 +18,9 @@ package mercator
 
 import fulminate.*
 
-import scala.quoted.*
-import scala.compiletime.*
 import scala.collection.BuildFrom
+import scala.compiletime.*
+import scala.quoted.*
 
 given Realm = realm"mercator"
 

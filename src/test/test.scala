@@ -16,9 +16,9 @@
 
 package mercator
 
-import probably.*
 import gossamer.*
 import larceny.*
+import probably.*
 
 import scala.util.{Try, Success}
 
