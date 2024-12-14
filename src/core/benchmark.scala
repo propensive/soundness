@@ -16,9 +16,9 @@
 
 package sedentary
 
-import vacuous.*
 import anticipation.*
 import probably.*
+import vacuous.*
 
 import scala.collection.mutable as scm
 
