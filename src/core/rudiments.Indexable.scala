@@ -21,8 +21,8 @@ import language.experimental.pureFunctions
 import scala.collection.mutable as scm
 
 import anticipation.*
-import prepositional.*
 import denominative.*
+import prepositional.*
 
 object Indexable:
   given [ElementType] => IArray[ElementType] is Indexable by Ordinal into ElementType as iarray =

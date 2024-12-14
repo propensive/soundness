@@ -1,7 +1,7 @@
 package rudiments
 
-import denominative.*
 import anticipation.*
+import denominative.*
 
 object Segmentable:
   given [ElementType] => IndexedSeq[ElementType] is Segmentable =

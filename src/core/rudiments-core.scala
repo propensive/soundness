@@ -21,10 +21,10 @@ import language.experimental.captureChecking
 
 import java.io as ji
 
-import scala.deriving.*
-import scala.compiletime.*
 import scala.collection as sc
 import scala.collection.mutable as scm
+import scala.compiletime.*
+import scala.deriving.*
 
 import anticipation.*
 import denominative.*

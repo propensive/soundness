@@ -22,8 +22,8 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-import symbolism.*
 import prepositional.*
+import symbolism.*
 import vacuous.*
 
 object Rudiments:

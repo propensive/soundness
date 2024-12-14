@@ -17,12 +17,12 @@
 package rudiments
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import larceny.*
-import contingency.*
-import vacuous.*
 import probably.*
 import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 
