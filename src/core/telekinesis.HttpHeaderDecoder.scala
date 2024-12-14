@@ -16,9 +16,9 @@
 
 package telekinesis
 
-import rudiments.*
-import contingency.*
 import anticipation.*
+import contingency.*
+import rudiments.*
 import spectacular.*
 
 object HttpHeaderDecoder:

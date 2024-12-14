@@ -1,8 +1,8 @@
 package telekinesis
 
-import spectacular.*
 import anticipation.*
 import gossamer.*
+import spectacular.*
 
 object HttpVersion:
   given HttpVersion is Showable as showable =

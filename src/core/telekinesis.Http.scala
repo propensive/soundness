@@ -16,12 +16,12 @@
 
 package telekinesis
 
-import gossamer.*
-import rudiments.*
-import gesticulate.*
-import spectacular.*
 import anticipation.*
+import gesticulate.*
+import gossamer.*
 import nettlesome.*
+import rudiments.*
+import spectacular.*
 
 import java.net.*
 import java.io.*

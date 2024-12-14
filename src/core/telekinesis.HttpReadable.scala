@@ -16,10 +16,10 @@
 
 package telekinesis
 
+import anticipation.*
 import gossamer.*
 import rudiments.*
 import turbulence.*
-import anticipation.*
 
 object HttpReadable:
   given Text is HttpReadable as text = (status, body) => body.read[Bytes].utf8

@@ -16,13 +16,13 @@
 
 package telekinesis
 
-import rudiments.*
-import prepositional.*
-import turbulence.*
+import anticipation.*
 import contingency.*
 import gesticulate.*
-import anticipation.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
+import turbulence.*
 
 object Servable:
   def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => LazyList[Bytes])

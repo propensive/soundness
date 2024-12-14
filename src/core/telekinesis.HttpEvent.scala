@@ -16,8 +16,8 @@
 
 package telekinesis
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 import nettlesome.*
 
 enum HttpEvent:

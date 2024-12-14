@@ -16,11 +16,11 @@
 
 package telekinesis
 
+import anticipation.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
-import fulminate.*
 import spectacular.*
-import anticipation.*
 
 object HttpMethod:
   given ("formmethod" is GenericHtmlAttribute[HttpMethod]) as formmethod:

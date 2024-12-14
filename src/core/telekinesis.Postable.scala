@@ -16,16 +16,16 @@
 
 package telekinesis
 
-import gossamer.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import hieroglyph.*
-import contingency.*
-import gesticulate.*
-import spectacular.*
 import anticipation.*
+import contingency.*
+import fulminate.*
+import gesticulate.*
+import gossamer.*
+import hieroglyph.*
 import monotonous.*, alphabets.base256.alphanumericOrBraille
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 import language.dynamics
 

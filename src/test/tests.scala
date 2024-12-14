@@ -16,14 +16,14 @@
 
 package telekinesis
 
-import probably.*
 import anticipation.*
-import nettlesome.*
-import fulminate.*
 import contingency.*, strategies.throwUnsafely
+import fulminate.*
+import gossamer.*
+import nettlesome.*
+import probably.*
 import serpentine.*, pathHierarchies.urls
 import spectacular.*
-import gossamer.*
 
 import errorDiagnostics.stackTraces
 

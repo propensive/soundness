@@ -16,11 +16,11 @@
 
 package telekinesis
 
-import rudiments.*
 import anticipation.*
-import vacuous.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 trait RequestHeader[LabelType <: Label]():
   def header: Text

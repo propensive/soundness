@@ -16,9 +16,9 @@
 
 package telekinesis
 
-import rudiments.*
 import anticipation.*
 import gossamer.*
+import rudiments.*
 
 object ResponseHeader:
   lazy val standard: Map[Text, ResponseHeader[?]] = List(AcceptCharset, AccessControlAllowOrigin,

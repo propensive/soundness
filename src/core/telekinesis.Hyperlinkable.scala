@@ -16,8 +16,8 @@
 
 package telekinesis
 
-import rudiments.*
 import nettlesome.*
+import rudiments.*
 
 object Hyperlinkable:
   given httpUrl: Hyperlinkable[HttpUrl] = identity(_)

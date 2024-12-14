@@ -16,8 +16,8 @@
 
 package telekinesis
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 
 open class SimpleRequestHeader[LabelType <: Label: ValueOf]() extends RequestHeader[LabelType]():
   def header: Text = Text(summon[ValueOf[LabelType]].value)

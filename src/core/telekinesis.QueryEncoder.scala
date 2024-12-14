@@ -16,11 +16,11 @@
 
 package telekinesis
 
+import anticipation.*
 import gossamer.*
 import rudiments.*
-import wisteria.*
 import spectacular.*
-import anticipation.*
+import wisteria.*
 
 import language.dynamics
 

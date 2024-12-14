@@ -18,14 +18,14 @@ package telekinesis
 
 import anticipation.*
 import contingency.*
+import fulminate.*
+import gesticulate.*
 import gossamer.*
 import hieroglyph.*
-import fulminate.*
 import nettlesome.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
-import gesticulate.*
 import vacuous.*
 
 import language.dynamics
