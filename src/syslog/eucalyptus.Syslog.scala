@@ -36,7 +36,8 @@ object Syslog:
     mend:
       case StreamError(_)     => ()
       case ExecError(_, _, _) => ()
-    .within:
-      syslog.tag match
-        case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
-        case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))
+
+    . within:
+        syslog.tag match
+          case tag: Text => mute[ExecEvent](stream.writeTo(sh"logger -t $tag".fork[Unit]()))
+          case _         => mute[ExecEvent](stream.writeTo(sh"logger".fork[Unit]()))
