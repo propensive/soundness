@@ -44,7 +44,8 @@ object XmlDecoder extends Derivation[XmlDecoder]:
           elements.find:
             case element: XmlAst.Element if element.name.name == label => true
             case _                                                     => false
-          .get
+
+          . get
 
         context.read(List(element))
 

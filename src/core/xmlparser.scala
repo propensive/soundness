@@ -252,4 +252,4 @@ object XmlInterpolation:
           case char =>
             throw InterpolationError(m"character $char is not valid in an entity name", state.offset, 1)
 
-    .copy(source = t"${state.source}$string")
+    . copy(source = t"${state.source}$string")

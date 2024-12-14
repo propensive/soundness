@@ -65,7 +65,8 @@ object Xml:
       case idx: Int    => t"[$idx]"
       case label: Text => t"/$label"
       case unit: Unit  => t"/*"
-  .join
+
+  . join
 
   def parse(content: Text): XmlDoc raises XmlParseError =
     import org.w3c.dom as owd, owd.Node.*
@@ -132,17 +133,19 @@ object Xml:
         recur(tail, List(current(idx)))
 
       case (unit: Unit) :: tail =>
-        val next = current
-          .collect { case e@XmlAst.Element(_, children, _, _) => children }
-          .flatten
-          .collect { case e: XmlAst.Element => e }
+        val next =
+          current
+          . collect { case e@XmlAst.Element(_, children, _, _) => children }
+          . flatten
+          . collect { case e: XmlAst.Element => e }
 
         recur(tail, next)
 
       case (label: Text) :: tail =>
-        val next = current
-          .collect { case e@XmlAst.Element(_, children, _, _) => children }
-          .flatten.collect { case e: XmlAst.Element if e.name.name == label => e }
+        val next =
+          current
+          . collect { case e@XmlAst.Element(_, children, _, _) => children }
+          . flatten.collect { case e: XmlAst.Element if e.name.name == label => e }
 
         recur(tail, next)
 
