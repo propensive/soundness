@@ -16,14 +16,14 @@
 
 package charisma
 
-import gossamer.*
-import rudiments.*
 import anticipation.*
-import vacuous.*
-import hypotenuse.*
 import contingency.*
+import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 object PeriodicTable:
   val H = ChemicalElement(1,   t"H",  t"Hydrogen")
