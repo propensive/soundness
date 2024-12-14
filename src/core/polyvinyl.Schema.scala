@@ -18,10 +18,10 @@ package polyvinyl
 
 import scala.quoted.*
 
-import rudiments.*
 import anticipation.*
 import fulminate.*
 import prepositional.*
+import rudiments.*
 
 trait Schema[DataType, RecordType <: Record in DataType]:
   def fields: Map[String, RecordField]
