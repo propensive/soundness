@@ -16,10 +16,10 @@
 
 package hypotenuse
 
-import probably.*
-import gossamer.*
 import anticipation.*
 import denominative.*
+import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Hypotenuse tests"):
   def run(): Unit =

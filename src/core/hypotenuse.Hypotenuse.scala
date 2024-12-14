@@ -22,13 +22,13 @@ import language.experimental.into
 import java.lang.{Integer as JInt, Long as JLong, Short as JShort, Byte as JByte, Double as JDouble,
     Float as JFloat}
 
-import scala.util.FromDigits
 import scala.annotation.*
 import scala.compiletime.*
+import scala.util.FromDigits
 
 import anticipation.*
-import fulminate.*
 import denominative.*
+import fulminate.*
 
 object Hypotenuse:
   given Realm = realm"hypotenuse"
