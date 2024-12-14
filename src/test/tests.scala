@@ -17,12 +17,12 @@
 package mosquito
 
 import gossamer.*
-import rudiments.*
-import probably.*
-import spectacular.*
-import quantitative.*
 import hieroglyph.*, textMetrics.uniform
 import larceny.*
+import probably.*
+import quantitative.*
+import rudiments.*
+import spectacular.*
 
 object Tests extends Suite(t"Mosquito tests"):
   def run(): Unit =

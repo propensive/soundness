@@ -16,13 +16,13 @@
 
 package mosquito
 
-import rudiments.*
 import anticipation.*
+import gossamer.*
+import hieroglyph.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
-import gossamer.*
-import prepositional.*
-import hieroglyph.*
 import vacuous.*
 
 object Mosquito:
