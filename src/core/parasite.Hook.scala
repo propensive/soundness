@@ -16,8 +16,8 @@
 
 package parasite
 
-import language.experimental.pureFunctions
 import language.experimental.into
+import language.experimental.pureFunctions
 
 import rudiments.*
 

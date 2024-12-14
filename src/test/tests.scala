@@ -16,13 +16,13 @@
 
 package parasite
 
-import probably.*
-import rudiments.*
+import anticipation.*, timeInterfaces.long
+import contingency.*
 import digression.*
 import gossamer.*
+import probably.*
+import rudiments.*
 import turbulence.*
-import contingency.*
-import anticipation.*, timeInterfaces.long
 
 import strategies.throwUnsafely
 

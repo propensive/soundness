@@ -16,15 +16,15 @@
 
 package parasite
 
-import language.experimental.pureFunctions
 import language.experimental.into
+import language.experimental.pureFunctions
 
 import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
-import digression.*
 import denominative.*
+import digression.*
 import rudiments.*
 import vacuous.*
 

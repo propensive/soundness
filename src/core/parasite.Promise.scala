@@ -25,8 +25,8 @@ import vacuous.*
 
 import java.util as ju
 import ju.concurrent as juc
-import juc.locks as jucl
 import juc.atomic as juca
+import juc.locks as jucl
 
 import Completion.*
 
