@@ -36,11 +36,12 @@ object Adversaria:
     fields.flatMap: field =>
       field.annotations.map(_.asExpr).collect:
         case '{$annotation: AnnotationType} => annotation
-      .map: annotation =>
-        '{CaseField(Text(${Expr(field.name)}), (target: TargetType) =>
-            ${'target.asTerm.select(field).asExpr}, $annotation)}
-      .reverse
-    .head
+
+      . map: annotation =>
+          '{CaseField(Text(${Expr(field.name)}), (target: TargetType) =>
+              ${'target.asTerm.select(field).asExpr}, $annotation)}
+      . reverse
+    . head
 
   def fields[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
           : Expr[List[CaseField[TargetType, AnnotationType]]] =
@@ -54,10 +55,12 @@ object Adversaria:
       val name = Expr(field.name)
       field.annotations.map(_.asExpr).collect:
         case '{$annotation: AnnotationType} => annotation
-      .map: annotation =>
-        '{CaseField(Text($name), (target: TargetType) => ${'target.asTerm.select(field).asExpr},
-            $annotation)}
-      .reverse
+
+      . map: annotation =>
+          '{CaseField(Text($name), (target: TargetType) => ${'target.asTerm.select(field).asExpr},
+              $annotation)}
+
+      . reverse
 
     Expr.ofList(elements)
 
