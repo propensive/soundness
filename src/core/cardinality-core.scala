@@ -16,7 +16,7 @@
 
 package cardinality
 
-import annotation.*
+import scala.annotation.*
 
 import language.experimental.genericNumberLiterals
 
