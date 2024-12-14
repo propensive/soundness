@@ -16,18 +16,18 @@
 
 package bitumen
 
-import turbulence.*
 import anticipation.*
-import rudiments.*
-import vacuous.*
+import contingency.*
 import denominative.*
 import gossamer.*
-import contingency.*
-import serpentine.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import spectacular.*
 import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
 case class UnixMode
    (setUid:     Boolean = false,
