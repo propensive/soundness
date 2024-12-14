@@ -16,15 +16,15 @@
 
 package gossamer
 
+import anticipation.*
+import contingency.*
+import denominative.*
+import hieroglyph.*, charEncoders.utf8, textMetrics.uniform
+import larceny.*
 import probably.*
 import rudiments.{where as _, *}
-import hieroglyph.*, charEncoders.utf8, textMetrics.uniform
 import spectacular.*
 import vacuous.*
-import denominative.*
-import contingency.*
-import anticipation.*
-import larceny.*
 
 import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely

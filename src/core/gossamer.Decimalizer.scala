@@ -16,9 +16,9 @@
 
 package gossamer
 
-import vacuous.*
-import rudiments.*
 import anticipation.*
+import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

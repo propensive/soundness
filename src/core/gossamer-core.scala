@@ -16,17 +16,17 @@
 
 package gossamer
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
 import anticipation.*
-import kaleidoscope.*
-import hieroglyph.*
-import symbolism.*
-import prepositional.*
-import hypotenuse.*
-import spectacular.*
 import denominative.*
+import fulminate.*
+import hieroglyph.*
+import hypotenuse.*
+import kaleidoscope.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
 import scala.reflect.*
 import scala.collection.mutable as scm

@@ -16,12 +16,12 @@
 
 package gossamer
 
+import anticipation.*
+import denominative.*
+import kaleidoscope.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
-import prepositional.*
-import kaleidoscope.*
-import denominative.*
 
 import scala.reflect.*
 

@@ -16,10 +16,10 @@
 
 package gossamer
 
-import rudiments.*
 import anticipation.*
-import vacuous.*
 import denominative.*
+import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

@@ -16,8 +16,8 @@
 
 package gossamer
 
-import rudiments.*
 import fulminate.*
+import rudiments.*
 
 import language.experimental.pureFunctions
 import language.experimental.into
