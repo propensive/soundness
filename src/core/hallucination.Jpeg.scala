@@ -16,8 +16,8 @@
 
 package hallucination
 
-import gesticulate.*
 import anticipation.*
+import gesticulate.*
 
 erased trait Jpeg extends ImageFormat
 

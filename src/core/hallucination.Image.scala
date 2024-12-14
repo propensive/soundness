@@ -16,14 +16,14 @@
 
 package hallucination
 
-import escapade.*
-import turbulence.*
-import rudiments.*
-import prepositional.*
 import anticipation.*
-import spectacular.*
-import iridescence.*
+import escapade.*
 import gossamer.*
+import iridescence.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
 
 import java.awt.image as jai
 import java.awt as ja

@@ -16,8 +16,8 @@
 
 package hallucination
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Hallucination Tests"):
   def run(): Unit =

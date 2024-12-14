@@ -16,12 +16,12 @@
 
 package hallucination
 
-import turbulence.*
-import rudiments.*
-import prepositional.*
 import anticipation.*
 import gesticulate.*
+import prepositional.*
+import rudiments.*
 import spectacular.*
+import turbulence.*
 
 import javax.imageio as ji
 
