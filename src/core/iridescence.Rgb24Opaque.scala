@@ -42,6 +42,7 @@ object Rgb24Opaque:
     def hex: Text =
       List(red, green, blue).foldLeft("#"): (acc, c) =>
         acc+(c.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
-      .tt
+
+      . tt
 
 export Rgb24Opaque.Rgb24
