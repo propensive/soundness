@@ -16,15 +16,15 @@
 
 package gastronomy
 
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
+import enigmatic.*
+import gossamer.*
+import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
+import monotonous.*
 import probably.*
 import rudiments.*
-import anticipation.*
-import gossamer.*
-import enigmatic.*
-import monotonous.*
-import contingency.*, strategies.throwUnsafely
 import spectacular.*
-import hieroglyph.*, charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
 
 import alphabets.hex.upperCase
 

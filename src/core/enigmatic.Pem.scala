@@ -18,11 +18,11 @@ package enigmatic
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64.standard
 import rudiments.*
-import fulminate.*
 import vacuous.*
 
 case class Pem(label: PemLabel, data: Bytes):

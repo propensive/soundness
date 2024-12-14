@@ -19,8 +19,8 @@ package enigmatic
 import anticipation.*
 import gastronomy.*
 import gossamer.*
-import prepositional.*
 import monotonous.*
+import prepositional.*
 import spectacular.*
 
 object Hmac:

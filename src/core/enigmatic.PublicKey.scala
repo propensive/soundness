@@ -18,8 +18,8 @@ package enigmatic
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import monotonous.*
+import prepositional.*
 import spectacular.*
 
 object PublicKey:
