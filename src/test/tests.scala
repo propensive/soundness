@@ -16,12 +16,12 @@
 
 package abacist
 
-import probably.*
-import rudiments.*
 import gossamer.{t, Decimalizer}
 import larceny.*
-import spectacular.*
+import probably.*
 import quantitative.*
+import rudiments.*
+import spectacular.*
 
 import language.strictEquality
 

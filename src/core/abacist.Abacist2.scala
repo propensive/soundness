@@ -16,9 +16,9 @@
 
 package abacist
 
-import rudiments.*
 import anticipation.*
 import quantitative.*
+import rudiments.*
 import spectacular.*
 import symbolism.*
 
