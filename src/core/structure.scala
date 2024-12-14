@@ -16,12 +16,12 @@
 
 package imperial
 
+import ambience.*
+import anticipation.*
+import contingency.*
+import gossamer.*
 import rudiments.*
 import vacuous.*
-import ambience.*
-import contingency.*
-import anticipation.*
-import gossamer.*
 
 object BaseLayout:
   case class Dir(home: Boolean, path: List[Text]):

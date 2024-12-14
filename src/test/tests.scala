@@ -18,8 +18,8 @@ package imperial
 
 import ambience.*
 import anticipation.*
-import gossamer.*
 import contingency.*
+import gossamer.*
 import probably.*
 import rudiments.*
 import vacuous.*
