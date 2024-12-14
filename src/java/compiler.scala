@@ -79,8 +79,8 @@ case class Javac(options: List[JavacOption]):
           process.put(CompileProgress(0.1, t"javac"))
 
           Javac.compiler()
-           .getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
-           .nn.call().nn
+          . getTask(null, null, diagnostics, options.map(_.s).asJava, null, javaSources)
+          . nn.call().nn
 
         if success then process.put(CompileProgress(1.0, t"javac"))
 

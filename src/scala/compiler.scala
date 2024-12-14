@@ -119,9 +119,7 @@ extension (companion: Notice.type)
 
         Notice(importance, file, message, codeRange)
 
-    .nn.orElse:
-      Notice(importance, file, message, Unset)
-    .nn
+    . nn.orElse(Notice(importance, file, message, Unset)).nn
 
 case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionType]]):
 
