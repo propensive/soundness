@@ -86,7 +86,8 @@ object Multipart:
                                        then key -> value.segment(Sec ~ Pen.of(value))
                                        else key -> value
               case _                => raise(MultipartError(Reason.BadDisposition)) yet (t"", t"")
-          .to(Map)
+
+          . to(Map)
 
         val dispositionValue = parts.prim match
           case t"inline"     => Multipart.Disposition.Inline
@@ -99,7 +100,8 @@ object Multipart:
         val name = params.at(t"name")
 
         Part(dispositionValue, headers, name, filename, stream)
-      .or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
+
+      . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
     def parts(): LazyList[Part] =
       val part = parsePart(headers(Nil), body())
