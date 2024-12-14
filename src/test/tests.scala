@@ -16,9 +16,9 @@
 
 package camouflage
 
-import probably.*
-import gossamer.*
 import anticipation.*
+import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Camouflage tests"):
   def run(): Unit =

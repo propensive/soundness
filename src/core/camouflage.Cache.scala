@@ -1,7 +1,7 @@
 package camouflage
 
-import parasite.*
 import anticipation.*
+import parasite.*
 import rudiments.*
 import vacuous.*
 
