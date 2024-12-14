@@ -20,8 +20,8 @@ import anticipation.*
 import bifurcate.*
 import contingency.*
 import gossamer.*
-import prepositional.*
 import hypotenuse.*
+import prepositional.*
 import quantitative.*
 import rudiments.*
 import turbulence.*
