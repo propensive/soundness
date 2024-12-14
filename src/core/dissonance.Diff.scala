@@ -116,11 +116,11 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     edits.runsBy:
       case Par(_, _, _) => true
       case _            => false
-    .map:
-      case xs@(Par(_, _, _) :: _) => Region.Unchanged(xs.collect { case par: Par[ElemType] => par })
-      case xs                     => Region.Changed
-                                      (xs.collect { case del: Del[ElemType] => del },
-                                       xs.collect { case ins: Ins[ElemType] => ins })
+    . map:
+        case xs@(Par(_, _, _) :: _) => Region.Unchanged(xs.collect { case par: Par[ElemType] => par })
+        case xs                     => Region.Changed
+                                        (xs.collect { case del: Del[ElemType] => del },
+                                         xs.collect { case ins: Ins[ElemType] => ins })
 
   def chunks: LazyList[Chunk[ElemType]] =
     def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): LazyList[Chunk[ElemType]] =
