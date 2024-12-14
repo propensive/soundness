@@ -16,16 +16,14 @@
 
 package eucalyptus
 
-import guillotine.*
-import rudiments.*
-import parasite.*
 import anticipation.*
+import contingency.*
+import guillotine.*
+import parasite.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
-import contingency.*
-
-//import scala.language.experimental.captureChecking
 
 case class Syslog(tag: Optional[Text] = Unset)
 

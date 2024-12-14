@@ -16,17 +16,15 @@
 
 package eucalyptus
 
-import escapade.*
-import iridescence.*, webColors.*
 import anticipation.*
-import prepositional.*
-import gossamer.*
 import digression.*
+import escapade.*
 import fulminate.*
-import spectacular.*
+import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-
-//import scala.language.experimental.captureChecking
+import iridescence.*, webColors.*
+import prepositional.*
+import spectacular.*
 
 package logFormats:
   given Level is Teletypeable = level =>

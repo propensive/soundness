@@ -16,14 +16,14 @@
 
 package eucalyptus
 
-import probably.*
 import anticipation.*
-import gossamer.*
-import spectacular.*
-import escapade.*
-import parasite.*
-import fulminate.*
 import contingency.*, strategies.throwUnsafely
+import escapade.*
+import fulminate.*
+import gossamer.*
+import parasite.*
+import probably.*
+import spectacular.*
 import turbulence.*, stdioSources.virtualMachine
 
 object Tests extends Suite(t"Eucalyptus tests"):

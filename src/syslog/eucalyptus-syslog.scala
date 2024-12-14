@@ -17,8 +17,8 @@
 package eucalyptus
 
 import anticipation.*
-import prepositional.*
 import parasite.*
+import prepositional.*
 
 package logging:
   given [MessageType: Inscribable in Text](using Monitor) => MessageType is Loggable as syslog =

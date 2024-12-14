@@ -24,9 +24,9 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import parasite.*, orphanDisposal.cancel
+import prepositional.*
 import rudiments.*
 import spectacular.*
-import prepositional.*
 import turbulence.*
 
 import language.experimental.pureFunctions

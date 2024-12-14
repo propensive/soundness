@@ -16,11 +16,11 @@
 
 package eucalyptus
 
-// import rudiments.*
-// import fulminate.*
 // import anticipation.*
-// import parasite.*
+// import fulminate.*
 // import gossamer.*
+// import parasite.*
+// import rudiments.*
 
 // import scala.quoted.*
 
