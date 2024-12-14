@@ -16,13 +16,13 @@
 
 package xylophone
 
+import anticipation.*
+import contingency.*
+import gossamer.*
+import printers.compact
 import probably.*
 import rudiments.*
-import anticipation.*
-import gossamer.*
 import spectacular.*
-import contingency.*
-import printers.compact
 
 import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely

@@ -16,11 +16,11 @@
 
 package xylophone
 
-import rudiments.*
-import wisteria.*
 import anticipation.*
-import spectacular.*
 import contingency.*
+import rudiments.*
+import spectacular.*
+import wisteria.*
 
 trait XmlDecoder[ValueType]:
   def read(xml: List[XmlAst]): ValueType

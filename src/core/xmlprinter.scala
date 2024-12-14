@@ -16,10 +16,10 @@
 
 package xylophone
 
-import rudiments.*
 import anticipation.*
-import spectacular.*
 import gossamer.*
+import rudiments.*
+import spectacular.*
 
 trait XmlPrinter[OutputType]:
   def print(doc: Xml): OutputType

@@ -16,14 +16,14 @@
 
 package xylophone
 
-import contextual.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
 import anticipation.*
+import contextual.*
 import contingency.*
+import fulminate.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import errorDiagnostics.empty
 

@@ -16,13 +16,13 @@
 
 package xylophone
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
+import contingency.*
 import gossamer.*
 import hieroglyph.*
-import contingency.*
+import rudiments.*
 import spectacular.*
-import anticipation.*
+import vacuous.*
 
 import annotation.targetName
 import language.dynamics

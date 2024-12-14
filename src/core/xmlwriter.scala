@@ -17,10 +17,10 @@
 package xylophone
 
 import anticipation.*
+import gossamer.*
 import rudiments.*
 import spectacular.*
 import wisteria.*
-import gossamer.*
 
 object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
