@@ -16,12 +16,12 @@
 
 package exoskeleton
 
-import profanity.*
-import rudiments.*
-import vacuous.*
 import ambience.*
 import anticipation.*
+import profanity.*
+import rudiments.*
 import turbulence.*
+import vacuous.*
 
 case class CliInvocation
    (arguments:        List[Argument],

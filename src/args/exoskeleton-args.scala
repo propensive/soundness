@@ -16,9 +16,9 @@
 
 package exoskeleton
 
-import rudiments.*
 import anticipation.*
 import fulminate.*
+import rudiments.*
 
 import language.experimental.captureChecking
 

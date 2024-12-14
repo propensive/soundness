@@ -16,12 +16,12 @@
 
 package exoskeleton
 
-import rudiments.*
-import vacuous.*
 import ambience.*
 import anticipation.*
 import gossamer.*
 import profanity.*
+import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

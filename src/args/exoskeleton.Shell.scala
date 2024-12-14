@@ -16,12 +16,12 @@
 
 package exoskeleton
 
-import rudiments.*
-import fulminate.*
 import anticipation.*
-import prepositional.*
-import spectacular.*
+import fulminate.*
 import gossamer.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
 
 import language.experimental.captureChecking
 

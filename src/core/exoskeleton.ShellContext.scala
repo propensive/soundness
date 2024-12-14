@@ -16,10 +16,10 @@
 
 package exoskeleton
 
-import galilei.*
 import anticipation.*
-import serpentine.*
+import galilei.*
 import prepositional.*
+import serpentine.*
 
 trait ShellContext:
   def scriptName: Text

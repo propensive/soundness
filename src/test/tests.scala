@@ -16,8 +16,8 @@
 
 package exoskeleton
 
-import probably.*
 import gossamer.*
+import probably.*
 
 import unsafeExceptions.canThrowAny
 

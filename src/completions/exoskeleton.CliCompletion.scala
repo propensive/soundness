@@ -16,17 +16,17 @@
 
 package exoskeleton
 
-import anticipation.*
-import rudiments.*
-import vacuous.*
-import turbulence.*
-import profanity.*
-import escapade.*
-import guillotine.*
-import spectacular.*
-import gossamer.*
 import ambience.*
+import anticipation.*
+import escapade.*
+import gossamer.*
+import guillotine.*
 import hieroglyph.*, textMetrics.uniform
+import profanity.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
 import scala.collection.mutable as scm
 

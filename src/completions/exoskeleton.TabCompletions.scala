@@ -16,26 +16,26 @@
 
 package exoskeleton
 
-import spectacular.*
-import gossamer.{where as _, *}
-import anticipation.*, filesystemApi.serpentinePath
-import rudiments.*, homeDirectories.default
-import vacuous.*
-import serpentine.*
-import prepositional.*
-import contingency.*
-import nomenclature.*
-import guillotine.*
-import fulminate.*
-import turbulence.*
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
+import anticipation.*, filesystemApi.serpentinePath
+import contingency.*
+import fulminate.*
 import galilei.*
-import filesystemOptions.dereferenceSymlinks.enabled
+import gossamer.{where as _, *}
+import guillotine.*
+import nomenclature.*
+import prepositional.*
+import rudiments.*, homeDirectories.default
+import serpentine.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
+
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-
 import pathNavigation.posix
 
 object TabCompletions:

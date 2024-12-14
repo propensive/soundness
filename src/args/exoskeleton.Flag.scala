@@ -16,13 +16,13 @@
 
 package exoskeleton
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
+import denominative.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
-import denominative.*
-import anticipation.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 

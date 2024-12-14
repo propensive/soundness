@@ -16,9 +16,9 @@
 
 package exoskeleton
 
-import vacuous.*
-import escapade.*
 import anticipation.*
+import escapade.*
+import vacuous.*
 
 import language.experimental.pureFunctions
 

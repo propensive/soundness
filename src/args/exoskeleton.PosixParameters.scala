@@ -16,9 +16,9 @@
 
 package exoskeleton
 
+import contingency.*
 import rudiments.*
 import vacuous.*
-import contingency.*
 
 import language.experimental.pureFunctions
 

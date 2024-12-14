@@ -16,8 +16,8 @@
 
 package exoskeleton
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 object InstallError:
   object Reason:

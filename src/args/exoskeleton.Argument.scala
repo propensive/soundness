@@ -16,10 +16,10 @@
 
 package exoskeleton
 
-import vacuous.*
 import anticipation.*
 import gossamer.*
 import rudiments.*
+import vacuous.*
 
 import language.experimental.captureChecking
 

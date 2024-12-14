@@ -16,10 +16,10 @@
 
 package exoskeleton
 
-import profanity.*
-import rudiments.*
 import ambience.*
 import anticipation.*
+import profanity.*
+import rudiments.*
 import turbulence.*
 
 trait Executive:

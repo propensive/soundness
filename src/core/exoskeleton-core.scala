@@ -16,14 +16,14 @@
 
 package exoskeleton
 
-import profanity.*
-import rudiments.*
-import gossamer.*
-import digression.*
-import hieroglyph.*, textMetrics.uniform
-import escapade.*
 import ambience.*
 import anticipation.*
+import digression.*
+import escapade.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
+import profanity.*
+import rudiments.*
 import turbulence.*
 
 import sun.misc as sm
