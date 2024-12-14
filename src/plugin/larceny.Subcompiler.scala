@@ -60,10 +60,10 @@ object Subcompiler:
 
           given Context =
             ctx
-             .setReporter(reporter)
-             .setSetting(ctx.settings.classpath, classpath)
-             .setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
-             .setSetting(ctx.settings.color, "never")
+            . setReporter(reporter)
+            . setSetting(ctx.settings.classpath, classpath)
+            . setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
+            . setSetting(ctx.settings.color, "never")
 
           Scala3.newRun.tap: run =>
             run.compileSources(List(sourceFile))
