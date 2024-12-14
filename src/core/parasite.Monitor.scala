@@ -163,9 +163,9 @@ extends Monitor:
       case Failed(error)               => throw error
       case Cancelled                   => abort(ConcurrencyError(Reason.Cancelled))
 
-    .match
-      case Delivered(_, result) => result
-      case other                => panic(m"impossible state")
+    . match
+        case Delivered(_, result) => result
+        case other                => panic(m"impossible state")
 
 
   def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =

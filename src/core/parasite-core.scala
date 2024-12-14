@@ -109,10 +109,11 @@ def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothi
       def surrender = boundary.break(Perseverance.Surrender)
       def persevere = boundary.break(Perseverance.Persevere)
       Perseverance.Prevail(evaluate(using () => surrender, () => persevere))
-    .match
-      case Perseverance.Surrender      => abort(RetryError(attempt.n1))
-      case Perseverance.Prevail(value) => value
-      case Perseverance.Persevere      => recur(attempt + 1)
+
+    . match
+        case Perseverance.Surrender      => abort(RetryError(attempt.n1))
+        case Perseverance.Prevail(value) => value
+        case Perseverance.Persevere      => recur(attempt + 1)
 
   recur(Prim)
 
