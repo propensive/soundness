@@ -47,12 +47,14 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
   case r"HUB.*" =>
     mend:
       case error: Error => name
-    .within:
-      import dynamicJsonAccess.enabled
-      val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
-      json.children.as[List[Json]]
-       .filter(_.modes(0).as[Text] == t"tube")
-       .map(_.stationNaptan.as[Name[Naptan]]).prim.or(name)
+
+    . within:
+        import dynamicJsonAccess.enabled
+        val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
+
+        json.children.as[List[Json]]
+        . filter(_.modes(0).as[Text] == t"tube")
+        . map(_.stationNaptan.as[Name[Naptan]]).prim.or(name)
 
   case _ => name
 
@@ -66,42 +68,44 @@ def app(): Unit = cli:
       Out.println(error.message)
       service.shutdown()
       Exit.Fail(2)
-  .within:
-    arguments match
-      case About() :: _ => execute:
-        val image = unsafely(Image(Classpath / n"image.png"))
-        Out.println(image.rasterize)
-        Exit.Ok
 
-      case Install() :: _ => execute:
-        safely(Out.println(TabCompletions.install().communicate))
-        Exit.Ok
+  . within:
+      arguments match
+        case About() :: _ => execute:
+          val image = unsafely(Image(Classpath / n"image.png"))
+          Out.println(image.rasterize)
+          Exit.Ok
 
-      case Trip() :: _ =>
-        val stations = Data.stations
-        val start0: Optional[StationRow] = Start.select(stations.values)
-        val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
-        val departure0: Optional[Text] = Departure[Text]()
+        case Install() :: _ => execute:
+          safely(Out.println(TabCompletions.install().communicate))
+          Exit.Ok
 
-        execute:
-          mend:
-            case error: UserError => Out.println(error.message) yet Exit.Fail(1)
-          .within:
-            val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
-            val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
+        case Trip() :: _ =>
+          val stations = Data.stations
+          val start0: Optional[StationRow] = Start.select(stations.values)
+          val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
+          val departure0: Optional[Text] = Departure[Text]()
 
-            val departure = departure0 match
-              case time@r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" if 0 <= hh < 24 => time
-              case _                                                            => t"0800"
+          execute:
+            mend:
+              case error: UserError => Out.println(error.message) yet Exit.Fail(1)
 
-            Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
-            val summary = Output.render(Data.plan(start, destination, departure), start, destination)
-            daemon(safely(sh"say $summary".exec[Unit]()))
-            Exit.Ok
+            . within:
+                val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
+                val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
 
-      case _ => execute:
-        Out.println(e"$Bold(Unrecognized command!)")
-        Exit.Fail(1)
+                val departure = departure0 match
+                  case time@r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" if 0 <= hh < 24 => time
+                  case _                                                            => t"0800"
+
+                Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
+                val summary = Output.render(Data.plan(start, destination, departure), start, destination)
+                daemon(safely(sh"say $summary".exec[Unit]()))
+                Exit.Ok
+
+        case _ => execute:
+          Out.println(e"$Bold(Unrecognized command!)")
+          Exit.Fail(1)
 
 object Data:
   private val cache: Cache[Bijection[Name[Naptan], StationRow]] = Cache()
@@ -118,21 +122,22 @@ object Data:
       case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
       case error: IoError            => InitError(error.message)
       case _: StreamError            => InitError(m"An error occurred when reading the cache file from disk")
-    .within:
-      cache.establish:
-        import filesystemOptions.readAccess.enabled
-        import filesystemOptions.writeAccess.disabled
-        import filesystemOptions.dereferenceSymlinks.enabled
-        import filesystemOptions.createNonexistent.enabled
-        import filesystemOptions.createNonexistentParents.enabled
-        val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
-        val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
-          ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
-            import filesystemOptions.writeAccess.enabled
-            file.open(stream.writeTo(_))
+    . within:
+        cache.establish:
+          import filesystemOptions.readAccess.enabled
+          import filesystemOptions.writeAccess.disabled
+          import filesystemOptions.dereferenceSymlinks.enabled
+          import filesystemOptions.createNonexistent.enabled
+          import filesystemOptions.createNonexistentParents.enabled
+          val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
-        Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
+          val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
+            ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
+              import filesystemOptions.writeAccess.enabled
+              file.open(stream.writeTo(_))
+
+          Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
   def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan raises UserError =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?mode=tube,elizabeth-line,dlr,overground&time=$time"
@@ -144,8 +149,9 @@ object Data:
       case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
       case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
       case error: TimestampError           => accrual + m"${error.message} at $focus from $sourceUrl"
-    .within:
-      Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
+
+    . within:
+        Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
 
 object Output:
   val tl = u"box drawings light arc down and right"
