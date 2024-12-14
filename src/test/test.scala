@@ -16,9 +16,9 @@
 
 package panopticon
 
-import probably.*
 import gossamer.*
 import larceny.*
+import probably.*
 
 case class Organization(name: String, leader: Person)
 case class Person(name: String, age: Int, role: Role)

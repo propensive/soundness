@@ -16,9 +16,9 @@
 
 package panopticon
 
-import rudiments.*
-import fulminate.*
 import anticipation.*
+import fulminate.*
+import rudiments.*
 
 import scala.quoted.*
 import scala.compiletime.*
