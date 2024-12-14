@@ -16,8 +16,8 @@
 
 package cataclysm
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Cataclysm Tests"):
   def run(): Unit =

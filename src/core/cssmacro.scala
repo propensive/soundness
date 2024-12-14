@@ -16,10 +16,10 @@
 
 package cataclysm
 
-import rudiments.*
+import anticipation.*
 import fulminate.*
 import gossamer.*
-import anticipation.*
+import rudiments.*
 import spectacular.*
 
 import scala.quoted.*

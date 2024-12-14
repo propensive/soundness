@@ -16,14 +16,15 @@
 
 package cataclysm
 
-import rudiments.*
-import gossamer.*
-import vacuous.*
 import anticipation.*
+import gossamer.*
 import hieroglyph.*
+import rudiments.*
+import vacuous.*
 
-import annotation.targetName
 import language.dynamics
+
+import scala.annotation.targetName
 
 object CssStylesheet:
   given (using charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
