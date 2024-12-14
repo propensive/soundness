@@ -16,11 +16,11 @@
 
 package ulysses
 
-import gastronomy.*
 import cardinality.*
+import gastronomy.*
+import hypotenuse.*
 import rudiments.*
 import vacuous.*
-import hypotenuse.*
 
 import scala.collection.immutable as sci
 import scala.collection.mutable as scm

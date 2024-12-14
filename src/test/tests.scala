@@ -16,10 +16,10 @@
 
 package ulysses
 
-import probably.*
-import gossamer.*
-import gastronomy.*, hashFunctions.sha1
 import anticipation.*
+import gastronomy.*, hashFunctions.sha1
+import gossamer.*
+import probably.*
 
 import language.experimental.genericNumberLiterals
 
