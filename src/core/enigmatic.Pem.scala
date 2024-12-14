@@ -49,10 +49,12 @@ object Pem:
     lines.tail.indexWhere:
       case r"-----* *END $label([ A-Z]+) *-----*" => true
       case _                                     => false
-    .match
-      case -1  => abort(PemError(PemError.Reason.EndMissing))
-      case index =>
-        val joined: Text = lines.tail.take(index).join
-        tend:
-          case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
-        .within(Pem(label, joined.deserialize[Base64]))
+
+    . match
+        case -1  => abort(PemError(PemError.Reason.EndMissing))
+        case index =>
+          val joined: Text = lines.tail.take(index).join
+          tend:
+            case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+
+          . within(Pem(label, joined.deserialize[Base64]))
