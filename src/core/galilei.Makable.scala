@@ -102,11 +102,12 @@ object Makable:
               case ExecError(_, _, _) =>
                 import errorDiagnostics.stackTraces
                 IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
-            .within:
-              sh"mkfifo $path"() match
-                case Exit.Ok => ()
-                case _             =>
-                  raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
+
+            . within:
+                sh"mkfifo $path"() match
+                  case Exit.Ok => ()
+                  case _             =>
+                    raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
 trait Makable:
   type Self
