@@ -77,10 +77,10 @@ object Mercator:
         def point[ValueType](value: ValueType): TypeConstructorType[ValueType] =
           ${
             companion
-                .select(applyMethods(0))
-                .appliedToType(TypeRepr.of[ValueType])
-                .appliedTo('value.asTerm)
-                .asExprOf[TypeConstructorType[ValueType]]
+            . select(applyMethods(0))
+            . appliedToType(TypeRepr.of[ValueType])
+            . appliedTo('value.asTerm)
+            . asExprOf[TypeConstructorType[ValueType]]
           }
     }
     else if applyMethods.length == 0
@@ -108,7 +108,7 @@ object Mercator:
            (lambda: ValueType => ValueType2)
                 : FunctorType[ValueType2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
-              .appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
+            . appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
     }
 
     if mapMethods.length == 1 then makeFunctor
@@ -141,10 +141,10 @@ object Mercator:
            (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
                 : MonadType[ValueType2] =
           ${'value.asTerm
-              .select(flatMapMethods(0))
-              .appliedToType(TypeRepr.of[ValueType2])
-              .appliedTo('lambda.asTerm)
-              .asExprOf[MonadType[ValueType2]]}
+            . select(flatMapMethods(0))
+            . appliedToType(TypeRepr.of[ValueType2])
+            . appliedTo('lambda.asTerm)
+            . asExprOf[MonadType[ValueType2]]}
     }
 
     if flatMapMethods.length == 1 then makeMonad
