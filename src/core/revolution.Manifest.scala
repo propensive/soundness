@@ -34,7 +34,8 @@ object Manifest:
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
         (key.toString.tt, value.toString.tt)
-      .to(Map)
+
+      . to(Map)
 
   given Manifest is Readable by Bytes as readable = manifest => LazyList(manifest.serialize)
   given Manifest is Aggregable by Bytes as aggregable = parse(_)
@@ -42,7 +43,8 @@ object Manifest:
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
       (entry.key, entry.value)
-    .to(Map)
+
+    . to(Map)
 
   given Manifest is Addable by ManifestEntry into Manifest = (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
