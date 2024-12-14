@@ -16,8 +16,8 @@
 
 package zeppelin
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 case class ZipError()(using Diagnostics)
 extends Error(m"problem with ZIP file")
