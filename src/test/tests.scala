@@ -16,8 +16,8 @@
 
 package capricious
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Capricious Tests"):
   def run(): Unit =

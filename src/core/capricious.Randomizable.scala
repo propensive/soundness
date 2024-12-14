@@ -16,9 +16,9 @@
 
 package capricious
 
-import wisteria.*
 import hypotenuse.*
 import rudiments.*
+import wisteria.*
 
 import scala.compiletime.*
 

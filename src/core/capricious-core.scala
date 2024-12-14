@@ -22,8 +22,8 @@ import rudiments.*
 
 import scala.util as su
 
-import java.util as ju
 import java.security as js
+import java.util as ju
 
 import language.experimental.genericNumberLiterals
 
