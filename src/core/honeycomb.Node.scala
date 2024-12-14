@@ -36,7 +36,8 @@ object Node:
         (keyValue: @unchecked) match
           case (key, Unset)       => t" $key"
           case (key, value: Text) => t""" $key="$value""""
-      .join
+
+      . join
 
     if item.children.isEmpty && !item.verbatim
     then t"<${item.label}$filling${if item.unclosed then t"" else t"/"}>"

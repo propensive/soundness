@@ -45,10 +45,10 @@ object Honeycomb:
 
           val expr: Expr[keyType is HtmlAttribute[valueType]] =
             Expr.summon[keyType is HtmlAttribute[valueType] onto NameType]
-             .orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
-             .getOrElse:
-              val typeName = TypeRepr.of[valueType].show
-              abandon(m"""the attribute $attribute cannot take a value of type $typeName""")
+            . orElse(Expr.summon[keyType is HtmlAttribute[valueType]])
+            . getOrElse:
+                val typeName = TypeRepr.of[valueType].show
+                abandon(m"""the attribute $attribute cannot take a value of type $typeName""")
 
           '{  $expr.convert($value) match
                 case HtmlAttribute.NotShown => Unset

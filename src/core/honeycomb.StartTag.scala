@@ -28,7 +28,8 @@ object StartTag:
       ((key, value): @unchecked) match
         case (key, value: Text) => t"[$key=$value]"
         case (key, Unset)       => t"[$key]"
-    .join
+
+    . join
 
     t"${elem.label}$tail"
 
