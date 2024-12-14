@@ -16,11 +16,11 @@
 
 package monotonous
 
-import probably.*
 import anticipation.*
-import contingency.*
 import capricious.*, randomization.seeded, randomization.lengths.uniformUpto100000
+import contingency.*
 import gossamer.*
+import probably.*
 import spectacular.*
 import turbulence.*
 

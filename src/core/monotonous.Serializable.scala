@@ -17,8 +17,8 @@
 package monotonous
 
 import anticipation.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 object Serializable:
   def base[BaseType <: Serialization](bits: Int)(using alphabet: Alphabet[BaseType])

@@ -22,9 +22,9 @@ import scala.compiletime.*, ops.int.*
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
-import prepositional.*
 import hypotenuse.*
+import prepositional.*
+import rudiments.*
 import vacuous.*
 
 trait Deserializable:
