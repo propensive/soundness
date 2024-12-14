@@ -17,8 +17,8 @@
 package gesticulate
 
 import anticipation.*
-import rudiments.*
 import gossamer.*
+import rudiments.*
 
 import language.experimental.captureChecking
 

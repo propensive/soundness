@@ -16,10 +16,10 @@
 
 package gesticulate
 
+import contingency.*
 import gossamer.*
 import probably.*
 import rudiments.*
-import contingency.*
 
 import strategies.throwUnsafely
 

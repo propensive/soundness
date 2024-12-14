@@ -16,14 +16,14 @@
 
 package gesticulate
 
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import gossamer.*
+import anticipation.*
 import contextual.*
 import contingency.*
-import anticipation.*
+import fulminate.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import scala.io.*
 

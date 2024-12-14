@@ -4,10 +4,10 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import rudiments.*
 import prepositional.*
-import vacuous.*
+import rudiments.*
 import turbulence.*
+import vacuous.*
 
 import scala.reflect.*
 

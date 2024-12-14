@@ -16,14 +16,14 @@
 
 package gesticulate
 
-import rudiments.*
-import vacuous.*
-import gossamer.{where as _, *}
+import anticipation.*
 import contextual.*
 import contingency.*
-import anticipation.*
+import gossamer.{where as _, *}
 import prepositional.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.dynamics
 //import language.experimental.captureChecking

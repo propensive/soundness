@@ -1,10 +1,10 @@
 package gesticulate
 
 import anticipation.*
-import rudiments.*
 import prepositional.*
-import vacuous.*
+import rudiments.*
 import turbulence.*
+import vacuous.*
 
 object Part:
   given Part is Readable by Bytes as readable = _.body

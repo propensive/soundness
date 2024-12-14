@@ -16,13 +16,13 @@
 
 package gesticulate
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
+import contextual.*
 import fulminate.*
 import gossamer.*
-import contextual.*
-import anticipation.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.dynamics
 //import language.experimental.captureChecking
