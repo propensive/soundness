@@ -16,13 +16,13 @@
 
 package plutocrat
 
-import gossamer.*
 import anticipation.*
+import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-import spectacular.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import symbolism.*
 
 import language.experimental.captureChecking

@@ -16,9 +16,9 @@
 
 package plutocrat
 
-import probably.*
 import gossamer.*
 import larceny.*
+import probably.*
 
 object Tests extends Suite(t"Plutocrat tests"):
   def run(): Unit =
