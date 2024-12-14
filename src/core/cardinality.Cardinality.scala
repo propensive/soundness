@@ -18,8 +18,8 @@ package cardinality
 
 import compiletime.ops.double.*
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 import scala.quoted.*
 import scala.compiletime.*

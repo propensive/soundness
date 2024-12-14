@@ -16,10 +16,10 @@
 
 package cardinality
 
-import compiletime.ops.double.*
-import scala.util.FromDigits
+import scala.annotation.*
+import scala.compiletime.ops.double.*
 import scala.reflect.TypeTest
-import annotation.*
+import scala.util.FromDigits
 
 import language.experimental.genericNumberLiterals
 
