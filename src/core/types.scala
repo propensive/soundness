@@ -44,14 +44,16 @@ object Typonym:
     Type.of[PhantomType] match
       case '[type listType <: Tuple; TypeList[listType]] =>
         untuple[listType].map(_.asType).map { case '[elementType] => reify[elementType] }
-          .reverse
-          .foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
+        . reverse
+        . foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
 
       case '[type mapType <: Tuple; TypeMap[mapType]] =>
-        val entries = untuple[mapType].map(_.asType).map:
-          case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
-        .foldLeft('{Nil}): (list, next) =>
-          '{$next :: $list}
+        val entries =
+          untuple[mapType].map(_.asType).map:
+            case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
+
+          . foldLeft('{Nil}): (list, next) =>
+              '{$next :: $list}
         
         '{$entries.to(Map)}
         
