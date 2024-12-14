@@ -16,11 +16,11 @@
 
 package probably
 
-import gossamer.*
 import anticipation.*
-import rudiments.*
-import denominative.*
 import chiaroscuro.*
+import denominative.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
 
 import dotty.tools.dotc.util as dtdu

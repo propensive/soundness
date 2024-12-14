@@ -16,15 +16,15 @@
 
 package probably
 
-import gossamer.*
-import fulminate.*
 import anticipation.*
-import rudiments.*
-import hypotenuse.*
-import vacuous.*
 import digression.*
-import spectacular.*
+import fulminate.*
+import gossamer.*
 import hieroglyph.*
+import hypotenuse.*
+import rudiments.*
+import spectacular.*
+import vacuous.*
 
 import scala.collection.mutable as scm
 

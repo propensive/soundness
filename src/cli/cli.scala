@@ -16,14 +16,14 @@
 
 package probably
 
-import escapade.*
-import turbulence.*
-import contingency.*
-import vacuous.*
-import anticipation.*
 import ambience.*, environments.virtualMachine
-import hieroglyph.*, textMetrics.uniform
+import anticipation.*
+import contingency.*
 import digression.*
+import escapade.*
+import hieroglyph.*, textMetrics.uniform
+import turbulence.*
+import vacuous.*
 
 import language.adhocExtensions
 

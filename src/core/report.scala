@@ -16,22 +16,22 @@
 
 package probably
 
-import rudiments.*
-import vacuous.*
-import digression.*
-import anticipation.*
-import gossamer.*
-import fulminate.*
-import contingency.*
-import chiaroscuro.*
 import ambience.*
-import escritoire.*, tableStyles.default
+import anticipation.*
+import chiaroscuro.*
+import contingency.*
 import dendrology.*
+import digression.*
 import escapade.*, columnAttenuation.ignore
-import turbulence.*
-import iridescence.*
-import spectacular.*
+import escritoire.*, tableStyles.default
+import fulminate.*
+import gossamer.*
 import hieroglyph.*
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
 given Decimalizer = Decimalizer(3)
 

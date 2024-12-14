@@ -16,14 +16,14 @@
 
 package probably
 
-import rudiments.*
-import gossamer.*
 import anticipation.*
 import digression.*
+import gossamer.*
+import rudiments.*
 
-import scala.runtime.coverage.*
-import scala.io.*
 import scala.collection.mutable.BitSet
+import scala.io.*
+import scala.runtime.coverage.*
 
 import java.io.*
 
