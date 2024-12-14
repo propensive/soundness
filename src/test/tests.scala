@@ -17,15 +17,15 @@ jawn, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
 package merino
 
-import probably.*
-import gossamer.*
-import anticipation.*, filesystemInterfaces.javaIo
-import eucalyptus.*
-import rudiments.*, workingDirectories.virtualMachine
-import contingency.*, strategies.throwUnsafely
-import hieroglyph.*, charEncoders.utf8
-import turbulence.*
 import ambience.*, systemProperties.virtualMachine
+import anticipation.*, filesystemInterfaces.javaIo
+import contingency.*, strategies.throwUnsafely
+import eucalyptus.*
+import gossamer.*
+import hieroglyph.*, charEncoders.utf8
+import probably.*
+import rudiments.*, workingDirectories.virtualMachine
+import turbulence.*
 
 import java.io as ji
 

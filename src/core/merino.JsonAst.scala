@@ -18,13 +18,13 @@ jawn, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 package merino
 
 import annotation.*
-import rudiments.*
-import contingency.*
 import anticipation.*
+import contingency.*
 import prepositional.*
+import rudiments.*
+import scala.collection.mutable.ArrayBuffer
 import turbulence.*
 import vacuous.*
-import scala.collection.mutable.ArrayBuffer
 
 import JsonAst.AsciiByte.*
 import JsonParseError.Reason
