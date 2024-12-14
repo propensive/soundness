@@ -16,7 +16,7 @@
 
 package honeycomb
 
-import vacuous.*
 import anticipation.*
+import vacuous.*
 
 type Attributes = Map[String, Unset.type | Text]

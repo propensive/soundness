@@ -16,11 +16,11 @@
 
 package honeycomb
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
 import anticipation.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 object StartTag:
   given StartTag[?, ?] is GenericCssSelection = elem =>

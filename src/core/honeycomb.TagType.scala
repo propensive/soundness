@@ -16,9 +16,9 @@
 
 package honeycomb
 
+import anticipation.*
 import rudiments.*
 import vacuous.*
-import anticipation.*
 
 import scala.quoted.*
 

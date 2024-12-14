@@ -16,14 +16,14 @@
 
 package honeycomb
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
 import anticipation.*
+import gesticulate.*
+import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import gesticulate.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 trait HtmlAttribute[-ValueType]:
   type Self <: Label

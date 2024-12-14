@@ -16,11 +16,11 @@
 
 package honeycomb
 
-import rudiments.*
-import vacuous.*
+import anticipation.*
 import fulminate.*
 import prepositional.*
-import anticipation.*
+import rudiments.*
+import vacuous.*
 
 import scala.quoted.*
 

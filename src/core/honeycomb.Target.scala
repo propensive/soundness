@@ -16,8 +16,8 @@
 
 package honeycomb
 
-import gossamer.*
 import anticipation.*
+import gossamer.*
 import spectacular.*
 
 object Target:

@@ -16,12 +16,12 @@
 
 package honeycomb
 
-import rudiments.*
-import vacuous.*
-import gossamer.*
-import xylophone.*
 import anticipation.*
+import gossamer.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
+import xylophone.*
 
 trait HtmlSerializer[ResultType]:
   def serialize(doc: HtmlDoc, maxWidth: Int = -1): ResultType

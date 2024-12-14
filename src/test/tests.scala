@@ -16,8 +16,8 @@
 
 package honeycomb
 
-import probably.*
 import gossamer.*
+import probably.*
 import rudiments.*
 import spectacular.*
 

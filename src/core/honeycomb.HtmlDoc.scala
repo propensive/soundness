@@ -16,11 +16,11 @@
 
 package honeycomb
 
-import hieroglyph.*
-import vacuous.*
 import anticipation.*
-import spectacular.*
 import gossamer.*
+import hieroglyph.*
+import spectacular.*
+import vacuous.*
 
 case class HtmlDoc(root: Node["html"])
 

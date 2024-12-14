@@ -16,8 +16,8 @@
 
 package honeycomb
 
-import rudiments.*
 import gossamer.*
+import rudiments.*
 import spectacular.*
 
 object Scope:

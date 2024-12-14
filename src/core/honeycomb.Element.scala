@@ -16,10 +16,10 @@
 
 package honeycomb
 
-import rudiments.*
-import vacuous.*
 import anticipation.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.dynamics
 
