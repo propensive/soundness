@@ -81,7 +81,8 @@ extension (bytes: Bytes)
     bytes.map: b =>
       val i = b&0xff
       (if i%0x80 <= 0x20 || i == 0x7f then i + 0x100 else i).toChar
-    .mkString.tt
+
+    . mkString.tt
 
 extension [TextType](text: TextType)
   def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
@@ -309,7 +310,8 @@ extension (text: into Text)
 
       for j <- 1 to n do
         dist(j) = (old(j - 1) + (if text.s.charAt(i - 1) == other.s.charAt(j - 1) then 0 else 1))
-          .min(old(j) + 1).min(dist(j - 1) + 1)
+
+        . min(old(j) + 1).min(dist(j - 1) + 1)
 
       for j <- 0 to n do old(j) = dist(j)
 

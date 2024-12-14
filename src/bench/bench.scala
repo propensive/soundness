@@ -29,10 +29,12 @@ object Benchmarks extends Suite(t"Gossamer Benchmarks"):
         deferCompilation:
           import gossamer.*
           Group(List(Person("Jack", 30))).show
-      .benchmark(warmup = 30000L, duration = 30000L)
+
+      . benchmark(warmup = 30000L, duration = 30000L)
 
       test(t"Resolve a Debug instance"):
         deferCompilation:
           import gossamer.*
           Group(List(Person("Jack", 30))).inspect
-      .benchmark(warmup = 30000L, duration = 30000L)
+
+      . benchmark(warmup = 30000L, duration = 30000L)
