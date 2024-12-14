@@ -54,7 +54,8 @@ object Watch:
         key.pollEvents().nn.iterator.nn.asScala.each: event =>
           watches.use: ref =>
             ref(key)
-          .each(_.put(event))
+
+          . each(_.put(event))
 
         key.reset()
 
@@ -64,11 +65,13 @@ object Watch:
         paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
           if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
           else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
-        .groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
+
+        . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
 
       pathGroups.view.mapValues: predicates =>
         (value: Text) => predicates.exists(_(value))
-      .to(Map)
+
+      . to(Map)
 
 class Watch():
   private val spool: Spool[WatchEvent] = Spool()
