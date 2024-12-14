@@ -22,9 +22,9 @@ import scala.compiletime.*
 
 import anticipation.*
 import monotonous.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
-import prepositional.*
 import vacuous.*
 
 object Digest:

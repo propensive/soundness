@@ -23,8 +23,8 @@ import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import hieroglyph.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*

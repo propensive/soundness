@@ -17,8 +17,8 @@
 package gastronomy
 
 import anticipation.*
-import prepositional.*
 import gossamer.*
+import prepositional.*
 
 object Md5:
   given JavaHashFunction in Md5 as hashFunction:

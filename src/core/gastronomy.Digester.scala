@@ -18,8 +18,8 @@ package gastronomy
 
 import scala.compiletime.*, ops.int.*
 
-import rudiments.*
 import prepositional.*
+import rudiments.*
 
 case class Digester(run: Digestion => Unit):
   def apply[HashType <: Algorithm](using function: HashFunction in HashType): Digest in HashType =

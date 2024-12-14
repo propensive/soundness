@@ -22,8 +22,8 @@ import javax.crypto as jc
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Crc32:

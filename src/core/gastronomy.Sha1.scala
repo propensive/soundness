@@ -17,8 +17,8 @@
 package gastronomy
 
 import anticipation.*
-import prepositional.*
 import gossamer.*
+import prepositional.*
 
 sealed trait Sha1 extends Algorithm:
   type Bits = 160
