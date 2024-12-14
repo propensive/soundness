@@ -16,11 +16,11 @@
 
 package metamorphose
 
+import contingency.*, strategies.throwUnsafely
+import gossamer.*
+import language.experimental.genericNumberLiterals
 import probably.*
 import rudiments.*
-import gossamer.*
-import contingency.*, strategies.throwUnsafely
-import language.experimental.genericNumberLiterals
 
 object Tests extends Suite(t"Metamorphose tests"):
   def run(): Unit =

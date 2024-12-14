@@ -19,9 +19,9 @@ package metamorphose
 import scala.collection.mutable.BitSet
 import scala.annotation.*
 
+import anticipation.*
 import contingency.*
 import rudiments.*
-import anticipation.*
 
 object Permutation:
 
