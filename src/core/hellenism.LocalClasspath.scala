@@ -57,4 +57,5 @@ extends Classpath:
       case ClasspathEntry.Directory(directory) => List(directory)
       case ClasspathEntry.Jar(jar)             => List(jar)
       case _                                   => Nil
-    .join(unsafely(Properties.path.separator()))
+
+    . join(unsafely(Properties.path.separator()))
