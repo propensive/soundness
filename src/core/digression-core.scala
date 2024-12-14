@@ -16,8 +16,8 @@
 
 package digression
 
-import fulminate.*
 import anticipation.*
+import fulminate.*
 
 import language.experimental.captureChecking
 

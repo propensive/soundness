@@ -16,10 +16,10 @@
 
 package digression
 
-import rudiments.*
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 
 import language.experimental.captureChecking
 

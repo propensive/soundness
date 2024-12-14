@@ -16,12 +16,12 @@
 
 package digression
 
+import anticipation.*
+import eucalyptus.*, logging.stdout
+import fulminate.*
+import gossamer.*
 import probably.*
 import rudiments.*
-import anticipation.*
-import gossamer.*
-import fulminate.*
-import eucalyptus.*, logging.stdout
 
 import unsafeExceptions.canThrowAny
 
