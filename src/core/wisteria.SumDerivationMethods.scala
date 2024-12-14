@@ -80,7 +80,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
     // Here label comes from context of fold's predicate
     fold[DerivationType, Variants, Labels](variantLabel, size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
-    .vouch(using Unsafe)
+
+    . vouch(using Unsafe)
 
   protected transparent inline def variant[DerivationType](sum: DerivationType)
      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
@@ -100,7 +101,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
     fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
-    .vouch(using Unsafe)
+
+    . vouch(using Unsafe)
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
      (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)

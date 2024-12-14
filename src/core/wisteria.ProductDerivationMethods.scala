@@ -40,7 +40,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     reflection.fromProduct:
       fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
-      .reverse
+
+      . reverse
 
   protected transparent inline def constructWith[ConstructorType[_]]
      (using requirement: ContextRequirement)
@@ -119,7 +120,8 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     fold[DerivationType, Fields, Labels, Optional[FieldType]](tuple, Unset, 0):
       accumulator => [FieldType2] => field =>
         if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
-    .vouch(using Unsafe)
+
+    . vouch(using Unsafe)
 
   protected transparent inline def fields[DerivationType <: Product](inline product: DerivationType)
      (using requirement: ContextRequirement)
