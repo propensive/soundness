@@ -17,11 +17,11 @@
 package harlequin
 
 import escapade.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
 import iridescence.*
 import spectacular.*
 import vacuous.*
-import gossamer.*
-import hieroglyph.*, textMetrics.uniform
 
 package syntaxHighlighting:
   import Accent.*

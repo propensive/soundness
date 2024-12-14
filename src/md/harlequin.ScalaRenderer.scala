@@ -18,8 +18,8 @@ package harlequin
 
 import anticipation.*
 import gossamer.*
-import punctuation.*
 import honeycomb.*
+import punctuation.*
 import vacuous.*
 
 object ScalaRenderer extends Renderer(t"scala"), CommonRenderer:

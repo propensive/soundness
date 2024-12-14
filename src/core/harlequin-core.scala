@@ -16,8 +16,8 @@
 
 package harlequin
 
-import rudiments.*
 import anthology.*
+import rudiments.*
 
 extension (range: CodeRange)
   def of(source: SourceCode): SourceCode =

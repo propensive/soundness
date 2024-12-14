@@ -16,11 +16,11 @@
 
 package harlequin
 
-import rudiments.*
 import anticipation.*
-import gossamer.*
-import vacuous.*
 import denominative.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
 

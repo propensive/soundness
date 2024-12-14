@@ -16,8 +16,8 @@
 
 package harlequin
 
-import probably.*
 import gossamer.*
+import probably.*
 
 object Tests extends Suite(t"Harlequin Tests"):
   def run(): Unit =
