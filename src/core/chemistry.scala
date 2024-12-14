@@ -205,7 +205,8 @@ object Molecule:
     orderedElements.map: (element, count) =>
       val number = if count == 1 then t"" else count.show.chars.map(_.subscript).sift[Char].map(_.show).join
       t"${element.symbol}$number"
-    .join+suffix
+
+    . join+suffix
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 
@@ -269,7 +270,8 @@ object ChemicalFormula:
   given show: Show[ChemicalFormula] = formula =>
     formula.molecules.to(List).map: (molecule, count) =>
       (if count == 1 then t"" else count.show)+molecule.show
-    .join(t" + ")
+
+    . join(t" + ")
 
 case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable:
   def formula: ChemicalFormula = this
@@ -277,7 +279,8 @@ case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable
   def atoms: Map[ChemicalElement, Int] =
     molecules.foldLeft(Molecule.empty):
       case (acc, (molecule, count)) => acc*(molecule**count)
-    .elements
+
+    . elements
 
 enum PhysicalState:
   case Solid, Liquid, Gas, Aqueous
