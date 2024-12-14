@@ -21,11 +21,11 @@ import language.experimental.captureChecking
 import java.util as ju
 
 import anticipation.*
-import vacuous.*
-import fulminate.*
-import rudiments.*
-import prepositional.*
 import contingency.*
+import fulminate.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
 
 object Uuid extends Extractor[Text, Uuid]:
   def parse(text: Text): Uuid raises UuidError = extract(text).or(raise(UuidError(text), Uuid(0L, 0L)))

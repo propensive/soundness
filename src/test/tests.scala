@@ -17,12 +17,12 @@
 package inimitable
 
 import anticipation.*
+import contingency.*
+import digression.*
 import gossamer.*
 import larceny.*
-import contingency.*
 import probably.*
 import rudiments.*
-import digression.*
 
 object Tests extends Suite(t"Inimitable Tests"):
   def run(): Unit =
