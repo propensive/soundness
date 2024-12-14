@@ -4,9 +4,9 @@ import scala.reflect.*
 
 import anticipation.*
 import denominative.*
+import hypotenuse.*
 import rudiments.*
 import vacuous.*
-import hypotenuse.*
 
 object Conduit:
   enum State:

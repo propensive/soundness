@@ -22,8 +22,8 @@ import java.io as ji
 import java.util.zip as juz
 
 import anticipation.*
-import rudiments.*
 import contingency.*
+import rudiments.*
 import vacuous.*
 
 trait Compression:

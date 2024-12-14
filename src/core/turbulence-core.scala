@@ -26,9 +26,9 @@ import capricious.*
 import contingency.*
 import hypotenuse.*
 import parasite.*, orphanDisposal.await
+import prepositional.*
 import rudiments.*
 import symbolism.*
-import prepositional.*
 import vacuous.*
 
 extension [ValueType](value: ValueType)

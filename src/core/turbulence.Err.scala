@@ -18,8 +18,8 @@ package turbulence
 
 import language.experimental.captureChecking
 
-import rudiments.*
 import anticipation.*
+import rudiments.*
 
 object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)

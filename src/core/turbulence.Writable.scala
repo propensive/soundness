@@ -22,8 +22,8 @@ import java.nio as jn
 import anticipation.*
 import contingency.*
 import hieroglyph.*
-import rudiments.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Writable:

@@ -16,14 +16,14 @@
 
 package turbulence
 
-import probably.*
+import anticipation.*
+import contingency.*, strategies.throwUnsafely
 import gossamer.*
+import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
+import parasite.*
+import probably.*
 import rudiments.*
 import spectacular.*
-import parasite.*
-import anticipation.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
-import contingency.*, strategies.throwUnsafely
 
 import scala.collection.mutable as scm
 
