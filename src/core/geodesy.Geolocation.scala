@@ -19,7 +19,8 @@ object Geolocation:
         case List(key, value) => (key, value)
         case Nil | List(_)    => raise(GeolocationError(MissingEquals)) yet Unset
         case _                => raise(GeolocationError(MultipleEquals)) yet Unset
-    .compact
+
+    . compact
 
   given (using Tactic[GeolocationError]) => Decoder[Geolocation] as decoder =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
