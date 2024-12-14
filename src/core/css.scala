@@ -84,7 +84,8 @@ extends CssStylesheet.Item:
 
     params.collect:
       case (key: Text, value: Text) => t"$key: $value;"
-    .join(t"@font-face { ", t" ", t" }")
+
+    . join(t"@font-face { ", t" ", t" }")
 
 case class Import(url: Text) extends CssStylesheet.Item:
   def text: Text = t"@import url('$url');"

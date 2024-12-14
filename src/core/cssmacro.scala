@@ -446,7 +446,8 @@ object ShowProperty:
 
   given ShowProperty[Font] = _.names.map: f =>
     if f.contains(t" ") then t"'$f'" else f
-  .join(t", ")
+
+  . join(t", ")
 
   //given ShowProperty[SimplePath] = path => t"url('${path}')"
 
