@@ -16,13 +16,13 @@
 
 package hellenism
 
-import java.net as jn
 import java.io as ji
+import java.net as jn
 
 import anticipation.*
 import contingency.*
-import serpentine.*
 import rudiments.*
+import serpentine.*
 import vacuous.*
 
 object Classloader:

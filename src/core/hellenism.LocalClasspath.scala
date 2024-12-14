@@ -19,9 +19,9 @@ package hellenism
 import ambience.*
 import anticipation.*
 import contingency.*
-import nomenclature.*
 import galilei.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
