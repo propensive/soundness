@@ -56,9 +56,10 @@ class LruCache[KeyType, ValueType](maxSize: Int):
     
     ids.getOrElse(key, Unset).let: oldId =>
       values(oldId).tap(touch(oldId, newId, key, _))
-    .or:
-      value.tap: value =>
-        values(newId) = value
-        ids(key) = newId
-        keys(newId) = key
-        evict()
+
+    . or:
+        value.tap: value =>
+          values(newId) = value
+          ids(key) = newId
+          keys(newId) = key
+          evict()
