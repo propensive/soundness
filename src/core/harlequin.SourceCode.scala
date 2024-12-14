@@ -93,10 +93,10 @@ object SourceCode:
           if lastEnd != start
           then
             text.segment(Ordinal.zerary(lastEnd) ~ Ordinal.natural(start))
-             .cut(t"\n")
-             .to(LazyList)
-             .flatMap(untab(_).filter(_.length > 0))
-             .init
+            . cut(t"\n")
+            . to(LazyList)
+            . flatMap(untab(_).filter(_.length > 0))
+            . init
 
           else LazyList()
 
@@ -109,7 +109,7 @@ object SourceCode:
             text.segment(Ordinal.zerary(start) ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
-            .init
+            . init
 
         unparsed #::: content #::: stream(end)
 

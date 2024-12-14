@@ -53,14 +53,16 @@ package syntaxHighlighting:
       val content = source(lineNo).map(_.teletype).join
       source.focus.mask:
         case ((startLine, _), (endLine, _)) => startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
-      .let: focus =>
-        e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋))  $content"
-      .or:
-        e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $error$content"
 
-    .join(e"", e"\n", markup)
+      . let: focus =>
+          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋))  $content"
+      . or:
+          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $error$content"
+
+    . join(e"", e"\n", markup)
 
   given SourceCode is Teletypeable as unnumbered = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
-    .join(e"\n")
+
+    . join(e"\n")
