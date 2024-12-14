@@ -16,24 +16,23 @@
 
 package ethereal
 
+import ambience.*
 import anticipation.*
+import contingency.*
+import eucalyptus.*
+import exoskeleton.*
+import fulminate.*
 import galilei.*
-
-import serpentine.*
-import rudiments.*
-import vacuous.*
+import gossamer.*
 import guillotine.*
 import hypotenuse.*
-import gossamer.*
 import nomenclature.*
-import exoskeleton.*
-import eucalyptus.*
-import turbulence.*
-import contingency.*
-import spectacular.*
 import prepositional.*
-import ambience.*
-import fulminate.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import turbulence.*
+import vacuous.*
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled

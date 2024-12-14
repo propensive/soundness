@@ -19,9 +19,9 @@ package example
 import soundness.*
 
 import executives.direct
-import unhandledErrors.stackTrace
 import parameterInterpretation.posix
 import threadModels.platform
+import unhandledErrors.stackTrace
 
 @main
 def run(): Unit = cliService:

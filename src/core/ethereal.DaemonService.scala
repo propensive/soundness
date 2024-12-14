@@ -16,12 +16,12 @@
 
 package ethereal
 
-import galilei.*
 import anticipation.*
-import rudiments.*
-import prepositional.*
-import serpentine.*
 import exoskeleton.*
+import galilei.*
+import prepositional.*
+import rudiments.*
+import serpentine.*
 
 import language.experimental.pureFunctions
 

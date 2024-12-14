@@ -17,8 +17,8 @@
 package ethereal
 
 import anticipation.*
-import rudiments.*
 import profanity.*
+import rudiments.*
 
 import language.experimental.pureFunctions
 

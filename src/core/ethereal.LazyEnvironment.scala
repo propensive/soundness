@@ -16,9 +16,9 @@
 
 package ethereal
 
-import gossamer.*
 import ambience.*
 import anticipation.*
+import gossamer.*
 import vacuous.*
 
 class LazyEnvironment(variables: List[Text]) extends Environment:

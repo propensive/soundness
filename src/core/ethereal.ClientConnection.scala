@@ -17,10 +17,10 @@
 package ethereal
 
 import anticipation.*
-import rudiments.*
 import contingency.*
 import parasite.*
 import profanity.*
+import rudiments.*
 import turbulence.*
 
 import java.net as jn
