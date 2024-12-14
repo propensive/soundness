@@ -16,12 +16,12 @@
 
 package quantitative
 
+import gossamer.{t, Decimalizer}
+import hypotenuse.*
+import larceny.*
 import probably.*
 import rudiments.*
-import gossamer.{t, Decimalizer}
-import larceny.*
 import spectacular.*
-import hypotenuse.*
 
 import language.strictEquality
 

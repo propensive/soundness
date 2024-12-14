@@ -16,13 +16,13 @@
 
 package quantitative
 
-import gossamer.*
-import rudiments.*
 import anticipation.*
+import gossamer.*
 import hypotenuse.*
-import symbolism.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
+import symbolism.*
 
 import scala.quoted.*
 

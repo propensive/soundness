@@ -16,12 +16,12 @@
 
 package quantitative
 
-import gossamer.*
 import anticipation.*
+import gossamer.*
 import spectacular.*
 
-import language.implicitConversions
 import language.experimental.captureChecking
+import language.implicitConversions
 
 trait UnitName[-ValueType]:
   def siPrefix: MetricPrefix = NoPrefix

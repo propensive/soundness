@@ -16,8 +16,8 @@
 
 package quantitative
 
-import language.implicitConversions
 import language.experimental.captureChecking
+import language.implicitConversions
 
 import rudiments.*
 

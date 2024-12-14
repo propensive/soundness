@@ -16,12 +16,12 @@
 
 package quantitative
 
-import rudiments.*
+import anticipation.*
 import fulminate.*
-import symbolism.*
 import hypotenuse.*
 import prepositional.*
-import anticipation.*
+import rudiments.*
+import symbolism.*
 
 import scala.quoted.*
 import scala.compiletime.*
