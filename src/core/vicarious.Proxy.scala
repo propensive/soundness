@@ -1,8 +1,8 @@
 package vicarious
 
 import anticipation.*
-import vacuous.*
 import prepositional.*
+import vacuous.*
 
 import language.dynamics
 
