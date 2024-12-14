@@ -16,8 +16,8 @@
 
 package savagery
 
-import probably.*
 import gossamer.*
+import probably.*
 import spectacular.*
 
 object Tests extends Suite(t"Savagery tests"):

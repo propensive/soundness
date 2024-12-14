@@ -16,18 +16,18 @@
 
 package savagery
 
-import rudiments.*
-import gossamer.*, decimalFormatters.java
+import anticipation.*
 import cardinality.*
 import cataclysm.{Float as _, Length as _, *}
 import contingency.*
-import quantitative.*
-import anticipation.*
-import spectacular.*
-import prepositional.*
+import gossamer.*, decimalFormatters.java
 import hieroglyph.*
-import xylophone.*
+import prepositional.*
+import quantitative.*
+import rudiments.*
+import spectacular.*
 import vacuous.*
+import xylophone.*
 
 extension (left: Float)
   @targetName("makeCoordinates")
