@@ -16,13 +16,13 @@
 
 package superlunary
 
-import guillotine.*
-import anthology.*
-import eucalyptus.*
-import contingency.*
-import rudiments.*
-import anticipation.*
 import ambience.*, systemProperties.virtualMachine
+import anthology.*
+import anticipation.*
+import contingency.*
+import eucalyptus.*
+import guillotine.*
+import rudiments.*
 
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType

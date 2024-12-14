@@ -16,15 +16,15 @@
 
 package superlunary
 
-import jacinta.*
-import gossamer.*
-import inimitable.*
-import anticipation.*
 import anthology.*
-import fulminate.*
+import anticipation.*
 import contingency.*
-import spectacular.*
+import fulminate.*
+import gossamer.*
 import hellenism.*, classloaders.threadContext
+import inimitable.*
+import jacinta.*
+import spectacular.*
 
 import scala.quoted.*
 

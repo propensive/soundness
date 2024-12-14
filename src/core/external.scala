@@ -16,20 +16,20 @@
 
 package superlunary
 
-import jacinta.*
-import serpentine.*, pathHierarchies.unix
-import anticipation.*
-import spectacular.*
-import digression.*
-import rudiments.*
-import vacuous.*
-import fulminate.*
-import gossamer.*
 import anthology.*
-import galilei.*
-import inimitable.*
+import anticipation.*
 import contingency.*
+import digression.*
+import fulminate.*
+import galilei.*
+import gossamer.*
 import hellenism.*
+import inimitable.*
+import jacinta.*
+import rudiments.*
+import serpentine.*, pathHierarchies.unix
+import spectacular.*
+import vacuous.*
 
 import scala.compiletime.*
 import scala.quoted.*
