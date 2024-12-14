@@ -23,8 +23,8 @@ import rudiments.*
 import spectacular.*
 
 import scala.quoted.*
+import scala.annotation.targetName
 
-import annotation.targetName
 import language.dynamics
 
 given Realm = realm"cataclysm"
