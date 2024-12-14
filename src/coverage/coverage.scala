@@ -79,7 +79,8 @@ case class CoverageResults(path: Text, spec: IArray[Juncture], oldHits: Set[Int]
     val index: Int = spec.lastIndexWhere(_.id == 0)
     spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
       path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-    .to(Map)
+
+    . to(Map)
 
 object Coverage:
   def apply(): Option[CoverageResults] = currentDir.map: dir =>

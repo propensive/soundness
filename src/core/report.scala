@@ -172,7 +172,8 @@ class TestReport(using Environment):
     suite.option.map: suite =>
       (resolve(suite.parent).tests(suite.id): @unchecked) match
         case suite@ReportLine.Suite(_, _) => suite
-    .getOrElse(lines)
+
+    . getOrElse(lines)
 
   private var coverage: Option[CoverageResults] = None
 
@@ -323,10 +324,11 @@ class TestReport(using Environment):
 
       val allHits = coverage.hits ++ coverage.oldHits
 
-      val junctures2 = coverage.structure.values.flatten
-          .to(List)
-          .filter(!_.covered(allHits))
-          .map(_.copy(children = Nil))
+      val junctures2 =
+        coverage.structure.values.flatten
+        . to(List)
+        . filter(!_.covered(allHits))
+        . map(_.copy(children = Nil))
 
       Table[(Surface, Teletype)](
         Column(e""): row =>
@@ -382,7 +384,9 @@ class TestReport(using Environment):
         Out.println:
           statuses.map[Teletype]: status =>
             gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
-          .join(e" ")
+
+          . join(e" ")
+
       Out.println(t"─"*72)
 
     def benches(line: ReportLine): Iterable[ReportLine.Bench] =
@@ -463,7 +467,9 @@ class TestReport(using Environment):
       Out.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
           e"$Bold(${webColors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
-        .grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
+
+        . grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
+
       Out.println(t"─"*74)
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
