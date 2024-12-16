@@ -23,7 +23,7 @@ import symbolism.*
 import vacuous.*
 
 case class YearMonth(year: Int, month: MonthName):
-  import compiletime.ops.int.*
+  import scala.compiletime.ops.int.*
 
 object YearMonth:
   given YearMonth is Subtractable as dayOfMonth:
