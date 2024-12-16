@@ -16,13 +16,12 @@
 
 package cardinality
 
-import compiletime.ops.double.*
+import scala.compiletime.*
+import scala.compiletime.ops.double.*
+import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-
-import scala.quoted.*
-import scala.compiletime.*
 
 object Cardinality:
   type Asym[ValueType <: Double, TrueValueType <: Double, FalseValueType <: Double] <: Double =
