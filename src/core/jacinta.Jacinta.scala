@@ -1,6 +1,6 @@
 package jacinta
 
-import compiletime.*
+import scala.compiletime.*
 
 import anticipation.*
 import denominative.*
