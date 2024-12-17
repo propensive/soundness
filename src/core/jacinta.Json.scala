@@ -112,7 +112,7 @@ trait Json2:
 
     inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
       variant(value): [VariantType <: DerivationType] =>
-        value => summonInline[Tactic[JsonError]].give:
+        value =>
           Json.ast:
             (context.encode(value).root.asMatchable: @unchecked) match
               case (labels, values) => (labels.asMatchable: @unchecked) match
