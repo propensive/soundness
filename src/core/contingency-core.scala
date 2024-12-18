@@ -188,7 +188,7 @@ extension [ValueType](optional: Optional[ValueType])
           : ValueType =
     optional.or(abort(error))
 
-  def lead[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+  def dare[ErrorType <: Exception](using DummyImplicit)[SuccessType]
      (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                   ValueType => SuccessType)
         : Optional[SuccessType] =
