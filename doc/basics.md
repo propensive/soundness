@@ -631,8 +631,8 @@ enum Language:
   case En(dialect: Dialect)
   case Eo
 ```
-The `allSingletons` method returns `true` if every case in a sum type is a
-singleton. This also applies to sealed traits of case objects.
+The `choice` method returns `true` if every case in a sum type is a
+singleton, that is a "straight choice" between them. This also applies to sealed traits of case objects.
 
 Here is an example of its use deriving `Show`:
 ```scala
@@ -647,12 +647,12 @@ object Show extends Derivation[Show]:
   inline def split[DerivationType: SumReflection]
           : Show[DerivationType] =
     value =>
-      inline if !allSingletons then compiletime.error("cannot derive") else
+      inline if !choice then compiletime.error("cannot derive") else
         variant(value): [VariantType <: DerivationType] =>
           variant => typeName.s+"."+variant.show
 ```
 
-Note that `inline if` is used to ensure that `allSingletons` is evaluated at
+Note that `inline if` is used to ensure that `choice` is evaluated at
 _compiletime_, enabling the error branch (`compiletime.error`) to be retained
 or eliminated. If it is retained, compilation will fail.
 

@@ -17,17 +17,21 @@
 package wisteria
 
 import anticipation.*
-import rudiments.*
-import vacuous.*
 import contingency.*
 import fulminate.*
+import rudiments.*
+import vacuous.*
 
 import scala.deriving.*
 import scala.compiletime.*
 
 trait SumDerivationMethods[TypeclassType[_]]:
 
+  @deprecated("This method has been renamed to `choice`")
   transparent inline def allSingletons[DerivationType: SumReflection]: Boolean =
+    choice[DerivationType]
+
+  transparent inline def choice[DerivationType: SumReflection]: Boolean =
     inline erasedValue[DerivationType.MirroredElemTypes] match
       case _: (variantType *: variantTypes) => all[variantType, variantTypes]
 
@@ -38,8 +42,8 @@ trait SumDerivationMethods[TypeclassType[_]]:
     case _                                 => false
 
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
-      (using variantIndex: Int & VariantIndex[VariantType],
-             reflection:   SumReflection[DerivationType])
+     (using variantIndex: Int & VariantIndex[VariantType],
+            reflection:   SumReflection[DerivationType])
           : Optional[VariantType] =
 
     type Labels = reflection.MirroredElemLabels
@@ -51,20 +55,20 @@ trait SumDerivationMethods[TypeclassType[_]]:
         if index == variantIndex then field.asInstanceOf[VariantType] else Unset
 
   protected inline def variantLabels[DerivationType]
-      (using reflection: SumReflection[DerivationType])
+     (using reflection: SumReflection[DerivationType])
           : List[Text] =
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
   protected transparent inline def delegate[DerivationType](label: Text)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          requirement.Optionality[TypeclassType[VariantType]] =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         requirement.Optionality[TypeclassType[VariantType]] =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -76,17 +80,18 @@ trait SumDerivationMethods[TypeclassType[_]]:
     // Here label comes from context of fold's predicate
     fold[DerivationType, Variants, Labels](variantLabel, size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
-    .vouch(using Unsafe)
+
+    . vouch(using Unsafe)
 
   protected transparent inline def variant[DerivationType](sum: DerivationType)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          VariantType =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         VariantType =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -96,19 +101,20 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
     fold[DerivationType, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
       [VariantType <: DerivationType] => variant => lambda[VariantType](variant)
-    .vouch(using Unsafe)
+
+    . vouch(using Unsafe)
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          requirement.Optionality[TypeclassType[VariantType]] =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label:   Text,
-                               index:   Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (inline inputLabel: Text, size: Int, index: Int, fallible: Boolean)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         requirement.Optionality[TypeclassType[VariantType]] =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label:   Text,
+                              index:   Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : Optional[ResultType] =
 
     inline erasedValue[VariantsType] match
@@ -139,19 +145,19 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType](inputLabel), Unset)(using summonInline[Tactic[VariantError]])
-        else throw Panic(m"Should be unreachable")
+        else panic(m"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-      (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
-      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
-      (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
-      [ResultType]
-      (inline lambda: [VariantType <: DerivationType] =>
-                          VariantType =>
-                              (context: requirement.Optionality[TypeclassType[VariantType]],
-                               label: Text,
-                               index: Int & VariantIndex[VariantType]) ?=>
-                                  ResultType)
+     (inline sum: DerivationType, size: Int, index: Int, fallible: Boolean)
+     (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
+     (inline predicate: (label: Text, index: Int & VariantIndex[DerivationType]) ?=> Boolean)
+     [ResultType]
+     (inline lambda: [VariantType <: DerivationType] =>
+                         VariantType =>
+                             (context: requirement.Optionality[TypeclassType[VariantType]],
+                              label: Text,
+                              index: Int & VariantIndex[VariantType]) ?=>
+                                 ResultType)
           : Optional[ResultType] =
 
     inline erasedValue[VariantsType] match
@@ -179,6 +185,6 @@ trait SumDerivationMethods[TypeclassType[_]]:
       case _ =>
         inline if fallible
         then raise(VariantError[DerivationType]("".tt), Unset)(using summonInline[Tactic[VariantError]])
-        else throw Panic(m"Should be unreachable")
+        else panic(m"Should be unreachable")
 
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]

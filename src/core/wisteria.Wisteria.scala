@@ -35,8 +35,10 @@ object Wisteria:
     productSymbol.flatMap: symbol =>
       symbol.companionClass.declaredMethod(methodName).headOption.map: method =>
         Ref(symbol.companionModule).select(method)
-    .map: selection =>
-      TypeRepr.of[ProductType].typeArgs match
-        case Nil  => selection
-        case args => selection.appliedToTypes(args)
-    .map(_.asExprOf[FieldType]).getOrElse('{Unset})
+
+    . map: selection =>
+        TypeRepr.of[ProductType].typeArgs match
+          case Nil  => selection
+          case args => selection.appliedToTypes(args)
+
+    . map(_.asExprOf[FieldType]).getOrElse('{Unset})

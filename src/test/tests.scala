@@ -17,8 +17,8 @@
 package wisteria
 
 import anticipation.*
-import rudiments.*
 import contingency.*
+import rudiments.*
 import vacuous.*
 
 import scala.util.Try
@@ -27,6 +27,23 @@ import scala.deriving.Mirror.SumOf
 
 //object Month:
   //given Presentation[Month] = _.toString.tt
+
+object SumOnly extends SumDerivation[SumOnly]:
+
+  given SumOnly[SumOnlyEnum.Alpha] = alpha => println(s"$alpha is an alpha")
+  given SumOnly[SumOnlyEnum.Beta] = beta => println(s"$beta is a beta")
+
+  inline def split[DerivationType: SumReflection]: SumOnly[DerivationType] =
+    value => variant(value):
+      [VariantType <: DerivationType] => value =>
+        context.applyTo(value)
+
+trait SumOnly[Type]:
+  def applyTo(value: Type): Unit
+
+enum SumOnlyEnum:
+  case Alpha(n: Int)
+  case Beta(n: String)
 
 enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
@@ -78,19 +95,16 @@ object Readable extends Derivation[Readable]:
   given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    IArray.from(text.s.split(",")).pipe: 
-      array =>
-        construct: 
-          [FieldType] =>
-            readable =>
-              if index < array.length then readable.read(array(index).tt) else default().or:
-                ???
+    IArray.from(text.s.split(",")).pipe: array =>
+      construct: [FieldType] =>
+        readable =>
+          if index < array.length then readable.read(array(index).tt) else default().or:
+            ???
 
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
     text.s.split(":").to(List).map(_.tt) match
-      case List(variant, text2) => delegate(variant): 
-        [VariantType <: DerivationType] =>
-          context => context.read(text2)
+      case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
+        context => context.read(text2)
 
 trait Readable[ValueType]:
   def read(text: Text): ValueType
@@ -168,9 +182,8 @@ object Show extends Derivation[Show] {
 
   inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
     inline if allSingletons then
-      variant(value): 
-        [VariantType <: DerivationType] =>
-          variant => typeName.s+"."+variant.show
+      variant(value): [VariantType <: DerivationType] =>
+        variant => typeName.s+"."+variant.show
     else
       compiletime.error("cannot derive Show for adt")
 }
@@ -250,8 +263,4 @@ def main(): Unit =
   val showForSimple = summon[Show[Simple]]
   println(showForSimple.show(Simple.Second))
   // TODO: remove or adjust
-  // val compilationError = summon[Show[Adt]]
-  val producerForSimple = summon[Producer[Simple]]
-  println(producerForSimple.produce("First"))
-
-
+  val compilationError = summon[Show[Adt]]
