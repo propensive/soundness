@@ -24,42 +24,27 @@ import scala.quoted.*
 
 import language.dynamics
 
-object TagType:
-  given TagType[?, ?, ?] is GenericCssSelection = _.labelString.tt
+object ClearTag:
+  given ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
-open case class TagType[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
+case class ClearTag[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
    (labelString: NameType,
-    unclosed:    Boolean  = false,
-    block:       Boolean  = true,
-    verbatim:    Boolean  = false)
+    unclosed:    Boolean = false,
+    block:       Boolean = true,
+    verbatim:    Boolean = false)
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
   def label: Text = labelString.tt
 
-  def preset(presetAttributes: (String, Text)*): TagType[NameType, ChildType, AttributeType] =
-    new TagType[NameType, ChildType, AttributeType](labelString, unclosed, block, verbatim):
-      override def attributes: Attributes = presetAttributes.to(Map)
-
-  type Content = ChildType
-
   inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
           : StartTag[NameType, ChildType] =
 
     ${  Honeycomb.read[NameType, ChildType, ChildType]('this, 'method, 'labelString, 'attributes)  }
 
-  def applyDynamic(method: String)(children: (Optional[Html[ChildType]] | Seq[Html[ChildType]])*)
-          : Element[NameType] =
-    method match
-      case "apply" =>
-        Element(labelString, unclosed, block, verbatim, attributes, children)
+  def applyDynamic[Return <: Label](method: "apply")
+     (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
+          : Element[Return] =
 
-      case className =>
-        Element
-         (labelString,
-          unclosed,
-          block,
-          verbatim,
-          attributes.updated("class", className.tt),
-          children)
+    Element(labelString, unclosed, block, verbatim, Map(), children)

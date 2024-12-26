@@ -8,8 +8,8 @@ export honeycomb.{cls, id, A, Abbr, Address, Area, Article, Aside, Audio, B, Bas
     Output, P, Param, Picture, Pre, Progress, Q, Rb, Rp, Rt, Ruby, S, Samp, Script, Section, Select,
     Slot, Small, Source, Span, Strong, Style, Sub, Summary, Sup, Table, Tbody, Td, Template,
     Textarea, Tfoot, Th, Thead, Time, Title, Tr, Track, U, Ul, Var, Video, Wbr, Attributes,
-    Autocomplete, Capture, ClearTagType, Crossorigin, CssClass, DomId, Element, Embedded,
+    Autocomplete, Capture, ClearTag, Crossorigin, CssClass, DomId, Element, Embedded,
     EventHandlers, Flow, Global, HDir, Heading, Honeycomb, Html, HtmlAttribute, HtmlDoc,
     HtmlSerializer, HtmlXml, HttpEquiv, Interactive, Kind, Metadata, Method, Node, NonInteractive,
     Palpable, Phrasing, Preload, Rel, Rev, Sandbox, Scope, ScriptSupporting, Sectioning, Shape,
-    StartTag, TagType, Target, Wrap}
+    StartTag, Tag, Target, Wrap}
