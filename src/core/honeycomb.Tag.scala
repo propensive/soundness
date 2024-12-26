@@ -28,10 +28,7 @@ object Tag:
   given Tag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 open case class Tag[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
-   (labelString: NameType,
-    unclosed:    Boolean  = false,
-    block:       Boolean  = true,
-    verbatim:    Boolean  = false)
+   (labelString: NameType)
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
@@ -39,7 +36,7 @@ extends Node[NameType], Dynamic:
   def label: Text = labelString.tt
 
   def preset(presetAttributes: (String, Text)*): Tag[NameType, ChildType, AttributeType] =
-    new Tag[NameType, ChildType, AttributeType](labelString, unclosed, block, verbatim):
+    new Tag[NameType, ChildType, AttributeType](labelString):
       override def attributes: Attributes = presetAttributes.to(Map)
 
   type Content = ChildType
@@ -52,14 +49,5 @@ extends Node[NameType], Dynamic:
   def applyDynamic(method: String)(children: (Optional[Html[ChildType]] | Seq[Html[ChildType]])*)
           : Element[NameType] =
     method match
-      case "apply" =>
-        Element(labelString, unclosed, block, verbatim, attributes, children)
-
-      case className =>
-        Element
-         (labelString,
-          unclosed,
-          block,
-          verbatim,
-          attributes.updated("class", className.tt),
-          children)
+      case "apply"   => Element(labelString, attributes, children)
+      case className => Element(labelString, attributes.updated("class", className.tt), children)

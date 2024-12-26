@@ -27,14 +27,11 @@ object Element:
   @targetName("make")
   def apply[NodeType <: Label, ChildType <: Label]
      (labelString: String,
-      unclosed:    Boolean,
-      block:       Boolean,
-      verbatim:    Boolean,
       attributes:  Attributes,
       children:    Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]] = Nil)
           : Element[NodeType] =
 
-    new Element(labelString, unclosed, block, verbatim, attributes, flatten(children))
+    new Element(labelString, attributes, flatten(children))
 
   private def flatten[ChildType <: Label]
      (nodes: Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]])
@@ -46,18 +43,13 @@ object Element:
       case node: Html[ChildType] @unchecked     => Seq(node)
 
 case class Element[+NameType <: Label]
-   (labelString: String,
-    unclosed:    Boolean,
-    tagBlock:    Boolean,
-    verbatim:    Boolean,
-    attributes:  Map[String, Optional[Text]],
-    children:    Seq[Html[?]])
+   (labelString: String, attributes: Map[String, Optional[Text]], children: Seq[Html[?]])
 extends Node[NameType]:
 
   def label: Text = labelString.show
 
-  val block: Boolean = tagBlock || children.exists: child =>
-    (child: @unchecked) match
-      case node: Node[?] => node.block
-      case _: Text       => false
-      case _: Int        => false
+  // val block: Boolean = tagBlock || children.exists: child =>
+  //   (child: @unchecked) match
+  //     case node: Node[?] => node.block
+  //     case _: Text       => false
+  //     case _: Int        => false

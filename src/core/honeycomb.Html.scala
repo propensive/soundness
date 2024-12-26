@@ -28,9 +28,21 @@ object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
   def children: Seq[Html[?]] = Nil
-  def block: Boolean = true
-  def unclosed: Boolean = false
-  def verbatim: Boolean = false
 
   def apply(head: Node["head"], body: Node["body"]): Element["html"] =
-    Element(label.s, unclosed, block, verbatim, Map(), Seq(head, body))
+    Element(label.s, Map(), Seq(head, body))
+
+  private[honeycomb] val unclosedElements: Set[Text] =
+    Set
+     (t"br", t"hr", t"iframe", t"img", t"input", t"link", t"meta", t"option", t"param", t"template")
+
+  private[honeycomb] val verbatimElements: Set[Text] = Set(t"pre", t"script", t"textarea")
+
+  private[honeycomb] val inlineElements: Set[Text] =
+    Set
+     (t"a", t"abbr", t"area", t"audio", t"b", t"base", t"bdi", t"bdo", t"br", t"button", t"canvas",
+      t"cite", t"code", t"col", t"data", t"datalist", t"del", t"dfn", t"em", t"embed", t"map",
+      t"hr", t"i", t"iframe", t"img", t"input", t"ins", t"kbd", t"label", t"link", t"mark", t"meta",
+      t"meter", t"noscript", t"object", t"output", t"picture", t"pre", t"progress", t"q", t"ruby",
+      t"s", t"samp", t"script", t"select", t"slot", t"small", t"span", t"strong", t"sub", t"sup",
+      t"template", t"textarea", t"time", t"u", t"var", t"video", t"wbr")

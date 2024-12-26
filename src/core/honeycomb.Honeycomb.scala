@@ -64,9 +64,6 @@ object Honeycomb:
         '{
             StartTag
              ($name,
-              $node.unclosed,
-              $node.block,
-              $node.verbatim,
               $node.attributes ++ ${Expr.ofSeq(recur(exprs))}.compact.collect:
                 case (key, value: Text) => (key, value)
                 case (key, Unset)       => (key, Unset))  }

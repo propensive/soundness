@@ -17,7 +17,7 @@ object Renderable:
         val attributes2 = attributes.map(_.s -> _).to(Map)
         val children2 = children.map(convert(_))
 
-        Node(label, attributes2, children2, false, false, false)
+        Node(label, attributes2, children2)
 
 trait Renderable:
   type Self

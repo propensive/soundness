@@ -28,10 +28,7 @@ object ClearTag:
   given ClearTag[?, ?, ?] is GenericCssSelection = _.labelString.tt
 
 case class ClearTag[+NameType <: Label, ChildType <: Label, AttributeType <: Label]
-   (labelString: NameType,
-    unclosed:    Boolean = false,
-    block:       Boolean = true,
-    verbatim:    Boolean = false)
+   (labelString: NameType)
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
@@ -47,4 +44,4 @@ extends Node[NameType], Dynamic:
      (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
           : Element[Return] =
 
-    Element(labelString, unclosed, block, verbatim, Map(), children)
+    Element(labelString, Map(), children)

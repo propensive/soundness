@@ -34,14 +34,10 @@ object StartTag:
     t"${elem.label}$tail"
 
 case class StartTag[+NameType <: Label, ChildType <: Label]
-   (labelString: NameType,
-    unclosed:    Boolean,
-    block:       Boolean,
-    verbatim:    Boolean,
-    attributes:  Attributes)
+   (labelString: NameType, attributes: Attributes)
 extends Node[NameType]:
   def children = Nil
   def label: Text = labelString.tt
 
   def apply(children: (Optional[Html[ChildType]] | Seq[Html[ChildType]])*): Element[NameType] =
-    Element(labelString, unclosed, block, verbatim, attributes, children)
+    Element(labelString, attributes, children)
