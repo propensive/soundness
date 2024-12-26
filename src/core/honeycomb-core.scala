@@ -17,8 +17,6 @@
 package honeycomb
 
 import anticipation.*
-import gossamer.*
-import rudiments.*
 
 import language.dynamics
 
