@@ -41,4 +41,4 @@ object Digression:
       "finally", "long", "strictfp", "volatile", "const", "float", "native", "super", "while")
 
   def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
-    abandonment('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
+    haltingly('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
