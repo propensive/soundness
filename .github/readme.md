@@ -23,6 +23,7 @@ _Hypotenuse_ has the goal of improving the safety and aesthetics of working with
 
 
 
+
 ## Getting Started
 
 ### Philosophy
@@ -132,7 +133,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Hypotenuse is designed to be _small_. Its entire source code currently consists
-of 1579 lines of code.
+of 1581 lines of code.
 
 ## Building
 
