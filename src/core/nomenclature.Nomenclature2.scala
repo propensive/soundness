@@ -56,7 +56,7 @@ object Nomenclature2:
           : CompanionType =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: CompanionType => module
-      case _                     => abandon(m"The companion object did not have the expected type.")
+      case _                     => halt(m"The companion object did not have the expected type.")
 
   def parse[PlatformType: Type, NameType <: String: Type](using Quotes): Expr[Name[PlatformType]] =
     import quotes.reflect.*
@@ -69,13 +69,13 @@ object Nomenclature2:
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
               case ConstantType(StringConstant(text)) => text.tt
-              case _ => abandon(m"Bad type")
-            case _                                                        => abandon(m"Bad type")
+              case _ => halt(m"Bad type")
+            case _                                                        => halt(m"Bad type")
           val rule = companion[Rule](repr.typeSymbol)
           if !rule.check(name, text)
-          then abandon(m"the name is not valid because it ${rule.describe(text)}")
+          then halt(m"the name is not valid because it ${rule.describe(text)}")
       case _ =>
-        abandon(m"Could not access constraint")
+        halt(m"Could not access constraint")
 
 
     '{${Expr(name)}.asInstanceOf[Name[PlatformType]]}
