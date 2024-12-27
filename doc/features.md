@@ -1,4 +1,5 @@
 - simple interface for creating and running tasks
-- ideally suited for use on Java 20+
+- supports platform or virtual threads
 - asynchronous tasks form an intuitive hierarchy
-- capture checking avoids thread leakage
+- safe hierarchical cancellation
+- ready for capture checking for improved resource safety
