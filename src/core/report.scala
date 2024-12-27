@@ -500,10 +500,11 @@ class TestReport(using Environment):
             Out.println(cmp.teletype)
 
           case DebugInfo.Captures(map) =>
-            Table[(Text, Text), Teletype](
-              Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
-              Column(e"Value")(_(1)),
-            ).tabulate(map.to(List)).grid(140).render.each(Out.println(_))
+            Table[(Text, Text), Teletype]
+             (Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
+              Column(e"Value")(_(1)))
+
+            . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
 
           case DebugInfo.Message(text) =>
             Out.println(text)
