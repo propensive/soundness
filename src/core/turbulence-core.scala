@@ -98,8 +98,8 @@ extension [ElementType](stream: LazyList[ElementType])
 
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] =
       stream.flow(LazyList()):
-        val delay = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
-        if delay.milliseconds > 0 then sleep(delay)
+        val duration2 = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
+        if duration2.milliseconds > 0 then snooze(duration2)
         stream
 
     async(recur(stream, System.currentTimeMillis)).await()

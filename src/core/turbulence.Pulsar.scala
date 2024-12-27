@@ -27,6 +27,6 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
 
   def stream(using Monitor): LazyList[Unit] =
     if !continue then LazyList() else try
-      sleep(duration)
+      snooze(duration)
       () #:: stream
     catch case err: AsyncError => LazyList()
