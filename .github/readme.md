@@ -21,6 +21,7 @@ follow a hierarchical pattern.
 
 
 
+
 ## Getting Started
 
 The type `Root` defines a "root", beneath which any number of possible `Path` instances may exist in
@@ -100,7 +101,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Serpentine is designed to be _small_. Its entire source code currently consists
-of 950 lines of code.
+of 402 lines of code.
 
 ## Building
 
