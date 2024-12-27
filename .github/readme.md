@@ -21,6 +21,7 @@ and writing files within a ZIP archive, in a streaming or random access style.
 
 
 
+
 ## Getting Started
 
 ### Creating a ZIP file
@@ -85,7 +86,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Zeppelin is designed to be _small_. Its entire source code currently consists
-of 203 lines of code.
+of 201 lines of code.
 
 ## Building
 
