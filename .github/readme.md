@@ -22,6 +22,7 @@ a few useful methods for working with `LazyList`s for streaming data as bytes, c
 
 
 
+
 ## Getting Started
 
 ## `LazyList`s
@@ -133,10 +134,10 @@ multiple sources into `LazyList`s; `Multiplexer`s merge streams.
 Finally, Turbulence provides implementations of GZIP and Zlib compression
 algorithms on byte streams.
 
-### Reading, Writing and Appending
+### Reading, Writing (and Appending)
 
 Turbulence defines four key typeclass interfaces related to streaming:
-`Readable`, `Writable`, `Appendable` and `Aggregable`, and
+`Readable`, `Writable` and `Aggregable`, and
 
 #### `Funnel`s
 
@@ -309,7 +310,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Turbulence is designed to be _small_. Its entire source code currently consists
-of 1050 lines of code.
+of 1025 lines of code.
 
 ## Building
 
