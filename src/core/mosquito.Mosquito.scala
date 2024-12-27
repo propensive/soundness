@@ -89,6 +89,21 @@ object Mosquito:
 
       recur(left)
 
+    def unitVector[SquareType]
+       (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
+              addable:       SquareType is Addable by SquareType into SquareType,
+              rootable:      SquareType is Rootable[2] into LeftType,
+              divisible:     LeftType is Divisible by LeftType into Double)
+            : Vector[Double, SizeType] =
+
+      val magnitude: LeftType = left.norm
+
+      def recur(tuple: Tuple): Tuple = tuple match
+        case head *: tail => (head.asInstanceOf[LeftType]/magnitude) *: recur(tail)
+        case _            => EmptyTuple
+
+      recur(left)
+
     @targetName("add")
     def + [RightType](right: Vector[RightType, SizeType])
        (using addition: LeftType is Addable by RightType)
