@@ -277,7 +277,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
   application(using executives.direct(using unhandledErrors.silent))(Nil):
     import stdioSources.virtualMachine.ansi
-    import orphanDisposal.await
+    import asyncTermination.await
 
     Hook.onShutdown:
       portFile.wipe()
