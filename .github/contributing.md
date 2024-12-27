@@ -1,13 +1,13 @@
 <img src="/doc/images/200x200.png" align="right">
 
-# Contributing to Rudiments
+# Contributing to Burdock
 
-Firstly, thank you for taking an interesting in contributing! Rudiments is an
+Firstly, thank you for taking an interesting in contributing! Burdock is an
 open-source project, and welcomes contributions in the form of feature code,
 bug reports and fixes, tests, feature suggestions and anything else which may
 help to make it better software.
 
-Rudiments is one of a large number of
+Burdock is one of a large number of
 [Soundness](https://github.com/propensive/soundness/) projects, which benefit
 from having consistent integrations and automated admin tasks. These will be
 developed across all projects simultaneously, and there's a roadmap for
@@ -29,7 +29,7 @@ save a lot of time.
 
 If a response is not forthcoming in the [Discord
 chatroom](https://discord.gg/MBUrkTgMnA), open a [GitHub
-issue](https://github.com/propensive/rudiments/issues) or contact the project
+issue](https://github.com/propensive/burdock/issues) or contact the project
 maintainer directly _but publicly_. Please __do not__ contact the maintainer
 about technical issues privately, as it misses a good opportunity to share
 knowledge with a wider audience, unless there is a good reason to do so. Jon
@@ -37,14 +37,14 @@ Pretty can usually be contacted [on X](https://x.com/propensive).
 
 All development work&mdash;whether bugfixing or implementing new
 features&mdash;should have a corresponding issue before work starts. If you
-have commit rights to the `propensive/rudiments` repository, push to a branch named
+have commit rights to the `propensive/burdock` repository, push to a branch named
 after the issue number, prefixed with `issue/`, for example, `issue/23`.
 
 ## Contribution standards
 
 Pull requests should try to follow the coding style of existing code in the
 repository. They are unlikely to be rejected on grounds of formatting, except
-in extreme cases. Rudiments does not use automatic code-formatting because it
+in extreme cases. Burdock does not use automatic code-formatting because it
 has proven to produce unreliable and unsatisfactory results (and furthermore,
 hand-formatting is not particularly laborious).
 
@@ -79,7 +79,7 @@ if it&rsquo;s needed.
 
 Contributors and other participants in online discussions are expected to be
 civil, on-topic and to nurture a pleasant development environment for all
-Rudiments&rsquo;s users. Individualism is valued, and nobody should feel
+Burdock&rsquo;s users. Individualism is valued, and nobody should feel
 constrained in how they express themselves, as long as they adhere to the
 expectations.
 
