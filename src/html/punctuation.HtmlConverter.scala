@@ -32,7 +32,7 @@ open class HtmlConverter(renderers: Renderer*):
   private val headings = IArray(H1, H2, H3, H4, H5, H6)
 
   private def heading(level: 1 | 2 | 3 | 4 | 5 | 6, children: Seq[Markdown.Ast.Inline]) =
-    headings(level - 1)(id = slug(text(children)))(children.flatMap(phrasing))
+    headings(level - 1)(id = DomId(slug(text(children))))(children.flatMap(phrasing))
 
   def blockify(nodes: Seq[Markdown.Ast.Node]): Seq[Markdown.Ast.Block] =
     val acc = nodes.foldLeft((true, List[Markdown.Ast.Block]())):
