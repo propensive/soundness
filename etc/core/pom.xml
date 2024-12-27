@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>hallucination-core</artifactId>
-  <version>0.23.0</version>
+  <version>0.24.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,12 +25,12 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>escapade-core</artifactId>
-      <version>0.23.0</version>
+      <version>0.24.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>gesticulate-core</artifactId>
-      <version>0.23.0</version>
+      <version>0.24.0</version>
     </dependency>
   </dependencies>
   <organization>
