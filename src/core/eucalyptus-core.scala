@@ -23,7 +23,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
-import parasite.*, orphanDisposal.cancel
+import parasite.*, asyncTermination.cancel
 import prepositional.*
 import rudiments.*
 import spectacular.*
