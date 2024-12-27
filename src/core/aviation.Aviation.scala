@@ -25,21 +25,21 @@ object Aviation:
         val hour = d.toInt
         val minutes = ((d - hour) * 100 + 0.5).toInt
 
-        if minutes >= 60 then abandon(m"a time cannot have a minute value above 59", lit.pos)
-        if hour < 0 then abandon(m"a time cannot be negative", lit.pos)
-        if hour > 12 then abandon(m"a time cannot have an hour value above 12", lit.pos)
+        if minutes >= 60 then halt(m"a time cannot have a minute value above 59", lit.pos)
+        if hour < 0 then halt(m"a time cannot be negative", lit.pos)
+        if hour > 12 then halt(m"a time cannot have an hour value above 12", lit.pos)
 
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
 
         if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then abandon(m"the time should have exactly two minutes digits", lit.pos)
+        then halt(m"the time should have exactly two minutes digits", lit.pos)
 
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Clockface(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}
 
       case _ =>
-        abandon(m"expected a literal double value")
+        halt(m"expected a literal double value")
 
   object Date:
     erased given Underlying[Date, Int] as underlying = ###
