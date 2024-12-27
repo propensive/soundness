@@ -46,7 +46,7 @@ object Contingency:
           case _                                   => Nil
 
       case other =>
-        abandon(m"unexpected AST: ${other.toString}")
+        halt(m"unexpected AST: ${other.toString}")
 
   private def mapping[ErrorType <: Exception: Type](using Quotes)
      (handler: quotes.reflect.Term)
@@ -61,15 +61,15 @@ object Contingency:
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
+        params.zip(types).all(exhaustive) || halt(m"bad pattern")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || abandon(m"bad pattern")
+        params.zip(types).all(exhaustive) || halt(m"bad pattern")
 
       case other =>
-        abandon(m"bad pattern")
+        halt(m"bad pattern")
 
     def unpack(repr: TypeRepr): Set[TypeRepr] = repr.asMatchable match
       case OrType(left, right) => unpack(left) ++ unpack(right)
@@ -81,17 +81,17 @@ object Contingency:
       case Typed(_, matchType)   => List(matchType.tpe)
       case Bind(_, pattern)      => patternType(pattern)
       case Alternatives(patters) => patters.flatMap(patternType)
-      case Wildcard()            => abandon(m"wildcard")
+      case Wildcard()            => halt(m"wildcard")
 
       case Unapply(select, _, _) =>
         if exhaustive(pattern, TypeRepr.of[ErrorType]) then List(TypeRepr.of[ErrorType])
-        else abandon(m"Unapply ${select.symbol.declaredType.toString}")
+        else halt(m"Unapply ${select.symbol.declaredType.toString}")
 
       case TypedOrTest(Unapply(Select(target, method), _, _), typeTree) =>
         if exhaustive(pattern, typeTree.tpe) then List(typeTree.tpe) else Nil
 
       case other =>
-        abandon(m"this pattern could not be recognized as a distinct `Error` type")
+        halt(m"this pattern could not be recognized as a distinct `Error` type")
 
     caseDefs(handler).flatMap:
       case CaseDef(pattern, _, rhs) => (rhs.asExpr: @unchecked) match
@@ -206,9 +206,9 @@ object Contingency:
                     '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
 
                   case None =>
-                    abandon(m"There is no available handler for ${TypeRepr.of[errorType].show}")
+                    halt(m"There is no available handler for ${TypeRepr.of[errorType].show}")
         case _ =>
-          abandon(m"argument to `tend` should be a partial function implemented as match cases")
+          halt(m"argument to `tend` should be a partial function implemented as match cases")
 
       val method = TypeRepr.of[ContextType[ResultType]].typeSymbol.declaredMethod("apply").head
       lambda.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[ResultType]
@@ -229,8 +229,7 @@ object Contingency:
                 case Apply(_, List(Inlined(_, _, matches))) => matches
 
                 case _ =>
-                  abandon
-                   (m"argument to `mend` should be a partial function implemented as match cases")
+                  halt(m"argument to `mend` should be a partial function implemented as match cases")
 
               val pfExpr = partialFunction.asExprOf[Exception ~> ResultType]
 
@@ -260,7 +259,7 @@ object Contingency:
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other => abandon:
+                case other => halt:
                   m"argument to `accrue` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
@@ -301,7 +300,7 @@ object Contingency:
                 case Apply(_, List(_, Block(List(DefDef(_, _, _, Some(block))), _))) =>
                   mapping(unwrap(block))
 
-                case other => abandon:
+                case other => halt:
                   m"argument to `track` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
