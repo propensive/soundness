@@ -22,6 +22,7 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 
 
 
+
 ## Getting Started
 
 ### Parsing
@@ -226,7 +227,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Xylophone is designed to be _small_. Its entire source code currently consists
-of 658 lines of code.
+of 662 lines of code.
 
 ## Building
 
