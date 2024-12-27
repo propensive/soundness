@@ -34,6 +34,7 @@ libraryDependencies += "dev.soundness" % "dendrology-dag" % "0.2.0"
 
 
 
+
 ## Getting Started
 
 Dendrology can render tree-like structures as text, such as the following,
@@ -203,7 +204,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Dendrology is designed to be _small_. Its entire source code currently consists
-of 205 lines of code.
+of 211 lines of code.
 
 ## Building
 
