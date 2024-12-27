@@ -25,6 +25,7 @@ Feudalism implements a generic `Mutex` type which guarantees these constraints.
 
 
 
+
 ## Getting Started
 
 ### Creating a new Mutex
@@ -61,7 +62,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Feudalism is designed to be _small_. Its entire source code currently consists
-of 100 lines of code.
+of 108 lines of code.
 
 ## Building
 
