@@ -25,6 +25,7 @@ unrepresentable, which is contravened when media types are represented by string
 
 
 
+
 ## Getting Started
 
 ### `MediaType`
@@ -112,7 +113,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Gesticulate is designed to be _small_. Its entire source code currently consists
-of 294 lines of code.
+of 440 lines of code.
 
 ## Building
 
