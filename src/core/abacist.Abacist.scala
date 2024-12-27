@@ -1,4 +1,4 @@
-/*
+/b*
     Abacist, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
@@ -46,16 +46,16 @@ object Abacist:
             unitValue.value match
               case Some(unitValue) =>
                 if unitValue < 0
-                then abandon(m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative")
+                then halt(m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative")
                 else if unitValue >= max
-                then abandon(m"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
+                then halt(m"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
 
                 recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
 
               case None =>
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
-          case Nil => abandon:
+          case Nil => halt:
             m"${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units"
 
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
@@ -116,7 +116,7 @@ object Abacist:
     val lookupUnit = readUnitPower(TypeRepr.of[UnitType])
 
     val multiplier: Multiplier = multipliers[UnitsType].where(_.unitPower == lookupUnit).or:
-      abandon(m"the Count does not include this unit")
+      halt(m"the Count does not include this unit")
 
     '{(($value.longValue/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
 
@@ -132,7 +132,7 @@ object Abacist:
 
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
-            then abandon(m"""
+            then halt(m"""
               the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and ${current.name}
             """)
 
