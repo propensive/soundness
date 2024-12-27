@@ -48,7 +48,7 @@ object Hieroglyph:
     val context: StringContext = contextExpr.valueOrAbort
     Encoding.unapply(context.parts.head.tt) match
       case None =>
-        abandon(m"the encoding ${context.parts.head.tt} was not available")
+        halt(m"the encoding ${context.parts.head.tt} was not available")
 
       case Some(encoding) =>
         if !encoding.charset.isRegistered
@@ -66,4 +66,4 @@ object Hieroglyph:
     Unicode(name) match
       case char: Char => Expr(char)
       case text: Text => Expr(text)
-      case _          => abandon(m"the unicode character $name does not exist")
+      case _          => halt(m"the unicode character $name does not exist")
