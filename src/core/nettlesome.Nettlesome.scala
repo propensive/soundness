@@ -184,13 +184,13 @@ object Nettlesome:
     val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
-    else abandon(m"the TCP port number ${portNumber} is not in the range 1-65535")
+    else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
     val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
-    else abandon(m"the UDP port number ${portNumber} is not in the range 1-65535")
+    else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
 
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
