@@ -89,12 +89,12 @@ older than JDK 20.
 
 A task may be cancelled at any time, though cancellation is co-operative: it
 requires the body of the task to be written to expect possible cancellation.
-Within a task's body, the method `acquiesce()` may be called multiple times. For
-as long as the task is running normally, `acquiesce()` will do nothing. But if a
+Within a task's body, the method `relent()` may be called multiple times. For
+as long as the task is running normally, `relent()` will do nothing. But if a
 task is cancelled, the task will stop immediately, without a value being
 produced. Any `await()` calls on the task will throw a `CancelError`.
 
-However, this happens _only_ when `acquiesce()` is called, so if no such calls
+However, this happens _only_ when `relent()` is called, so if no such calls
 are run as the task is executing, that task cannot be cancelled, and it must
 execute to completion.
 
