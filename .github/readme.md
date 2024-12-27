@@ -28,6 +28,7 @@ for most purposes, and has the distinction that `debug` will always provide _som
 
 
 
+
 ## Getting Started
 
 All Spectacular terms and types are defined in the `spectacular` package:
@@ -186,7 +187,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Spectacular is designed to be _small_. Its entire source code currently consists
-of 439 lines of code.
+of 474 lines of code.
 
 ## Building
 
