@@ -37,6 +37,7 @@ Central repository. This will enable users of other build tools to use it.
 For the overeager, curious and impatient, see [building](#building).
 
 
+
 ## Getting Started
 
 All Contingency terms and types are defined in the `contingency` package:
@@ -410,7 +411,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Contingency is designed to be _small_. Its entire source code currently consists
-of 753 lines of code.
+of 643 lines of code.
 
 ## Building
 
