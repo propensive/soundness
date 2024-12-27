@@ -30,6 +30,7 @@ Central repository. This will enable users of other build tools to use it.
 For the overeager, curious and impatient, see [building](#building).
 
 
+
 ## Getting Started
 
 __Anticipation__ defines several typeclass interfaces to provide interoperability
@@ -199,7 +200,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Anticipation is designed to be _small_. Its entire source code currently consists
-of 394 lines of code.
+of 405 lines of code.
 
 ## Building
 
