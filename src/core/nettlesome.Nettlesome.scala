@@ -181,13 +181,13 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
+    val portNumber: Int = haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
     else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int = abandonment(context.valueOrAbort.parts.head.tt.decode[Int])
+    val portNumber: Int = haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
     else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
@@ -195,7 +195,7 @@ object Nettlesome:
   def ip(context: Expr[StringContext])(using Quotes): Expr[Ipv4 | Ipv6] =
     val text = Text(context.valueOrAbort.parts.head)
 
-    abandonment:
+    haltingly:
       if text.contains(t".") then
         val ipv4 = Ipv4.parse(text)
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
@@ -204,7 +204,7 @@ object Nettlesome:
         val ipv6 = Ipv6.parse(text)
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
-  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = abandonment:
+  def mac(context: Expr[StringContext])(using Quotes): Expr[MacAddress] = haltingly:
     val macAddress = MacAddress.parse(context.valueOrAbort.parts.head.tt)
     '{MacAddress(${Expr(macAddress.long)})}
 

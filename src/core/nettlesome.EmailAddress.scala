@@ -39,7 +39,7 @@ object EmailAddress:
   given (using Tactic[EmailAddressError]) => Decoder[EmailAddress] = EmailAddress.parse(_)
   given EmailAddress is Encodable in Text = _.text
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = abandonment:
+  def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = haltingly:
     val text: Text = context.valueOrAbort.parts.head.tt
     val address = EmailAddress.parse(text)
 

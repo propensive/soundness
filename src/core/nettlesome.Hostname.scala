@@ -36,7 +36,7 @@ object Hostname:
 
   given Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = abandonment:
+  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = haltingly:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
   given ToExpr[Hostname] as toExpr:
