@@ -23,6 +23,7 @@ typesafe opaque type alias of `String`.
 
 
 
+
 ## Getting Started
 
 _Gossamer_ provides a collection of useful methods and constructors for working with strings.
@@ -171,7 +172,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Gossamer is designed to be _small_. Its entire source code currently consists
-of 1079 lines of code.
+of 1108 lines of code.
 
 ## Building
 
