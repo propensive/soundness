@@ -25,7 +25,7 @@ import anticipation.*
 import capricious.*
 import contingency.*
 import hypotenuse.*
-import parasite.*, orphanDisposal.await
+import parasite.*, asyncTermination.await
 import prepositional.*
 import rudiments.*
 import symbolism.*
