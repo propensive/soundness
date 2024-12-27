@@ -22,6 +22,7 @@ is specified in their type.
 
 
 
+
 ## Getting Started
 
 _Cardinality_ provides a representation of numbers which must lie within a certain (closed) range. A range type is written with the
