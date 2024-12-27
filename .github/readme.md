@@ -28,6 +28,7 @@ working with matrices and scalar and vector products.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `mosquito` package, so it's sufficient
@@ -165,7 +166,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Mosquito is designed to be _small_. Its entire source code currently consists
-of 247 lines of code.
+of 257 lines of code.
 
 ## Building
 
