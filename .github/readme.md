@@ -25,6 +25,7 @@ units in mixed bases.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `abacist` package, and are exported to
@@ -175,7 +176,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Abacist is designed to be _small_. Its entire source code currently consists
-of 315 lines of code.
+of 311 lines of code.
 
 ## Building
 
