@@ -4,7 +4,7 @@
 
 # Ethereal
 
-__Launch Scala applications lightning-fast by running them as daemons.__
+__Launch Scala applications lightning-fast by running them as daemons__
 
 _Ethereal_ provides the capability to turn an existing Scala command-line application into a daemon for fast startup
 (like [Nailgun](https://github.com/facebookarchive/nailgun)). This is particularly useful when combined with
@@ -28,16 +28,19 @@ Scala application into a self-contained, portable executable.
 
 
 
+
 ## Getting Started
 
 ### Running as a Daemon
 
 Java is known for its slow startup time compared to other languages. While that has improved significantly in
-more recent versions, waiting about a second is typical, even for a trivial "Hello world" application. This is
+more recent versions, waiting a fraction of a second is typical, even for a trivial "Hello world" application. This is
 unacceptable for many purposes, in particular, providing dynamic tab-completions.
 
 Furthermore, many programs run faster, the longer they have been running, thanks to the HotSpot just-in-time
 compiler. This advantage returns to zero every time the application is started.
+
+Any runtime state must also be reconstructed every time the application launches.
 
 Ethereal makes it easy to write a program which runs as a daemon. The first time it is called, it starts the
 JVM as a background process which listens for socket connections on a free local port, and all subsequent
@@ -62,24 +65,24 @@ The daemon implementation is an ordinary method call which primarily specifies t
 invocation, and would typically be the implementation of a main method,
 ```scala
 @main
-def myapp(): Unit = daemon:
+def myapp(): Unit = cliService:
   Out.println(t"Hello world")
   ExitStatus.Ok
 ```
 or:
 ```scala
 object MyApp:
-  def main(args: IArray[String]): Unit = daemon:
+  def main(args: IArray[String]): Unit = cliService:
     Out.println(t"Hello world")
     ExitStatus.Ok
 ```
 
-When invoking this `main` method, the code inside the `daemon` block is not run immediately, but a server is
+When invoking this `main` method, the code inside the `cliService` block is not run immediately, but a server is
 started which listens on a free port, and each time it receives a request on that port, _then_ will the code in
-the block be executed. The context of a `daemon` block provides all the same context as an `application` block,
+the block be executed. The context of a `cliService` block provides all the same context as an `application` block,
 so it's very easy to convert a non-daemon application into a daemon.
 
-Note that unlike an `application` block, no arguments need to be passed to the the `daemon` block, but the
+Note that unlike an `application` block, no arguments need to be passed to the the `cliService` block, but the
 `arguments` and `parameters` methods can be used to get the arguments or parameters for the current invocation.
 
 The `Out` object from [Turbulence](https://github.com/propensive/turbulence/) (or `Err`) must be used for
@@ -119,8 +122,9 @@ message is relevant to it.
 To use the bus facility, the daemon should have a type parameter specified when it is invoked, for example:
 ```scala
 @main
-def myapp(): Unit = daemon[Text]:
+def myapp(): Unit = cliService[Text]:
   // body
+  ExitStatus.Ok
 ```
 
 This may be any `Matchable` type, and determines what values may be broadcast to other clients, and conversely,
@@ -131,10 +135,11 @@ A message may be sent to all other clients by calling `broadcast` from within a 
 enum BusMessage:
   case Hello, Goodbye
 
-def myapp(): Unit = daemon[BusMessage]:
+def myapp(): Unit = cliService[BusMessage]:
   broadcast(BusMessage.Hello)
   // do something
   broadcast(BusMessage.Goodbye)
+  ExitStatus.Ok
 ```
 
 If such messages are sent, then they ought to be received too! The contextual method, `bus`, provides a stream
@@ -145,7 +150,6 @@ implementation should be both sending and receiving messages on the bus.
 A typical implementation might multiplex the event stream from a
 [Profanity](https://github.com/propensive/profanity/) terminal with the bus, and handle keypresses and messages
 from other clients in an event loop.
-
 
 
 ## Status
@@ -164,7 +168,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Ethereal is designed to be _small_. Its entire source code currently consists
-of 435 lines of code.
+of 466 lines of code.
 
 ## Building
 
