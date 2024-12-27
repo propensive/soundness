@@ -7,3 +7,4 @@ Subsequently, Anticipation will also be made available as a binary in the Maven
 Central repository. This will enable users of other build tools to use it.
 
 For the overeager, curious and impatient, see [building](#building).
+
