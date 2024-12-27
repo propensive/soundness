@@ -22,6 +22,7 @@ and safe to work with JSON in Scala.
 
 
 
+
 ## Getting Started
 
 ### Parsing
@@ -181,7 +182,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Jacinta is designed to be _small_. Its entire source code currently consists
-of 610 lines of code.
+of 603 lines of code.
 
 ## Building
 
