@@ -29,6 +29,7 @@ structured types as early as possible. This is the role of Ambience.
 
 
 
+
 ## Getting Started
 
 All Ambience terms and types are in the `ambience` package.
@@ -198,7 +199,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Ambience is designed to be _small_. Its entire source code currently consists
-of 281 lines of code.
+of 265 lines of code.
 
 ## Building
 
