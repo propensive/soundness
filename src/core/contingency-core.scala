@@ -118,7 +118,7 @@ def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
   boundary: label ?=>
     block(using AmalgamateTactic(label))
 
-def abandonment[ErrorType <: Error](using Quotes, Realm)[SuccessType]
+def haltingly[ErrorType <: Error](using Quotes, Realm)[SuccessType]
    (block: Diagnostics ?=> AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
