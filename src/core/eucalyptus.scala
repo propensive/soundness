@@ -57,7 +57,7 @@ package eucalyptus
 //     import quotes.reflect.*
 
 //     def invalidRoutes(): Nothing =
-//       abandon(m"the routes must be specified as one or more case clauses")
+//       halt(m"the routes must be specified as one or more case clauses")
 
 //     val count: Int = routes.asTerm match
 //       case Inlined(_, _, Block(List(DefDef(_, _, _, Some(Match(_, caseDefs)))), _)) =>
@@ -83,7 +83,7 @@ package eucalyptus
 //                         val logWriter: Expr[LogWriter[targetType, TextType]] =
 //                           Expr.summon[LogWriter[targetType, TextType]].getOrElse:
 //                             val writerName = TypeRepr.of[LogWriter[targetType, TextType]].show.tt
-//                             abandon(m"could not get an instance of $writerName")
+//                             halt(m"could not get an instance of $writerName")
 
 //                         val action =
 //                          '{
