@@ -24,6 +24,7 @@ __Telekinesis__ is a lightweight HTTP client for sending and HTTP requests.
 
 
 
+
 ## Getting Started
 
 Here is an example of a simple HTTP request:
@@ -106,7 +107,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Telekinesis is designed to be _small_. Its entire source code currently consists
-of 640 lines of code.
+of 778 lines of code.
 
 ## Building
 
