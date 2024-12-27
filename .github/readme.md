@@ -27,6 +27,7 @@ opportunities Scala offers to make these APIs as intuitive as possible.
 
 
 
+
 ## Getting Started
 
 _Aviation_ provides a variety of types representing and working with different time-related concepts.
@@ -114,7 +115,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Aviation is designed to be _small_. Its entire source code currently consists
-of 800 lines of code.
+of 944 lines of code.
 
 ## Building
 
