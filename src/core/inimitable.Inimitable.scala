@@ -28,5 +28,5 @@ object Inimitable:
   given Realm = realm"inimitable"
 
   def uuid(expr: Expr[StringContext])(using Quotes): Expr[Uuid] =
-    val uuid = abandonment(Uuid.parse(expr.valueOrAbort.parts.head.tt))
+    val uuid = haltingly(Uuid.parse(expr.valueOrAbort.parts.head.tt))
     '{Uuid(${Expr(uuid.msb)}, ${Expr(uuid.lsb)})}
