@@ -51,18 +51,18 @@ object Cardinality:
                 val value = string.toDouble
 
                 if value < lowerBound
-                then abandon(m"""the value $string is less than the lower bound for this value,
+                then halt(m"""the value $string is less than the lower bound for this value,
                     ${lowerBound.toString}""")
 
                 if value > upperBound
-                then abandon(m"""the value $string is greater than the upper bound for this value,
+                then halt(m"""the value $string is greater than the upper bound for this value,
                     ${upperBound.toString}""")
 
                 '{${Expr(value)}.asInstanceOf[LeftDoubleType ~ RightDoubleType]}
 
               case _ =>
-                abandon(m"the upper bound must be a Double singleton literal types")
+                halt(m"the upper bound must be a Double singleton literal types")
           case _ =>
-            abandon(m"the lower bound must be a Double singleton literal types")
+            halt(m"the lower bound must be a Double singleton literal types")
       case None =>
         '{NumericRange($digits.toDouble)}
