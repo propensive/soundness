@@ -18,6 +18,8 @@ package parasite
 
 import language.experimental.pureFunctions
 
+import java.util.concurrent.locks as jucl
+
 import scala.annotation.*
 
 import anticipation.*
@@ -45,7 +47,7 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def sleep(duration: Long): Unit = Thread.sleep(duration)
+  def snooze(duration: Long): Unit = jucl.LockSupport.parkNanos(duration*1_000_000L)
   def handle(throwable: Throwable): Transgression
 
   def intercept(handler: Throwable ~> Transgression): Monitor

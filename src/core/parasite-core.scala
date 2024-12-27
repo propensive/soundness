@@ -72,11 +72,11 @@ def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap =
 def relent[ResultType]()(using Subordinate): Unit = monitor.relent()
 def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 
-def sleep[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
-  monitor.sleep(duration.milliseconds)
+def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
+  monitor.snooze(duration.milliseconds)
 
-def snooze[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
-  monitor.sleep(instant.millisecondsSinceEpoch - System.currentTimeMillis)
+def sleep[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
+  monitor.snooze(instant.millisecondsSinceEpoch - System.currentTimeMillis)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
   def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises ConcurrencyError =
