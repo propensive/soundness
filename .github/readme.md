@@ -50,6 +50,8 @@ libraryDependencies += "dev.soundness" % "quantitative-core" % "0.1.0"
 
 
 
+
+
 ## Getting Started
 
 All Quantitative terms and types are defined in the `quantitative` package,
@@ -529,7 +531,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Quantitative is designed to be _small_. Its entire source code currently consists
-of 1322 lines of code.
+of 1344 lines of code.
 
 ## Building
 
