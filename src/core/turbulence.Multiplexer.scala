@@ -36,7 +36,7 @@ case class Multiplexer[KeyType, ElementType]()(using Monitor):
   def close(): Unit = tasks.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: LazyList[ElementType])(using Subordinate): Unit =
+  private def pump(key: KeyType, stream: LazyList[ElementType])(using Worker): Unit =
     if stream.isEmpty then remove(key) else
       relent()
       queue.put(stream.head)
