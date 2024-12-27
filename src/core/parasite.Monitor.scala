@@ -99,7 +99,7 @@ abstract class Worker
 extends Monitor:
   self =>
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
-  private var relentCount: Int = 0
+  private var relentCount: Int = 1
   private val startTime: Long = System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
