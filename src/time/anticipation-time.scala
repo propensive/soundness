@@ -23,3 +23,4 @@ extension [InstantType: GenericInstant](instant: InstantType)
 
 extension [DurationType: GenericDuration](duration: DurationType)
   def milliseconds: Long = DurationType.milliseconds(duration)
+  def nanoseconds: Long = DurationType.nanoseconds(duration)

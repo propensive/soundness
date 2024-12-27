@@ -21,6 +21,7 @@ import language.experimental.captureChecking
 trait GenericDuration:
   type Self
   def milliseconds(duration: Self): Long
+  def nanoseconds(duration: Self): Long = milliseconds(duration)*1_000_000L
 
 object GenericDuration:
   given Long is GenericDuration = identity(_)

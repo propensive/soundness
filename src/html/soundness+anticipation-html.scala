@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.GenericHtmlAttribute
+export anticipation.{GenericHtmlAttribute, GenericHtml, GenericHtmlRenderable}
