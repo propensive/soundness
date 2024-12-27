@@ -24,6 +24,7 @@ it&rsquo;s the same as for any other program.
 
 
 
+
 ## Getting Started
 
 _Probably_ defines only two primary types: a mutable `Runner` for recording test results and reporting back on
@@ -214,7 +215,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Probably is designed to be _small_. Its entire source code currently consists
-of 757 lines of code.
+of 765 lines of code.
 
 ## Building
 
