@@ -24,6 +24,7 @@ method that reads a stream of bytes and returns structured data.
 
 
 
+
 ## Getting Started
 
 Merino will parse a `DataStream`, that is, a `LazyList[IArray[Byte]]`. This
@@ -82,7 +83,7 @@ level and the required stability and maintainability of your own project.
 
 Merino
 jawn is designed to be _small_. Its entire source code currently consists
-of 785 lines of code.
+of 819 lines of code.
 
 ## Building
 
