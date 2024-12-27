@@ -25,6 +25,7 @@ plus the means to generate DOT for input to GraphViz.
 
 
 
+
 ## Getting Started
 
 Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for
@@ -124,7 +125,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Acyclicity is designed to be _small_. Its entire source code currently consists
-of 262 lines of code.
+of 263 lines of code.
 
 ## Building
 
