@@ -99,10 +99,12 @@ abstract class Worker
 extends Monitor:
   self =>
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
+  private var relentCount: Int = 0
+  private val startTime: Long = System.currentTimeMillis
+  val promise: Promise[Result] = Promise()
 
   def chain: Chain = Chain(frame, parent.chain)
   def evaluate(worker: Worker): Result
-  val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
   def handle(throwable: Throwable): Transgression = handler.or(parent.handle)(throwable)
@@ -113,6 +115,8 @@ extends Monitor:
       def name: Optional[Text] = self.name
       def daemon: Boolean = self.daemon
       def evaluate(worker: Worker): Result = self.evaluate(worker)
+
+  def relentlessness: Double = (System.currentTimeMillis - startTime).toDouble/relentCount
 
   def delegate(lambda: Monitor -> Unit): Unit = state.replace: state =>
     workers.each { child => if child.daemon then child.cancel() else lambda(child) }
@@ -125,13 +129,15 @@ extends Monitor:
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
       case submonitor: Worker => (submonitor.stack.s+"//"+ref).tt
 
-  def relent(): Unit = state.use:
-    case Initializing    => ()
-    case Active(_)       => ()
-    case Completed(_, _) => panic(m"should not be relenting after completion")
-    case Delivered(_, _) => panic(m"should not be relenting after completion")
-    case Failed(_)       => panic(m"should not be relenting after failure")
-    case Cancelled       => panic(m"should not be relenting after cancellation")
+  def relent(): Unit =
+    relentCount += 1
+    state.use:
+      case Initializing    => ()
+      case Active(_)       => ()
+      case Completed(_, _) => panic(m"should not be relenting after completion")
+      case Delivered(_, _) => panic(m"should not be relenting after completion")
+      case Failed(_)       => panic(m"should not be relenting after failure")
+      case Cancelled       => panic(m"should not be relenting after cancellation")
 
   def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
           : Task[ResultType2] raises AsyncError =
