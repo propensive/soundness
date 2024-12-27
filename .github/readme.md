@@ -34,6 +34,7 @@ Central repository. This will enable users of other build tools to use it.
 For the overeager, curious and impatient, see [building](#building).
 
 
+
 ## Getting Started
 
 ### `Message`s
@@ -133,7 +134,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Fulminate is designed to be _small_. Its entire source code currently consists
-of 197 lines of code.
+of 213 lines of code.
 
 ## Building
 
