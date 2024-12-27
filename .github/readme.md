@@ -21,6 +21,7 @@ easy to work with as text. _Hallucination_ aspires to make this possible.
 
 
 
+
 ## Getting Started
 
 All terms and types are define in the `hallucination` package, and can be used with:
@@ -83,7 +84,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Hallucination is designed to be _small_. Its entire source code currently consists
-of 63 lines of code.
+of 85 lines of code.
 
 ## Building
 
