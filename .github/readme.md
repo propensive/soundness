@@ -21,6 +21,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 
 
 
+
 ## Getting Started
 
 Annotations in Scala are rarely the best solution for any task, but can
@@ -110,7 +111,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Adversaria is designed to be _small_. Its entire source code currently consists
-of 142 lines of code.
+of 150 lines of code.
 
 ## Building
 
