@@ -93,7 +93,7 @@ extension [ElementType](stream: LazyList[ElementType])
   def strict: LazyList[ElementType] = stream.length yet stream
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
-     (using Monitor, Tactic[ConcurrencyError])
+     (using Monitor, Tactic[AsyncError])
           : LazyList[ElementType] =
 
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] =
@@ -214,7 +214,7 @@ extension (obj: LazyList.type)
       try
         snooze(startTime + duration.milliseconds*iteration)
         () #:: pulsar(duration)
-      catch case err: ConcurrencyError => LazyList()
+      catch case err: AsyncError => LazyList()
 
     recur(0)
 

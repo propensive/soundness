@@ -29,4 +29,4 @@ class Pulsar[DurationType: GenericDuration](duration: DurationType):
     if !continue then LazyList() else try
       sleep(duration)
       () #:: stream
-    catch case err: ConcurrencyError => LazyList()
+    catch case err: AsyncError => LazyList()
