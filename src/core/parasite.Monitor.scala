@@ -128,7 +128,6 @@ extends Monitor:
   def relent(): Unit = state.use:
     case Initializing    => ()
     case Active(_)       => ()
-    case Suspended(_, _) => synchronized(wait())
     case Completed(_, _) => panic(m"should not be relenting after completion")
     case Delivered(_, _) => panic(m"should not be relenting after completion")
     case Failed(_)       => panic(m"should not be relenting after failure")
@@ -147,7 +146,7 @@ extends Monitor:
 
   def cancel(): Unit =
     val state2 = state.replace:
-      case Initializing | Active(_) | Suspended(_, _) =>
+      case Initializing | Active(_) =>
         thread.interrupt()
         promise.cancel()
         Cancelled
@@ -161,7 +160,6 @@ extends Monitor:
     state.replace:
       case Initializing                => abort(AsyncError(Reason.Incomplete))
       case Active(_)                   => abort(AsyncError(Reason.Incomplete))
-      case Suspended(_, _)             => abort(AsyncError(Reason.Incomplete))
       case Completed(duration, result) => Delivered(duration, result)
       case Delivered(duration, result) => Delivered(duration, result)
       case Failed(error)               => throw error
@@ -181,16 +179,6 @@ extends Monitor:
     promise.attend()
     thread.join()
     result()
-
-  def suspend(): Unit = state.replace:
-    case Active(startTime)       => Suspended(startTime, 1)
-    case Suspended(startTime, n) => Suspended(startTime, n + 1)
-    case other                   => other
-
-  def resume(force: Boolean = false): Unit = state.replace:
-    case Suspended(startTime, 1) => Active(startTime).also(synchronized(notifyAll()))
-    case Suspended(startTime, n) => if force then Active(startTime) else Suspended(startTime, n - 1)
-    case other                   => other
 
   private lazy val thread: Thread = parent.supervisor.fork(stack):
     boundary[Unit]:
@@ -216,10 +204,10 @@ extends Monitor:
           Thread.interrupted()
 
           val state2 = state.replace:
-            case Initializing | Active(_) | Cancelled | Suspended(_, _) => Cancelled
-            case state@Completed(_, _)                                  => state
-            case state@Delivered(_, _)                                  => state
-            case state@Failed(_)                                        => state
+            case Initializing | Active(_) | Cancelled => Cancelled
+            case state@Completed(_, _)                => state
+            case state@Delivered(_, _)                => state
+            case state@Failed(_)                      => state
 
           state2 match
             case Cancelled => workers.each { child => if child.daemon then child.cancel() }
@@ -242,7 +230,6 @@ extends Monitor:
             case Active(_)                        => Cancelled.also(promise.cancel())
             case state@Completed(duration, value) => state.also(promise.offer(value))
             case state@Delivered(duration, value) => state
-            case Suspended(_, _)                  => Cancelled.also(promise.cancel())
             case state@Failed(_)                  => state.also(promise.cancel())
             case Cancelled                        => Cancelled
 

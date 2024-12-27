@@ -26,6 +26,7 @@ import contingency.*
 import denominative.*
 import digression.*
 import rudiments.*
+import fulminate.*
 import vacuous.*
 
 package threadModels:
@@ -36,8 +37,11 @@ package asyncTermination:
   given Codicil as await = _.delegate(_.attend())
   given Codicil as cancel = _.delegate(_.cancel())
 
+  given Codicil as panic = _.delegate: child =>
+    if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
+
   given (using Tactic[AsyncError]) => Codicil as fail = _.delegate: child =>
-    if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete), ())
+    if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
   given Supervisor as global = PlatformSupervisor.supervisor

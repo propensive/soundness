@@ -36,7 +36,5 @@ object Daemon:
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
 trait Daemon:
-  def suspend(): Unit
-  def resume(force: Boolean = false): Unit
   def attend(): Unit
   def cancel(): Unit

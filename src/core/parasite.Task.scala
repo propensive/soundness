@@ -42,12 +42,9 @@ trait Task[+ResultType]:
   def ready: Boolean
   def await(): ResultType raises AsyncError
   def attend(): Unit
-  def suspend(): Unit
-  def resume(force: Boolean = false): Unit
   def cancel(): Unit
 
-  def await[DurationType: GenericDuration](duration: DurationType)
-          : ResultType raises AsyncError
+  def await[DurationType: GenericDuration](duration: DurationType): ResultType raises AsyncError
 
   def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
           : Task[ResultType2] raises AsyncError

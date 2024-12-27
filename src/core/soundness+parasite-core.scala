@@ -24,7 +24,7 @@ package threadModels:
   export parasite.threadModels.{platform, virtual}
 
 package asyncTermination:
-  export parasite.asyncTermination.{await, cancel, fail}
+  export parasite.asyncTermination.{await, cancel, fail, panic}
 
 package supervisors:
   export parasite.supervisors.global

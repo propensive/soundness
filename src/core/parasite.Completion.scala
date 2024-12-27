@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 enum Completion[+ValueType]:
   case Initializing, Cancelled
   case Active(startTime: Long)
-  case Suspended(startTame: Long, count: Int)
   case Completed(duration: Long, value: ValueType)
   case Delivered(duration: Long, value: ValueType)
   case Failed(error: Throwable)
