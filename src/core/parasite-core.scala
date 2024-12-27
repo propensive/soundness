@@ -66,17 +66,22 @@ def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=>
 
   Task(evaluate(using _), daemon = false, name = name)
 
-def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap =
-  Trap(lambda, monitor)
-
+def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Trap(lambda, monitor)
 def relent[ResultType]()(using Subordinate): Unit = monitor.relent()
 def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 
 def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
-  monitor.snooze(duration.milliseconds)
+  monitor.snooze(duration)
+
+def slumber[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
+  hibernate(System.currentTimeMillis + duration.milliseconds)
 
 def sleep[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
   monitor.snooze(instant.millisecondsSinceEpoch - System.currentTimeMillis)
+
+def hibernate[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
+  while instant.millisecondsSinceEpoch > System.currentTimeMillis
+  do sleep(instant.millisecondsSinceEpoch)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
   def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises ConcurrencyError =

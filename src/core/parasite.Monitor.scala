@@ -47,9 +47,11 @@ sealed trait Monitor:
   def cancel(): Unit
   def remove(monitor: Subordinate): Unit = subordinates -= monitor
   def supervisor: Supervisor
-  def snooze(duration: Long): Unit = jucl.LockSupport.parkNanos(duration*1_000_000L)
-  def handle(throwable: Throwable): Transgression
 
+  def snooze[DurationType: GenericDuration](duration: DurationType): Unit =
+    jucl.LockSupport.parkNanos(duration.nanoseconds)
+
+  def handle(throwable: Throwable): Transgression
   def intercept(handler: Throwable ~> Transgression): Monitor
 
 sealed abstract class Supervisor() extends Monitor:
