@@ -26,6 +26,7 @@ immutable API.
 
 
 
+
 ## Getting Started
 
 All Gastronomy terms and types are defined in the `gastronomy` package:
@@ -245,7 +246,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Gastronomy is designed to be _small_. Its entire source code currently consists
-of 276 lines of code.
+of 275 lines of code.
 
 ## Building
 
