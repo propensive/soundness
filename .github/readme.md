@@ -23,6 +23,7 @@ paths.
 
 
 
+
 ## Getting Started
 
 Surveillance watches directories for changes to their contents, through an extension method, `watch()`, on a
@@ -68,7 +69,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Surveillance is designed to be _small_. Its entire source code currently consists
-of 138 lines of code.
+of 137 lines of code.
 
 ## Building
 
