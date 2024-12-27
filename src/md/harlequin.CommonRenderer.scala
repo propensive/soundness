@@ -24,7 +24,7 @@ import spectacular.*
 import vacuous.*
 
 trait CommonRenderer:
-  def className(accent: Accent): Text = accent.show.lower
+  def className(accent: Accent): List[CssClass] = List(CssClass(accent.show.lower))
   def element(accent: Accent, text: Text): Element["code"] = Code(`class` = className(accent))(text)
 
   protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
