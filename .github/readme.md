@@ -24,6 +24,7 @@ just on the operation, but also the filesystem and in-scope options.
 
 
 
+
 ## Getting Started
 
 ### Example
@@ -93,7 +94,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Galilei is designed to be _small_. Its entire source code currently consists
-of 965 lines of code.
+of 860 lines of code.
 
 ## Building
 
