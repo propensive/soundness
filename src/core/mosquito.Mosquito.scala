@@ -65,11 +65,22 @@ object Mosquito:
           (left(0)*right(1) - left(1)*right(0)) *:
           EmptyTuple
 
-
   extension [SizeType <: Int, LeftType](left: Vector[LeftType, SizeType])
     def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
     def list: List[LeftType] = left.toList.asInstanceOf[List[LeftType]]
     def iarray: IArray[LeftType] = left.toIArray.asInstanceOf[IArray[LeftType]]
+    def size(using ValueOf[SizeType]): Int = valueOf[SizeType]
+
+    def norm[SquareType]
+       (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
+              addable:       SquareType is Addable by SquareType into SquareType,
+              rootable:      SquareType is Rootable[2] into LeftType)
+            : LeftType =
+
+      def recur(sum: multiplicable.Result, i: Int): LeftType =
+        if i == 0 then sum.sqrt else recur(sum + left(i)*left(i), i - 1)
+
+      recur(left(0)*left(0), size - 1)
 
     def map[LeftType2](fn: LeftType => LeftType2): Vector[LeftType2, SizeType] =
       def recur(tuple: Tuple): Tuple = tuple match
@@ -79,7 +90,7 @@ object Mosquito:
       recur(left)
 
     @targetName("add")
-      def + [RightType](right: Vector[RightType, SizeType])
+    def + [RightType](right: Vector[RightType, SizeType])
        (using addition: LeftType is Addable by RightType)
             : Vector[addition.Result, SizeType] =
 
