@@ -89,7 +89,7 @@ object Mosquito:
 
       recur(left)
 
-    def unitVector[SquareType]
+    def unitary[SquareType]
        (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
               addable:       SquareType is Addable by SquareType into SquareType,
               rootable:      SquareType is Rootable[2] into LeftType,
