@@ -32,6 +32,7 @@ libraryDependencies += "dev.soundness" % "dissonance-core" % "0.3.0"
 
 
 
+
 ## Getting Started
 
 Dissonance provides only a single method, `diff`, which takes a `left` and
@@ -152,7 +153,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Dissonance is designed to be _small_. Its entire source code currently consists
-of 491 lines of code.
+of 490 lines of code.
 
 ## Building
 
