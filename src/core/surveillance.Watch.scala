@@ -31,7 +31,7 @@ import vacuous.*
 
 object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
-    import orphanDisposal.await
+    import asyncTermination.await
     def stop(): Unit = pollLoop.stop()
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
