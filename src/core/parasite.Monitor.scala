@@ -84,12 +84,21 @@ object VirtualSupervisor extends Supervisor():
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start(() => block).nn
 
+object AdaptiveSupervisor extends Supervisor():
+  def name: Text = "adaptive".tt
+
+  def fork(name: Optional[Text])(block: => Unit): Thread =
+    try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
+      PlatformSupervisor.fork(name)(block)
+
 object PlatformSupervisor extends Supervisor():
   def name: Text = "platform".tt
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
-    Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
+    val runnable: Runnable = () => block
+    new Thread(runnable).tap: thread =>
       name.let(_.s).let(thread.setName(_))
+      thread.start()
 
 abstract class Worker
    (frame:   Codepoint,

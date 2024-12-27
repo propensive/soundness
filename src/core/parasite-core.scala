@@ -32,6 +32,7 @@ import vacuous.*
 package threadModels:
   given ThreadModel as platform = () => PlatformSupervisor
   given ThreadModel as virtual = () => VirtualSupervisor
+  given ThreadModel as adaptive = () => AdaptiveSupervisor
 
 package asyncTermination:
   given Codicil as await = _.delegate(_.attend())
@@ -77,7 +78,7 @@ def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
   monitor.snooze(duration)
 
-def slumber[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
+def delay[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
   hibernate(System.currentTimeMillis + duration.milliseconds)
 
 def sleep[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
