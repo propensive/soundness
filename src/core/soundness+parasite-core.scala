@@ -23,8 +23,8 @@ export parasite.{Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise
 package threadModels:
   export parasite.threadModels.{platform, virtual}
 
-package orphanDisposal:
-  export parasite.orphanDisposal.{await, cancel, fail}
+package asyncTermination:
+  export parasite.asyncTermination.{await, cancel, fail}
 
 package supervisors:
   export parasite.supervisors.global

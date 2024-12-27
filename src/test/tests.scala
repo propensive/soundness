@@ -27,7 +27,7 @@ import turbulence.*
 import strategies.throwUnsafely
 
 import threadModels.platform
-import orphanDisposal.cancel
+import asyncTermination.cancel
 
 given Interceptor = (path, error) =>
   println(s"An async exception occurred in ${path.stack}:")
@@ -261,7 +261,7 @@ object Tests extends Suite(t"Parasite tests"):
         .assert(_ == 2)
 
         test(t"Incomplete child is awaited"):
-          import orphanDisposal.await
+          import asyncTermination.await
           var value = 1
           val task = async:
             value = 2
@@ -275,7 +275,7 @@ object Tests extends Suite(t"Parasite tests"):
         println("C")
 
         test(t"Incomplete child is cancelled"):
-          import orphanDisposal.cancel
+          import asyncTermination.cancel
           var value = 1
           val task = async:
             value = 2

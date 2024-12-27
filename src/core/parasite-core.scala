@@ -32,7 +32,7 @@ package threadModels:
   given ThreadModel as platform = () => PlatformSupervisor
   given ThreadModel as virtual = () => VirtualSupervisor
 
-package orphanDisposal:
+package asyncTermination:
   given Codicil as await = _.delegate(_.attend())
   given Codicil as cancel = _.delegate(_.cancel())
 
