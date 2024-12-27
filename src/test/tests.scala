@@ -137,7 +137,7 @@ object Tests extends Suite(t"Parasite tests"):
           val promise = Promise[Int]()
           promise.cancel()
           capture(promise.await())
-        .assert(_ == ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+        .assert(_ == AsyncError(AsyncError.Reason.Cancelled))
 
       suite(t"Asyncs"):
         test(t"Simple task produces a result"):

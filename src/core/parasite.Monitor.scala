@@ -31,7 +31,7 @@ import rudiments.*
 import vacuous.*
 
 import Completion.*
-import ConcurrencyError.Reason
+import AsyncError.Reason
 
 sealed trait Monitor:
   type Result
@@ -135,13 +135,13 @@ extends Monitor:
     case Cancelled       => panic(m"should not be relenting after cancellation")
 
   def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError =
+          : Task[ResultType2] raises AsyncError =
 
     async(lambda(await()))
 
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
      (using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError =
+          : Task[ResultType2] raises AsyncError =
 
     async(lambda(await()).await())
 
@@ -157,27 +157,27 @@ extends Monitor:
 
     if state2 == Cancelled then thread.join()
 
-  def result()(using cancel: Tactic[ConcurrencyError]): Result =
+  def result()(using cancel: Tactic[AsyncError]): Result =
     state.replace:
-      case Initializing                => abort(ConcurrencyError(Reason.Incomplete))
-      case Active(_)                   => abort(ConcurrencyError(Reason.Incomplete))
-      case Suspended(_, _)             => abort(ConcurrencyError(Reason.Incomplete))
+      case Initializing                => abort(AsyncError(Reason.Incomplete))
+      case Active(_)                   => abort(AsyncError(Reason.Incomplete))
+      case Suspended(_, _)             => abort(AsyncError(Reason.Incomplete))
       case Completed(duration, result) => Delivered(duration, result)
       case Delivered(duration, result) => Delivered(duration, result)
       case Failed(error)               => throw error
-      case Cancelled                   => abort(ConcurrencyError(Reason.Cancelled))
+      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
 
     . match
         case Delivered(_, result) => result
         case other                => panic(m"impossible state")
 
 
-  def await[DurationType: GenericDuration](duration: DurationType): Result raises ConcurrencyError =
+  def await[DurationType: GenericDuration](duration: DurationType): Result raises AsyncError =
     promise.attend(duration)
     thread.join()
     result()
 
-  def await(): Result raises ConcurrencyError =
+  def await(): Result raises AsyncError =
     promise.attend()
     thread.join()
     result()

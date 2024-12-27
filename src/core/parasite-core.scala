@@ -36,8 +36,8 @@ package orphanDisposal:
   given Codicil as await = _.delegate(_.attend())
   given Codicil as cancel = _.delegate(_.cancel())
 
-  given (using Tactic[ConcurrencyError]) => Codicil as fail = _.delegate: child =>
-    if !child.ready then raise(ConcurrencyError(ConcurrencyError.Reason.Incomplete), ())
+  given (using Tactic[AsyncError]) => Codicil as fail = _.delegate: child =>
+    if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete), ())
 
 package supervisors:
   given Supervisor as global = PlatformSupervisor.supervisor
@@ -84,23 +84,23 @@ def hibernate[InstantType: GenericInstant](instant: InstantType)(using Monitor):
   do sleep(instant.millisecondsSinceEpoch)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
-  def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises ConcurrencyError =
+  def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises AsyncError =
     async(tasks.map(_.await()))
 
 extension [ResultType](tasks: Iterable[Task[ResultType]])
-  def race()(using Monitor, Codicil): ResultType raises ConcurrencyError =
+  def race()(using Monitor, Codicil): ResultType raises AsyncError =
     val promise: Promise[ResultType] = Promise()
     tasks.each(_.map(promise.offer(_)))
 
     promise.await()
 
 extension [ResultType](stream: LazyList[ResultType])
-  def concurrent(using Monitor, Codicil): LazyList[ResultType] raises ConcurrencyError =
+  def concurrent(using Monitor, Codicil): LazyList[ResultType] raises AsyncError =
     if async(stream.isEmpty).await() then LazyList() else stream.head #:: stream.tail.concurrent
 
 def supervise[ResultType](block: Monitor ?=> ResultType)
    (using model: ThreadModel, codepoint: Codepoint)
-        : ResultType raises ConcurrencyError =
+        : ResultType raises AsyncError =
   block(using model.supervisor())
 
 def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> ValueType)

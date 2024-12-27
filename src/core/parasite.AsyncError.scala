@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 
 import fulminate.*
 
-object ConcurrencyError:
+object AsyncError:
   object Reason:
     given Reason is Communicable =
       case Cancelled       => m"the operation was cancelled"
@@ -31,5 +31,5 @@ object ConcurrencyError:
   enum Reason:
     case Cancelled, Incomplete, AlreadyComplete, Timeout
 
-case class ConcurrencyError(reason: ConcurrencyError.Reason)(using Diagnostics)
+case class AsyncError(reason: AsyncError.Reason)(using Diagnostics)
 extends Error(reason.communicate)

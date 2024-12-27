@@ -62,10 +62,10 @@ final case class Promise[ValueType]():
       case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
       case current             => current
 
-  def fulfill(supplied: -> ValueType): Unit raises ConcurrencyError =
+  def fulfill(supplied: -> ValueType): Unit raises AsyncError =
     state.updateAndGet(completeIncomplete(supplied)).nn match
-      case Cancelled           => raise(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
-      case Complete(_)         => raise(ConcurrencyError(ConcurrencyError.Reason.AlreadyComplete))
+      case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
+      case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
       case Incomplete(waiting) => ()
 
   def offer(supplied: -> ValueType): Unit = state.updateAndGet(completeIncomplete(supplied))
@@ -77,11 +77,11 @@ final case class Promise[ValueType]():
       case Cancelled           => Cancelled
 
   @tailrec
-  def await(): ValueType raises ConcurrencyError =
+  def await(): ValueType raises AsyncError =
     state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
       case Incomplete(_)   => jucl.LockSupport.park(this) yet await()
       case Complete(value) => value
-      case Cancelled       => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+      case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
   @tailrec
   def attend(): Unit = state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
@@ -97,17 +97,17 @@ final case class Promise[ValueType]():
     case _                   => ()
 
   def await[DurationType: GenericDuration](duration: DurationType)
-          : ValueType raises ConcurrencyError =
+          : ValueType raises AsyncError =
     val deadline = System.nanoTime() + duration.milliseconds*1000000L
 
     @tailrec
     def recur(): ValueType =
-      if deadline < System.nanoTime then abort(ConcurrencyError(ConcurrencyError.Reason.Timeout))
+      if deadline < System.nanoTime then abort(AsyncError(AsyncError.Reason.Timeout))
       else state.getAndUpdate(enqueue(Thread.currentThread.nn)).nn match
         case Incomplete(_)   => jucl.LockSupport.parkUntil(this, deadline - System.nanoTime())
                                 recur()
         case Complete(value) => value
-        case Cancelled       => abort(ConcurrencyError(ConcurrencyError.Reason.Cancelled))
+        case Cancelled       => abort(AsyncError(AsyncError.Reason.Cancelled))
 
     recur()
 

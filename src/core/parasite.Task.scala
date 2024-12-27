@@ -40,17 +40,17 @@ object Task:
 
 trait Task[+ResultType]:
   def ready: Boolean
-  def await(): ResultType raises ConcurrencyError
+  def await(): ResultType raises AsyncError
   def attend(): Unit
   def suspend(): Unit
   def resume(force: Boolean = false): Unit
   def cancel(): Unit
 
   def await[DurationType: GenericDuration](duration: DurationType)
-          : ResultType raises ConcurrencyError
+          : ResultType raises AsyncError
 
   def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError
+          : Task[ResultType2] raises AsyncError
 
   def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Codicil)
-          : Task[ResultType2] raises ConcurrencyError
+          : Task[ResultType2] raises AsyncError
