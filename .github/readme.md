@@ -23,6 +23,7 @@ __Escapade__ makes it easy to work safely with strings containing ANSI escape co
 
 
 
+
 ## Getting Started
 
 ### About ANSI Codes
@@ -138,7 +139,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Escapade is designed to be _small_. Its entire source code currently consists
-of 734 lines of code.
+of 743 lines of code.
 
 ## Building
 
