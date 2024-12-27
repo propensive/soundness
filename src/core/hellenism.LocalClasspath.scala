@@ -25,10 +25,26 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 import symbolism.*
 
 object LocalClasspath:
-  def apply(entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type])
+
+  given (using SystemProperties) => LocalClasspath is Encodable in Text = _()
+
+  given (using SystemProperties, Tactic[SystemPropertyError]) => Decoder[LocalClasspath] =
+    classpath =>
+      val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
+        classpath.cut(Properties.path.separator()).map: path =>
+          if path.ends(t"/") then ClasspathEntry.Directory(path)
+          else if path.ends(t".jar") then ClasspathEntry.Jar(path)
+          else ClasspathEntry.Directory(path)
+
+      new LocalClasspath(entries, entries.to(Set))
+
+  def apply
+     (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar |
+                ClasspathEntry.JavaRuntime.type])
           : LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
@@ -46,9 +62,9 @@ object LocalClasspath:
 
 class LocalClasspath private
    (val entries: List
-                  [ClasspathEntry.Directory |
-                   ClasspathEntry.Jar |
-                   ClasspathEntry.JavaRuntime.type],
+                  [ClasspathEntry.Directory
+                   | ClasspathEntry.Jar
+                   | ClasspathEntry.JavaRuntime.type],
     val entrySet: Set[ClasspathEntry])
 extends Classpath:
 
