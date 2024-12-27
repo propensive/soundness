@@ -49,8 +49,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then abandon(m"a U16 may not be less than ${0}")
-      if int > 0xffff then abandon(m"a U16 may not be greater than ${0xffff}")
+      if int < 0 then halt(m"a U16 may not be less than ${0}")
+      if int > 0xffff then halt(m"a U16 may not be greater than ${0xffff}")
 
       Expr(int.toShort)
 
@@ -59,8 +59,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Short.MinValue then abandon(m"an S16 may not be less than ${Short.MinValue.toInt}")
-      if int > Short.MaxValue then abandon(m"an S16 may not be greater than ${Short.MaxValue.toInt}")
+      if int < Short.MinValue then halt(m"an S16 may not be less than ${Short.MinValue.toInt}")
+      if int > Short.MaxValue then halt(m"an S16 may not be greater than ${Short.MaxValue.toInt}")
 
       Expr(int.toShort)
 
@@ -69,8 +69,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < 0 then abandon(m"a U8 may not be less than ${0}")
-      if int > 0xffff then abandon(m"a U8 may not be greater than ${0xffff}")
+      if int < 0 then halt(m"a U8 may not be less than ${0}")
+      if int > 0xffff then halt(m"a U8 may not be greater than ${0xffff}")
 
       Expr(int.toByte)
 
@@ -79,8 +79,8 @@ object Hypotenuse2:
 
     case Some(digits) =>
       val int = JInt.parseInt(digits)
-      if int < Byte.MinValue then abandon(m"an S8 may not be less than ${Byte.MinValue.toInt}")
-      if int > Byte.MaxValue then abandon(m"an S8 may not be greater than ${Byte.MaxValue.toInt}")
+      if int < Byte.MinValue then halt(m"an S8 may not be less than ${Byte.MinValue.toInt}")
+      if int > Byte.MaxValue then halt(m"an S8 may not be greater than ${Byte.MaxValue.toInt}")
 
       Expr(int.toByte)
 
@@ -110,7 +110,7 @@ object Hypotenuse2:
         case '{($bound: Long) >= ($value: Long)}     => value
         case '{($bound: Float) > ($value: Float)}    => value
         case '{($bound: Float) >= ($value: Float)}   => value
-        case _                                       => abandon(errorMessage)
+        case _                                       => halt(errorMessage)
 
       else expr match
         case '{($bound: Int) < ($value: Int)}        => value
@@ -127,7 +127,7 @@ object Hypotenuse2:
         case '{($bound: Long) <= ($value: Long)}     => value
         case '{($bound: Float) < ($value: Float)}    => value
         case '{($bound: Float) <= ($value: Float)}   => value
-        case _                                       => abandon(errorMessage)
+        case _                                       => halt(errorMessage)
 
     val (lessStrict, less) =
       (if greaterThan.valueOrAbort then (bound, value) else (value, bound)) match
@@ -138,6 +138,6 @@ object Hypotenuse2:
         case ('{$left: Char}, '{$right: Char})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Byte}, '{$right: Byte})     => ('{$left < $right}, '{$left <= $right})
         case ('{$left: Short}, '{$right: Short})   => ('{$left < $right}, '{$left <= $right})
-        case _                                      => abandon(errorMessage)
+        case _                                      => halt(errorMessage)
 
     '{$expr && ${if strict.valueOrAbort then lessStrict else less}}
