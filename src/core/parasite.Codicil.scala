@@ -20,4 +20,4 @@ import language.experimental.pureFunctions
 import language.experimental.into
 
 trait Codicil:
-  def cleanup(subordinate: Subordinate): Unit
+  def cleanup(worker: Worker): Unit

@@ -24,16 +24,16 @@ import digression.*
 import vacuous.*
 
 object Daemon:
-  def apply(evaluate: Subordinate => Unit)
+  def apply(evaluate: Worker => Unit)
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
           : Daemon =
-    inline def evaluate0: Subordinate => Unit = evaluate
+    inline def evaluate0: Worker => Unit = evaluate
 
-    new Subordinate(codepoint, monitor, codicil, Unset) with Daemon:
+    new Worker(codepoint, monitor, codicil, Unset) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true
-      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
+      def evaluate(worker: Worker): Result = evaluate0(worker)
 
 trait Daemon:
   def suspend(): Unit

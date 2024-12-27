@@ -36,7 +36,7 @@ import ConcurrencyError.Reason
 sealed trait Monitor:
   type Result
   val promise: Promise[Result]
-  protected[parasite] var subordinates: Set[Subordinate] = Set()
+  protected[parasite] var workers: Set[Worker] = Set()
 
   def name: Optional[Text]
   def chain: Optional[Chain]
@@ -45,7 +45,7 @@ sealed trait Monitor:
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Subordinate): Unit = subordinates -= monitor
+  def remove(monitor: Worker): Unit = workers -= monitor
   def supervisor: Supervisor
 
   def snooze[DurationType: GenericDuration](duration: DurationType): Unit =
@@ -65,7 +65,7 @@ sealed abstract class Supervisor() extends Monitor:
   def supervisor: Supervisor = this
   def stack: Text = name+":".tt
   def cancel(): Unit = ()
-  def shutdown(): Unit = subordinates.each(_.cancel())
+  def shutdown(): Unit = workers.each(_.cancel())
 
   def handle(throwable: Throwable): Transgression =
     println("Throwable reached the supervisor")
@@ -91,7 +91,7 @@ object PlatformSupervisor extends Supervisor():
     Thread.ofPlatform().nn.start(() => block).nn.tap: thread =>
       name.let(_.s).let(thread.setName(_))
 
-abstract class Subordinate
+abstract class Worker
    (frame:   Codepoint,
     parent:  Monitor,
     codicil: Codicil,
@@ -101,21 +101,21 @@ extends Monitor:
   private val state: Mutex[Completion[Result]] = Mutex(Completion.Initializing)
 
   def chain: Chain = Chain(frame, parent.chain)
-  def evaluate(subordinate: Subordinate): Result
+  def evaluate(worker: Worker): Result
   val promise: Promise[Result] = Promise()
   def supervisor: Supervisor = parent.supervisor
   def apply(): Optional[Result] = promise()
   def handle(throwable: Throwable): Transgression = handler.or(parent.handle)(throwable)
 
-  def intercept(handler: Throwable ~> Transgression): Subordinate =
-    new Subordinate(frame, parent, codicil, handler):
+  def intercept(handler: Throwable ~> Transgression): Worker =
+    new Worker(frame, parent, codicil, handler):
       type Result = self.Result
       def name: Optional[Text] = self.name
       def daemon: Boolean = self.daemon
-      def evaluate(subordinate: Subordinate): Result = self.evaluate(subordinate)
+      def evaluate(worker: Worker): Result = self.evaluate(worker)
 
   def delegate(lambda: Monitor -> Unit): Unit = state.replace: state =>
-    subordinates.each { child => if child.daemon then child.cancel() else lambda(child) }
+    workers.each { child => if child.daemon then child.cancel() else lambda(child) }
     state
 
   def stack: Text =
@@ -123,7 +123,7 @@ extends Monitor:
 
     parent match
       case supervisor: Supervisor  => (supervisor.name.s+"://"+ref).tt
-      case submonitor: Subordinate => (submonitor.stack.s+"//"+ref).tt
+      case submonitor: Worker => (submonitor.stack.s+"//"+ref).tt
 
   def relent(): Unit = state.use:
     case Initializing    => ()
@@ -197,7 +197,7 @@ extends Monitor:
       try
         state.replace:
           case Initializing =>
-            parent.subordinates += this
+            parent.workers += this
             Active(System.currentTimeMillis)
 
           case other =>
@@ -222,14 +222,14 @@ extends Monitor:
             case state@Failed(_)                                        => state
 
           state2 match
-            case Cancelled => subordinates.each { child => if child.daemon then child.cancel() }
+            case Cancelled => workers.each { child => if child.daemon then child.cancel() }
             case _         => ()
 
         case error: Throwable =>
           state() = Failed(error)
           handle(error) match
             case Transgression.Absorb   => ()
-            case Transgression.Cancel   => subordinates.each(_.cancel())
+            case Transgression.Cancel   => workers.each(_.cancel())
             case Transgression.Escalate => parent.handle(error)
 
       finally

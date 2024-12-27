@@ -52,22 +52,22 @@ package retryTenacities:
 
 transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 
-def daemon(using Codepoint)(evaluate: Subordinate ?=> Unit)(using Monitor, Codicil): Daemon =
+def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): Daemon =
   Daemon(evaluate(using _))
 
-def async[ResultType](using Codepoint)(evaluate: Subordinate ?=> ResultType)(using Monitor, Codicil)
+def async[ResultType](using Codepoint)(evaluate: Worker ?=> ResultType)(using Monitor, Codicil)
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = Unset)
 
-def task[ResultType](using Codepoint)(name: into Text)(evaluate: Subordinate ?=> ResultType)
+def task[ResultType](using Codepoint)(name: into Text)(evaluate: Worker ?=> ResultType)
    (using Monitor, Codicil)
         : Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = name)
 
 def trap(lambda: Throwable ~> Transgression)(using monitor: Monitor): Trap = Trap(lambda, monitor)
-def relent[ResultType]()(using Subordinate): Unit = monitor.relent()
+def relent[ResultType]()(using Worker): Unit = monitor.relent()
 def cancel[ResultType]()(using Monitor): Unit = monitor.cancel()
 
 def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =

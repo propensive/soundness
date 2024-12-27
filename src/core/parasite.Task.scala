@@ -26,17 +26,17 @@ import vacuous.*
 
 object Task:
   def apply[ResultType]
-     (evaluate: Subordinate => ResultType, daemon: Boolean, name: Optional[Text])
+     (evaluate: Worker => ResultType, daemon: Boolean, name: Optional[Text])
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
           : Task[ResultType] =
-    inline def evaluate0: Subordinate => ResultType = evaluate
+    inline def evaluate0: Worker => ResultType = evaluate
     inline def name0: Optional[Text] = name
 
-    new Subordinate(codepoint, monitor, codicil, Unset) with Task[ResultType]:
+    new Worker(codepoint, monitor, codicil, Unset) with Task[ResultType]:
       type Result = ResultType
       def name: Optional[Text] = name0
       def daemon: Boolean = false
-      def evaluate(subordinate: Subordinate): Result = evaluate0(subordinate)
+      def evaluate(worker: Worker): Result = evaluate0(worker)
 
 trait Task[+ResultType]:
   def ready: Boolean
