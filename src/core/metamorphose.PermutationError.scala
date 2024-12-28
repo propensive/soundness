@@ -40,5 +40,5 @@ object PermutationError:
     case TooShort(size, min) =>
       m"the input, of size $size, is too short for the permutation of size $min"
 
-case class PermutationError(reason: PermutationError.Reason)
+case class PermutationError(reason: PermutationError.Reason)(using Diagnostics)
 extends Error(m"could not construct permutation because $reason")
