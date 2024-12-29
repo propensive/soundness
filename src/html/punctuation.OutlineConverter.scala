@@ -19,7 +19,7 @@ package punctuation
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import honeycomb.*
+import honeycomb.*, html5.*
 import rudiments.*
 import vacuous.*
 

@@ -19,7 +19,7 @@ package punctuation
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import honeycomb.*
+import honeycomb.*, html5.*
 import rudiments.*
 import vacuous.*
 
@@ -61,7 +61,7 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Block.Table(parts*)             => Seq(Table(parts.flatMap(tableParts)))
 
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
-      renderersMap.get(syntax).optional.lay(Seq(Div.amok(Pre(honeycomb.Code(escape(value)))))): renderer =>
+      renderersMap.get(syntax).optional.lay(Seq(Div.amok(Pre(html5.Code(escape(value)))))): renderer =>
         renderer.render(meta, value)
 
     case Markdown.Ast.Block.BulletList(num, _, items*) =>
@@ -108,7 +108,7 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Inline.LineBreak                => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
-    case Markdown.Ast.Inline.SourceCode(code)         => List(honeycomb.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
+    case Markdown.Ast.Inline.SourceCode(code)         => List(html5.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
     case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
     case _                                            => Nil
 
