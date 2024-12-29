@@ -20,6 +20,9 @@ import anticipation.*
 
 import language.dynamics
 
+extension [ValueType: Renderable](value: ValueType)
+  def html: List[ValueType.Result] = ValueType.html(value)
+
 extension (context: StringContext)
   def cls(): CssClass = CssClass(context.parts.head.tt)
   def id(): DomId = DomId(context.parts.head.tt)

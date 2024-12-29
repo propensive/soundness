@@ -1,6 +1,6 @@
 # This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
 
-target honeycomb/test
+target honeycomb/core
 repo propensive/gossamer
 repo propensive/serpentine
 repo propensive/xylophone
