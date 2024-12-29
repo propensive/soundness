@@ -28,6 +28,7 @@ content—which lend themselves to conversion to HTML or another format.
 
 
 
+
 ## Getting Started
 
 _Harlequin_ provides only a single method, `ScalaSyntax.highlight`, which takes a `Text` value and
@@ -89,7 +90,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Harlequin is designed to be _small_. Its entire source code currently consists
-of 235 lines of code.
+of 233 lines of code.
 
 ## Building
 
