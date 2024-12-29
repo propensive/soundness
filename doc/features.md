@@ -6,4 +6,3 @@
 - optional pattern-matching on requests
 - fast streaming without complexity
 - safe parameter and header access
-- typesafe representation of URLs
