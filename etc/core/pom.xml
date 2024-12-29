@@ -29,12 +29,12 @@
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>gesticulate-core</artifactId>
+      <artifactId>nettlesome-url</artifactId>
       <version>0.24.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>nettlesome-url</artifactId>
+      <artifactId>gesticulate-core</artifactId>
       <version>0.24.0</version>
     </dependency>
   </dependencies>
