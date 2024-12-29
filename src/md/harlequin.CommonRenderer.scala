@@ -19,13 +19,15 @@ package harlequin
 import anticipation.*
 import gossamer.*
 import harlequin.*
-import honeycomb.*
+import honeycomb.*, html5.*
 import spectacular.*
 import vacuous.*
 
 trait CommonRenderer:
   def className(accent: Accent): List[CssClass] = List(CssClass(accent.show.lower))
-  def element(accent: Accent, text: Text): Element["code"] = Code(`class` = className(accent))(text)
+
+  def element(accent: Accent, text: Text): Element["code"] =
+    html5.Code(`class` = className(accent))(text)
 
   protected def postprocess(source: SourceCode): Seq[Html[Flow]] =
     val code = source.lines.map: line =>
