@@ -34,6 +34,11 @@
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
+      <artifactId>nomenclature-core</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
       <artifactId>escapade-core</artifactId>
       <version>0.24.0</version>
     </dependency>
