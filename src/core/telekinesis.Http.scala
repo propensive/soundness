@@ -89,7 +89,10 @@ object Http:
     (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
       case connection: HttpURLConnection =>
         connection.setRequestMethod(method.toString.show.upper.s)
-        connection.setRequestProperty(RequestHeader.ContentType.header.s, PostType.contentType.show.s)
+
+        connection.setRequestProperty
+         (RequestHeader.ContentType.header.s, PostType.contentType.show.s)
+
         connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
         headers.each:
@@ -98,6 +101,7 @@ object Http:
 
         if method == HttpMethod.Post || method == HttpMethod.Put then
           connection.setDoOutput(true)
+          connection.connect()
           val out = connection.getOutputStream().nn
           PostType.content(content).map(_.to(Array)).each(out.write(_))
           out.close()
