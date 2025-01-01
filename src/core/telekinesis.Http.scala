@@ -29,56 +29,56 @@ import java.io.*
 import language.dynamics
 
 object Http:
-  def post[PostType: Postable, UrlType: Hyperlinkable]
+  def post[PostType: Postable, UrlType: Fetchable]
      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch[PostType](UrlType.hyperlink(url), content, HttpMethod.Post, headers)
+    fetch[PostType](UrlType.url(url), content, HttpMethod.Post, headers)
 
-  def put[PostType: Postable, UrlType: Hyperlinkable]
+  def put[PostType: Postable, UrlType: Fetchable]
      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch[PostType](UrlType.hyperlink(url), content, HttpMethod.Put, headers)
+    fetch[PostType](UrlType.url(url), content, HttpMethod.Put, headers)
 
-  def get[UrlType: Hyperlinkable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
+  def get[UrlType: Fetchable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Get, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Get, headers)
 
-  def options[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def options[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Options, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Options, headers)
 
-  def head[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def head[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Head, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Head, headers)
 
-  def delete[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def delete[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Delete, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Delete, headers)
 
-  def connect[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def connect[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Connect, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Connect, headers)
 
-  def trace[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def trace[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Trace, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Trace, headers)
 
-  def patch[UrlType: Hyperlinkable](url: UrlType, headers: RequestHeader.Value*)(using Online)
+  def patch[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.hyperlink(url), (), HttpMethod.Patch, headers)
+    fetch(UrlType.url(url), (), HttpMethod.Patch, headers)
 
-  private def fetch[PostType: Postable]
+  def fetch[PostType: Postable]
      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
      (using Online)
           : HttpResponse logs HttpEvent =

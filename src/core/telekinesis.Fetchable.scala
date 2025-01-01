@@ -19,8 +19,8 @@ package telekinesis
 import nettlesome.*
 import rudiments.*
 
-object Hyperlinkable:
-  given httpUrl: Hyperlinkable[HttpUrl] = identity(_)
+object Fetchable:
+  given httpUrl: Fetchable[HttpUrl] = identity(_)
 
-trait Hyperlinkable[-UrlType]:
-  def hyperlink(value: UrlType): HttpUrl
+trait Fetchable[-UrlType]:
+  def url(value: UrlType): HttpUrl
