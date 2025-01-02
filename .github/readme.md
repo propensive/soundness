@@ -26,6 +26,7 @@ position, and hyperlinks.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `yossarian` package:
@@ -197,6 +198,6 @@ The logo shows an abstract depiction of some rows of content in a console.
 
 ## License
 
-Yossarian is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Yossarian is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
