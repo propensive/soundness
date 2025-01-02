@@ -26,6 +26,7 @@ listing may be obtained with `sh"ls $path".exec[List[String]]()`.
 
 
 
+
 ## Getting Started
 
 ### Commands
@@ -264,6 +265,6 @@ The logo shows the principal parts of a guillotine: the lunette and the blade.
 
 ## License
 
-Guillotine is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Guillotine is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
