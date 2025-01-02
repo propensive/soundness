@@ -32,6 +32,7 @@ or slant. _Phoenicia_ provides read-only access to this data.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `phoenicia` package:
@@ -181,6 +182,6 @@ The logo shows a close-up view of a character in a _serif_ font.
 
 ## License
 
-Phoenicia is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Phoenicia is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
