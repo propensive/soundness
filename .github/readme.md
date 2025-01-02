@@ -28,6 +28,7 @@ content and other parameters.
 
 
 
+
 ## Getting Started
 
 Here is an example of a table rendered by Escritoire:
