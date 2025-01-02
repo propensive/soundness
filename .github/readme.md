@@ -23,6 +23,7 @@ is specified in their type.
 
 
 
+
 ## Getting Started
 
 _Cardinality_ provides a representation of numbers which must lie within a certain (closed) range. A range type is written with the
@@ -159,6 +160,6 @@ The logo shows the hat typically worn by a cardinal, alluding to the name _Cardi
 
 ## License
 
-Cardinality is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Cardinality is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
