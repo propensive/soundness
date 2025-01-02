@@ -13,8 +13,8 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-  <name>Rudiments</name>
-  <description>Rudimentary utilities for writing everyday Scala</description>
+  <name>Vicarious</name>
+  <description>Typesafe associations with product type fields</description>
   <url>https://soundness.dev/vicarious</url>
   <packaging>jar</packaging>
   <properties>
@@ -24,27 +24,7 @@
   <dependencies>
     <dependency>
       <groupId>dev.soundness</groupId>
-      <artifactId>anticipation-http</artifactId>
-      <version>0.24.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>anticipation-path</artifactId>
-      <version>0.24.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>anticipation-codec</artifactId>
-      <version>0.24.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>vacuous-core</artifactId>
-      <version>0.24.0</version>
-    </dependency>
-    <dependency>
-      <groupId>dev.soundness</groupId>
-      <artifactId>denominative-core</artifactId>
+      <artifactId>rudiments-core</artifactId>
       <version>0.24.0</version>
     </dependency>
   </dependencies>
