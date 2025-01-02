@@ -25,6 +25,7 @@ an implementation of this encoding.
 
 
 
+
 ## Getting Started
 
 Metamorphose primarily provides the `Permutation` class, which is in the
@@ -181,6 +182,6 @@ caterpillar.
 
 ## License
 
-Metamorphose is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Metamorphose is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
