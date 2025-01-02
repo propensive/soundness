@@ -22,6 +22,7 @@ support for different character encodings, and utilizing additional Unicode meta
 
 
 
+
 ## Getting Started
 
 ### Character Display Width
@@ -162,6 +163,6 @@ The logo is a stylised rendering of the [Unicode](https://home.unicode.org/) log
 
 ## License
 
-Hieroglyph is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Hieroglyph is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
