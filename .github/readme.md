@@ -22,6 +22,7 @@ converting STDIN into an event stream of keypresses.
 
 
 
+
 ## Getting Started
 
 Java does not provide native support for direct access to keypress events. While Standard input (`STDIN`)
@@ -212,6 +213,6 @@ The logo shows the horns of a devil; the epitome of the profane.
 
 ## License
 
-Profanity is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Profanity is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
