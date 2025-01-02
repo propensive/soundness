@@ -31,6 +31,7 @@ structured types as early as possible. This is the role of Ambience.
 
 
 
+
 ## Getting Started
 
 All Ambience terms and types are in the `ambience` package.
