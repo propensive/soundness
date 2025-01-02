@@ -29,6 +29,7 @@ perfect for testing.
 
 
 
+
 ## Getting Started
 
 Larceny is a compiler plugin, and can be included in a compilation with the
@@ -261,6 +262,6 @@ The logo shows a shape of a medieval fortification, alluding to a "demilitarized
 
 ## License
 
-Larceny is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Larceny is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
