@@ -24,6 +24,7 @@ Bloom filter, with flexibility to tune its properties according to need.
 
 
 
+
 ## Getting Started
 
 ### About Bloom Filters
@@ -189,6 +190,6 @@ The logo shows a blooming lotus flower, alluding to the _Bloom_ filters that Uly
 
 ## License
 
-Ulysses is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Ulysses is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
