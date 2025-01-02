@@ -29,6 +29,7 @@ Scala application into a self-contained, portable executable.
 
 
 
+
 ## Getting Started
 
 ### Running as a Daemon
@@ -254,6 +255,6 @@ The logo shows a spectrum of light, and is thus _ethereal_.
 
 ## License
 
-Ethereal is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Ethereal is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
