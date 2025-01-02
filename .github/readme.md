@@ -23,6 +23,7 @@ a few useful methods for working with `LazyList`s for streaming data as bytes, c
 
 
 
+
 ## Getting Started
 
 ## `LazyList`s
@@ -396,6 +397,6 @@ The logo shows a turbulent (and colorful) vortex.
 
 ## License
 
-Turbulence is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Turbulence is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
