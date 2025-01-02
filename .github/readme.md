@@ -26,6 +26,7 @@ unrepresentable, which is contravened when media types are represented by string
 
 
 
+
 ## Getting Started
 
 ### `MediaType`
@@ -199,6 +200,6 @@ The logo shows a simple fast-forward symbol, familiar from playing many kinds of
 
 ## License
 
-Gesticulate is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Gesticulate is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
