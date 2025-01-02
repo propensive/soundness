@@ -21,8 +21,11 @@ import prepositional.*
 import vacuous.*
 
 object Proxy:
-  transparent inline def make[KeyType]: Proxy[KeyType] = ${Vicarious.make[KeyType]}
-
+  transparent inline given derived[KeyType]: Proxy[KeyType] = ${Vicarious.make[KeyType]}
 
 case class Proxy[KeyType](label: Optional[Text] = Unset) extends Selectable:
   def selectDynamic(key: String): Any = Proxy(label.lay(key.tt)(_+".".tt+key.tt))
+  def unapply(scrutinee: Proxy[?]): Boolean = scrutinee.label == label
+
+  def apply[ValueType](using catalog: Catalog[KeyType, ValueType])(): ValueType =
+    catalog.values(label.vouch(using Unsafe))
