@@ -37,6 +37,7 @@ libraryDependencies += "dev.soundness" % "dendrology-dag" % "0.2.0"
 
 
 
+
 ## Getting Started
 
 Dendrology can render tree-like structures as text, such as the following,
