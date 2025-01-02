@@ -30,6 +30,7 @@ to write and build software which depends on Symbolism.
 
 
 
+
 ## Getting Started
 
 
@@ -289,6 +290,6 @@ The logo shows three of the four arithmetic operators overlaid upon each other.
 
 ## License
 
-Symbolism is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Symbolism is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
