@@ -25,6 +25,7 @@ connecting and serving TCP connections.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `coaxial` package, which can be imported
@@ -272,6 +273,6 @@ The logo shows a cross-section of a coaxial connector.
 
 ## License
 
-Coaxial is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Coaxial is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
