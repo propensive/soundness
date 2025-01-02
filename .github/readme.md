@@ -31,6 +31,7 @@ correct.
 
 
 
+
 ## Getting Started
 
 TBC
@@ -140,6 +141,6 @@ The logo is a stylized allusion to the Scala logo.
 
 ## License
 
-Anthology is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Anthology is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
