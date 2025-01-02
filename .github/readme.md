@@ -39,6 +39,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 
 
+
 ## Getting Started
 
 All Contingency terms and types are defined in the `contingency` package:
