@@ -4,7 +4,7 @@
 
 # Anthology
 
-__A typesafe interface to the Scala compiler__
+__A typesafe interface to JVM compilers__
 
 Often we need to invoke the Scala compiler programmatically. The standard
 invocation requires parameters to be specified as a sequence of strings,
