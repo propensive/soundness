@@ -23,6 +23,7 @@ Directory](https://specifications.freedesktop.org/basedir-spec/basedir-spec-late
 
 
 
+
 ## Getting Started
 
 ### Standard directory layout
@@ -177,6 +178,6 @@ The logo shows the colors of an emperor (suggesting _imperial_) penguin.
 
 ## License
 
-Imperial is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Imperial is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
