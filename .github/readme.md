@@ -26,6 +26,7 @@ make logs easier to read.
 
 
 
+
 ## Getting Started
 
 ### Defining a logger
@@ -223,6 +224,6 @@ The logo shows the cut cross section of a (supposedly) Eucalyptus tree, with a l
 
 ## License
 
-Eucalyptus is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Eucalyptus is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
