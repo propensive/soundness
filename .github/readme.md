@@ -27,6 +27,7 @@ the same set which can safely select one string from the set.
 
 
 
+
 ## Getting Started
 
 When working with front-end applications that must be presented to different users in different languages, it's
@@ -263,6 +264,6 @@ The logo shows two overlapping speech bubbles, highlighting Cosmopolite's focus 
 
 ## License
 
-Cosmopolite is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Cosmopolite is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
