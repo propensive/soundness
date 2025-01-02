@@ -20,6 +20,7 @@ __Charisma__ provides a simple representation of chemical elements and formulas 
 
 
 
+
 ## Getting Started
 
 ### Chemical Entities
@@ -237,6 +238,6 @@ The logo shows a deuterium atom, according to the [Bohr model](https://en.wikipe
 
 ## License
 
-Charisma is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Charisma is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
