@@ -23,6 +23,7 @@ all systems. _Inimitable_ provides a few utilities for working with them.
 
 
 
+
 ## Getting Started
 
 All Inimitable terms and types are defined in the `inimitable` package:
@@ -178,6 +179,6 @@ The logo shows an arrangement of the 128 bits which form a UUID in a grid.
 
 ## License
 
-Inimitable is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Inimitable is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
