@@ -24,6 +24,7 @@ reflection detail about how the source of an expression translates into an AST.
 
 
 
+
 ## Getting Started
 
 Hyperbole runs at compiletime to inspect an expression, but can present its
@@ -182,6 +183,6 @@ The logo shows a set of shapes formed from hyperbolic curves, reminiscent of a b
 
 ## License
 
-Hyperbole is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Hyperbole is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
