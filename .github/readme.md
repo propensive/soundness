@@ -17,6 +17,7 @@ __Deserialize binary data in Scala__
 
 
 
+
 ## Getting Started
 
 
@@ -126,6 +127,6 @@ language.
 
 ## License
 
-Bifurcate is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Bifurcate is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
