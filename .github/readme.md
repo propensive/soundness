@@ -28,6 +28,7 @@ opportunities Scala offers to make these APIs as intuitive as possible.
 
 
 
+
 ## Getting Started
 
 _Aviation_ provides a variety of types representing and working with different time-related concepts.
@@ -201,6 +202,6 @@ The logo shows a bird, the archetype of _aviation_, ascending in front of a sett
 
 ## License
 
-Aviation is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Aviation is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
