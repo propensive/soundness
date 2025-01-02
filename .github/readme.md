@@ -27,6 +27,7 @@ content and other parameters.
 
 
 
+
 ## Getting Started
 
 Here is an example of a table rendered by Escritoire:
@@ -629,6 +630,6 @@ The logo shows some stylized papers laid out on a green writing table, or _escri
 
 ## License
 
-Escritoire is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Escritoire is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
