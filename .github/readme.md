@@ -29,6 +29,7 @@ working with matrices and scalar and vector products.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `mosquito` package, so it's sufficient
@@ -252,6 +253,6 @@ The logo represents the _x_, _y_ and _z_ axes of a vector space.
 
 ## License
 
-Mosquito is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Mosquito is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
