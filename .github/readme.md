@@ -29,6 +29,7 @@ for most purposes, and has the distinction that `debug` will always provide _som
 
 
 
+
 ## Getting Started
 
 All Spectacular terms and types are defined in the `spectacular` package:
@@ -273,6 +274,6 @@ The logo is a film reel, the medium for distributing a _show_.
 
 ## License
 
-Spectacular is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Spectacular is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
