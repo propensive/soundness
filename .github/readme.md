@@ -26,6 +26,7 @@ Feudalism implements a generic `Mutex` type which guarantees these constraints.
 
 
 
+
 ## Getting Started
 
 ### Creating a new Mutex
@@ -153,6 +154,6 @@ while in the write-access half, the ring is just a single thread.
 
 ## License
 
-Feudalism is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Feudalism is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
