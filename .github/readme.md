@@ -28,6 +28,7 @@ instances.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `baroque` package, which can be imported
