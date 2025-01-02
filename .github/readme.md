@@ -26,6 +26,7 @@ units in mixed bases.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `abacist` package, and are exported to
@@ -263,6 +264,6 @@ The logo shows a single bead on a rod of an abacus, the device an _abacist_ spec
 
 ## License
 
-Abacist is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Abacist is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
