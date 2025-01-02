@@ -24,6 +24,7 @@ __Escapade__ makes it easy to work safely with strings containing ANSI escape co
 
 
 
+
 ## Getting Started
 
 ### About ANSI Codes
@@ -225,6 +226,6 @@ The logo shows a hot-air balloon, indicative of an escapade.
 
 ## License
 
-Escapade is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Escapade is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
