@@ -31,6 +31,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 
 
+
 ## Getting Started
 
 __Anticipation__ defines several typeclass interfaces to provide interoperability
@@ -287,6 +288,6 @@ The logo shows a simple floral pattern.
 
 ## License
 
-Anticipation is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Anticipation is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
