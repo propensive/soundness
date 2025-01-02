@@ -24,6 +24,7 @@ _Hypotenuse_ has the goal of improving the safety and aesthetics of working with
 
 
 
+
 ## Getting Started
 
 ### Philosophy
@@ -219,6 +220,6 @@ The logo shows a right-angled triange, the longest side of which is its _hypoten
 
 ## License
 
-Hypotenuse is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Hypotenuse is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
