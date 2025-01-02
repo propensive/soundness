@@ -24,6 +24,7 @@ libraries.
 
 
 
+
 ## Getting Started
 
 Cellulose provides facilities for constructing, parsing, accessing,
@@ -203,6 +204,6 @@ The logo imagines a high-level arrangement of cells in a hexagonal grid.
 
 ## License
 
-Cellulose is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Cellulose is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
