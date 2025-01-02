@@ -26,6 +26,7 @@ an implementation of this encoding.
 
 
 
+
 ## Getting Started
 
 Metamorphose primarily provides the `Permutation` class, which is in the
