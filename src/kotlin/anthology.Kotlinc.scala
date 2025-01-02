@@ -31,11 +31,6 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.config.CompilerConfiguration
 
-
-case class KotlinError() extends Error(m"there was a compilation error")
-
-type KotlinVersions = 1.0
-
 case class Kotlinc
    [CompilerType <: KotlinVersions]
    (sources: Map[Text, Text], classpath: LocalClasspath, out: Path):
