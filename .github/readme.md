@@ -31,6 +31,7 @@ modifying its source code.
 
 
 
+
 ## Getting Started
 
 To use Umbrageous, `scalac` must be invoked with two additional parameters:
@@ -191,6 +192,6 @@ The logo shows the shadowy side of a mountain range.
 
 ## License
 
-Umbrageous is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Umbrageous is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
