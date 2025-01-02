@@ -38,6 +38,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 
 
+
 ## Getting Started
 
 All Contingency terms and types are defined in the `contingency` package:
@@ -498,6 +499,6 @@ The logo shows three tickets, each of which has been _validated_.
 
 ## License
 
-Contingency is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Contingency is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
