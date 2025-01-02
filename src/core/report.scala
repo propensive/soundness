@@ -22,8 +22,8 @@ import chiaroscuro.*
 import contingency.*
 import dendrology.*
 import digression.*
-import escapade.*, columnAttenuation.ignore
-import escritoire.*, tableStyles.default
+import escapade.*
+import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
