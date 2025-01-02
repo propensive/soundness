@@ -26,6 +26,7 @@ Scala. Tab completions are automatically provided for [`bash`](https://www.gnu.o
 
 
 
+
 ## Getting Started
 
 Exoskeleton has a modular design, so you can use as much or as little of it as
@@ -356,6 +357,6 @@ The logo shows a simplistic and imaginary arthropod, with a pair of wings on eac
 
 ## License
 
-Exoskeleton is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Exoskeleton is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
