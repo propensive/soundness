@@ -27,6 +27,7 @@ immutable API.
 
 
 
+
 ## Getting Started
 
 All Gastronomy terms and types are defined in the `gastronomy` package:
@@ -332,6 +333,6 @@ The logo shows a slice of avocado, a gastronomic delight.
 
 ## License
 
-Gastronomy is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Gastronomy is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
