@@ -23,6 +23,7 @@ protocol.
 
 
 
+
 ## Getting Started
 
 ### Browser Sessions
@@ -184,6 +185,6 @@ The logo represents the eight legs of a tarantula.
 
 ## License
 
-Tarantula is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Tarantula is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
