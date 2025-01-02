@@ -25,6 +25,7 @@ enforcing nesting rules between different tags.
 
 
 
+
 ## Getting Started
 
 ### Constructing HTML nodes
@@ -221,6 +222,6 @@ The logo shows part of the abdomen of a bee, the insect which makes honeycomb.
 
 ## License
 
-Honeycomb is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Honeycomb is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
