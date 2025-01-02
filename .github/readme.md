@@ -22,6 +22,7 @@ ambitious goal of avoiding off-by-one errors, without compromising performance.
 
 
 
+
 ## Getting Started
 
 ### The `Ordinal` type
@@ -212,6 +213,6 @@ by one".
 
 ## License
 
-Denominative is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Denominative is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
