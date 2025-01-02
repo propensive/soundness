@@ -20,14 +20,9 @@ import anticipation.*
 import prepositional.*
 import vacuous.*
 
-import language.dynamics
+object Proxy:
+  transparent inline def make[KeyType]: Proxy[KeyType] = ${Vicarious.make[KeyType]}
 
-case class Proxy[KeyType](label: Optional[Text] = Unset) extends Dynamic:
-  def selectDynamic(key: String): Proxy[KeyType] =
-    Proxy(label.lay(key.tt)(_+".".tt+key.tt))
 
-  def apply[ValueType]()(using catalog: Catalog[KeyType, ValueType]): ValueType =
-    catalog.values(label.or("".tt))
-
-  def applyDynamic[ValueType](key: String)()(using Catalog[KeyType, ValueType]): ValueType =
-    selectDynamic(key).apply[ValueType]()
+case class Proxy[KeyType](label: Optional[Text] = Unset) extends Selectable:
+  def selectDynamic(key: String): Any = Proxy(label.lay(key.tt)(_+".".tt+key.tt))
