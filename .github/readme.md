@@ -159,7 +159,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Prepositional is designed to be _small_. Its entire source code currently consists
-of 12 lines of code.
+of 13 lines of code.
 
 ## Building
 
@@ -246,6 +246,6 @@ The logo shows a ball being placed into a box. These objects are often used to e
 
 ## License
 
-Prepositional is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Prepositional is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
