@@ -27,6 +27,7 @@ differences.
 
 
 
+
 ## Getting Started
 
 All Chiaroscuro terms and types are defined in the `chiaroscuro` package:
