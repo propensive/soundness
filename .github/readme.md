@@ -25,6 +25,7 @@ differences.
 
 
 
+
 ## Getting Started
 
 All Chiaroscuro terms and types are defined in the `chiaroscuro` package:
@@ -283,6 +284,6 @@ The logo shows a stylized crescent moon, illustrating the contrast of light agai
 
 ## License
 
-Chiaroscuro is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Chiaroscuro is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
