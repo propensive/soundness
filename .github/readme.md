@@ -32,6 +32,7 @@ conversions of singleton literal types.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `typonym` package:
@@ -208,6 +209,6 @@ The logo shows the square brackets which usually delimit a type in Scala.
 
 ## License
 
-Typonym is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Typonym is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
