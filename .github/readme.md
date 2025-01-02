@@ -21,6 +21,7 @@ cache which will be appropriate for some (but not all) applications: a least-rec
 
 
 
+
 ## Getting Started
 
 All Camouflage terms and types are defined in the `camouflage` package:
@@ -217,6 +218,6 @@ The logo shows a swatch of fabric in typical military camouflage colors.
 
 ## License
 
-Camouflage is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Camouflage is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
