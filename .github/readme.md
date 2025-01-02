@@ -25,6 +25,7 @@ typesafe opaque type alias of `String`.
 
 
 
+
 ## Getting Started
 
 _Gossamer_ provides a collection of useful methods and constructors for working with strings.
