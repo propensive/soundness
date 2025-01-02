@@ -30,6 +30,7 @@ structured types as early as possible. This is the role of Ambience.
 
 
 
+
 ## Getting Started
 
 All Ambience terms and types are in the `ambience` package.
@@ -285,6 +286,6 @@ The logo depicts the upper atmosphere of an imagined planet, alluding to the syn
 
 ## License
 
-Ambience is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Ambience is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
