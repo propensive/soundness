@@ -28,6 +28,7 @@ immutable API.
 
 
 
+
 ## Getting Started
 
 All Gastronomy terms and types are defined in the `gastronomy` package:
