@@ -32,6 +32,7 @@ IO and NIO types like `File` and `Path`
 
 
 
+
 ## Getting Started
 
 Using Diuretic is usually as simple as adding an import, alongside another
@@ -174,6 +175,6 @@ The logo shows a stylized cup of coffee, a well-known diuretic.
 
 ## License
 
-Diuretic is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Diuretic is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
