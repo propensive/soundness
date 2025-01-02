@@ -32,8 +32,6 @@ import javax.tools as jt
 import java.util as ju
 import java.net as jn
 
-case class JavacOption(flags: Text*)
-
 object Javac:
   private var Javac: jt.JavaCompiler = jt.ToolProvider.getSystemJavaCompiler().nn
   def refresh(): Unit = Javac = jt.ToolProvider.getSystemJavaCompiler().nn
@@ -46,7 +44,7 @@ case class Javac(options: List[JavacOption]):
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
-          : CompileProcess logs CompileEvent raises CompileError =
+          : CompileProcess logs CompileEvent raises CompilerError =
     Log.info(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()
 
