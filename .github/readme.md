@@ -52,6 +52,8 @@ libraryDependencies += "dev.soundness" % "quantitative-core" % "0.1.0"
 
 
 
+
+
 ## Getting Started
 
 All Quantitative terms and types are defined in the `quantitative` package,
@@ -619,6 +621,6 @@ The logo shows an unlabelled diagram of the seven SI base units, as illustrated 
 
 ## License
 
-Quantitative is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Quantitative is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
