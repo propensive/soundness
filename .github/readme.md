@@ -29,6 +29,7 @@ content—which lend themselves to conversion to HTML or another format.
 
 
 
+
 ## Getting Started
 
 _Harlequin_ provides only a single method, `ScalaSyntax.highlight`, which takes a `Text` value and
@@ -176,6 +177,6 @@ The logo shows the motley pattern of a harlequin.
 
 ## License
 
-Harlequin is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Harlequin is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
