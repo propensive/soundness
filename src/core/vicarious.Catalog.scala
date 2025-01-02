@@ -22,22 +22,29 @@ import vacuous.*
 
 import language.dynamics
 
-case class Catalog[KeyType, +ValueType](values: Map[Text, ValueType]):
-  def apply(accessor: (`*`: Proxy[KeyType]) ?=> Proxy[KeyType]): ValueType =
-    values(accessor(using Proxy[KeyType]()).label.vouch(using Unsafe))
+case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
+  def apply(accessor: (`*`: Proxy[KeyType, ValueType]) ?=> Proxy[KeyType, ValueType]): ValueType =
+    values(accessor(using Proxy()).label.vouch(using Unsafe))
 
   def map[ValueType2](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
     Catalog(values.view.mapValues(lambda).to(Map))
 
-  def tie[ResultType](using proxy: Proxy[KeyType])
+  def tie[ResultType](using proxy: Proxy[KeyType, ValueType])
      (lambda: (catalog: this.type, `*`: proxy.type) ?=> ResultType)
           : ResultType =
     lambda(using this, proxy)
 
+  def braid[ValueType2](right: Catalog[KeyType, ValueType2])[ResultType]
+     (lambda: (ValueType, ValueType2) => ResultType)
+          : Catalog[KeyType, ResultType] =
+    Catalog(values.map { (key, value) => key -> lambda(value, right.values(key)) })
+
 extension [KeyType, ValueType](catalog: Catalog[KeyType, ValueType])
-  def braid(using proxy: Proxy[KeyType])(lambda: (`*`: proxy.type) ?=> Proxy[?] ~> ValueType)
+  def brush(using proxy: MatchProxy[KeyType, ValueType])
+     (lambda: (`*`: proxy.type) ?=> MatchProxy[KeyType, ValueType] ~> ValueType)
           : Catalog[KeyType, ValueType] =
 
     val partialFunction = lambda(using proxy)
+
     Catalog[KeyType, ValueType](catalog.values.map: (key, value) =>
-      key -> partialFunction.applyOrElse(Proxy(key), _ => value))
+      key -> partialFunction.applyOrElse(MatchProxy(key), _ => value))

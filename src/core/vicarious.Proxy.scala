@@ -18,14 +18,26 @@ package vicarious
 
 import anticipation.*
 import prepositional.*
+import rudiments.*
 import vacuous.*
 
 object Proxy:
-  transparent inline given derived[KeyType]: Proxy[KeyType] = ${Vicarious.make[KeyType]}
+  transparent inline given derived[KeyType, ValueType]: Proxy[KeyType, ValueType] =
+    ${Vicarious.proxy[KeyType, ValueType]}
 
-case class Proxy[KeyType](label: Optional[Text] = Unset) extends Selectable:
-  def selectDynamic(key: String): Any = Proxy(label.lay(key.tt)(_+".".tt+key.tt))
-  def unapply(scrutinee: Proxy[?]): Boolean = scrutinee.label == label
 
-  def apply[ValueType](using catalog: Catalog[KeyType, ValueType])(): ValueType =
-    catalog.values(label.vouch(using Unsafe))
+case class Proxy[KeyType, ValueType](label: Optional[Text] = Unset) extends Selectable:
+  def selectDynamic(key: String)(using catalog: Catalog[KeyType, ValueType])
+          : ValueType | Proxy[KeyType, ValueType] =
+    val label2 = label.lay(key.tt)(_+".".tt+key.tt)
+    catalog.values.at(label2).or(Proxy(label2))
+
+object MatchProxy:
+  transparent inline given derived[KeyType, ValueType]: MatchProxy[KeyType, ValueType] =
+    ${Vicarious.matchProxy[KeyType, ValueType]}
+
+case class MatchProxy[KeyType, ValueType](label: Optional[Text] = Unset) extends Selectable:
+  def selectDynamic(key: String): MatchProxy[KeyType, ValueType] =
+    MatchProxy(label.lay(key.tt)(_+".".tt+key.tt))
+
+  def unapply(scrutinee: MatchProxy[KeyType, ValueType]): Boolean = scrutinee.label == label
