@@ -33,6 +33,7 @@ libraryDependencies += "dev.soundness" % "dissonance-core" % "0.3.0"
 
 
 
+
 ## Getting Started
 
 Dissonance provides only a single method, `diff`, which takes a `left` and
@@ -239,6 +240,6 @@ The logo shows three sets of concentric circles, offset from each other, and cre
 
 ## License
 
-Dissonance is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Dissonance is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
