@@ -24,6 +24,7 @@ paths.
 
 
 
+
 ## Getting Started
 
 Surveillance watches directories for changes to their contents, through an extension method, `watch()`, on a
@@ -155,6 +156,6 @@ The logo shows a glistening eye, watching or _surveilling_.
 
 ## License
 
-Surveillance is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Surveillance is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
