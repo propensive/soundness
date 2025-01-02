@@ -23,6 +23,7 @@ provide intuitive syntax for manipulating XML, as well as better typesafety and 
 
 
 
+
 ## Getting Started
 
 ### Parsing
@@ -313,6 +314,6 @@ The logo shows two angle brackets (or chevrons), representing the most significa
 
 ## License
 
-Xylophone is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Xylophone is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
