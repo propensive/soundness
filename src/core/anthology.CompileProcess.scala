@@ -16,41 +16,11 @@
 
 package anthology
 
-import ambience.*
 import anticipation.*
 import contingency.*
-import digression.*
-import fulminate.*
-import gossamer.*
-import hellenism.*
 import parasite.*
-import rudiments.*
 import turbulence.*
 import vacuous.*
-
-given realm: Realm = realm"anthology"
-
-enum Importance:
-  case Info, Warning, Error
-
-case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
-case class Notice(importance: Importance, file: Text, message: Text, codeRange: Optional[CodeRange])
-
-case class CompilerError()(using Diagnostics)
-extends Error(m"there was a problem with the compiler configuration")
-
-enum CompileResult:
-  case Failure
-  case Success
-  case Crash(error: StackTrace)
-
-case class CompileProgress(complete: Double, stage: Text)
-
-trait Compiler:
-  def apply(classpath: LocalClasspath)[PathType: GenericPath]
-     (sources: Map[Text, Text], out: PathType)
-     (using SystemProperties, Monitor)
-          : CompileProcess logs CompileEvent raises CompilerError
 
 class CompileProcess():
   private[anthology] var continue: Boolean = true
@@ -84,16 +54,3 @@ class CompileProcess():
 
   lazy val progress: LazyList[CompileProgress] = progressSpool.stream
   lazy val notices: LazyList[Notice] = noticesSpool.stream
-
-enum CompileEvent:
-  case Start
-  case CompilerCrash
-  case Notice(diagnostic: Text)
-  case Running(args: List[Text])
-
-object CompileEvent:
-  given CompileEvent is Communicable =
-    case Start              => m"Starting compilation"
-    case CompilerCrash      => m"Compiler crashed"
-    case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
-    case Running(args)      => m"Running compiler with arguments ${args.join(t" ")}"
