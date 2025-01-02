@@ -24,6 +24,7 @@ typesafe opaque type alias of `String`.
 
 
 
+
 ## Getting Started
 
 _Gossamer_ provides a collection of useful methods and constructors for working with strings.
@@ -258,6 +259,6 @@ The logo shows the glowing tip of a gossamer-thin fibreoptic cable.
 
 ## License
 
-Gossamer is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Gossamer is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
