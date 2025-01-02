@@ -22,9 +22,8 @@ import rudiments.*
 import vacuous.*
 
 object Proxy:
-  transparent inline given derived[KeyType, ValueType]: Proxy[KeyType, ValueType] =
-    ${Vicarious.proxy[KeyType, ValueType]}
-
+  transparent inline given derived[KeyType, ValueType]: (Proxy[KeyType, ValueType] | MatchProxy[KeyType]) =
+    ${Vicarious.proxy[KeyType, ValueType](false)}
 
 case class Proxy[KeyType, ValueType](label: Optional[Text] = Unset) extends Selectable:
   def selectDynamic(key: String)(using catalog: Catalog[KeyType, ValueType])
@@ -33,11 +32,11 @@ case class Proxy[KeyType, ValueType](label: Optional[Text] = Unset) extends Sele
     catalog.values.at(label2).or(Proxy(label2))
 
 object MatchProxy:
-  transparent inline given derived[KeyType, ValueType]: MatchProxy[KeyType, ValueType] =
-    ${Vicarious.matchProxy[KeyType, ValueType]}
+  transparent inline given derived[KeyType, ValueType]: (Proxy[KeyType, ValueType] | MatchProxy[KeyType]) =
+    ${Vicarious.proxy[KeyType, ValueType](true)}
 
-case class MatchProxy[KeyType, ValueType](label: Optional[Text] = Unset) extends Selectable:
-  def selectDynamic(key: String): MatchProxy[KeyType, ValueType] =
+case class MatchProxy[KeyType](label: Optional[Text] = Unset) extends Selectable:
+  def selectDynamic(key: String): MatchProxy[KeyType] =
     MatchProxy(label.lay(key.tt)(_+".".tt+key.tt))
 
-  def unapply(scrutinee: MatchProxy[KeyType, ValueType]): Boolean = scrutinee.label == label
+  def unapply(scrutinee: MatchProxy[KeyType]): Boolean = scrutinee.label == label

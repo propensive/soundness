@@ -40,8 +40,8 @@ case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
     Catalog(values.map { (key, value) => key -> lambda(value, right.values(key)) })
 
 extension [KeyType, ValueType](catalog: Catalog[KeyType, ValueType])
-  def brush(using proxy: MatchProxy[KeyType, ValueType])
-     (lambda: (`*`: proxy.type) ?=> MatchProxy[KeyType, ValueType] ~> ValueType)
+  def brush(using proxy: MatchProxy[KeyType])
+     (lambda: (`*`: proxy.type) ?=> MatchProxy[KeyType] ~> ValueType)
           : Catalog[KeyType, ValueType] =
 
     val partialFunction = lambda(using proxy)
