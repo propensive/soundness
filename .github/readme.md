@@ -21,6 +21,7 @@ Caesura provides an API for reading and writing CSV and TSV.
 
 
 
+
 ## Getting Started
 
 ### Reading CSV Data
@@ -196,6 +197,6 @@ The logo is a comma, the significant character for separating values in CSV file
 
 ## License
 
-Caesura is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Caesura is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
