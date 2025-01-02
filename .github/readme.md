@@ -27,6 +27,7 @@ and block-level content, with converters to
 
 
 
+
 ## Getting Started
 
 Markdown may be read from a source such as a string or file with the `Markdown.parse` method. For example,
@@ -195,6 +196,6 @@ The logo shows a downward arrow overlaid on a capital letter M, representing the
 
 ## License
 
-Punctuation is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Punctuation is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
