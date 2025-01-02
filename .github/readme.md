@@ -24,6 +24,7 @@ connecting and serving TCP connections.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `coaxial` package, which can be imported
@@ -183,7 +184,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Coaxial is designed to be _small_. Its entire source code currently consists
-of 328 lines of code.
+of 330 lines of code.
 
 ## Building
 
