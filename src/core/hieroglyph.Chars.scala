@@ -1,5 +1,5 @@
 /*
-    Hieroglyph, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Hieroglyph, version 0.24.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
