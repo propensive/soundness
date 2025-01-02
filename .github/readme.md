@@ -23,6 +23,7 @@ and safe to work with JSON in Scala.
 
 
 
+
 ## Getting Started
 
 ### Parsing
@@ -268,6 +269,6 @@ The logo shows a pair of braces—important syntax in JSON—positioned to look 
 
 ## License
 
-Jacinta is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Jacinta is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
