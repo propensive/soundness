@@ -26,6 +26,7 @@ plus the means to generate DOT for input to GraphViz.
 
 
 
+
 ## Getting Started
 
 Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for
@@ -211,6 +212,6 @@ The logo shows a single dot, alluding to the [DOT language](https://graphviz.org
 
 ## License
 
-Acyclicity is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Acyclicity is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
