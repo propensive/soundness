@@ -23,6 +23,7 @@ stylesheets.
 
 
 
+
 ## Getting Started
 
 Cataclysm provides several types for modeling CSS.
@@ -293,6 +294,6 @@ The logo shows a cresting wave, cataclysmic in nature.
 
 ## License
 
-Cataclysm is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Cataclysm is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
