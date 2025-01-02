@@ -25,6 +25,7 @@ paths.
 
 
 
+
 ## Getting Started
 
 Surveillance watches directories for changes to their contents, through an extension method, `watch()`, on a
