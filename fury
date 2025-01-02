@@ -39,5 +39,5 @@ project anthology
   module test
     compiler  scala
     sources   src/test
-    include   probably/cli anthology/scala
+    include   probably/cli anthology/scala anthology/java
     main      anthology.Tests
