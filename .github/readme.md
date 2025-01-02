@@ -22,6 +22,7 @@ and writing files within a ZIP archive, in a streaming or random access style.
 
 
 
+
 ## Getting Started
 
 ### Creating a ZIP file
@@ -172,6 +173,6 @@ The logo shows the overlaid shapes of three zippers.
 
 ## License
 
-Zeppelin is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Zeppelin is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
