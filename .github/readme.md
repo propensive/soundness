@@ -53,6 +53,7 @@ within a single runtime environment.
 
 
 
+
 ## Getting Started
 
 ### Background
@@ -446,6 +447,6 @@ The logo shows a moon, reflected in water.
 
 ## License
 
-Superlunary is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Superlunary is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
