@@ -26,6 +26,7 @@ instances.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `baroque` package, which can be imported
@@ -188,6 +189,6 @@ resembles a capital B, the first letter of "Baroque".
 
 ## License
 
-Baroque is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Baroque is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
