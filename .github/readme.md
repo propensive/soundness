@@ -32,6 +32,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 
 
+
 ## Getting Started
 
 Utilities in _Rudiments_ are mostly provided through extension methods, and importing the `rudiments` package
@@ -236,6 +237,6 @@ The logo shows a burning sun, the basis for life in our solar system; it represe
 
 ## License
 
-Rudiments is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Rudiments is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
