@@ -28,6 +28,7 @@ plus the means to generate DOT for input to GraphViz.
 
 
 
+
 ## Getting Started
 
 Acyclicity provides a monadic representation of a directed, acyclic graph (DAG) called `Dag`, and support for
