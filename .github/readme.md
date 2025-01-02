@@ -23,6 +23,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 
 
 
+
 ## Getting Started
 
 Annotations in Scala are rarely the best solution for any task, but can
