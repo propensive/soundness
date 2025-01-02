@@ -25,6 +25,7 @@ method that reads a stream of bytes and returns structured data.
 
 
 
+
 ## Getting Started
 
 Merino will parse a `DataStream`, that is, a `LazyList[IArray[Byte]]`. This
@@ -181,6 +182,6 @@ The logo represents a ball of wool, potentially merino wool.
 ## License
 
 Merino
-jawn is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+jawn is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
