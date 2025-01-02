@@ -34,6 +34,7 @@ libraryDependencies += "dev.soundness" % "wisteria-core" % "0.23.0"
 
 
 
+
 ## Getting Started
 
 Wisteria makes it easy to derive typeclass instances for product and sum types,
@@ -961,6 +962,6 @@ The logo shows a hazy, floral shape in pale colors.
 
 ## License
 
-Wisteria is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Wisteria is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
