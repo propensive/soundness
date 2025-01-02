@@ -22,6 +22,7 @@ _annotations_ in Scala, by making them available through _typeclass interfaces_.
 
 
 
+
 ## Getting Started
 
 Annotations in Scala are rarely the best solution for any task, but can
@@ -197,6 +198,6 @@ The logo is an [arobase](https://en.wikipedia.org/wiki/At_sign) or "at-sign", be
 
 ## License
 
-Adversaria is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Adversaria is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
