@@ -27,6 +27,7 @@ or within a Servlet container, preferably on a Loom-based JVM.
 
 
 
+
 ## Getting Started
 
 TBC
@@ -134,6 +135,6 @@ The logo shows four interlocked three-pointed stars, intended to look like flyin
 
 ## License
 
-Scintillate is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Scintillate is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
