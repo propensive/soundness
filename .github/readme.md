@@ -35,6 +35,7 @@ Panopticon provides concise and elegant syntax for working with lenses.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `panopticon` package, which can be imported with,
@@ -221,6 +222,6 @@ The logo shows an optical lens.
 
 ## License
 
-Panopticon is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Panopticon is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
