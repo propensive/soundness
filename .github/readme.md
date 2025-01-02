@@ -26,6 +26,7 @@ method that reads a stream of bytes and returns structured data.
 
 
 
+
 ## Getting Started
 
 Merino will parse a `DataStream`, that is, a `LazyList[IArray[Byte]]`. This
