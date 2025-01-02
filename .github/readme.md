@@ -25,6 +25,7 @@ just on the operation, but also the filesystem and in-scope options.
 
 
 
+
 ## Getting Started
 
 ### Example
@@ -184,6 +185,6 @@ The logo is the Galilean planet, Io.
 
 ## License
 
-Galilei is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Galilei is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
