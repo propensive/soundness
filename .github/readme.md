@@ -25,6 +25,7 @@ implementation of `Point` (providing the monadic "unit" operation) can be found.
 
 
 
+
 ## Getting Started
 
 It is not possible to write code such as,
@@ -173,6 +174,6 @@ The logo shows the lines of latitude of an [Oblique Mercator Projection](https:/
 
 ## License
 
-Mercator is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Mercator is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
