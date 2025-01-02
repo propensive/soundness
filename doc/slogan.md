@@ -1,1 +1,1 @@
-A typesafe interface to the Scala compiler
+A typesafe interface to JVM compilers
