@@ -23,6 +23,7 @@ easy to work with as text. _Hallucination_ aspires to make this possible.
 
 
 
+
 ## Getting Started
 
 All terms and types are define in the `hallucination` package, and can be used with:
