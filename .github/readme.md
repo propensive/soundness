@@ -36,6 +36,7 @@ For the overeager, curious and impatient, see [building](#building).
 
 
 
+
 ## Getting Started
 
 ### The `Optional` type
@@ -193,6 +194,6 @@ The logo shows a stylized pressure gauge, reading zero.
 
 ## License
 
-Vacuous is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Vacuous is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
