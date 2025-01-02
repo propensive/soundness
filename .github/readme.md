@@ -26,6 +26,7 @@ idiomatic API.
 
 
 
+
 ## Getting Started
 
 All terms and types are provided in the `octogenarian` package:
@@ -214,6 +215,6 @@ The logo shows a stylized version of the Git logo.
 
 ## License
 
-Octogenarian is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Octogenarian is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
