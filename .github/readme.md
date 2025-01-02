@@ -26,6 +26,7 @@ TBC
 
 
 
+
 ## Getting Started
 
 All Parasite terms and types are defined in the `parasite` package:
@@ -377,6 +378,6 @@ The logo shows a tick symbol, indicative of a task (which has been completed).
 
 ## License
 
-Parasite is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Parasite is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
