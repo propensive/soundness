@@ -26,6 +26,7 @@ source, loaded at compiletime, and utilized in a later phase of compilation.
 
 
 
+
 ## Getting Started
 
 ### Untyped Schemas
@@ -307,6 +308,6 @@ The logo is a record, or LP, common as a distribution medium for music until the
 
 ## License
 
-Polyvinyl is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Polyvinyl is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
