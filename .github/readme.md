@@ -22,6 +22,7 @@ easy to work with as text. _Hallucination_ aspires to make this possible.
 
 
 
+
 ## Getting Started
 
 All terms and types are define in the `hallucination` package, and can be used with:
@@ -171,6 +172,6 @@ Hallucination's logo is a simplistic eye, the organ that is stimulated by images
 
 ## License
 
-Hallucination is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Hallucination is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
