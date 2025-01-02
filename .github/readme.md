@@ -35,6 +35,7 @@ libraryDependencies += "dev.soundness" % "dendrology-dag" % "0.2.0"
 
 
 
+
 ## Getting Started
 
 Dendrology can render tree-like structures as text, such as the following,
@@ -290,6 +291,6 @@ The logo shows a pattern of leaves from a tree; trees being the subject of Dendr
 
 ## License
 
-Dendrology is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Dendrology is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
