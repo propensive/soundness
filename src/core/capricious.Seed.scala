@@ -1,5 +1,5 @@
 /*
-    Capricious, version [unreleased]. Copyright 2024 Jon Pretty, Propensive OÜ.
+    Capricious, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 

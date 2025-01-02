@@ -23,6 +23,7 @@ available on the JVM.
 
 
 
+
 ## Getting Started
 
 All terms and types are defined in the `capricious` package:
@@ -311,6 +312,6 @@ The logo shows a stylized pollen cell, the canonical body used to illustrate Bro
 
 ## License
 
-Capricious is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Capricious is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
