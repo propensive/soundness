@@ -18,6 +18,7 @@ TBC
 
 
 
+
 ## Getting Started
 
 TBC
@@ -126,6 +127,6 @@ The logo ambiguously resembles a flask, representing experimentation and testing
 
 ## License
 
-Sedentary is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Sedentary is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
