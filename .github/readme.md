@@ -25,6 +25,7 @@ __Iridescence__ implements several algorithms for working with colors represente
 
 
 
+
 ## Getting Started
 
 _Iridescence_ provides seven different ways of representing colors:
@@ -258,6 +259,6 @@ The logo illustrates a color wheel.
 
 ## License
 
-Iridescence is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Iridescence is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
