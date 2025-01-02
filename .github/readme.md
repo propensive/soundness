@@ -26,6 +26,7 @@ to make these mundane tasks easier.
 
 
 
+
 ## Getting Started
 
 ### Constructing monetary values
@@ -230,6 +231,6 @@ The logo shows an imagined currency symbol based on a lambda (λ).
 
 ## License
 
-Plutocrat is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Plutocrat is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
