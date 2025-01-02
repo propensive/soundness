@@ -24,6 +24,7 @@ languages or stylized diagrams. This is the role that _Savagery_ aims to fill.
 
 
 
+
 ## Getting Started
 
 TBC
@@ -133,6 +134,6 @@ The logo is a stylized variation of the official SVG logo.
 
 ## License
 
-Savagery is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Savagery is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
