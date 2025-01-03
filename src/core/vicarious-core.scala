@@ -22,9 +22,8 @@ import fulminate.*
 
 given Realm = realm"vicarious"
 
-inline def catalog[ValueType](inline lambda: [FieldType] => (field: FieldType) => ValueType)
-   [KeyType]
-   (value: KeyType)
+inline def catalog[KeyType](key: KeyType)[ValueType]
+   (inline lambda: [FieldType] => (field: FieldType) => ValueType)
    (using classTag: ClassTag[ValueType])
         : Catalog[KeyType, ValueType] =
-  ${Vicarious.catalog[KeyType, ValueType]('lambda, 'value, 'classTag)}
+  ${Vicarious.catalog[KeyType, ValueType]('lambda, 'key, 'classTag)}
