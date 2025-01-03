@@ -36,7 +36,7 @@ object HttpMethod:
   given HttpMethod is Showable = _.toString.tt.upper
 
   given Decoder[HttpMethod] = _.upper match
-    case t"HEAD"    => Head
+    case t"HEAD"    => HttpHead
     case t"POST"    => Post
     case t"PUT"     => Put
     case t"DELETE"  => Delete
@@ -51,7 +51,7 @@ sealed trait HttpMethod(tracked val payload: Boolean):
   def unapply(request: HttpRequest): Boolean = request.method == this
 
 case object Get extends HttpMethod(false)
-case object Head extends HttpMethod(false)
+case object HttpHead extends HttpMethod(false)
 case object Post extends HttpMethod(true)
 case object Put extends HttpMethod(true)
 case object Delete extends HttpMethod(false)
