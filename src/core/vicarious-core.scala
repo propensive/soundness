@@ -20,3 +20,9 @@ import anticipation.*
 import fulminate.*
 
 given Realm = realm"vicarious"
+
+inline def catalog[ValueType](inline lambda: [FieldType] => (field: FieldType) => ValueType)
+   [KeyType]
+   (value: KeyType)
+        : Catalog[KeyType, ValueType] =
+  ${Vicarious.catalog[KeyType, ValueType]('lambda, 'value)}

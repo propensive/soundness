@@ -21,6 +21,12 @@ import scala.deriving.*
 import scala.quoted.*
 
 object Vicarious:
+  def catalog[KeyType: Type, ValueType: Type]
+     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType], value: Expr[KeyType])
+     (using Quotes)
+         : Expr[Catalog[KeyType, ValueType]] =
+
+    '{???}
 
   def proxy[KeyType: Type, ValueType: Type](matcher: Boolean)(using Quotes)
           : Expr[Proxy[KeyType, ValueType] | MatchProxy[KeyType]] =
