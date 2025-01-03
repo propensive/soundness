@@ -25,8 +25,15 @@ object Vicarious:
      (lambda: Expr[[FieldType] => (field: FieldType) => ValueType], value: Expr[KeyType])
      (using Quotes)
          : Expr[Catalog[KeyType, ValueType]] =
+    import quotes.reflect.*
 
-    '{???}
+    def fields[ProductType: Type](term: Term): List[Term] =
+      TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+        term.select(field).asExpr match
+          case '{ $field: fieldType } =>
+            '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
+
+    '{Catalog(IArray[Any](${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))}
 
   def proxy[KeyType: Type, ValueType: Type](matcher: Boolean)(using Quotes)
           : Expr[Proxy[KeyType, ValueType] | MatchProxy[KeyType]] =

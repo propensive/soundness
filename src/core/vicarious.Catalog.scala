@@ -22,7 +22,8 @@ import vacuous.*
 
 import language.dynamics
 
-case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
+//case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
+case class Catalog[KeyType, ValueType](values: IArray[Any]):
   def apply(accessor: (`*`: Proxy[KeyType, ValueType]) ?=> Proxy[KeyType, ValueType]): ValueType =
     values(accessor(using Proxy()).label.vouch(using Unsafe))
 
