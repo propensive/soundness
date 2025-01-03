@@ -23,8 +23,11 @@ import nettlesome.*
 import language.dynamics
 
 extension [UrlType: Fetchable](url: UrlType)(using Online)
-  def fetch(method: HttpMethod = Get)(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
-    Http.fetch[Unit](UrlType.url(url), (), method, headers)
+  def fetch(method: HttpMethod)(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
+    Http.fetch(UrlType.url(url), (), method, headers)
+
+  def fetch(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
+    Http.fetch(UrlType.url(url), (), Get, headers)
 
   def submit[BodyType: Postable]
      (method: (HttpMethod { val payload: true }) = Post, headers: RequestHeader.Value*)
