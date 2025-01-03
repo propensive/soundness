@@ -51,7 +51,7 @@ case class HttpResponse
 
   def as[BodyType: Receivable as receivable]: BodyType raises HttpError = (status: @unchecked) match
     case status: FailureCase => abort(HttpError(status, headers: List[(Text, Text)]))
-    case status              => readable.read(status, body)
+    case status              => receivable.read(status, body)
 
   @targetName("add")
   infix def + [ValueType: Encodable in ResponseHeader.Value](value: ValueType): HttpResponse =

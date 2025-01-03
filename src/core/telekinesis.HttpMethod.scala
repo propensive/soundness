@@ -33,7 +33,17 @@ object HttpMethod:
 
   given HttpMethod is Communicable as communicable = method => Message(method.show.upper)
 
-enum HttpMethod:
-  case Get, Head, Post, Put, Delete, Connect, Options, Trace, Patch
+  given HttpMethod is Showable = _.toString.tt.upper
 
+sealed trait HttpMethod(tracked val payload: Boolean):
   def unapply(request: HttpRequest): Boolean = request.method == this
+
+case object Get extends HttpMethod(false)
+case object Head extends HttpMethod(false)
+case object Post extends HttpMethod(true)
+case object Put extends HttpMethod(true)
+case object Delete extends HttpMethod(false)
+case object Connect extends HttpMethod(false)
+case object Options extends HttpMethod(false)
+case object Trace extends HttpMethod(false)
+case object Patch extends HttpMethod(false)

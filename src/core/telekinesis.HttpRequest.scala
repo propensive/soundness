@@ -70,7 +70,7 @@ case class HttpRequest
     import charEncoders.ascii
     val text: Text = Text.construct:
       def newline(): Unit = append(t"\r\n")
-      append(method.show.upper)
+      append(method.show)
       append(t" ")
       append(target)
       append(t" ")
@@ -115,7 +115,7 @@ case class HttpRequest
       case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
 
     . to(Map) ++ method.match
-      case HttpMethod.Post | HttpMethod.Put =>
+      case Post | Put =>
         contentType.or(media"application/x-www-form-urlencoded").base.show match
           case t"multipart/form-data" =>
             mend:

@@ -34,49 +34,49 @@ object Http:
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch[PostType](UrlType.url(url), content, HttpMethod.Post, headers)
+    fetch[PostType](UrlType.url(url), content, Post, headers)
 
   def put[PostType: Postable, UrlType: Fetchable]
      (url: UrlType, content: PostType = (), headers: RequestHeader.Value*)
      (using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch[PostType](UrlType.url(url), content, HttpMethod.Put, headers)
+    fetch[PostType](UrlType.url(url), content, Put, headers)
 
   def get[UrlType: Fetchable](url: UrlType, headers: Seq[RequestHeader.Value] = Nil)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Get, headers)
+    fetch(UrlType.url(url), (), Get, headers)
 
   def options[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Options, headers)
+    fetch(UrlType.url(url), (), Options, headers)
 
   def head[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Head, headers)
+    fetch(UrlType.url(url), (), Head, headers)
 
   def delete[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Delete, headers)
+    fetch(UrlType.url(url), (), Delete, headers)
 
   def connect[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Connect, headers)
+    fetch(UrlType.url(url), (), Connect, headers)
 
   def trace[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Trace, headers)
+    fetch(UrlType.url(url), (), Trace, headers)
 
   def patch[UrlType: Fetchable](url: UrlType, headers: RequestHeader.Value*)(using Online)
           : HttpResponse logs HttpEvent =
 
-    fetch(UrlType.url(url), (), HttpMethod.Patch, headers)
+    fetch(UrlType.url(url), (), Patch, headers)
 
   def fetch[PostType: Postable]
      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
@@ -99,7 +99,7 @@ object Http:
           case RequestHeader.Value(key, value) =>
             connection.setRequestProperty(key.header.s, value.s)
 
-        if method == HttpMethod.Post || method == HttpMethod.Put then
+        if method == Post || method == Put then
           connection.setDoOutput(true)
           connection.connect()
           val out = connection.getOutputStream().nn
