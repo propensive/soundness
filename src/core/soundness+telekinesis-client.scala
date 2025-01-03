@@ -18,5 +18,5 @@ package soundness
 
 export telekinesis.{Auth, FailureCase, Http, HttpError, HttpEvent, HttpHeaderDecoder,
     HttpMethod, Receivable, HttpRequest, HttpResponse, HttpStatus, Fetchable, Params,
-    Postable, QueryEncoder, RequestHeader, ResponseHeader, SimpleRequestHeader, post, put, get,
-    options, trace, patch, head, delete, connect, Servable}
+    Postable, QueryEncoder, RequestHeader, ResponseHeader, SimpleRequestHeader, Post, Put, Get,
+    Options, Trace, Patch, Head, Delete, Connect, Servable, fetch, submit}

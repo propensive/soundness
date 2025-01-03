@@ -22,26 +22,14 @@ import nettlesome.*
 
 import language.dynamics
 
-extension (url: HttpUrl)(using Online)
-  def post[BodyType: Postable](headers: RequestHeader.Value*)(body: BodyType)
+extension [UrlType: Fetchable](url: UrlType)(using Online)
+  def fetch(method: HttpMethod = Get)(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
+    Http.fetch[Unit](UrlType.url(url), (), method, headers)
+
+  def submit[BodyType: Postable]
+     (method: (HttpMethod { val payload: true }) = Post, headers: RequestHeader.Value*)
+     (body: BodyType)
           : HttpResponse logs HttpEvent =
-    Http.post(url, body, headers*)
-
-  def put[BodyType: Postable](headers: RequestHeader.Value*)(body: BodyType)
-          : HttpResponse logs HttpEvent =
-    Http.put(url, body, headers*)
-
-  def post[BodyType: Postable](body: BodyType): HttpResponse logs HttpEvent = Http.post(url, body)
-  def put[BodyType: Postable](body: BodyType): HttpResponse logs HttpEvent = Http.put(url, body)
-  def get(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.get(url, headers)
-
-  def options(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
-    Http.options(url, headers*)
-
-  def trace(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.trace(url, headers*)
-  def patch(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.patch(url, headers*)
-  def head(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.head(url, headers*)
-  def delete(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.delete(url, headers*)
-  def connect(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.connect(url, headers*)
+    Http.fetch[BodyType](UrlType.url(url), body, method, headers)
 
 given Realm = realm"telekinesis"
