@@ -32,7 +32,7 @@ object HttpConnection:
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
-    val method = HttpMethod.valueOf(exchange.getRequestMethod.nn.show.lower.capitalize.s)
+    val method = exchange.getRequestMethod.nn.show.decode[HttpMethod]
 
     val headers: List[RequestHeader.Value] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>

@@ -21,8 +21,8 @@ import spectacular.*
 import telekinesis.*
 
 object Redirect:
-  def apply[HyperlinkType: Hyperlinkable](location: HyperlinkType, permanent: Boolean): Redirect =
-    new Redirect(HyperlinkType.hyperlink(location).show, permanent)
+  def apply[LinkType: Fetchable](location: LinkType, permanent: Boolean): Redirect =
+    new Redirect(LinkType.url(location).show, permanent)
 
   given Redirect is Servable as redirect = redirect =>
     val headers = List(ResponseHeader.Location.header -> redirect.location)

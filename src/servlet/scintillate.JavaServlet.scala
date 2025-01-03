@@ -52,7 +52,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       . to(List)
 
     val httpRequest = HttpRequest
-     (method  = HttpMethod.valueOf(request.getMethod.nn.show.lower.capitalize.s),
+     (method  = request.getMethod.nn.show.decode[HttpMethod],
       version = HttpVersion.parse(request.getProtocol.nn.tt),
       host    = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       target  = target,
