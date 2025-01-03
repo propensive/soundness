@@ -16,13 +16,16 @@
 
 package vicarious
 
+import rudiments.*
+
 import scala.compiletime.*
-import scala.deriving.*
 import scala.quoted.*
 
 object Vicarious:
   def catalog[KeyType: Type, ValueType: Type]
-     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType], value: Expr[KeyType])
+     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType],
+      value: Expr[KeyType],
+      classTag: Expr[ClassTag[ValueType]])
      (using Quotes)
          : Expr[Catalog[KeyType, ValueType]] =
     import quotes.reflect.*
@@ -33,40 +36,48 @@ object Vicarious:
           case '{ $field: fieldType } =>
             '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
 
-    '{Catalog(IArray[Any](${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))}
+    '{ given ClassTag[ValueType] = $classTag
+       Catalog(IArray(${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))  }
 
-  def proxy[KeyType: Type, ValueType: Type](matcher: Boolean)(using Quotes)
-          : Expr[Proxy[KeyType, ValueType] | MatchProxy[KeyType]] =
+  def fieldNames[ProductType: Type](prefix: String)(using Quotes): List[String] =
+    import quotes.reflect.*
+    TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
+      val label = if prefix == "" then field.name else prefix+"."+field.name
+      (field.info.asType: @unchecked) match
+        case '[fieldType] => label :: fieldNames[fieldType](label)
+
+  def dereference[KeyType: Type, ValueType: Type, IdType <: Nat: Type]
+     (key: Expr[String])(using Quotes)
+          : Expr[ValueType | Proxy[KeyType, ValueType, Nat]] =
 
     import quotes.reflect.*
 
-    def recompose[LabelsType <: Tuple: Type, ElementsType <: Tuple: Type](result: TypeRepr)
-            : TypeRepr =
+    val index = (TypeRepr.of[IdType].asMatchable: @unchecked) match
+      case ConstantType(IntConstant(index)) => index
 
-      (Type.of[LabelsType]: @unchecked) match
-        case '[ EmptyTuple ] =>
-          result
+    val field = key.valueOrAbort
+    val fields = fieldNames[KeyType]("")
 
-        case '[ type headLabel <: String; type tailLabels <: Tuple; headLabel *: tailLabels ] =>
-          (Type.of[ElementsType]: @unchecked) match
-            case '[ type tailElement <: Tuple; headElement *: tailElements ] =>
-              (TypeRepr.of[headLabel].asMatchable: @unchecked) match
-                case ConstantType(StringConstant(label)) =>
-                  recompose[tailLabels, tailElements](Refinement(result, label, proxy[headElement]))
+    ConstantType(IntConstant(fields.indexOf(fields(index)+"."+field))).asType match
+      case '[ type idType <: Nat; idType ] => '{Proxy[KeyType, ValueType, idType]()}
 
-    def proxy[KeyType2: Type]: TypeRepr = Expr.summon[Mirror.ProductOf[KeyType2]] match
-      case Some('{ type labels <: Tuple
-                   type types <: Tuple
-                   $mirror: Mirror.Product
-                             { type MirroredElemLabels = labels
-                               type MirroredElemTypes = types } }) =>
-        recompose[labels, types]:
-          if matcher then  TypeRepr.of[MatchProxy[KeyType]]
-          else TypeRepr.of[Proxy[KeyType, ValueType]]
+  def proxy[KeyType: Type, ValueType: Type](using Quotes): Expr[Proxy[KeyType, ValueType, 0]] =
+    import quotes.reflect.*
 
-      case _ =>
-        if matcher then TypeRepr.of[MatchProxy[KeyType]] else TypeRepr.of[ValueType]
+    val fields = fieldNames[KeyType]("")
 
-    (proxy[KeyType].asType: @unchecked) match
-      case '[ type resultType <: Proxy[KeyType, ValueType] | MatchProxy[KeyType]; resultType ] =>
-        '{Proxy().asInstanceOf[resultType]}
+    def recur(prefix: String, repr: TypeRepr): TypeRepr =
+      val index: Int = if prefix == "" then 0 else fields.indexOf(prefix)
+      val nat = ConstantType(IntConstant(index))
+
+      val base =
+        TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[KeyType], TypeRepr.of[ValueType], nat))
+
+      repr.typeSymbol.caseFields.foldLeft(base): (repr, field) =>
+        val label = if prefix == "" then field.name else prefix+"."+field.name
+        val fieldType: TypeRepr = field.info
+        Refinement(repr, field.name, recur(label, fieldType))
+
+    recur("", TypeRepr.of[KeyType]).asType match
+      case '[type proxyType <: Proxy[KeyType, ValueType, 0]; proxyType] =>
+        '{Proxy().asInstanceOf[proxyType]}

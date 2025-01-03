@@ -17,6 +17,7 @@
 package vicarious
 
 import anticipation.*
+import rudiments.*
 import fulminate.*
 
 given Realm = realm"vicarious"
@@ -24,5 +25,6 @@ given Realm = realm"vicarious"
 inline def catalog[ValueType](inline lambda: [FieldType] => (field: FieldType) => ValueType)
    [KeyType]
    (value: KeyType)
+   (using classTag: ClassTag[ValueType])
         : Catalog[KeyType, ValueType] =
-  ${Vicarious.catalog[KeyType, ValueType]('lambda, 'value)}
+  ${Vicarious.catalog[KeyType, ValueType]('lambda, 'value, 'classTag)}
