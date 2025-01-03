@@ -23,7 +23,9 @@ import scala.quoted.*
 
 object Vicarious:
   def catalog[KeyType: Type, ValueType: Type]
-     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType], value: Expr[KeyType])
+     (lambda: Expr[[FieldType] => (field: FieldType) => ValueType],
+      value: Expr[KeyType],
+      classTag: Expr[ClassTag[ValueType]])
      (using Quotes)
          : Expr[Catalog[KeyType, ValueType]] =
     import quotes.reflect.*
@@ -34,7 +36,8 @@ object Vicarious:
           case '{ $field: fieldType } =>
             '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
 
-    '{Catalog(IArray[Any](${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))}
+    '{ given ClassTag[ValueType] = $classTag
+       Catalog(IArray(${Varargs(fields[KeyType](value.asTerm).map(_.asExprOf[ValueType]))}*))  }
 
   def fieldNames[ProductType: Type](prefix: String)(using Quotes): List[String] =
     import quotes.reflect.*

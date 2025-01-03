@@ -21,28 +21,28 @@ import vacuous.*
 
 import language.dynamics
 
-case class Catalog[KeyType, ValueType](values: IArray[Any]):
+//case class Catalog[KeyType, ValueType](values: Map[Text, ValueType]):
+case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[KeyType, ValueType, 0]) ?=> Proxy[KeyType, ValueType, ?])
           : ValueType =
-    values(accessor(using Proxy()).id.vouch(using Unsafe)).asInstanceOf[ValueType]
+    values(accessor(using Proxy()).id.vouch(using Unsafe))
 
-  def map[ValueType2](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
-    Catalog(values.map[Any] { field => lambda(field.asInstanceOf[ValueType]) })
+  def map[ValueType2: ClassTag](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
+    Catalog(values.map(lambda))
 
   def tie[ResultType](using proxy: Proxy[KeyType, ValueType, 0])
      (lambda: (catalog: this.type, `*`: proxy.type) ?=> ResultType)
           : ResultType =
     lambda(using this, proxy)
 
-  def braid[ValueType2](right: Catalog[KeyType, ValueType2])[ResultType]
+  def braid[ValueType2: ClassTag](right: Catalog[KeyType, ValueType2])[ResultType: ClassTag]
      (lambda: (ValueType, ValueType2) => ResultType)
           : Catalog[KeyType, ResultType] =
-    Catalog(IArray.tabulate[Any](values.length): index =>
-      lambda(values(index).asInstanceOf[ValueType], right.values(index).asInstanceOf[ValueType2]))
+    Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
 
-extension [KeyType, ValueType](catalog: Catalog[KeyType, ValueType])
+extension [KeyType, ValueType: ClassTag](catalog: Catalog[KeyType, ValueType])
   def brush(using proxy: Proxy[KeyType, ValueType, Nat])
      (lambda: (`*`: proxy.type) ?=> Proxy[KeyType, ValueType, Nat] ~> ValueType)
           : Catalog[KeyType, ValueType] =
