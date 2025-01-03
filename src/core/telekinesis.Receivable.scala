@@ -21,18 +21,18 @@ import gossamer.*
 import rudiments.*
 import turbulence.*
 
-object HttpReadable:
-  given Text is HttpReadable as text = (status, body) => body.read[Bytes].utf8
-  given Bytes is HttpReadable as bytes = (status, body) => body.read[Bytes]
-  given LazyList[Bytes] is HttpReadable as byteStream = (status, body) => body
+object Receivable:
+  given Text is Receivable as text = (status, body) => body.read[Bytes].utf8
+  given Bytes is Receivable as bytes = (status, body) => body.read[Bytes]
+  given LazyList[Bytes] is Receivable as byteStream = (status, body) => body
 
   given [ContentType: GenericHttpReader as readable]
-      => ContentType is HttpReadable as genericHttpReader =
+      => ContentType is Receivable as genericHttpReader =
     (status, body) => readable.read(body.read[Bytes].utf8)
 
-  given HttpStatus is HttpReadable as httpStatus:
+  given HttpStatus is Receivable as httpStatus:
     def read(status: HttpStatus, body: LazyList[Bytes]) = status
 
-trait HttpReadable:
+trait Receivable:
   type Self
   def read(status: HttpStatus, body: LazyList[Bytes]): Self

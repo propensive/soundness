@@ -44,4 +44,5 @@ extension (url: HttpUrl)(using Online)
   def delete(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.delete(url, headers*)
   def connect(headers: RequestHeader.Value*): HttpResponse logs HttpEvent = Http.connect(url, headers*)
 
+  def fetch(method: HttpMethod)
 given Realm = realm"telekinesis"
