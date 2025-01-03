@@ -35,6 +35,18 @@ object HttpMethod:
 
   given HttpMethod is Showable = _.toString.tt.upper
 
+  given Decoder[HttpMethod] = _.upper match
+    case t"HEAD"    => Head
+    case t"POST"    => Post
+    case t"PUT"     => Put
+    case t"DELETE"  => Delete
+    case t"CONNECT" => Connect
+    case t"OPTIONS" => Options
+    case t"TRACE"   => Trace
+    case t"PATCH"   => Patch
+    case t"GET"     => Get
+    case _          => Get
+
 sealed trait HttpMethod(tracked val payload: Boolean):
   def unapply(request: HttpRequest): Boolean = request.method == this
 
