@@ -23,7 +23,7 @@ export gossamer.{Bidi, Buffer, Cuttable, Decimalizer, Interpolation, Joinable, N
     snip, reverse, contains, trim, where, upto, dropWhile, snipWhere,
     mapChars, count, metrics, pad, center, fit, uncamel, unkebab, unsnake, starts, ends,
     tr, subscript, superscript, sub, flatMap, urlEncode, urlDecode, punycode, bytes,
-    sysBytes, lev, join, add, words, lines, appendln, spaced, slices}
+    sysBytes, lev, join, add, words, lines, appendln, spaced, slices, seek, search}
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java

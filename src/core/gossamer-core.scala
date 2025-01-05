@@ -1,5 +1,5 @@
 /*
-    Gossamer, version 0.24.0. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Gossamer, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -31,7 +31,7 @@ import vacuous.*
 import scala.reflect.*
 import scala.collection.mutable as scm
 
-import java.util.regex.*
+import java.util.regex as jur
 import java.net.{URLEncoder, URLDecoder}
 
 import language.experimental.pureFunctions
@@ -181,7 +181,11 @@ extension [TextType: Textual](text: TextType)
 
   def contains(substring: into Text): Boolean = TextType.indexOf(text, substring).present
   def contains(char: Char): Boolean = TextType.indexOf(text, char.show).present
-  def seek(substring: into Text): Optional[Ordinal] = TextType.indexOf(text, substring)
+
+  def search(regex: Regex, overlap: Boolean = false): LazyList[TextType] =
+    regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
+
+  def seek(regex: Regex): Optional[TextType] = regex.seek(TextType.text(text)).let(text.segment(_))
 
   inline def trim: TextType =
     val start = text.where(!_.isWhitespace).or(Ult.of(text))
@@ -282,7 +286,7 @@ extension [TextType: Textual](text: TextType)
 
 extension (text: into Text)
   inline def sub(from: into Text, to: into Text): Text =
-    text.s.replaceAll(Pattern.quote(from.s).nn, to.s).nn.tt
+    text.s.replaceAll(jur.Pattern.quote(from.s).nn, to.s).nn.tt
 
   inline def sub(from: Regex, to: into Text): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
 
