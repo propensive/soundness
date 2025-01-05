@@ -22,7 +22,7 @@ export gossamer.{Bidi, Buffer, Cuttable, Decimalizer, Interpolation, Joinable, N
     upper, plain, skip, keep, capitalize, uncapitalize, tail, init, empty, chars,
     snip, reverse, contains, trim, where, upto, dropWhile, snipWhere,
     mapChars, count, metrics, pad, center, fit, uncamel, unkebab, unsnake, starts, ends,
-    tr, subscript, superscript, rsub, sub, flatMap, urlEncode, urlDecode, punycode, bytes,
+    tr, subscript, superscript, sub, flatMap, urlEncode, urlDecode, punycode, bytes,
     sysBytes, lev, join, add, words, lines, appendln, spaced, slices}
 
 package decimalFormatters:

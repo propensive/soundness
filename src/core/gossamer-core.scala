@@ -281,8 +281,6 @@ extension [TextType: Textual](text: TextType)
   inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
 
 extension (text: into Text)
-  inline def rsub(from: into Text, to: into Text): Text = text.s.replaceAll(from.s, to.s).nn.tt
-
   inline def sub(from: into Text, to: into Text): Text =
     text.s.replaceAll(Pattern.quote(from.s).nn, to.s).nn.tt
 
