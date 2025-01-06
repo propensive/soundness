@@ -17,10 +17,11 @@
 package soundness
 
 export turbulence.{Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io,
-    LazyListOutputStream, Line, LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable,
+    Line, LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable,
     SimpleWritable, Stdio, StreamError, Tap, Writable, Zlib, stream, read, writeTo,
-    deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer, pulsar,
-    gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool, strict, Conduit, inputStream}
+    deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer,
+    pulsar, gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool, strict,
+    Conduit, inputStream, outputStream}
 
 package stdioSources:
   export turbulence.stdioSources.mute

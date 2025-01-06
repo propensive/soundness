@@ -21,6 +21,8 @@ import language.adhocExtensions
 import java.io as ji
 import java.util.zip as juz
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import capricious.*
 import contingency.*
@@ -321,6 +323,23 @@ extension (lazyList: LazyList[Bytes])
         else LazyList(head.take(count.long.toInt))
 
     recur(lazyList, memory)
+
+  def outputStream: ji.OutputStream = new ji.OutputStream:
+    private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+    private val chunks: Spool[Bytes] = Spool()
+
+    def stream: LazyList[Bytes] = chunks.stream
+    def write(int: Int): Unit = buffer.append(int.toByte)
+
+    override def close(): Unit = flush().also(chunks.stop())
+    override def write(bytes: Array[Byte]): Unit = chunks.put(bytes.immutable(using Unsafe))
+
+    override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+      chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
+
+    override def flush(): Unit = if !buffer.isEmpty then
+      chunks.put(buffer.toArray.immutable(using Unsafe))
+      buffer.clear()
 
   def inputStream: ji.InputStream = new ji.InputStream:
     private var stream: LazyList[Bytes] = lazyList
