@@ -1,1 +1,1 @@
-Rudimentary utilities for writing everyday Scala
+Rudimentary methods for elegant, everyday Scala

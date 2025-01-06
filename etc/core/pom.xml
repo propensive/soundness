@@ -14,7 +14,7 @@
     </license>
   </licenses>
   <name>Rudiments</name>
-  <description>Rudimentary utilities for writing everyday Scala</description>
+  <description>Rudimentary methods for elegant, everyday Scala</description>
   <url>https://soundness.dev/rudiments</url>
   <packaging>jar</packaging>
   <properties>
