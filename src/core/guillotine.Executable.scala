@@ -28,6 +28,7 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import kaleidoscope.*
 import rudiments.*
 import spectacular.*
 
@@ -72,7 +73,7 @@ object Command:
       if argument.contains(t"\"") && !argument.contains(t"'") then t"""'$argument'"""
       else if argument.contains(t"'") && !argument.contains(t"\"") then t""""$argument""""
       else if argument.contains(t"'") && argument.contains(t"\"")
-      then t""""${argument.rsub(t"\\\"", t"\\\\\"")}""""
+      then t""""${argument.sub(r"""\"""", t"\\\\\"")}""""
       else if argument.contains(t" ") || argument.contains(t"\t") || argument.contains(t"\\")
       then t"'$argument'"
       else argument
