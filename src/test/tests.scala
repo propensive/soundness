@@ -95,16 +95,19 @@ object Readable extends Derivation[Readable]:
   given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    IArray.from(text.s.split(",")).pipe: array =>
-      construct: [FieldType] =>
-        readable =>
-          if index < array.length then readable.read(array(index).tt) else default().or:
-            ???
+    IArray.from(text.s.split(",")).pipe: 
+      array =>
+        construct:
+          [FieldType] =>
+            readable =>
+              if index < array.length then readable.read(array(index).tt) else default().or:
+                ???
 
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
     text.s.split(":").to(List).map(_.tt) match
-      case List(variant, text2) => delegate(variant): [VariantType <: DerivationType] =>
-        context => context.read(text2)
+      case List(variant, text2) => delegate(variant): 
+        [VariantType <: DerivationType] =>
+          context => context.read(text2)
 
 trait Readable[ValueType]:
   def read(text: Text): ValueType
@@ -181,9 +184,10 @@ object Show extends Derivation[Show] {
     typeName.s
 
   inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
-    inline if allSingletons then
-      variant(value): [VariantType <: DerivationType] =>
-        variant => typeName.s+"."+variant.show
+    inline if choice then
+      variant(value): 
+        [VariantType <: DerivationType] =>
+          variant => typeName.s+"."+variant.show
     else
       compiletime.error("cannot derive Show for adt")
 }
@@ -205,12 +209,9 @@ object Producer extends Derivation[Producer] {
   inline def join[DerivationType <: Product: ProductOf]: Producer[DerivationType] = ???
 
   inline def split[DerivationType: SumOf]: Producer[DerivationType] = input =>
-    inline if allSingletons then
-      delegate(input): 
-        [VariantType <: DerivationType] =>
-          producer => producer.produce(input)
-    else
-      compiletime.error("cannot derive Show for adt")
+    inline if choice then
+      Some(produceSingleton(input))
+    else compiletime.error("not a choice")
 }
 
 @main
@@ -262,5 +263,10 @@ def main(): Unit =
   println("isSimpleSum")
   val showForSimple = summon[Show[Simple]]
   println(showForSimple.show(Simple.Second))
-  // TODO: remove or adjust
-  val compilationError = summon[Show[Adt]]
+  // TODO: use check if not compiles
+  // val compilationError = summon[Show[Adt]]
+
+  println("choice + produceSingletonValue")
+  val producer = summon[Producer[Simple]]
+  println(producer.produce("Second"))
+  println(Try(producer.produce("Secondd")))

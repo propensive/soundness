@@ -29,7 +29,7 @@ lazy val core = (project in file("src/core"))
   .settings(
     name := "core",
     libraryDependencies ++= Seq(
-        "dev.soundness" % "contingency-core" % "0.15.0",
+        "dev.soundness" % "contingency-core" % "0.24.0",
     ),
     Compile / baseDirectory := baseDirectory.value,
   )
