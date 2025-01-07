@@ -2,8 +2,6 @@ src/**/target
 project/target/
 target
 
-project
-
 .metals
 .bsp
 .vscode

@@ -268,5 +268,5 @@ def main(): Unit =
 
   println("choice + produceSingletonValue")
   val producer = summon[Producer[Simple]]
-  println(producer.produce("Second"))
+  println(producer.produce("Third"))
   println(Try(producer.produce("Secondd")))
