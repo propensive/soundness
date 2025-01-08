@@ -22,6 +22,8 @@ import nettlesome.*
 
 import language.dynamics
 
+given Realm = realm"telekinesis"
+
 extension [UrlType: Fetchable](url: UrlType)(using Online)
   def fetch(method: HttpMethod)(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
     Http.fetch(UrlType.url(url), (), method, headers)
@@ -34,5 +36,3 @@ extension [UrlType: Fetchable](url: UrlType)(using Online)
      (body: BodyType)
           : HttpResponse logs HttpEvent =
     Http.fetch[BodyType](UrlType.url(url), body, method, headers)
-
-given Realm = realm"telekinesis"
