@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>dev.soundness</groupId>
+  <artifactId>chiaroscuro-core</artifactId>
+  <version>0.24.0</version>
+  <licenses>
+    <license>
+      <name>Apache 2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <name>Chiaroscuro</name>
+  <description>Compare and contrast similar objects and highlight their differences</description>
+  <url>https://soundness.dev/chiaroscuro</url>
+  <packaging>jar</packaging>
+  <properties>
+    <java.version>21</java.version>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>escapade-core</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>escritoire-core</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>dendrology-tree</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+    <dependency>
+      <groupId>dev.soundness</groupId>
+      <artifactId>dissonance-core</artifactId>
+      <version>0.24.0</version>
+    </dependency>
+  </dependencies>
+  <organization>
+    <name>Propensive</name>
+    <url>https://propensive.com/</url>
+  </organization>
+  <scm>
+    <url>https://github.com/propensive/chiaroscuro</url>
+    <connection>scm:git@github.com:propensive/chiaroscuro.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>propensive</id>
+      <name>Jon Pretty</name>
+      <email>jon.pretty@propensive.com</email>
+      <url>https://propensive.com/</url>
+    </developer>
+  </developers>
+</project>

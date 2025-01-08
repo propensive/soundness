@@ -14,7 +14,10 @@ project chiaroscuro
   module core
     compiler  scala
     sources   src/core
-    include   gossamer/core dissonance/core escritoire/core dendrology/tree escapade/core iridescence/core wisteria/core
+    include   escapade/core
+    include   dendrology/tree
+    include   escritoire/core
+    include   dissonance/core
 
   module test
     compiler  scala
