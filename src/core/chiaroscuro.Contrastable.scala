@@ -17,13 +17,9 @@
 package chiaroscuro
 
 import anticipation.*
-import dendrology.*
 import dissonance.*
-import escapade.*
-import escritoire.*, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*
-import iridescence.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -31,71 +27,9 @@ import wisteria.*
 
 import scala.deriving.*
 
-enum Semblance:
-  case Identical(value: Text)
-  case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
-
-object Semblance:
-  given (using calc: TextMetrics) => Semblance is Teletypeable =
-    case Semblance.Breakdown(cmp, l, r) =>
-      import tableStyles.default
-
-      def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
-        case Identical(value)                   => Nil
-        case Different(left, right, difference) => Nil
-        case Breakdown(comparison, left, right) => comparison.to(List)
-
-      case class Row(treeLine: Text, left: Teletype, right: Teletype, difference: Teletype)
-
-      given (using Text is Textual) => TreeStyle[Row] = (tiles, row) =>
-        row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
-
-      def mkLine(data: (Text, Semblance)) =
-        def line(bullet: Text): Text = t"$bullet ${data(0)}"
-
-        data(1) match
-          case Identical(v) =>
-            Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)", e"")
-
-          case Different(left, right, difference) =>
-            Row(line(t"▪"), e"${webColors.YellowGreen}($left)", e"${webColors.Crimson}($right)",
-                e"${rgb"#40bbcb"}(${difference.or(t"")})")
-
-          case Breakdown(cmp, left, right) =>
-            Row(line(t"■"), e"$left", e"$right", e"")
-
-      val table = Table[Row](
-        Column(e"")(_.treeLine),
-        Column(e"Expected", textAlign = TextAlignment.Right)(_.left),
-        Column(e"Found")(_.right),
-        Column(e"Difference")(_.difference.or(e""))
-      )
-
-      table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).grid(200).render.join(e"\n")
-
-    case Different(left, right, difference) =>
-      val whitespace = if right.contains('\n') then e"\n" else e" "
-      val whitespace2 = if left.contains('\n') then e"\n" else e" "
-      e"The result$whitespace${webColors.Crimson}($right)${whitespace}did not equal$whitespace2${webColors.YellowGreen}($left)"
-
-    case Identical(value) =>
-      e"The value ${webColors.Gray}($value) was expected"
-
-object Similarity:
-  given [ValueType]: Similarity[ValueType] = (a, b) => a == b
-
-trait Similarity[-ValueType]:
-  def similar(a: ValueType, b: ValueType): Boolean
-
 trait Contrastable:
   type Self
   def apply(left: Self, right: Self): Semblance
-
-extension [ValueType](left: ValueType)
-  inline def contrastWith(right: ValueType): Semblance = compiletime.summonFrom:
-    case contrastable: (ValueType is Contrastable) => contrastable(left, right)
-    case _                                         => Contrastable.general(left, right)
 
 object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable]:
   def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
