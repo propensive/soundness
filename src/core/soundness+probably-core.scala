@@ -1,6 +1,6 @@
 package soundness
 
-export probably.{Baseline, Benchmark, DebugInfo, Inclusion, Outcome, Runner, Test, TestContext,
+export probably.{Baseline, Benchmark, Details, Inclusion, Outcome, Runner, Test, TestContext,
     TestId, TestReport, TestReporter, TestRun, TestSuite, Tolerance, Min, Mean, Max, BySpeed,
     ByTime, Ratio, Difference, `+/-`, meets, test, suite, aspire, assert, check, matches, debug}
 

@@ -45,11 +45,11 @@ object TestReport:
         case Outcome.Fail(_) =>
           report2
         case Outcome.Throws(error, _) =>
-          report2.addDebugInfo(testId, DebugInfo.Throws(StackTrace(error)))
+          report2.addDetails(testId, Details.Throws(StackTrace(error)))
         case Outcome.CheckThrows(error, _) =>
-          report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
+          report2.addDetails(testId, Details.CheckThrows(StackTrace(error)))
 
-  given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
+  given Inclusion[TestReport, Details] = _.addDetails(_, _)
 
 class TestReport(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
@@ -104,8 +104,8 @@ class TestReport(using Environment):
 
   private var coverage: Option[CoverageResults] = None
 
-  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[DebugInfo]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[DebugInfo]]().withDefault(_ => scm.ArrayBuffer[DebugInfo]())
+  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Details]] =
+    scm.TreeMap[TestId, scm.ArrayBuffer[Details]]().withDefault(_ => scm.ArrayBuffer[Details]())
 
   def declareSuite(suite: TestSuite): TestReport = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
@@ -122,7 +122,7 @@ class TestReport(using Environment):
     (tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
 
-  def addDebugInfo(testId: TestId, info: DebugInfo): TestReport =
+  def addDetails(testId: TestId, info: Details): TestReport =
     this.also(details(testId) = details(testId).append(info))
 
   enum Status:
@@ -403,22 +403,22 @@ class TestReport(using Environment):
       val ribbon = Ribbon(webColors.DarkRed.srgb, webColors.FireBrick.srgb, webColors.Tomato.srgb)
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.teletype, id.name.teletype))
 
-      info.each: debugInfo =>
+      info.each: details =>
         Out.println(t"")
-        debugInfo match
-          case DebugInfo.Throws(err) =>
+        details match
+          case Details.Throws(err) =>
             val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
             Out.println(e"${webColors.Silver}(An exception was thrown while running test:)")
             Out.println(err.crop(t"probably.Runner", t"run()").teletype)
             showLegend()
 
-          case DebugInfo.CheckThrows(err) =>
+          case Details.CheckThrows(err) =>
             val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
             Out.println(e"${webColors.Silver}(An exception was thrown while checking the test predicate:)")
             Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).teletype)
             showLegend()
 
-          case DebugInfo.Compare(expected, found, cmp) =>
+          case Details.Compare(expected, found, cmp) =>
             val expected2: Teletype = e"$Italic(${webColors.White}($expected))"
             val found2: Teletype = e"$Italic(${webColors.White}($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
@@ -426,14 +426,14 @@ class TestReport(using Environment):
             Out.println(e"${webColors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
             Out.println(cmp.teletype)
 
-          case DebugInfo.Captures(map) =>
+          case Details.Captures(map) =>
             Table[(Text, Text), Teletype]
              (Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)))
 
             . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
 
-          case DebugInfo.Message(text) =>
+          case Details.Message(text) =>
             Out.println(text)
 
       Out.println()

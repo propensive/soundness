@@ -21,7 +21,7 @@ import chiaroscuro.*
 import digression.*
 import rudiments.*
 
-enum DebugInfo:
+enum Details:
   case Throws(stack: StackTrace)
   case CheckThrows(stack: StackTrace)
   case Captures(values: Map[Text, Text])

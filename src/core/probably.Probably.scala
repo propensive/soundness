@@ -32,7 +32,7 @@ object Probably:
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
       inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, DebugInfo]],
+      inc2:      Expr[Inclusion[ReportType, Details]],
       action:    Expr[TestRun[TestType] => ResultType])
      (using Quotes)
           : Expr[ResultType] =
@@ -76,7 +76,7 @@ object Probably:
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
       inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, DebugInfo]])
+      inc2:      Expr[Inclusion[ReportType, Details]])
      (using Quotes)
           : Expr[TestType] =
 
@@ -87,7 +87,7 @@ object Probably:
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
       inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, DebugInfo]])
+      inc2:      Expr[Inclusion[ReportType, Details]])
      (using Quotes)
           : Expr[Unit] =
     general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
@@ -96,7 +96,7 @@ object Probably:
      (test: Expr[Test[TestType]],
       runner: Expr[Runner[ReportType]],
       inc: Expr[Inclusion[ReportType, Outcome]],
-      inc2: Expr[Inclusion[ReportType, DebugInfo]])
+      inc2: Expr[Inclusion[ReportType, Details]])
      (using Quotes)
           : Expr[Unit] =
 
@@ -112,7 +112,7 @@ object Probably:
       contrast: TestType is Contrastable,
       exp: Option[TestType],
       inc: Inclusion[ReportType, Outcome],
-      inc2: Inclusion[ReportType, DebugInfo],
+      inc2: Inclusion[ReportType, Details],
       display: TestType is Inspectable)
           : ResultType =
 
@@ -120,19 +120,19 @@ object Probably:
       val outcome = run match
         case TestRun.Throws(err, duration, map) =>
           val exception: Exception = try err() catch case exc: Exception => exc
-          if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
+          if !map.isEmpty then inc2.include(runner.report, test.id, Details.Captures(map))
           Outcome.Throws(exception, duration)
 
         case TestRun.Returns(value, duration, map) =>
           try if predicate(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
-                inc2.include(runner.report, test.id, DebugInfo.Compare(display.text(exp),
+                inc2.include(runner.report, test.id, Details.Compare(display.text(exp),
                     display.text(value), contrast(exp, value)))
               case None =>
-                //inc2.include(runner.report, test.id, DebugInfo.Compare(summon[Any is Contrastable].compare(value, 1)))
+                //inc2.include(runner.report, test.id, Details.Compare(summon[Any is Contrastable].compare(value, 1)))
 
-            if !map.isEmpty then inc2.include(runner.report, test.id, DebugInfo.Captures(map))
+            if !map.isEmpty then inc2.include(runner.report, test.id, Details.Captures(map))
 
             Outcome.Fail(duration)
           catch case err: Exception => Outcome.CheckThrows(err, duration)
