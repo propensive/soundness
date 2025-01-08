@@ -140,7 +140,7 @@ object Probably:
       inc.include(runner.report, test.id, outcome)
       result(run)
 
-  def debug[TestType: Type](expr: Expr[TestType], test: Expr[Testbed])(using Quotes): Expr[TestType] =
+  def debug[TestType: Type](expr: Expr[TestType], test: Expr[Harness])(using Quotes): Expr[TestType] =
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match

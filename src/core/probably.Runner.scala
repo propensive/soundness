@@ -20,7 +20,7 @@ import rudiments.*
 import vacuous.*
 
 object Runner:
-  private[probably] val testbedThreadLocal: ThreadLocal[Option[Testbed]] = ThreadLocal()
+  private[probably] val harnessThreadLocal: ThreadLocal[Option[Harness]] = ThreadLocal()
 
 class Runner[ReportType]()(using reporter: Reporter[ReportType]):
   private var active: Set[TestId] = Set()
@@ -31,8 +31,8 @@ class Runner[ReportType]()(using reporter: Reporter[ReportType]):
 
   def run[T, S](test: Test[T]): Trial[T] =
     synchronized { active += test.id }
-    val ctx = Testbed()
-    Runner.testbedThreadLocal.set(Some(ctx))
+    val ctx = Harness()
+    Runner.harnessThreadLocal.set(Some(ctx))
     val ns0 = System.nanoTime
 
     try
@@ -53,7 +53,7 @@ class Runner[ReportType]()(using reporter: Reporter[ReportType]):
         synchronized { active -= test.id }
 
     finally
-      Runner.testbedThreadLocal.set(None)
+      Runner.harnessThreadLocal.set(None)
 
   def suite(suite: TestSuite, block: TestSuite ?=> Unit): Unit =
     if !skip(suite.id) then

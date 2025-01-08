@@ -22,7 +22,7 @@ import spectacular.*
 
 import scala.collection.mutable as scm
 
-open class Testbed():
+open class Harness():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
 
   def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =

@@ -16,9 +16,9 @@
 
 package soundness
 
-export probably.{Baseline, Benchmark, Details, Inclusion, Outcome, Runner, Test, Testbed,
+export probably.{Baseline, Benchmark, Details, Inclusion, Outcome, Runner, Test, Harness,
     TestId, TestReport, Reporter, Trial, TestSuite, Tolerance, Min, Mean, Max, BySpeed,
     ByTime, Ratio, Difference, `+/-`, meets, test, suite, aspire, assert, check, matches, debug}
 
 package testContexts:
-  export probably.testbeds.{threadLocal}
+  export probably.harnesses.{threadLocal}

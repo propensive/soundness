@@ -92,12 +92,12 @@ extension [TestType](test: Test[TestType])
 
     assert[ReportType](pf.isDefinedAt(_))
 
-extension [ValueType](inline value: ValueType)(using inline test: Testbed)
+extension [ValueType](inline value: ValueType)(using inline test: Harness)
   inline def debug: ValueType = ${Probably.debug('value, 'test)}
 
-package testbeds:
-  given threadLocal: Testbed = new Testbed():
-    private val delegate: Option[Testbed] = Option(Runner.testbedThreadLocal.get()).map(_.nn).flatten
+package harnesses:
+  given threadLocal: Harness = new Harness():
+    private val delegate: Option[Harness] = Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
 
     override def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
       delegate.map(_.capture[ValueType](name, value)).getOrElse(value)
