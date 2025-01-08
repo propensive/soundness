@@ -1,8 +1,12 @@
-All Ambience terms and types are in the `ambience` package.
-
+All Ambience terms and types are in the `ambience` package,
 ```scala
 import ambience.*
 ````
+but are exported to the `soundness` package, which is useful when using
+Ambience with other Soundness libraries:
+```scala
+import soundness.*
+```
 
 All other entities are imported explicitly.
 
