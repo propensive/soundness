@@ -210,7 +210,7 @@ object Producer extends Derivation[Producer] {
 
   inline def split[DerivationType: SumOf]: Producer[DerivationType] = input =>
     inline if choice then
-      Some(produceSingleton(input))
+      Some(singleton(input))
     else compiletime.error("not a choice")
 }
 
@@ -266,7 +266,7 @@ def main(): Unit =
   // TODO: use check if not compiles
   // val compilationError = summon[Show[Adt]]
 
-  println("choice + produceSingletonValue")
+  println("choice + singletonValue")
   val producer = summon[Producer[Simple]]
   println(producer.produce("Third"))
   println(Try(producer.produce("Secondd")))
