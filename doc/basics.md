@@ -285,7 +285,7 @@ object Show extends ProductDerivation[Show]:
         array.join(t"[", t", ", t"]")
 ```
 
-This definiton is sufficient to generate new (and working) contextual instances
+This definition is sufficient to generate new (and working) contextual instances
 of `Show` for product types. Given the definition of `Person` above,
 `Person(t"George", 19).show` would produce the string, `[George, 19]`.
 
@@ -358,7 +358,7 @@ right arrays will at least be pairwise-compatible.) We could then iterate over
 the three arrays together, applying the each typeclass to its corresponding
 left and right field value, and then aggregating the results.
 
-While possible, this would be inefficient and would rquire a significant
+While possible, this would be inefficient and would require a significant
 compromise of typesafety: inside the lambda, a value and a typeclass will be
 typed according to `FieldType`, and therefore uniquely compatible with each
 other. But as soon as they are aggregated into an array, independent of each
