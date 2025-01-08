@@ -56,7 +56,7 @@ class Runner[ReportType]()(using reporter: Reporter[ReportType]):
     finally
       Runner.harnessThreadLocal.set(None)
 
-  def suite(suite: TestSuite, block: TestSuite ?=> Unit): Unit =
+  def suite(suite: Testable, block: Testable ?=> Unit): Unit =
     if !skip(suite.id) then
       reporter.declareSuite(report, suite)
       block(using suite)

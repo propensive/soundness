@@ -27,16 +27,16 @@ import vacuous.*
 
 import language.adhocExtensions
 
-abstract class Suite(suiteName: Text) extends TestSuite(suiteName):
+abstract class Suite(suiteName: Text) extends Testable(suiteName):
   val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch(using Unsafe)
 
-  given runner: Runner[TestReport] =
+  given runner: Runner[Report] =
     given Stdio = suiteIo
     try Runner() catch case err: EnvironmentError =>
       println(StackTrace(err).teletype.render)
       ???
 
-  given TestSuite = this
+  given Testable = this
 
   def run(): Unit
 

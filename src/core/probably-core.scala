@@ -36,14 +36,14 @@ extension (value: Double)
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
   infix def meets (tolerance: Tolerance): Boolean = tolerance.covers(value)
 
-def test[ReportType](name: Text)(using suite: TestSuite, codepoint: Codepoint): TestId =
+def test[ReportType](name: Text)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)
 
-def suite[ReportType](name: Text)(using suite: TestSuite, runner: Runner[ReportType])
-   (block: TestSuite ?=> Unit)
+def suite[ReportType](name: Text)(using suite: Testable, runner: Runner[ReportType])
+   (block: Testable ?=> Unit)
         : Unit =
 
-  runner.suite(TestSuite(name, suite), block)
+  runner.suite(Testable(name, suite), block)
 
 extension [TestType](test: Test[TestType])
   inline def aspire[ReportType](inline predicate: TestType => Boolean)

@@ -21,10 +21,12 @@ import digression.*
 import rudiments.*
 import vacuous.*
 
-class TestSuite(val name: Text, val parent: Optional[TestSuite] = Unset)(using codepoint: Codepoint):
+class Testable(val name: Text, val parent: Optional[Testable] = Unset)
+   (using codepoint: Codepoint):
+
   override def equals(that: Any): Boolean = that.matchable(using Unsafe) match
-    case that: TestSuite => name == that.name && parent == that.parent
-    case _               => false
+    case that: Testable => name == that.name && parent == that.parent
+    case _              => false
 
   override def hashCode: Int = name.hashCode + parent.hashCode
 

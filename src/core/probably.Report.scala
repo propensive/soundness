@@ -35,9 +35,9 @@ import vacuous.*
 
 import scala.collection.mutable as scm
 
-object TestReport:
-  given Inclusion[TestReport, Outcome] with
-    def include(report: TestReport, testId: TestId, outcome: Outcome): TestReport =
+object Report:
+  given Inclusion[Report, Outcome] with
+    def include(report: Report, testId: TestId, outcome: Outcome): Report =
       val report2 = report.addOutcome(testId, outcome)
       outcome match
         case Outcome.Pass(_) =>
@@ -49,9 +49,9 @@ object TestReport:
         case Outcome.CheckThrows(error, _) =>
           report2.addDetails(testId, Details.CheckThrows(StackTrace(error)))
 
-  given Inclusion[TestReport, Details] = _.addDetails(_, _)
+  given Inclusion[Report, Details] = _.addDetails(_, _)
 
-class TestReport(using Environment):
+class Report(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
 
   class TestsMap():
@@ -67,7 +67,7 @@ class TestReport(using Environment):
       tests(testId)
 
   enum ReportLine:
-    case Suite(suite: Optional[TestSuite], tests: TestsMap = TestsMap())
+    case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
     case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
 
@@ -96,7 +96,7 @@ class TestReport(using Environment):
 
   private val lines: ReportLine.Suite = ReportLine.Suite(Unset)
 
-  def resolve(suite: Optional[TestSuite]): ReportLine.Suite =
+  def resolve(suite: Optional[Testable]): ReportLine.Suite =
     suite.option.map: suite =>
       (resolve(suite.parent).tests(suite.id): @unchecked) match
         case suite@ReportLine.Suite(_, _) => suite
@@ -108,23 +108,23 @@ class TestReport(using Environment):
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Details]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[Details]]().withDefault(_ => scm.ArrayBuffer[Details]())
 
-  def declareSuite(suite: TestSuite): TestReport = this.also:
+  def declareSuite(suite: Testable): Report = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
 
   def fail(error: Throwable, active: Set[TestId]): Unit = failure = (error, active)
 
-  def addBenchmark(testId: TestId, benchmark: Benchmark): TestReport = this.also:
+  def addBenchmark(testId: TestId, benchmark: Benchmark): Report = this.also:
     val benchmarks = resolve(testId.suite).tests
     benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
 
-  def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.also:
+  def addOutcome(testId: TestId, outcome: Outcome): Report = this.also:
     val tests = resolve(testId.suite).tests
 
     (tests.getOrElseUpdate
       (testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
 
-  def addDetails(testId: TestId, info: Details): TestReport =
+  def addDetails(testId: TestId, info: Details): Report =
     this.also(details(testId) = details(testId).append(info))
 
   enum Status:

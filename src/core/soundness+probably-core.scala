@@ -17,7 +17,7 @@
 package soundness
 
 export probably.{Baseline, Benchmark, Details, Inclusion, Outcome, Runner, Test, Harness,
-    TestId, TestReport, Reporter, Trial, TestSuite, Tolerance, Min, Mean, Max, BySpeed,
+    TestId, Report, Reporter, Trial, Testable, Tolerance, Min, Mean, Max, BySpeed,
     ByTime, Ratio, Difference, `+/-`, meets, test, suite, aspire, assert, check, matches, debug}
 
 package testContexts:

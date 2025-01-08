@@ -22,16 +22,16 @@ import turbulence.*
 trait Reporter[ReportType]:
   def make(): ReportType
   def fail(report: ReportType, error: Throwable, active: Set[TestId]): Unit
-  def declareSuite(report: ReportType, suite: TestSuite): Unit
+  def declareSuite(report: ReportType, suite: Testable): Unit
   def complete(report: ReportType): Unit
 
 object Reporter:
-  given (using Stdio, Environment): Reporter[TestReport] with
-    def make(): TestReport = TestReport()
-    def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
+  given (using Stdio, Environment): Reporter[Report] with
+    def make(): Report = Report()
+    def declareSuite(report: Report, suite: Testable): Unit = report.declareSuite(suite)
 
-    def fail(report: TestReport, error: Throwable, active: Set[TestId]): Unit =
+    def fail(report: Report, error: Throwable, active: Set[TestId]): Unit =
       report.fail(error, active)
 
-    def complete(report: TestReport): Unit =
+    def complete(report: Report): Unit =
       report.complete(Coverage())

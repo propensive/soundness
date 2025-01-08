@@ -19,8 +19,8 @@ package probably
 import vacuous.*
 
 object Benchmark:
-  given Inclusion[TestReport, Benchmark] with
-    def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
+  given Inclusion[Report, Benchmark] with
+    def include(report: Report, testId: TestId, benchmark: Benchmark): Report =
       report.addBenchmark(testId, benchmark)
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
