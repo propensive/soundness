@@ -85,7 +85,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
 
-            label -> leftValue.contrastWith(rightValue)
+            label -> leftValue.juxtapose(rightValue)
 
       Semblance.Breakdown(comparison, leftDebug, rightDebug)
 
@@ -115,5 +115,5 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
     (left, right) =>
       variant(left):
         [VariantType <: DerivationType] => left =>
-          complement(right).let(left.contrastWith(_)).or:
+          complement(right).let(left.juxtapose(_)).or:
             Semblance.Different(left.inspect, right.inspect)
