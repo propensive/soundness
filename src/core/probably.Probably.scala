@@ -57,7 +57,8 @@ object Probably:
 
         //val contrast: Expr[testType is Contrastable] = '{Contrastable.general[testType]}
 
-        val contrast = Expr.summon[testType is Contrastable].getOrElse('{Contrastable.general[testType]})
+        val contrast =
+          Expr.summon[testType is Contrastable].getOrElse('{Contrastable.general[testType]})
 
         '{
           assertion[testType, TestType, ReportType, ResultType]
@@ -80,7 +81,8 @@ object Probably:
      (using Quotes)
           : Expr[TestType] =
 
-    general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => t.get })
+    general[TestType, ReportType, TestType]
+     (test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => t.get })
 
   def assert[TestType: Type, ReportType: Type]
      (test:      Expr[Test[TestType]],
@@ -90,7 +92,8 @@ object Probably:
       inc2:      Expr[Inclusion[ReportType, Details]])
      (using Quotes)
           : Expr[Unit] =
-    general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
+    general[TestType, ReportType, Unit]
+     (test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
 
   def aspire[TestType: Type, ReportType: Type]
      (test: Expr[Test[TestType]],
@@ -100,7 +103,8 @@ object Probably:
      (using Quotes)
           : Expr[Unit] =
 
-    general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
+    general[TestType, ReportType, Unit]
+     (test, '{ _ => true }, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
 
   def succeed: Any => Boolean = (value: Any) => true
 
@@ -130,7 +134,8 @@ object Probably:
                 inc2.include(runner.report, test.id, Details.Compare(display.text(exp),
                     display.text(value), contrast(exp, value)))
               case None =>
-                //inc2.include(runner.report, test.id, Details.Compare(summon[Any is Contrastable].compare(value, 1)))
+                // inc2.include(runner.report, test.id, Details.Compare
+                //  (summon[Any is Contrastable].compare(value, 1)))
 
             if !map.isEmpty then inc2.include(runner.report, test.id, Details.Captures(map))
 
@@ -140,12 +145,15 @@ object Probably:
       inc.include(runner.report, test.id, outcome)
       result(run)
 
-  def debug[TestType: Type](expr: Expr[TestType], test: Expr[Harness])(using Quotes): Expr[TestType] =
+  def debug[TestType: Type](expr: Expr[TestType], test: Expr[Harness])(using Quotes)
+          : Expr[TestType] =
+
     import quotes.reflect.*
 
     val exprName: Text = expr.asTerm.pos match
       case pos: dtdu.SourcePosition =>
-        pos.lineContent.show.segment(Ordinal.zerary(pos.startColumn) ~ Ordinal.natural(pos.endColumn))
+        pos.lineContent.show.segment
+         (Ordinal.zerary(pos.startColumn) ~ Ordinal.natural(pos.endColumn))
 
       case _ =>
         t"<unknown>"

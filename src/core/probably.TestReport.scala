@@ -74,7 +74,8 @@ class TestReport(using Environment):
     def summaries: List[Summary] = this match
       case Suite(suite, tests)  =>
         val rest = tests.list.sortBy(_(0).timestamp).flatMap(_(1).summaries)
-        if suite.absent then rest else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
+        if suite.absent then rest
+        else Summary(Status.Suite, suite.option.get.id, 0, 0, 0, 0) :: rest
 
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
@@ -119,7 +120,8 @@ class TestReport(using Environment):
   def addOutcome(testId: TestId, outcome: Outcome): TestReport = this.also:
     val tests = resolve(testId.suite).tests
 
-    (tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
+    (tests.getOrElseUpdate
+      (testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
       case ReportLine.Test(_, buf) => buf.append(outcome)
 
   def addDetails(testId: TestId, info: Details): TestReport =
@@ -228,11 +230,17 @@ class TestReport(using Environment):
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Teletype =
           val main = e"${if hits == 0 then webColors.Gray else webColors.ForestGreen}($hits)"
-          if oldHits == 0 then main else e"${webColors.Goldenrod}(${oldHits.show.subscript}) $main"
+
+          if oldHits == 0 then main
+          else e"${webColors.Goldenrod}(${oldHits.show.subscript}) $main"
 
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
-        val hitCount: Int = branches.to(List).map(_.id).map(coverage.hits.contains).count(identity(_))
-        val oldHitCount: Int = branches.to(List).map(_.id).map(coverage.oldHits.contains).count(identity(_))
+        val hitCount: Int =
+          branches.to(List).map(_.id).map(coverage.hits.contains).count(identity(_))
+
+        val oldHitCount: Int =
+          branches.to(List).map(_.id).map(coverage.oldHits.contains).count(identity(_))
+
         CoverageData(path, branches.size, hitCount, oldHitCount)
 
       val maxHits = data.map(_.branches).maxOption
@@ -257,8 +265,8 @@ class TestReport(using Environment):
         . filter(!_.covered(allHits))
         . map(_.copy(children = Nil))
 
-      Table[(Surface, Teletype)](
-        Column(e""): row =>
+      Table[(Surface, Teletype)]
+       (Column(e""): row =>
           if row(0).juncture.branch then e"⎇" else e"",
         Column(e""): row =>
           if coverage.hits.contains(row(0).juncture.id) then e"${Bg(ForestGreen)}(  )"
@@ -267,13 +275,17 @@ class TestReport(using Environment):
         Column(e"Juncture")(_(1)),
         Column(e"Line"): row =>
           e"$GreenYellow(${row(0).juncture.path})$Gray(:)$Gold(${row(0).juncture.lineNo})",
-        Column(e"Symbol")(_(0).juncture.symbolName)
-      ).tabulate(render(junctures2)).grid(columns)(using tableStyles.horizontal).render.each(Out.println(_))
+        Column(e"Symbol")(_(0).juncture.symbolName))
+
+      . tabulate(render(junctures2))
+      . grid(columns)(using tableStyles.horizontal)
+      . render
+      . each(Out.println(_))
 
       Out.println(e"")
 
-      Table[CoverageData](
-        Column(e"Source file", textAlign = TextAlignment.Left): data =>
+      Table[CoverageData]
+       (Column(e"Source file", textAlign = TextAlignment.Left): data =>
           data.path,
         Column(e"Hits", textAlign = TextAlignment.Right)(_.hitsText),
         Column(e"Size", textAlign = TextAlignment.Right)(_.branches),
@@ -290,8 +302,8 @@ class TestReport(using Environment):
           val bars = List(webColors.ForestGreen -> covered, webColors.Goldenrod -> oldCovered,
               webColors.Brown -> notCovered)
 
-          bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join
-      ).tabulate(data).grid(columns).render.each(Out.println(_))
+          bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join)
+      . tabulate(data).grid(columns).render.each(Out.println(_))
 
       Out.println(e"")
 
@@ -323,14 +335,17 @@ class TestReport(using Environment):
         case _                            => Nil
 
     benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
-      val ribbon = Ribbon(webColors.DarkGreen.srgb, webColors.MediumSeaGreen.srgb, webColors.PaleGreen.srgb)
+      val ribbon =
+        Ribbon(webColors.DarkGreen.srgb, webColors.MediumSeaGreen.srgb, webColors.PaleGreen.srgb)
+
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
 
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
 
       def confInt(b: Benchmark): Teletype =
-        if b.confidenceInterval == 0 then e"" else e"${webColors.Thistle}(±)${showTime(b.confidenceInterval)}"
+        if b.confidenceInterval == 0 then e""
+        else e"${webColors.Thistle}(±)${showTime(b.confidenceInterval)}"
 
       def opsPerS(b: Benchmark): Teletype =
         if b.throughput == 0 then e""

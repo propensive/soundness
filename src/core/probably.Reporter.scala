@@ -29,6 +29,9 @@ object Reporter:
   given (using Stdio, Environment): Reporter[TestReport] with
     def make(): TestReport = TestReport()
     def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
-    def fail(report: TestReport, error: Throwable, active: Set[TestId]): Unit = report.fail(error, active)
+
+    def fail(report: TestReport, error: Throwable, active: Set[TestId]): Unit =
+      report.fail(error, active)
+
     def complete(report: TestReport): Unit =
       report.complete(Coverage())

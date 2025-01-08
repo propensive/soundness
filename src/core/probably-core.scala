@@ -74,7 +74,9 @@ extension [TestType](test: Test[TestType])
             inclusion:  Inclusion[ReportType, Outcome],
             inclusion2: Inclusion[ReportType, Details])
           : Unit =
-    ${Probably.assert[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
+    ${
+        Probably.assert[TestType, ReportType]
+         ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
 
   inline def check[ReportType]()
      (using runner:     Runner[ReportType],
@@ -82,7 +84,9 @@ extension [TestType](test: Test[TestType])
             inclusion2: Inclusion[ReportType, Details])
           : TestType =
 
-    ${Probably.check[TestType, ReportType]('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2)}
+    ${
+        Probably.check[TestType, ReportType]
+         ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
 
   inline def matches[ReportType](inline pf: TestType ~> Any)
      (using runner: Runner[ReportType],
@@ -97,7 +101,8 @@ extension [ValueType](inline value: ValueType)(using inline test: Harness)
 
 package harnesses:
   given threadLocal: Harness = new Harness():
-    private val delegate: Option[Harness] = Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
+    private val delegate: Option[Harness] =
+      Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
 
     override def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
       delegate.map(_.capture[ValueType](name, value)).getOrElse(value)

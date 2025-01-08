@@ -39,9 +39,9 @@ case class Juncture
     code:       List[Text]):
 
   def contains(right: Juncture): Boolean =
-    (right.start >= start && right.end <= end && !(right.start == start && right.end == end)) ||
-        treeName == t"DefDef" && right.treeName != t"DefDef" && className == right.className &&
-        methodName == right.methodName
+    (right.start >= start && right.end <= end && !(right.start == start && right.end == end))
+    || treeName == t"DefDef" && right.treeName != t"DefDef" && className == right.className
+    && methodName == right.methodName
 
   def shortCode: Text =
     val lines = code.flatMap(_.cut(t"\\n"))

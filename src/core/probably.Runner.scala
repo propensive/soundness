@@ -27,7 +27,8 @@ class Runner[ReportType]()(using reporter: Reporter[ReportType]):
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
 
-  def maybeRun[T, S](test: Test[T]): Optional[Trial[T]] = if skip(test.id) then Unset else run[T, S](test)
+  def maybeRun[T, S](test: Test[T]): Optional[Trial[T]] =
+    if skip(test.id) then Unset else run[T, S](test)
 
   def run[T, S](test: Test[T]): Trial[T] =
     synchronized { active += test.id }

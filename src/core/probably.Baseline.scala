@@ -27,4 +27,6 @@ object Baseline:
     case Ratio, Difference
 
 case class Baseline
-   (compare: Baseline.Compare = Mean, metric: Baseline.Metric = BySpeed, calc: Baseline.Calc = Ratio)
+   (compare: Baseline.Compare = Mean,
+    metric:  Baseline.Metric  = BySpeed,
+    calc:    Baseline.Calc    = Ratio)
