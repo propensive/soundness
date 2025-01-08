@@ -19,7 +19,7 @@ package probably
 import anticipation.*
 import rudiments.*
 
-enum TestRun[+T]:
+enum Trial[+T]:
   case Returns(result: T, duration: Long, context: Map[Text, Text])
   case Throws(exception: () => Nothing, duration: Long, context: Map[Text, Text])
 

@@ -33,7 +33,7 @@ object Probably:
       runner:    Expr[Runner[ReportType]],
       inc:       Expr[Inclusion[ReportType, Outcome]],
       inc2:      Expr[Inclusion[ReportType, Details]],
-      action:    Expr[TestRun[TestType] => ResultType])
+      action:    Expr[Trial[TestType] => ResultType])
      (using Quotes)
           : Expr[ResultType] =
 
@@ -80,7 +80,7 @@ object Probably:
      (using Quotes)
           : Expr[TestType] =
 
-    general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => t.get })
+    general[TestType, ReportType, TestType](test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => t.get })
 
   def assert[TestType: Type, ReportType: Type]
      (test:      Expr[Test[TestType]],
@@ -90,7 +90,7 @@ object Probably:
       inc2:      Expr[Inclusion[ReportType, Details]])
      (using Quotes)
           : Expr[Unit] =
-    general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
+    general[TestType, ReportType, Unit](test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
 
   def aspire[TestType: Type, ReportType: Type]
      (test: Expr[Test[TestType]],
@@ -100,7 +100,7 @@ object Probably:
      (using Quotes)
           : Expr[Unit] =
 
-    general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: TestRun[TestType]) => () })
+    general[TestType, ReportType, Unit](test, '{ _ => true }, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
 
   def succeed: Any => Boolean = (value: Any) => true
 
@@ -108,7 +108,7 @@ object Probably:
      (runner: Runner[ReportType],
       test: Test[TestType2],
       predicate: TestType2 => Boolean,
-      result: TestRun[TestType2] => ResultType,
+      result: Trial[TestType2] => ResultType,
       contrast: TestType is Contrastable,
       exp: Option[TestType],
       inc: Inclusion[ReportType, Outcome],
@@ -118,12 +118,12 @@ object Probably:
 
     runner.run(test).pipe: run =>
       val outcome = run match
-        case TestRun.Throws(err, duration, map) =>
+        case Trial.Throws(err, duration, map) =>
           val exception: Exception = try err() catch case exc: Exception => exc
           if !map.isEmpty then inc2.include(runner.report, test.id, Details.Captures(map))
           Outcome.Throws(exception, duration)
 
-        case TestRun.Returns(value, duration, map) =>
+        case Trial.Returns(value, duration, map) =>
           try if predicate(value) then Outcome.Pass(duration) else
             exp match
               case Some(exp) =>
