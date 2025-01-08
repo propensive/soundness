@@ -156,11 +156,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
                 if predicate(using label.tt, index2)
                 then
                   val index3: Int & VariantIndex[VariantType] = VariantIndex[VariantType](index)
-                  val context = summonFrom:
-                    case given (VariantType <:< Singleton) => 
-                      ???
-                    case _ =>  
-                      requirement.wrap(summonInline[TypeclassType[VariantType]])
+                  val context = requirement.wrap(summonInline[TypeclassType[VariantType]])
                   lambda[VariantType](context)(using context, label.tt, index3)
                 else
                   fold
