@@ -16,4 +16,4 @@
 
 package probably
 
-case class Test[+ReturnType](id: TestId, action: TestContext => ReturnType)
+case class Test[+ReturnType](id: TestId, action: Testbed => ReturnType)
