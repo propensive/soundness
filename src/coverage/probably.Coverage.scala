@@ -17,7 +17,6 @@
 package probably
 
 import anticipation.*
-import digression.*
 import gossamer.*
 import rudiments.*
 
@@ -26,61 +25,6 @@ import scala.io.*
 import scala.runtime.coverage.*
 
 import java.io.*
-
-object Juncture:
-  given Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)
-
-case class Juncture
-   (id:         Int,
-    path:       Text,
-    className:  Text,
-    methodName: Text,
-    start:      Int,
-    end:        Int,
-    lineNo:     Int,
-    symbolName: Text,
-    treeName:   Text,
-    branch:     Boolean,
-    ignored:    Boolean,
-    code:       List[Text]):
-
-  def contains(right: Juncture): Boolean =
-    (right.start >= start && right.end <= end && !(right.start == start && right.end == end)) ||
-        treeName == t"DefDef" && right.treeName != t"DefDef" && className == right.className &&
-        methodName == right.methodName
-
-  def shortCode: Text =
-    val lines = code.flatMap(_.cut(t"\\n"))
-    if lines.length > 1 then t"${lines.head}..." else lines.head
-
-  def method: StackTrace.Method = StackTrace.Method(
-    StackTrace.rewrite(className.s),
-    StackTrace.rewrite(methodName.s, method = true),
-  )
-
-object Surface:
-  def collapse(todo: List[Juncture], done: List[Surface]): List[Surface] = todo match
-    case Nil =>
-      done.reverse
-
-    case head :: tail =>
-      val todo2 = tail.takeWhile(head.contains(_))
-      collapse(tail.drop(todo2.length), Surface(head, collapse(todo2, Nil)) :: done)
-
-case class Surface(juncture: Juncture, children: List[Surface]):
-  def covered(hits: Set[Int]): Boolean =
-    hits.contains(juncture.id) && children.all(_.covered(hits))
-
-  def uncovered(hits: Set[Int]): Surface =
-    Surface(juncture, children.filter(!_.covered(hits)).map(_.uncovered(hits)))
-
-case class CoverageResults(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
-  lazy val structure: Map[Text, List[Surface]] =
-    val index: Int = spec.lastIndexWhere(_.id == 0)
-    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
-      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
-
-    . to(Map)
 
 object Coverage:
   def apply(): Option[CoverageResults] = currentDir.map: dir =>

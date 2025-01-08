@@ -16,12 +16,14 @@
 
 package probably
 
+import anticipation.*
+import chiaroscuro.*
+import digression.*
 import rudiments.*
 
-case class Tolerance(value: Double, tolerance: Double):
-  def covers(right: Double): Boolean = value >= (value - tolerance) && value <= (value + tolerance)
-
-extension (value: Double)
-  @targetName("plusOrMinus")
-  infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
-  infix def meets (tolerance: Tolerance): Boolean = tolerance.covers(value)
+enum DebugInfo:
+  case Throws(stack: StackTrace)
+  case CheckThrows(stack: StackTrace)
+  case Captures(values: Map[Text, Text])
+  case Compare(expected: Text, found: Text, semblance: Semblance)
+  case Message(message: Text)

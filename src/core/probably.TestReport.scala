@@ -33,79 +33,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-given Decimalizer = Decimalizer(3)
-
 import scala.collection.mutable as scm
-
-object Baseline:
-  enum Compare:
-    case Min, Mean, Max
-
-  enum Metric:
-    case BySpeed, ByTime
-
-  enum Calc:
-    case Ratio, Difference
-
-export Baseline.Compare.{Min, Mean, Max}
-export Baseline.Metric.{BySpeed, ByTime}
-export Baseline.Calc.{Ratio, Difference}
-
-case class Baseline
-   (compare: Baseline.Compare = Mean, metric: Baseline.Metric = BySpeed, calc: Baseline.Calc = Ratio)
-
-object Benchmark:
-  given Inclusion[TestReport, Benchmark] with
-    def include(report: TestReport, testId: TestId, benchmark: Benchmark): TestReport =
-      report.addBenchmark(testId, benchmark)
-  type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
-
-case class Benchmark
-   (total:      Long,
-    count:      Int,
-    min:        Double,
-    mean:       Double,
-    max:        Double,
-    sd:         Double,
-    confidence: Benchmark.Percentiles,
-    baseline:   Optional[Baseline]):
-
-  def zScore(percentile: Benchmark.Percentiles): Double = percentile match
-    case 80 => 0.842
-    case 85 => 1.036
-    case 90 => 1.282
-    case 95 => 1.645
-    case 96 => 1.751
-    case 97 => 1.881
-    case 98 => 2.054
-    case 99 => 2.326
-
-  def confidenceInterval: Long = (zScore(confidence)*sd/math.sqrt(count.toDouble)).toLong
-  def throughput: Long = (1000000000.0/mean).toLong
-
-enum DebugInfo:
-  case Throws(stack: StackTrace)
-  case CheckThrows(stack: StackTrace)
-  case Captures(values: Map[Text, Text])
-  case Compare(expected: Text, found: Text, semblance: Semblance)
-  case Message(message: Text)
-
-trait Inclusion[ReportType, DataType]:
-  def include(report: ReportType, testId: TestId, data: DataType): ReportType
-
-trait TestReporter[ReportType]:
-  def make(): ReportType
-  def fail(report: ReportType, error: Throwable, active: Set[TestId]): Unit
-  def declareSuite(report: ReportType, suite: TestSuite): Unit
-  def complete(report: ReportType): Unit
-
-object TestReporter:
-  given (using Stdio, Environment): TestReporter[TestReport] with
-    def make(): TestReport = TestReport()
-    def declareSuite(report: TestReport, suite: TestSuite): Unit = report.declareSuite(suite)
-    def fail(report: TestReport, error: Throwable, active: Set[TestId]): Unit = report.fail(error, active)
-    def complete(report: TestReport): Unit =
-      report.complete(Coverage())
 
 object TestReport:
   given Inclusion[TestReport, Outcome] with
@@ -122,7 +50,6 @@ object TestReport:
           report2.addDebugInfo(testId, DebugInfo.CheckThrows(StackTrace(error)))
 
   given Inclusion[TestReport, DebugInfo] = _.addDebugInfo(_, _)
-
 
 class TestReport(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
