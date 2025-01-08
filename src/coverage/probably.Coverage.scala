@@ -26,13 +26,21 @@ import scala.runtime.coverage.*
 
 import java.io.*
 
+case class Coverage(path: Text, spec: IArray[Juncture], oldHits: Set[Int], hits: Set[Int]):
+  lazy val structure: Map[Text, List[Surface]] =
+    val index: Int = spec.lastIndexWhere(_.id == 0)
+    spec.to(List).drop(index).groupBy(_.path).map: (path, junctures) =>
+      path -> Surface.collapse(junctures.sortBy(-_.end).sortBy(_.start), Nil)
+
+    . to(Map)
+
 object Coverage:
-  def apply(): Option[CoverageResults] = currentDir.map: dir =>
+  def apply(): Option[Coverage] = currentDir.map: dir =>
     val currentFile = Invoker.measurementFile(dir.s)
     val hits = measurements(currentFile)
     val dirFile = File(dir.s)
 
-    if !dirFile.exists() then CoverageResults(dir, IArray(), Set(), Set())
+    if !dirFile.exists() then Coverage(dir, IArray(), Set(), Set())
     else
       val otherFiles = Option(dirFile.listFiles).map(_.nn).map(_.to(List).map(_.nn)).getOrElse(Nil)
       val measurementFiles = otherFiles.filter(_.getName.nn.startsWith("scoverage.measurements"))
@@ -40,7 +48,7 @@ object Coverage:
       val allHits: Set[Int] = measurementFiles.flatMap(measurements(_)).to(Set)
       val oldHits: Set[Int] = allHits -- hits
 
-      CoverageResults(dir, spec(dir), oldHits, hits)
+      Coverage(dir, spec(dir), oldHits, hits)
 
   private def currentDir: Option[Text] =
     Option(System.getProperty("scalac.coverage")).map(_.nn).map(Text(_))

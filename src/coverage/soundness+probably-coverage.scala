@@ -16,4 +16,4 @@
 
 package soundness
 
-export probably.{Coverage, CoverageResults, Juncture, Surface}
+export probably.{Coverage, Juncture, Surface}

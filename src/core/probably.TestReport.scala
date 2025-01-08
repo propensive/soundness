@@ -102,7 +102,7 @@ class TestReport(using Environment):
 
     . getOrElse(lines)
 
-  private var coverage: Option[CoverageResults] = None
+  private var coverage: Option[Coverage] = None
 
   private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Details]] =
     scm.TreeMap[TestId, scm.ArrayBuffer[Details]]().withDefault(_ => scm.ArrayBuffer[Details]())
@@ -187,7 +187,7 @@ class TestReport(using Environment):
     def avgTime: Teletype = if avg == 0L then e"" else showTime(avg)
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
-  def complete(coverage: Option[CoverageResults])(using Stdio): Unit =
+  def complete(coverage: Option[Coverage])(using Stdio): Unit =
     given TextMetrics with
       private val eastAsian = textMetrics.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
