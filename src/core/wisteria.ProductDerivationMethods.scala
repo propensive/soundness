@@ -140,9 +140,9 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       type Fields = reflection.MirroredElemTypes
       val tuple: Fields = Tuple.fromProductTyped(product)
 
-      IArray.create[ResultType](tuple.size): 
+      IArray.create[ResultType](tuple.size):
         array =>
-          fold[DerivationType, Fields, Labels, Unit](tuple, (), 0): 
+          fold[DerivationType, Fields, Labels, Unit](tuple, (), 0):
             unit =>
               [FieldType] => field =>
                 given requirement.Optionality[TypeclassType[FieldType]] as typeclass =

@@ -37,9 +37,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
   private transparent inline def all[VariantType, VariantTypes <: Tuple]: Boolean = summonFrom:
     case given (VariantType <:< Singleton) => inline erasedValue[VariantTypes] match
-      case _: EmptyTuple => true
+      case _: EmptyTuple                     => true
       case _: (variantType *: variantsType)  => all[variantType, variantsType]
-    case _ => false
+    case _                                 => false
 
   protected transparent inline def complement[DerivationType, VariantType](sum: DerivationType)
      (using variantIndex: Int & VariantIndex[VariantType],
@@ -60,32 +60,34 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
     constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
-  protected transparent inline def produceSingleton[DerivationType](input: Text)
-  (using reflection: SumReflection[DerivationType]): DerivationType = 
+  protected transparent inline def singleton[DerivationType](input: Text)
+     (using reflection: SumReflection[DerivationType])
+          : DerivationType =
+
     type Variants = reflection.MirroredElemTypes
     type Labels = reflection.MirroredElemLabels
-    foldForProduceSingleton[DerivationType, Variants, Labels](_ == input) match
-      case v: DerivationType => v
-      case Unset => raise(VariantError[DerivationType](input), ???)(using summonInline[Tactic[VariantError]])  
 
-  private transparent inline def foldForProduceSingleton
-  [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
-  (using reflection: SumReflection[DerivationType])
-  (predicate: Text => Boolean): Optional[DerivationType] = 
+    singletonFold[DerivationType, Variants, Labels](_ == input).or:
+      summonInline[Tactic[VariantError]].give:
+        abort(VariantError[DerivationType](input))
+
+  private transparent inline def singletonFold
+     [DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
+     (using reflection: SumReflection[DerivationType])
+     (predicate: Text => Boolean)
+          : Optional[DerivationType] =
+
     inline erasedValue[VariantsType] match
       case _: (variantType *: variantsType) => inline erasedValue[LabelsType] match
-        case _: (labelType *: labelsType) => 
+        case _: (labelType *: labelsType) =>
           type VariantType = variantType & DerivationType
-          (valueOf[labelType].asMatchable: @unchecked) match
-            case label: String =>
-              if(predicate(label)) then
-                summonInline[Mirror.ProductOf[VariantType]].fromProduct(EmptyTuple)
-              else
-                foldForProduceSingleton[DerivationType, variantsType, labelsType](predicate)
+
+          if predicate(valueOf[labelType & String].tt)
+          then summonInline[Mirror.ProductOf[VariantType]].fromProduct(EmptyTuple)
+          else singletonFold[DerivationType, variantsType, labelsType](predicate)
+
       case _  =>
         Unset
-          
-
 
   protected transparent inline def delegate[DerivationType](label: Text)
      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
@@ -108,7 +110,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
     fold[DerivationType, Variants, Labels](variantLabel, size, 0, true)(label == variantLabel):
       [VariantType <: DerivationType] => context => lambda[VariantType](context)
 
-    .vouch(using Unsafe)
+    . vouch(using Unsafe)
 
   protected transparent inline def variant[DerivationType](sum: DerivationType)
      (using reflection: SumReflection[DerivationType], requirement: ContextRequirement)
