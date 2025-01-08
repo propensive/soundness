@@ -22,7 +22,7 @@ import vacuous.*
 object Runner:
   private[probably] val testContextThreadLocal: ThreadLocal[Option[TestContext]] = ThreadLocal()
 
-class Runner[ReportType]()(using reporter: TestReporter[ReportType]):
+class Runner[ReportType]()(using reporter: Reporter[ReportType]):
   private var active: Set[TestId] = Set()
   def skip(id: TestId): Boolean = false
   val report: ReportType = reporter.make()
