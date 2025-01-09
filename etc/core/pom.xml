@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>chiaroscuro-core</artifactId>
-  <version>0.25.0</version>
+  <version>0.26.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,22 +25,22 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>escapade-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>escritoire-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>dendrology-tree</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>dissonance-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
   </dependencies>
   <organization>
