@@ -26,6 +26,7 @@ _Hypotenuse_ has the goal of improving the safety and aesthetics of working with
 
 
 
+
 ## Getting Started
 
 ### Philosophy
