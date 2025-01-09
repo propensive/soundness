@@ -25,5 +25,5 @@ enum Details:
   case Throws(stack: StackTrace)
   case CheckThrows(stack: StackTrace)
   case Captures(values: Map[Text, Text])
-  case Compare(expected: Text, found: Text, semblance: Semblance)
+  case Compare(expected: Text, found: Text, juxtaposition: Juxtaposition)
   case Message(message: Text)
