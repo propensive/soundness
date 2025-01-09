@@ -33,7 +33,9 @@ object HttpMethod:
 
   given HttpMethod is Communicable as communicable = method => Message(method.show.upper)
 
-  given HttpMethod is Showable = _.toString.tt.upper
+  given HttpMethod is Showable =
+    case HttpHead => t"HEAD"
+    case method   => method.toString.tt.upper
 
   given Decoder[HttpMethod] = _.upper match
     case t"HEAD"    => HttpHead
