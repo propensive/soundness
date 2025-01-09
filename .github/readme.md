@@ -6,16 +6,15 @@
 
 __Simple interfaces for reading, processing and writing JSON__
 
-_Jacinta_ is a fully-featured JSON library built upon the JSON parser,
+_Jacinta_ is a fully-featured JSON library for Scala, built upon the JSON parser,
 [Merino](https://github.com/propensive/merino/), and designed to make it easy
 and safe to work with JSON in Scala.
 
 ## Features
 
-- parse and represent JSON in Scala
-- intuitive dynamic API for field access, without compromising typesafety
-- typeclass-based conversion to and from JSON
-- generic derivation of typeclass interfaces for reading and writing product and coproduct types to JSON
+- parse and serialize JSON
+- intuitive dynamic API for quick field access, without compromising typesafety
+- automatic conversion to and from product and sum types
 
 
 ## Availability
@@ -28,51 +27,118 @@ and safe to work with JSON in Scala.
 
 ## Getting Started
 
-### Parsing
-
-A `Json` value may be obtained from any readable value by passing it to the `Json.parse` method. This could be a
-string value, for example,
+All Jacinta terms and types are in the `jacinta` package, and exported to the `soundness` package.
+So we begin either by importing,
 ```scala
 import jacinta.*
+```
+or:
+```scala
+import soundness.*
+```
+
+### Core types
+
+Jacinta's most important type is `Json` which represents an instance of a JSON value, that is,
+a JSON object, array or primitive (string, number or boolean). It does not represent
+_serialized JSON_, so details like whitespace and the ordering of keys in an object are not
+represented.
+
+Scala's type system knows nothing more about the internal structure of a `Json` value than this. So
+a `Json` value representing the number `12` is indistinguishable by the type system from a `Json`
+value representing an array of complex objects.
+
+### Parsing
+
+We can obtain a `Json` value by constructing one from existing values.. Or we can parse some textual
+input.
+
+The `Json.parse` method takes any input that is `Readable by Bytes`. This includes not only
+`Text` and `Bytes` values, but other types like filesystem `Path`s—if suitable context is provided
+for a `Readable by Bytes` value to be resolved.
+
+Here is an example of parsing `Text` as JSON:
+```scala
 Json.parse(t"""{ "name": "Alfred", "age": 83 }""")
 ```
-but could also be a file or any other data stream with an appropirate `Readable` typeclass instance in scope:
+
+Calling `Json.parse` may raise a `JsonParseError`, so this should be handled in some way. Full
+details of error handling in Soundness is provided by
+[Contingency](https://github.com/propensive/contingency/).
+
+### Dynamic field access
+
+As a dynamically-typed value, Scala's type system does not know anything about the fields that are
+available on a particular `Json` value. It does not even know if it is an object with fields, an
+array with indices, or a primitive value.
+
+But we may know more than the type system. Or at least, we may wish to program to the assumption
+that we know more. So Jacinta makes it possible to access fields and array indices _dynamically_
+using selection or arbitrary field names with the familiar `.`, and application with parentheses
+for numeric indices.
+
+This would normally be a significant compromise on typesafety, since it would allow us to call
+nonexistent methods on `Json` values, without protection from the compiler. So access must be
+explicitly enabled with the import:
 ```scala
-import galilei.*
-val input = (dir / t"source.json").file
-Json.parse(input)
+import dynamicJsonAccess.enabled
 ```
 
-If parsing fails, a `JsonParseError` is thrown. Otherwise, an instance of `Json` representing a JSON abstract
-syntax tree is returned.
+With this contextual value in-scope, we can dereference and deindex `Json` values, dynamically.
+The result will always be another `Json` value, ready to be deindexed or dereferenced, or a
+`JsonError` will be thrown if the index is out of range, or the object key does not exist.
 
-### Serialization
+`Json` values are not useful (in most cases) for use elsewhere in Scala code, unless we can
+convert them to typed Scala values. This is called _decoding_.
 
-Many types may be serialized to JSON, i.e. converted into instances of `Json`, by calling the `.json` extension
-method upon them. `42.json` will produce a `Json` value of the integer `42` represented as a JSON number type.
+### Decoding `Json` values
 
-Other primitive types may be converted in obvious ways, for example, `t"Hello World".json`. Case class instances
-may be converted into `Json` instances of objects provided the type of every parameter of the case class can be.
-This applies recursively, so a case class composed of other case classes may be serialized to JSON. For example:
+
+
+### Encoding as `Json`
+
+Many Scala values can be mapped directly (and often unambiguously) to JSON values. Trivially, this
+includes `Text`, `Boolean` and various numeric types. But collection types like `List` and `Set`
+can also be mapped to JSON arrays, if their elements are types which can be mapped. And case
+classes and tuples of these types may also be mapped, so long as their elements can. With a suitable
+choice of encoding, sum types (like enumerations or sealed traits) can also be mapped.
+
+This is true compositionally. For example, `List`s of sealed traits, composed of case classes whose
+parameters are tuples of `Int`s, `Set`s and other case classes are equally encodable.
+
+Encoding a value to `Json` is as simple as calling `.json` on that value. If it is able to be
+encoded, the result will be a `Json` value. (Note that this is not the same as encoding a `Json`
+value to string-like representation, which is a useful—but different—operation, described below.)
+
+Here is an example of a simple, but nontrivial case-class structure:
 ```scala
 case class Person(firstName: Text, lastName: Text)
 case class Recipient(person: Person, emailAddress: Text)
 
-val recipient = Recipient(Person(t"Mike", t"Smith"), t"mike@example.com").json
+val recipient = Recipient(Person(t"Piotr", t"Nowak"), t"pn@example.com")
 ```
 
-Given these definitions, the `recipient` instance would serialize to the JSON,
+Given these definitions, the `recipient` instance can be encoded with `recipient.json` into a
+`Json` value representing the following JSON object:
 ```json
 {
   "person": {
-    "firstName": "Mike",
-    "lastName": "Smith"
+    "firstName": "Piotr",
+    "lastName": "Nowak"
   },
-  "emailAddress": "mike@example.com"
+  "emailAddress": "pn@example.com"
 }
 ```
 
 #### Coproducts
+
+
+### Encoding as `Text`
+
+
+### Decoding as `Json`
+
+
 
 Sealed traits of two or more case class subtypes will be serialized to JSON objects, exactly as each of the
 subtypes would be, but with an additional field called `_type`, whose value will be set to the unqualified type
@@ -162,11 +228,6 @@ object Email:
   given Json.Reader[Email] = summon[Json.Reader[Text]].map(Email(_))
   given Json.Writer[Email] = summon[Json.Writer[Text]].contramap(_.value)
 ```
-
-
-
-
-
 
 
 ## Status
