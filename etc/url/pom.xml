@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>nettlesome-url</artifactId>
-  <version>0.25.0</version>
+  <version>0.26.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,27 +25,27 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>nettlesome-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>serpentine-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>nomenclature-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>escapade-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-html</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
   </dependencies>
   <organization>
