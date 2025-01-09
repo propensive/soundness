@@ -371,36 +371,35 @@ class Report(using Environment):
             e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
-            e"${opsPerS(s.benchmark)}"
-        ) ::: (
-          comparisons.map: c =>
-            import Baseline.*
-            val baseline = c.benchmark.baseline.vouch(using Unsafe)
-            Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
-              (bench: ReportLine.Bench) =>
-                def op(left: Double, right: Double): Double = baseline.mode match
-                  case Arithmetic => left - right
-                  case Geometric  => left/right
+            e"${opsPerS(s.benchmark)}")
+        ::: comparisons.map: c =>
+          import Baseline.*
+          val baseline = c.benchmark.baseline.vouch(using Unsafe)
+          Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
+            (bench: ReportLine.Bench) =>
+              def op(left: Double, right: Double): Double = baseline.mode match
+                case Arithmetic => left - right
+                case Geometric  => left/right
 
-                def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
+              def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
-                val value = baseline.compare match
-                  case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
-                  case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
-                  case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
+              val value = baseline.compare match
+                case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
+                case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
+                case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
 
-                val valueWithUnits = baseline.metric match
-                  case ByTime  => showTime(value.toLong)
-                  case BySpeed => e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
+              val valueWithUnits = baseline.metric match
+                case ByTime  => showTime(value.toLong)
+                case BySpeed => e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
 
-                baseline.mode match
-                  case Arithmetic => if value == 0 then e"★"
-                                     else if value < 0
-                                     then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
-                                     else e"$Thistle(+)$valueWithUnits"
+              baseline.mode match
+                case Arithmetic => if value == 0 then e"★"
+                                   else if value < 0
+                                   then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
+                                   else e"$Thistle(+)$valueWithUnits"
 
-                  case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
-        ))*
+                case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
+        )*
       )
 
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
