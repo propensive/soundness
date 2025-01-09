@@ -27,6 +27,7 @@ __Iridescence__ implements several algorithms for working with colors represente
 
 
 
+
 ## Getting Started
 
 _Iridescence_ provides seven different ways of representing colors:
