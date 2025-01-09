@@ -107,7 +107,7 @@ object Bootstrapper:
       
         val entries: Map[(Text, Text), Requirement] = urls.compact.flatMap: url =>
           Out.println(m"Downloading $url")
-          val data = url.get().read[Bytes]
+          val data = url.fetch().read[Bytes]
           val digest = data.digest[Sha2[256]].serialize[Hex]
 
           def filter(name: Text): Boolean =
