@@ -314,9 +314,14 @@ class Report(using Environment):
 
       table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
-      Out.println(e" $Bold($White($passed)) passed (${100.0*passed/total}%), $Bold($White($failed)) failed (${100.0*failed/total}%), $Bold($White(${passed + failed})) total")
+      val pass = e"$Bold($White($passed)) passed (${100.0*passed/total}%)"
+      val fail = e"$Bold($White($failed)) failed (${100.0*failed/total}%)"
+      val all = e"$Bold($White(${passed + failed})) total"
+      Out.println(e" $pass, $fail, $all")
       Out.println(t"─"*72)
-      List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).each: statuses =>
+
+      import Status.*
+      List(Pass, Bench, Throws, Fail, Mixed, CheckThrows).grouped(3).each: statuses =>
         Out.println:
           statuses.map[Teletype]: status =>
             gossamer.pad[Teletype](e"  ${status.symbol} ${status.describe}")(20)
@@ -335,7 +340,8 @@ class Report(using Environment):
       val ribbon =
         Ribbon(DarkGreen.srgb, MediumSeaGreen.srgb, PaleGreen.srgb)
 
-      Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
+      Out.println:
+        ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Benchmarks", e"${suite.lay(t"")(_.name)}")
 
       val comparisons: List[ReportLine.Bench] =
         benchmarks.filter(!_.benchmark.baseline.absent).to(List)
@@ -370,36 +376,35 @@ class Report(using Environment):
           comparisons.map: c =>
             import Baseline.*
             val baseline = c.benchmark.baseline.vouch(using Unsafe)
-            Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
-              def op(left: Double, right: Double): Double = baseline.mode match
-                case Arithmetic => left - right
-                case Geometric  => left/right
+            Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
+              (bench: ReportLine.Bench) =>
+                def op(left: Double, right: Double): Double = baseline.mode match
+                  case Arithmetic => left - right
+                  case Geometric  => left/right
 
-              def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
+                def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
-              val value = baseline.compare match
-                case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
-                case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
-                case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
+                val value = baseline.compare match
+                  case Compare.Min  => op(metric(bench.benchmark.min), metric(c.benchmark.min))
+                  case Compare.Mean => op(metric(bench.benchmark.mean), metric(c.benchmark.mean))
+                  case Compare.Max  => op(metric(bench.benchmark.max), metric(c.benchmark.max))
 
-              val valueWithUnits = baseline.metric match
-                case ByTime =>
-                  showTime(value.toLong)
+                val valueWithUnits = baseline.metric match
+                  case ByTime  => showTime(value.toLong)
+                  case BySpeed => e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
 
-                case BySpeed =>
-                  e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
+                baseline.mode match
+                  case Arithmetic => if value == 0 then e"★"
+                                     else if value < 0
+                                     then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
+                                     else e"$Thistle(+)$valueWithUnits"
 
-              baseline.mode match
-                case Arithmetic => if value == 0 then e"★"
-                                   else if value < 0
-                                   then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
-                                   else e"$Thistle(+)$valueWithUnits"
-
-                case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
+                  case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
         ))*
       )
 
-      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput)).grid(columns).render.each(Out.println(_))
+      bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
+      . grid(columns).render.each(Out.println(_))
 
     def showLegend(): Unit =
       Out.println(t"─"*74)
@@ -456,8 +461,11 @@ class Report(using Environment):
           e"No tests were active when a fatal error occurred."
 
         case _ =>
-          val tests = active.to(List).map { test => e"$Bold(${test.name})" }.join(e"", e", ", e" and ", e"")
           val were = if active.size == 1 then e"was" else e"were"
+          val tests =
+            active.to(List).map { test => e"$Bold(${test.name})" }
+            . join(e"", e", ", e" and ", e"")
+
           e"A fatal error occurred while $tests $were running."
 
       Out.println()
