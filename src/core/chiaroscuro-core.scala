@@ -17,6 +17,6 @@
 package chiaroscuro
 
 extension [ValueType](left: ValueType)
-  inline def juxtapose(right: ValueType): Semblance = compiletime.summonFrom:
+  inline def juxtapose(right: ValueType): Juxtaposition = compiletime.summonFrom:
     case contrastable: (ValueType is Contrastable) => contrastable(left, right)
     case _                                         => Contrastable.general(left, right)

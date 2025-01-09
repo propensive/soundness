@@ -27,38 +27,38 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-enum Semblance:
-  case Identical(value: Text)
+enum Juxtaposition:
+  case Same(value: Text)
   case Different(left: Text, right: Text, difference: Optional[Text] = Unset)
-  case Breakdown(comparison: IArray[(Text, Semblance)], left: Text, right: Text)
+  case Collation(comparison: IArray[(Text, Juxtaposition)], left: Text, right: Text)
 
-object Semblance:
-  given (using calc: TextMetrics) => Semblance is Teletypeable =
-    case Semblance.Breakdown(cmp, l, r) =>
+object Juxtaposition:
+  given (using calc: TextMetrics) => Juxtaposition is Teletypeable =
+    case Juxtaposition.Collation(cmp, l, r) =>
       import tableStyles.default
 
-      def children(comp: (Text, Semblance)): List[(Text, Semblance)] = comp(1) match
-        case Identical(value)                   => Nil
+      def children(comp: (Text, Juxtaposition)): List[(Text, Juxtaposition)] = comp(1) match
+        case Same(value)                        => Nil
         case Different(left, right, difference) => Nil
-        case Breakdown(comparison, left, right) => comparison.to(List)
+        case Collation(comparison, left, right) => comparison.to(List)
 
       case class Row(treeLine: Text, left: Teletype, right: Teletype, difference: Teletype)
 
       given (using Text is Textual) => TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
 
-      def mkLine(data: (Text, Semblance)) =
+      def mkLine(data: (Text, Juxtaposition)) =
         def line(bullet: Text): Text = t"$bullet ${data(0)}"
 
         data(1) match
-          case Identical(v) =>
+          case Same(v) =>
             Row(line(t"▪"), e"${rgb"#667799"}($v)", e"${rgb"#667799"}($v)", e"")
 
           case Different(left, right, difference) =>
             Row(line(t"▪"), e"${webColors.YellowGreen}($left)", e"${webColors.Crimson}($right)",
                 e"${rgb"#40bbcb"}(${difference.or(t"")})")
 
-          case Breakdown(cmp, left, right) =>
+          case Collation(cmp, left, right) =>
             Row(line(t"■"), e"$left", e"$right", e"")
 
       val table = Table[Row](
@@ -75,5 +75,5 @@ object Semblance:
       val whitespace2 = if left.contains('\n') then e"\n" else e" "
       e"The result$whitespace${webColors.Crimson}($right)${whitespace}did not equal$whitespace2${webColors.YellowGreen}($left)"
 
-    case Identical(value) =>
+    case Same(value) =>
       e"The value ${webColors.Gray}($value) was expected"

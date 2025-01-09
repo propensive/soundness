@@ -29,44 +29,44 @@ import scala.deriving.*
 
 trait Contrastable:
   type Self
-  def apply(left: Self, right: Self): Semblance
+  def apply(left: Self, right: Self): Juxtaposition
 
 object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable]:
   def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
-    Semblance.Identical(left.inspect)
+    Juxtaposition.Same(left.inspect)
 
   given Int is Contrastable as int = (left, right) =>
-    if left == right then Semblance.Identical(left.show)
-    else Semblance.Different(left.show, right.show, t"${math.abs(right - left)}")
+    if left == right then Juxtaposition.Same(left.show)
+    else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
 
   given Double is Contrastable = (left, right) =>
     given Decimalizer = Decimalizer(3)
-    if left == right then Semblance.Identical(left.show)
+    if left == right then Juxtaposition.Same(left.show)
     else
       val size = 100*(right - left)/left
       val sizeText = if size.isFinite then t"${if size > 0 then t"+" else t""}$size%" else t""
-      Semblance.Different(left.show, right.show, sizeText)
+      Juxtaposition.Different(left.show, right.show, sizeText)
 
   inline def general[ValueType]: ValueType is Contrastable = (left, right) =>
-    if left == right then Semblance.Identical(left.inspect) else Semblance.Different(left.inspect, right.inspect)
+    if left == right then Juxtaposition.Same(left.inspect) else Juxtaposition.Different(left.inspect, right.inspect)
 
   given Exception is Contrastable:
-    def apply(left: Exception, right: Exception): Semblance =
+    def apply(left: Exception, right: Exception): Juxtaposition =
       val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.inspect)
       val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.inspect)
 
-      if left.getClass == right.getClass && leftMsg == rightMsg then Semblance.Identical(leftMsg)
-      else Semblance.Different(leftMsg, rightMsg)
+      if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
+      else Juxtaposition.Different(leftMsg, rightMsg)
 
   given Char is Contrastable = (left, right) =>
-    if left == right then Semblance.Identical(left.show) else Semblance.Different(left.show, right.show)
+    if left == right then Juxtaposition.Same(left.show) else Juxtaposition.Different(left.show, right.show)
 
   given Text is Contrastable = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
   def compareSeq[ValueType: Contrastable: Similarity]
      (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
-          : Semblance =
-    if left == right then Semblance.Identical(leftDebug) else
+          : Juxtaposition =
+    if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
           case Par(leftIndex, rightIndex, value) =>
@@ -74,46 +74,46 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
 
-            label -> Semblance.Identical(value.inspect)
+            label -> Juxtaposition.Same(value.inspect)
 
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscript}" -> Semblance.Different(t"—", value.inspect)
+            t" ⧸${rightIndex.show.subscript}" -> Juxtaposition.Different(t"—", value.inspect)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscript}⧸" -> Semblance.Different(value.inspect, t"—")
+            t"${leftIndex.show.superscript}⧸" -> Juxtaposition.Different(value.inspect, t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
 
             label -> leftValue.juxtapose(rightValue)
 
-      Semblance.Breakdown(comparison, leftDebug, rightDebug)
+      Juxtaposition.Collation(comparison, leftDebug, rightDebug)
 
 
   given [ValueType: {Contrastable, Similarity}] => IArray[ValueType] is Contrastable as iarray:
-    def apply(left: IArray[ValueType], right: IArray[ValueType]): Semblance =
+    def apply(left: IArray[ValueType], right: IArray[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   given [ValueType: {Contrastable, Similarity}] => List[ValueType] is Contrastable as list:
-    def apply(left: List[ValueType], right: List[ValueType]): Semblance =
+    def apply(left: List[ValueType], right: List[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   given [ValueType: {Contrastable, Similarity}] => Trie[ValueType] is Contrastable as trie:
-    def apply(left: Trie[ValueType], right: Trie[ValueType]): Semblance =
+    def apply(left: Trie[ValueType], right: Trie[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable =
     (left, right) =>
       val elements = fields(left, true): [FieldType] =>
         leftParam =>
-          if leftParam == complement(right) then (label, Semblance.Identical(leftParam.inspect))
+          if leftParam == complement(right) then (label, Juxtaposition.Same(leftParam.inspect))
           else (label, context(leftParam, complement(right)))
 
-      Semblance.Breakdown(elements, left.inspect, right.inspect)
+      Juxtaposition.Collation(elements, left.inspect, right.inspect)
 
   inline def split[DerivationType: SumReflection]: DerivationType is Contrastable =
     (left, right) =>
       variant(left):
         [VariantType <: DerivationType] => left =>
           complement(right).let(left.juxtapose(_)).or:
-            Semblance.Different(left.inspect, right.inspect)
+            Juxtaposition.Different(left.inspect, right.inspect)

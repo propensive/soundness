@@ -16,4 +16,4 @@
 
 package soundness
 
-export chiaroscuro.{Contrastable, Semblance, Similarity, juxtapose}
+export chiaroscuro.{Contrastable, Juxtaposition, Similarity, juxtapose}
