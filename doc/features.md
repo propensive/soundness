@@ -1,4 +1,3 @@
-- parse and represent JSON in Scala
-- intuitive dynamic API for field access, without compromising typesafety
-- typeclass-based conversion to and from JSON
-- generic derivation of typeclass interfaces for reading and writing product and coproduct types to JSON
+- parse and serialize JSON
+- intuitive dynamic API for quick field access, without compromising typesafety
+- automatic conversion to and from product and sum types
