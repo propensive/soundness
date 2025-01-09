@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>quantitative-core</artifactId>
-  <version>0.24.0</version>
+  <version>0.25.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,22 +25,22 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>gossamer-core</artifactId>
-      <version>0.24.0</version>
+      <version>0.25.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-time</artifactId>
-      <version>0.24.0</version>
+      <version>0.25.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>anticipation-opaque</artifactId>
-      <version>0.24.0</version>
+      <version>0.25.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>hypotenuse-core</artifactId>
-      <version>0.24.0</version>
+      <version>0.25.0</version>
     </dependency>
   </dependencies>
   <organization>
