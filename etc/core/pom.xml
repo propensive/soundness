@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>burdock-core</artifactId>
-  <version>0.25.0</version>
+  <version>0.26.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
@@ -25,32 +25,32 @@
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>zeppelin-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>exoskeleton-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>hellenism-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>revolution-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>gastronomy-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
     <dependency>
       <groupId>dev.soundness</groupId>
       <artifactId>telekinesis-core</artifactId>
-      <version>0.25.0</version>
+      <version>0.26.0</version>
     </dependency>
   </dependencies>
   <organization>
