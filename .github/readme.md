@@ -31,6 +31,7 @@ Scala application into a self-contained, portable executable.
 
 
 
+
 ## Getting Started
 
 ### Running as a Daemon
