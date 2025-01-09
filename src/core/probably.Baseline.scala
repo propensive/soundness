@@ -23,10 +23,10 @@ object Baseline:
   enum Metric:
     case BySpeed, ByTime
 
-  enum Calc:
-    case Ratio, Difference
+  enum Mode:
+    case Geometric, Arithmetic
 
 case class Baseline
    (compare: Baseline.Compare = Mean,
     metric:  Baseline.Metric  = BySpeed,
-    calc:    Baseline.Calc    = Ratio)
+    mode:    Baseline.Mode    = Geometric)

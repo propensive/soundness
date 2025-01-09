@@ -374,9 +374,9 @@ class Report(using Environment):
             import Baseline.*
             val baseline = c.benchmark.baseline.vouch(using Unsafe)
             Column(e"$Bold(${webColors.CadetBlue}(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
-              def op(left: Double, right: Double): Double = baseline.calc match
-                case Difference => left - right
-                case Ratio      => left/right
+              def op(left: Double, right: Double): Double = baseline.mode match
+                case Arithmetic => left - right
+                case Geometric  => left/right
 
               def metric(value: Double) = if baseline.metric == ByTime then value else 1/value
 
@@ -392,13 +392,13 @@ class Report(using Environment):
                 case BySpeed =>
                   e"${webColors.Silver}(${value}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
 
-              baseline.calc match
-                case Difference => if value == 0 then e"★"
+              baseline.mode match
+                case Arithmetic => if value == 0 then e"★"
                                    else if value < 0
                                    then e"${webColors.Thistle}(-)${valueWithUnits.dropChars(1)}"
                                    else e"${webColors.Thistle}(+)$valueWithUnits"
 
-                case Ratio      => if value == 1 then e"★" else e"${webColors.Silver}($value)"
+                case Geometric  => if value == 1 then e"★" else e"${webColors.Silver}($value)"
         ))*
       )
 

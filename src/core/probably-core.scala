@@ -29,7 +29,7 @@ given Decimalizer = Decimalizer(3)
 
 export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{BySpeed, ByTime}
-export Baseline.Calc.{Ratio, Difference}
+export Baseline.Mode.{Arithmetic, Geometric}
 
 extension (value: Double)
   @targetName("plusOrMinus")
