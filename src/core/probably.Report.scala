@@ -27,7 +27,7 @@ import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import iridescence.*
+import iridescence.*, webColors.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -132,21 +132,21 @@ class Report(using Environment):
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
-      case Fail        => webColors.Tomato
-      case Throws      => webColors.DarkOrange
+      case Fail        => Tomato
+      case Throws      => DarkOrange
       case CheckThrows => rgb"#dd40a0"
       case Mixed       => rgb"#ddd700"
-      case Suite       => webColors.SlateBlue
-      case Bench       => webColors.CadetBlue
+      case Suite       => SlateBlue
+      case Bench       => CadetBlue
 
     def symbol: Teletype = this match
-      case Pass        => e"${Bg(rgb"#8abd00")}( $Bold(${webColors.Black}(✓)) )"
-      case Fail        => e"${Bg(webColors.Tomato)}( $Bold(${webColors.Black}(✗)) )"
-      case Throws      => e"${Bg(webColors.DarkOrange)}( $Bold(${webColors.Black}(!)) )"
-      case CheckThrows => e"${Bg(rgb"#dd40a0")}( $Bold(${webColors.Black}(‼)) )"
-      case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold(${webColors.Black}(?)) )"
+      case Pass        => e"${Bg(rgb"#8abd00")}( $Bold($Black(✓)) )"
+      case Fail        => e"${Bg(Tomato)}( $Bold($Black(✗)) )"
+      case Throws      => e"${Bg(DarkOrange)}( $Bold($Black(!)) )"
+      case CheckThrows => e"${Bg(rgb"#dd40a0")}( $Bold($Black(‼)) )"
+      case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold($Black(?)) )"
       case Suite       => e"   "
-      case Bench       => e"${Bg(webColors.CadetBlue)}( $Bold(${webColors.Black}(*)) )"
+      case Bench       => e"${Bg(CadetBlue)}( $Bold($Black(*)) )"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
@@ -158,9 +158,9 @@ class Report(using Environment):
       case Bench       => e"Benchmark"
 
   val unitsSeq: List[Teletype] = List(
-    e"${webColors.BurlyWood}(µs)",
-    e"${webColors.Goldenrod}(ms)",
-    e"${webColors.Sienna}(s) "
+    e"$BurlyWood(µs)",
+    e"$Goldenrod(ms)",
+    e"$Sienna(s) "
   )
 
   def showTime(n: Long, units: List[Teletype] = unitsSeq): Teletype = units match
@@ -172,14 +172,14 @@ class Report(using Environment):
         val sig = (n/1000L).show
         import textMetrics.uniform
         val frac = (n%1000).show.pad(3, Rtl, '0')
-        e"${webColors.Silver}(${sig}.$frac) ${unit}"
+        e"$Silver(${sig}.$frac) ${unit}"
 
   case class Summary(status: Status, id: TestId, count: Int, min: Long, max: Long, avg: Long):
     def indentedName: Teletype =
       val depth = id.suite.let(_.id.depth).or(0) + 1
 
       val title =
-        if status == Status.Suite then e"${webColors.Silver}($Bold(${id.name}))"
+        if status == Status.Suite then e"$Silver($Bold(${id.name}))"
         else e"${id.name}"
 
       e"${t"  "*(depth - 1)}$title"
@@ -205,12 +205,12 @@ class Report(using Environment):
         Column(e"")(_.status.symbol),
 
         Column(e"$Bold(Hash)"): s =>
-          e"${webColors.CadetBlue}(${s.id.id})",
+          e"$CadetBlue(${s.id.id})",
 
         Column(e"$Bold(Test)")(_.indentedName),
 
         Column(e"$Bold(Count)", textAlign = TextAlignment.Right): s =>
-          e"${webColors.SteelBlue}(${s.iterations})",
+          e"$SteelBlue(${s.iterations})",
 
         Column(e"$Bold(Min)", textAlign = TextAlignment.Right): s =>
           if s.count < 2 then e"" else s.minTime,
@@ -229,10 +229,10 @@ class Report(using Environment):
       Out.println(e"$Bold($Underline(Test coverage))")
       case class CoverageData(path: Text, branches: Int, hits: Int, oldHits: Int):
         def hitsText: Teletype =
-          val main = e"${if hits == 0 then webColors.Gray else webColors.ForestGreen}($hits)"
+          val main = e"${if hits == 0 then Gray else ForestGreen}($hits)"
 
           if oldHits == 0 then main
-          else e"${webColors.Goldenrod}(${oldHits.show.subscript}) $main"
+          else e"$Goldenrod(${oldHits.show.subscript}) $main"
 
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         val hitCount: Int =
@@ -254,8 +254,6 @@ class Report(using Environment):
       def render(junctures: List[Surface]): LazyList[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
-
-      import webColors.*
 
       val allHits = coverage.hits ++ coverage.oldHits
 
@@ -299,8 +297,7 @@ class Report(using Environment):
           val notCovered: Text = width(maxHits.map((data.branches.toDouble - data.hits -
               data.oldHits)/_).getOrElse(0))
 
-          val bars = List(webColors.ForestGreen -> covered, webColors.Goldenrod -> oldCovered,
-              webColors.Brown -> notCovered)
+          val bars = List(ForestGreen -> covered, Goldenrod -> oldCovered, Brown -> notCovered)
 
           bars.filter(_(1).length > 0).map { (color, bar) => e"$color($bar)" }.join)
       . tabulate(data).grid(columns).render.each(Out.println(_))
@@ -317,7 +314,7 @@ class Report(using Environment):
 
       table.tabulate(summaryLines).grid(columns).render.each(Out.println(_))
       given Decimalizer = Decimalizer(decimalPlaces = 1)
-      Out.println(e" $Bold(${webColors.White}($passed)) passed (${100.0*passed/total}%), $Bold(${webColors.White}($failed)) failed (${100.0*failed/total}%), $Bold(${webColors.White}(${passed + failed})) total")
+      Out.println(e" $Bold($White($passed)) passed (${100.0*passed/total}%), $Bold($White($failed)) failed (${100.0*failed/total}%), $Bold($White(${passed + failed})) total")
       Out.println(t"─"*72)
       List(Status.Pass, Status.Bench, Status.Throws, Status.Fail, Status.Mixed, Status.CheckThrows).grouped(3).each: statuses =>
         Out.println:
@@ -336,7 +333,7 @@ class Report(using Environment):
 
     benches(lines).groupBy(_.test.suite).each: (suite, benchmarks) =>
       val ribbon =
-        Ribbon(webColors.DarkGreen.srgb, webColors.MediumSeaGreen.srgb, webColors.PaleGreen.srgb)
+        Ribbon(DarkGreen.srgb, MediumSeaGreen.srgb, PaleGreen.srgb)
 
       Out.println(ribbon.fill(e"${suite.let(_.id.id).or(t"")}", e"Benchmarks", e"${suite.let(_.name).or(t"")}"))
 
@@ -345,16 +342,16 @@ class Report(using Environment):
 
       def confInt(b: Benchmark): Teletype =
         if b.confidenceInterval == 0 then e""
-        else e"${webColors.Thistle}(±)${showTime(b.confidenceInterval)}"
+        else e"$Thistle(±)${showTime(b.confidenceInterval)}"
 
       def opsPerS(b: Benchmark): Teletype =
         if b.throughput == 0 then e""
-        else e"${webColors.Silver}(${b.throughput}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
+        else e"$Silver(${b.throughput}) $Turquoise(op$Gray(·)s¯¹)"
 
       val bench: Table[ReportLine.Bench, Teletype] = Table[ReportLine.Bench](
         (List(
           Column(e"$Bold(Hash)"): s =>
-            e"${webColors.CadetBlue}(${s.test.id})",
+            e"$CadetBlue(${s.test.id})",
           Column(e"$Bold(Test)"): s =>
             e"${s.test.name}",
 
@@ -373,7 +370,7 @@ class Report(using Environment):
           comparisons.map: c =>
             import Baseline.*
             val baseline = c.benchmark.baseline.vouch(using Unsafe)
-            Column(e"$Bold(${webColors.CadetBlue}(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
+            Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right): (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.mode match
                 case Arithmetic => left - right
                 case Geometric  => left/right
@@ -390,15 +387,15 @@ class Report(using Environment):
                   showTime(value.toLong)
 
                 case BySpeed =>
-                  e"${webColors.Silver}(${value}) ${webColors.Turquoise}(op${webColors.Gray}(·)s¯¹)"
+                  e"$Silver(${value}) $Turquoise(op$Gray(·)s¯¹)"
 
               baseline.mode match
                 case Arithmetic => if value == 0 then e"★"
                                    else if value < 0
-                                   then e"${webColors.Thistle}(-)${valueWithUnits.dropChars(1)}"
-                                   else e"${webColors.Thistle}(+)$valueWithUnits"
+                                   then e"$Thistle(-)${valueWithUnits.dropChars(1)}"
+                                   else e"$Thistle(+)$valueWithUnits"
 
-                case Geometric  => if value == 1 then e"★" else e"${webColors.Silver}($value)"
+                case Geometric  => if value == 1 then e"★" else e"$Silver($value)"
         ))*
       )
 
@@ -408,37 +405,37 @@ class Report(using Environment):
       Out.println(t"─"*74)
       Out.println:
         StackTrace.legend.to(List).map: (symbol, description) =>
-          e"$Bold(${webColors.White}(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
+          e"$Bold($White(${symbol.pad(3, Rtl)}))  ${description.pad(20)}"
 
         . grouped(3).to(List).map(_.to(List).join).join(e"${t"\n"}")
 
       Out.println(t"─"*74)
 
     details.to(List).sortBy(_(0).timestamp).each: (id, info) =>
-      val ribbon = Ribbon(webColors.DarkRed.srgb, webColors.FireBrick.srgb, webColors.Tomato.srgb)
+      val ribbon = Ribbon(DarkRed.srgb, FireBrick.srgb, Tomato.srgb)
       Out.println(ribbon.fill(e"$Bold(${id.id})", id.codepoint.text.teletype, id.name.teletype))
 
       info.each: details =>
         Out.println(t"")
         details match
           case Details.Throws(err) =>
-            val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
-            Out.println(e"${webColors.Silver}(An exception was thrown while running test:)")
+            val name = e"$Italic($White(${err.component}.${err.className}))"
+            Out.println(e"$Silver(An exception was thrown while running test:)")
             Out.println(err.crop(t"probably.Runner", t"run()").teletype)
             showLegend()
 
           case Details.CheckThrows(err) =>
-            val name = e"$Italic(${webColors.White}(${err.component}.${err.className}))"
-            Out.println(e"${webColors.Silver}(An exception was thrown while checking the test predicate:)")
+            val name = e"$Italic($White(${err.component}.${err.className}))"
+            Out.println(e"$Silver(An exception was thrown while checking the test predicate:)")
             Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).teletype)
             showLegend()
 
           case Details.Compare(expected, found, cmp) =>
-            val expected2: Teletype = e"$Italic(${webColors.White}($expected))"
-            val found2: Teletype = e"$Italic(${webColors.White}($found))"
+            val expected2: Teletype = e"$Italic($White($expected))"
+            val found2: Teletype = e"$Italic($White($found))"
             val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
             val instead = e"but instead it returned$nl$found2$nl"
-            Out.println(e"${webColors.Silver}(The test was expected to return$nl$expected2$nl$instead)")
+            Out.println(e"$Silver(The test was expected to return$nl$expected2$nl$instead)")
             Out.println(cmp.teletype)
 
           case Details.Captures(map) =>
@@ -465,5 +462,5 @@ class Report(using Environment):
 
       Out.println()
 
-      Out.println(Ribbon(webColors.Crimson.srgb, webColors.LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
+      Out.println(Ribbon(Crimson.srgb, LightSalmon.srgb).fill(e"$Bold(FATAL)", explanation))
       Out.println(StackTrace(error).teletype)
