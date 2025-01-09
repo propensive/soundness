@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>dev.soundness</groupId>
   <artifactId>anticipation-http</artifactId>
-  <version>0.25.0</version>
+  <version>0.26.0</version>
   <licenses>
     <license>
       <name>Apache 2</name>
