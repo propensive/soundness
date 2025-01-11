@@ -185,6 +185,17 @@ extension [TextType: Textual](text: TextType)
   def search(regex: Regex, overlap: Boolean = false): LazyList[TextType] =
     regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
 
+  def extract[ValueType](start: Ordinal)(lambda: Matching ?=> TextType ~> ValueType)
+          : LazyList[ValueType] =
+
+    if start.n0 < input.s.length then
+      val matching = Matching(start.n0)
+      lambda(using matching).lift(input) match
+        case Some(head) => head #:: extract(input, Ordinal.zerary(matching.nextStart.or(0)))(lambda)
+        case _          => LazyList()
+
+    else LazyList()
+
   def seek(regex: Regex): Optional[TextType] = regex.seek(TextType.text(text)).let(text.segment(_))
 
   inline def trim: TextType =
