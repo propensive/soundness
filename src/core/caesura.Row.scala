@@ -39,7 +39,7 @@ case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     apply(summon[DsvRedesignation].transform(field.tt))
 
   def apply[ValueType: Decoder](field: Text): Optional[ValueType] =
-    columns.let(_.at(field)).let { index => data.at(Ordinal.zerary(index)) }.let(ValueType.decode(_))
+    columns.let(_.at(field)).let { index => data.at(index.z) }.let(ValueType.decode(_))
 
   override def hashCode: Int = data.indices.foldLeft(0): (aggregate, index) =>
     aggregate*31 + data(index).hashCode
