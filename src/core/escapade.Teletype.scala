@@ -61,7 +61,7 @@ object Teletype:
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
     def unsafeChar(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
     def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
-      text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
+      text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
     def show[ValueType: Teletypeable](value: ValueType) = value.teletype
     def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
@@ -163,14 +163,14 @@ case class Teletype
       @tailrec
       def addText(from: Int, to: Int, insertions: TreeMap[Int, Text]): TreeMap[Int, Text] =
         if insertions.isEmpty then
-          buf.add(plain.segment(Ordinal.zerary(from.max(0)) ~ Ordinal.natural(to.max(0))))
+          buf.add(plain.segment(from.max(0).z ~ Ordinal.natural(to.max(0))))
           insertions
         else if insertions.head(0) < to then
-          buf.add(plain.segment(Ordinal.zerary(pos) ~ Ordinal.natural(insertions.head(0))))
+          buf.add(plain.segment(pos.z ~ Ordinal.natural(insertions.head(0))))
           buf.add(insertions.head(1))
           addText(insertions.head(0), to, insertions.tail)
         else
-          buf.add(plain.segment(Ordinal.zerary(from) ~ Ordinal.natural(to)))
+          buf.add(plain.segment(from.z ~ Ordinal.natural(to)))
           insertions
 
       if stack.isEmpty then
