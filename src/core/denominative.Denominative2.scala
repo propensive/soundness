@@ -27,7 +27,7 @@ object Denominative2:
       (start.n0 & 0xffffffffL) << 32 | end & 0xffffffffL
 
   extension (bounds: Bounds)
-    inline def start: Ordinal = Ordinal.zerary(((bounds >> 32) & 0xffffffff).toInt)
+    inline def start: Ordinal = ((bounds >> 32) & 0xffffffff).toInt.z
     inline def end: Countback = (bounds & 0xffffffff).toInt
     inline def next: Countback = end - 1
     inline def previous: Ordinal = start - 1
@@ -47,7 +47,7 @@ object Denominative2:
     inline infix def + (inline cardinal: Int): Countback = countback - cardinal
 
     @targetName("invert")
-    inline def `unary_~`: Ordinal = Ordinal.zerary(countback)
+    inline def `unary_~`: Ordinal = countback.z
 
     @targetName("minus2")
     inline infix def - (inline cardinal: Int): Countback = countback + cardinal

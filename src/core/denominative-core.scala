@@ -36,12 +36,12 @@ inline def Ant: Countback   = Countback(2)
 extension (inline cardinal: Int)
   @targetName("plus")
   inline infix def + (inline ordinal: Ordinal): Ordinal =
-    Ordinal.zerary(cardinal + ordinal.n0)
+    (cardinal + ordinal.n0).z
 
   inline def z: Ordinal = Ordinal.zerary(cardinal)
 
 extension [ValueType: Countable](value: ValueType)
-  inline def full: Interval = Interval(Prim, Ordinal.zerary(ValueType.size(value) - 1))
+  inline def full: Interval = Interval(Prim, (ValueType.size(value) - 1).z)
 
 export Denominative.{Ordinal, Interval}
 export Denominative2.{Countback, Bounds}
