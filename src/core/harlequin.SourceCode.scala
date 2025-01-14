@@ -84,7 +84,7 @@ object SourceCode:
 
     def stream(lastEnd: Int = 0): LazyList[SourceToken] = scanner.token match
       case Tokens.EOF =>
-        untab(text.segment(Ordinal.zerary(lastEnd) ~ Ult.of(text))).filter(_.length > 0)
+        untab(text.segment(lastEnd.z ~ Ult.of(text))).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
@@ -92,7 +92,7 @@ object SourceCode:
         val unparsed: LazyList[SourceToken] =
           if lastEnd != start
           then
-            text.segment(Ordinal.zerary(lastEnd) ~ Ordinal.natural(start))
+            text.segment(lastEnd.z ~ Ordinal.natural(start))
             . cut(t"\n")
             . to(LazyList)
             . flatMap(untab(_).filter(_.length > 0))
@@ -106,7 +106,7 @@ object SourceCode:
         val content: LazyList[SourceToken] =
           if start == end then LazyList()
           else
-            text.segment(Ordinal.zerary(start) ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
+            text.segment(start.z ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
               LazyList
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
