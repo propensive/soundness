@@ -333,7 +333,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Authority with invalid port fails"):
         capture(Authority.parse(t"username@example.com:no"))
       .matches:
-        case UrlError(_, position, UrlError.Expectation.Number) if position == Ordinal.zerary(21) =>
+        case UrlError(_, position, UrlError.Expectation.Number) if position == 21.z =>
 
 
       test(t"Parse full URL"):
