@@ -31,6 +31,7 @@ content—which lend themselves to conversion to HTML or another format.
 
 
 
+
 ## Getting Started
 
 _Harlequin_ provides only a single method, `ScalaSyntax.highlight`, which takes a `Text` value and
