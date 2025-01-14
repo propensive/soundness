@@ -23,33 +23,6 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-object BaseLayout:
-  case class Dir(home: Boolean, path: List[Text]):
-    @targetName("child")
-    infix def / (name: Text): Dir = Dir(home, name :: path)
-
-    def render(homeDir: Text): Text =
-      val slash = if path.isEmpty then t"" else t"/"
-      t"${if home then homeDir else t""}$slash${path.reverse.join(t"/")}"
-
-case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = false)
-   (using baseDir: BaseLayout.Dir):
-
-  def absolutePath(using Environment, SystemProperties)
-          : Text raises EnvironmentError raises SystemPropertyError =
-
-    val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
-    val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
-    part.let(baseDir / _).or(baseDir).render(home2)
-
-  given BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
-
-  def apply[PathType: SpecificPath]()(using SystemProperties, Environment)
-          : PathType raises SystemPropertyError raises EnvironmentError =
-
-    val path: Text = absolutePath
-    SpecificPath(path)
-
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[PathType: SpecificPath]()(using SystemProperties, Environment)
           : PathType raises SystemPropertyError raises EnvironmentError =
@@ -97,13 +70,3 @@ object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
     object Sys extends BaseLayout(t"sys", readOnly = true)
 
   object Sys extends BaseLayout(t"sys", readOnly = true)
-
-object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
-  object Cache extends BaseLayout(t".cache")
-  object Config extends BaseLayout(t".config")
-
-  object Local extends BaseLayout(t".local"):
-    object Bin extends BaseLayout(t"bin")
-    object Lib extends BaseLayout(t"lib")
-    object Share extends BaseLayout(t"share")
-    object State extends BaseLayout(t"state")
