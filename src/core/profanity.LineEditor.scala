@@ -41,10 +41,10 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     case Home        => copy(position0 = 0)
     case End         => copy(position0 = value.length)
     case Left        => copy(position0 = (position - 1) `max` 0)
-    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where { index => value.at(Ordinal.zerary(index)) == ' ' }.lay(0)(_ + 1))
+    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where { index => value.at(index.z) == ' ' }.lay(0)(_ + 1))
 
     case Ctrl(Right) => val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
-                        val position2 = range.where { index => value.at(Ordinal.zerary(index)) == ' ' }.lay(value.length)(_ + 1)
+                        val position2 = range.where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
                         copy(position0 = position2 `min` value.length)
     case Right       => copy(position0 = (position + 1) `min` value.length)
     case _           => this
