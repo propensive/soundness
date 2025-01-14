@@ -341,13 +341,13 @@ def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPa
 
 extension [ValueType: Countable](inline value: ValueType)
   inline def ult: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 1) else Unset
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 1).z else Unset
 
   inline def pen: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 2) else Unset
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 2).z else Unset
 
   inline def ant: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then Ordinal.zerary(ValueType.size(value) - 3) else Unset
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 3).z else Unset
 
 export scala.collection.immutable.Vector as Trie
 
