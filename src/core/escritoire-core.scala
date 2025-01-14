@@ -56,7 +56,7 @@ package columnar:
 
       def longestWord(text: TextType, position: Int, lastStart: Int, max: Int): Int =
         if position < text.length then
-          if TextType.unsafeChar(text, Ordinal.zerary(position)) == ' '
+          if TextType.unsafeChar(text, position.z) == ' '
           then longestWord(text, position + 1, position + 1, max.max(position - lastStart))
           else longestWord(text, position + 1, lastStart, max)
         else max.max(position - lastStart)
@@ -72,7 +72,7 @@ package columnar:
               : List[TextType] =
 
         if position < text.length then
-          if TextType.unsafeChar(text, Ordinal.zerary(position)) == ' '
+          if TextType.unsafeChar(text, position.z) == ' '
           then format(text, position + 1, lineStart, position, lines)
           else
             if position - lineStart >= width
@@ -81,11 +81,11 @@ package columnar:
               position + 1,
               lastSpace + 1,
               lastSpace,
-              text.segment(Ordinal.zerary(lineStart) ~ Ordinal.natural(lastSpace)) :: lines)
+              text.segment(lineStart.z ~ Ordinal.natural(lastSpace)) :: lines)
 
             else format(text, position + 1, lineStart, lastSpace, lines)
         else if lineStart == position then lines
-        else text.segment(Ordinal.zerary(lineStart) ~ Ordinal.natural(position)) :: lines
+        else text.segment(lineStart.z ~ Ordinal.natural(position)) :: lines
 
       lines.to(IndexedSeq).flatMap(format(_, 0, 0, 0, Nil).reverse)
 
