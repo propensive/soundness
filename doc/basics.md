@@ -1,52 +1,49 @@
-Hyperbole runs at compiletime to inspect an expression, but can present its
-output in different ways:
-- as a message reported at compiletime
-- as a terminal compile error
-- as a value which can be used in some way at runtime
+Hyperbole runs at compiletime to expose the TASTy trees of expressions. It can be
+invoked either from a macro, or within user code. In both cases, it produces a
+single string showing a tabular representation of the TASTy tree, for displaying
+in the console.
 
-It can be invoked on an expression in ordinary code, or in an inline context
-where a `Quotes` instance is available, on a lifted `Expr` or a `Tree` value.
+## Inside a Macro
 
-In all cases, the macro is invoked with an `introspect` method, either passing
-the expression to be inspected, or a lifted `Expr` expression value in a quoted
-context, disambiguated by overloading. In a quoted context, an additional
-optional parameter, `terminate`, may be specified as `true` to indicate that
-the output should be reported as a compiler error rather than an informational
-message at compiletime; by default it is `false`.
+Within a macro, where there is a `Quotes` instance available, any `Expr` value can
+be introspected by calling its `introspect` extension method.
 
-A contextual `Introspection` value determines what result should be yielded
-from a call to `introspect`. This given value can determine not only the result
-type, but whether the expression is evaluated or its value retained. Three
-implementations offered:
+This will construct an instance of `Teletype`, a kind of string including ANSI
+control codes. An ordinary `Text` value can be obtained using `Teletype#plain`,
+which can be printed during compilation (as information or as an error), or
+even used in the expansion of the macro.
 
-- `introspection.println`—records the introspection details to `stdout` with
-  `println`, and returns the expression value
-- `introspection.text`—constructs a `Text` value containing the introspection
-  details, ignoring the expression without evaluating it
+## In Ordinary Code
 
-The default is to log using Eucalyptus. Note that this contextual value is not
-necessary for the `introspect` method that take an `Expr` value.
+The TASTy tree for any expression can also be obtained in ordinary code, using the
+global `introspect` method.
 
-For example, in a macro method body,
+For example, we can introspect the expression `1 + x`:
 ```scala
-import hyperbole.*
-def macroImpl(expr: Expr[T])(using Quotes): Expr[Unit] =
-  import quotes.reflect.*
-  introspect(expr, terminate = true)
+val x = 5
+introspect(1 + x)
 ```
-or, for example, in a [Probably](https://github.com/propensive/probably/) test,
-```scala
-import hyperbole.*, introspection.log
-import probably.*
-import eucalyptus.*, logging.stdout
-
-test(t"Two joined lists are not empty"):
-  val xs = List(1)
-  val ys = List(2)
-  introspect(xs ++ ys)
-.assert(!_.isEmpty)
-
+which will expand to the string,
+```
+TASTy             Param   Source   Code
+╶─────────────────────────────────────────────────────╴
+▪ Inlined                 1 + x    1.+(rs$line$2.x)
+└─▪ Apply                 1 + x    1.+(rs$line$2.x)
+  ├─▪ Select      +       1 +      1.+
+  │ └─▪ Literal   1       1        1
+  └─▪ Ident       x           x    rs$line$2.x
 ```
 
-
-
+We could then compare the AST to a variant such as this:
+```scala
+val y: 5 = 5
+introspect(y + 1)
+```
+which produces the simpler tree,
+```
+TASTy         Param   Source   Code
+╶─────────────────────────────────────╴
+▪ Inlined             y + 1    6
+└─▪ Literal   6       y + 1    6
+```
+thanks to constant folding taking advantage of the singleton type of `y`.
