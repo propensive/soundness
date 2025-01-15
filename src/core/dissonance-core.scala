@@ -19,9 +19,7 @@ package dissonance
 import language.experimental.captureChecking
 
 import anticipation.*
-import fulminate.*
 import rudiments.*
-import vacuous.*
 
 def diff[ElemType]
    (left:    IndexedSeq[ElemType],
@@ -82,7 +80,7 @@ extension (diff: Diff[Text])
 
       command :: delSeq ::: sep ::: insSeq
 
-  def casual: CasualDiff =
+  /* def casual: CasualDiff =
     def recur(todo: List[Region[Text]], acc: List[Replace], last: List[Text]): CasualDiff =
       todo match
         case Nil                            => CasualDiff(acc.reverse)
@@ -106,4 +104,4 @@ extension (diff: Diff[Text])
 
           recur(tail, replace(deletions2, last.length) :: acc, Nil)
 
-    recur(diff.collate, Nil, Nil)
+    recur(diff.collate, Nil, Nil) */
