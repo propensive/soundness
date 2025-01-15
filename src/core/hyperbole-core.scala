@@ -21,8 +21,8 @@ import escapade.*
 
 import scala.quoted.*
 
-transparent inline def inspect[ValueType](inline value: ValueType): Text =
-  ${Hyperbole.inspection[ValueType]('value)}
+transparent inline def introspect[ValueType](inline value: ValueType): Text =
+  ${Hyperbole.introspection[ValueType]('value)}
 
 extension [ValueType](expr: Expr[ValueType])(using Quotes)
-  def inspect: Teletype = Hyperbole.inspect[ValueType](expr)
+  def introspect(terminate: Boolean): Teletype = Hyperbole.introspect[ValueType](expr, terminate)

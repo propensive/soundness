@@ -31,10 +31,10 @@ import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
 object Hyperbole:
-  def inspection[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] =
-    Expr(inspect(value).plain)
+  def introspection[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] =
+    Expr(introspect(value).plain)
 
-  def inspect[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
+  def introspect[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
     import quotes.reflect.*
 
     def init = expr.asTerm.pos.startColumn
