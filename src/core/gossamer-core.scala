@@ -239,9 +239,8 @@ extension [TextType: Textual](text: TextType)
     text.where(!pred(_)).lay(TextType.empty): ordinal =>
       text.before(ordinal)
 
-  def snipWhere(pred: Char => Boolean, index: Ordinal = Prim): Optional[(TextType, TextType)] =
-    text.where(pred, index).let: ordinal =>
-      text.snip(ordinal.n0)
+  def snip(pred: Char => Boolean, index: Ordinal = Prim): Optional[(TextType, TextType)] =
+    text.where(pred, index).let(_.n0).let(text.snip(_))
 
   def mapChars(lambda: Char => Char): TextType = TextType.map(text, lambda)
 
