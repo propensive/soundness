@@ -97,7 +97,9 @@ object TarRef:
     def parse(text: Text): (Unset.type, Text) =
       (Unset, if text.at(Prim) == '/' then text.skip(1) else text)
 
-  given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator = (root, descent) => TarRef(descent)
+  given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator =
+    (root, descent) => TarRef(descent)
+
   given TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")
 
 enum TypeFlag:
@@ -134,28 +136,48 @@ object TarEntry:
       mtime: Optional[InstantType] = Unset)
           : TarEntry =
 
-    val mtimeU32: U32 = (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
+    val mtimeU32: U32 =
+      (mtime.let(_.millisecondsSinceEpoch).or(System.currentTimeMillis)/1000).toInt.bits.u32
+
     TarEntry.File(name, mode, user, group, mtimeU32, data.stream[Bytes])
 
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
-  case File(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, data: LazyList[Bytes])
+  case File
+     (path:  TarRef,
+      mode:  nixMode,
+      user:  UnixUser,
+      group: UnixGroup,
+      mtime: U32,
+      data:  LazyList[Bytes])
   extends TarEntry(path, mode, user, group, mtime)
 
   case Directory(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
   extends TarEntry(path, mode, user, group, mtime)
 
-  case Link(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+  case Link
+     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
 
-  case Symlink(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
+  case Symlink
+     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, target: Text)
   extends TarEntry(path, mode, user, group, mtime)
 
   case CharSpecial
-     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+     (path:   TarRef,
+      mode:   UnixMode,
+      user:   UnixUser,
+      group:  UnixGroup,
+      mtime:  U32,
+      device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case BlockSpecial
-     (path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32, device: (U32, U32))
+     (path:   TarRef,
+      mode:   UnixMode,
+      user:   UnixUser,
+      group:  UnixGroup,
+      mtime:  U32,
+      device: (U32, U32))
   extends TarEntry(path, mode, user, group, mtime)
 
   case Fifo(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32)
@@ -227,4 +249,5 @@ object Tar:
   given Tar is Readable by Bytes as readable = _.serialize
 
 case class Tar(entries: LazyList[TarEntry]):
-  def serialize: LazyList[Bytes] = entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
+  def serialize: LazyList[Bytes] =
+    entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
