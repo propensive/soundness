@@ -89,7 +89,8 @@ def loop(block: => Unit): Loop^{block} = Loop({ () => block })
 
 export Rudiments.&
 
-extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
+extension [ProductType <: Product](using mirror: Mirror.ProductOf[ProductType])
+   (product: ProductType)
   def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
 
 extension [TupleType <: Tuple](tuple: TupleType)
@@ -118,31 +119,32 @@ export scala.util.control.NonFatal
 
 export scala.util.boundary, boundary.break
 
-export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
-    MapHasAsJava, EnumerationHasAsScala}
+export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala,
+    SeqHasAsJava, MapHasAsJava, EnumerationHasAsScala}
 
 export caps.Cap as Capability
 
-export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation}
+export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch,
+    StaticAnnotation}
 
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
-extension [FunctorType[+_], ValueType](value: FunctorType[ValueType]^)(using functor: Functor[FunctorType])
+extension [FunctorType[+_], ValueType](using functor: Functor[FunctorType])
+   (value: FunctorType[ValueType]^)
   def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2]^{value, lambda} =
     functor.map(value, lambda)
 
-extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType]^)
-          (using cofunctor: Cofunctor[CofunctorType])
+extension [CofunctorType[-_], ValueType](using cofunctor: Cofunctor[CofunctorType])
+   (value: CofunctorType[ValueType]^)
   def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, lambda} =
     cofunctor.contramap(value, lambda)
 
 extension (value: Any)
-  def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
-    summon[Irrefutable[value.type, ResultType]].unapply(value)
-
+  def as[ResultType](using irrefutable: Irrefutable[value.type, ResultType]): ResultType =
+    irrefutable.unapply(value)
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =
@@ -203,19 +205,22 @@ extension [ValueType](iterable: Iterable[ValueType])
 
     recur(0, iterable, 0, 0, 0)
 
-extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using Unsafe): Array[ElemType] = (value.asMatchable: @unchecked) match
+extension [ElemType](using Unsafe)(value: IArray[ElemType])
+  inline def mutable: Array[ElemType] = (value.asMatchable: @unchecked) match
     case array: Array[ElemType] => array
 
-extension [ElemType](array: Array[ElemType])
-  def immutable(using Unsafe): IArray[ElemType] = (array: @unchecked) match
+extension [ElemType](using Unsafe)(array: Array[ElemType])
+  def immutable: IArray[ElemType] = (array: @unchecked) match
     case array: IArray[ElemType] => array
 
-  def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
+extension [ElemType](using ClassTag[ElemType])(array: Array[ElemType])
+  def snapshot: IArray[ElemType] =
     val newArray = new Array[ElemType](array.length)
     System.arraycopy(array, 0, newArray, 0, array.length)
-    newArray.immutable(using Unsafe)
+    erased given Unsafe.type = Unsafe
+    newArray.immutable
 
+extension [ElemType](array: Array[ElemType])
   inline def place(value: IArray[ElemType], ordinal: Ordinal = Prim): Unit =
     System.arraycopy(value.asInstanceOf[Array[ElemType]], 0, array, ordinal.n0, value.length)
 
@@ -231,10 +236,12 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
           : Map[KeyType, ValueType] =
 
     right.foldLeft(map): (accumulator, keyValue) =>
-      accumulator.updated(keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
+      accumulator.updated
+       (keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
 
 extension [KeyType, ValueType](map: scm.Map[KeyType, ValueType])
-  def establish(key: KeyType)(evaluate: => ValueType): ValueType = map.getOrElseUpdate(key, evaluate)
+  def establish(key: KeyType)(evaluate: => ValueType): ValueType =
+    map.getOrElseUpdate(key, evaluate)
 
 extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
   def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
@@ -263,17 +270,20 @@ extension [ElemType](seq: Seq[ElemType])
 
     if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
-inline def cursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+inline def cursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
         : ElemType =
 
   cursor.of(seq)
 
-inline def precursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+inline def precursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
         : Optional[ElemType] =
 
   cursor.of(seq, -1)
 
-inline def postcursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+inline def postcursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
         : Optional[ElemType] =
 
   cursor.of(seq, 1)
@@ -297,10 +307,13 @@ extension (iarray: IArray.type)
   def create[ElemType: ClassTag](size: Int)(lambda: Array[ElemType] => Unit): IArray[ElemType] =
     val array: Array[ElemType] = new Array[ElemType](size)
     lambda(array)
-    array.immutable(using Unsafe)
+    erased given Unsafe.type = Unsafe
+    array.immutable
 
 extension (bytes: Bytes)
-  def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+  def javaInputStream: ji.InputStream =
+    erased given Unsafe.type = Unsafe
+    new ji.ByteArrayInputStream(bytes.mutable)
 
 extension [ValueType: Indexable](inline value: ValueType)
   inline def has(index: ValueType.Operand): Boolean = ValueType.contains(value, index)
@@ -309,7 +322,7 @@ extension [ValueType: Indexable](inline value: ValueType)
     optimizable[ValueType.Result]: default =>
       if ValueType.contains(value, index) then ValueType.access(value, index) else default
 
-extension [ValueType: Segmentable as segmentable](inline value: ValueType)
+extension [ValueType](using inline segmentable: ValueType is Segmentable)(inline value: ValueType)
   inline def segment(interval: Interval): ValueType = segmentable.segment(value, interval)
 
 extension (bs: Int)
