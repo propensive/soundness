@@ -30,8 +30,16 @@ import vacuous.*
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
-object reflection:
-  def expand[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
+transparent inline def ast[ValueType](inline value: ValueType): Text =
+  ${Hyperbole.inspect[ValueType]('value)}
+
+extension [ValueType](expr: Expr[ValueType])(using Quotes)
+  def ast: Teletype = Hyperbole.ast[ValueType](expr)
+
+object Hyperbole:
+  def inspect[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] = Expr(ast(value).plain)
+
+  def ast[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
     import quotes.reflect.*
 
     def init = expr.asTerm.pos.startColumn
@@ -39,7 +47,9 @@ object reflection:
     def source(tree: Tree): Teletype = tree.pos match
       case pos: dtdu.SourcePosition =>
         val content =
-          pos.lineContent.show.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
+          try pos.lineContent.show.segment(pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
+          catch case e: Exception => t""
+
         ((t" "*(pos.startColumn - init))+content).teletype
 
       case _ =>
@@ -50,7 +60,8 @@ object reflection:
 
       def shortCode: Text =
         val c = expr.upto(_ != '\n')
-        if c.length != expr.length then t"$c..." else expr
+        //if c.length != expr.length then t"$c..." else expr
+        expr
 
     object TastyTree:
       def apply
@@ -72,7 +83,10 @@ object reflection:
         case TypedOrTest(focus, tt) =>
           TastyTree(t"TypedOrTest", tree, List(expand(focus), expand(tt)))
 
-        case Inlined(_, _, child) =>
+        case Inlined(Some(tree), _, child) =>
+          TastyTree(t"Inlined", tree, List(expand(tree), expand(child)))
+
+        case Inlined(None, _, child) =>
           TastyTree(t"Inlined", tree, List(expand(child)))
 
         case Apply(focus, children) =>
@@ -142,7 +156,7 @@ object reflection:
       Column(e"Code")(_.expr))
 
     . tabulate(seq)
-    . grid(200)
+    . grid(10000)
     . render
     . join(e"\n")
 
