@@ -77,8 +77,11 @@ extends DecimalConverter:
           val point = scale.max(0) + 1
           val length = shift + idx - scale.min(0)
 
-          val suffix: Int = if exponentiate then exponent.length + (if exponentValue < 0 then 1 else
-              0) + (exponentScale(exponentValue, 0)) else 0
+          val suffix: Int =
+            if exponentiate then
+              exponent.length + (if exponentValue < 0 then 1 else 0)
+              + (exponentScale(exponentValue, 0))
+            else 0
           val fullLength = (if negative then 1 else 0) + (if point < length then 1 else 0) + length
           val array = new Array[Char](fullLength + suffix)
 
@@ -102,7 +105,13 @@ extends DecimalConverter:
               exp /= 10
               i -= 1
 
-          write(array, bcd2 << shift*4, fullLength - 1, next >= 5, if negative then point + 1 else point)
+          write
+           (array,
+            bcd2 << shift*4,
+            fullLength - 1,
+            next >= 5,
+            if negative then point + 1 else point)
+
         else recur(next, bcd2, idx + 1)
 
       val chars: Array[Char] = recur(norm, 0L, 1)

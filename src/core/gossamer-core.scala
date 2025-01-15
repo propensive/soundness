@@ -73,7 +73,11 @@ extension (bytes: Bytes)
   def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
   def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
-  def hex: Text = bytes.mutable(using Unsafe).map { b => String.format("\\u%04x", b.toInt).nn }.mkString.tt
+
+  def hex: Text =
+    bytes.mutable(using Unsafe).map { byte => String.format("\\u%04x", byte.toInt).nn }
+    . mkString.tt
+
   def text(using decoder: CharDecoder): Text = decoder.decode(bytes)
 
   // Printable Unicode Encoding
@@ -169,12 +173,10 @@ extension [TextType: Textual](text: TextType)
   def punch(n: Ordinal): (TextType, TextType) =
     (text.segment(Prim ~ (n - 1)), text.segment((n + 1) ~ Ult.of(text)))
 
-  // def char(index: Ordinal): Optional[Char] =
-  //   if index >= Prim && index <= Ult.of(text) then TextType.unsafeChar(text, index) else Unset
-
-  inline def reverse: TextType =
+  def reverse: TextType =
     def recur(index: Ordinal, result: TextType): TextType =
-      if index <= Ult.of(text) then recur(index + 1, TextType.concat(text.segment(index ~ index), result))
+      if index <= Ult.of(text)
+      then recur(index + 1, TextType.concat(text.segment(index ~ index), result))
       else result
 
     recur(Prim, TextType.empty)
