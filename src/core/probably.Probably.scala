@@ -153,7 +153,7 @@ object Probably:
     val exprName: Text = expr.asTerm.pos match
       case pos: dtdu.SourcePosition =>
         pos.lineContent.show.segment
-         (Ordinal.zerary(pos.startColumn) ~ Ordinal.natural(pos.endColumn))
+         (pos.startColumn.z ~ Ordinal.natural(pos.endColumn))
 
       case _ =>
         t"<unknown>"
