@@ -14,6 +14,7 @@
     and limitations under the License.
 */
 
+/*
 package dissonance
 
 import anticipation.*
@@ -115,3 +116,5 @@ case class CasualDiff(replacements: List[Replace]):
     case Replace(context, original, replacement) =>
       (context.to(LazyList).map("  "+_) #::: original.to(LazyList).map("- "+_) #:::
           replacement.to(LazyList).map("+ "+_)).map(_.tt)
+
+*/
