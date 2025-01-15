@@ -148,10 +148,10 @@ extension [TextType: Textual](text: TextType)
   def slices(size: Int): List[TextType] =
     val length = text.length
     List.tabulate[TextType]((length - 1)/size + 1): i =>
-      text.segment(Ordinal.zerary(i*size) ~ Ordinal.natural(((i + 1)*size).min(length)))
+      text.segment((i*size).z ~ Ordinal.natural(((i + 1)*size).min(length)))
 
   def skip(count: Int, bidi: Bidi = Ltr): TextType = bidi match
-    case Ltr => text.segment(Ordinal.zerary(count) ~ Ult.of(text))
+    case Ltr => text.segment(count.z ~ Ult.of(text))
     case Rtl => text.segment(Prim ~ Countback(count).of(text))
 
   def keep(count: Int, bidi: Bidi = Ltr): TextType = bidi match
@@ -168,7 +168,7 @@ extension [TextType: Textual](text: TextType)
   def chars: IArray[Char] = TextType.text(text).s.toCharArray.nn.immutable(using Unsafe)
 
   def snip(n: Int): (TextType, TextType) =
-    (text.segment(Prim ~ Ordinal.zerary(n - 1)), text.segment(Ordinal.zerary(n) ~ Ult.of(text)))
+    (text.segment(Prim ~ (n - 1).z), text.segment(n.z ~ Ult.of(text)))
 
   def punch(n: Ordinal): (TextType, TextType) =
     (text.segment(Prim ~ (n - 1)), text.segment((n + 1) ~ Ult.of(text)))
@@ -194,7 +194,7 @@ extension [TextType: Textual](text: TextType)
     if start.n0 < input.s.length then
       val matching = Matching(start.n0)
       lambda(using matching).lift(text) match
-        case Some(head) => head #:: extract(Ordinal.zerary(matching.nextStart.or(0)))(lambda)
+        case Some(head) => head #:: extract(matching.nextStart.or(0).z)(lambda)
         case _          => LazyList()
 
     else LazyList()
