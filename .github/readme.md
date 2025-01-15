@@ -22,6 +22,9 @@ follow a hierarchical pattern.
 
 
 
+
+
+
 ## Getting Started
 
 The type `Root` defines a "root", beneath which any number of possible `Path` instances may exist in
@@ -187,6 +190,6 @@ The logo shows a serpentine section of river, meandering.
 
 ## License
 
-Serpentine is copyright &copy; 2024 Jon Pretty & Propensive O&Uuml;, and
+Serpentine is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
