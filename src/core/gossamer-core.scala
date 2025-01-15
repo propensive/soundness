@@ -188,10 +188,11 @@ extension [TextType: Textual](text: TextType)
   def extract[ValueType](start: Ordinal)(lambda: Matching ?=> TextType ~> ValueType)
           : LazyList[ValueType] =
 
+    val input = TextType.text(text)
     if start.n0 < input.s.length then
       val matching = Matching(start.n0)
-      lambda(using matching).lift(input) match
-        case Some(head) => head #:: extract(input, Ordinal.zerary(matching.nextStart.or(0)))(lambda)
+      lambda(using matching).lift(text) match
+        case Some(head) => head #:: extract(Ordinal.zerary(matching.nextStart.or(0)))(lambda)
         case _          => LazyList()
 
     else LazyList()
