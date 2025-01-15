@@ -16,13 +16,13 @@
 
 package hyperbole
 
+import anticipation.*
+import escapade.*
+
 import scala.quoted.*
 
-object Macros:
-  def impl[T](expr: Expr[T])(using Quotes): Expr[T] =
-    import quotes.*, reflect.*
-    import reflection.*
-    report.info(tasty(expr).s)
-    expr
+transparent inline def inspect[ValueType](inline value: ValueType): Text =
+  ${Hyperbole.inspection[ValueType]('value)}
 
-  transparent inline def inspect[T](inline value: T): Unit = ${Macros.impl[T]('value)}
+extension [ValueType](expr: Expr[ValueType])(using Quotes)
+  def inspect: Teletype = Hyperbole.inspect[ValueType](expr)

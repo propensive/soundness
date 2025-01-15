@@ -16,10 +16,7 @@
 
 package hyperbole
 
-import gossamer.*
-import rudiments.*
+import anticipation.*
+import vacuous.*
 
-object Tests:
-  val three = 3
-  // Macros.inspect:
-  //   three match { case x: (Int | String) => x + 1 }
+case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)

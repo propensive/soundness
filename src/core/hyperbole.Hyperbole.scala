@@ -30,12 +30,6 @@ import vacuous.*
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
-transparent inline def inspect[ValueType](inline value: ValueType): Text =
-  ${Hyperbole.inspection[ValueType]('value)}
-
-extension [ValueType](expr: Expr[ValueType])(using Quotes)
-  def inspect: Teletype = Hyperbole.inspect[ValueType](expr)
-
 object Hyperbole:
   def inspection[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] =
     Expr(inspect(value).plain)
@@ -160,5 +154,3 @@ object Hyperbole:
     . grid(10000)
     . render
     . join(e"\n")
-
-case class Expansion(text: Text, param: Optional[Text], expr: Text, source: Text)
