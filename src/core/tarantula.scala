@@ -118,7 +118,7 @@ case class WebDriver(server: Browser#Server):
         post(t"value", Data(text).json)
 
       @targetName("at")
-      infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType])(using Log[Text])
+      infix def / [ElementType](value: ElementType)(using locator: Focusable[ElementType])(using Log[Text])
               : List[Element] =
         case class Data(`using`: Text, value: Text)
 
@@ -128,7 +128,7 @@ case class WebDriver(server: Browser#Server):
         . map(_(Wei).as[Text])
         . map(Element(_))
 
-      def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+      def element[ElementType](value: ElementType)(using locator: Focusable[ElementType], log: Log[Text])
               : Element =
         case class Data(`using`: Text, value: Text)
         val e = post(t"element", Data(locator.strategy, locator.value(value)).json)
@@ -155,7 +155,7 @@ case class WebDriver(server: Browser#Server):
     def url[UrlType: SpecificUrl]()(using Log[Text]): UrlType = SpecificUrl(get(t"url").url.as[Text])
 
     @targetName("at")
-    infix def / [ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+    infix def / [ElementType](value: ElementType)(using locator: Focusable[ElementType], log: Log[Text])
             : List[Element] =
 
       case class Data(`using`: Text, value: Text)
@@ -166,7 +166,7 @@ case class WebDriver(server: Browser#Server):
       . map(_(Wei).as[Text])
       . map(Element(_))
 
-    def element[ElementType](value: ElementType)(using locator: ElementLocator[ElementType], log: Log[Text])
+    def element[ElementType](value: ElementType)(using locator: Focusable[ElementType], log: Log[Text])
             : Element =
 
       case class Data(`using`: Text, value: Text)
@@ -184,13 +184,19 @@ case class WebDriver(server: Browser#Server):
 
     Session(json.value.sessionId.as[Text])
 
-case class ElementLocator[-T](strategy: Text, value: T => Text)
+trait Focusable[-T]:
+  type Self
+  def strategy: Text
+  def focus(value: T): Text
 
-object ElementLocator:
-  given ElementLocator[Text](t"link text", identity(_))
-  given ElementLocator[Selector](t"css selector", _.normalize.value)
-  given ElementLocator[TagType[?, ?, ?]](t"tag name", _.label)
-  given ElementLocator[DomId](t"css selector", v => t"#${v.name}")
-  given ElementLocator[CssClass](t"css selector", v => t".${v.name}")
+object Focusable:
+  given Text is Focusable:
+    def strategy = t"link text"
+    def focus(value: Text): Text = value
+
+  given Focusable[Selector](t"css selector", _.normalize.value)
+  given Focusable[TagType[?, ?, ?]](t"tag name", _.label)
+  given Focusable[DomId](t"css selector", v => t"#${v.name}")
+  given Focusable[CssClass](t"css selector", v => t".${v.name}")
 
 given realm: Realm = realm"tarantula"
