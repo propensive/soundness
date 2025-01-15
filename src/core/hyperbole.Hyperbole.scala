@@ -30,16 +30,17 @@ import vacuous.*
 import scala.quoted.*
 import dotty.tools.*, dotc.util as dtdu
 
-transparent inline def ast[ValueType](inline value: ValueType): Text =
-  ${Hyperbole.inspect[ValueType]('value)}
+transparent inline def inspect[ValueType](inline value: ValueType): Text =
+  ${Hyperbole.inspection[ValueType]('value)}
 
 extension [ValueType](expr: Expr[ValueType])(using Quotes)
-  def ast: Teletype = Hyperbole.ast[ValueType](expr)
+  def inspect: Teletype = Hyperbole.inspect[ValueType](expr)
 
 object Hyperbole:
-  def inspect[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] = Expr(ast(value).plain)
+  def inspection[ValueType](value: Expr[ValueType])(using Quotes): Expr[Text] =
+    Expr(inspect(value).plain)
 
-  def ast[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
+  def inspect[ValueType](expr: Expr[ValueType])(using Quotes): Teletype =
     import quotes.reflect.*
 
     def init = expr.asTerm.pos.startColumn
