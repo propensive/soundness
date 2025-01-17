@@ -364,6 +364,9 @@ package proximityMeasures:
 
     dist(n)
 
+  given Proximity as normalizedLevenshteinDistance = (left, right) =>
+    levenshteinDistance.distance(left, right)/left.length.max(right.length)
+
 extension (text: into Text)
   inline def sub(from: into Text, to: into Text): Text =
     text.s.replaceAll(jur.Pattern.quote(from.s).nn, to.s).nn.tt
