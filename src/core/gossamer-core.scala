@@ -37,6 +37,8 @@ import java.net.{URLEncoder, URLDecoder}
 import language.experimental.pureFunctions
 import language.experimental.into
 
+export Gossamer2.opaques.Ascii
+
 def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
         : Unit =
