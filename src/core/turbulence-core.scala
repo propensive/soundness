@@ -21,8 +21,6 @@ import language.adhocExtensions
 import java.io as ji
 import java.util.zip as juz
 
-import scala.collection.mutable as scm
-
 import anticipation.*
 import capricious.*
 import contingency.*

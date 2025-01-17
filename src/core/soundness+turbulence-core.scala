@@ -21,7 +21,7 @@ export turbulence.{Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spoo
     SimpleWritable, Stdio, StreamError, Tap, Writable, Zlib, stream, read, writeTo,
     deduplicate, rate, multiplexWith, regulate, cluster, parallelMap, multiplex, multiplexer, defer,
     pulsar, gzip, gunzip, discard, compress, decompress, shred, chunked, take, spool, strict,
-    Conduit, inputStream, outputStream}
+    Conduit, inputStream, LazyListOutputStream}
 
 package stdioSources:
   export turbulence.stdioSources.mute
