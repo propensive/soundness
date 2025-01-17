@@ -299,6 +299,71 @@ extension [TextType: Textual](text: TextType)
   inline def subscript: TextType = TextType.map(text, hieroglyph.subscript(_).or(' '))
   inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
 
+package proximityMeasures:
+  given Proximity as jaroDistance = (left, right) =>
+   if left == right then 1.0 else
+     val maxDist: Int = left.length.max(right.length)/2 - 1
+     val found1 = new scm.BitSet(left.length)
+     val found2 = new scm.BitSet(right.length)
+
+     @tailrec
+     def recur(i: Int, j: Int, matches: Int): Int =
+       if i >= left.length then matches else
+         if j >= (i + maxDist + 1).min(right.length)
+         then recur(i + 1, (i + 1 - maxDist).max(0), matches)
+         else if left.s.charAt(i) == right.s.charAt(j) && !found2(j) then
+           found1(i) = true
+           found2(j) = true
+           recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
+         else recur(i, j + 1, matches)
+
+     val matches = recur(0, 0, 0)
+
+     def trans(i: Int, j: Int, count: Int): Int =
+       if i >= left.length then count else if found1(i) then
+         def next(j: Int): Int = if found2(j) then j else next(j + 1)
+         val j2 = next(j)
+         trans(i + 1, j2 + 1, if left.s.charAt(i) == right.s.charAt(j2) then count else count + 1)
+       else trans(i + 1, j, count)
+
+     val count = trans(0, 0, 0)
+
+     if matches == 0 then 0.0
+     else (matches.toDouble/left.length + matches.toDouble/right.length +
+         (matches - count/2.0)/matches)/3
+
+  given Proximity as prefixMatch = (left, right) =>
+    val limit = left.length.min(right.length)
+
+    def recur(index: Int = 0): Int = if index >= limit then index else
+      if left.s.charAt(index) == right.s.charAt(index) then recur(index + 1) else index
+
+    recur()
+
+  given Proximity as jaroWinklerDistance = (left, right) =>
+    val scale = 0.1
+    val distance = jaroDistance.distance(left, right)
+    distance + scale*prefixMatch.distance(left, right).min(4.0)*(1.0 - distance)
+
+  given Proximity as levenshteinDistance = (left, right) =>
+    val m = left.s.length
+    val n = right.length
+    val old = new Array[Int](n + 1)
+    val dist = new Array[Int](n + 1)
+
+    for j <- 1 to n do old(j) = old(j - 1) + 1
+
+    for i <- 1 to m do
+      dist(0) = old(0) + 1
+
+      for j <- 1 to n do
+        dist(j) = (old(j - 1) + (if left.s.charAt(i - 1) == right.s.charAt(j - 1) then 0 else 1))
+        . min(old(j) + 1).min(dist(j - 1) + 1)
+
+      for j <- 0 to n do old(j) = dist(j)
+
+    dist(n)
+
 extension (text: into Text)
   inline def sub(from: into Text, to: into Text): Text =
     text.s.replaceAll(jur.Pattern.quote(from.s).nn, to.s).nn.tt
@@ -314,68 +379,8 @@ extension (text: into Text)
   inline def bytes(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysBytes: IArray[Byte] = CharEncoder.system.encode(text)
 
-  def lev(other: into Text): Int =
-    val m = text.s.length
-    val n = other.length
-    val old = new Array[Int](n + 1)
-    val dist = new Array[Int](n + 1)
-
-    for j <- 1 to n do old(j) = old(j - 1) + 1
-
-    for i <- 1 to m do
-      dist(0) = old(0) + 1
-
-      for j <- 1 to n do
-        dist(j) = (old(j - 1) + (if text.s.charAt(i - 1) == other.s.charAt(j - 1) then 0 else 1))
-
-        . min(old(j) + 1).min(dist(j - 1) + 1)
-
-      for j <- 0 to n do old(j) = dist(j)
-
-    dist(n)
-
-  def prefixMatch(other: Text): Int =
-    val limit = text.length.min(other.length)
-
-    def recur(index: Int = 0): Int = if index >= limit then index else
-      if text.s.charAt(index) == other.s.charAt(index) then recur(index + 1) else index
-
-    recur()
-
-  def jaroWinklerDistance(other: Text, scale: Double = 0.1): Double =
-    val distance = jaroDistance(other)
-    distance + scale*prefixMatch(other).min(4)*(1 - distance)
-
-  def jaroDistance(other: Text): Double = if text == other then 1.0 else
-    val maxDist: Int = text.length.max(other.length)/2 - 1
-    val found1 = new scm.BitSet(text.length)
-    val found2 = new scm.BitSet(other.length)
-
-    @tailrec
-    def recur(i: Int, j: Int, matches: Int): Int =
-      if i >= text.length then matches else
-        if j >= (i + maxDist + 1).min(other.length)
-        then recur(i + 1, (i + 1 - maxDist).max(0), matches)
-        else if text.s.charAt(i) == other.s.charAt(j) && !found2(j) then
-          found1(i) = true
-          found2(j) = true
-          recur(i + 1, (i + 1 - maxDist).max(0), matches + 1)
-        else recur(i, j + 1, matches)
-
-    val matches = recur(0, 0, 0)
-
-    def trans(i: Int, j: Int, count: Int): Int =
-      if i >= text.length then count else if found1(i) then
-        def next(j: Int): Int = if found2(j) then j else next(j + 1)
-        val j2 = next(j)
-        trans(i + 1, j2 + 1, if text.s.charAt(i) == other.s.charAt(j2) then count else count + 1)
-      else trans(i + 1, j, count)
-
-    val count = trans(0, 0, 0)
-
-    if matches == 0 then 0.0
-    else (matches.toDouble/text.length + matches.toDouble/other.length +
-        (matches - count/2.0)/matches)/3
+  def proximity(other: into Text)(using proximity: Proximity): Double =
+    proximity.distance(text, other)
 
 extension (iarray: IArray[Char]) def text: Text = String(iarray.mutable(using Unsafe)).tt
 
