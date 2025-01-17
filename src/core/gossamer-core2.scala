@@ -17,4 +17,4 @@
 package gossamer
 
 extension (inline ctx: StringContext)
-  transparent inline def a(inline parts: String*): Ascii = ${Gossamer.ascii('ctx, 'parts)}
+  transparent inline def a(inline parts: Ascii*): Ascii = ${Gossamer.ascii('ctx, 'parts)}
