@@ -64,24 +64,24 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
   override def toString(): String = text.s
 
   def colorText: Text = unwrap:
+    val esc = 27.toChar
     fold[String](""): (acc, next, level) =>
-      val esc = 27.toChar
       if next.s.isEmpty then acc else level match
         case 0 => acc+next
-        case 1 => acc+s"$esc[3m"+next+s"$esc[0m"
-        case _ => acc+s"$esc[3m$esc[1m"+next+s"$esc[0m"
+        case 1 => s"$acc$esc[3m$next$esc[0m"
+        case _ => s"$acc$esc[3m$esc[1m$next$esc[0m"
 
   def unwrap(string: String): Text =
     val buf: StringBuilder = StringBuilder()
 
     def recur(lines: List[String], break: Boolean): Text = lines match
       case Nil =>
-        buf.toString.trim.nn.tt
+        buf.toString.nn.tt
 
       case line :: tail =>
         if line.forall(_.isWhitespace) then recur(tail, true) else
           buf.append(if !break then " " else "\n")
-          buf.append(line.trim.nn.replaceAll("\\s+", " "))
+          buf.append(line.nn.replaceAll("\\s+", " "))
           recur(tail, false)
 
     recur(string.split("\n").nn.map(_.nn).to(List), false)
