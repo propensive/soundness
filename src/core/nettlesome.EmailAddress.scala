@@ -134,7 +134,7 @@ case class EmailAddress
       case LocalPart.Quoted(quoted)     => t"\"$quoted\""
       case LocalPart.Unquoted(unquoted) => unquoted
 
-    val remote = domain match
+    val remote = (domain: @unchecked) match
       case host: Hostname => host.show
       case ipv4: Ipv4     => ipv4.show
       case ipv6: Ipv6     => ipv6.show
