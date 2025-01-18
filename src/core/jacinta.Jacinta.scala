@@ -32,9 +32,10 @@ object Jacinta:
     given JsonPointer is Showable = pointer =>
       def recur(elements: List[Ordinal | Text], result: Text): Text =
         (elements.asMatchable: @unchecked) match
-          case Nil                   => if result.empty then t"." else result
-          case Zerary(index) :: tail => recur(tail, t"[${index.n0}]$result")
-          case (key: Text) :: tail   => recur(tail, t".$key$result")
+          case Nil         => if result.empty then t"." else result
+          case key :: tail => (key.asMatchable: @unchecked) match
+            case index: Ordinal => recur(tail, t"[${index.n0}]$result")
+            case key: Text      => recur(tail, t".$key$result")
 
       recur(pointer.reverse, t"")
 
