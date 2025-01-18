@@ -119,10 +119,10 @@ def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     block(using AmalgamateTactic(label))
 
 def haltingly[ErrorType <: Error](using Quotes, Realm)[SuccessType]
-   (block: Diagnostics ?=> AbandonTactic[ErrorType, SuccessType] ?=> SuccessType)
+   (block: Diagnostics ?=> HaltTactic[ErrorType, SuccessType] ?=> SuccessType)
         : SuccessType =
 
-  given AbandonTactic[ErrorType, SuccessType]()
+  given HaltTactic[ErrorType, SuccessType]()
   given Diagnostics = Diagnostics.omit
   block
 
@@ -192,7 +192,7 @@ extension [ValueType](optional: Optional[ValueType])
      (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                   ValueType => SuccessType)
         : Optional[SuccessType] =
-    
+
     try boundary: label ?=>
       optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
     catch case error: Exception => Unset

@@ -23,7 +23,7 @@ import scala.quoted.*
 import fulminate.*
 import anticipation.*
 
-open class AbandonTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
+open class HaltTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Tactic[ErrorType]:
   given Diagnostics as diagnostics = Diagnostics.omit
   def record(error: Diagnostics ?=> ErrorType): Unit = halt(error.message)
