@@ -32,3 +32,10 @@ package enumIdentification:
   export gossamer.enumIdentification.pascalCase
   export gossamer.enumIdentification.snakeCase
   export gossamer.enumIdentification.camelCase
+
+package proximityMeasures:
+  export gossamer.proximityMeasures.jaroDistance
+  export gossamer.proximityMeasures.jaroWinklerDistance
+  export gossamer.proximityMeasures.prefixMatch
+  export gossamer.proximityMeasures.levenshteinDistance
+  export gossamer.proximityMeasures.normalizedLevenshteinDistance
