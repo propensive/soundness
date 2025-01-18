@@ -24,7 +24,7 @@ import gossamer.*
 import rudiments.*
 import symbolism.*
 
-extension [UnitsType <: Measure](inline quantity: Quantity[UnitsType])
+extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
   @targetName("plus")
   transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
     ${Quantitative.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{false})}
