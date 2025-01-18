@@ -86,10 +86,16 @@ object Quantitative extends Quantitative2:
         inline def multiply(left: Quantity[LeftType], right: Double): Quantity[LeftType] =
           left*right
 
-    inline given [RightType <: Measure]
+    given [RightType <: Measure]
         => Double is Multiplicable by Quantity[RightType] into
             Quantity[RightType] as multiplicable3 =
-      _*_
+      new Multiplicable:
+        type Self = Double
+        type Operand = Quantity[RightType]
+        type Result = Quantity[RightType]
+
+        inline def multiply(left: Double, right: Quantity[RightType]): Quantity[RightType] =
+          left*right
 
     transparent inline given [LeftType <: Measure, RightType <: Measure]
         => Quantity[LeftType] is Divisible by Quantity[RightType] as divisible =
