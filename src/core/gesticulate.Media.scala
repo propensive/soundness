@@ -28,9 +28,9 @@ import vacuous.*
 import scala.io.*
 
 import language.dynamics
-//import language.experimental.captureChecking
 
 import errorDiagnostics.empty
+import proximityMeasures.levenshteinDistance
 
 object Media:
   given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
@@ -104,7 +104,7 @@ object Media:
         case Subtype.Standard(_) =>
           if !systemMediaTypes.contains(parsed.basic)
           then
-            val suggestion = systemMediaTypes.minBy(_.lev(parsed.basic))
+            val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
             throw InterpolationError(m"""
               ${parsed.basic} is not a registered media type; did you mean $suggestion or
               ${parsed.basic.sub(t"/", t"/x-")}?
