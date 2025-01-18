@@ -18,7 +18,9 @@ object Nomenclature:
 
     inline given [PlatformType](using PlatformType is Nominative, Tactic[NameError])
         => Decoder[Name[PlatformType]] =
-      apply(_)
+      val decoder: Decoder[Name[PlatformType]] = apply[PlatformType](_)
+
+      decoder
 
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
