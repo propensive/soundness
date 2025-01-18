@@ -16,8 +16,6 @@
 
 package contingency
 
-import rudiments.*
-
 class Accrue[AccrualType <: Exception, LambdaType[_]]
    (val initial: AccrualType,
-    val lambda:  (accrual: AccrualType) ?=> Exception ~> AccrualType)
+    val lambda:  (accrual: AccrualType) ?=> PartialFunction[Exception, AccrualType])
