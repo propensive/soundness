@@ -25,6 +25,6 @@ import anticipation.*
 
 open class HaltTactic[ErrorType <: Error, SuccessType]()(using Quotes, Realm)
 extends Tactic[ErrorType]:
-  given Diagnostics as diagnostics = Diagnostics.omit
+  given diagnostics: Diagnostics = Diagnostics.omit
   def record(error: Diagnostics ?=> ErrorType): Unit = halt(error.message)
   def abort(error: Diagnostics ?=> ErrorType): Nothing = halt(error.message)

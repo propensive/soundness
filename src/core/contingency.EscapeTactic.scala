@@ -22,7 +22,7 @@ import rudiments.*
 class EscapeTactic[ResultType](label: boundary.Label[ResultType])
 extends Tactic[Break[ResultType]]:
   
-  given Diagnostics as diagnostics = Diagnostics.omit
+  given diagnostics: Diagnostics = Diagnostics.omit
 
   def abort(escape: Diagnostics ?=> Break[ResultType]): Nothing =
     boundary.break(escape.value)(using label)
