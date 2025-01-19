@@ -30,30 +30,30 @@ import fulminate.*
 import vacuous.*
 
 package threadModels:
-  given ThreadModel as platform = () => PlatformSupervisor
-  given ThreadModel as virtual = () => VirtualSupervisor
-  given ThreadModel as adaptive = () => AdaptiveSupervisor
+  given platform: ThreadModel = () => PlatformSupervisor
+  given virtual: ThreadModel = () => VirtualSupervisor
+  given adaptive: ThreadModel = () => AdaptiveSupervisor
 
 package asyncTermination:
-  given Codicil as await = _.delegate(_.attend())
-  given Codicil as cancel = _.delegate(_.cancel())
+  given await: Codicil = _.delegate(_.attend())
+  given cancel: Codicil = _.delegate(_.cancel())
 
-  given Codicil as panic = _.delegate: child =>
+  given panic: Codicil = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  given (using Tactic[AsyncError]) => Codicil as fail = _.delegate: child =>
+  given fail: Codicil raises AsyncError = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
-  given Supervisor as global = PlatformSupervisor.supervisor
+  given global: Supervisor = PlatformSupervisor.supervisor
 
 package retryTenacities:
-  given Tenacity as exponentialForever = Tenacity.exponential(10L, 1.2)
-  given Tenacity as exponentialFiveTimes = Tenacity.exponential(10L, 1.2).limit(5)
-  given Tenacity as exponentialTenTimes = Tenacity.exponential(10L, 1.2).limit(10)
-  given Tenacity as fixedNoDelayForever = Tenacity.fixed(0L)
-  given Tenacity as fixedNoDelayFiveTimes = Tenacity.fixed(0L).limit(5)
-  given Tenacity as fixedNoDelayTenTimes = Tenacity.fixed(0L).limit(10)
+  given exponentialForever: Tenacity = Tenacity.exponential(10L, 1.2)
+  given exponentialFiveTimes: Tenacity = Tenacity.exponential(10L, 1.2).limit(5)
+  given exponentialTenTimes: Tenacity = Tenacity.exponential(10L, 1.2).limit(10)
+  given fixedNoDelayForever: Tenacity = Tenacity.fixed(0L)
+  given fixedNoDelayFiveTimes: Tenacity = Tenacity.fixed(0L).limit(5)
+  given fixedNoDelayTenTimes: Tenacity = Tenacity.fixed(0L).limit(10)
 
 transparent inline def monitor(using Monitor): Monitor = summonInline[Monitor]
 
