@@ -21,7 +21,7 @@ import gossamer.*
 import prepositional.*
 
 object Md5:
-  given JavaHashFunction in Md5 as hashFunction:
+  given hashFunction: JavaHashFunction in Md5:
     val name: Text = t"MD5"
     val hmacName: Text = t"HmacMD5"
 

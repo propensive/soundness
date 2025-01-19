@@ -24,6 +24,6 @@ sealed trait Sha1 extends Algorithm:
   type Bits = 160
 
 object Sha1:
-  given JavaHashFunction in Sha1 as hashFunction:
+  given hashFunction: JavaHashFunction in Sha1:
     val name: Text = t"SHA1"
     val hmacName: Text = t"HmacSHA1"

@@ -41,27 +41,27 @@ object Digestible extends Derivable[Digestible]:
           int.digest(digestion, index)
           context.digest(digestion, variant)
 
-  given [ValueType: Digestible](using util.NotGiven[Unset.type <:< ValueType])
-      => Optional[ValueType] is Digestible as optional =
+  given optional: [ValueType: Digestible] => util.NotGiven[Unset.type <:< ValueType]
+      => Optional[ValueType] is Digestible =
     (acc, value) => value.let(ValueType.digest(acc, _))
 
-  given [IterableType <: Iterable, ValueType: Digestible]
-      => IterableType[ValueType] is Digestible as iterable =
+  given iterable: [IterableType <: Iterable, ValueType: Digestible]
+      => IterableType[ValueType] is Digestible =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
-  given [KeyType: Digestible, ValueType: Digestible]
-      => Map[KeyType, ValueType] is Digestible as map =
+  given map: [KeyType: Digestible, ValueType: Digestible]
+      => Map[KeyType, ValueType] is Digestible =
     (digestion, map) => map.each: (key, value) =>
       KeyType.digest(digestion, key)
       ValueType.digest(digestion, value)
 
-  given [ValueType: Digestible] => LazyList[ValueType] is Digestible as lazyList =
+  given lazyList: [ValueType: Digestible] => LazyList[ValueType] is Digestible =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
-  given Int is Digestible as int = (digestion, value) =>
+  given int: Int is Digestible = (digestion, value) =>
     digestion.append((24 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
-  given Long is Digestible as long = (digestion, value) =>
+  given long: Long is Digestible = (digestion, value) =>
     digestion.append((52 to 0 by -8).map(value >> _).map(_.toByte).toArray.immutable(using Unsafe))
 
   given Double is Digestible =
@@ -84,7 +84,7 @@ object Digestible extends Derivable[Digestible]:
   given Text is Digestible =
     (digestion, text) => digestion.append(text.bytes(using charEncoders.utf8))
 
-  given Bytes is Digestible as bytes = _.append(_)
+  given bytes: Bytes is Digestible = _.append(_)
   given Digest is Digestible = (digestion, digest) => digestion.append(digest.bytes)
 
   given [ValueType: Encodable in Bytes] => ValueType is Digestible =

@@ -21,11 +21,11 @@ import prepositional.*
 import turbulence.*
 
 package hashFunctions:
-  given HashFunction in Crc32 as crc32 = Crc32.hashFunction
-  given HashFunction in Md5 as md5 = Md5.hashFunction
-  given HashFunction in Sha1 as sha1 = Sha1.hashFunction
+  given crc32: HashFunction in Crc32 = Crc32.hashFunction
+  given md5: HashFunction in Md5 = Md5.hashFunction
+  given sha1: HashFunction in Sha1 = Sha1.hashFunction
 
-  given [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction in Sha2[BitsType] as sha2 =
+  given sha2: [BitsType <: 224 | 256 | 384 | 512: ValueOf] => HashFunction in Sha2[BitsType] =
     Sha2.hashFunction[BitsType]
 
 extension [ValueType: Digestible](value: ValueType)

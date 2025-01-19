@@ -27,7 +27,7 @@ import rudiments.*
 import vacuous.*
 
 object Crc32:
-  given HashFunction in Crc32 as hashFunction:
+  given hashFunction: HashFunction in Crc32:
     def init(): Digestion = new Digestion:
       private val state: juz.CRC32 = juz.CRC32()
       def append(bytes: Bytes): Unit = state.update(bytes.mutable(using Unsafe))

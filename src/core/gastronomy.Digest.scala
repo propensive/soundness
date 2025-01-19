@@ -31,7 +31,7 @@ object Digest:
   def apply[HashType <: Algorithm](bytes: Bytes): Digest in HashType = new Digest(bytes):
     type Format = HashType
 
-  given [DigestType <: Algorithm](using Alphabet[Base64]) => Digest in DigestType is Showable =
+  given [DigestType <: Algorithm] => Alphabet[Base64] => Digest in DigestType is Showable =
     _.bytes.serialize[Base64]
 
   given [DigestType <: Algorithm] => Digest in DigestType is Encodable in Bytes = _.bytes
