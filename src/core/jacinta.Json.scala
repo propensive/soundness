@@ -37,8 +37,8 @@ import wisteria.*
 import JsonError.Reason
 
 trait Json2:
-  given [ValueType: Encodable in Json as encodable]
-      => Optional[ValueType] is Encodable in Json as optionalEncodable =
+  given optionalEncodable: [ValueType: Encodable in Json as encodable]
+      => Optional[ValueType] is Encodable in Json =
     new Encodable:
       type Self = Optional[ValueType]
       type Format = Json
@@ -48,11 +48,11 @@ trait Json2:
       def encode(value: Optional[ValueType]): Json =
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
-  given [ValueType: Decodable in Json](using Tactic[JsonError])
-      => Optional[ValueType] is Decodable in Json as optional = (json, omit) =>
+  given optional: [ValueType: Decodable in Json] => Tactic[JsonError]
+      => Optional[ValueType] is Decodable in Json = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)
 
-  inline given [ValueType] => ValueType is Decodable in Json as decodable = summonFrom:
+  inline given decodable: [ValueType] => ValueType is Decodable in Json = summonFrom:
     case given Decoder[ValueType] =>
       summonInline[Tactic[JsonError]].give:
         (value, omit) => value.root.string.decode[ValueType]
@@ -60,7 +60,7 @@ trait Json2:
     case given Reflection[ValueType] =>
       DecodableDerivation.derived
 
-  inline given [ValueType] => ValueType is Encodable in Json as encodable = summonFrom:
+  inline given encodable: [ValueType] => ValueType is Encodable in Json = summonFrom:
     case given (ValueType is Encodable in Text) => value => Json.ast(JsonAst(value.encode.s))
     case given Reflection[ValueType]            => EncodableDerivation.derived
 
@@ -120,26 +120,26 @@ trait Json2:
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
-  // given [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json as integral =
+  // given integral: [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json =
   //   (value, omit) => IntegralType.fromInt(value.root.long.toInt)
 
 object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
-  given Json is Decodable in Json as boolean = (value, omit) => value
-  given (using Tactic[JsonError]) => Boolean is Decodable in Json as boolean = (value, omit) => value.root.boolean
-  given (using Tactic[JsonError]) => Double is Decodable in Json as double = (value, omit) => value.root.double
-  given (using Tactic[JsonError]) => Float is Decodable in Json as float = (value, omit) => value.root.double.toFloat
-  given (using Tactic[JsonError]) => Long is Decodable in Json as long = (value, omit) => value.root.long
-  given (using Tactic[JsonError]) => Int is Decodable in Json as int = (value, omit) => value.root.long.toInt
-  given (using Tactic[JsonError]) => Text is Decodable in Json as text = (value, omit) => value.root.string
-  given (using Tactic[JsonError]) => String is Decodable in Json as string = (value, omit) => value.root.string.s
+  given boolean: Json is Decodable in Json = (value, omit) => value
+  given boolean: Tactic[JsonError] => Boolean is Decodable in Json = (value, omit) => value.root.boolean
+  given double: Tactic[JsonError] => Double is Decodable in Json = (value, omit) => value.root.double
+  given float: Tactic[JsonError] => Float is Decodable in Json = (value, omit) => value.root.double.toFloat
+  given long: Tactic[JsonError] => Long is Decodable in Json = (value, omit) => value.root.long
+  given int: Tactic[JsonError] => Int is Decodable in Json = (value, omit) => value.root.long.toInt
+  given text: Tactic[JsonError] => Text is Decodable in Json = (value, omit) => value.root.string
+  given string: Tactic[JsonError] => String is Decodable in Json = (value, omit) => value.root.string.s
 
-  given [ValueType: Decodable in Json](using Tactic[JsonError])
-      => Option[ValueType] is Decodable in Json as option = (json, omit) =>
+  given option: [ValueType: Decodable in Json] => Tactic[JsonError]
+      => Option[ValueType] is Decodable in Json = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
-  given [ValueType: Encodable in Json as encodable] => Option[ValueType] is Encodable in Json as optionEncodable =
+  given optionEncodable: [ValueType: Encodable in Json as encodable] => Option[ValueType] is Encodable in Json =
     new Encodable:
       type Self = Option[ValueType]
       type Format = Json
@@ -150,26 +150,26 @@ object Json extends Json2, Dynamic:
         case None        => Json.ast(JsonAst(Unset))
         case Some(value) => encodable.encode(value)
 
-  given [IntegralType: Integral] => IntegralType is Encodable in Json as integralEncodable =
+  given integralEncodable: [IntegralType: Integral] => IntegralType is Encodable in Json =
     integral => Json.ast(JsonAst(IntegralType.toLong(integral)))
 
-  given Text is Encodable in Json as textEncodable = text => Json.ast(JsonAst(text.s))
-  given String is Encodable in Json as stringEncodable = string => Json.ast(JsonAst(string))
-  given Double is Encodable in Json as doubleEncodable = double => Json.ast(JsonAst(double))
-  given Int is Encodable in Json as intEncodable = int => Json.ast(JsonAst(int.toLong))
-  given Long is Encodable in Json as longEncodable = long => Json.ast(JsonAst(long))
-  given Boolean is Encodable in Json as booleanEncodable = boolean => Json.ast(JsonAst(boolean))
-  given Json is Encodable in Json as jsonEncodable = identity(_)
+  given textEncodable: Text is Encodable in Json = text => Json.ast(JsonAst(text.s))
+  given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
+  given doubleEncodable: Double is Encodable in Json = double => Json.ast(JsonAst(double))
+  given intEncodable: Int is Encodable in Json = int => Json.ast(JsonAst(int.toLong))
+  given longEncodable: Long is Encodable in Json = long => Json.ast(JsonAst(long))
+  given booleanEncodable: Boolean is Encodable in Json = boolean => Json.ast(JsonAst(boolean))
+  given jsonEncodable: Json is Encodable in Json = identity(_)
 
   given [CollectionType <: Iterable, ElementType: Encodable in Json as encodable]
       => CollectionType[ElementType] is Encodable in Json =
     values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
 
-  given [CollectionType <: Iterable, ElementType: Decodable in Json]
-     (using factory:    Factory[ElementType, CollectionType[ElementType]],
-            jsonAccess: Tactic[JsonError],
-            foci:       Foci[JsonPointer])
-      => (CollectionType[ElementType] is Decodable in Json) as array =
+  given array: [CollectionType <: Iterable, ElementType: Decodable in Json]
+  => (factory:    Factory[ElementType, CollectionType[ElementType]],
+      jsonAccess: Tactic[JsonError],
+      foci:       Foci[JsonPointer])
+      => (CollectionType[ElementType] is Decodable in Json) =
     (value, omit) =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
@@ -178,8 +178,8 @@ object Json extends Json2, Dynamic:
 
       builder.result()
 
-  given [ElementType: Decodable in Json](using Tactic[JsonError])
-      => (Map[Text, ElementType] is Decodable in Json) as map =
+  given map: [ElementType: Decodable in Json] => Tactic[JsonError]
+      => (Map[Text, ElementType] is Decodable in Json) =
 
     (value, omit) =>
       val (keys, values) = value.root.obj
@@ -188,7 +188,7 @@ object Json extends Json2, Dynamic:
         focus(prior.or(JsonPointer()) / keys(index).tt):
           acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index)), false))
 
-  given Json is Encodable in Text as encodable = json => JsonPrinter.print(json.root, false)
+  given encodable: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   inline def parse[SourceType](value: SourceType): Json raises JsonParseError =
     summonFrom:
@@ -196,21 +196,22 @@ object Json extends Json2, Dynamic:
       case given (SourceType is Readable by Text)  =>
         Json(JsonAst.parse(value.read[Bytes]))
 
-  given (using JsonPrinter) => Json is Showable = json =>
+  given JsonPrinter => Json is Showable = json =>
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
-  given (using encoder: CharEncoder, printer: JsonPrinter)
+  given (encoder: CharEncoder, printer: JsonPrinter)
       => (Json is GenericHttpResponseStream) = new:
     def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
     def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
-  given (using Tactic[JsonParseError]) => Decoder[Json] =
+  given Tactic[JsonParseError] => Decoder[Json] =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given (using Tactic[JsonParseError]) => ((Json is GenericHttpReader)) =
+  given Tactic[JsonParseError] => ((Json is GenericHttpReader)) =
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
-  given [SourceType: Readable by Bytes](using Tactic[JsonParseError]) => Json is Aggregable by Bytes as aggregable =
+  given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
+  =>  Json is Aggregable by Bytes =
     Json.parse(_)
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =

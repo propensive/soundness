@@ -19,4 +19,4 @@ package jacinta
 import rudiments.*
 
 object dynamicJsonAccess:
-  erased given DynamicJsonEnabler as enabled = ###
+  erased given enabled: DynamicJsonEnabler = ###

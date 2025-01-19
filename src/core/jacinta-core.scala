@@ -33,7 +33,7 @@ import JsonError.Reason
 
 export Jacinta.JsonPointer
 
-given (using js: JsonPrinter) => JsonAst is Showable = js.print(_)
+given (js: JsonPrinter) => JsonAst is Showable = js.print(_)
 
 extension (json: JsonAst)
   inline def isNumber: Boolean = isDouble || isLong || isBigDecimal
@@ -104,5 +104,5 @@ extension [ValueType: Encodable in Json](value: ValueType)
   def json: Json = ValueType.encode(value)
 
 package jsonPrinters:
-  given JsonPrinter as indented = JsonPrinter.print(_, true)
-  given JsonPrinter as minimal = JsonPrinter.print(_, false)
+  given indented: JsonPrinter = JsonPrinter.print(_, true)
+  given minimal: JsonPrinter = JsonPrinter.print(_, false)
