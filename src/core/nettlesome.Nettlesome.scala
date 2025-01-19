@@ -55,7 +55,7 @@ object Nettlesome:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
-      given decoder: Decoder[Ipv4] raises IpAddressError = parse(_)
+      given decoder: Tactic[IpAddressError] => Decoder[Ipv4] = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -86,7 +86,7 @@ object Nettlesome:
       erased given underlying: Underlying[MacAddress, Long] = ###
       given MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
-      given decoder: Decoder[MacAddress] raises MacAddressError = parse(_)
+      given decoder: Tactic[MacAddressError] => Decoder[MacAddress] = parse(_)
 
       def apply(value: Long): MacAddress = value
 
@@ -125,7 +125,7 @@ object Nettlesome:
       given showable: TcpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: TcpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
-      given decoder: Decoder[TcpPort] raises NumberError raises PortError =
+      given decoder: (Tactic[NumberError], Tactic[PortError]) => Decoder[TcpPort] =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
@@ -138,7 +138,7 @@ object Nettlesome:
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: UdpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
-      given decoder: Decoder[UdpPort] raises NumberError raises PortError =
+      given decoder: (Tactic[NumberError], Tactic[PortError]) => Decoder[UdpPort] =
         text => apply(Decoder.int.decode(text))
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]

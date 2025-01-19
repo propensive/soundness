@@ -49,4 +49,4 @@ def online(using internet: Internet): Boolean = internet.online
 
 package internetAccess:
   given enabled: Online = Online()
-  given disabled: Online raises OfflineError = abort(OfflineError())
+  given disabled: Tactic[OfflineError] => Online = abort(OfflineError())
