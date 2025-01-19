@@ -16,7 +16,7 @@ object Nomenclature:
     given [PlatformType] => Name[PlatformType] is Communicable = name => Message(name.text)
     given [PlatformType] => Name[PlatformType] is Encodable in Text = _.text
 
-    inline given [PlatformType](using PlatformType is Nominative, Tactic[NameError])
+    inline given [PlatformType] => (PlatformType is Nominative, Tactic[NameError])
         => Decoder[Name[PlatformType]] =
       val decoder: Decoder[Name[PlatformType]] = apply[PlatformType](_)
 
