@@ -58,7 +58,7 @@ object Readable:
 
     LazyList.defer(recur(0L.b))
 
-  given reader: [InType <: ji.Reader] => InType is Readable by Char raises StreamError = reader =>
+  given reader: [InType <: ji.Reader] => Tactic[StreamError] => InType is Readable by Char = reader =>
     def recur(count: Memory): LazyList[Char] =
       try reader.read() match
         case -1  => LazyList()
@@ -70,7 +70,8 @@ object Readable:
     LazyList.defer(recur(0L.b))
 
   given bufferedReader: [InType <: ji.BufferedReader]
-  =>  InType is Readable by Line raises StreamError =
+  =>  Tactic[StreamError]
+  =>  InType is Readable by Line =
     reader =>
       def recur(count: Memory): LazyList[Line] =
         try reader.readLine() match
@@ -83,10 +84,11 @@ object Readable:
       LazyList.defer(recur(0L.b))
 
   given inputStream: [InType <: ji.InputStream]
-      => InType is Readable by Bytes raises StreamError =
+      => Tactic[StreamError]
+      => InType is Readable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
-  given channel: jn.channels.ReadableByteChannel is Readable by Bytes raises StreamError = channel =>
+  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes = channel =>
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
     def recur(total: Long): LazyList[Bytes] =
