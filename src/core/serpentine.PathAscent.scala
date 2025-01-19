@@ -23,7 +23,7 @@ import rudiments.*
 import symbolism.*
 
 object PathAscent:
-  given [ElementType](using Navigable by ElementType)
+  given [ElementType] => (Navigable by ElementType)
       => PathAscent is Divisible by ElementType into (Relative by ElementType) =
     new Divisible:
       type Self = PathAscent
@@ -49,6 +49,6 @@ case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
   type Operand = Nothing
 
   @targetName("parent")
-  infix def / (parent: ^.type): PathAscent = PathAscent(ascent + 1)
+  infix def / (parent: Serpentine.^.type): PathAscent = PathAscent(ascent + 1)
 
   override def parent: PathAscent = PathAscent(ascent + 1)

@@ -29,25 +29,25 @@ import vacuous.*
 import scala.compiletime.*
 
 object Path:
-  given [PathType <: Path] => PathType is Encodable in Text as encodable = _.text
+  given encodable: [PathType <: Path] => PathType is Encodable in Text = _.text
 
-  given [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] as decoder =
+  given decoder: [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] =
     Path.parse(_)
 
-  given [PlatformType] => (Path on PlatformType) is Showable as showable = _.text
-  given [PlatformType] => (Path on PlatformType) is GenericPath as generic = _.text
-  given [PlatformType] => (Path on PlatformType) is Nominable as nominable = path =>
+  given showable: [PlatformType] => (Path on PlatformType) is Showable = _.text
+  given generic: [PlatformType] => (Path on PlatformType) is GenericPath = _.text
+  given nominable: [PlatformType] => (Path on PlatformType) is Nominable = path =>
     path.textDescent.prim.or(path.textRoot)
 
-  given [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath as specific =
+  given specific: [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath =
     _.decode[Path on PlatformType]
 
-  given Path is Communicable as communicable = path =>
+  given communicable: Path is Communicable = path =>
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
-  given [PlatformType: Navigable](using Tactic[PathError])
+  given addable: [PlatformType: Navigable] => Tactic[PathError]
       => (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
-          (Path on PlatformType) as addable =
+        (Path on PlatformType) =
     (left, right) =>
       def recur(descent: List[Text], ascent: Int): Path on PlatformType =
         if ascent > 0 then

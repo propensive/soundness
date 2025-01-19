@@ -27,10 +27,9 @@ import vacuous.*
 import scala.compiletime.*
 
 object Relative:
-  given [RelativeType <: Relative](using navigable: Navigable)
-      => RelativeType is Encodable in Text as encodable = relative =>
-    if relative.textDescent.isEmpty
-    then
+  given encodable: [RelativeType <: Relative] => (navigable: Navigable)
+      => RelativeType is Encodable in Text = relative =>
+    if relative.textDescent.isEmpty then
       if relative.ascent == 0 then navigable.selfText
       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
     else
@@ -42,8 +41,7 @@ object Relative:
   given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
     encodable.encode(_)
 
-  given [ElementType](using Navigable by ElementType)
-      => Decoder[Relative by ElementType] as decoder =
+  given decoder: [ElementType] => (Navigable by ElementType) => Decoder[Relative by ElementType] =
     parse(_)
 
   def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
