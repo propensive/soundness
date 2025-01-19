@@ -57,7 +57,7 @@ object Decoder:
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double), 0.0)
 
-  given Decoder[Float] raises NumberError = text =>
+  given float: Decoder[Float] raises NumberError = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Float), 0.0F)
 
