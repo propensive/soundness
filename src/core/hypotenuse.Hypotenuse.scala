@@ -58,9 +58,9 @@ object Hypotenuse:
   opaque type F32 = Float
 
   object F64:
-    erased given Underlying[F64, Double] as underlying = erasedValue
+    erased given underlying: Underlying[F64, Double] = erasedValue
 
-    inline given CanEqual[F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] as canEqual =
+    inline given canEqual: CanEqual[F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] =
       erasedValue
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 =
@@ -69,7 +69,7 @@ object Hypotenuse:
     inline def apply(inline bits: B64): F64 = JDouble.longBitsToDouble(bits)
     inline def apply(inline double: Double): F64 = double
 
-    inline given F64 is Orderable as orderable:
+    inline given orderable: F64 is Orderable:
 
       inline def compare
          (inline left: F64, inline right: F64, inline strict: Boolean, inline greater: Boolean)
@@ -79,7 +79,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given F64 is Commensurable as commensurableInt:
+    inline given commensurableInt: F64 is Commensurable:
       type Operand = Int
 
       inline def compare
@@ -90,7 +90,7 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given F64 is Commensurable as commensurable:
+    inline given commensurable: F64 is Commensurable:
       type Operand = Double
 
       inline def compare(inline left: F64, inline right: Double, inline strict: Boolean,
@@ -100,46 +100,46 @@ object Hypotenuse:
         then inline if strict then left > right else left >= right
         else inline if strict then left < right else left <= right
 
-    inline given Conversion[Double, F64] as doubleConversion:
+    inline given doubleConversion: Conversion[Double, F64]:
       inline def apply(value: Double): F64 = value
 
-    inline given Conversion[Float, F64] as floatConversion:
+    inline given floatConversion: Conversion[Float, F64]:
       def apply(value: Float): F64 = value.toDouble
 
-    inline given Conversion[Int, F64] as intConversion:
+    inline given intConversion: Conversion[Int, F64]:
       def apply(value: Int): F64 = value.toDouble
 
-    inline given Conversion[Short, F64] as shortConversion:
+    inline given shortConversion: Conversion[Short, F64]:
       def apply(value: Short): F64 = value.toDouble
 
-    inline given Conversion[Byte, F64] as byteConversion:
+    inline given byteConversion: Conversion[Byte, F64]:
       def apply(value: Byte): F64 = value.toDouble
 
-    inline given Conversion[U32, F64] as u32Conversion:
+    inline given u32Conversion: Conversion[U32, F64]:
       def apply(value: U32): F64 = JInt.toUnsignedLong(value).toDouble
 
-    inline given Conversion[S32, F64] as s32Conversion:
+    inline given s32Conversion: Conversion[S32, F64]:
       def apply(value: S32): F64 = value.toDouble
 
-    inline given Conversion[U16, F64] as u16Conversion:
+    inline given u16Conversion: Conversion[U16, F64]:
       def apply(value: U16): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given Conversion[U8, F64] as u8Conversion:
+    inline given u8Conversion: Conversion[U8, F64]:
       def apply(value: U8): F64 = JShort.toUnsignedInt(value).toDouble
 
-    inline given Conversion[S16, F64] as s16Conversion:
+    inline given s16Conversion: Conversion[S16, F64]:
       def apply(value: S16): F64 = value.toDouble
 
-    inline given Conversion[S8, F64] as s8Conversion:
+    inline given s8Conversion: Conversion[S8, F64]:
       def apply(value: S8): F64 = value.toDouble
 
   object F32:
-    erased given Underlying[F32, Float] as underlying = erasedValue
+    erased given underlying: Underlying[F32, Float] = erasedValue
 
-    inline given CanEqual[F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] as canEqual =
+    inline given canEqual: CanEqual[F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] =
       erasedValue
 
-    inline given F32 is Orderable as orderable:
+    inline given orderable: F32 is Orderable:
 
       inline def compare
          (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -156,38 +156,38 @@ object Hypotenuse:
     inline def apply(inline bits: B32): F32 = JFloat.intBitsToFloat(bits)
     inline def apply(inline float: Float): F32 = float
 
-    inline given Conversion[Float, F32] as floatConversion:
+    inline given floatConversion: Conversion[Float, F32]:
       def apply(value: Float): F32 = value
 
-    inline given Conversion[Short, F32] as shortConversion:
+    inline given shortConversion: Conversion[Short, F32]:
       def apply(value: Short): F32 = value.toFloat
 
-    inline given Conversion[Byte, F32] as byteConversion:
+    inline given byteConversion: Conversion[Byte, F32]:
       def apply(value: Byte): F32 = value.toFloat
 
-    inline given Conversion[U16, F32] as u16Conversion:
+    inline given u16Conversion: Conversion[U16, F32]:
       def apply(value: U16): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given Conversion[U8, F32] as u8Conversion:
+    inline given u8Conversion: Conversion[U8, F32]:
       def apply(value: U8): F32 = JShort.toUnsignedInt(value).toFloat
 
-    inline given Conversion[S16, F32] as s16Conversion:
+    inline given s16Conversion: Conversion[S16, F32]:
       def apply(value: S16): F32 = value.toFloat
 
-    inline given Conversion[S8, F32] as s8Conversion:
+    inline given s8Conversion: Conversion[S8, F32]:
       def apply(value: S8): F32 = value.toFloat
 
   object U64:
-    erased given Underlying[U64, Long] as underlying = erasedValue
-    inline given CanEqual[U64, U64] as canEqual = erasedValue
+    erased given underlying: Underlying[U64, Long] = erasedValue
+    inline given canEqual: CanEqual[U64, U64] = erasedValue
 
-    given FromDigits[U64] as fromDigits:
+    given fromDigits: FromDigits[U64]:
       inline def fromDigits(digits: String): U64 = ${Hypotenuse2.parseU64('digits)}
 
     given U64 is Textualizer = JLong.toUnsignedString(_).nn.tt
     inline def apply(inline bits: B64): U64 = bits
 
-    inline given U64 is Orderable as orderable:
+    inline given orderable: U64 is Orderable:
 
       inline def compare
          (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -201,17 +201,17 @@ object Hypotenuse:
           else JLong.compareUnsigned(left, right) != 1
 
   object S64:
-    erased given Underlying[S64, Long] as underlying = erasedValue
-    inline given CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    erased given underlying: Underlying[S64, Long] = erasedValue
+    inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given FromDigits[S64] as fromDigits:
+    given fromDigits: FromDigits[S64]:
       inline def fromDigits(digits: String): S64 = ${Hypotenuse2.parseS64('digits)}
 
     given S64 is Textualizer = _.toString.tt
     inline def apply(inline bits: B64): S64 = bits
 
-    inline given S64 is Orderable as orderable:
+    inline given orderable: S64 is Orderable:
 
       inline def compare
          (inline left: S64, inline right: S64, inline strict: Boolean, inline greaterThan: Boolean)
@@ -223,16 +223,16 @@ object Hypotenuse:
 
 
   object U32:
-    erased given Underlying[U32, Int] as underlying = erasedValue
-    inline given CanEqual[U32, U32] as canEqual = erasedValue
+    erased given underlying: Underlying[U32, Int] = erasedValue
+    inline given canEqual: CanEqual[U32, U32] = erasedValue
 
-    given FromDigits[U32] as fromDigits:
+    given fromDigits: FromDigits[U32]:
       inline def fromDigits(digits: String): U32 = ${Hypotenuse2.parseU32('digits)}
 
     given U32 is Textualizer = JInt.toUnsignedString(_).nn.tt
     inline def apply(inline bits: B32): U32 = bits
 
-    inline given U32 is Orderable as orderable:
+    inline given orderable: U32 is Orderable:
       inline def compare
          (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
@@ -245,17 +245,17 @@ object Hypotenuse:
           else JInt.compareUnsigned(left, right) != 1
 
   object S32:
-    erased given Underlying[S32, Int] as underlying = erasedValue
-    inline given CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    erased given underlying: Underlying[S32, Int] = erasedValue
+    inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given FromDigits[S32] as fromDigits:
+    given fromDigits: FromDigits[S32]:
       inline def fromDigits(digits: String): S32 = ${Hypotenuse2.parseS32('digits)}
 
     given S32 is Textualizer = _.toString.tt
     inline def apply(inline bits: B32): S32 = bits
 
-    inline given S32 is Orderable as orderable:
+    inline given orderable: S32 is Orderable:
 
       inline def compare
          (inline left: S32, inline right: S32, inline strict: Boolean, inline greaterThan: Boolean)
@@ -266,16 +266,16 @@ object Hypotenuse:
         else inline if strict then (left: Int) < (right: Int) else (left: Int) <= (right: Int)
 
   object U16:
-    erased given Underlying[U16, Short] as underlying = erasedValue
-    inline given CanEqual[U16, U16] as canEqual = erasedValue
+    erased given underlying: Underlying[U16, Short] = erasedValue
+    inline given canEqual: CanEqual[U16, U16] = erasedValue
 
-    given FromDigits[U16] as fromDigits:
+    given fromDigits: FromDigits[U16]:
       inline def fromDigits(digits: String): U16 = ${Hypotenuse2.parseU16('digits)}
 
     given U16 is Textualizer = u16 => JShort.toUnsignedInt(u16).toString.nn.tt
     inline def apply(inline bits: B16): U16 = bits
 
-    inline given U16 is Orderable as orderable:
+    inline given orderable: U16 is Orderable:
 
       inline def compare
          (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -289,18 +289,18 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left.toInt <= right2
 
   object S16:
-    erased given Underlying[S16, Short] as underlying = erasedValue
+    erased given underlying: Underlying[S16, Short] = erasedValue
 
-    inline given CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    inline given canEqual: CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given FromDigits[S16] as fromDigits:
+    given fromDigits: FromDigits[S16]:
       inline def fromDigits(digits: String): S16 = ${Hypotenuse2.parseS16('digits)}
 
     given S16 is Textualizer = _.toString.tt
     inline def apply(inline bits: B16): S16 = bits
 
-    inline given S16 is Orderable as orderable:
+    inline given orderable: S16 is Orderable:
 
       inline def compare
          (inline left: S16, inline right: S16, inline strict: Boolean, inline greaterThan: Boolean)
@@ -311,15 +311,15 @@ object Hypotenuse:
         else inline if strict then left < right else left <= right
 
   object U8:
-    erased given Underlying[U8, Byte] as underlying = erasedValue
-    inline given CanEqual[U8, U8] as canEqual = erasedValue
-    given FromDigits[U8] as fromDigits:
+    erased given underlying: Underlying[U8, Byte] = erasedValue
+    inline given canEqual: CanEqual[U8, U8] = erasedValue
+    given fromDigits: FromDigits[U8]:
       inline def fromDigits(digits: String): U8 = ${Hypotenuse2.parseU8('digits)}
 
     given U8 is Textualizer = u8 => JByte.toUnsignedInt(u8).toString.nn.tt
     inline def apply(inline bits: B8): U8 = bits
 
-    inline given U8 is Orderable as orderable:
+    inline given orderable: U8 is Orderable:
 
       inline def compare
          (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)
@@ -333,18 +333,18 @@ object Hypotenuse:
         else inline if strict then left2 < right2 else left2 <= right2
 
   object S8:
-    erased given Underlying[S8, Byte] as underlying = erasedValue
+    erased given underlying: Underlying[S8, Byte] = erasedValue
 
-    inline given CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] as canEqual =
+    inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    given FromDigits[S8] as fromDigits:
+    given fromDigits: FromDigits[S8]:
       inline def fromDigits(digits: String): S8 = ${Hypotenuse2.parseS8('digits)}
 
     given S8 is Textualizer = _.toString.tt
     inline def apply(inline bits: B8): S8 = bits
 
-    inline given S8 is Orderable as inquality:
+    inline given inquality: S8 is Orderable:
 
       inline def compare
          (inline left: S8, inline right: S8, inline strict: Boolean, inline greaterThan: Boolean)
@@ -355,7 +355,7 @@ object Hypotenuse:
         else inline if strict then left < right else left <= right
 
   object B64:
-    erased given Underlying[B64, Long] as underlying = erasedValue
+    erased given underlying: Underlying[B64, Long] = erasedValue
     inline def block(inline n: Int): B64 = (1L << n) - 1
     inline def set(inline ordinal: Ordinal): B64 = 1L << ordinal.n0
 
@@ -391,7 +391,7 @@ object Hypotenuse:
       b64
 
   object B32:
-    erased given Underlying[B32, Int] as underlying = erasedValue
+    erased given underlying: Underlying[B32, Int] = erasedValue
     inline def block(inline n: Int): B32 = (1 << n) - 1
     inline def set(inline ordinal: Ordinal): B32 = 1 << ordinal.n0
     inline def set(inline interval: Interval): B32 = block(interval.size) << interval.start.n0
@@ -415,7 +415,7 @@ object Hypotenuse:
       b32
 
   object B16:
-    erased given Underlying[B16, Short] as underlying = erasedValue
+    erased given underlying: Underlying[B16, Short] = erasedValue
     inline def block(inline n: Int): B16 = ((1 << n) - 1).toShort
     inline def set(inline ordinal: Ordinal): B16 = (1 << ordinal.n0).toShort
 
@@ -436,7 +436,7 @@ object Hypotenuse:
       b16.toShort
 
   object B8:
-    erased given Underlying[B8, Byte] as underlying = erasedValue
+    erased given underlying: Underlying[B8, Byte] = erasedValue
     inline def block(inline n: Int): B8 = ((1 << n) - 1).toByte
     inline def set(inline ordinal: Ordinal): B8 = (1 << ordinal.n0).toByte
 

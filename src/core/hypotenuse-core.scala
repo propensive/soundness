@@ -410,7 +410,7 @@ extension [LeftType](inline left: LeftType)
 
 package arithmeticOptions:
   object division:
-    inline given DivisionByZero as unchecked:
+    inline given unchecked: DivisionByZero:
       type Wrap[ResultType] = ResultType
       inline def divideU64(left: U64, right: U64): U64 = U64((Long(left.bits)/Long(right.bits)).bits)
       inline def divideS64(left: S64, right: S64): S64 = S64((left.long/right.long).bits)
@@ -421,7 +421,7 @@ package arithmeticOptions:
       inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
       inline def divideS8(left: S8, right: S8): S8 = S8((left.byte/right.byte).toByte.bits)
 
-    inline given DivisionByZero as checked:
+    inline given checked: DivisionByZero:
       type Wrap[ResultType] = ResultType raises DivisionError
 
       inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
@@ -453,7 +453,7 @@ package arithmeticOptions:
         if right.int == 0 then raise(DivisionError(), S8(0.bits)) else S8((left.byte/right.byte).toByte.bits)
 
   object overflow:
-    inline given CheckOverflow as unchecked:
+    inline given unchecked: CheckOverflow:
       type Wrap[ResultType] = ResultType
       inline def addU64(left: U64, right: U64): U64 = U64((Long(left.bits) + Long(right.bits)).bits)
       inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
@@ -464,7 +464,7 @@ package arithmeticOptions:
       inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
       inline def addS8(left: S8, right: S8): S8 = S8((left.byte + right.byte).toByte.bits)
 
-    inline given CheckOverflow as checked:
+    inline given checked: CheckOverflow:
       type Wrap[ResultType] = ResultType raises OverflowError
 
       inline def addU64(left: U64, right: U64): U64 raises OverflowError =
