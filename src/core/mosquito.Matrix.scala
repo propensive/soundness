@@ -85,7 +85,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     new Matrix(rows, columns2, elements)
 
 object Matrix:
-  given [ElementType: Showable](using TextMetrics) => Matrix[ElementType, ?, ?] is Showable = matrix =>
+  given [ElementType: Showable] => TextMetrics => Matrix[ElementType, ?, ?] is Showable = matrix =>
     val textElements = matrix.elements.map(_.show)
     val sizes = textElements.map(_.length)
 
