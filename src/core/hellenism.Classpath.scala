@@ -32,7 +32,7 @@ import vacuous.*
 object Classpath:
   type Rules = MustNotContain["/"]
 
-  given (using classloader: Classloader) => (Path on Classpath) is Substantiable =
+  given (classloader: Classloader) => (Path on Classpath) is Substantiable =
     path => classloader.java.getResourceAsStream(path.text.s) != null
 
   @targetName("child")
@@ -53,13 +53,13 @@ object Classpath:
         case jar: ClasspathEntry.Jar                  => jar
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-  given (using Tactic[ClasspathError], Classpath is Radical from Classloader)
-      => (Path on Classpath) is Readable by Bytes as readableBytes =
+  given readableBytes: (Tactic[ClasspathError], Classpath is Radical from Classloader)
+      => (Path on Classpath) is Readable by Bytes =
     unsafely:
       Readable.inputStream.contramap: resource =>
         resource.root.inputStream(resource.text)
 
-  given (using Tactic[NameError]) => Classpath is Navigable by Name[Classpath] under Rules =
+  given Tactic[NameError] => Classpath is Navigable by Name[Classpath] under Rules =
     new Navigable:
       type Self = Classpath
       type Operand = Name[Classpath]
@@ -73,7 +73,7 @@ object Classpath:
       def element(text: Text): Name[Classpath] = Name(text)
       def caseSensitivity: Case = Case.Sensitive
 
-  given (using Classloader) => Classpath is Radical from Classloader = new Radical:
+  given Classloader => Classpath is Radical from Classloader = new Radical:
     type Self = Classpath
     type Source = Classloader
 
