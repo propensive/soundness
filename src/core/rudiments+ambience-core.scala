@@ -23,9 +23,9 @@ import anticipation.*
 import contingency.*
 
 package workingDirectories:
-  given virtualMachine: SystemProperties => WorkingDirectory raises SystemPropertyError =
+  given virtualMachine: Tactic[SystemPropertyError] => SystemProperties => WorkingDirectory =
     () => Properties.user.dir[Text]()
 
 package homeDirectories:
-  given virtualMachine: SystemProperties => HomeDirectory raises SystemPropertyError =
+  given virtualMachine: Tactic[SystemPropertyError] => SystemProperties => HomeDirectory =
     () => Properties.user.home[Text]()

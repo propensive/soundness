@@ -75,7 +75,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given editor: [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] = SpecificPath(_)
   given pager: [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] = SpecificPath(_)
 
-  given sshAgentPid: EnvironmentVariable["sshAgentPid", Pid] raises NumberError =
+  given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
   given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
