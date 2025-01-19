@@ -24,8 +24,6 @@ import wisteria.*
 
 import scala.deriving.*
 
-import language.experimental.captureChecking
-
 object Inspectable extends Inspectable2:
   inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) => _.encode
