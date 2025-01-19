@@ -25,33 +25,31 @@ import scala.compiletime.*
 import language.experimental.genericNumberLiterals
 
 object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Randomizable]:
-  given Byte is Randomizable as byte = _.long().toByte
-  given Short is Randomizable as short = _.long().toShort
-  given Int is Randomizable as int = _.long().toInt
-  given Long is Randomizable as long = _.long()
-  given Char is Randomizable as char = _.long().toChar
-  given Seed is Randomizable as seed = _.long().pipe(Seed(_))
-  given Boolean is Randomizable as boolean = _.long() < 0L
+  given byte: Byte is Randomizable = _.long().toByte
+  given short: Short is Randomizable = _.long().toShort
+  given int: Int is Randomizable = _.long().toInt
+  given long: Long is Randomizable = _.long()
+  given char: Char is Randomizable = _.long().toChar
+  given seed: Seed is Randomizable = _.long().pipe(Seed(_))
+  given boolean: Boolean is Randomizable = _.long() < 0L
 
-  given [ElementType: Randomizable](using size: RandomSize)
-      => List[ElementType] is Randomizable =
+  given [ElementType: Randomizable] => (size: RandomSize) => List[ElementType] is Randomizable =
     random =>
       given Random = random
       List.fill(size.generate(random))(arbitrary[ElementType]())
 
-  given [ElementType: Randomizable](using size: RandomSize)
-      => Set[ElementType] is Randomizable =
+  given [ElementType: Randomizable] => (size: RandomSize) => Set[ElementType] is Randomizable =
     random =>
       given Random = random
       Set.fill(size.generate(random))(arbitrary[ElementType]())
 
-  given [ElementType: {Randomizable, ClassTag}](using size: RandomSize)
+  given [ElementType: {Randomizable, ClassTag}] => (size: RandomSize)
       => IArray[ElementType] is Randomizable =
     random =>
       given Random = random
       IArray.fill(size.generate(random))(arbitrary[ElementType]())
 
-  given (using Distribution) => Double is Randomizable = summon[Distribution].transform(_)
+  given Distribution => Double is Randomizable = summon[Distribution].transform(_)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Randomizable =
     random =>

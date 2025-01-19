@@ -29,29 +29,29 @@ import language.experimental.genericNumberLiterals
 
 package randomization:
   package text:
-    given Text is Randomizable as bigListOfNaughtyStrings:
+    given bigListOfNaughtyStrings: Text is Randomizable:
       val resource = getClass.getResourceAsStream("/capricious/blns.txt").nn
       val blns = IArray.from(scala.io.Source.fromInputStream(resource).getLines().map(_.tt))
 
       def from(random: Random) = blns(random.long().toInt.abs%blns.length)
 
   package sizes:
-    given RandomSize as uniformUpto10 = _.long().toInt.abs%10
-    given RandomSize as uniformUpto100 = _.long().toInt.abs%100
-    given RandomSize as uniformUpto1000 = _.long().toInt.abs%1000
-    given RandomSize as uniformUpto10000 = _.long().toInt.abs%10000
-    given RandomSize as uniformUpto100000 = _.long().toInt.abs%100000
+    given uniformUpto10: RandomSize = _.long().toInt.abs%10
+    given uniformUpto100: RandomSize = _.long().toInt.abs%100
+    given uniformUpto1000: RandomSize = _.long().toInt.abs%1000
+    given uniformUpto10000: RandomSize = _.long().toInt.abs%10000
+    given uniformUpto100000: RandomSize = _.long().toInt.abs%100000
 
-  given Randomization as unseeded = () => su.Random(java.util.Random())
-  given Randomization as secureUnseeded = () => su.Random(js.SecureRandom())
+  given unseeded: Randomization = () => su.Random(java.util.Random())
+  given secureUnseeded: Randomization = () => su.Random(js.SecureRandom())
 
-  given Randomization as stronglySecure = () =>
+  given stronglySecure: Randomization = () =>
     su.Random(js.SecureRandom.getInstanceStrong().nn)
 
-  given (using seed: Seed) => Randomization as seeded = () =>
+  given seeded: (seed: Seed) => Randomization = () =>
     su.Random(ju.Random(seed.long))
 
-  given (using seed: Seed) => Randomization as secureSeeded = () =>
+  given secureSeeded: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
 def stochastic[ResultType](using randomization: Randomization)(block: Random ?=> ResultType)
@@ -67,7 +67,7 @@ def random[ValueType: Randomizable](): ValueType =
 def toss()(using Random): Boolean = math.random < 0.5
 
 package randomDistributions:
-  given Distribution as gaussian = Gaussian()
-  given Distribution as uniformUnitInterval = UniformDistribution(0, 1)
-  given Distribution as uniformSymmetricUnitInterval = UniformDistribution(-1, 1)
-  given Distribution as binary = random => Double(random.long())
+  given gaussian: Distribution = Gaussian()
+  given uniformUnitInterval: Distribution = UniformDistribution(0, 1)
+  given uniformSymmetricUnitInterval: Distribution = UniformDistribution(-1, 1)
+  given binary: Distribution = random => Double(random.long())
