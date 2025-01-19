@@ -23,8 +23,8 @@ import prepositional.*
 import rudiments.*
 
 object DecodableManifest:
-  given (using Tactic[FqcnError]) => ("Main-Class" is DecodableManifest of Fqcn) as mainClass = Fqcn(_)
-  given ("Created-By" is DecodableManifest of Text) as createdBy = identity(_)
+  given mainClass: Tactic[FqcnError] => ("Main-Class" is DecodableManifest of Fqcn) = Fqcn(_)
+  given createdBy: ("Created-By" is DecodableManifest of Text) = identity(_)
 
 trait DecodableManifest:
   type Self <: Label

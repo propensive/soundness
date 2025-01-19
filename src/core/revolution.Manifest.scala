@@ -37,8 +37,8 @@ object Manifest:
 
       . to(Map)
 
-  given Manifest is Readable by Bytes as readable = manifest => LazyList(manifest.serialize)
-  given Manifest is Aggregable by Bytes as aggregable = parse(_)
+  given readable: Manifest is Readable by Bytes = manifest => LazyList(manifest.serialize)
+  given aggregable: Manifest is Aggregable by Bytes = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:
     entries.map: entry =>
@@ -62,7 +62,7 @@ case class Manifest(entries: Map[Text, Text]):
     val manifest = juj.Manifest()
     entries.each: (key, value) =>
       manifest.getMainAttributes.nn.putValue(key.s, value.s)
-    
+
     val out = ji.ByteArrayOutputStream()
     manifest.write(out)
     out.toByteArray().nn.immutable(using Unsafe)

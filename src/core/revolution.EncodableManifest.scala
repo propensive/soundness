@@ -22,9 +22,9 @@ import prepositional.*
 import rudiments.*
 
 object EncodableManifest:
-  given ("Main-Class" is EncodableManifest of Fqcn) as mainClass = _.text
-  given ("Manifest-Version" is EncodableManifest of VersionNumber) as manifestVersion = _.text
-  given ("Created-By" is EncodableManifest of Text) as createdBy = identity(_)
+  given mainClass: ("Main-Class" is EncodableManifest of Fqcn) = _.text
+  given manifestVersion: ("Manifest-Version" is EncodableManifest of VersionNumber) = _.text
+  given createdBy: ("Created-By" is EncodableManifest of Text) = identity(_)
 
 trait EncodableManifest:
   type Self <: Label
