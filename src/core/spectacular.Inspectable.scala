@@ -27,39 +27,39 @@ import scala.deriving.*
 import language.experimental.captureChecking
 
 object Inspectable extends Inspectable2:
-  inline given [ValueType] => ValueType is Inspectable as derived = compiletime.summonFrom:
+  inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) => _.encode
     case given Reflection[ValueType]            => InspectableDerivation.derived[ValueType].text(_)
     case given (ValueType is Showable)          => _.show
     case _                                      => value => s"⸉${value.toString.tt}⸊".tt
 
-  given Char is Inspectable as char = char => ("'"+escape(char).s+"'").tt
-  given Long is Inspectable as long = long => (long.toString+"L").tt
-  given String is Inspectable as string = string => text.text(string.tt).s.substring(1).nn.tt
-  given Byte is Inspectable as byte = byte => (byte.toString+".toByte").tt
-  given Short is Inspectable as short = short => (short.toString+".toShort").tt
+  given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
+  given long: Long is Inspectable = long => (long.toString+"L").tt
+  given string: String is Inspectable = string => text.text(string.tt).s.substring(1).nn.tt
+  given byte: Byte is Inspectable = byte => (byte.toString+".toByte").tt
+  given short: Short is Inspectable = short => (short.toString+".toShort").tt
 
-  given Text is Inspectable as text = text =>
+  given text: Text is Inspectable = text =>
     val builder: StringBuilder = new StringBuilder()
     text.s.map(escape(_, true)).each(builder.append)
 
     ("t\""+builder.toString+"\"").tt
 
-  given Float is Inspectable as float =
+  given float: Float is Inspectable =
     case Float.PositiveInfinity => "Float.PositiveInfinity".tt
     case Float.NegativeInfinity => "Float.NegativeInfinity".tt
     case float if float.isNaN   => "Float.NaN".tt
     case float                  => (float.toString+"F").tt
 
-  given Double is Inspectable as double =
+  given double: Double is Inspectable =
     case Double.PositiveInfinity => "Double.PositiveInfinity".tt
     case Double.NegativeInfinity => "Double.NegativeInfinity".tt
     case double if double.isNaN  => "Double.NaN".tt
     case double                  => double.toString.tt
 
-  given Boolean is Inspectable as boolean = boolean => if boolean then "true".tt else "false".tt
-  given reflect.Enum is Inspectable as reflectEnum = _.toString.show
-  given Pid is Inspectable as pid = pid => s"[PID:${pid.value}]".tt
+  given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
+  given reflectEnum: reflect.Enum is Inspectable = _.toString.show
+  given pid: Pid is Inspectable = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -75,29 +75,29 @@ object Inspectable extends Inspectable2:
     case char =>
       if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
-  given [ElemType: Inspectable] => Set[ElemType] is Inspectable as set =
+  given set: [ElemType: Inspectable] => Set[ElemType] is Inspectable =
     _.map(_.inspect).mkString("{", ", ", "}").tt
 
-  given [ElemType: Inspectable] => Trie[ElemType] is Inspectable as vector =
+  given vector: [ElemType: Inspectable] => Trie[ElemType] is Inspectable =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩").tt
 
-  given [ElemType: Inspectable] => IndexedSeq[ElemType] is Inspectable as indexedSeq =
+  given indexedSeq: [ElemType: Inspectable] => IndexedSeq[ElemType] is Inspectable =
     _.map(_.inspect).mkString("⟨ ", " ", " ⟩ᵢ").tt
 
-  given [ElemType: Inspectable] => Iterable[ElemType] is Inspectable as iterable =
+  given iterable: [ElemType: Inspectable] => Iterable[ElemType] is Inspectable =
     _.map(_.inspect).mkString("⦗", ", ", "⦘").tt
 
-  given [ElemType: Inspectable] => List[ElemType] is Inspectable as list =
+  given list: [ElemType: Inspectable] => List[ElemType] is Inspectable =
     _.map(_.inspect).mkString("[", ", ", "]").tt
 
-  given [ElemType: Inspectable] => Array[ElemType] is Inspectable as array = array =>
+  given array: [ElemType: Inspectable] => Array[ElemType] is Inspectable = array =>
     array.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       (subscript+value.inspect.s).tt
 
     . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
-  given [ElemType: Inspectable] => LazyList[ElemType] is Inspectable as lazyList = lazyList =>
+  given lazyList: [ElemType: Inspectable] => LazyList[ElemType] is Inspectable = lazyList =>
     def recur(lazyList: LazyList[ElemType], todo: Int): Text =
       if todo <= 0 then "..?".tt
       else if lazyList.toString == "LazyList(<not computed>)" then "∿∿∿".tt
@@ -106,7 +106,7 @@ object Inspectable extends Inspectable2:
 
     recur(lazyList, 3)
 
-  given [ElemType: Inspectable] => IArray[ElemType] is Inspectable as iarray = iarray =>
+  given iarray: [ElemType: Inspectable] => IArray[ElemType] is Inspectable = iarray =>
     iarray.zipWithIndex.map: (value, index) =>
       val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
       subscript+value.inspect.s.tt
@@ -132,14 +132,14 @@ object Inspectable extends Inspectable2:
 
     arrayType+dimension//+renderBraille(str.split("@").nn(1).nn)
 
-  given [ValueType: Inspectable] => Option[ValueType] is Inspectable as option =
+  given option: [ValueType: Inspectable] => Option[ValueType] is Inspectable =
     case None        => "None".tt
     case Some(value) => s"Some(${value.inspect.s})".tt
 
   given None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
-  given [ValueType: Inspectable] => Optional[ValueType] is Inspectable as optional =
+  given optional: [ValueType: Inspectable] => Optional[ValueType] is Inspectable =
     _.let { value => s"⸂${ValueType.text(value)}⸃".tt }.or("⸄⸅".tt)
 
 trait Inspectable extends TextConversion:

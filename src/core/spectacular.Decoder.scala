@@ -28,45 +28,45 @@ import wisteria.*
 import language.experimental.pureFunctions
 
 object Decoder:
-  given (using number: Tactic[NumberError]) => Decoder[Int] as int = text =>
+  given int: (number: Tactic[NumberError]) => Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int), 0)
 
-  given (using Tactic[FqcnError]) => Decoder[Fqcn] as fqcn = Fqcn(_)
-  given (using Tactic[UuidError]) => Decoder[Uuid] as uuid = Uuid.parse(_)
+  given fqcn: Decoder[Fqcn] raises FqcnError = Fqcn(_)
+  given uuid: Decoder[Uuid] raises UuidError = Uuid.parse(_)
 
-  given (using Tactic[NumberError]) => Decoder[Byte] as byte = text =>
+  given byte: Decoder[Byte] raises NumberError = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Byte), 0)
 
     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
     else int.toByte
 
-  given (using Tactic[NumberError]) => Decoder[Short] as short = text =>
+  given short: Decoder[Short] raises NumberError = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Short), 0)
 
     if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
     else int.toShort
 
-  given (using Tactic[NumberError]) => Decoder[Long] as long = text =>
+  given long: Tactic[NumberError] => Decoder[Long] = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long), 0L)
 
-  given (using Tactic[NumberError]) => Decoder[Double] as double = text =>
+  given double: Decoder[Double] raises NumberError = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double), 0.0)
 
-  given (using Tactic[NumberError]) => Decoder[Float] = text =>
+  given Decoder[Float] raises NumberError = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Float), 0.0F)
 
-  given Decoder[Char] as char = _.s(0)
-  given Decoder[Text] as text = identity(_)
-  given Decoder[String] as string = _.s
-  given (using number: Tactic[NumberError]) => Decoder[Pid] as pid = long.map(Pid(_))
+  given char: Decoder[Char] = _.s(0)
+  given text: Decoder[Text] = identity(_)
+  given string: Decoder[String] = _.s
+  given pid: (number: Tactic[NumberError]) => Decoder[Pid] = long.map(Pid(_))
 
-  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}](using Tactic[VariantError])
+  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Tactic[VariantError]
       => Decoder[EnumType] = value =>
     EnumType.value(EnumType.decode(value)).or:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
