@@ -22,8 +22,8 @@ import prepositional.*
 import spectacular.*
 
 object CliInput:
-  given Decoder[CliInput] as decoder = text => valueOf(text.lower.capitalize.s)
-  given CliInput is Encodable in Text as encodable = _.toString.tt.lower
+  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
+  given encodable: CliInput is Encodable in Text = _.toString.tt.lower
 
 enum CliInput:
   case Terminal, Pipe

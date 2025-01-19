@@ -60,8 +60,8 @@ import java.net as jn
 import java.io as ji
 
 package daemonConfig:
-  given StderrSupport as doNotSupportStderr = () => false
-  given StderrSupport as supportStderr = () => true
+  given doNotSupportStderr: StderrSupport = () => false
+  given supportStderr: StderrSupport = () => true
 
 def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
 
