@@ -62,19 +62,19 @@ final case class Promise[ValueType]():
       case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
       case current             => current
 
-  def fulfill(supplied: -> ValueType): Unit raises AsyncError =
+  def fulfill(supplied: => ValueType): Unit raises AsyncError =
     state.updateAndGet(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
       case Incomplete(waiting) => ()
 
-  def offer(supplied: -> ValueType): Unit = state.updateAndGet(completeIncomplete(supplied))
+  def offer(supplied: => ValueType): Unit = state.updateAndGet(completeIncomplete(supplied))
 
   private def enqueue(thread: Thread)(current: State[ValueType] | Null): State[ValueType] =
     current.nn match
       case Incomplete(waiting) => Incomplete(waiting + thread)
       case Complete(value)     => Complete(value)
-      case Cancelled           => Cancelled
+      case _                   => Cancelled
 
   @tailrec
   def await(): ValueType raises AsyncError =
