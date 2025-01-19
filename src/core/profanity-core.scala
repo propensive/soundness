@@ -27,7 +27,7 @@ import language.experimental.captureChecking
 
 given realm: Realm = realm"profanity"
 
-given (using terminal: Terminal) => Stdio as stdio = terminal.stdio
+given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 
 def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
@@ -57,19 +57,18 @@ def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
     if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
 
 package keyboards:
-  given Keyboard as raw:
+  given raw: Keyboard:
     type Keypress = Char
     def process(stream: LazyList[Char]): LazyList[Keypress] = stream
 
-  given Keyboard as numeric:
+  given numeric: Keyboard:
     type Keypress = Int
     def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
-  given (using monitor: Monitor, codicil: Codicil) => StandardKeyboard as standard =
-    StandardKeyboard()
+  given standard: (monitor: Monitor, codicil: Codicil) => StandardKeyboard = StandardKeyboard()
 
 package terminalOptions:
-  given BracketedPasteMode as bracketedPasteMode = () => true
-  given BackgroundColorDetection as backgroundColorDetection = () => true
-  given TerminalFocusDetection as terminalFocusDetection = () => true
-  given TerminalSizeDetection as terminalSizeDetection = () => true
+  given bracketedPasteMode: BracketedPasteMode = () => true
+  given backgroundColorDetection: BackgroundColorDetection = () => true
+  given terminalFocusDetection: TerminalFocusDetection = () => true
+  given terminalSizeDetection: TerminalSizeDetection = () => true

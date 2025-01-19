@@ -35,8 +35,8 @@ enum TerminalInfo extends TerminalEvent:
   case Paste(text: Text)
 
 object Signal:
-  given Decoder[Signal] as decoder = text => Signal.valueOf(text.lower.capitalize.s)
-  given Signal is Encodable in Text as encodable = _.shortName
+  given decoder: Decoder[Signal] = text => Signal.valueOf(text.lower.capitalize.s)
+  given encodable: Signal is Encodable in Text = _.shortName
   given Signal is Communicable = signal => Message(signal.shortName)
 
 enum Signal extends TerminalEvent:
