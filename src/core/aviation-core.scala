@@ -27,11 +27,11 @@ export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 given realm: Realm = realm"aviation"
 
 package calendars:
-  given RomanCalendar as julian:
+  given julian: RomanCalendar:
     def leapYear(year: Year): Boolean = year%4 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4
 
-  given RomanCalendar as gregorian:
+  given gregorian: RomanCalendar:
     def leapYear(year: Year): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 

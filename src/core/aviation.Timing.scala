@@ -32,7 +32,7 @@ object Timing:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = ###
-    given Timing.TaiInstant is GenericInstant as generic:
+    given generic: Timing.TaiInstant is GenericInstant:
       def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
 
@@ -43,11 +43,11 @@ object Timing:
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
 
-    given Timing.Instant is GenericInstant as generic:
+    given generic: Timing.Instant is GenericInstant:
       def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
       def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
 
-    inline given Instant is Orderable as orderable:
+    inline given orderable: Instant is Orderable:
       inline def compare
          (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
               : Boolean =
@@ -55,14 +55,14 @@ object Timing:
 
     given ordering: Ordering[Instant] = Ordering.Long
 
-    given Instant is Addable by Duration into Instant as plus = new Addable:
+    given plus: Instant is Addable by Duration into Instant = new Addable:
       type Self = Instant
       type Result = Instant
       type Operand = Duration
       def add(instant: Instant, duration: Duration): Instant =
         instant + (duration.value/1000.0).toLong
 
-    given Instant is Subtractable by Instant into Duration as minus = new Subtractable:
+    given minus: Instant is Subtractable by Instant into Duration = new Subtractable:
       type Self = Instant
       type Result = Duration
       type Operand = Instant
@@ -73,7 +73,7 @@ object Timing:
   object Duration:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given Timing.Duration is (GenericDuration & SpecificDuration) as generic =
+    given generic: Timing.Duration is (GenericDuration & SpecificDuration) =
       new GenericDuration with SpecificDuration:
         type Self = Timing.Duration
         def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)

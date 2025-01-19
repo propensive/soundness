@@ -58,20 +58,20 @@ object Aviation:
         halt(m"expected a literal double value")
 
   object Date:
-    erased given Underlying[Date, Int] as underlying = ###
+    erased given underlying: Underlying[Date, Int] = ###
     def of(day: Int): Date = day
 
     def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day)
             : Date raises DateError =
       cal.julianDay(year, month, day)
 
-    given Date is Showable as show = d =>
+    given show: Date is Showable = d =>
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
-    given (using Tactic[DateError]) => Decoder[Date] as decoder = parse(_)
+    given decoder: Tactic[DateError] => Decoder[Date] = parse(_)
 
-    given (using RomanCalendar) => Date is Encodable in Text as encodable = date =>
+    given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
       List
        (date.year.toString.tt,
@@ -80,7 +80,7 @@ object Aviation:
 
       . join(t"-")
 
-    inline given Date is Orderable as orderable:
+    inline given orderable: Date is Orderable:
       inline def compare
          (inline left:        Date,
           inline right:       Date,
@@ -91,7 +91,7 @@ object Aviation:
 
     given ordering: Ordering[Date] = Ordering.Int
 
-    given (using calendar: Calendar) => Date is Addable as plus:
+    given plus: (calendar: Calendar) => Date is Addable:
       type Result = Date
       type Operand = Timespan
       def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)

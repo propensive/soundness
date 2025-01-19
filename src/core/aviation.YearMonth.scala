@@ -26,7 +26,7 @@ case class YearMonth(year: Int, month: MonthName):
   import scala.compiletime.ops.int.*
 
 object YearMonth:
-  given YearMonth is Subtractable as dayOfMonth:
+  given dayOfMonth: YearMonth is Subtractable:
     type Result = Date
     type Operand = Int
 

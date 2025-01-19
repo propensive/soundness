@@ -21,7 +21,7 @@ import rudiments.*
 import symbolism.*
 
 object Timespan:
-  given Timespan & FixedDuration is GenericDuration & SpecificDuration as genericDuration =
+  given genericDuration: Timespan & FixedDuration is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
       type Self = Timespan & FixedDuration
       def duration(milliseconds: Long): Timespan & FixedDuration =
@@ -51,7 +51,7 @@ object Timespan:
       case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0) with FixedDuration
       case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n) with FixedDuration
 
-  given (using TimeSystem[StandardTime]) => Timespan is Addable as plus:
+  given plus: TimeSystem[StandardTime] => Timespan is Addable:
     type Result = Timespan
     type Operand = Timespan
     def add(left: Timespan, right: Timespan): Timespan =
@@ -63,7 +63,7 @@ object Timespan:
         left.minutes + right.minutes,
         left.seconds + right.seconds)
 
-  given (using TimeSystem[StandardTime]) => Timespan is Subtractable as minus:
+  given minus: TimeSystem[StandardTime] => Timespan is Subtractable:
     type Result = Timespan
     type Operand = Timespan
 

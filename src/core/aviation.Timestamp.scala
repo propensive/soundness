@@ -26,7 +26,7 @@ import errorDiagnostics.stackTraces
 object Timestamp:
   import calendars.gregorian
 
-  given (using Tactic[TimestampError]) => Decoder[Timestamp] = text =>
+  given Tactic[TimestampError] => Decoder[Timestamp] = text =>
     text match
       case r"$year([0-9]{4})-$month([0-9]{2})-$day([0-9]{2})T$hour([0-9]{2}):$minute([0-9]{2}):$second([0-9]{2})" =>
         tend:
