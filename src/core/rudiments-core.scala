@@ -17,7 +17,6 @@
 package rudiments
 
 import language.dynamics
-import language.experimental.captureChecking
 
 import java.io as ji
 
@@ -33,6 +32,7 @@ import vacuous.*
 type Nat = Int & Singleton
 type Label = String & Singleton
 
+@targetName("partialFn")
 infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
 
 def fixpoint[ValueType](initial: ValueType)
@@ -85,7 +85,7 @@ extension (inline statement: => Unit)
     statement
     block
 
-def loop(block: => Unit): Loop^{block} = Loop({ () => block })
+def loop(block: => Unit): Loop = Loop({ () => block })
 
 export Rudiments.&
 
@@ -130,13 +130,15 @@ export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheck
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
-extension [FunctorType[+_], ValueType](value: FunctorType[ValueType]^)(using functor: Functor[FunctorType])
-  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2]^{value, lambda} =
+extension [FunctorType[+_], ValueType](value: FunctorType[ValueType])
+   (using functor: Functor[FunctorType])
+
+  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] =
     functor.map(value, lambda)
 
-extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType]^)
+extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType])
           (using cofunctor: Cofunctor[CofunctorType])
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, lambda} =
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2] =
     cofunctor.contramap(value, lambda)
 
 extension (value: Any)
@@ -184,13 +186,13 @@ extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
   transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
 
-  def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] =
+  def indexBy[ValueType2](lambda: ValueType => ValueType2): Map[ValueType2, ValueType] =
     iterable.map: value =>
       (lambda(value), value)
 
     . to(Map)
 
-  def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
+  def longestTrain(predicate: ValueType => Boolean): (Int, Int) =
     @tailrec
     def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
             : (Int, Int) =
@@ -227,7 +229,7 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
+  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
           : Map[KeyType, ValueType] =
 
     right.foldLeft(map): (accumulator, keyValue) =>
