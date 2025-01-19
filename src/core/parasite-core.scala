@@ -41,7 +41,7 @@ package asyncTermination:
   given panic: Codicil = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  given fail: Codicil raises AsyncError = _.delegate: child =>
+  given fail: Tactic[AsyncError] => Codicil = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
