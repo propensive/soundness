@@ -31,8 +31,6 @@ import rudiments.*
 import serpentine.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 import IoError.{Operation, Reason}
 
 package pathNavigation:
