@@ -23,94 +23,94 @@ import prepositional.*
 
 package alphabets:
   package binary:
-    given Alphabet[Binary] as standard = Alphabet(t"01", false)
+    given standard: Alphabet[Binary] = Alphabet(t"01", false)
 
   package quaternary:
-    given Alphabet[Quaternary] as standard = Alphabet(t"0123", false)
-    given Alphabet[Quaternary] as dnaNucleotide = Alphabet(t"ATCG", false)
+    given standard: Alphabet[Quaternary] = Alphabet(t"0123", false)
+    given dnaNucleotide: Alphabet[Quaternary] = Alphabet(t"ATCG", false)
 
   package octal:
-    given Alphabet[Octal] as standard = Alphabet(t"01234567=", false)
+    given standard: Alphabet[Octal] = Alphabet(t"01234567=", false)
 
   package hex:
-    given Alphabet[Hex] as strictUpperCase = Alphabet(t"0123456789ABCDEF", false)
-    given Alphabet[Hex] as strictLowerCase = Alphabet(t"0123456789abcdef", false)
+    given strictUpperCase: Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", false)
+    given strictLowerCase: Alphabet[Hex] = Alphabet(t"0123456789abcdef", false)
 
-    given Alphabet[Hex] as upperCase =
+    given upperCase: Alphabet[Hex] =
       Alphabet(t"0123456789ABCDEF", false, strictLowerCase.inverse)
 
-    given Alphabet[Hex] as lowerCase =
+    given lowerCase: Alphabet[Hex] =
       Alphabet(t"0123456789abcdef", false, strictUpperCase.inverse)
 
-    given Alphabet[Hex] as bioctal = Alphabet(t"01234567cjzwfsbv", false)
+    given bioctal: Alphabet[Hex] = Alphabet(t"01234567cjzwfsbv", false)
 
   package base32:
-    given Alphabet[Base32] as strictUpperCase =
+    given strictUpperCase: Alphabet[Base32] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
 
-    given Alphabet[Base32] as strictLowerCase =
+    given strictLowerCase: Alphabet[Base32] =
       Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
 
-    given Alphabet[Base32] as upperCase =
+    given upperCase: Alphabet[Base32] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true, strictLowerCase.inverse)
 
-    given Alphabet[Base32] as lowerCase =
+    given lowerCase: Alphabet[Base32] =
       Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, strictUpperCase.inverse)
 
-    given Alphabet[Base32] as extendedHexUpperCase =
+    given extendedHexUpperCase: Alphabet[Base32] =
       Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, strictLowerCase.inverse)
 
-    given Alphabet[Base32] as extendedHexLowerCase =
+    given extendedHexLowerCase: Alphabet[Base32] =
       Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, strictUpperCase.inverse)
 
-    given Alphabet[Base32] as zBase32 = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
+    given zBase32: Alphabet[Base32] = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
 
-    given Alphabet[Base32] as zBase32Unpadded =
+    given zBase32Unpadded: Alphabet[Base32] =
       Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
 
-    given Alphabet[Base32] as geohash = Alphabet(t"0123456789bcdefghjkmnpqrstuvwxyz", false)
-    given Alphabet[Base32] as wordSafe = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
+    given geohash: Alphabet[Base32] = Alphabet(t"0123456789bcdefghjkmnpqrstuvwxyz", false)
+    given wordSafe: Alphabet[Base32] = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
 
     private val crockfordAlternatives =
       Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse ++ Map('o' -> 0, 'O' -> 0,
           'i' -> 1, 'I' -> 1, 'L' -> 1)
 
-    given Alphabet[Base32] as crockford =
+    given crockford: Alphabet[Base32] =
       Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)
 
   package base64:
-    given Alphabet[Base64] as standard =
+    given standard: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
 
-    given Alphabet[Base64] as unpadded =
+    given unpadded: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", false)
 
-    given Alphabet[Base64] as url =
+    given url: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", false)
 
-    given Alphabet[Base64] as xml =
+    given xml: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.", true)
 
-    given Alphabet[Base64] as imap =
+    given imap: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
-    given Alphabet[Base64] as yui =
+    given yui: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._", false)
 
-    given Alphabet[Base64] as radix64 =
+    given radix64: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
 
-    given Alphabet[Base64] as bcrypt =
+    given bcrypt: Alphabet[Base64] =
       Alphabet(t"./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", false)
 
-    given Alphabet[Base64] as sasl =
+    given sasl: Alphabet[Base64] =
       Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
-    given Alphabet[Base64] as uuencoding =
+    given uuencoding: Alphabet[Base64] =
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
   package base256:
-    given Alphabet[Base256] as modular =
+    given modular: Alphabet[Base256] =
       def char(i: Int): Char =
         if i == 34 || i == 39 || i == 92 then (i + 8192).toChar
         else if i <= 32 || 126 < i < 161 || i == 173 then (i + 256).toChar
@@ -118,14 +118,14 @@ package alphabets:
 
       Alphabet(Text(IArray.tabulate(256)(char)), false)
 
-    given Alphabet[Base256] as alphanumericOrBraille =
+    given alphanumericOrBraille: Alphabet[Base256] =
       def char(i: Int): Char =
         if i <= 32 || i == 34 || i == 39 || i == 92 || i >= 127 then (i + '\u2800').toChar
         else i.toChar
 
       Alphabet(Text(IArray.tabulate(256)(char)), false)
 
-    given Alphabet[Base256] as braille =
+    given braille: Alphabet[Base256] =
       Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
 
 extension (value: Text)

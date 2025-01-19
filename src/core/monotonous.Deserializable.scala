@@ -76,10 +76,10 @@ object Deserializable:
 
           recur(index0 = index0)
 
-  given (using Alphabet[Base256], Tactic[SerializationError]) => Deserializable in Base256 = base(8)
-  given (using Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
-  given (using Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)
-  given (using Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)
-  given (using Alphabet[Octal], Tactic[SerializationError]) => Deserializable in Octal = base(3)
-  given (using Alphabet[Quaternary], Tactic[SerializationError]) => Deserializable in Quaternary = base(2)
-  given (using Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
+  given (Alphabet[Base256], Tactic[SerializationError]) => Deserializable in Base256 = base(8)
+  given (Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
+  given (Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)
+  given (Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)
+  given (Alphabet[Octal], Tactic[SerializationError]) => Deserializable in Octal = base(3)
+  given (Alphabet[Quaternary], Tactic[SerializationError]) => Deserializable in Quaternary = base(2)
+  given (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
