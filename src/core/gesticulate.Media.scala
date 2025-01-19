@@ -33,10 +33,12 @@ import errorDiagnostics.empty
 import proximityMeasures.levenshteinDistance
 
 object Media:
-  given Text is Media = _ => MediaType(Group.Text, Subtype.Standard(t"plain"))
+  given Text is Media:
+    extension (value: Text) def mediaType = MediaType(Group.Text, Subtype.Standard(t"plain"))
 
-  given [ValueType: Nominable] => ValueType is Media = value =>
-    Extensions.guess(ValueType.name(value).cut(t".").last)
+  given [ValueType: Nominable] => ValueType is Media:
+    extension (value: ValueType)
+      def mediaType = Extensions.guess(ValueType.name(value).cut(t".").last)
 
   object Group:
     given Group is Inspectable = _.name

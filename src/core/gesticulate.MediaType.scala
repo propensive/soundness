@@ -46,28 +46,28 @@ extends Dynamic:
 
 object MediaType:
   given MediaType is Inspectable = mt => t"""media"${mt}""""
-  given ("content-type" is GenericHttpRequestParam[MediaType]) as contentType = showable.text(_)
-  given ("accept" is GenericHttpRequestParam[MediaType]) as accept = showable.text(_)
+  given contentType: ("content-type" is GenericHttpRequestParam[MediaType]) = showable.text(_)
+  given accept: ("accept" is GenericHttpRequestParam[MediaType]) = showable.text(_)
 
-  given MediaType is Showable as showable =
+  given showable: MediaType is Showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
   given MediaType is Encodable in Text = _.show
-  given (using Tactic[MediaTypeError]) => Decoder[MediaType] = Media.parse(_)
+  given Tactic[MediaTypeError] => Decoder[MediaType] = Media.parse(_)
 
-  given ("formenctype" is GenericHtmlAttribute[MediaType]) as formenctype:
+  given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"formenctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given ("media" is GenericHtmlAttribute[MediaType]) as media:
+  given media: ("media" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"media"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given ("enctype" is GenericHtmlAttribute[MediaType]) as enctype:
+  given enctype: ("enctype" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"enctype"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  given ("htype" is GenericHtmlAttribute[MediaType]) as htype:
+  given htype: ("htype" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
