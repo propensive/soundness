@@ -49,7 +49,7 @@ package charEncoders:
   given iso88591: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strict: TextSanitizer raises CharDecodeError = (pos, encoding) =>
+  given strict: Tactic[CharDecodeError] => TextSanitizer = (pos, encoding) =>
     raise(CharDecodeError(pos, encoding), '?')
 
   given skip: TextSanitizer = (pos, encoding) => Unset
