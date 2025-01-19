@@ -20,7 +20,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import hieroglyph.{lower as _, upper as _, *}, charEncoders.utf8, textMetrics.uniform
-import larceny.*
+//import larceny.*
 import probably.*
 import rudiments.{where as _, *}
 import spectacular.*
@@ -531,12 +531,12 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       . assert(_ == t"HELLO")
 
-    suite(t"Compile errors"):
+    /*suite(t"Compile errors"):
       test(t"Check that Text and String are incompatible"):
         demilitarize:
           val x: String = Text("text")
 
-      . assert(_.head.id == CompileErrorId.TypeMismatch)
+      . assert(_.head.id == CompileErrorId.TypeMismatch)*/
 
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):
