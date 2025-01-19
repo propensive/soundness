@@ -35,7 +35,7 @@ extension [ValueType](value: ValueType)
     tabular.tabulate(value)
 
 package columnAttenuation:
-  given fail: Attenuation raises TableError =
+  given fail: Tactic[TableError] => Attenuation =
     (minimum, available) => raise(TableError(minimum, available), ())
 
   given ignore: Attenuation = (minimum, available) => ()
