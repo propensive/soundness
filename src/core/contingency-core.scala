@@ -45,8 +45,8 @@ package strategies:
     def record(error: Diagnostics ?=> ErrorType): Unit = ErrorType.status(error).terminate()
     def abort(error: Diagnostics ?=> ErrorType): Nothing = ErrorType.status(error).terminate()
 
-  given uncheckedErrors: [ErrorType <: Exception] => (erased ErrorType is Unchecked)
-      =>  Tactic[ErrorType]:
+  given uncheckedErrors: [ErrorType <: Exception]
+  => (erased ErrorType is Unchecked) => Tactic[ErrorType]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     given CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: Diagnostics ?=> ErrorType): Unit = throw error
