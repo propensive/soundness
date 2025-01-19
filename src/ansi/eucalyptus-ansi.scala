@@ -38,7 +38,7 @@ package logFormats:
 
   private val indent = e" "*46
 
-  given Message is Inscribable in Teletype as ansiStandard = (event, level, realm, timestamp) =>
+  given ansiStandard: Message is Inscribable in Teletype = (event, level, realm, timestamp) =>
     try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
       case Nil          => e""
       case head :: tail =>
