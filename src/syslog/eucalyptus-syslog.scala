@@ -21,5 +21,5 @@ import parasite.*
 import prepositional.*
 
 package logging:
-  given [MessageType: Inscribable in Text](using Monitor) => MessageType is Loggable as syslog =
+  given syslog: [MessageType: Inscribable in Text] => Monitor => MessageType is Loggable =
     Log.route[Text](Syslog())
