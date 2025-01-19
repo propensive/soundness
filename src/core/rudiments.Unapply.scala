@@ -25,11 +25,13 @@ import anticipation.*
 import vacuous.*
 
 object Unapply:
-  given [MatchType, ResultType](using ext: Unapply[MatchType, ResultType]) => Unapply[Optional[MatchType], ResultType] as maybe =
+  given maybe[MatchType, ResultType](using ext: Unapply[MatchType, ResultType]): Unapply[Optional[MatchType], ResultType] =
     value => if value.absent then None else ext.unapply(value.asInstanceOf[MatchType])
 
-  given [ResultType](using ext: Irrefutable[Text, ResultType]) => Irrefutable[String, ResultType] = v =>
-    ext.unapply(v.tt)
+  given [ResultType]
+  => (ext: Irrefutable[Text, ResultType])
+  =>  Irrefutable[String, ResultType] =
+    v => ext.unapply(v.tt)
 
   given textChar: Unapply[Text, Char] = v => if v.s.length == 1 then Some(v.s.head) else None
   given textByte: Unapply[Text, Byte] = v => try Some(v.s.toByte) catch case e: NumberFormatException => None

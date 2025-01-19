@@ -52,10 +52,10 @@ object Rudiments:
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
     given communicable[MemoryType <: Memory]: (Communicable { type Self = MemoryType }) = memory => Message(memory.text)
 
-    given Memory is Addable by Memory into Memory as addable = _ + _
-    given Memory is Subtractable by Memory into Memory as subtractable = _ - _
-    given Memory is Multiplicable by Int into Memory as multiplicable = _*_
-    given Memory is Divisible by Int into Memory as divisible = _/_
+    given addable: Memory is Addable by Memory into Memory = _ + _
+    given subtractable: Memory is Subtractable by Memory into Memory = _ - _
+    given multiplicable: Memory is Multiplicable by Int into Memory = _*_
+    given divisible: Memory is Divisible by Int into Memory = _/_
 
     extension (left: Memory)
       def long: Long = left
