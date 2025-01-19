@@ -22,7 +22,7 @@ import rudiments.*
 import vacuous.*
 
 object TextSanitizer:
-  given (using Quickstart) => TextSanitizer as default = textSanitizers.substitute
+  given default: Quickstart => TextSanitizer = textSanitizers.substitute
 
 trait TextSanitizer:
   def sanitize(pos: Int, encoding: Encoding): Optional[Char]

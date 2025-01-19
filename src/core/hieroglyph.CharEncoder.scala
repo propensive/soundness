@@ -25,7 +25,7 @@ import java.nio as jn, jn.charset as jnc
 import language.experimental.captureChecking
 
 object CharEncoder:
-  given (using Quickstart) => CharEncoder as default = charEncoders.utf8
+  given default: Quickstart => CharEncoder = charEncoders.utf8
   def system: CharEncoder = unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
   def unapply(name: Text): Option[CharEncoder] =

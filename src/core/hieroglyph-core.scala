@@ -26,49 +26,45 @@ extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncode
   CharEncoder(encoding)
 
 package charDecoders:
-  given (using TextSanitizer) => CharDecoder as utf8 = CharDecoder.unapply("UTF-8".tt).get
-  given (using TextSanitizer) => CharDecoder as utf16 = CharDecoder.unapply("UTF-16".tt).get
+  given utf8: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
+  given utf16: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-16".tt).get
 
-  given (using TextSanitizer) => CharDecoder as utf16Le =
+  given utf16Le: TextSanitizer => CharDecoder =
     CharDecoder.unapply("UTF-16LE".tt).get
 
-  given (using TextSanitizer) => CharDecoder as utf16Be =
+  given utf16Be: TextSanitizer => CharDecoder =
     CharDecoder.unapply("UTF-16BE".tt).get
 
-  given (using TextSanitizer) => CharDecoder as ascii = CharDecoder.unapply("ASCII".tt).get
+  given ascii: TextSanitizer => CharDecoder = CharDecoder.unapply("ASCII".tt).get
 
-  given CharDecoder as iso88591 =
+  given iso88591: CharDecoder =
     CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skip).get
 
 package charEncoders:
-  given CharEncoder as utf8 = CharEncoder.unapply("UTF-8".tt).get
-  given CharEncoder as utf16 = CharEncoder.unapply("UTF-16".tt).get
-  given CharEncoder as utf16Le = CharEncoder.unapply("UTF-16LE".tt).get
-  given CharEncoder as utf16Be = CharEncoder.unapply("UTF-16BE".tt).get
-  given CharEncoder as ascii = CharEncoder.unapply("ASCII".tt).get
-  given CharEncoder as iso88591 = CharEncoder.unapply("ISO-8859-1".tt).get
+  given utf8: CharEncoder = CharEncoder.unapply("UTF-8".tt).get
+  given utf16: CharEncoder = CharEncoder.unapply("UTF-16".tt).get
+  given utf16Le: CharEncoder = CharEncoder.unapply("UTF-16LE".tt).get
+  given utf16Be: CharEncoder = CharEncoder.unapply("UTF-16BE".tt).get
+  given ascii: CharEncoder = CharEncoder.unapply("ASCII".tt).get
+  given iso88591: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strict(using charDecode: Tactic[CharDecodeError]): TextSanitizer =
-    new TextSanitizer:
-      def sanitize(pos: Int, encoding: Encoding): Char = raise(CharDecodeError(pos, encoding), '?')
+  given strict: TextSanitizer raises CharDecodeError = (pos, encoding) =>
+    raise(CharDecodeError(pos, encoding), '?')
 
-  given TextSanitizer as skip:
-    def sanitize(pos: Int, encoding: Encoding): Optional[Char] = Unset
-
-  given TextSanitizer as substitute:
-    def sanitize(pos: Int, encoding: Encoding): Optional[Char] = '?'
+  given skip: TextSanitizer = (pos, encoding) => Unset
+  given substitute: TextSanitizer = (pos, encoding) => '?'
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
   transparent inline def u(): Char | Text = ${Hieroglyph.char('context)}
 
 package textMetrics:
-  given TextMetrics as uniform:
+  given uniform: TextMetrics:
     def width(text: Text): Int = text.s.length
     def width(char: Char): Int = 1
 
-  given TextMetrics as eastAsianScripts:
+  given eastAsianScripts: TextMetrics:
     def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
     def width(char: Char): Int = char.metrics
 
