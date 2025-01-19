@@ -44,7 +44,7 @@ object Computable:
   given string: String is Computable = proc =>
     Text.construct(lazyList.compute(proc).map(_.s).each(append(_))).s
 
-  given dataStream: LazyList[Bytes] is Computable raises StreamError =
+  given dataStream: Tactic[StreamError] => LazyList[Bytes] is Computable =
     proc => Readable.inputStream.stream(proc.getInputStream.nn)
 
   given exitStatus: Exit is Computable = _.waitFor() match
