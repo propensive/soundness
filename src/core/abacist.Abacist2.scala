@@ -29,33 +29,32 @@ object Abacist2:
   opaque type Count[UnitsType <: Tuple] = Long
 
   object Count:
-    erased given [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] as underlying = ###
+    erased given underlying: [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] = ###
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
-
-    given [UnitsType <: Tuple] => Integral[Count[UnitsType]] as integral = summon[Integral[Long]]
+    given integral: [UnitsType <: Tuple] => Integral[Count[UnitsType]] = summon[Integral[Long]]
 
     inline def apply[UnitsType <: Tuple](inline values: Int*): Count[UnitsType] =
       ${Abacist.make[UnitsType]('values)}
 
-    given [UnitsType <: Tuple] => Count[UnitsType] is Addable as plus:
+    given addable: [UnitsType <: Tuple] => Count[UnitsType] is Addable:
       type Operand = Count[UnitsType]
       type Result = Count[UnitsType]
 
       def add(left: Count[UnitsType], right: Count[UnitsType]): Count[UnitsType] = left + right
 
-    given [UnitsType <: Tuple] => Count[UnitsType] is Subtractable as minus:
+    given subtractable: [UnitsType <: Tuple] => Count[UnitsType] is Subtractable:
       type Operand = Count[UnitsType]
       type Result = Count[UnitsType]
 
       def subtract(left: Count[UnitsType], right: Count[UnitsType]): Count[UnitsType] = left - right
 
-    given [UnitsType <: Tuple] => Count[UnitsType] is Multiplicable as times:
+    given multiplicable: [UnitsType <: Tuple] => Count[UnitsType] is Multiplicable:
       type Operand = Double
       type Result = Count[UnitsType]
 
       def multiply(left: Count[UnitsType], right: Double): Count[UnitsType] = left.multiply(right)
 
-    given [UnitsType <: Tuple] => Count[UnitsType] is Divisible as divide:
+    given divisible: [UnitsType <: Tuple] => Count[UnitsType] is Divisible:
       type Operand = Double
       type Result = Count[UnitsType]
 
