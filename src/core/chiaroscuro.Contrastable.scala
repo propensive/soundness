@@ -35,7 +35,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
   def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
     Juxtaposition.Same(left.inspect)
 
-  given Int is Contrastable as int = (left, right) =>
+  given int: Int is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
 
@@ -90,15 +90,15 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       Juxtaposition.Collation(comparison, leftDebug, rightDebug)
 
 
-  given [ValueType: {Contrastable, Similarity}] => IArray[ValueType] is Contrastable as iarray:
+  given iarray: [ValueType: {Contrastable, Similarity}] => IArray[ValueType] is Contrastable:
     def apply(left: IArray[ValueType], right: IArray[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  given [ValueType: {Contrastable, Similarity}] => List[ValueType] is Contrastable as list:
+  given list: [ValueType: {Contrastable, Similarity}] => List[ValueType] is Contrastable:
     def apply(left: List[ValueType], right: List[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 
-  given [ValueType: {Contrastable, Similarity}] => Trie[ValueType] is Contrastable as trie:
+  given trie: [ValueType: {Contrastable, Similarity}] => Trie[ValueType] is Contrastable:
     def apply(left: Trie[ValueType], right: Trie[ValueType]): Juxtaposition =
       compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
 

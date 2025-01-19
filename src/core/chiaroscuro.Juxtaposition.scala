@@ -33,7 +33,7 @@ enum Juxtaposition:
   case Collation(comparison: IArray[(Text, Juxtaposition)], left: Text, right: Text)
 
 object Juxtaposition:
-  given (using calc: TextMetrics) => Juxtaposition is Teletypeable =
+  given (calc: TextMetrics) => Juxtaposition is Teletypeable =
     case Juxtaposition.Collation(cmp, l, r) =>
       import tableStyles.default
 
@@ -44,7 +44,7 @@ object Juxtaposition:
 
       case class Row(treeLine: Text, left: Teletype, right: Teletype, difference: Teletype)
 
-      given (using Text is Textual) => TreeStyle[Row] = (tiles, row) =>
+      given (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
         row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
 
       def mkLine(data: (Text, Juxtaposition)) =
