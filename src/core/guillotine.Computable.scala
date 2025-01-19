@@ -30,24 +30,24 @@ import spectacular.*
 import turbulence.*
 
 object Computable:
-  given LazyList[Text] is Computable as lazyList = proc =>
+  given lazyList: LazyList[Text] is Computable = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(LazyList).map(_.tt)
 
-  given List[Text] is Computable as list = proc =>
+  given list: List[Text] is Computable = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(List).map(_.tt)
 
-  given Text is Computable as text = proc =>
+  given text: Text is Computable = proc =>
     Text.construct(lazyList.compute(proc).map(_.s).each(append(_)))
 
-  given String is Computable as string = proc =>
+  given string: String is Computable = proc =>
     Text.construct(lazyList.compute(proc).map(_.s).each(append(_))).s
 
-  given (using streamCut: Tactic[StreamError]) => LazyList[Bytes] is Computable as dataStream =
+  given dataStream: LazyList[Bytes] is Computable raises StreamError =
     proc => Readable.inputStream.stream(proc.getInputStream.nn)
 
-  given Exit is Computable as exitStatus = _.waitFor() match
+  given exitStatus: Exit is Computable = _.waitFor() match
     case 0     => Exit.Ok
     case other => Exit.Fail(other)
 
