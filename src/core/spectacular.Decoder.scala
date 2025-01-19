@@ -32,8 +32,8 @@ object Decoder:
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int), 0)
 
-  given fqcn: Decoder[Fqcn] raises FqcnError = Fqcn(_)
-  given uuid: Decoder[Uuid] raises UuidError = Uuid.parse(_)
+  given fqcn: Tactic[FqcnError] => Decoder[Fqcn] = Fqcn(_)
+  given uuid: Tactic[UuidError] => Decoder[Uuid] = Uuid.parse(_)
 
   given byte: Decoder[Byte] raises NumberError = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
@@ -42,7 +42,7 @@ object Decoder:
     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
     else int.toByte
 
-  given short: Decoder[Short] raises NumberError = text =>
+  given short: Tactic[NumberError] => Decoder[Short] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Short), 0)
 
@@ -53,11 +53,11 @@ object Decoder:
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long), 0L)
 
-  given double: Decoder[Double] raises NumberError = text =>
+  given double: Tactic[NumberError] => Decoder[Double] = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double), 0.0)
 
-  given float: Decoder[Float] raises NumberError = text =>
+  given float: Tactic[NumberError] => Decoder[Float] = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Float), 0.0F)
 
