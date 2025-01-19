@@ -53,10 +53,10 @@ object Geodesy:
     private val c = math.Pi*2
     def apply(value: Double): Radians = value
 
-    given Radians is Addable by Radians into Radians as addable =
+    given addable: Radians is Addable by Radians into Radians =
       (left, right) => (left + right)%(2*math.Pi)
 
-    given Radians is Subtractable by Radians into Radians as subtractable =
+    given subtractable: Radians is Subtractable by Radians into Radians =
       (left, right) => (2*math.Pi + left - right)%(2*math.Pi)
 
   extension (radians: Radians)

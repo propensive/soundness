@@ -29,10 +29,10 @@ extension (double: Double)
 export CardinalWind.*, IntercardinalWind.*, HalfWind.*
 
 package compassBearings:
-  given Bearing[Compass[4]] as fourPointCompass = Compass[4](_)
-  given Bearing[Compass[8]] as eightPointCompass = Compass[8](_)
-  given Bearing[Compass[16]] as sixteenPointCompass = Compass[16](_)
-  given Bearing[Degrees] as degreesFromNorth = _.degrees
-  given Bearing[Radians] as radiansFromNorth = identity(_)
-  given Bearing[Degrees] as degreesFromEast = radians => (radians - Radians(math.Pi/2)).degrees
-  given Bearing[Radians] as radiansFromEast = radians => radians - Radians(math.Pi/2)
+  given fourPointCompass: Bearing[Compass[4]] = Compass[4](_)
+  given eightPointCompass: Bearing[Compass[8]] = Compass[8](_)
+  given sixteenPointCompass: Bearing[Compass[16]] = Compass[16](_)
+  given degreesFromNorth: Bearing[Degrees] = _.degrees
+  given radiansFromNorth: Bearing[Radians] = identity(_)
+  given degreesFromEast: Bearing[Degrees] = radians => (radians - Radians(math.Pi/2)).degrees
+  given radiansFromEast: Bearing[Radians] = radians => radians - Radians(math.Pi/2)
