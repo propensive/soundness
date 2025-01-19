@@ -145,7 +145,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
           fold[DerivationType, Fields, Labels, Unit](tuple, (), 0):
             unit =>
               [FieldType] => field =>
-                given requirement.Optionality[TypeclassType[FieldType]] as typeclass =
+                given typeclass: requirement.Optionality[TypeclassType[FieldType]] =
                   requirement.wrap(context)
 
                 array(index) = lambda[FieldType](field)
