@@ -259,43 +259,43 @@ extension [PlatformType <: Posix](path: Path on PlatformType)
 
 package filesystemOptions:
   object readAccess:
-    given ReadAccess as enabled:
+    given enabled: ReadAccess:
       type Transform[HandleType] = HandleType & ReadAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
 
-    given ReadAccess as disabled:
+    given disabled: ReadAccess:
       type Transform[HandleType] = HandleType
       def options(): List[jnf.OpenOption] = Nil
 
   object writeAccess:
-    given WriteAccess as enabled:
+    given enabled: WriteAccess:
       type Transform[HandleType] = HandleType & WriteAccess.Ability
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
 
-    given WriteAccess as disabled:
+    given disabled: WriteAccess:
       type Transform[HandleType] = HandleType
       def options(): List[jnf.OpenOption] = Nil
 
   object dereferenceSymlinks:
-    given DereferenceSymlinks as enabled:
+    given enabled: DereferenceSymlinks:
       def dereference = true
       def options() = Nil
 
-    given DereferenceSymlinks as disabled:
+    given disabled: DereferenceSymlinks:
       def dereference = false
       def options() = List(jnf.LinkOption.NOFOLLOW_LINKS)
 
   object moveAtomically:
-    given MoveAtomically as enabled = () => List(jnf.StandardCopyOption.ATOMIC_MOVE)
-    given MoveAtomically as disabled = () => Nil
+    given enabled: MoveAtomically = () => List(jnf.StandardCopyOption.ATOMIC_MOVE)
+    given disabled: MoveAtomically = () => Nil
 
   object copyAttributes:
-    given CopyAttributes as enabled = () => List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
-    given CopyAttributes as disabled = () => Nil
+    given enabled: CopyAttributes = () => List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
+    given disabled: CopyAttributes = () => Nil
 
   object deleteRecursively:
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-        => DeleteRecursively on PlatformType as enabled:
+    given enabled: [PlatformType <: Filesystem] => Tactic[IoError]
+    =>  DeleteRecursively on PlatformType:
 
       import filesystemOptions.dereferenceSymlinks.disabled
 
@@ -308,8 +308,8 @@ package filesystemOptions:
       def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
         path.children.each(recur(_)) yet operation
 
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-        => DeleteRecursively on PlatformType as disabled:
+    given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
+        => DeleteRecursively on PlatformType:
 
       type Platform = PlatformType
 
@@ -320,15 +320,16 @@ package filesystemOptions:
         else operation
 
   object overwritePreexisting:
-    given [PlatformType <: Filesystem](using deleteRecursively: DeleteRecursively on PlatformType)
-        => OverwritePreexisting on PlatformType as enabled:
+    given enabled: [PlatformType <: Filesystem]
+    => (deleteRecursively: DeleteRecursively on PlatformType)
+    =>  OverwritePreexisting on PlatformType:
       type Platform = PlatformType
 
       def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
 
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-        => OverwritePreexisting on PlatformType as disabled:
+    given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
+        => OverwritePreexisting on PlatformType:
 
       type Platform = PlatformType
 
@@ -337,9 +338,9 @@ package filesystemOptions:
           abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
 
   object createNonexistentParents:
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-       (using (Path on PlatformType) is Substantiable)
-        => CreateNonexistentParents on PlatformType as enabled:
+    given enabled: [PlatformType <: Filesystem] => Tactic[IoError]
+    => (Path on PlatformType) is Substantiable
+    =>  CreateNonexistentParents on PlatformType:
 
       def apply[ResultType](path: Path on PlatformType)(operation: => ResultType): ResultType =
         path.parent.let: parent =>
@@ -350,17 +351,18 @@ package filesystemOptions:
 
         operation
 
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-        => CreateNonexistentParents on PlatformType as disabled:
+    given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
+        => CreateNonexistentParents on PlatformType:
       type Platform = PlatformType
 
       def apply[ResultType](path: Path on PlatformType)(block: => ResultType): ResultType =
         path.protect(Operation.Write)(block)
 
   object createNonexistent:
-    given [PlatformType <: Filesystem](using create: CreateNonexistentParents on PlatformType)
-       (using (Path on PlatformType) is Substantiable)
-        => CreateNonexistent on PlatformType as enabled:
+    given enabled: [PlatformType <: Filesystem]
+    => (create: CreateNonexistentParents on PlatformType)
+    =>  (Path on PlatformType) is Substantiable
+    =>  CreateNonexistent on PlatformType:
       type Platform = PlatformType
 
       def error(path: Path on Platform, operation: IoError.Operation): Nothing =
@@ -372,8 +374,8 @@ package filesystemOptions:
 
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
-    given [PlatformType <: Filesystem](using Tactic[IoError])
-        => CreateNonexistent on PlatformType as disabled:
+    given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
+        => CreateNonexistent on PlatformType:
 
       type Platform = PlatformType
 
@@ -384,5 +386,5 @@ package filesystemOptions:
       def options(): List[jnf.OpenOption] = List()
 
   object writeSynchronously:
-    given WriteSynchronously as enabled = () => List(jnf.StandardOpenOption.SYNC)
-    given WriteSynchronously as disabled = () => Nil
+    given enabled: WriteSynchronously = () => List(jnf.StandardOpenOption.SYNC)
+    given disabled: WriteSynchronously = () => Nil

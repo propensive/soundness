@@ -34,7 +34,7 @@ erased trait Dos extends Filesystem
 object Dos:
   type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
-  given (using Tactic[PathError]) => Dos is Radical from DosDrive as radical = new Radical:
+  given radical: Tactic[PathError] => Dos is Radical from DosDrive = new Radical:
     type Self = Dos
     type Source = DosDrive
 
@@ -49,7 +49,7 @@ object Dos:
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
 
 
-  given (using Tactic[NameError]) => Dos is Navigable by Name[Dos] under Rules as navigable =
+  given navigable: Tactic[NameError] => Dos is Navigable by Name[Dos] under Rules =
     new Navigable:
       type Operand = Name[Dos]
       type Self = Dos

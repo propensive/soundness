@@ -34,7 +34,7 @@ object Posix:
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError]) => Posix is Radical from (Root on Posix) as radical = new Radical:
+  given radical: Tactic[PathError] => Posix is Radical from (Root on Posix) = new Radical:
     type Self = Posix
     type Source = Root on Posix
 
@@ -45,7 +45,7 @@ object Posix:
       if path.at(Prim) == '/' then Posix.RootSingleton
       else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
 
-  given (using Tactic[NameError]) => Posix is Navigable by Name[Posix] under Rules as navigable =
+  given navigable: Tactic[NameError] => Posix is Navigable by Name[Posix] under Rules =
     new Navigable:
       type Self = Posix
       type Operand = Name[Posix]

@@ -22,7 +22,7 @@ import prepositional.*
 import turbulence.*
 
 object Handle:
-  given (using Tactic[StreamError]) => Handle is Readable by Bytes as readable = _.reader()
-  given (using Tactic[StreamError]) => Handle is Writable by Bytes as writable = _.writer(_)
+  given readable: Tactic[StreamError] => Handle is Readable by Bytes = _.reader()
+  given writable: Tactic[StreamError] => Handle is Writable by Bytes = _.writer(_)
 
 class Handle(val reader: () => LazyList[Bytes], val writer: LazyList[Bytes] => Unit)

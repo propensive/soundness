@@ -36,7 +36,7 @@ object MacOs:
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError]) => MacOs is Radical from Root as radical = new Radical:
+  given radical: Tactic[PathError] => MacOs is Radical from Root = new Radical:
     type Self = MacOs
     type Source = Root
 
@@ -46,7 +46,7 @@ object MacOs:
     def root(path: Text): Source = if path.at(Prim) == '/' then $ else
       raise(PathError(PathError.Reason.InvalidRoot, path)) yet $
 
-  given (using Tactic[NameError]) => MacOs is Navigable by Name[MacOs] under Rules as navigable =
+  given navigable: Tactic[NameError] => MacOs is Navigable by Name[MacOs] under Rules =
     new Navigable:
       type Self = MacOs
       type Operand = Name[MacOs]

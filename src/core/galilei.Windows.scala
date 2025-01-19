@@ -39,8 +39,8 @@ object Windows:
       MustNotEqual["(?i)AUX(\\.[^.]+)?"] & MustNotEqual["(?i)NUL(\\.[^.]+)?"] &
       MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"]
 
-  given (using Tactic[NameError])
-      => Windows is Navigable by Name[Windows] under Rules as navigable =
+  given navigable: Tactic[NameError]
+  => Windows is Navigable by Name[Windows] under Rules =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows
@@ -53,7 +53,7 @@ object Windows:
       def elementText(element: Name[Windows]): Text = element.text
       def caseSensitivity: Case = Case.Preserving
 
-  given (using Tactic[PathError]) => Windows is Radical from WindowsDrive as radical = new Radical:
+  given radical: Tactic[PathError] => Windows is Radical from WindowsDrive = new Radical:
     type Self = Windows
     type Source = WindowsDrive
 

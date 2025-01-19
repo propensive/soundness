@@ -36,7 +36,7 @@ object Linux:
 
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
 
-  given (using Tactic[PathError]) => Linux is Radical from Root as radical =
+  given radical: Tactic[PathError] => Linux is Radical from Root =
     new Radical:
       type Self = Linux
       type Source = Root
@@ -48,7 +48,7 @@ object Linux:
         if path.at(Prim) == '/' then %
         else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
 
-  given (using Tactic[NameError]) => Linux is Navigable by Name[Linux] under Rules as navigable =
+  given navigable: Tactic[NameError] => Linux is Navigable by Name[Linux] under Rules =
     new Navigable:
       type Self = Linux
       type Operand = Name[Linux]

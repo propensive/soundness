@@ -38,8 +38,8 @@ object Filesystem:
   given [FilesystemType <: Filesystem] => (Path on FilesystemType) is Substantiable =
     path => jnf.Files.exists(path.javaPath)
 
-  given (using Tactic[PathError])
-      => Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root as radical =
+  given radical: Tactic[PathError]
+      => Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =
@@ -49,8 +49,8 @@ object Filesystem:
     (delegate: @unchecked) match
       case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
 
-  given (using Tactic[NameError])
-      => Filesystem is Navigable by Name[Filesystem] under Rules as navigable =
+  given navigable: Tactic[NameError]
+  => Filesystem is Navigable by Name[Filesystem] under Rules =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =
