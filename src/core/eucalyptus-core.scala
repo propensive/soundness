@@ -32,21 +32,21 @@ import turbulence.*
 import language.experimental.pureFunctions
 
 package logFormats:
-  given Level is Showable as textLevel =
+  given textLevel: Level is Showable =
     case Level.Fine => t"FINE"
     case Level.Info => t"INFO"
     case Level.Warn => t"WARN"
     case Level.Fail => t"FAIL"
 
-  given [EventType: Communicable] => EventType is Inscribable in Text as standard =
+  given standard: [EventType: Communicable] => EventType is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"${dateFormat.format(timestamp).nn} [$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given [EventType: Communicable] => EventType is Inscribable in Text as untimestamped =
+  given untimestamped: [EventType: Communicable] => EventType is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"[$level] ${realm.name.fit(10)} > ${event.communicate}\n"
 
-  given [EventType: Communicable] => EventType is Inscribable in Text as lightweight =
+  given lightweight: [EventType: Communicable] => EventType is Inscribable in Text =
     (event, level, realm, timestamp) =>
       t"[$level] ${event.communicate}\n"
 
@@ -96,14 +96,14 @@ extension (logObject: Log.type)
         spool.put(event.format(level, realm, timestamp))
 
 package logging:
-  given [FormatType] => FormatType is Loggable as silent = Log.silent[FormatType]
+  given silent: [FormatType] => FormatType is Loggable = Log.silent[FormatType]
 
-  given [FormatType: Printable, EventType: Inscribable in FormatType](using Stdio)
-      => EventType is Loggable as stdout =
+  given stdout: [FormatType: Printable, EventType: Inscribable in FormatType] => Stdio
+      => EventType is Loggable =
     (level, realm, timestamp, event) =>
       Out.println(EventType.formatter(event, level, realm, timestamp))
 
-  given [EventType: Inscribable in FormatType, FormatType: Printable](using Stdio)
-      => EventType is Loggable as stderr =
+  given stderr: [EventType: Inscribable in FormatType, FormatType: Printable] => Stdio
+      => EventType is Loggable =
     (level, realm, timestamp, event) =>
       Err.println(EventType.formatter(event, level, realm, timestamp))
