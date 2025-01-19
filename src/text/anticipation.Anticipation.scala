@@ -35,31 +35,34 @@ object Anticipation:
 
     extension (text: Text) inline def s: String = text
 
-    given Text is Addable by Text into Text as addable = _ + _
+    given Text is Addable by Text into Text = _ + _
 
     private def recur(text: Text, n: Int, acc: Text): Text =
       if n == 0 then acc else recur(text, n - 1, acc+text)
 
-    given Text is Multiplicable by Int into Text as multiplicable =
-      (text, n) => recur(text, n.max(0), "".tt)
+    given multiplicable: Text is Multiplicable by Int into Text = new Multiplicable:
+      type Self = Text
+      type Operand = Int
+      type Result = Text
+      def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
 
-    given Ordering[Text] as ordering = Ordering.String.on[Text](identity)
-    given CommandLineParser.FromString[Text] as fromString = identity(_)
+    given Ordering[Text] = Ordering.String.on[Text](identity)
+    given CommandLineParser.FromString[Text] = identity(_)
 
-    given (using fromExpr: FromExpr[String]) => FromExpr[Text] as fromExpr:
+    given fromExpr: (fromExpr: FromExpr[String]) => FromExpr[Text]:
       def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
 
-    given ToExpr[Text] as toExpr:
+    given ToExpr[Text]:
       def apply(text: Text)(using Quotes) =
         import quotes.reflect.*
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
-    given Conversion[String, Text] as stringText = identity(_)
+    given Conversion[String, Text] = identity(_)
 
-    erased given CanEqual[Text, Text] as canEqual = erasedValue
+    erased given CanEqual[Text, Text] = erasedValue
 
-    given Typeable[Text] as typeable:
+    given Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
         case str: String => Some(str)
         case _           => None
