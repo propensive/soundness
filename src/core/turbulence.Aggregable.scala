@@ -25,24 +25,24 @@ import rudiments.*
 import vacuous.*
 
 object Aggregable:
-  given Bytes is Aggregable by Bytes as bytesBytes = source =>
+  given bytesBytes: Bytes is Aggregable by Bytes = source =>
     def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes =
       source.flow(buf.toByteArray().nn.immutable(using Unsafe)):
         buf.write(head.mutable(using Unsafe)); recur(buf, tail)
 
     recur(ji.ByteArrayOutputStream(), source)
 
-  given (using decoder: CharDecoder) => Text is Aggregable by Bytes as bytesText =
+  given bytesText: (decoder: CharDecoder) => Text is Aggregable by Bytes =
     bytesBytes.map(decoder.decode)
 
-  given Text is Aggregable by Text as textText = source =>
+  given textText: Text is Aggregable by Text = source =>
     val buffer = new StringBuffer()
     source.each { chunk => buffer.append(chunk.s) }
     buffer.toString.tt
 
-  given [ElementType, ElementType2]
-     (using aggregable: ElementType2 is Aggregable by ElementType)
-      => LazyList[ElementType2] is Aggregable by ElementType as lazyList =
+  given lazyList: [ElementType, ElementType2]
+  => (aggregable: ElementType2 is Aggregable by ElementType)
+  =>  LazyList[ElementType2] is Aggregable by ElementType =
     element => LazyList(aggregable.aggregate(element))
 
 trait Aggregable:

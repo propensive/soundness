@@ -52,24 +52,24 @@ extension [ValueType](value: ValueType)
     writable.write(target, readable.stream(value))
 
 package stdioSources:
-  given Stdio as mute = Stdio(null, null, null, termcapDefinitions.basic)
+  given mute: Stdio = Stdio(null, null, null, termcapDefinitions.basic)
 
   package system:
-    given Stdio as textOnly =
+    given textOnly: Stdio =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.basic)
 
-    given Stdio as ansi =
+    given ansi: Stdio =
       Stdio(System.out.nn, System.err.nn, System.in.nn, termcapDefinitions.xterm256)
 
   package virtualMachine:
-    given Stdio as textOnly =
+    given textOnly: Stdio =
       val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
       val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
       val stdin = ji.FileInputStream(ji.FileDescriptor.in)
 
       Stdio(stdout, stderr, stdin, termcapDefinitions.basic)
 
-    given Stdio as ansi =
+    given ansi: Stdio =
       val stdout = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out))
       val stderr = ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err))
       val stdin = ji.FileInputStream(ji.FileDescriptor.in)
@@ -178,14 +178,14 @@ package lineSeparation:
   import LineSeparation.Action.*
   import LineSeparation.NewlineSeq
 
-  given LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl) as carriageReturn
-  given LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl) as strictCarriageReturn
-  given LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl) as linefeed
-  given LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl) as strictLinefeeds
-  given LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl) as carriageReturnLinefeed
-  given LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl) as adaptiveLinefeed
+  given carriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl)
+  given strictCarriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl)
+  given linefeed: LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl)
+  given strictLinefeeds: LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl)
+  given carriageReturnLinefeed: LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl)
+  given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl)
 
-  given LineSeparation as virtualMachine = System.lineSeparator.nn match
+  given virtualMachine: LineSeparation = System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeed
     case "\r"      => carriageReturn
     case "\n"      => linefeed

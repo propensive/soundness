@@ -27,8 +27,8 @@ import rudiments.*
 import vacuous.*
 
 object Writable:
-  given [OutType <: ji.OutputStream](using streamCut: Tactic[StreamError])
-      => OutType is Writable by Bytes as outputStreamBytes =
+  given outputStreamBytes: [OutType <: ji.OutputStream] => (streamCut: Tactic[StreamError])
+      => OutType is Writable by Bytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -36,8 +36,8 @@ object Writable:
 
       outputStream.close()
 
-  given (using streamCut: Tactic[StreamError], encoder: CharEncoder)
-          => ji.OutputStream is Writable by Text as outputStreamText =
+  given outputStreamText: (streamCut: Tactic[StreamError], encoder: CharEncoder)
+          => ji.OutputStream is Writable by Text =
 
     (outputStream, stream) =>
       stream.each: text =>
@@ -46,21 +46,21 @@ object Writable:
 
       outputStream.close()
 
-  given [TargetType: Writable by Text](using decoder: CharDecoder)
-      => TargetType is Writable by Bytes as decodingAdapter =
+  given decodingAdapter: [TargetType: Writable by Text] => (decoder: CharDecoder)
+      => TargetType is Writable by Bytes =
     (target, stream) => TargetType.write(target, decoder.decode(stream))
 
-  given [TargetType: Writable by Bytes](using encoder: CharEncoder)
-      => TargetType is Writable by Text as encodingAdapter =
+  given encodingAdapter: [TargetType: Writable by Bytes] => (encoder: CharEncoder)
+      => TargetType is Writable by Text =
     (target, stream) => TargetType.write(target, encoder.encode(stream))
 
-  given (using Tactic[StreamError])
-      => jn.channels.WritableByteChannel is Writable by Bytes as channel = (channel, stream) =>
+  given channel: Tactic[StreamError]
+      => jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
     @tailrec
     def recur(total: Memory, todo: LazyList[jn.ByteBuffer]): Unit =
       todo.flow(()):
         val count = try channel.write(head) catch case e: Exception => -1
-        
+
         if count == -1 then raise(StreamError(total))
         else recur(total + count.b, if head.hasRemaining then todo else tail)
 

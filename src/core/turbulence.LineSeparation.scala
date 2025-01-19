@@ -22,7 +22,7 @@ import anticipation.*
 import rudiments.*
 
 object LineSeparation:
-  given (using Quickstart) => LineSeparation as default = lineSeparation.adaptiveLinefeed
+  given default: Quickstart => LineSeparation = lineSeparation.adaptiveLinefeed
 
   inline def readByte
      (inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
