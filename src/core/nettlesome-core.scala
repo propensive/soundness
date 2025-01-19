@@ -48,5 +48,5 @@ def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): Resul
 def online(using internet: Internet): Boolean = internet.online
 
 package internetAccess:
-  given Online as enabled = Online()
-  given (using Tactic[OfflineError]) => Online as disabled = abort(OfflineError())
+  given enabled: Online = Online()
+  given disabled: Online raises OfflineError = abort(OfflineError())

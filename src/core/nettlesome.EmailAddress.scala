@@ -36,7 +36,7 @@ import EmailAddressError.Reason.*
 object EmailAddress:
   given Realm = realm"nettlesome"
 
-  given (using Tactic[EmailAddressError]) => Decoder[EmailAddress] = EmailAddress.parse(_)
+  given Decoder[EmailAddress] raises EmailAddressError = EmailAddress.parse(_)
   given EmailAddress is Encodable in Text = _.text
 
   def expand(context: Expr[StringContext])(using Quotes): Expr[EmailAddress] = haltingly:

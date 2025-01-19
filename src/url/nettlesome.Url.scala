@@ -46,8 +46,7 @@ extends Root(t"${scheme.name}://${authority.lay(t"")(_.show)}$pathText", t"/", C
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
-  given (using Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
-      => HttpUrl is Radical from HttpUrl as radical = new Radical:
+  given radical: HttpUrl is Radical from HttpUrl raises UrlError raises HostnameError raises NameError = new Radical:
     type Self = HttpUrl
     type Source = HttpUrl
 
@@ -55,8 +54,8 @@ object Url:
     def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
     def rootText(url: HttpUrl): Text = url.show
 
-  given (using Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
-      => HttpUrl is Navigable by Name[HttpUrl] under Rules as navigable = new Navigable:
+  given navigable: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+      => HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
     type Operand = Name[HttpUrl]
     type Self = HttpUrl
     type Constraint = Rules
@@ -70,61 +69,61 @@ object Url:
     def caseSensitivity: Case = Case.Sensitive
 
   given HttpUrl is GenericUrl = _.show
-  given (using Tactic[UrlError], Tactic[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
+  given (Tactic[UrlError], Tactic[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
 
-  given [SchemeType <: Label] => Url[SchemeType] is Showable as showable = url =>
+  given showable: [SchemeType <: Label] => Url[SchemeType] is Showable = url =>
     val auth = url.authority.lay(t"")(t"//"+_.show)
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
   given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
 
-  given [SchemeType <: Label](using Tactic[UrlError], Tactic[HostnameError])
+  given [SchemeType <: Label] => (Tactic[UrlError], Tactic[HostnameError])
       => Decoder[Url[SchemeType]] =
     parse(_)
 
   given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show
 
-  given [SchemeType <: Label] => Url[SchemeType] is Teletypeable as teletype =
+  given teletype: [SchemeType <: Label] => Url[SchemeType] is Teletypeable =
     url => e"$Underline(${Fg(0x00bfff)}(${url.show}))"
 
-  given [SchemeType <: Label] => Url[SchemeType] is Communicable as communicable =
+  given communicable: [SchemeType <: Label] => Url[SchemeType] is Communicable =
     url => Message(url.show)
 
-  given [SchemeType <: Label] => ("action" is GenericHtmlAttribute[Url[SchemeType]]) as action:
+  given action: [SchemeType <: Label] => ("action" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"action"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("codebase" is GenericHtmlAttribute[Url[SchemeType]]) as codebase:
+  given codebale: [SchemeType <: Label] => ("codebase" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"codebase"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("cite" is GenericHtmlAttribute[Url[SchemeType]]) as cite:
+  given cite: [SchemeType <: Label] => ("cite" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"cite"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("data" is GenericHtmlAttribute[Url[SchemeType]]) as data:
+  given data: [SchemeType <: Label] => ("data" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"data"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label]
-      => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]) as formaction:
+  given formaction: [SchemeType <: Label]
+      => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"formaction"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("poster" is GenericHtmlAttribute[Url[SchemeType]]) as poster:
+  given poster: [SchemeType <: Label] => ("poster" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"poster"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("src" is GenericHtmlAttribute[Url[SchemeType]]) as src:
+  given src: [SchemeType <: Label] => ("src" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"src"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("href" is GenericHtmlAttribute[Url[SchemeType]]) as href:
+  given href: [SchemeType <: Label] => ("href" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"href"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  given [SchemeType <: Label] => ("manifest" is GenericHtmlAttribute[Url[SchemeType]]) as manifest:
+  given manifest: [SchemeType <: Label] => ("manifest" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 

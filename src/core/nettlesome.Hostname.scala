@@ -39,7 +39,7 @@ object Hostname:
   def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = haltingly:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
-  given ToExpr[Hostname] as toExpr:
+  given toExpr: ToExpr[Hostname]:
     def apply(hostname: Hostname)(using Quotes): Expr[Hostname] =
       val labels = Varargs:
         hostname.dnsLabels.map: label =>

@@ -20,9 +20,9 @@ import anticipation.*
 import spectacular.*
 
 object Connectable:
-  given Ipv4 is Connectable as ipv4 = _.show
-  given Ipv6 is Connectable as ipv6 = _.show
-  given Hostname is Connectable as hostname = _.show
+  given ipv4: Ipv4 is Connectable = _.show
+  given ipv6: Ipv6 is Connectable = _.show
+  given hostname: Hostname is Connectable = _.show
 
 trait Connectable:
   type Self
