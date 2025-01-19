@@ -33,16 +33,41 @@ object Multiplicable:
     def multiply(multiplicand: MultiplicandType, multiplier: MultiplierType): ResultType =
       lambda(multiplicand, multiplier)
 
-  given Double is Multiplicable by Double into Double as double = _*_
-  given Float is Multiplicable by Float into Float as float = _*_
-  given Long is Multiplicable by Long into Long as long = _*_
-  given Int is Multiplicable by Int into Int as int = _*_
+  given Double is Multiplicable by Double into Double = new Multiplicable:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
+    def multiply(multiplicand: Double, multiplier: Double): Double = multiplicand*multiplier
 
-  given Short is Multiplicable by Short into Short as short =
-    (multiplicand, multiplier) => (multiplicand*multiplier).toShort
+  given Long is Multiplicable by Long into Long = new Multiplicable:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
+    def multiply(multiplicand: Long, multiplier: Long): Long = multiplicand*multiplier
 
-  given Byte is Multiplicable by Byte into Byte as byte =
-    (multiplicand, multiplier) => (multiplicand*multiplier).toByte
+  given Int is Multiplicable by Int into Int = new Multiplicable:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
+    def multiply(multiplicand: Int, multiplier: Int): Int = multiplicand*multiplier
+
+  given Float is Multiplicable by Float into Float = new Multiplicable:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
+    def multiply(multiplicand: Float, multiplier: Float): Float = multiplicand*multiplier
+
+  given Short is Multiplicable by Short into Short = new Multiplicable:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+    def multiply(multiplicand: Short, multiplier: Short): Short = (multiplicand*multiplier).toByte
+
+  given Byte is Multiplicable by Byte into Byte = new Multiplicable:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+    def multiply(multiplicand: Byte, multiplier: Byte): Byte = (multiplicand*multiplier).toByte
 
 trait Multiplicable:
   type Self

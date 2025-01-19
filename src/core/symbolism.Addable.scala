@@ -32,12 +32,41 @@ object Addable:
 
     def add(augend: AugendType, addend: AddendType): ResultType = lambda(augend, addend)
 
-  given Double is Addable by Double into Double as double = _ + _
-  given Float is Addable by Float into Float as float = _ + _
-  given Long is Addable by Long into Long as long = _ + _
-  given Int is Addable by Int into Int as int = _ + _
-  given Short is Addable by Short into Short as short = (augend, addend) => (augend + addend).toShort
-  given Byte is Addable by Byte into Byte as byte = (augend, addend) => (augend + addend).toByte
+  given Double is Addable by Double into Double = new Addable:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
+    def add(augend: Augend, addend: Addend): Result = augend + addend
+
+  given Float is Addable by Float into Float = new Addable:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
+    def add(augend: Augend, addend: Addend): Result = augend + addend
+
+  given Long is Addable by Long into Long = new Addable:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
+    def add(augend: Augend, addend: Addend): Result = augend + addend
+
+  given Int is Addable by Int into Int = new Addable:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
+    def add(augend: Augend, addend: Addend): Result = augend + addend
+
+  given Short is Addable by Short into Short = new Addable:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+    def add(augend: Augend, addend: Addend): Result = (augend + addend).toShort
+
+  given Byte is Addable by Byte into Byte = new Addable:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+    def add(augend: Augend, addend: Addend): Result = (augend + addend).toByte
 
 trait Addable:
   type Self

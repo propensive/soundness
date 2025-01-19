@@ -23,12 +23,35 @@ import language.experimental.captureChecking
 import scala.annotation.targetName
 
 object Negatable:
-  given Double is Negatable into Double as double = -_
-  given Float is Negatable into Float as float = -_
-  given Long is Negatable into Long as long = -_
-  given Int is Negatable into Int as int = -_
-  given Short is Negatable into Short as short = operand => (-operand).toShort
-  given Byte is Negatable into Byte as byte = operand => (-operand).toByte
+  given Double is Negatable into Double = new Negatable:
+    type Self = Double
+    type Result = Double
+    def negate(operand: Self): Result = -operand
+
+  given Float is Negatable into Float = new Negatable:
+    type Self = Float
+    type Result = Float
+    def negate(operand: Self): Result = -operand
+
+  given Long is Negatable into Long = new Negatable:
+    type Self = Long
+    type Result = Long
+    def negate(operand: Self): Result = -operand
+
+  given Int is Negatable into Int = new Negatable:
+    type Self = Int
+    type Result = Int
+    def negate(operand: Self): Result = -operand
+
+  given Short is Negatable into Short = new Negatable:
+    type Self = Short
+    type Result = Short
+    def negate(operand: Self): Result = (-operand).toShort
+
+  given Byte is Negatable into Byte = new Negatable:
+    type Self = Byte
+    type Result = Byte
+    def negate(operand: Self): Result = (-operand).toByte
 
 trait Negatable:
   type Self

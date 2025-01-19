@@ -31,16 +31,42 @@ object Divisible:
 
     def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
 
-  given Double is Divisible by Double into Double as double = _/_
-  given Float is Divisible by Float into Float as float = _/_
-  given Long is Divisible by Long into Long as long = _/_
-  given Int is Divisible by Int into Int as int = _/_
+  given Double is Divisible by Double into Double = new Divisible:
+    type Self = Double
+    type Operand = Double
+    type Result = Double
+    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
 
-  given Short is Divisible by Short into Short as short =
-    (dividend, divisor) => (dividend/divisor).toShort
+  given Float is Divisible by Float into Float = new Divisible:
+    type Self = Float
+    type Operand = Float
+    type Result = Float
+    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
 
-  given Byte is Divisible by Byte into Byte as byte =
-    (dividend, divisor) => (dividend/divisor).toByte
+  given Long is Divisible by Long into Long = new Divisible:
+    type Self = Long
+    type Operand = Long
+    type Result = Long
+    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+
+  given Int is Divisible by Int into Int = new Divisible:
+    type Self = Int
+    type Operand = Int
+    type Result = Int
+    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+
+  given Short is Divisible by Short into Short = new Divisible:
+    type Self = Short
+    type Operand = Short
+    type Result = Short
+    def divide(dividend: Dividend, divisor: Divisor): Result = (dividend/divisor).toShort
+
+  given Byte is Divisible by Byte into Byte = new Divisible:
+    type Self = Byte
+    type Operand = Byte
+    type Result = Byte
+    def divide(dividend: Dividend, divisor: Divisor): Result = (dividend/divisor).toByte
+
 
 trait Divisible:
   type Self

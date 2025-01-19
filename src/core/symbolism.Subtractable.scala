@@ -33,16 +33,41 @@ object Subtractable:
     def subtract(minuend: MinuendType, subtrahend: SubtrahendType): ResultType =
       lambda(minuend, subtrahend)
 
-  given Double is Subtractable by Double into Double as double = _ - _
-  given Float is Subtractable by Float into Float as float = _ - _
-  given Long is Subtractable by Long into Long as long = _ - _
-  given Int is Subtractable by Int into Int as int = _ - _
+  given Double is Subtractable by Double into Double = new Subtractable:
+    type Self = Double
+    type Result = Double
+    type Operand = Double
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
 
-  given Short is Subtractable by Short into Short as short =
-    (minuend, subtrahend) => (minuend - subtrahend).toShort
+  given Float is Subtractable by Float into Float = new Subtractable:
+    type Self = Float
+    type Result = Float
+    type Operand = Float
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
 
-  given Byte is Subtractable by Byte into Byte as byte =
-    (minuend, subtrahend) => (minuend - subtrahend).toByte
+  given Long is Subtractable by Long into Long = new Subtractable:
+    type Self = Long
+    type Result = Long
+    type Operand = Long
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+
+  given Int is Subtractable by Int into Int = new Subtractable:
+    type Self = Int
+    type Result = Int
+    type Operand = Int
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+
+  given Short is Subtractable by Short into Short = new Subtractable:
+    type Self = Short
+    type Result = Short
+    type Operand = Short
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = (minuend - subtrahend).toShort
+
+  given Byte is Subtractable by Byte into Byte = new Subtractable:
+    type Self = Byte
+    type Result = Byte
+    type Operand = Byte
+    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = (minuend - subtrahend).toByte
 
 trait Subtractable:
   type Self

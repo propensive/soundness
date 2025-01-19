@@ -28,8 +28,8 @@ object Rootable:
 
     def root(operand: OperandType): ResultType = lambda(operand)
 
-  given Double is Rootable[2] into Double as double = math.sqrt(_)
-  given Double is Rootable[3] into Double as double2 = math.cbrt(_)
+  given sqrt: Double is Rootable[2] into Double = math.sqrt(_)
+  given cbrt: Double is Rootable[3] into Double = math.cbrt(_)
 
 trait Rootable[RootType <: Int & Singleton]:
   type Self
