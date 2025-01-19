@@ -28,7 +28,7 @@ object Communicable:
   given Long is Communicable = long => Message(long.toString.tt)
   given Message is Communicable = identity(_)
 
-  given List[Message] is Communicable as listMessage =
+  given listMessage: List[Message] is Communicable =
     messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
 trait Communicable:
