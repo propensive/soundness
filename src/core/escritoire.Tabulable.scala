@@ -53,7 +53,7 @@ object Tabulable extends ProductDerivation[[RowType] =>> RowType is Tabulable[Te
   given Int is Tabulable[Text] = () =>
     Table[Int, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
-  given (using Decimalizer) => Double is Tabulable[Text] = () =>
+  given Decimalizer => Double is Tabulable[Text] = () =>
     Table[Double, Text](Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show))
 
   given Text is Tabulable[Text] = () =>

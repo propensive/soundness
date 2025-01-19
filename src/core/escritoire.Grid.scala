@@ -29,7 +29,7 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Grid:
-  given [TextType: {Textual, Printable as printable}](using TextMetrics)
+  given [TextType: {Textual, Printable as printable}] => TextMetrics
       => Grid[TextType] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
