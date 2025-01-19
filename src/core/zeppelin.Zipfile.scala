@@ -45,7 +45,7 @@ object Zip:
   class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
 
-  given (using Tactic[NameError]) => Zip is Radical from Zip.ZipRoot = new Radical:
+  given Tactic[NameError] => Zip is Radical from Zip.ZipRoot = new Radical:
     type Self = Zip
     type Source = ZipRoot
 
@@ -53,7 +53,7 @@ object Zip:
     def rootText(root: Source): Text = t""
     def root(path: Text): Source = ZipRoot()
 
-  given (using Tactic[NameError]) => Zip is Navigable by Name[Zip] under Rules = new Navigable:
+  given Tactic[NameError] => Zip is Navigable by Name[Zip] under Rules = new Navigable:
     type Self = Zip
     type Operand = Name[Zip]
     type Constraint = Rules
