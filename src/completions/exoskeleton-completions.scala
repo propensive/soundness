@@ -33,7 +33,7 @@ def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: 
   cli.explain(explanation)
 
 package executives:
-  given (using handler: UnhandledErrorHandler) => Executive as completions:
+  given completions: (handler: UnhandledErrorHandler) => Executive:
     type CliType = Cli
     type Return = Execution
 

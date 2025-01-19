@@ -25,7 +25,7 @@ import language.experimental.captureChecking
 given Realm = realm"exoskeleton"
 
 package parameterInterpretation:
-  given SimpleParameterInterpreter.type as simple = SimpleParameterInterpreter
-  given PosixCliInterpreter.type as posix = PosixCliInterpreter
+  given simple: SimpleParameterInterpreter.type = SimpleParameterInterpreter
+  given posix: PosixCliInterpreter.type = PosixCliInterpreter
 
 def arguments(using cli: Cli): List[Argument] = cli.arguments

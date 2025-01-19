@@ -23,11 +23,11 @@ import vacuous.*
 import language.experimental.pureFunctions
 
 object FlagInterpreter:
-  given FlagInterpreter[Unit] as unit:
+  given unit: FlagInterpreter[Unit]:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given [OperandType: Decoder] => FlagInterpreter[OperandType] as decoder = arguments =>
+  given decoder: [OperandType: Decoder] => FlagInterpreter[OperandType] = arguments =>
     (arguments.take(1): @unchecked) match
       case List(value) => value().decode[OperandType]
 

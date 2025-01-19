@@ -29,12 +29,12 @@ import turbulence.*
 import sun.misc as sm
 
 package unhandledErrors:
-  given UnhandledErrorHandler as silent:
+  given silent: UnhandledErrorHandler:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception => Exit(1)
       case error: Throwable => Exit(2)
 
-  given UnhandledErrorHandler as genericErrorMessage:
+  given genericErrorMessage: UnhandledErrorHandler:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
@@ -44,7 +44,7 @@ package unhandledErrors:
         Out.println(t"An unexpected error occurred.")
         Exit(2)
 
-  given UnhandledErrorHandler as exceptionMessage:
+  given exceptionMessage: UnhandledErrorHandler:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(error.toString.tt)
@@ -54,7 +54,7 @@ package unhandledErrors:
         Out.println(error.toString.tt)
         Exit(2)
 
-  given UnhandledErrorHandler as stackTrace:
+  given stackTrace: UnhandledErrorHandler:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
@@ -65,7 +65,7 @@ package unhandledErrors:
         Exit(2)
 
 package executives:
-  given (using handler: UnhandledErrorHandler) => Executive as direct:
+  given direct: (handler: UnhandledErrorHandler) => Executive:
     type Return = Exit
     type CliType = CliInvocation
 

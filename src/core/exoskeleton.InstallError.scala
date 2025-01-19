@@ -21,7 +21,7 @@ import fulminate.*
 
 object InstallError:
   object Reason:
-    given Reason is Communicable as communicable =
+    given communicable: Reason is Communicable =
       case Environment =>
         m"it was not possible to get enough information about the install environment"
 

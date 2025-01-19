@@ -26,9 +26,9 @@ import spectacular.*
 import language.experimental.captureChecking
 
 object Shell:
-  given Decoder[Shell] as decoder = text => valueOf(text.lower.capitalize.s)
-  given Shell is Encodable in Text as encodable = _.toString.tt.lower
-  given Shell is Communicable as communicable = shell => Message(shell.toString.tt.lower)
+  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
+  given encodable: Shell is Encodable in Text = _.toString.tt.lower
+  given communicable: Shell is Communicable = shell => Message(shell.toString.tt.lower)
 
 enum Shell:
   case Zsh, Bash, Fish
