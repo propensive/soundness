@@ -19,4 +19,4 @@ package caesura
 import rudiments.*
 
 object dynamicDsvAccess:
-  erased given DynamicDsvEnabler as enabled = ###
+  erased given enabled: DynamicDsvEnabler = ###

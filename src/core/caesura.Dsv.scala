@@ -75,7 +75,7 @@ object Dsv:
     val rows = recur(source.stream[Text])
     if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
 
-  given (using DsvFormat) => Dsv is Showable = _.rows.map(_.show).join(t"\n")
+  given DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
      (content:  LazyList[Text],

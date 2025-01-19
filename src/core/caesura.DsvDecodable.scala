@@ -46,7 +46,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
           focus(CellRef(rowNumber, label)):
             typeclass.decode(row2))
 
-  given [ValueType: Decoder] => ValueType is DsvDecodable as decoder = _.data.head.decode[ValueType]
+  given decoder: [ValueType: Decoder] => ValueType is DsvDecodable = _.data.head.decode[ValueType]
 
 trait DsvDecodable:
   type Self

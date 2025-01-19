@@ -26,7 +26,7 @@ object DsvEncodable extends ProductDerivable[DsvEncodable]:
     val cells = fields(value) { [FieldType] => field => context.encode(field).data }.to(List).flatten
     Row(cells)
 
-  given [ValueType: Encodable in Text] => ValueType is DsvEncodable as encoder =
+  given encoder: [ValueType: Encodable in Text] => ValueType is DsvEncodable =
     value => Row(ValueType.encode(value))
 
 trait DsvEncodable:

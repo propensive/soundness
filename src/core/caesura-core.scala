@@ -19,19 +19,19 @@ package caesura
 import gossamer.*
 
 package dsvFormats:
-  given DsvFormat as csv = DsvFormat(false, ',', '"', '"')
-  given DsvFormat as csvWithHeader = DsvFormat(true, ',', '"', '"')
-  given DsvFormat as tsv = DsvFormat(false, '\t', '"', '"')
-  given DsvFormat as tsvWithHeader = DsvFormat(true, '\t', '"', '"')
-  given DsvFormat as ssv = DsvFormat(false, ' ', '"', '"')
-  given DsvFormat as ssvWithHeader = DsvFormat(true, ' ', '"', '"')
+  given csv: DsvFormat = DsvFormat(false, ',', '"', '"')
+  given csvWithHeader: DsvFormat = DsvFormat(true, ',', '"', '"')
+  given tsv: DsvFormat = DsvFormat(false, '\t', '"', '"')
+  given tsvWithHeader: DsvFormat = DsvFormat(true, '\t', '"', '"')
+  given ssv: DsvFormat = DsvFormat(false, ' ', '"', '"')
+  given ssvWithHeader: DsvFormat = DsvFormat(true, ' ', '"', '"')
 
 package dsvRedesignations:
-  given DsvRedesignation as unchanged = identity(_)
-  given DsvRedesignation as lowerDotted = _.uncamel.map(_.lower).join(t" ")
-  given DsvRedesignation as lowerSlashed = _.uncamel.map(_.lower).join(t" ")
-  given DsvRedesignation as capitalizedWords = _.uncamel.map(_.capitalize).join(t" ")
-  given DsvRedesignation as lowerWords = _.uncamel.map(_.lower).join(t" ")
+  given unchanged: DsvRedesignation = identity(_)
+  given lowerDotted: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given lowerSlashed: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given capitalizedWords: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
+  given lowerWords: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
 
 extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
 

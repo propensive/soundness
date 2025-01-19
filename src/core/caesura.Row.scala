@@ -55,7 +55,7 @@ object Row:
   def apply(iterable: Iterable[Text]): Row = new Row(IArray.from(iterable))
   def apply(text: Text*): Row = new Row(IArray.from(text))
 
-  given (using format: DsvFormat) => Row is Showable =
+  given (format: DsvFormat) => Row is Showable =
     _.data.map: cell =>
       if !cell.contains(format.Quote) then cell else
         Text.construct:
