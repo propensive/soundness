@@ -37,4 +37,4 @@ extension [ValueType: Teletypeable](value: ValueType) def teletype: Teletype =
   ValueType.teletype(value)
 
 package printableTypes:
-  given Message is Printable as message = summon[Teletype is Printable].contramap(_.teletype)
+  given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)

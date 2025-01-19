@@ -32,15 +32,15 @@ import scala.util.*
 import language.experimental.pureFunctions
 
 object Teletype:
-  given (using NotGiven[Teletype is Textual]) => Teletype is Addable as add:
+  given add: NotGiven[Teletype is Textual] => Teletype is Addable:
     type Operand = Teletype
     type Result = Teletype
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
-  given (using Stdio) => SimpleWritable[Out.type, Teletype] as writableOut =
+  given writableOut: Stdio => SimpleWritable[Out.type, Teletype] =
     (_, output) => Out.print(output)
 
-  given (using Stdio) => SimpleWritable[Err.type, Teletype] as writableErr =
+  given writableErr: Stdio => SimpleWritable[Err.type, Teletype] =
     (_, output) => Err.print(output)
 
   given Teletype is Textual:
@@ -67,10 +67,10 @@ object Teletype:
     def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
 
   val empty: Teletype = Teletype(t"")
-  given Teletype is Joinable as joinable = _.fold(empty)(_ + _)
-  given Teletype is Printable as printable = _.render(_)
+  given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
+  given printable: Teletype is Printable = _.render(_)
 
-  given Teletype is Cuttable by Text as cuttable = (text, delimiter, limit) =>
+  given cuttable: Teletype is Cuttable by Text = (text, delimiter, limit) =>
     import java.util.regex.*
     val pattern = Pattern.compile(t"(.*)${Pattern.quote(delimiter.s).nn}(.*)".s).nn
 

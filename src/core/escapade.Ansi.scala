@@ -37,7 +37,7 @@ trait Ansi2:
   extends Substitution[Ansi.Input, ValueType, "t"]:
     def embed(value: ValueType) = Ansi.Input.TextInput(teletype(value))
 
-  inline given [ValueType] => Substitution[Ansi.Input, ValueType, "t"] as teletype =
+  inline given teletype: [ValueType] => Substitution[Ansi.Input, ValueType, "t"] =
     val teletype: ValueType => Teletype = value => compiletime.summonFrom:
       case given (ValueType is Teletypeable) => value.teletype
       case given (ValueType is Showable)    => Teletype(value.show)
