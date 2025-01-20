@@ -18,12 +18,7 @@ package umbrageous
 
 import dotty.tools.dotc.*, ast.*, core.*, Contexts.*, Decorators.*, Names.*, plugins.*
 
-class UmbrageousPlugin() extends StandardPlugin:
-  val name: String = "umbrageous"
-  override val description: String = "shades packages during compilation"
-  def init(options: List[String]): List[PluginPhase] = List(UmbrageousTransformer(options))
-
-class UmbrageousTransformer(options: List[String]) extends PluginPhase:
+class Shader(options: List[String]) extends PluginPhase:
   val phaseName: String = "shade"
   override val runsAfter: Set[String] = Set("parser")
   override val runsBefore: Set[String] = Set("typer")
@@ -42,18 +37,24 @@ class UmbrageousTransformer(options: List[String]) extends PluginPhase:
 
     object transformer extends UntypedTreeMap:
       private def rewritePackage
-         (tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select): PackageDef =
+         (tree: Ident | Select, fqn: String, defs: List[Tree], select: Select => Select)
+              : PackageDef =
         tree match
           case Ident(name) =>
             val pkg = name.decode.toString+"."+fqn
-            val prefixes2 = prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }.sortBy(_(0).length)
+            val prefixes2 =
+              prefixes.filter { (k, v) => pkg == k || pkg.startsWith(k+".") }
+              . sortBy(_(0).length)
 
             val ident = prefixes2.lastOption.fold(tree): (k, v) =>
               select(Select(Ident(v.toTermName), name))
 
-            val imports = prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }.map:
-              case (_, prefix) =>
-                Import(Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
+            val imports =
+              prefixes2.lastOption.fold(prefixes) { (k, v) => prefixes.filter(_(0) != k) }
+              . map:
+                case (_, prefix) =>
+                  Import
+                   (Ident(prefix.toTermName), List(ImportSelector(Ident(StdNames.nme.WILDCARD))))
 
             PackageDef(ident, imports ::: defs)
 
