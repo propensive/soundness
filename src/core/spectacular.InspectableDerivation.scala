@@ -26,13 +26,14 @@ import scala.deriving.*
 import language.experimental.captureChecking
 
 object InspectableDerivation extends Derivable[Inspectable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable = value =>
-    fields(value):
-      [FieldType] => field =>
-        val text = context.text(field)
-        if tuple then text else s"$label:$text"
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable =
+    value =>
+      fields(value):
+        [FieldType] => field =>
+          val text = context.text(field)
+          if tuple then text else s"$label:$text"
 
-    . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+      . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
   inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
     variant(value):

@@ -71,7 +71,8 @@ object Inspectable extends Inspectable2:
     case '\u001b' if eEscape => "\\e".tt
 
     case char =>
-      if char < 128 && char >= 32 then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
+      if char < 128 && char >= 32
+      then char.toString.tt else String.format("\\u%04x", char.toInt).nn.tt
 
   given set: [ElemType: Inspectable] => Set[ElemType] is Inspectable =
     _.map(_.inspect).mkString("{", ", ", "}").tt

@@ -73,6 +73,10 @@ object Decoder:
       raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
 
 trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
-  def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
+  def unapply(text: Text): Option[ValueType] =
+    try Some(decode(text)) catch case error: Exception => None
+
   def decode(text: Text): ValueType
-  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] = text => lambda(decode(text))
+
+  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] =
+    text => lambda(decode(text))
