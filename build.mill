@@ -231,8 +231,6 @@ object burdock extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
   }
-
-  object test extends ProbablyTestModule
 }
 
 object galilei extends SoundnessModule {
