@@ -43,7 +43,7 @@ trait SoundnessModule extends Module {
 
 trait SoundnessSubModule extends BaseScalaModule {
   def resources = Task {
-    Seq(PathRef(millSourcePath / "res"))
+    Seq(PathRef(millSourcePath / ".." / ".." / "res"))
   }
 
   def sources = Task.Sources {
