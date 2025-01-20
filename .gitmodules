@@ -1,0 +1,198 @@
+[submodule "anticipation"]
+	path = anticipation
+	url = https://github.com/propensive/anticipation.git
+[submodule "prepositional"]
+	path = prepositional
+	url = https://github.com/propensive/prepositional.git
+[submodule "symbolism"]
+	path = symbolism
+	url = https://github.com/propensive/symbolism.git
+[submodule "rudiments"]
+	path = rudiments
+	url = https://github.com/propensive/rudiments.git
+[submodule "fulminate"]
+	path = fulminate
+	url = https://github.com/propensive/fulminate.git
+[submodule "vacuous"]
+	path = vacuous
+	url = https://github.com/propensive/vacuous.git
+[submodule "denominative"]
+	path = denominative
+	url = https://github.com/propensive/denominative.git
+[submodule "contingency"]
+	path = contingency
+	url = https://github.com/propensive/contingency.git
+[submodule "wisteria"]
+	path = wisteria
+	url = https://github.com/propensive/wisteria.git
+[submodule "kaleidoscope"]
+	path = kaleidoscope
+	url = https://github.com/propensive/kaleidoscope.git
+[submodule "hieroglyph"]
+	path = hieroglyph
+	url = https://github.com/propensive/hieroglyph.git
+[submodule "contextual"]
+	path = contextual
+	url = https://github.com/propensive/contextual.git
+[submodule "inimitable"]
+	path = inimitable
+	url = https://github.com/propensive/inimitable.git
+[submodule "digression"]
+	path = digression
+	url = https://github.com/propensive/digression.git
+[submodule "spectacular"]
+	path = spectacular
+	url = https://github.com/propensive/spectacular.git
+[submodule "cardinality"]
+	path = cardinality
+	url = https://github.com/propensive/cardinality.git
+[submodule "hypotenuse"]
+	path = hypotenuse
+	url = https://github.com/propensive/hypotenuse.git
+[submodule "gossamer"]
+	path = gossamer
+	url = https://github.com/propensive/gossamer.git
+[submodule "feudalism"]
+	path = feudalism
+	url = https://github.com/propensive/feudalism.git
+[submodule "parasite"]
+	path = parasite
+	url = https://github.com/propensive/parasite.git
+[submodule "capricious"]
+	path = capricious
+	url = https://github.com/propensive/capricious.git
+[submodule "turbulence"]
+	path = turbulence
+	url = https://github.com/propensive/turbulence.git
+[submodule "iridescence"]
+	path = iridescence
+	url = https://github.com/propensive/iridescence.git
+[submodule "acyclicity"]
+	path = acyclicity
+	url = https://github.com/propensive/acyclicity.git
+[submodule "dendrology"]
+	path = dendrology
+	url = https://github.com/propensive/dendrology.git
+[submodule "escritoire"]
+	path = escritoire
+	url = https://github.com/propensive/escritoire.git
+[submodule "dissonance"]
+	path = dissonance
+	url = https://github.com/propensive/dissonance.git
+[submodule "chiaroscuro"]
+	path = chiaroscuro
+	url = https://github.com/propensive/chiaroscuro.git
+[submodule "ambience"]
+	path = ambience
+	url = https://github.com/propensive/ambience.git
+[submodule "eucalyptus"]
+	path = eucalyptus
+	url = https://github.com/propensive/eucalyptus.git
+[submodule "guillotine"]
+	path = guillotine
+	url = https://github.com/propensive/guillotine.git
+[submodule "probably"]
+	path = probably
+	url = https://github.com/propensive/probably.git
+[submodule "escapade"]
+	path = escapade
+	url = https://github.com/propensive/escapade.git
+[submodule "larceny"]
+	path = larceny
+	url = https://github.com/propensive/larceny.git
+[submodule "nettlesome"]
+	path = nettlesome
+	url = https://github.com/propensive/nettlesome
+[submodule "nomenclature"]
+	path = nomenclature
+	url = https://github.com/propensive/nomenclature
+[submodule "serpentine"]
+	path = serpentine
+	url = https://github.com/propensive/serpentine
+[submodule "quantitative"]
+	path = quantitative
+	url = https://github.com/propensive/quantitative
+[submodule "abacist"]
+	path = abacist
+	url = https://github.com/propensive/abacist
+[submodule "aviation"]
+	path = aviation
+	url = https://github.com/propensive/aviation
+[submodule "anthology"]
+	path = anthology
+	url = https://github.com/propensive/anthology
+[submodule "burdock"]
+	path = burdock
+	url = https://github.com/propensive/burdock
+[submodule "caesura"]
+	path = caesura
+	url = https://github.com/propensive/caesura
+[submodule "camouflage"]
+	path = camouflage
+	url = https://github.com/propensive/camouflage
+[submodule "cosmopolite"]
+	path = cosmopolite
+	url = https://github.com/propensive/cosmopolite
+[submodule "diuretic"]
+	path = diuretic
+	url = https://github.com/propensive/diuretic
+[submodule "ethereal"]
+	path = ethereal
+	url = https://github.com/propensive/ethereal
+[submodule "exoskeleton"]
+	path = exoskeleton
+	url = https://github.com/propensive/exoskeleton
+[submodule "galilei"]
+	path = galilei
+	url = https://github.com/propensive/galilei
+[submodule "gastronomy"]
+	path = gastronomy
+	url = https://github.com/propensive/gastronomy
+[submodule "geodesy"]
+	path = geodesy
+	url = https://github.com/propensive/geodesy
+[submodule "gesticulate"]
+	path = gesticulate
+	url = https://github.com/propensive/gesticulate
+[submodule "hallucination"]
+	path = hallucination
+	url = https://github.com/propensive/hallucination
+[submodule "jacinta"]
+	path = jacinta
+	url = https://github.com/propensive/jacinta
+[submodule "merino"]
+	path = merino
+	url = https://github.com/propensive/merino
+[submodule "hellenism"]
+	path = hellenism
+	url = https://github.com/propensive/hellenism
+[submodule "scintillate"]
+	path = scintillate
+	url = https://github.com/propensive/scintillate
+[submodule "telekinesis"]
+	path = telekinesis
+	url = https://github.com/propensive/telekinesis
+[submodule "zeppelin"]
+	path = zeppelin
+	url = https://github.com/propensive/zeppelin
+[submodule "monotonous"]
+	path = monotonous
+	url = https://github.com/propensive/monotonous
+[submodule "mosquito"]
+	path = mosquito
+	url = https://github.com/propensive/mosquito
+[submodule "profanity"]
+	path = profanity
+	url = https://github.com/propensive/profanity
+[submodule "surveillance"]
+	path = surveillance
+	url = https://github.com/propensive/surveillance
+[submodule "metamorphose"]
+	path = metamorphose
+	url = https://github.com/propensive/metamorphose
+[submodule "revolution"]
+	path = revolution
+	url = https://github.com/propensive/revolution
+[submodule "vicarious"]
+	path = vicarious
+	url = https://github.com/propensive/vicarious
