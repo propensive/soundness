@@ -10,6 +10,7 @@ Ideas for better management of Soundness repositories:
 - Publishing to Maven Central using Mill
 - Merge `npcrus/soundness-monorepo` and `propensive/soundness`
 - Experiment with discoverability
+- scalafmt
 
 lower priority:
 - Build grouped `web`, `cli`, `data`, `base`, `dev`, `sci` binaries; maybe others

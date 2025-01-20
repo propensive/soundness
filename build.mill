@@ -59,22 +59,43 @@ trait ProbablyTestModule extends SoundnessSubModule {
 
 // ------------------------ MODULES ------------------------
 
-// object larceny extends SoundnessModule {
-//   def sources = Task.Sources {
-//     Seq(PathRef(millSourcePath /"src" / "plugin"))
-//   }
-// }
+object abacist extends SoundnessModule {
+  object Core extends SoundnessSubModule {
+    def moduleDeps = Seq(quantitative.units)
+  }
 
-object prepositional extends SoundnessModule {
-  object core extends SoundnessSubModule
+  object test extends SoundnessSubModule
 }
 
-object symbolism extends SoundnessModule {
+object acyclicity extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(prepositional.core)
+    def moduleDeps = Seq(gossamer.core)
   }
 
   object test extends ProbablyTestModule
+}
+
+object ambience extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object anthology extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hellenism.core)
+  }
+
+  object `scala` extends SoundnessSubModule {
+    def moduleDeps = Seq(core, anticipation.log, ambience.core, galilei.core)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  }
+
+  object `java` extends SoundnessSubModule {
+    def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
+  }
 }
 
 object anticipation extends SoundnessModule {
@@ -136,6 +157,187 @@ object anticipation extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object aviation extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(quantitative.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object burdock extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
+  }
+}
+
+object caesura extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(turbulence.core, escritoire.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object camouflage extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(parasite.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object capricious extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(wisteria.core, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object cardinality extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(fulminate.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object chiaroscuro extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object contextual extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object contingency extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object cosmopolite extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object dendrology extends SoundnessModule {
+  object tree extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object dag extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, acyclicity.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object denominative extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.text)
+  }
+}
+
+object digression extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core, contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object dissonance extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core, contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object diuretic extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object escapade extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object escritoire extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object ethereal extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object eucalyptus extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(turbulence.core, gossamer.core)
+  }
+  object syslog extends SoundnessSubModule {
+    def moduleDeps = Seq(guillotine.core, core)
+  }
+
+  object ansi extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, core, iridescence.core)
+  }
+}
+
+object exoskeleton extends SoundnessModule {
+  object args extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, profanity.core, ambience.core)
+  }
+
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(args, galilei.core)
+  }
+
+  object completions extends SoundnessSubModule {
+    def moduleDeps = Seq(core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object feudalism extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object fulminate extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(
@@ -153,26 +355,227 @@ object fulminate extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
-object cardinality extends SoundnessModule {
+object galilei extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(fulminate.core)
+    def moduleDeps = Seq(serpentine.core, guillotine.core, nomenclature.core)
   }
 
   object test extends ProbablyTestModule
 }
 
-object vacuous extends SoundnessModule {
+object gastronomy extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(fulminate.core)
+    def moduleDeps = Seq(monotonous.core, turbulence.core)
   }
 
+  object test extends ProbablyTestModule
 }
 
-object denominative extends SoundnessModule {
+object geodesy extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(gossamer.core)
   }
 
+  object test extends ProbablyTestModule
+}
+
+object gesticulate extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object gossamer extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object guillotine extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object hallucination extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, gesticulate.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object hellenism extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object hieroglyph extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(kaleidoscope.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object hypotenuse extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object inimitable extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core, contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object iridescence extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(contextual.core, anticipation.color, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object jacinta extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(merino.core, gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object kaleidoscope extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core, contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object larceny extends SoundnessModule {
+  def sources = Task.Sources {
+    Seq(PathRef(millSourcePath /"src" / "plugin"))
+  }
+}
+
+object merino extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(turbulence.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object metamorphose extends SoundnessModule {
+  object core extends SoundnessModule {
+    def moduleDeps = Seq(contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object monotonous extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object mosquito extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object nettlesome extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
+  }
+  object url extends SoundnessSubModule {
+    def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object nomenclature extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object parasite extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(digression.core, anticipation.time, feudalism.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object prepositional extends SoundnessModule {
+  object core extends SoundnessSubModule
+}
+
+object probably extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  }
+
+  object cli extends SoundnessSubModule {
+    def moduleDeps = Seq(core, escritoire.core)
+  }
+
+  object coverage extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, dendrology.tree, digression.core)
+  }
+}
+
+object profanity extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(eucalyptus.core, diuretic.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object quantitative extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time)
+  }
+  object units extends SoundnessSubModule {
+    def moduleDeps = Seq(core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object revolution extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(serpentine.core, turbulence.core)
+  }
+
+  object test extends ProbablyTestModule
 }
 
 object rudiments extends SoundnessModule {
@@ -195,352 +598,6 @@ object rudiments extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
-object feudalism extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object caesura extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(turbulence.core, escritoire.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object aviation extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(quantitative.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object zeppelin extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(galilei.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object burdock extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
-  }
-}
-
-object galilei extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(serpentine.core, guillotine.core, nomenclature.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object camouflage extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(parasite.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object geodesy extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object hallucination extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, gesticulate.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object merino extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(turbulence.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object cosmopolite extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object monotonous extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object gesticulate extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object revolution extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(serpentine.core, turbulence.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object telekinesis extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, gesticulate.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object vicarious extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object gastronomy extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, turbulence.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object hellenism extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object contingency extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object surveillance extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object ethereal extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object dissonance extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object hypotenuse extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object kaleidoscope extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object hieroglyph extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(kaleidoscope.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object contextual extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object iridescence extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(contextual.core, anticipation.color, hypotenuse.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object inimitable extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object digression extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object parasite extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(digression.core, anticipation.time, feudalism.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object wisteria extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(contingency.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object profanity extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(eucalyptus.core, diuretic.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object capricious extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, hypotenuse.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object turbulence extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object spectacular extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object gossamer extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object ambience extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object escritoire extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object acyclicity extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object diuretic extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object dendrology extends SoundnessModule {
-  object tree extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object dag extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, acyclicity.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object exoskeleton extends SoundnessModule {
-  object args extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, profanity.core, ambience.core)
-  }
-
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(args, galilei.core)
-  }
-
-  object completions extends SoundnessSubModule {
-    def moduleDeps = Seq(core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
 object scintillate extends SoundnessModule {
   object server extends SoundnessSubModule {
     def moduleDeps = Seq(telekinesis.core)
@@ -554,38 +611,6 @@ object scintillate extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
-object escapade extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object chiaroscuro extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object guillotine extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
-object nomenclature extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
-  }
-
-  object test extends ProbablyTestModule
-}
-
 object serpentine extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, nomenclature.core)
@@ -594,95 +619,75 @@ object serpentine extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
-object jacinta extends SoundnessModule {
-  def moduleDeps = Seq(merino.core, gossamer.core)
-
-  object test extends ProbablyTestModule
-}
-
-object mosquito extends SoundnessModule {
-  def moduleDeps = Seq(gossamer.core)
-
-  object test extends ProbablyTestModule
-}
-
-object metamorphose extends SoundnessModule {
-  def moduleDeps = Seq(contingency.core)
-
-  object test extends ProbablyTestModule
-}
-
-object quantitative extends SoundnessModule {
+object spectacular extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hypotenuse.core, gossamer.core, anticipation.opaque, anticipation.time)
-  }
-  object units extends SoundnessSubModule {
-    def moduleDeps = Seq(core)
+    def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
   }
 
   object test extends ProbablyTestModule
 }
 
-object anthology extends SoundnessModule {
+object surveillance extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hellenism.core)
-  }
-
-  object `scala` extends SoundnessSubModule {
-    def moduleDeps = Seq(core, anticipation.log, ambience.core, galilei.core)
-    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  }
-
-  object `java` extends SoundnessSubModule {
-    def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
-  }
-}
-
-object abacist extends SoundnessModule {
-  object Core extends SoundnessSubModule {
-    def moduleDeps = Seq(quantitative.units)
-  }
-
-  object test extends SoundnessSubModule
-}
-
-object eucalyptus extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(turbulence.core, gossamer.core)
-  }
-  object syslog extends SoundnessSubModule {
-    def moduleDeps = Seq(guillotine.core, core)
-  }
-
-  object ansi extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, core, iridescence.core)
-  }
-}
-
-object nettlesome extends SoundnessModule {
-  object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, hypotenuse.core)
-  }
-  object url extends SoundnessSubModule {
-    def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
+    def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
   }
 
   object test extends ProbablyTestModule
 }
 
-object probably extends SoundnessModule {
+object symbolism extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage)
-    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+    def moduleDeps = Seq(prepositional.core)
   }
 
-  object cli extends SoundnessSubModule {
-    def moduleDeps = Seq(core, escritoire.core)
+  object test extends ProbablyTestModule
+}
+
+object telekinesis extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(monotonous.core, gesticulate.core)
   }
 
-  object coverage extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, dendrology.tree, digression.core)
+  object test extends ProbablyTestModule
+}
+
+object turbulence extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core)
   }
+
+  object test extends ProbablyTestModule
+}
+
+object vacuous extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(fulminate.core)
+  }
+
+}
+
+object vicarious extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object wisteria extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(contingency.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object zeppelin extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(galilei.core)
+  }
+
+  object test extends ProbablyTestModule
 }
 
 object entry extends BaseScalaModule {
