@@ -25,30 +25,8 @@ import scala.compiletime.*
 
 import language.dynamics
 
-given Realm = realm"panopticon"
-
-class Target[FromType, PathType <: Tuple]() extends Dynamic:
-  transparent inline def selectDynamic(member: String): Any =
-    ${Panopticon.dereference[FromType, PathType]('member)}
-
-export Panopticon.Lens
-
-extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
-  @targetName("append")
-  infix def ++ [ToType2, PathType2 <: Tuple](right: Lens[ToType, PathType2, ToType2])
-          : Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
-
-    Lens.make()
-
-  inline def get(target: FromType): ToType = ${Panopticon.get[FromType, PathType, ToType]('target)}
-
-  inline def set(target: FromType, newValue: ToType): FromType =
-    ${Panopticon.set[FromType, PathType, ToType]('target, 'newValue)}
-
-trait MemberType[TargetType, LabelType <: String & Singleton]:
-  type ReturnType
-
 object Panopticon:
+  given Realm = realm"panopticon"
   opaque type Lens[FromType, PathType <: Tuple, ToType] = Int
   opaque type InitLens[FromType] = Int
 
@@ -151,7 +129,3 @@ object Panopticon:
 
               case Some(symbol) => (symbol.info.asType: @unchecked) match
                 case '[returnType] => '{Target[returnType, fieldNameType *: TupleType]()}
-
-trait Dereferencer[TargetType, LabelType <: Label]:
-  type FieldType
-  def field(target: TargetType): FieldType
