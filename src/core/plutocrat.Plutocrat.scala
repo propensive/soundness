@@ -25,50 +25,13 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 
-import language.experimental.captureChecking
-
-open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
-  this: Currency =>
-  def apply(value: Double): Money[this.type] =
-    val integral = value.toLong
-    val tweak = (if integral < 0 then -0.5 else 0.5)/modulus
-    Money(this)(integral, ((value - integral + tweak)*modulus).toInt)
-
-  def zero: Money[this.type] = apply(0.00)
-
-case class Price[CurrencyType <: Currency & Singleton: ValueOf]
-   (principal: Money[CurrencyType], tax: Money[CurrencyType]):
-
-  def effectiveTaxRate: Double = tax/principal
-
-  @targetName("add")
-  infix def + (right: Price[CurrencyType]): Price[CurrencyType] =
-    Price(principal + right.principal, tax + right.tax)
-
-  @targetName("subtract")
-  infix def - (right: Price[CurrencyType]): Price[CurrencyType] =
-    Price(principal - right.principal, tax - right.tax)
-
-  @targetName("negate")
-  def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
-
-  @targetName("divide")
-  infix def / (right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
-
-  def inclusive: Money[CurrencyType] = principal + tax
-
-trait CurrencyStyle:
-  def format(currency: Currency, unit: Text, subunit: Text): Text
-
-package currencyStyles:
-  given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"
-  given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
-
 object Plutocrat:
   opaque type Money[+CurrencyType <: Currency & Singleton] = Long
 
   object Money:
-    erased given underlying[CurrencyType <: Currency & Singleton]: Underlying[Money[CurrencyType], Int] = ###
+    erased given underlying[CurrencyType <: Currency & Singleton]
+            : Underlying[Money[CurrencyType], Int] =
+      ###
 
     def apply(currency: Currency & Singleton)(wholePart: Long, subunit: Int): Money[currency.type] =
       wholePart*currency.modulus + subunit
@@ -96,7 +59,7 @@ object Plutocrat:
       _ - _
 
     given [CurrencyType <: Currency & Singleton]
-        => Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] as multiplicable2 =
+        => Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] as multiplicable =
       (left, right) =>
         val value = left*right
         (value + value.signum/2).toLong
@@ -132,13 +95,3 @@ object Plutocrat:
         val share: Money[CurrencyType] = left/right
         val remainder: Money[CurrencyType] = (left - share)
         remainder.split(right - 1, share :: result)
-
-export Plutocrat.Money
-
-extension [CurrencyType <: Currency & Singleton: ValueOf](seq: Iterable[Money[CurrencyType]])
-  def total: Money[CurrencyType] =
-    def recur(seq: Iterable[Money[CurrencyType]], total: Money[CurrencyType]): Money[CurrencyType] =
-      if seq.isEmpty then total else recur(seq.tail, total + seq.head)
-
-    val currency: CurrencyType = summon[ValueOf[CurrencyType]].value
-    recur(seq, currency.zero)

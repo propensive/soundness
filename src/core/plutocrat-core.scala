@@ -18,7 +18,9 @@ package plutocrat
 
 import gossamer.*
 
-import language.experimental.captureChecking
+package currencyStyles:
+  given local: CurrencyStyle = (currency, unit, subunit) => t"${currency.symbol}$unit.$subunit"
+  given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
 
 package currencies:
   object Eur extends Currency(t"EUR", t"€",    t"Euro",               100)
@@ -37,3 +39,13 @@ package currencies:
   object Nzd extends Currency(t"NZD", t"NZ$$", t"New Zealand Dollar", 100)
   object Inr extends Currency(t"INR", t"₹",    t"Indian Rupee",       100)
   object Mxn extends Currency(t"MXN", t"$$",   t"Mexican Peso",       100)
+
+export Plutocrat.Money
+
+extension [CurrencyType <: Currency & Singleton: ValueOf](seq: Iterable[Money[CurrencyType]])
+  def total: Money[CurrencyType] =
+    def recur(seq: Iterable[Money[CurrencyType]], total: Money[CurrencyType]): Money[CurrencyType] =
+      if seq.isEmpty then total else recur(seq.tail, total + seq.head)
+
+    val currency: CurrencyType = summon[ValueOf[CurrencyType]].value
+    recur(seq, currency.zero)
