@@ -38,8 +38,6 @@ enum CodlToken:
   case Body(stream: LazyList[Char])
 
 object CodlToken:
-  //given Similar[CodlToken] = _.productPrefix == _.productPrefix
-
   given CodlToken is Inspectable =
     case Indent                       => t"Indent"
     case Peer                         => t"Peer"

@@ -30,7 +30,6 @@ import vacuous.*
 import java.io as ji
 
 import language.dynamics
-//import language.experimental.captureChecking
 
 object CodlNode:
   given CodlNode is Inspectable = _.data.option.fold(t"!"): data =>
@@ -40,18 +39,18 @@ object CodlNode:
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
 
   given (using CodlNode is Inspectable) => CodlNode is Contrastable as contrast = (left, right) =>
-    if left == right then Semblance.Identical(left.inspect) else
+    if left == right then Juxtaposition.Same(left.inspect) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.inspect).toString.tt)
-          case Ins(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.inspect)
-          case Del(_, v)    => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.inspect).toString.tt, t"—")
+          case Par(_, _, v) => v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
+          case Ins(_, v)    => v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
+          case Del(_, v)    => v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
           case Sub(_, v, lv, rv) =>
-            if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrastWith(rv)
-            else t"[key]" -> Semblance.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
+            if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.juxtapose(rv)
+            else t"[key]" -> Juxtaposition.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
 
-      Semblance.Breakdown(comparison, left.key.or(t"—"), right.key.or(t"—"))
+      Juxtaposition.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
 
 case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
@@ -97,19 +96,19 @@ object CodlDoc:
     new Contrastable:
       type Self = CodlDoc
       def apply(left: CodlDoc, right: CodlDoc) =
-        if left == right then Semblance.Identical(left.inspect) else
+        if left == right then Juxtaposition.Same(left.inspect) else
           val comparison = IArray.from:
-            (t"[schema]", left.schema.contrastWith(right.schema)) +:
-            (t"[margin]", left.margin.contrastWith(right.margin)) +:
+            (t"[schema]", left.schema.juxtapose(right.schema)) +:
+            (t"[margin]", left.margin.juxtapose(right.margin)) +:
             diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-              case Par(_, _, v)      => v.let(_.key).or(t"—") -> Semblance.Identical(v.let(_.inspect).toString.tt)
-              case Ins(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(t"—", v.inspect)
-              case Del(_, v)         => v.let(_.key).or(t"—") -> Semblance.Different(v.let(_.inspect).toString.tt, t"—")
+              case Par(_, _, v)      => v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
+              case Ins(_, v)         => v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
+              case Del(_, v)         => v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
               case Sub(_, v, lv, rv) =>
                 val key = if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
-                key -> lv.contrastWith(rv)
+                key -> lv.juxtapose(rv)
 
-          Semblance.Breakdown(comparison, t"", t"")
+          Juxtaposition.Collation(comparison, t"", t"")
 
 case class CodlDoc(children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Char] = LazyList())
 extends Indexed:
