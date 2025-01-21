@@ -52,9 +52,6 @@ case class Price[CurrencyType <: Currency & Singleton: ValueOf]
   @targetName("negate")
   def `unary_-`: Price[CurrencyType] = Price(-principal, -tax)
 
-  @targetName("multiply")
-  infix def * (right: Double): Price[CurrencyType] = Price(principal*right, tax*right)
-
   @targetName("divide")
   infix def / (right: Double): Price[CurrencyType] = Price(principal/right, tax/right)
 
@@ -99,14 +96,10 @@ object Plutocrat:
       _ - _
 
     given [CurrencyType <: Currency & Singleton]
-        => Money[CurrencyType] is Multiplicable by Int into Money[CurrencyType] as multiplicable =
-      _*_
-
-    // given [CurrencyType <: Currency & Singleton, DoubleType <: Double]
-    //     => Money[CurrencyType] is Multiplicable by DoubleType into Money[CurrencyType] as multiplicable2 =
-    //   (left, right) =>
-    //     val value = left*right
-    //     (value + value.signum/2).toLong
+        => Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] as multiplicable2 =
+      (left, right) =>
+        val value = left*right
+        (value + value.signum/2).toLong
 
   extension [CurrencyType <: Currency & Singleton: ValueOf](left: Money[CurrencyType])
     @targetName("greaterThan")
