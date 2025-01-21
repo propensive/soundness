@@ -20,6 +20,8 @@ import gossamer.*
 import larceny.*
 import probably.*
 
+import currencies.*
+
 object Tests extends Suite(t"Plutocrat tests"):
   def run(): Unit =
     suite(t"Money tests"):
