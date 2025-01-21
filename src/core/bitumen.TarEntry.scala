@@ -22,109 +22,13 @@ import denominative.*
 import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
-
-case class UnixMode
-   (setUid:     Boolean = false,
-    setGid:     Boolean = false,
-    ownerRead:  Boolean = true,
-    ownerWrite: Boolean = true,
-    ownerExec:  Boolean = false,
-    groupRead:  Boolean = true,
-    groupWrite: Boolean = false,
-    groupExec:  Boolean = false,
-    otherRead:  Boolean = true,
-    otherWrite: Boolean = false,
-    otherExec:  Boolean = false):
-
-  def int: Int =
-    var sum: Int = 0
-    if setUid then sum += 2048
-    if setGid then sum += 1024
-    if ownerRead then sum += 256
-    if ownerWrite then sum += 128
-    if ownerExec then sum += 64
-    if groupRead then sum += 32
-    if groupWrite then sum += 16
-    if groupExec then sum += 8
-    if otherRead then sum += 4
-    if otherWrite then sum += 2
-    if otherExec then sum += 1
-    sum
-
-  def bytes: Bytes = int.octal.pad(7, Rtl, '0').bytes
-
-case class UnixUser(value: Int, name: Optional[Text] = Unset):
-  def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
-
-case class UnixGroup(value: Int, name: Optional[Text] = Unset):
-  def bytes: Bytes = value.octal.pad(7, Rtl, '0').bytes
-
-type InvalidTarNames = ".*[\u0000-\u0019].*" | ".*\u007f-\uffff.*" | ".*\\/.*" | ".*\\\\.*"
-
-case class TarPath(tarFile: Tar, ref: TarRef):
-  def entry: TarEntry = ???
-
-case class TarRef(descent: List[Name[InvalidTarNames]]):
-  def parent: Optional[TarRef] = descent match
-    case Nil       => Unset
-    case _ :: tail => TarRef(tail)
-
-object TarRef:
-  def apply(text: Text)
-     (using pathError:  Tactic[PathError],
-            navigable:  TarRef is Navigable[InvalidTarNames, Unset.type],
-            rootParser: RootParser[TarRef, Unset.type],
-            creator:    PathCreator[TarRef, InvalidTarNames, Unset.type])
-          : TarRef =
-    Navigable.decode[TarRef](text)
-
-  @targetName("child")
-  infix def / (name: Name[InvalidTarNames]): TarRef = TarRef(List(name))
-
-  given TarRef is Navigable[InvalidTarNames, Unset.type] as navigable:
-    def root(path: TarRef): Unset.type = Unset
-    def descent(path: TarRef): List[Name[InvalidTarNames]] = path.descent
-    def prefix(ref: Unset.type): Text = t""
-    def separator(path: TarRef): Text = t"/"
-
-  given RootParser[TarRef, Unset.type] as rootParser:
-    def parse(text: Text): (Unset.type, Text) =
-      (Unset, if text.at(Prim) == '/' then text.skip(1) else text)
-
-  given PathCreator[TarRef, InvalidTarNames, Unset.type] as pathCreator =
-    (root, descent) => TarRef(descent)
-
-  given TarRef is Showable as showable = _.descent.reverse.map(_.render).join(t"/")
-
-enum TypeFlag:
-  case File
-  case Link
-  case Symlink
-  case CharSpecial
-  case BlockSpecial
-  case Directory
-  case Fifo
-  case Contiguous
-  case NextFile
-  case GlobalExtension
-
-  def id: Char = this match
-    case File            => '0'
-    case Link            => '1'
-    case Symlink         => '2'
-    case CharSpecial     => '3'
-    case BlockSpecial    => '4'
-    case Directory       => '5'
-    case Fifo            => '6'
-    case Contiguous      => '7'
-    case NextFile        => 'x'
-    case GlobalExtension => 'g'
 
 object TarEntry:
   def apply[DataType: Readable by Bytes, InstantType: GenericInstant]
@@ -144,7 +48,7 @@ object TarEntry:
 enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
   case File
      (path:  TarRef,
-      mode:  nixMode,
+      mode:  UnixMode,
       user:  UnixUser,
       group: UnixGroup,
       mtime: U32,
@@ -217,37 +121,28 @@ enum TarEntry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mt
     number.octal.pad(width - 1).bytes
 
   lazy val header: Bytes = Bytes.construct(512): array =>
-    array.place(entryName.bytes, 0)
-    array.place(mode.bytes, 100)
-    array.place(user.bytes, 108)
-    array.place(group.bytes, 116)
-    array.place(format(size, 12), 124)
-    array.place(format(mtime, 12), 136)
-    array.place(t"        ".bytes, 148)
+    array.place(entryName.bytes, Prim)
+    array.place(mode.bytes, 100.z)
+    array.place(user.bytes, 108.z)
+    array.place(group.bytes, 116.z)
+    array.place(format(size, 12.z), 124.z)
+    array.place(format(mtime, 12.z), 136.z)
+    array.place(t"        ".bytes, 148.z)
     array(156) = typeFlag.id.toByte
 
-    link.let { link => array.place(link.bytes, 157) }
+    link.let { link => array.place(link.bytes, 157.z) }
 
     deviceNumbers.let: (devMajor, devMinor) =>
-      array.place(format(devMajor, 8), 329)
-      array.place(format(devMinor, 8), 337)
+      array.place(format(devMajor, 8), 329.z)
+      array.place(format(devMinor, 8), 337.z)
 
-    user.name.let { name => array.place(name.bytes, 265) }
-    group.name.let { name => array.place(name.bytes, 297) }
+    user.name.let { name => array.place(name.bytes, 265.z) }
+    group.name.let { name => array.place(name.bytes, 297.z) }
 
-    array.place(t"ustar\u0000".bytes, 257)
-    array.place(t"00".bytes, 263)
+    array.place(t"ustar\u0000".bytes, 257.z)
+    array.place(t"00".bytes, 263.z)
 
     val total = array.map(_.bits.u8.u32).reduce(_ + _)
-    array.place(format(total, 8), 148)
+    array.place(format(total, 8), 148.z)
 
   def serialize: LazyList[Bytes] = header #:: dataBlocks
-
-object Tar:
-  val zeroBlock: Bytes = IArray.fill[Byte](512)(0)
-
-  given Tar is Readable by Bytes as readable = _.serialize
-
-case class Tar(entries: LazyList[TarEntry]):
-  def serialize: LazyList[Bytes] =
-    entries.flatMap(_.serialize) #::: LazyList(Tar.zeroBlock, Tar.zeroBlock)
