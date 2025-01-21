@@ -48,7 +48,6 @@ object CodlSchema:
 
   def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema = Struct(subschemas.map(Entry(_, _)), Arity.AtMostOne)
 
-
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
                         val validator: Optional[Text => Boolean])
 extends Dynamic:
@@ -88,19 +87,9 @@ extends Dynamic:
 
   export arity.{required, variadic, unique}
 
-enum Arity:
-  case One, AtLeastOne, AtMostOne, Many, Unique
-
-  def required: Boolean = this == One || this == Unique || this == AtLeastOne
-  def variadic: Boolean = this == AtLeastOne || this == Many
-  def unique: Boolean = !variadic
-
-  def symbol: Text = this match
-    case One        => t""
-    case AtLeastOne => t"+"
-    case AtMostOne   => t"?"
-    case Many       => t"*"
-    case Unique     => t"!"
+case class Field(fieldArity: Arity, fieldValidator: Optional[Text => Boolean] = Unset)
+extends CodlSchema(IArray(), fieldArity, fieldValidator):
+  def optional: Field = Field(Arity.AtMostOne, fieldValidator)
 
 object Struct:
   def apply(arity: Arity, subschemas: (Text, CodlSchema)*): Struct =
@@ -126,7 +115,3 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
 
   override def toString(): String =
     structSubschemas.map(_.toString).map(Text(_)).join(t"(", t", ", t")${structArity.symbol}").s
-
-case class Field(fieldArity: Arity, fieldValidator: Optional[Text => Boolean] = Unset)
-extends CodlSchema(IArray(), fieldArity, fieldValidator):
-  def optional: Field = Field(Arity.AtMostOne, fieldValidator)

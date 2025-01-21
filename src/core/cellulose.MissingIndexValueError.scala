@@ -16,10 +16,8 @@
 
 package cellulose
 
-import language.experimental.captureChecking
+import anticipation.*
+import fulminate.*
 
-extension (inline ctx: StringContext)
-  transparent inline def codl(inline parts: Any*): CodlDoc = ${Codl.Prefix.expand('ctx, 'parts)}
-
-extension [ValueType](value: ValueType)(using encoder: CodlEncoder[ValueType])
-  def codl: CodlDoc = CodlDoc(IArray.from(encoder.encode(value).flatten), encoder.schema, 0)
+case class MissingIndexValueError(index: Int)(using Diagnostics)
+extends Error(m"the index $index does not exist in the CoDL document")

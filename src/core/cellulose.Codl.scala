@@ -23,31 +23,8 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
-import spectacular.*, booleanStyles.trueFalse
 import turbulence.*
 import vacuous.*
-
-given Realm = realm"cellulose"
-
-enum CodlToken:
-  case Indent, Peer, Blank, Argument
-  case Outdent(n: Int)
-  case Item(text: Text, line: Int, col: Int, block: Boolean = false)
-  case Comment(text: Text, line: Int, col: Int)
-  case Error(error: CodlError)
-  case Body(stream: LazyList[Char])
-
-object CodlToken:
-  given CodlToken is Inspectable =
-    case Indent                       => t"Indent"
-    case Peer                         => t"Peer"
-    case Blank                        => t"Blank"
-    case Argument                     => t"Argument"
-    case Body(_)                      => t"Body(...)"
-    case Outdent(n)                   => t"Outdent($n)"
-    case Item(text, line, col, block) => t"Item($text, $line, $col, $block)"
-    case Comment(text, line, col)     => t"Comment($text, $line, $col)"
-    case Error(error)                 => t"Error(${error.message})"
 
 erased trait Codl
 
@@ -71,9 +48,15 @@ object Codl:
     val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
     val baseSchema: CodlSchema = schema
 
-    case class Proto(key: Optional[Text] = Unset, line: Int = 0, col: Int = 0, children: List[CodlNode] = Nil,
-                        meta: Optional[Meta] = Unset, schema: CodlSchema = CodlSchema.Free, params: Int = 0,
-                        multiline: Boolean = false):
+    case class Proto
+       (key:       Optional[Text] = Unset,
+        line:      Int            = 0,
+        col:       Int            = 0,
+        children:  List[CodlNode] = Nil,
+        meta:      Optional[Meta] = Unset,
+        schema:    CodlSchema     = CodlSchema.Free,
+        params:    Int            = 0,
+        multiline: Boolean        = false):
 
       def commit(child: Proto): (Optional[(Text, (Int, Int))], Proto) =
         val closed = child.close
@@ -93,12 +76,18 @@ object Codl:
         key.lay(CodlNode(Unset, meta)):
           case key: Text =>
             val meta2 = meta.let { m => m.copy(comments = m.comments.reverse) }
-            val data = Data(key, IArray.from(children.reverse), Layout(params, multiline, col - margin), schema)
+
+            val data = Data
+                        (key,
+                         IArray.from(children.reverse),
+                         Layout(params, multiline, col - margin),
+                         schema)
+
             val node = CodlNode(data, meta2)
 
             schema.requiredKeys.each: key =>
-              if !node.data.let(_.has(key)).or(false)
-              then raise(CodlError(line, col, node.key.or(t"?").length, MissingKey(node.key.or(t"?"), key)))
+              if !node.data.let(_.has(key)).or(false) then raise:
+                CodlError(line, col, node.key.or(t"?").length, MissingKey(node.key.or(t"?"), key))
 
             node
 

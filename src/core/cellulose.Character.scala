@@ -17,7 +17,6 @@
 package cellulose
 
 import anticipation.*
-import contingency.*
 import denominative.*
 import gossamer.*
 import kaleidoscope.*
@@ -62,80 +61,3 @@ object Character:
     def char: Char = if char == -1 then '\u0000' else char.toChar
     def line: Int = ((char >> 48) & 0xffffff).toInt
     def column: Int = if char == End then 0 else ((char >> 24) & 0xffffff).toInt
-
-import Character.*
-
-class PositionReader(private var in: LazyList[Text]):
-  private var lastLine: Int = 0
-  private var lastCol: Int = 0
-  private var startLine: Int = 0
-  private var startCol: Int = 0
-  private var requireCr: Optional[Boolean] = Unset
-  private var finished: Boolean = false
-  private val buf: StringBuilder = StringBuilder()
-
-  private var current: Ordinal = Prim - 1
-
-  def charStream(): LazyList[Char] = LazyList.continually(read()).takeWhile(_ != -1).map(_.toChar)
-
-  private var text: Text =
-    if in.isEmpty then t""
-    else
-      val result = in.head
-      in = in.tail
-      result
-
-  @tailrec
-  private def read(): Int =
-    current += 1
-
-    text.at(current).let(_.toInt).or:
-      if in.isEmpty then -1 else
-        text = in.head
-        in = in.tail
-        current = Prim - 1
-        read()
-
-  private def advance(char: Character): Unit = char.char match
-    case '\n' =>
-      lastLine += 1
-      lastCol = 0
-    case _ =>
-      lastCol += 1
-
-  def next()(using Tactic[CodlError]): Character =
-    if finished then throw IllegalStateException("Attempted to read past the end of the stream")
-    read() match
-      case -1 =>
-        finished = true
-        Character.End
-      case '\r' =>
-        requireCr match
-          case Unset => requireCr = true
-          case false => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(false)))
-          case true  => ()
-
-        if read() != '\n' then raise(CodlError(lastLine, lastCol, 1, UnexpectedCarriageReturn))
-
-        Character('\n', lastLine, lastCol).tap(advance)
-
-      case '\n' =>
-        requireCr match
-          case true  => raise(CodlError(lastLine, lastCol, 1, CarriageReturnMismatch(true)))
-          case Unset => requireCr = false
-          case false => ()
-
-        Character('\n', lastLine, lastCol).tap(advance)
-
-      case ch =>
-        Character(ch, lastLine, lastCol).tap(advance)
-
-  def start(): (Int, Int) = (startLine, startCol)
-  def get(): Text = buf.toString.show.also(buf.clear())
-
-  def put(char: Character): Unit =
-    if buf.isEmpty then
-      startLine = char.line
-      startCol = char.column
-
-    buf.append(char.char)

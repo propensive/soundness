@@ -23,20 +23,7 @@ import vacuous.*
 
 import java.io as ji
 
-object CodlPrinter:
-  val standardPrinter: CodlPrinter = codl =>
-    val writer: ji.Writer = ji.StringWriter()
-    Printer.print(writer, codl)
-    writer.toString.tt
-
-trait CodlPrinter:
-  def serialize(codl: CodlDoc): Text
-
-package codlPrinters:
-  given standard: CodlPrinter = CodlPrinter.standardPrinter
-
 object Printer:
-
   def print(out: ji.Writer, doc: CodlDoc): Unit =
 
     @tailrec

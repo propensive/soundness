@@ -84,15 +84,3 @@ object CodlError:
 
 case class CodlError(line: Int, col: Int, length: Int, reason: CodlError.Reason)(using Diagnostics)
 extends Error(m"could not read the CoDL document at $line:$col: $reason")
-
-case class BcodlError(expectation: Text, pos: Int)(using Diagnostics)
-extends Error(m"expected $expectation at position $pos")
-
-case class MultipleIdentifiersError(key: Text)(using Diagnostics)
-extends Error(m"multiple parameters of $key have been marked as identifiers")
-
-case class MissingValueError(key: Text)(using Diagnostics)
-extends Error(m"the key $key does not exist in the CoDL document")
-
-case class MissingIndexValueError(index: Int)(using Diagnostics)
-extends Error(m"the index $index does not exist in the CoDL document")
