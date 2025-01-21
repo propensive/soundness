@@ -26,48 +26,15 @@ import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
+import prepositional.*
 import rudiments.*
-import serpentine.*, pathHierarchies.unix
+import serpentine.*, pathNavigation.linux
 import spectacular.*
 import vacuous.*
 
 import scala.compiletime.*
 import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
-
-object DispatchRunner:
-  def run(input: String): String =
-    val cls = Class.forName("Generated$Code$From$Quoted").nn
-    val instance = cls.getDeclaredConstructor().nn.newInstance().nn
-    val callable = instance.asInstanceOf[{ def apply(): String => String }]
-
-    callable()(input)
-
-  def main(args: Array[String]): Unit =
-    val out = System.out.nn
-    System.setErr(null)
-    System.setOut(null)
-    val params = args(0)
-    out.println(run(args(0)))
-
-class References():
-  private var ref: Optional[Expr[List[Json]]] = Unset
-  private var allocations: List[Json] = List()
-
-  def setRef(expr: Expr[List[Json]]): Unit = ref = expr
-  def array: Expr[List[Json]] = ref.vouch(using Unsafe)
-  def current: Int = allocations.length
-
-  def allocate[ValueType](value: => ValueType)(using JsonEncoder[ValueType]): Int =
-    allocations.length.also { allocations ::= value.json }
-
-  def apply(): Text = allocations.reverse.json.encode
-
-extension [ValueType](value: ValueType)(using Quotes)
-  inline def put(using references: References): Expr[ValueType] = '{
-    import strategies.throwUnsafely
-    ${references.array}(${ToExpr.IntToExpr(references.allocate[ValueType](value))}).as[ValueType]
-  }
 
 object Dispatcher:
   private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
@@ -77,10 +44,11 @@ trait Dispatcher:
   protected def scalac: Scalac[?]
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
 
-  inline def dispatch[OutputType: JsonDecoder](body: References ?=> Quotes ?=> Expr[OutputType])
-     [ScalacVersionType <: ScalacVersions]
+  inline def dispatch[OutputType: Decodable in Json]
+     (body: References ?=> Quotes ?=> Expr[OutputType])
+     [ScalacVersionType <: Scalac.All]
      (using codepoint: Codepoint, classloader: Classloader)
-          : Result[OutputType] raises CompileError =
+          : Result[OutputType] raises CompilerError =
 
     import strategies.throwUnsafely
     val uuid = Uuid()
@@ -103,7 +71,7 @@ trait Dispatcher:
           }
         Dispatcher.cache(codepoint)
       else
-        val out: Unix.Path = % / p"home" / p"propensive" / p"tmp" / p"staging" / PathName(uuid.show)
+        val out: Path = % / p"home" / p"propensive" / p"tmp" / p"staging" / Name(uuid.show)
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
@@ -130,8 +98,3 @@ trait Dispatcher:
        (out,
         classpath, () => fn(references()).decode[Json].as[OutputType],
         (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
-
-case class Dispatch[OutputType]
-   (path: Path, classpath: LocalClasspath, local: () => OutputType, remote: (Text => Text) => OutputType):
-
-  def mainClass: Text = t"superlunary.DispatchRunner"
