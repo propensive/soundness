@@ -1,5 +1,5 @@
 /*
-    Bifurcate, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Polaris, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,5 +16,4 @@
 
 package soundness
 
-export bifurcate.{Buffer, Bufferable, Debufferable, Unpackable, unpackFrom, buffer, unpack,
-    byteWidth}
+export polaris.{Buffer, Bufferable, Debufferable, Unpackable, unpackFrom, buffer, unpack, byteWidth}

@@ -1,5 +1,5 @@
 /*
-    Bifurcate, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Polaris, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,11 +14,17 @@
     and limitations under the License.
 */
 
-package bifurcate
+package polaris
 
 import anticipation.*
 
-class Buffer(private[bifurcate] val bytes: Bytes, initialPosition: Int = 0):
-  private[bifurcate] var position: Int = initialPosition
-  def offset: Int = position
-  def advance(count: Int): Unit = position += count
+extension (bytes: Bytes)
+  def unpackFrom[DataType: Unpackable](offset: Int): DataType.Result =
+    DataType.unpack(Buffer(bytes, offset))
+
+  def buffer[ResultType](lambda: Buffer ?=> ResultType): ResultType = lambda(using Buffer(bytes))
+
+def unpack[ValueType: Unpackable](using buffer: Buffer): ValueType.Result =
+  ValueType.unpack(buffer)
+
+def byteWidth[DataType: Debufferable]: Int = DataType.width
