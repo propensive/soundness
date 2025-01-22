@@ -29,19 +29,10 @@ import turbulence.*
 
 import scala.compiletime.*
 
-case class PtyState
-   (cursor:             Int     = 0,
-    savedCursor:        Int     = 0,
-    style:              Style   = Style(),
-    focusDetectionMode: Boolean = false,
-    focus:              Boolean = true,
-    bracketedPasteMode: Boolean = false,
-    hideCursor:         Boolean = false,
-    title:              Text    = t"",
-    link:               Text    = t"")
+import PtyEscapeError.Reason, Reason.*
 
 object Pty:
-  def apply(width: Int, height: Int): Pty = Pty(ScreenBuffer(width, height), PtyState(), Spool())
+  def apply(width: Int, height: Int): Pty = Pty(Screen(width, height), PtyState(), Spool())
 
   def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
@@ -50,39 +41,12 @@ object Pty:
 
     case _ => LazyList()
 
-object PtyEscapeError:
-  object Reason:
-    given Reason is Communicable as communicable =
-      case BadSgrParameters(ns)         => m"${ns} is not a valid SGR parameter sequence"
-      case BadCsiParameter(n, command)  => m"$n is not a valid CSI parameter for the $command command"
-      case NonintegerSgrParameter(text) => m"$text is not a numerical SGR parameter"
-      case BadColor(n)                  => m"$n is not a valid color number"
-      case BadOscParameter(parameter)   => m"$parameter is not a recognized OSC parameter"
-      case BadCsiCommand(param, char)   => m"$char (with parameter $param) is not a valid CSI command"
-      case BadCsiEscape(char)           => m"$char is not valid in a CSI escape sequence"
-      case BadFeEscape(char)            => m"$char is not a valid Fe escape"
-
-  enum Reason:
-    case BadSgrParameters(n: Text)
-    case BadCsiParameter(n: Int, command: Text)
-    case NonintegerSgrParameter(text: Text)
-    case BadColor(n: Int)
-    case BadOscParameter(parameter: Text)
-    case BadCsiCommand(param: Text, char: Char)
-    case BadCsiEscape(char: Char)
-    case BadFeEscape(char: Char)
-
-import PtyEscapeError.Reason, Reason.*
-
-case class PtyEscapeError(reason: Reason)(using Diagnostics)
-extends Error(m"an ANSI escape code could not be handled because $reason")
-
-case class Pty(buffer: ScreenBuffer, state0: PtyState, output: Spool[Text]):
+case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
   def stream: LazyList[Text] = output.stream
 
   def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
-    val buffer2: ScreenBuffer = buffer.copy()
+    val buffer2: Screen = buffer.copy()
 
     object cursor:
       private var index: Int = state0.cursor

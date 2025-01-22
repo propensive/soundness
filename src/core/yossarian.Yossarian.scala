@@ -25,9 +25,9 @@ import vacuous.*
 
 object Yossarian:
   opaque type Style = Long
-  opaque type ScreenBuffer = (Int, Array[Style], Array[Char], Array[Text])
+  opaque type Screen = (Int, Array[Style], Array[Char], Array[Text])
 
-  extension (buffer: ScreenBuffer)
+  extension (buffer: Screen)
     def width: Int = buffer(0)
     def styleBuffer: Array[Style] = buffer(1)
     def charBuffer: Array[Char] = buffer(2)
@@ -38,10 +38,10 @@ object Yossarian:
     def style(x: Int, y: Int): Style = styleBuffer(offset(x, y))
     def char(x: Int, y: Int): Char = charBuffer(offset(x, y))
     def link(x: Int, y: Int): Text = linkBuffer(offset(x, y))
-    def line: ScreenBuffer = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
+    def line: Screen = (charBuffer.length, styleBuffer, charBuffer, linkBuffer)
     def render: Text = String(charBuffer).grouped(width).to(List).map(_.tt).join(t"\n")
 
-    def find(text: Text): Optional[ScreenBuffer] = line.render.s.indexOf(text.s) match
+    def find(text: Text): Optional[Screen] = line.render.s.indexOf(text.s) match
       case -1 => Unset
 
       case index =>
@@ -78,7 +78,7 @@ object Yossarian:
       charBuffer(cursor) = char
       linkBuffer(cursor) = link
 
-    def copy(): ScreenBuffer =
+    def copy(): Screen =
       val styles = new Array[Style](capacity)
       System.arraycopy(styleBuffer, 0, styles, 0, styles.length)
       val chars = new Array[Char](capacity)
@@ -87,8 +87,8 @@ object Yossarian:
       System.arraycopy(linkBuffer, 0, links, 0, links.length)
       (width, styles, chars, links)
 
-  object ScreenBuffer:
-    def apply(width: Int, height: Int): ScreenBuffer =
+  object Screen:
+    def apply(width: Int, height: Int): Screen =
       val chars = Array.fill[Char](width*height)(' ')
       val styles = Array.fill[Style](width*height)(Style())
       val links = Array.fill[Text](width*height)(t"")
@@ -138,4 +138,4 @@ object Yossarian:
       def update(style: Style, boolean: Boolean): Style =
         if boolean then (style | (1L << bit)) else (style & ~(1L << bit))
 
-export Yossarian.*
+export Yossarian.{Style, Screen}
