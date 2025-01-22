@@ -54,7 +54,8 @@ object SourceCode:
   def apply(language: ProgrammingLanguage, text: Text): SourceCode =
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val ctx0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
-    val languageSettings =
+
+    /*val languageSettings =
       List
        ("experimental.clauseInterleaving",
         "experimental.genericNumberLiterals",
@@ -62,12 +63,12 @@ object SourceCode:
         "experimental.modularity",
         "experimental.erasedDefinitions",
         "experimental.saferExceptions",
-        "experimental.namedTypeArguments")
+        "experimental.namedTypeArguments")*/
 
-    ctx0.setSetting(ctx0.settings.language, languageSettings)
+    //ctx0.setSetting(ctx0.settings.language, languageSettings)
     ctx0.setSetting(ctx0.settings.source, "future")
 
-    given Contexts.Context as ctx =
+    given ctx: Contexts.Context =
       ctx0.setCompilationUnit(CompilationUnit(source, mustExist = false)(using ctx0))
 
 
