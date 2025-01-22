@@ -25,7 +25,7 @@ import telekinesis.*
 erased trait Http
 
 object Http:
-  given (using Monitor, Codicil, HttpServerEvent is Loggable, Tactic[ServerError])
+  given (Monitor, Codicil, HttpServerEvent is Loggable, Tactic[ServerError])
       => Http is Protocolic:
     type Carrier = TcpPort
     type Request = HttpConnection

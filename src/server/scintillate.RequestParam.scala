@@ -23,7 +23,7 @@ import rudiments.*
 import telekinesis.*
 
 object RequestParam:
-  given ("name" is GenericHtmlAttribute[RequestParam[?]]) as name:
+  given name: ("name" is GenericHtmlAttribute[RequestParam[?]]):
     def name: Text = t"name"
     def serialize(value: RequestParam[?]): Text = value.key
 

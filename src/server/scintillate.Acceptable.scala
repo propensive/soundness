@@ -30,7 +30,7 @@ import errorDiagnostics.stackTraces
 
 
 object Acceptable:
-  given (using Tactic[MultipartError]) => Multipart is Acceptable = request =>
+  given Tactic[MultipartError] => Multipart is Acceptable = request =>
     tend:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
 
