@@ -317,6 +317,14 @@ object diuretic extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object enigmatic extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gastronomy.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object escapade extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
