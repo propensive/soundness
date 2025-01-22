@@ -495,6 +495,15 @@ object hieroglyph extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object hyperbole extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(harlequin.core, escapade.core, escritoire.core, dendrology.tree, hieroglyph.core)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object hypotenuse extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
