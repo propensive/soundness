@@ -633,6 +633,14 @@ object parasite extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object polaris extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hypotenuse.core, wisteria.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object polyvinyl extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(rudiments.core)
