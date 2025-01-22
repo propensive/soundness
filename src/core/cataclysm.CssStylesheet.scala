@@ -23,7 +23,7 @@ import hieroglyph.*
 import language.dynamics
 
 object CssStylesheet:
-  given (using charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
+  given (charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
     def mediaType: Text = t"text/css; charset=${charEncoder.encoding.name}"
     def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
 

@@ -20,7 +20,7 @@ import anticipation.*
 import rudiments.*
 
 object Selectable:
-  given Selector is Selectable as ident = identity(_)
+  given ident: Selector is Selectable = identity(_)
 
   given [SelectableType: GenericCssSelection] => SelectableType is Selectable =
     SelectableType.selection(_).s match

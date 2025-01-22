@@ -26,7 +26,7 @@ given Realm = realm"cataclysm"
 
 private[cataclysm] type Label = String & Singleton
 
-given Decimalizer as decimalizer = Decimalizer(6)
+given Decimalizer = Decimalizer(6)
 
 def select[SelectorType: Selectable](sel: SelectorType)(css: CssStyle) =
   CssRule(SelectorType.selector(sel), css)
