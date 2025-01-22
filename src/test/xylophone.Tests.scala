@@ -18,14 +18,16 @@ package xylophone
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import gossamer.*
-import printers.compact
 import probably.*
 import rudiments.*
 import spectacular.*
 
+import xmlPrinters.compact
 import unsafeExceptions.canThrowAny
 import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)

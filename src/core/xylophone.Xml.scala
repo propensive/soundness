@@ -24,19 +24,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import scala.annotation.targetName
-
 import language.dynamics
-import scala.util.NotGiven
-
-case class Namespace(id: Text, uri: Text)
-
-object XmlName:
-  given XmlName is Showable = name => name.namespace match
-    case Unset                => name.name
-    case Namespace(prefix, _) => t"$prefix:${name.name}"
-
-case class XmlName(name: Text, namespace: Optional[Namespace] = Unset)
 
 sealed trait Xml:
   def pointer: List[Int | Text | Unit]
@@ -48,11 +36,9 @@ sealed trait Xml:
   def string(using XmlPrinter[Text]): Text raises XmlAccessError =
     summon[XmlPrinter[Text]].print(XmlDoc(XmlAst.Root(Xml.normalize(this)*)))
 
-type XmlPath = List[Text | Int | Unit]
-
 object Xml:
   given Xml is Showable = xml =>
-    safely(printers.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
+    safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
   given (using enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
     def mediaType: Text = t"application/xml; charset=${enc.name}"
@@ -154,7 +140,6 @@ object Xml:
     catch case err: XmlAccessError =>
       abort(XmlAccessError(err.index, xml.pointer.dropRight(err.path.length)))
 
-
 case class XmlFragment(head: Text | Unit, path: XmlPath, root: XmlAst.Root)
 extends Xml, Dynamic:
   def apply(idx: Int = 0): XmlNode = XmlNode(idx, head :: path, root)
@@ -206,22 +191,3 @@ case class XmlDoc(root: XmlAst.Root) extends Xml, Dynamic:
 
   def as[ValueType: XmlDecoder](using Tactic[XmlAccessError], Tactic[XmlReadError]): ValueType =
     summon[XmlDecoder[ValueType]].read(Xml.normalize(this))
-
-case class Attribute(node: XmlNode, attribute: Text):
-  def as
-     [ValueType]
-     (using decoder: XmlDecoder[ValueType])
-     (using Tactic[XmlReadError], Tactic[XmlAccessError])
-          : ValueType =
-
-    val attributes = Xml.normalize(node).prim match
-      case XmlAst.Element(_, _, attributes, _) => attributes
-      case _                                   => abort(XmlReadError())
-
-    decoder.read(List(XmlAst.Element(XmlName(t"empty"), List(XmlAst.Textual(attributes(XmlName(attribute)))))))
-
-case class xmlAttribute() extends StaticAnnotation
-case class xmlLabel(name: String) extends StaticAnnotation
-
-extension [T](value: T)(using NotGiven[T =:= StringContext])
-  def xml(using writer: XmlEncoder[T]): XmlDoc = XmlDoc(XmlAst.Root(writer.write(value)))

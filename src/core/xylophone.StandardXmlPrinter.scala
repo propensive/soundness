@@ -21,15 +21,6 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 
-trait XmlPrinter[OutputType]:
-  def print(doc: Xml): OutputType
-
-object XmlPrinter:
-  given XmlPrinter[Text] = StandardXmlPrinter(false)
-
-object printers:
-  given compact: XmlPrinter[Text] = StandardXmlPrinter(true)
-
 class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
   def print(doc: Xml): Text =
     var indent: Int = 0
@@ -65,7 +56,7 @@ class StandardXmlPrinter(compact: Boolean = false) extends XmlPrinter[Text]:
 
         for attribute <- attributes do attribute match
           case (key, value) => append(t" ", key.show, t"=\"", value, t"\"")
-        
+
         if element.children.isEmpty then append(t"/")
         append(t">")
         if !inline(element) then newline(1)

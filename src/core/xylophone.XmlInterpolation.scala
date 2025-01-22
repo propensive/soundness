@@ -28,7 +28,6 @@ import vacuous.*
 import errorDiagnostics.empty
 
 object XmlInterpolation:
-
   enum XmlInput:
     case Flat(text: Text)
     case Structured(xml: XmlAst.Element)

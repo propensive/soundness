@@ -16,6 +16,6 @@
 
 package xylophone
 
-extension (inline stringContext: StringContext)
-  transparent inline def x(inline parts: Any*): Xml =
-    ${XmlInterpolation.XmlInterpolator.expand('stringContext, 'parts)}
+import rudiments.*
+
+case class xmlLabel(name: String) extends StaticAnnotation
