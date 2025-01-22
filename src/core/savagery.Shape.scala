@@ -28,7 +28,7 @@ import xylophone.*
 sealed trait Shape:
   val transforms: List[Transform] = Nil
 
-case class Rectangle(position: Xy, width: Float, height: Float) extends Shape:
+case class Rectangle(position: Point, width: Float, height: Float) extends Shape:
   def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
 
 case class Path
@@ -44,25 +44,25 @@ extends Shape:
     // FIXME
     unsafely(Xml.parse(t"""<path d="$d"/>"""))
 
-  def moveTo(point: Xy): Path = Path(Move(Abs(point)) :: ops)
-  def lineTo(point: Xy): Path = Path(Line(Abs(point)) :: ops)
+  def moveTo(point: Point): Path = Path(Move(Abs(point)) :: ops)
+  def lineTo(point: Point): Path = Path(Line(Abs(point)) :: ops)
   def move(vector: DxDy): Path = Path(Move(Rel(vector)) :: ops)
   def line(vector: DxDy): Path = Path(Line(Rel(vector)) :: ops)
 
   def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Path =
     Path(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
 
-  def curveTo(ctrl1: Xy, ctrl2: Xy, point: Xy): Path =
+  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Path =
     Path(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
 
   def curve(ctrl2: DxDy, vector: DxDy): Path = Path(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
-  def curveTo(ctrl2: Xy, point: Xy): Path = Path(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Path = Path(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
 
   def quadCurve(ctrl1: DxDy, vector: DxDy): Path = Path(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
-  def quadCurveTo(ctrl1: Xy, point: Xy): Path = Path(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Path = Path(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
 
   def quadCurve(vector: DxDy): Path = Path(Quadratic(Unset, Rel(vector)) :: ops)
-  def quadCurveTo(point: Xy): Path = Path(Quadratic(Unset, Abs(point)) :: ops)
+  def quadCurveTo(point: Point): Path = Path(Quadratic(Unset, Abs(point)) :: ops)
 
   def moveUp(value: Float): Path = Path(Move(Rel(DxDy(value, 0.0))) :: ops)
   def moveDown(value: Float): Path = Path(Move(Rel(DxDy(-value, 0.0))) :: ops)
@@ -76,7 +76,7 @@ extends Shape:
 
   def closed: Path = Path(Close :: ops)
 
-case class Ellipse(center: Xy, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
+case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
   def circle: Boolean = xRadius == yRadius
 
   def xml: Xml = unsafely:

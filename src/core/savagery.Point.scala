@@ -21,7 +21,8 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 
-object Xy:
-  given Xy is Encodable in Text as encodable = value => t"${value.x.toString} ${value.y.toString}"
+object Point:
+  given Point is Encodable in Text as encodable =
+    value => t"${value.x.toString} ${value.y.toString}"
 
-case class Xy(x: Float, y: Float)
+case class Point(x: Float, y: Float)

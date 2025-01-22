@@ -17,4 +17,4 @@
 package savagery
 
 object Circle:
-  def apply(center: Xy, radius: Float): Ellipse = Ellipse(center, radius, radius, Degrees(0.0))
+  def apply(center: Point, radius: Float): Ellipse = Ellipse(center, radius, radius, Degrees(0.0))

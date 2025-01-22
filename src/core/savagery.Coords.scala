@@ -29,7 +29,7 @@ object Coords:
 
 enum Coords:
   case Rel(vector: DxDy)
-  case Abs(point: Xy)
+  case Abs(point: Point)
 
   def key(char: Char): Text = this match
     case Rel(_) => char.show.lower

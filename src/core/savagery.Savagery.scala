@@ -32,9 +32,9 @@ object Savagery:
 
     given Degrees is Encodable in Text as encodable = _.toString.tt
 
-  extension (point: Xy)
+  extension (point: Point)
     @targetName("plus")
-    infix def + (vector: DxDy): Xy = Xy(point.x + vector.dx, point.y + vector.dy)
+    infix def + (vector: DxDy): Point = Point(point.x + vector.dx, point.y + vector.dy)
 
     @targetName("asVector")
     def `unary_~`: DxDy = DxDy(point.x, point.y)

@@ -20,7 +20,7 @@ import rudiments.*
 
 extension (left: Float)
   @targetName("makeCoordinates")
-  infix def ! (right: Float) = Xy(left, right)
+  infix def ! (right: Float) = Point(left, right)
 
 export Savagery.{Degrees, SvgId}
 export Coords.{Rel, Abs}
