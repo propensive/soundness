@@ -20,6 +20,6 @@ import quantitative.*
 import rudiments.*
 
 object FontSize:
-  erased given PhysicalQuantity[Units[1, FontSize], "font size"] as quantity = ###
+  erased given quantity: PhysicalQuantity[Units[1, FontSize], "font size"] = ###
 
 erased trait FontSize extends Dimension
