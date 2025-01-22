@@ -23,5 +23,5 @@ import spectacular.*
 case class Shift(dx: Float, dy: Float)
 
 object Shift:
-  given Shift is Showable as showable =
+  given showable: Shift is Showable =
     value => t"${value.dx.toString} ${value.dy.toString}"

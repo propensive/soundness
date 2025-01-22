@@ -38,7 +38,7 @@ enum Stroke:
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
-  given Stroke is Encodable in Text as encodable =
+  given encodable: Stroke is Encodable in Text =
     case Move(shift: Shift)                              => t"m $shift"
     case Move(point: Point)                              => t"M $point"
     case Draw(Shift(0.0f, v))                            => t"v ${v.toDouble}"
