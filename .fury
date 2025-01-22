@@ -25,7 +25,7 @@ project phoenicia
     include   hypotenuse/core
     include   turbulence/core
     include   quantitative/core
-    include   bifurcate/core
+    include   polaris/core
 
   stream latest
     lifetime 7

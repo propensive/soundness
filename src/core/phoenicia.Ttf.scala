@@ -17,10 +17,10 @@
 package phoenicia
 
 import anticipation.*
-import bifurcate.*
 import contingency.*
 import gossamer.*
 import hypotenuse.*
+import polaris.*
 import prepositional.*
 import quantitative.*
 import rudiments.*
