@@ -202,3 +202,81 @@
 [submodule "baroque"]
 	path = baroque
 	url = https://github.com/propensive/baroque
+[submodule "cataclysm"]
+	path = cataclysm
+	url = https://github.com/propensive/cataclysm
+[submodule "cellulose"]
+	path = cellulose
+	url = https://github.com/propensive/cellulose
+[submodule "charisma"]
+	path = charisma
+	url = https://github.com/propensive/charisma
+[submodule "coaxial"]
+	path = coaxial
+	url = https://github.com/propensive/coaxial
+[submodule "enigmatic"]
+	path = enigmatic
+	url = https://github.com/propensive/enigmatic
+[submodule "harlequin"]
+	path = harlequin
+	url = https://github.com/propensive/harlequin
+[submodule "honeycomb"]
+	path = honeycomb
+	url = https://github.com/propensive/honeycomb
+[submodule "hyperbole"]
+	path = hyperbole
+	url = https://github.com/propensive/hyperbole
+[submodule "imperial"]
+	path = imperial
+	url = https://github.com/propensive/imperial
+[submodule "mercator"]
+	path = mercator
+	url = https://github.com/propensive/mercator
+[submodule "octogenarian"]
+	path = octogenarian
+	url = https://github.com/propensive/octogenarian
+[submodule "panopticon"]
+	path = panopticon
+	url = https://github.com/propensive/panopticon
+[submodule "phoenicia"]
+	path = phoenicia
+	url = https://github.com/propensive/phoenicia
+[submodule "plutocrat"]
+	path = plutocrat
+	url = https://github.com/propensive/plutocrat
+[submodule "polaris"]
+	path = polaris
+	url = https://github.com/propensive/polaris
+[submodule "polyvinyl"]
+	path = polyvinyl
+	url = https://github.com/propensive/polyvinyl
+[submodule "punctuation"]
+	path = punctuation
+	url = https://github.com/propensive/punctuation
+[submodule "savagery"]
+	path = savagery
+	url = https://github.com/propensive/savagery
+[submodule "sedentary"]
+	path = sedentary
+	url = https://github.com/propensive/sedentary
+[submodule "superlunary"]
+	path = superlunary
+	url = https://github.com/propensive/superlunary
+[submodule "tarantula"]
+	path = tarantula
+	url = https://github.com/propensive/tarantula
+[submodule "typonym"]
+	path = typonym
+	url = https://github.com/propensive/typonym
+[submodule "ulysses"]
+	path = ulysses
+	url = https://github.com/propensive/ulysses
+[submodule "umbrageous"]
+	path = umbrageous
+	url = https://github.com/propensive/umbrageous
+[submodule "xylophone"]
+	path = xylophone
+	url = https://github.com/propensive/xylophone
+[submodule "yossarian"]
+	path = yossarian
+	url = https://github.com/propensive/yossarian

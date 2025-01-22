@@ -219,6 +219,22 @@ object cardinality extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object cataclysm extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object charisma extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, hieroglyph.core, hypotenuse.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object chiaroscuro extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
