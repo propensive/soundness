@@ -604,6 +604,14 @@ object parasite extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object polyvinyl extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object prepositional extends SoundnessModule {
   object core extends SoundnessSubModule
 }
