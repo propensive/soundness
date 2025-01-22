@@ -18,18 +18,6 @@ package typonym
 
 import scala.quoted.*
 
-erased trait TypeList[+TupleType <: Tuple]
-erased trait TypeMap[+TupleType <: Tuple]
-erased trait TypeSet[+ElementType <: TypeElement[?]]
-erased trait TypeElement[ElementType]
-
-transparent inline def reify[PhantomType]: Any = ${Typonym.reify[PhantomType]}
-
-def reify[PhantomType](phantomType: Type[PhantomType])(using Quotes): Expr[Any] =
-  Typonym.reify[PhantomType](using phantomType)
-
-//transparent inline def erase(inline value: Any): Any = ${Typonym.erase(value)}
-
 object Typonym:
   private def untuple[TupleType <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
@@ -54,9 +42,9 @@ object Typonym:
 
           . foldLeft('{Nil}): (list, next) =>
               '{$next :: $list}
-        
+
         '{$entries.to(Map)}
-        
+
       case other => TypeRepr.of[PhantomType] match
         case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
         case ConstantType(IntConstant(int))         => Expr(int)
@@ -77,6 +65,6 @@ object Typonym:
           tuple.asType match
             case '[type tupleType <: Tuple; tupleType] => next.asType match
               case '[nextType] => TypeRepr.of[nextType *: tupleType]
-        
+
         tuple.asType match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[TypeList[tupleType]]
