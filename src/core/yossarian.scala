@@ -116,7 +116,7 @@ object Yossarian:
     val Foreground = Bits(40, 0x000000ffffffffffL)
     val Background = Bits(16, 0xffffff000000ffffL)
 
-    given Debug[Style] = style =>
+    given Style is Inspectable = style =>
       Map
        (t"Bo" -> Bit.Bold(style),
         t"F"  -> Bit.Faint(style),
