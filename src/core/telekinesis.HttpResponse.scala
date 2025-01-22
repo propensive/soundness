@@ -24,7 +24,7 @@ import turbulence.*
 import vacuous.*
 
 object HttpResponse:
-  given (using Tactic[HttpError]) => HttpResponse is Readable by Bytes as readable = response =>
+  given readable: Tactic[HttpError] => HttpResponse is Readable by Bytes = response =>
     val body = response.status match
       case status: (HttpStatus & FailureCase) =>
         raise(HttpError(status, response.headers), response.body)

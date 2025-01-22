@@ -30,19 +30,19 @@ object Servable:
     val headers = List(ResponseHeader.ContentType.header -> mediaType.show)
     HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
 
-  given Content is Servable as content:
+  given content: Content is Servable:
     def serve(content: Content): HttpResponse =
       val headers = List(ResponseHeader.ContentType.header -> content.media.show)
 
       HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
 
-  given [ResponseType: GenericHttpResponseStream] => ResponseType is Servable as bytes =
+  given bytes: [ResponseType: GenericHttpResponseStream] => ResponseType is Servable =
     Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
       ResponseType.content(value)
 
-  given Bytes is Servable as data = Servable(media"application/octet-stream")(LazyList(_))
+  given data: Bytes is Servable = Servable(media"application/octet-stream")(LazyList(_))
 
-  inline given [ValueType: Media] => ValueType is Servable as media =
+  inline given media: [ValueType: Media] => ValueType is Servable =
     scala.compiletime.summonFrom:
       case encodable: (ValueType is Encodable in Bytes) => value =>
         val headers = List(ResponseHeader.ContentType.header -> ValueType.mediaType(value).show)

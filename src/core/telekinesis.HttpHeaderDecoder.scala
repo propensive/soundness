@@ -22,9 +22,9 @@ import rudiments.*
 import spectacular.*
 
 object HttpHeaderDecoder:
-  given HttpHeaderDecoder[Text] as text = identity(_)
+  given text: HttpHeaderDecoder[Text] = identity(_)
 
-  given (using Tactic[NumberError]) => HttpHeaderDecoder[Memory] as memory =
+  given memory: Tactic[NumberError] => HttpHeaderDecoder[Memory] =
     value => Memory(value.decode[Int])
 
 trait HttpHeaderDecoder[ValueType]:
