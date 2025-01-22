@@ -227,6 +227,14 @@ object cataclysm extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object cellulose extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, anticipation.transport)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object charisma extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, hieroglyph.core, hypotenuse.core)
