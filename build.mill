@@ -641,6 +641,14 @@ object phoenicia extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object plutocrat extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.opaque, hypotenuse.core, gossamer.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object polaris extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(hypotenuse.core, wisteria.core)
