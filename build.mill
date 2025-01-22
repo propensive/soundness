@@ -739,6 +739,14 @@ object turbulence extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object typonym extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq()
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object vacuous extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)
