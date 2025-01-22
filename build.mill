@@ -825,11 +825,16 @@ object typonym extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object ulysses extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gastronomy.core, cardinality.core, hypotenuse.core)
+  }
+}
+
 object vacuous extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)
   }
-
 }
 
 object vicarious extends SoundnessModule {
