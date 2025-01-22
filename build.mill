@@ -840,9 +840,17 @@ object symbolism extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object tarantula extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object telekinesis extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, gesticulate.core)
+    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url)
   }
 
   object test extends ProbablyTestModule
