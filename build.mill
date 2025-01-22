@@ -56,11 +56,70 @@ trait ProbablyTestModule extends SoundnessSubModule {
   def moduleDeps = Seq(probably.cli)
 }
 
+// ------------------------ GROUPS ------------------------
+
+object soundness extends ScalaModule {
+  def scalaVersion = settings.scalaVersion
+  def moduleDeps = Seq()
+
+  object base extends ScalaModule {
+    def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
+        contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
+        fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
+        gossamer.core, inimitable.core, iridescence.core, kaleidoscope.core, mercator.core,
+        nomenclature.core, parasite.core, rudiments.core, spectacular.core, symbolism.core,
+        prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
+        typonym.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object cli extends ScalaModule {
+    def moduleDeps = Seq(burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
+        escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
+        guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object data extends ScalaModule {
+    def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
+        gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
+        panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
+        zeppelin.core, xylophone.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object sci extends ScalaModule {
+    def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
+        charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
+        quantitative.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object test extends ScalaModule {
+    def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
+        superlunary.core, yossarian.core, probably.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object tool extends ScalaModule {
+    def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
+        octogenarian.core, revolution.core, umbrageous.plugin)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object web extends ScalaModule {
+    def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+        honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
+        punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
+        telekinesis.core, plutocrat.core)
+    def scalaVersion = settings.scalaVersion
+  }
+}
 
 // ------------------------ MODULES ------------------------
 
 object abacist extends SoundnessModule {
-  object Core extends SoundnessSubModule {
+  object core extends SoundnessSubModule {
     def moduleDeps = Seq(quantitative.units)
   }
 
@@ -584,7 +643,7 @@ object merino extends SoundnessModule {
 }
 
 object metamorphose extends SoundnessModule {
-  object core extends SoundnessModule {
+  object core extends SoundnessSubModule {
     def moduleDeps = Seq(contingency.core)
   }
 
@@ -910,6 +969,14 @@ object wisteria extends SoundnessModule {
 object xylophone extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, anticipation.transport)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object yossarian extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
   }
 
   object test extends ProbablyTestModule
