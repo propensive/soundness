@@ -18,11 +18,12 @@ package savagery
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import spectacular.*
 
-case class DxDy(dx: Float, dy: Float)
+case class Segment(symbol: Char, parameters: (Double | Boolean)*):
+  def text: Text =
+    parameters.map:
+      case double: Double   => double.toString.tt
+      case boolean: Boolean => if boolean then t"1" else t"0"
 
-object DxDy:
-  given DxDy is Encodable in Text as encodable =
-    value => t"${value.dx.toString} ${value.dy.toString}"
+    . join(t"$symbol ", t" ", t"")

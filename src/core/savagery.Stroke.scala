@@ -22,25 +22,26 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-enum PathOp:
-  case Move(coords: Coords)
-  case Draw(coords: Coords)
+enum Stroke:
+  case Move(coords: Coordinates)
+  case Draw(coords: Coordinates)
   case Close
 
-  case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType],
-                                        ctrl2: CoordsType,
-                                        point: CoordsType)
+  case Cubic[PointType <: (Rel | Abs)]
+     (ctrl1: Optional[PointType], ctrl2: PointType, point: PointType)
 
-  case Quadratic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType], point: CoordsType)
-  case Arc(rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Coords)
+  case Quadratic[PointType <: (Rel | Abs)](ctrl1: Optional[PointType], point: PointType)
 
-object PathOp:
+  case Arc
+     (rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Coordinates)
+
+object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
-  given PathOp is Encodable in Text as encodable =
+  given Stroke is Encodable in Text as encodable =
     case Move(coords)                => t"${coords.key('m')} $coords"
-    case Draw(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
-    case Draw(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
+    case Draw(Rel(Shift(0.0f, v)))   => t"v ${v.toDouble}"
+    case Draw(Rel(Shift(h, 0.0f)))   => t"h ${h.toDouble}"
     case Draw(coords)                => t"${coords.key('l')} $coords"
     case Close                       => t"Z"
     case Cubic(Unset, ctrl2, coords) => t"${coords.key('s')} $ctrl2, $coords"

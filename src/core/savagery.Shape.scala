@@ -32,12 +32,12 @@ case class Rectangle(position: Point, width: Float, height: Float) extends Shape
   def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
 
 case class Line
-   (ops:       List[PathOp]       = Nil,
+   (ops:       List[Stroke]       = Nil,
     style:     Optional[CssStyle] = Unset,
     id:        Optional[SvgId]    = Unset,
     transform: List[Transform]    = Nil)
 extends Shape:
-  import PathOp.*
+  import Stroke.*
 
   def xml: Xml =
     val d: Text = ops.reverse.map(_.encode).join(t" ")
@@ -46,33 +46,33 @@ extends Shape:
 
   def moveTo(point: Point): Line = Line(Move(Abs(point)) :: ops)
   def lineTo(point: Point): Line = Line(Draw(Abs(point)) :: ops)
-  def move(vector: DxDy): Line = Line(Move(Rel(vector)) :: ops)
-  def line(vector: DxDy): Line = Line(Draw(Rel(vector)) :: ops)
+  def move(vector: Shift): Line = Line(Move(Rel(vector)) :: ops)
+  def line(vector: Shift): Line = Line(Draw(Rel(vector)) :: ops)
 
-  def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Line =
+  def curve(ctrl1: Shift, ctrl2: Shift, point: Shift): Line =
     Line(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
 
   def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Line =
     Line(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
 
-  def curve(ctrl2: DxDy, vector: DxDy): Line = Line(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
+  def curve(ctrl2: Shift, vector: Shift): Line = Line(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
   def curveTo(ctrl2: Point, point: Point): Line = Line(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
 
-  def quadCurve(ctrl1: DxDy, vector: DxDy): Line = Line(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
+  def quadCurve(ctrl1: Shift, vector: Shift): Line = Line(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
   def quadCurveTo(ctrl1: Point, point: Point): Line = Line(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
 
-  def quadCurve(vector: DxDy): Line = Line(Quadratic(Unset, Rel(vector)) :: ops)
+  def quadCurve(vector: Shift): Line = Line(Quadratic(Unset, Rel(vector)) :: ops)
   def quadCurveTo(point: Point): Line = Line(Quadratic(Unset, Abs(point)) :: ops)
 
-  def moveUp(value: Float): Line = Line(Move(Rel(DxDy(value, 0.0))) :: ops)
-  def moveDown(value: Float): Line = Line(Move(Rel(DxDy(-value, 0.0))) :: ops)
-  def moveLeft(value: Float): Line = Line(Move(Rel(DxDy(0.0, -value))) :: ops)
-  def moveRight(value: Float): Line = Line(Move(Rel(DxDy(0.0, value))) :: ops)
+  def moveUp(value: Float): Line = Line(Move(Rel(Shift(value, 0.0))) :: ops)
+  def moveDown(value: Float): Line = Line(Move(Rel(Shift(-value, 0.0))) :: ops)
+  def moveLeft(value: Float): Line = Line(Move(Rel(Shift(0.0, -value))) :: ops)
+  def moveRight(value: Float): Line = Line(Move(Rel(Shift(0.0, value))) :: ops)
 
-  def lineUp(value: Float): Line = Line(Draw(Rel(DxDy(value, 0.0))) :: ops)
-  def lineDown(value: Float): Line = Line(Draw(Rel(DxDy(-value, 0.0))) :: ops)
-  def lineLeft(value: Float): Line = Line(Draw(Rel(DxDy(0.0, -value))) :: ops)
-  def lineRight(value: Float): Line = Line(Draw(Rel(DxDy(0.0, value))) :: ops)
+  def lineUp(value: Float): Line = Line(Draw(Rel(Shift(value, 0.0))) :: ops)
+  def lineDown(value: Float): Line = Line(Draw(Rel(Shift(-value, 0.0))) :: ops)
+  def lineLeft(value: Float): Line = Line(Draw(Rel(Shift(0.0, -value))) :: ops)
+  def lineRight(value: Float): Line = Line(Draw(Rel(Shift(0.0, value))) :: ops)
 
   def closed: Line = Line(Close :: ops)
 

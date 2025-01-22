@@ -18,12 +18,11 @@ package savagery
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import spectacular.*
 
-case class LineSegment(symbol: Char, parameters: (Double | Boolean)*):
-  def text: Text =
-    parameters.map:
-      case double: Double   => double.toString.tt
-      case boolean: Boolean => if boolean then t"1" else t"0"
+case class Shift(dx: Float, dy: Float)
 
-    . join(t"$symbol ", t" ", t"")
+object Shift:
+  given Shift is Encodable in Text as encodable =
+    value => t"${value.dx.toString} ${value.dy.toString}"

@@ -34,11 +34,11 @@ object Savagery:
 
   extension (point: Point)
     @targetName("plus")
-    infix def + (vector: DxDy): Point = Point(point.x + vector.dx, point.y + vector.dy)
+    infix def + (vector: Shift): Point = Point(point.x + vector.dx, point.y + vector.dy)
 
     @targetName("asVector")
-    def `unary_~`: DxDy = DxDy(point.x, point.y)
+    def `unary_~`: Shift = Shift(point.x, point.y)
 
-  extension (vector: DxDy)
+  extension (vector: Shift)
     @targetName("plus2")
-    infix def + (right: DxDy): DxDy = DxDy(vector.dx + right.dx, vector.dy + right.dy)
+    infix def + (right: Shift): Shift = Shift(vector.dx + right.dx, vector.dy + right.dy)

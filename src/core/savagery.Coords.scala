@@ -22,13 +22,13 @@ import gossamer.*
 import rudiments.*
 import spectacular.*
 
-object Coords:
-  given Coords is Encodable in Text as encodable =
+object Coordinates:
+  given Coordinates is Encodable in Text as encodable =
     case Rel(vector) => vector.encode
     case Abs(point)  => point.encode
 
-enum Coords:
-  case Rel(vector: DxDy)
+enum Coordinates:
+  case Rel(vector: Shift)
   case Abs(point: Point)
 
   def key(char: Char): Text = this match

@@ -19,7 +19,7 @@ package savagery
 import vacuous.*
 
 enum Transform:
-  case Translate(vector: DxDy)
+  case Translate(vector: Shift)
   case Scale(x: Float, y: Optional[Float])
   case Matrix()
   case Skew()
