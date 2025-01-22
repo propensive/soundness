@@ -728,6 +728,14 @@ object scintillate extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object sedentary extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(probably.core, diuretic.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object serpentine extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, nomenclature.core)
