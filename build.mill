@@ -744,6 +744,15 @@ object spectacular extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object superlunary extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.css, anticipation.http, symbolism.core, anticipation.text, anticipation.http, jacinta.core, inimitable.core, gastronomy.core, ambience.core, hellenism.core, anthology.scala)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object surveillance extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
