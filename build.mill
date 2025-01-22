@@ -553,8 +553,9 @@ object kaleidoscope extends SoundnessModule {
 }
 
 object larceny extends SoundnessModule {
-  def sources = Task.Sources {
-    Seq(PathRef(millSourcePath /"src" / "plugin"))
+  object plugin extends SoundnessSubModule {
+    def moduleDeps = Seq()
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 }
 
@@ -828,6 +829,13 @@ object typonym extends SoundnessModule {
 object ulysses extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gastronomy.core, cardinality.core, hypotenuse.core)
+  }
+}
+
+object umbrageous extends SoundnessModule {
+  object plugin extends SoundnessSubModule {
+    def moduleDeps = Seq()
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 }
 
