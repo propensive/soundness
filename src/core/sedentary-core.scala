@@ -39,7 +39,7 @@ extension [TestType](test: Test[TestType])
     var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
     times.sizeHint(4096)
-    val ctx = new TestContext()
+    val ctx = new Harness()
 
     while System.currentTimeMillis < end do
       val t0 = System.nanoTime
