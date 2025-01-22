@@ -6,13 +6,15 @@ repo propensive/telekinesis
 repo propensive/guillotine
 repo propensive/cataclysm
 repo propensive/honeycomb
+repo propensive/gastronomy
+repo propensive/eucalyptus
 
 target tarantula/test
 
 project tarantula
   module core
     sources  src/core
-    include  jacinta/core telekinesis/core guillotine/core cataclysm/core honeycomb/core hallucination/core diuretic/core
+    include  jacinta/core telekinesis/core guillotine/core cataclysm/core honeycomb/core hallucination/core diuretic/core eucalyptus/core gastronomy/core
   
   module test
     compiler  scala
