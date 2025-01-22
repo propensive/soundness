@@ -1,5 +1,0 @@
-#!/bin/bash
-for D in $(find ~/.cache/irk/cls | grep '.class$' | sed 's/.*\/\([^/]*\).class$/\1/' | sort | uniq -c | grep -v ' 1 ' | grep -v '\$' | sed 's/........//')
-do
-  echo "$D: $(find ~/.cache/irk/cls | grep "\/$D.class" | cut -d/ -f7 | tr '\n' ' ')"
-done

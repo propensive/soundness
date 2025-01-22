@@ -1,2 +1,0 @@
-#!/bin/sh
-grep -r TBC mod/*/doc | cut -d: -f1

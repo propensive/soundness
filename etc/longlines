@@ -1,6 +1,0 @@
-#!/bin/bash
-for MOD in mod/*
-do
-  echo "$MOD:"
-  grep -r '.\{113\}' $MOD/src/*/*.scala | sed 's/^/\x1b[0;31m/'
-done
