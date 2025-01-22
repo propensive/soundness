@@ -196,3 +196,6 @@
 [submodule "vicarious"]
 	path = vicarious
 	url = https://github.com/propensive/vicarious
+[submodule "adversaria"]
+	path = adversaria
+	url = https://github.com/propensive/adversaria

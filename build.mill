@@ -75,6 +75,14 @@ object acyclicity extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object adversaria extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object ambience extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core)
