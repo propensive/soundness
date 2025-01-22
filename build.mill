@@ -670,6 +670,14 @@ object rudiments extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object savagery extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object scintillate extends SoundnessModule {
   object server extends SoundnessSubModule {
     def moduleDeps = Seq(telekinesis.core)
