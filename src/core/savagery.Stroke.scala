@@ -23,31 +23,42 @@ import spectacular.*
 import vacuous.*
 
 enum Stroke:
-  case Move(coords: Coordinates)
-  case Draw(coords: Coordinates)
+  case Move(coords: Shift | Point)
+  case Draw(coords: Shift | Point)
   case Close
 
-  case Cubic[PointType <: (Rel | Abs)]
+  case Cubic[PointType <: (Shift | Point)]
      (ctrl1: Optional[PointType], ctrl2: PointType, point: PointType)
 
-  case Quadratic[PointType <: (Rel | Abs)](ctrl1: Optional[PointType], point: PointType)
+  case Quadratic[PointType <: (Shift | Point)](ctrl1: Optional[PointType], point: PointType)
 
   case Arc
-     (rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Coordinates)
+     (rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Point | Shift)
 
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
   given Stroke is Encodable in Text as encodable =
-    case Move(coords)                => t"${coords.key('m')} $coords"
-    case Draw(Rel(Shift(0.0f, v)))   => t"v ${v.toDouble}"
-    case Draw(Rel(Shift(h, 0.0f)))   => t"h ${h.toDouble}"
-    case Draw(coords)                => t"${coords.key('l')} $coords"
-    case Close                       => t"Z"
-    case Cubic(Unset, ctrl2, coords) => t"${coords.key('s')} $ctrl2, $coords"
-    case Cubic(ctrl1, ctrl2, coords) => t"${coords.key('c')} ${ctrl1.option.get}, $ctrl2, $coords"
-    case Quadratic(Unset, coords)    => t"${coords.key('t')} $coords"
-    case Quadratic(ctrl1, coords)    => t"${coords.key('q')} ${ctrl1.option.get}, $coords"
+    case Move(shift: Shift)                              => t"m $shift"
+    case Move(point: Point)                              => t"M $point"
+    case Draw(Shift(0.0f, v))                            => t"v ${v.toDouble}"
+    case Draw(Shift(h, 0.0f))                            => t"h ${h.toDouble}"
+    case Draw(shift: Shift)                              => t"l $shift"
+    case Draw(point: Point)                              => t"L $point"
+    case Close                                           => t"Z"
+    case Cubic(Unset, ctrl2: Point, point: Point)        => t"S $ctrl2, $point"
+    case Cubic(Unset, ctrl2: Shift, shift: Shift)        => t"s $ctrl2, $shift"
+    case Cubic(ctrl1: Point, ctrl2: Point, point: Point) => t"C $ctrl1, $ctrl2, $point"
+    case Cubic(ctrl1: Shift, ctrl2: Shift, shift: Shift) => t"c $ctrl1, $ctrl2, $shift"
+    case Quadratic(Unset, point: Point)                  => t"T $point"
+    case Quadratic(Unset, shift: Shift)                  => t"t $shift"
+    case Quadratic(ctrl1: Point, point: Point)           => t"Q $ctrl1, $point"
+    case Quadratic(ctrl1: Point, shift: Shift)           => t"q $ctrl1, $shift"
 
-    case Arc(rx, ry, angle, largeArc, sweep, coords) =>
-      t"${coords.key('a')} ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(sweep == Sweep.Clockwise)} ${coords.encode}"
+    case Arc(rx, ry, angle, largeArc, sweep, point: Point) =>
+      val clockwise = sweep == Sweep.Clockwise
+      t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $point"
+
+    case Arc(rx, ry, angle, largeArc, sweep, shift: Shift) =>
+      val clockwise = sweep == Sweep.Clockwise
+      t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $shift"

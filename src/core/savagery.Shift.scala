@@ -18,11 +18,10 @@ package savagery
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import spectacular.*
 
 case class Shift(dx: Float, dy: Float)
 
 object Shift:
-  given Shift is Encodable in Text as encodable =
+  given Shift is Showable as showable =
     value => t"${value.dx.toString} ${value.dy.toString}"

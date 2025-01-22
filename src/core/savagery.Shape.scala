@@ -44,35 +44,35 @@ extends Shape:
     // FIXME
     unsafely(Xml.parse(t"""<path d="$d"/>"""))
 
-  def moveTo(point: Point): Line = Line(Move(Abs(point)) :: ops)
-  def lineTo(point: Point): Line = Line(Draw(Abs(point)) :: ops)
-  def move(vector: Shift): Line = Line(Move(Rel(vector)) :: ops)
-  def line(vector: Shift): Line = Line(Draw(Rel(vector)) :: ops)
+  def moveTo(point: Point): Line = Line(Move(point) :: ops)
+  def lineTo(point: Point): Line = Line(Draw(point) :: ops)
+  def move(vector: Shift): Line = Line(Move(vector) :: ops)
+  def line(vector: Shift): Line = Line(Draw(vector) :: ops)
 
   def curve(ctrl1: Shift, ctrl2: Shift, point: Shift): Line =
-    Line(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
+    Line(Cubic(ctrl1, ctrl2, point) :: ops)
 
   def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Line =
-    Line(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
+    Line(Cubic(ctrl1, ctrl2, point) :: ops)
 
-  def curve(ctrl2: Shift, vector: Shift): Line = Line(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Line = Line(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
+  def curve(ctrl2: Shift, vector: Shift): Line = Line(Cubic(Unset, ctrl2, vector) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Line = Line(Cubic(Unset, ctrl2, point) :: ops)
 
-  def quadCurve(ctrl1: Shift, vector: Shift): Line = Line(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
-  def quadCurveTo(ctrl1: Point, point: Point): Line = Line(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
+  def quadCurve(ctrl1: Shift, vector: Shift): Line = Line(Quadratic(ctrl1, vector) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Line = Line(Quadratic(ctrl1, point) :: ops)
 
-  def quadCurve(vector: Shift): Line = Line(Quadratic(Unset, Rel(vector)) :: ops)
-  def quadCurveTo(point: Point): Line = Line(Quadratic(Unset, Abs(point)) :: ops)
+  def quadCurve(vector: Shift): Line = Line(Quadratic(Unset, vector) :: ops)
+  def quadCurveTo(point: Point): Line = Line(Quadratic(Unset, point) :: ops)
 
-  def moveUp(value: Float): Line = Line(Move(Rel(Shift(value, 0.0))) :: ops)
-  def moveDown(value: Float): Line = Line(Move(Rel(Shift(-value, 0.0))) :: ops)
-  def moveLeft(value: Float): Line = Line(Move(Rel(Shift(0.0, -value))) :: ops)
-  def moveRight(value: Float): Line = Line(Move(Rel(Shift(0.0, value))) :: ops)
+  def moveUp(value: Float): Line = Line(Move(Shift(value, 0.0)) :: ops)
+  def moveDown(value: Float): Line = Line(Move(Shift(-value, 0.0)) :: ops)
+  def moveLeft(value: Float): Line = Line(Move(Shift(0.0, -value)) :: ops)
+  def moveRight(value: Float): Line = Line(Move(Shift(0.0, value)) :: ops)
 
-  def lineUp(value: Float): Line = Line(Draw(Rel(Shift(value, 0.0))) :: ops)
-  def lineDown(value: Float): Line = Line(Draw(Rel(Shift(-value, 0.0))) :: ops)
-  def lineLeft(value: Float): Line = Line(Draw(Rel(Shift(0.0, -value))) :: ops)
-  def lineRight(value: Float): Line = Line(Draw(Rel(Shift(0.0, value))) :: ops)
+  def lineUp(value: Float): Line = Line(Draw(Shift(value, 0.0)) :: ops)
+  def lineDown(value: Float): Line = Line(Draw(Shift(-value, 0.0)) :: ops)
+  def lineLeft(value: Float): Line = Line(Draw(Shift(0.0, -value)) :: ops)
+  def lineRight(value: Float): Line = Line(Draw(Shift(0.0, value)) :: ops)
 
   def closed: Line = Line(Close :: ops)
 

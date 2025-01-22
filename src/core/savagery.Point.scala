@@ -18,11 +18,10 @@ package savagery
 
 import anticipation.*
 import gossamer.*
-import prepositional.*
 import spectacular.*
 
 object Point:
-  given Point is Encodable in Text as encodable =
+  given Point is Showable as showable =
     value => t"${value.x.toString} ${value.y.toString}"
 
 case class Point(x: Float, y: Float)

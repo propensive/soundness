@@ -23,4 +23,3 @@ extension (left: Float)
   infix def ! (right: Float) = Point(left, right)
 
 export Savagery.{Degrees, SvgId}
-export Coordinates.{Rel, Abs}
