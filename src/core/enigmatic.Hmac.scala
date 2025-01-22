@@ -27,7 +27,7 @@ object Hmac:
   def apply[SchemeType <: Algorithm](bytes: Bytes) = new Hmac(bytes):
     type Format = SchemeType
 
-  given [HmacType <: Algorithm](using Alphabet[Base64]) => Hmac in HmacType is Showable = hmac =>
+  given [HmacType <: Algorithm] => Alphabet[Base64] => Hmac in HmacType is Showable = hmac =>
     t"Hmac(${hmac.bytes.serialize[Base64]})"
 
   given [HmacType <: Algorithm] => Hmac in HmacType is Encodable in Bytes = _.bytes
