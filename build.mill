@@ -431,6 +431,9 @@ object gesticulate extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core)
   }
+  object magic extends SoundnessSubModule {
+    def moduleDeps = Seq(core)
+  }
 
   object test extends ProbablyTestModule
 }
@@ -471,6 +474,14 @@ object harlequin extends SoundnessModule {
 object hellenism extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
+object honeycomb extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core)
   }
 
   object test extends ProbablyTestModule
