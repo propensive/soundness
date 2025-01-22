@@ -48,23 +48,23 @@ object CodlDecoder:
   given boolean: CodlDecoder[Boolean] = CodlFieldReader(_ == t"yes")
   given text: CodlDecoder[Text] = CodlFieldReader(identity(_))
 
-  given CodlDecoder[Unit] as unit:
+  given unit: CodlDecoder[Unit]:
     val schema: CodlSchema = Field(Arity.One)
     def decode(nodes: List[Indexed]): Unit raises CodlReadError = ()
 
-  given [ValueType: CodlDecoder] => CodlDecoder[Optional[ValueType]] as optional:
+  given optional: [ValueType: CodlDecoder] => CodlDecoder[Optional[ValueType]]:
     def schema: CodlSchema = ValueType.schema.optional
 
     def decode(value: List[Indexed]): Optional[ValueType] raises CodlReadError =
       if value.isEmpty then Unset else ValueType.decode(value)
 
-  given [ValueType: CodlDecoder] => CodlDecoder[Option[ValueType]] as option:
+  given option: [ValueType: CodlDecoder] => CodlDecoder[Option[ValueType]]:
     def schema: CodlSchema = ValueType.schema.optional
 
     def decode(value: List[Indexed]): Option[ValueType] raises CodlReadError =
       if value.isEmpty then None else Some(ValueType.decode(value))
 
-  given [ElementType: CodlDecoder] => CodlDecoder[List[ElementType]] as list =
+  given list: [ElementType: CodlDecoder] => CodlDecoder[List[ElementType]] =
     new CodlDecoder[List[ElementType]]:
       def schema: CodlSchema = ElementType.schema match
         case Field(_, validator) => Field(Arity.Many, validator)
@@ -78,7 +78,7 @@ object CodlDecoder:
           case struct: Struct =>
             value.map { v => ElementType.decode(List(v)) }
 
-  given [ElementType: CodlDecoder] => CodlDecoder[Set[ElementType]] as set:
+  given set: [ElementType: CodlDecoder] => CodlDecoder[Set[ElementType]]:
     def schema: CodlSchema = ElementType.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)

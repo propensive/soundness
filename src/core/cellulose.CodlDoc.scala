@@ -34,12 +34,11 @@ object CodlDoc:
   def apply(nodes: CodlNode*): CodlDoc = CodlDoc(IArray.from(nodes), CodlSchema.Free, 0)
 
   given CodlDoc is Inspectable = _.write
-  given (using printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
+  given (printer: CodlPrinter) => CodlDoc is Showable = printer.serialize(_)
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  given CodlDoc is Contrastable as contrast =
-    new Contrastable:
+  given contrastable: CodlDoc is Contrastable:
       type Self = CodlDoc
       def apply(left: CodlDoc, right: CodlDoc) =
         if left == right then Juxtaposition.Same(left.inspect) else
