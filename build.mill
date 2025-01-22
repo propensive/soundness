@@ -754,6 +754,14 @@ object wisteria extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object xylophone extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, anticipation.transport)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object zeppelin extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(galilei.core)
