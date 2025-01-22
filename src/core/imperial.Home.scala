@@ -16,11 +16,8 @@
 
 package imperial
 
-import ambience.*
 import anticipation.*
-import contingency.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 
 object Home extends BaseLayout(Unset)(using BaseLayout.Dir(true, Nil)):
