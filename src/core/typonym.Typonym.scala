@@ -37,11 +37,16 @@ object Typonym:
 
       case '[type mapType <: Tuple; TypeMap[mapType]] =>
         val entries =
-          untuple[mapType].map(_.asType).map:
+          val pairs: List[TypeRepr] = untuple[mapType]
+
+          val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
             case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
 
-          . foldLeft('{Nil}): (list, next) =>
-              '{$next :: $list}
+          def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
+            case Nil => '{Nil}
+            case head :: tail => '{$head :: ${recur(tail)}}
+
+          recur(keyValues)
 
         '{$entries.to(Map)}
 
