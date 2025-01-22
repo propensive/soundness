@@ -1,8 +1,8 @@
-[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/bifurcate/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/bifurcate/actions)
+[<img alt="GitHub Workflow" src="https://img.shields.io/github/actions/workflow/status/propensive/polaris/main.yml?style=for-the-badge" height="24">](https://github.com/propensive/polaris/actions)
 [<img src="https://img.shields.io/discord/633198088311537684?color=8899f7&label=DISCORD&style=for-the-badge" height="24">](https://discord.com/invite/MBUrkTgMnA)
 <img src="/doc/images/github.png" valign="middle">
 
-# Bifurcate
+# Polaris
 
 __Deserialize binary data in Scala__
 
@@ -26,7 +26,7 @@ __Deserialize binary data in Scala__
 
 ## Status
 
-Bifurcate is classified as __embryonic__. For reference, Soundness projects are
+Polaris is classified as __embryonic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
@@ -39,20 +39,20 @@ Projects at any stability level, even _embryonic_ projects, can still be used,
 as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
-Bifurcate is designed to be _small_. Its entire source code currently consists
-of 91 lines of code.
+Polaris is designed to be _small_. Its entire source code currently consists
+of 90 lines of code.
 
 ## Building
 
-Bifurcate will ultimately be built by Fury, when it is published. In the
+Polaris will ultimately be built by Fury, when it is published. In the
 meantime, two possibilities are offered, however they are acknowledged to be
 fragile, inadequately tested, and unsuitable for anything more than
 experimentation. They are provided only for the necessity of providing _some_
-answer to the question, "how can I try Bifurcate?".
+answer to the question, "how can I try Polaris?".
 
 1. *Copy the sources into your own project*
    
-   Read the `fury` file in the repository root to understand Bifurcate's build
+   Read the `fury` file in the repository root to understand Polaris's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
    project, then repeat (recursively) for each of the dependencies.
@@ -63,7 +63,7 @@ answer to the question, "how can I try Bifurcate?".
 
 2. *Build with [Wrath](https://github.com/propensive/wrath/)*
 
-   Wrath is a bootstrapping script for building Bifurcate and other projects in
+   Wrath is a bootstrapping script for building Polaris and other projects in
    the absence of a fully-featured build tool. It is designed to read the `fury`
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
@@ -75,21 +75,21 @@ answer to the question, "how can I try Bifurcate?".
    `/usr/local/bin/`.
 
    Clone this repository inside an empty directory, so that the build can
-   safely make clones of repositories it depends on as _peers_ of `bifurcate`.
+   safely make clones of repositories it depends on as _peers_ of `polaris`.
    Run `wrath -F` in the repository root. This will download and compile the
-   latest version of Scala, as well as all of Bifurcate's dependencies.
+   latest version of Scala, as well as all of Polaris's dependencies.
 
    If the build was successful, the compiled JAR files can be found in the
    `.wrath/dist` directory.
 
 ## Contributing
 
-Contributors to Bifurcate are welcome and encouraged. New contributors may like
+Contributors to Polaris are welcome and encouraged. New contributors may like
 to look for issues marked
-[beginner](https://github.com/propensive/bifurcate/labels/beginner).
+[beginner](https://github.com/propensive/polaris/labels/beginner).
 
 We suggest that all contributors read the [Contributing
-Guide](/contributing.md) to make the process of contributing to Bifurcate
+Guide](/contributing.md) to make the process of contributing to Polaris
 easier.
 
 Please __do not__ contact project maintainers privately with questions unless
@@ -99,7 +99,7 @@ audience, and it can result in duplication of effort.
 
 ## Author
 
-Bifurcate was designed and developed by Jon Pretty, and commercial support and
+Polaris was designed and developed by Jon Pretty, and commercial support and
 training on all aspects of Scala 3 is available from [Propensive
 O&Uuml;](https://propensive.com/).
 
@@ -107,10 +107,7 @@ O&Uuml;](https://propensive.com/).
 
 ## Name
 
-In physics, a _bifurcation_ is a critical point where a slight variation causes
-a switch between two distinct states. This alludes to the interpretation of an
-electrical current as a binary value, and it is sequences of binary values that
-_Bifurcate_ interprets.
+TBC
 
 In general, Soundness project names are always chosen with some rationale,
 however it is usually frivolous. Each name is chosen for more for its
@@ -129,6 +126,6 @@ language.
 
 ## License
 
-Bifurcate is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
+Polaris is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
 
