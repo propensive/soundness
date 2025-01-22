@@ -16,6 +16,4 @@
 
 package typonym
 
-import scala.quoted.*
-
 erased trait TypeSet[+ElementType <: TypeElement[?]]

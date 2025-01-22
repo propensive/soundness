@@ -16,6 +16,4 @@
 
 package typonym
 
-import scala.quoted.*
-
 erased trait TypeList[+TupleType <: Tuple]
