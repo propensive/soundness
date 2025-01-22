@@ -55,6 +55,6 @@ object Focusable:
 
   given Text is Focusable = Focusable(t"link text", identity(_))
   given Selector is Focusable = Focusable(t"css selector", _.normalize.value)
-  given TagType[?, ?, ?] is Focusable = Focusable(t"tag name", _.label)
+  given Tag[?, ?, ?] is Focusable = Focusable(t"tag name", _.label)
   given DomId is Focusable = Focusable(t"css selector", v => t"#${v.name}")
   given CssClass is Focusable = Focusable(t"css selector", v => t".${v.name}")
