@@ -49,12 +49,7 @@ case class WebDriver(server: Browser#Server):
 
     private def safe[ResultType](block: => ResultType): ResultType =
       try block catch case e: HttpError => e match
-        case HttpError(status, body) =>
-          val json = body match
-            case HttpBody.Chunked(stream) => Json.parse(stream.reduce(_ ++ _).utf8).value
-            case HttpBody.Empty           => throw e
-            case HttpBody.Data(data)      => Json.parse(data.utf8).value
-
+        case HttpError(status, body) => e.as[Json]
           throw WebDriverError(json.error.as[Text], json.message.as[Text],
               json.stacktrace.as[Text].cut(t"\n"))
 
