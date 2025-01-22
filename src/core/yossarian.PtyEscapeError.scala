@@ -21,7 +21,7 @@ import fulminate.*
 
 object PtyEscapeError:
   object Reason:
-    given Reason is Communicable as communicable =
+    given communicable: Reason is Communicable =
       case BadSgrParameters(ns)         => m"${ns} is not a valid SGR parameter sequence"
       case BadCsiParameter(n, command)  => m"$n is not a valid CSI parameter for the $command command"
       case NonintegerSgrParameter(text) => m"$text is not a numerical SGR parameter"
