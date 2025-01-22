@@ -16,12 +16,4 @@
 
 package baroque
 
-import anticipation.*
-import gossamer.*
-import quantitative.*
-import spectacular.*
-import symbolism.*
-
-import scala.annotation.*
-
-val I: Complex[Double] = Complex(0.0, 1.0)
+val i: Complex[Double] = Complex(0.0, 1.0)
