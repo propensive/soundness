@@ -588,6 +588,14 @@ object nomenclature extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object panopticon extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object parasite extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(digression.core, anticipation.time, feudalism.core)
