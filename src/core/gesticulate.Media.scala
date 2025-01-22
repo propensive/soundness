@@ -104,13 +104,13 @@ object Media:
 
       parsed.subtype match
         case Subtype.Standard(_) =>
-          if !systemMediaTypes.contains(parsed.basic)
-          then
-            val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
-            throw InterpolationError(m"""
-              ${parsed.basic} is not a registered media type; did you mean $suggestion or
-              ${parsed.basic.sub(t"/", t"/x-")}?
-            """)
+          if !systemMediaTypes.isEmpty then
+            if !systemMediaTypes.contains(parsed.basic) then
+              val suggestion = systemMediaTypes.minBy(_.proximity(parsed.basic))
+              throw InterpolationError(m"""
+                ${parsed.basic} is not a registered media type; did you mean $suggestion or
+                ${parsed.basic.sub(t"/", t"/x-")}?
+              """)
 
         case _ =>
           ()
