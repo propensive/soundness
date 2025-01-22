@@ -529,6 +529,14 @@ object larceny extends SoundnessModule {
   }
 }
 
+object mercator extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(fulminate.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object merino extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(turbulence.core)
