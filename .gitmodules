@@ -199,3 +199,6 @@
 [submodule "adversaria"]
 	path = adversaria
 	url = https://github.com/propensive/adversaria
+[submodule "baroque"]
+	path = baroque
+	url = https://github.com/propensive/baroque
