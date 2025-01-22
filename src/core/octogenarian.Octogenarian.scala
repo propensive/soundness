@@ -49,7 +49,7 @@ object Octogenarian:
 
       text
 
-    given Refspec is Encodable in Text as encodable = identity(_)
+    given encodable: Refspec is Encodable in Text = identity(_)
     given Refspec is Showable = identity(_)
 
   object Tag:

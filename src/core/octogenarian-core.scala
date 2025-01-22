@@ -35,7 +35,8 @@ import GitError.Reason.*
 given Realm = realm"octogenarian"
 
 package gitCommands:
-  given (using WorkingDirectory, GitEvent is Loggable) => GitCommand raises NameError raises PathError raises IoError raises ExecError as environmentDefault =
+  given environmentDefault: (WorkingDirectory, GitEvent is Loggable)
+  => GitCommand raises NameError raises PathError raises IoError raises ExecError =
 
     val path: Path on Posix = sh"which git"()
     GitCommand(path)
