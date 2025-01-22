@@ -243,6 +243,14 @@ object chiaroscuro extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object coaxial extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(galilei.core, nettlesome.core)
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object contextual extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(rudiments.core)
