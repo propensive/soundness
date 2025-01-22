@@ -24,7 +24,7 @@ import vacuous.*
 
 enum PathOp:
   case Move(coords: Coords)
-  case Line(coords: Coords)
+  case Draw(coords: Coords)
   case Close
 
   case Cubic[CoordsType <: (Rel | Abs)](ctrl1: Optional[CoordsType],
@@ -39,9 +39,9 @@ object PathOp:
 
   given PathOp is Encodable in Text as encodable =
     case Move(coords)                => t"${coords.key('m')} $coords"
-    case Line(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
-    case Line(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
-    case Line(coords)                => t"${coords.key('l')} $coords"
+    case Draw(Rel(DxDy(0.0f, v)))    => t"v ${v.toDouble}"
+    case Draw(Rel(DxDy(h, 0.0f)))    => t"h ${h.toDouble}"
+    case Draw(coords)                => t"${coords.key('l')} $coords"
     case Close                       => t"Z"
     case Cubic(Unset, ctrl2, coords) => t"${coords.key('s')} $ctrl2, $coords"
     case Cubic(ctrl1, ctrl2, coords) => t"${coords.key('c')} ${ctrl1.option.get}, $ctrl2, $coords"

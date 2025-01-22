@@ -31,7 +31,7 @@ sealed trait Shape:
 case class Rectangle(position: Point, width: Float, height: Float) extends Shape:
   def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
 
-case class Path
+case class Line
    (ops:       List[PathOp]       = Nil,
     style:     Optional[CssStyle] = Unset,
     id:        Optional[SvgId]    = Unset,
@@ -44,37 +44,37 @@ extends Shape:
     // FIXME
     unsafely(Xml.parse(t"""<path d="$d"/>"""))
 
-  def moveTo(point: Point): Path = Path(Move(Abs(point)) :: ops)
-  def lineTo(point: Point): Path = Path(Line(Abs(point)) :: ops)
-  def move(vector: DxDy): Path = Path(Move(Rel(vector)) :: ops)
-  def line(vector: DxDy): Path = Path(Line(Rel(vector)) :: ops)
+  def moveTo(point: Point): Line = Line(Move(Abs(point)) :: ops)
+  def lineTo(point: Point): Line = Line(Draw(Abs(point)) :: ops)
+  def move(vector: DxDy): Line = Line(Move(Rel(vector)) :: ops)
+  def line(vector: DxDy): Line = Line(Draw(Rel(vector)) :: ops)
 
-  def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Path =
-    Path(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
+  def curve(ctrl1: DxDy, ctrl2: DxDy, point: DxDy): Line =
+    Line(Cubic(Rel(ctrl1), Rel(ctrl2), Rel(point)) :: ops)
 
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Path =
-    Path(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
+  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Line =
+    Line(Cubic(Abs(ctrl1), Abs(ctrl2), Abs(point)) :: ops)
 
-  def curve(ctrl2: DxDy, vector: DxDy): Path = Path(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Path = Path(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
+  def curve(ctrl2: DxDy, vector: DxDy): Line = Line(Cubic(Unset, Rel(ctrl2), Rel(vector)) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Line = Line(Cubic(Unset, Abs(ctrl2), Abs(point)) :: ops)
 
-  def quadCurve(ctrl1: DxDy, vector: DxDy): Path = Path(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
-  def quadCurveTo(ctrl1: Point, point: Point): Path = Path(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
+  def quadCurve(ctrl1: DxDy, vector: DxDy): Line = Line(Quadratic(Rel(ctrl1), Rel(vector)) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Line = Line(Quadratic(Abs(ctrl1), Abs(point)) :: ops)
 
-  def quadCurve(vector: DxDy): Path = Path(Quadratic(Unset, Rel(vector)) :: ops)
-  def quadCurveTo(point: Point): Path = Path(Quadratic(Unset, Abs(point)) :: ops)
+  def quadCurve(vector: DxDy): Line = Line(Quadratic(Unset, Rel(vector)) :: ops)
+  def quadCurveTo(point: Point): Line = Line(Quadratic(Unset, Abs(point)) :: ops)
 
-  def moveUp(value: Float): Path = Path(Move(Rel(DxDy(value, 0.0))) :: ops)
-  def moveDown(value: Float): Path = Path(Move(Rel(DxDy(-value, 0.0))) :: ops)
-  def moveLeft(value: Float): Path = Path(Move(Rel(DxDy(0.0, -value))) :: ops)
-  def moveRight(value: Float): Path = Path(Move(Rel(DxDy(0.0, value))) :: ops)
+  def moveUp(value: Float): Line = Line(Move(Rel(DxDy(value, 0.0))) :: ops)
+  def moveDown(value: Float): Line = Line(Move(Rel(DxDy(-value, 0.0))) :: ops)
+  def moveLeft(value: Float): Line = Line(Move(Rel(DxDy(0.0, -value))) :: ops)
+  def moveRight(value: Float): Line = Line(Move(Rel(DxDy(0.0, value))) :: ops)
 
-  def lineUp(value: Float): Path = Path(Line(Rel(DxDy(value, 0.0))) :: ops)
-  def lineDown(value: Float): Path = Path(Line(Rel(DxDy(-value, 0.0))) :: ops)
-  def lineLeft(value: Float): Path = Path(Line(Rel(DxDy(0.0, -value))) :: ops)
-  def lineRight(value: Float): Path = Path(Line(Rel(DxDy(0.0, value))) :: ops)
+  def lineUp(value: Float): Line = Line(Draw(Rel(DxDy(value, 0.0))) :: ops)
+  def lineDown(value: Float): Line = Line(Draw(Rel(DxDy(-value, 0.0))) :: ops)
+  def lineLeft(value: Float): Line = Line(Draw(Rel(DxDy(0.0, -value))) :: ops)
+  def lineRight(value: Float): Line = Line(Draw(Rel(DxDy(0.0, value))) :: ops)
 
-  def closed: Path = Path(Close :: ops)
+  def closed: Line = Line(Close :: ops)
 
 case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Degrees) extends Shape:
   def circle: Boolean = xRadius == yRadius
