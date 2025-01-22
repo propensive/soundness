@@ -459,6 +459,15 @@ object hallucination extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object harlequin extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(anthology.scala, gossamer.core)
+    def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  }
+
+  object test extends ProbablyTestModule
+}
+
 object hellenism extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
