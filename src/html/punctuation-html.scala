@@ -27,5 +27,5 @@ extension (value: Markdown.Ast.Inline)(using conv: HtmlConverter)
   def html: Seq[Html[Phrasing]] = conv.phrasing(value)
 
 package htmlRenderers:
-  given HtmlConverter as standard = HtmlConverter()
-  given HtmlConverter as outline = OutlineConverter
+  given standard: HtmlConverter = HtmlConverter()
+  given outline: HtmlConverter = OutlineConverter
