@@ -31,7 +31,7 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-  given (Image in ImageFormatType) is GenericHttpResponseStream as response:
+  given response: (Image in ImageFormatType) is GenericHttpResponseStream:
     def mediaType = mediaType.show
     def content(image: Image in ImageFormatType): LazyList[Bytes] = image.serialize(using codec)
 
