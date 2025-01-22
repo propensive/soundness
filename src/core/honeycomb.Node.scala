@@ -23,14 +23,14 @@ import spectacular.*
 import vacuous.*
 
 object Node:
-  given [HtmlType <: Html[?]] => HtmlType is Showable as html = html => (html: @unchecked) match
+  given html: [HtmlType <: Html[?]] => HtmlType is Showable = html => (html: @unchecked) match
     case text: Text    => text
     case int: Int      => int.show
     case node: Node[?] => node.show
 
-  given Seq[Html[?]] is Showable as seq = _.map(_.show).join
+  given seq: Seq[Html[?]] is Showable = _.map(_.show).join
 
-  given [NodeType <: Node[?]] => NodeType is Showable as node = item =>
+  given node: [NodeType <: Node[?]] => NodeType is Showable = item =>
     val filling =
       item.attributes.map: keyValue =>
         (keyValue: @unchecked) match
