@@ -51,7 +51,7 @@ object Subcompiler:
         setup(Array[String](""), ctx2).map(_(1)).get
 
       def run(source: String, regions: Set[(Int, Int)], errors: List[CompileError])
-              : List[CompileError] =
+      :     List[CompileError] =
 
         if regions.isEmpty then errors else
           val reporter: CustomReporter = CustomReporter()
@@ -72,7 +72,7 @@ object Subcompiler:
           val newErrors = reporter.errors.to(List)
 
           def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
-                  : List[CompileError] =
+          :     List[CompileError] =
 
             todo match
               case Nil =>
