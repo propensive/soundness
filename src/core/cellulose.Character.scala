@@ -25,8 +25,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 opaque type Character = Long
 
 object Character:
