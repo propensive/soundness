@@ -26,7 +26,7 @@ erased trait Http
 
 object Http:
   given (Monitor, Codicil, HttpServerEvent is Loggable, Tactic[ServerError])
-      => Http is Protocolic:
+  =>    Http is Protocolic:
     type Carrier = TcpPort
     type Request = HttpConnection
     type Response = telekinesis.HttpResponse
