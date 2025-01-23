@@ -41,7 +41,7 @@ def test[ReportType](name: Text)(using suite: Testable, codepoint: Codepoint): T
 
 def suite[ReportType](name: Text)(using suite: Testable, runner: Runner[ReportType])
    (block: Testable ?=> Unit)
-        : Unit =
+:     Unit =
 
   runner.suite(Testable(name, suite), block)
 
@@ -55,34 +55,34 @@ extension [TestType](test: Test[TestType])
 
   inline def assert[ReportType]
      (inline predicate: TestType => Boolean)
-     (using runner:     Runner[ReportType],
+     (using runner:    Runner[ReportType],
             inclusion:  Inclusion[ReportType, Outcome],
             inclusion2: Inclusion[ReportType, Details])
-          : Unit =
+  :     Unit =
     ${Probably.assert[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def check[ReportType]
      (inline predicate: TestType => Boolean)
-     (using runner:     Runner[ReportType],
+     (using runner:    Runner[ReportType],
             inclusion:  Inclusion[ReportType, Outcome],
             inclusion2: Inclusion[ReportType, Details])
-          : TestType =
+  :     TestType =
     ${Probably.check[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[ReportType]()
-     (using runner:     Runner[ReportType],
+     (using runner:    Runner[ReportType],
             inclusion:  Inclusion[ReportType, Outcome],
             inclusion2: Inclusion[ReportType, Details])
-          : Unit =
+  :     Unit =
     ${
         Probably.assert[TestType, ReportType]
          ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
 
   inline def check[ReportType]()
-     (using runner:     Runner[ReportType],
+     (using runner:    Runner[ReportType],
             inclusion:  Inclusion[ReportType, Outcome],
             inclusion2: Inclusion[ReportType, Details])
-          : TestType =
+  :     TestType =
 
     ${
         Probably.check[TestType, ReportType]
@@ -92,7 +92,7 @@ extension [TestType](test: Test[TestType])
      (using runner: Runner[ReportType],
             inc:    Inclusion[ReportType, Outcome],
             inc2:   Inclusion[ReportType, Details])
-          : Unit =
+  :     Unit =
 
     assert[ReportType](pf.isDefinedAt(_))
 

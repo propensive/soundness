@@ -371,7 +371,7 @@ class Report(using Environment):
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             e"${opsPerS(s.benchmark)}")
-        ::: comparisons.map: c =>
+       ::: comparisons.map: c =>
           import Baseline.*
           val baseline = c.benchmark.baseline.vouch(using Unsafe)
           Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):

@@ -28,14 +28,14 @@ import scala.quoted.*
 
 object Probably:
   protected def general[TestType: Type, ReportType: Type, ResultType: Type]
-     (test:      Expr[Test[TestType]],
+     (test:     Expr[Test[TestType]],
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, Details]],
+      inc:      Expr[Inclusion[ReportType, Outcome]],
+      inc2:     Expr[Inclusion[ReportType, Details]],
       action:    Expr[Trial[TestType] => ResultType])
      (using Quotes)
-          : Expr[ResultType] =
+  :     Expr[ResultType] =
 
     import quotes.reflect.*
 
@@ -73,25 +73,25 @@ object Probably:
         }
 
   def check[TestType: Type, ReportType: Type]
-     (test:      Expr[Test[TestType]],
+     (test:     Expr[Test[TestType]],
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, Details]])
+      inc:      Expr[Inclusion[ReportType, Outcome]],
+      inc2:     Expr[Inclusion[ReportType, Details]])
      (using Quotes)
-          : Expr[TestType] =
+  :     Expr[TestType] =
 
     general[TestType, ReportType, TestType]
      (test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => t.get })
 
   def assert[TestType: Type, ReportType: Type]
-     (test:      Expr[Test[TestType]],
+     (test:     Expr[Test[TestType]],
       predicate: Expr[TestType => Boolean],
       runner:    Expr[Runner[ReportType]],
-      inc:       Expr[Inclusion[ReportType, Outcome]],
-      inc2:      Expr[Inclusion[ReportType, Details]])
+      inc:      Expr[Inclusion[ReportType, Outcome]],
+      inc2:     Expr[Inclusion[ReportType, Details]])
      (using Quotes)
-          : Expr[Unit] =
+  :     Expr[Unit] =
     general[TestType, ReportType, Unit]
      (test, predicate, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
 
@@ -101,7 +101,7 @@ object Probably:
       inc: Expr[Inclusion[ReportType, Outcome]],
       inc2: Expr[Inclusion[ReportType, Details]])
      (using Quotes)
-          : Expr[Unit] =
+  :     Expr[Unit] =
 
     general[TestType, ReportType, Unit]
      (test, '{ _ => true }, runner, inc, inc2, '{ (t: Trial[TestType]) => () })
@@ -118,7 +118,7 @@ object Probably:
       inc: Inclusion[ReportType, Outcome],
       inc2: Inclusion[ReportType, Details],
       display: TestType is Inspectable)
-          : ResultType =
+  :     ResultType =
 
     runner.run(test).pipe: run =>
       val outcome = run match
@@ -146,7 +146,7 @@ object Probably:
       result(run)
 
   def debug[TestType: Type](expr: Expr[TestType], test: Expr[Harness])(using Quotes)
-          : Expr[TestType] =
+  :     Expr[TestType] =
 
     import quotes.reflect.*
 

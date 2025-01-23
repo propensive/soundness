@@ -25,12 +25,12 @@ object Benchmark:
   type Percentiles = 80 | 85 | 90 | 95 | 96 | 97 | 98 | 99
 
 case class Benchmark
-   (total:      Long,
-    count:      Int,
-    min:        Double,
-    mean:       Double,
-    max:        Double,
-    sd:         Double,
+   (total:     Long,
+    count:     Int,
+    min:     Double,
+    mean:      Double,
+    max:     Double,
+    sd:      Double,
     confidence: Benchmark.Percentiles,
     baseline:   Optional[Baseline]):
 
