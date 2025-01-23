@@ -48,7 +48,7 @@ trait Dispatcher:
      (body: References ?=> Quotes ?=> Expr[OutputType])
      [ScalacVersionType <: Scalac.All]
      (using codepoint: Codepoint, classloader: Classloader)
-          : Result[OutputType] raises CompilerError =
+  :     Result[OutputType] raises CompilerError =
 
     import strategies.throwUnsafely
     val uuid = Uuid()

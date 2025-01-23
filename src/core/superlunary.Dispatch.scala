@@ -36,9 +36,9 @@ import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
 
 case class Dispatch[OutputType]
-   (path:      Path,
+   (path:     Path,
     classpath: LocalClasspath,
-    local:     () => OutputType,
+    local:    () => OutputType,
     remote:    (Text => Text) => OutputType):
 
   def mainClass: Text = t"superlunary.DispatchRunner"
