@@ -27,7 +27,7 @@ object LineSeparation:
   inline def readByte
      (inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
      (lineSeparators: LineSeparation)
-          : Unit =
+  :     Unit =
 
     val action: Action = read match
       case 10 =>
@@ -73,8 +73,8 @@ object LineSeparation:
 
 case class LineSeparation
    (newline: LineSeparation.NewlineSeq,
-    cr:      LineSeparation.Action,
-    lf:      LineSeparation.Action,
+    cr:     LineSeparation.Action,
+    lf:     LineSeparation.Action,
     crlf:    LineSeparation.Action,
     lfcr:    LineSeparation.Action):
 

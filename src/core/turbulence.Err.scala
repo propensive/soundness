@@ -23,7 +23,7 @@ object Err:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
 
   def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
-          : Unit =
+  :     Unit =
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
 
   def println[TextType: Printable](lines: Termcap ?=> TextType*)(using stdio: Stdio): Unit =

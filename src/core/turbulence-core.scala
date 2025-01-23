@@ -47,7 +47,7 @@ extension [ValueType](value: ValueType)
 
   def writeTo[TargetType](target: TargetType)[ElementType]
      (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
-          : Unit =
+  :     Unit =
 
     writable.write(target, readable.stream(value))
 
@@ -85,7 +85,7 @@ extension [ElementType](stream: LazyList[ElementType])
 
   inline def flow[ResultType](inline termination: => ResultType)
      (inline proceed: (head: ElementType, tail: LazyList[ElementType]) ?=> ResultType)
-          : ResultType =
+  :     ResultType =
     stream match
       case head #:: tail => proceed(using head, tail)
       case _             => termination
@@ -94,7 +94,7 @@ extension [ElementType](stream: LazyList[ElementType])
 
   def rate[DurationType: GenericDuration: SpecificDuration](duration: DurationType)
      (using Monitor, Tactic[AsyncError])
-          : LazyList[ElementType] =
+  :     LazyList[ElementType] =
 
     def recur(stream: LazyList[ElementType], last: Long): LazyList[ElementType] =
       stream.flow(LazyList()):
@@ -112,7 +112,7 @@ extension [ElementType](stream: LazyList[ElementType])
        (active: Boolean,
         stream: LazyList[Some[ElementType] | Tap.Regulation],
         buffer: List[ElementType])
-            : LazyList[ElementType] =
+    :     LazyList[ElementType] =
 
       recur(active, stream, buffer)
 
@@ -121,7 +121,7 @@ extension [ElementType](stream: LazyList[ElementType])
        (active: Boolean,
         stream: LazyList[Some[ElementType] | Tap.Regulation],
         buffer: List[ElementType])
-            : LazyList[ElementType] =
+    :     LazyList[ElementType] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
       else if stream.isEmpty then LazyList()
@@ -140,12 +140,12 @@ extension [ElementType](stream: LazyList[ElementType])
 
   def cluster[DurationType: GenericDuration](duration: DurationType, maxSize: Optional[Int] = Unset)
      (using Monitor)
-          : LazyList[List[ElementType]] =
+  :     LazyList[List[ElementType]] =
 
     val Limit = maxSize.or(Int.MaxValue)
 
     def recur(stream: LazyList[ElementType], list: List[ElementType], count: Int)
-            : LazyList[List[ElementType]] =
+    :     LazyList[List[ElementType]] =
 
       count match
         case 0 => safely(async(stream.isEmpty).await()) match
@@ -164,7 +164,7 @@ extension [ElementType](stream: LazyList[ElementType])
     LazyList.defer(recur(stream, Nil, 0))
 
   def parallelMap[ElementType2](lambda: ElementType => ElementType2)(using Monitor)
-          : LazyList[ElementType2] =
+  :     LazyList[ElementType2] =
 
     val out: Spool[ElementType2] = Spool()
 
@@ -193,12 +193,12 @@ package lineSeparation:
 
 extension (obj: LazyList.type)
   def multiplex[ElemType](streams: LazyList[ElemType]*)(using Monitor)
-          : LazyList[ElemType] =
+  :     LazyList[ElemType] =
 
     multiplexer(streams*).stream
 
   def multiplexer[ElemType](streams: LazyList[ElemType]*)(using Monitor)
-          : Multiplexer[Any, ElemType] =
+  :     Multiplexer[Any, ElemType] =
 
     val multiplexer = Multiplexer[Any, ElemType]()
     streams.zipWithIndex.map(_.swap).each(multiplexer.add)
@@ -263,7 +263,7 @@ extension (stream: LazyList[Bytes])
       def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
       def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-              : LazyList[Bytes] =
+      :     LazyList[Bytes] =
 
         stream match
           case source #:: more =>
@@ -290,7 +290,7 @@ extension (stream: LazyList[Bytes])
     def newArray(): Array[Byte] = new Array[Byte](size)
 
     def recur(stream: LazyList[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-            : LazyList[Bytes] =
+    :     LazyList[Bytes] =
 
       stream match
         case source #:: more =>
@@ -351,6 +351,6 @@ extension (stream: LazyList[Bytes])
           count
 
 def spool[ItemType](using DummyImplicit)[ResultType](lambda: Spool[ItemType] => ResultType)
-        : ResultType =
+:     ResultType =
   val spool: Spool[ItemType] = Spool()
   try lambda(spool) finally spool.stop()

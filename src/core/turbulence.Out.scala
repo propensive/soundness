@@ -23,7 +23,7 @@ object Out:
   def write(bytes: Bytes)(using stdio: Stdio): Unit = stdio.write(bytes)
 
   def print[TextType: Printable as printable](text: Termcap ?=> TextType)(using stdio: Stdio)
-          : Unit =
+  :     Unit =
     stdio.print(printable.print(text(using stdio.termcap), stdio.termcap))
 
   def println()(using Stdio): Unit = print("\n".tt)

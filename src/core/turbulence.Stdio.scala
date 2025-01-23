@@ -26,11 +26,11 @@ import vacuous.*
 
 object Stdio:
   def apply
-     (out:     ji.PrintStream | Null,
-      err:     ji.PrintStream | Null,
-      in:      ji.InputStream | Null,
+     (out:    ji.PrintStream | Null,
+      err:    ji.PrintStream | Null,
+      in:     ji.InputStream | Null,
       termcap: Termcap)
-          : Stdio =
+  :     Stdio =
 
     val safeOut: ji.PrintStream = Optional(out).or(MutePrintStream)
     val safeErr: ji.PrintStream = Optional(err).or(MutePrintStream)
