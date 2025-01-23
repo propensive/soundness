@@ -16,8 +16,6 @@
 
 package dissonance
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -75,9 +73,10 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
     Diff(edits2*)
 
-  def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2^{lambda}] = Diff(edits.map(_.map(lambda))*)
+  def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2] =
+    Diff(edits.map(_.map(lambda))*)
 
-  def patch(seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
+  def patch(seq: Seq[ElemType], update: (ElemType, ElemType) => ElemType = (left, right) => left)
   :     LazyList[ElemType] =
 
     def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match
@@ -90,7 +89,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
 
     recur(edits.to(List), seq)
 
-  def rdiff(similar: (ElemType, ElemType) -> Boolean, subSize: Int = 1): RDiff[ElemType] =
+  def rdiff(similar: (ElemType, ElemType) => Boolean, subSize: Int = 1): RDiff[ElemType] =
     val changes = collate.flatMap:
       case Region.Unchanged(pars)    => pars
       case Region.Changed(dels, Nil) => dels

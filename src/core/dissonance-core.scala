@@ -93,7 +93,8 @@ extension (diff: Diff[Text])
           def replace(deletions: List[Text], target: Int): Replace =
             val index = prelude.indexOfSlice(deletions)
             if index == target
-            then Replace(deletions.dropRight(deletions2.length), deletions2, insertions.map(_.value))
+            then
+              Replace(deletions.dropRight(deletions2.length), deletions2, insertions.map(_.value))
             else
               def countback(n: Int): Int =
                 if index - n > 0 && prelude(target - n) == prelude(index - n) then countback(n + 1)

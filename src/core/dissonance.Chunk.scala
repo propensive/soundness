@@ -20,4 +20,5 @@ import language.experimental.captureChecking
 
 import rudiments.*
 
-case class Chunk[ElemType](pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
+case class Chunk[ElemType]
+   (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
