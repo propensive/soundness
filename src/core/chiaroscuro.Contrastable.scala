@@ -65,7 +65,7 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
 
   def compareSeq[ValueType: Contrastable: Similarity]
      (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
-          : Juxtaposition =
+  :     Juxtaposition =
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
         diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
