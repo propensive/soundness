@@ -42,8 +42,8 @@ object JsonPrinter:
       append('"')
 
     def recur(json: JsonAst, indent: Int): Unit = json.asMatchable match
-      case (keys, values) => (keys.asMatchable: @unchecked) match
-        case keys: Array[String] => (values.asMatchable: @unchecked) match
+      case (keys, values) => keys.asMatchable.runtimeChecked match
+        case keys: Array[String] => values.asMatchable.runtimeChecked match
           case values: Array[JsonAst] @unchecked =>
             append('{')
             val last = keys.length - 1
