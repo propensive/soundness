@@ -100,7 +100,7 @@ object Printer:
                 if layout.multiline then
                   out.write('\n')
 
-                  if children.length >= layout.params then (children(layout.params - 1): @unchecked) match
+                  if children.length >= layout.params then children(layout.params - 1).runtimeChecked match
                     case CodlNode(Data(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
                       for ch <- key.chars do
