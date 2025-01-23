@@ -26,12 +26,12 @@ import serpentine.*
 import language.experimental.pureFunctions
 
 case class DaemonService[BusType <: Matchable]
-   (pid:        Pid,
+   (pid:     Pid,
     shutdown:   () => Unit,
     cliInput:   CliInput,
-    script:     Path on Linux,
+    script:    Path on Linux,
     deliver:    BusType => Unit,
-    bus:        LazyList[BusType],
+    bus:     LazyList[BusType],
     scriptName: Text)
 extends ShellContext:
 

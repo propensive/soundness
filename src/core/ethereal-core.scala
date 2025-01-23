@@ -69,8 +69,8 @@ def cli[BusType <: Matchable](using executive: Executive)
    (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
    (using interpreter:   CliInterpreter,
           stderrSupport: StderrSupport = daemonConfig.supportStderr,
-          model:         ThreadModel,
-          handler:       UnhandledErrorHandler)
+          model:      ThreadModel,
+          handler:      UnhandledErrorHandler)
       : Unit =
 
   given Realm: Realm = realm"ethereal"
@@ -143,7 +143,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
   def makeClient(socket: jn.Socket)
      (using Monitor, Stdio, Codicil)
-        : Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
+  :     Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
       val in = socket.getInputStream.nn
