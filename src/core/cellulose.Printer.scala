@@ -67,7 +67,9 @@ object Printer:
                 out.write('\n')
 
               case Struct(_, _) =>
-                val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
+                val ps = children.take:
+                  if layout.multiline then layout.params - 1 else layout.params
+
                 var col = indent - doc.margin + key.or(t"").length
                 ps.each: param =>
                   param.absolve match

@@ -106,10 +106,17 @@ extends CodlSchema(IArray.from(structSubschemas), structArity, Unset):
 
   lazy val params: IArray[Entry] =
     def recur(subschemas: List[Entry], fields: List[Entry]): IArray[Entry] = subschemas match
-      case Entry(key, struct: Struct) :: _                 => recur(Nil, fields)
-      case Entry(key, field: Field) :: _ if field.variadic => recur(Nil, Entry(key, field) :: fields)
-      case Entry(key, field: Field) :: tail                => recur(tail, Entry(key, field) :: fields)
-      case _                                               => IArray.from(fields.reverse)
+      case Entry(key, struct: Struct) :: _ =>
+        recur(Nil, fields)
+
+      case Entry(key, field: Field) :: _ if field.variadic =>
+        recur(Nil, Entry(key, field) :: fields)
+
+      case Entry(key, field: Field) :: tail =>
+        recur(tail, Entry(key, field) :: fields)
+
+      case _ =>
+        IArray.from(fields.reverse)
 
     recur(subschemas.to(List), Nil)
 

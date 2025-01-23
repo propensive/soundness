@@ -26,7 +26,8 @@ import language.experimental.captureChecking
 object CodlError:
   given Reason is Communicable =
     case UnexpectedCarriageReturn =>
-      m"a carriage return character ('\\r') was followed by a character other than a newline ('\\n')"
+      m"""a carriage return character ('\\r') was followed by a character other than a newline
+          ('\\n')"""
 
     case CarriageReturnMismatch(true) =>
       m"""a newline character ('\\n') was found without a preceding carriage return ('\\r'), which does not

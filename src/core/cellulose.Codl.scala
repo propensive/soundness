@@ -369,7 +369,8 @@ object Codl:
           case Pending(ch)    => reader.put(ch); consume(Word)
           case Space | Word   => consume(Word)
           case Comment        => consume(state)
-          case Indent         => reader.put(char); if diff == 4 then recur(Margin) else newline(Word)
+          case Indent         => reader.put(char)
+                                 if diff == 4 then recur(Margin) else newline(Word)
           case Margin         => block()
 
           case Hash => char.char match

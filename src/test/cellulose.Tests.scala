@@ -423,7 +423,8 @@ object Tests extends Suite(t"CoDL tests"):
                       |    content
                       |    # not a comment
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"content\n# not a comment", 1, 4, true))))
+      .assert: value =>
+        value == (0, LazyList(Item(t"root", 0, 0), Item(t"content\n# not a comment", 1, 4, true)))
 
       test(t"Parse multiline content including a additional indentation"):
         parseText(t"""|root
@@ -793,7 +794,8 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == CodlError(1, 16, 5, SurplusParams(t"three", t"child")))
 
       test(t"Two optional parameters not specified"):
-        childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child").root().child().layout.params
+        childWithTwoParams(AtMostOne, AtMostOne).parse(t"root\n  child").root().child().layout
+        . params
       .assert(_ == 0)
 
       test(t"Two optional parameters with one specified"):
@@ -970,7 +972,8 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == t"root\n  child\n")
 
       test(t"Serialize a node and a child with params layout"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0)))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"))), Layout(1, false, 0))))
+        . write
       .assert(_ == t"root child\n")
 
       test(t"Serialize a node and a child with block param"):
