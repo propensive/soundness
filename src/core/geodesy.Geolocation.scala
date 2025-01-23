@@ -38,7 +38,7 @@ object Geolocation:
 
     . compact
 
-  given (using Tactic[GeolocationError]) => Decoder[Geolocation] as decoder =
+  given decoder: Tactic[GeolocationError] => Decoder[Geolocation] =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
       val location =
         unsafely(Location(latitude.decode[Double].deg, longitude.decode[Double].deg))
@@ -90,7 +90,7 @@ object Geolocation:
       raise(GeolocationError(BadScheme))
       Geolocation(Location(0.deg, 0.deg))
 
-  given Geolocation is Encodable in Text as encodable = geolocation =>
+  given encodable: Geolocation is Encodable in Text = geolocation =>
     import geolocation.{location, altitude, uncertainty}
     t"geo:$location${altitude.lay(t"") { a => t",$a" }}${uncertainty.lay(t"") { u => t";u=$u" }}"
 
