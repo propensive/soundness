@@ -29,7 +29,7 @@ object Tests extends Suite(t"Feudalism tests"):
       val result = mutex.read: ref =>
         println(ref())
         ref.snapshot()
-      
+
       result
 
     .assert(_ == "Hello")
