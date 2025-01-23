@@ -26,7 +26,7 @@ import turbulence.*
 
 object Servable:
   def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => LazyList[Bytes])
-          : ResponseType is Servable = response =>
+  :     ResponseType is Servable = response =>
     val headers = List(ResponseHeader.ContentType.header -> mediaType.show)
     HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
 

@@ -34,5 +34,5 @@ extension [UrlType: Fetchable](url: UrlType)(using Online)
   def submit[BodyType: Postable]
      (method: (HttpMethod { val payload: true }) = Post, headers: RequestHeader.Value*)
      (body: BodyType)
-          : HttpResponse logs HttpEvent =
+  :     HttpResponse logs HttpEvent =
     Http.fetch[BodyType](UrlType.url(url), body, method, headers)

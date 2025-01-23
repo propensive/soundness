@@ -35,7 +35,7 @@ object HttpResponse:
     body.stream
 
   def apply[ServableType: Servable](servable: ServableType, headers: ResponseHeader.Value*)
-          : HttpResponse =
+  :     HttpResponse =
 
     val headers2: List[(Text, Text)] = headers.to(List).map: header =>
       header.header.header -> header.value
@@ -60,6 +60,6 @@ case class HttpResponse
 
   def apply[ValueType](header: ResponseHeader[ValueType])
      (using decoder: HttpHeaderDecoder[ValueType])
-          : List[ValueType] =
+  :     List[ValueType] =
 
     headersMap.at(header).or(Nil).map(decoder.decode(_))

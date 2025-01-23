@@ -32,7 +32,7 @@ object Http:
   def fetch[PostType: Postable]
      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
      (using Online)
-          : HttpResponse logs HttpEvent =
+  :     HttpResponse logs HttpEvent =
 
     Log.info(HttpEvent.Send(method, url, headers))
     Log.fine(HttpEvent.Request(PostType.preview(content)))
