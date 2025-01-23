@@ -23,7 +23,7 @@ import turbulence.*
 import vacuous.*
 
 object Part:
-  given Part is Readable by Bytes as readable = _.body
+  given readable: Part is Readable by Bytes = _.body
 
 case class Part
    (disposition: Multipart.Disposition,
