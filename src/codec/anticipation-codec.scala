@@ -31,6 +31,6 @@ object Bytes:
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
   def bytestream: Bytes = ValueType.encode(value)
- 
+
 extension (long: Long)
   def bytes: Bytes = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
