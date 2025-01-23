@@ -31,7 +31,7 @@ object Message:
 
   transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message]): List[Message] =
     inline erasedValue[TupleType] match
-      case _: (messageType *: tailType) => (subs: @unchecked) match
+      case _: (messageType *: tailType) => subs.runtimeChecked match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
           val show = summonInline[Communicable { type Self >: messageType }]
