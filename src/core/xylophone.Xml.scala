@@ -158,7 +158,7 @@ extends Xml, Dynamic:
   def as
      [ValueType]
      (using decoder: XmlDecoder[ValueType])
-         : ValueType raises XmlAccessError raises XmlReadError =
+  :     ValueType raises XmlAccessError raises XmlReadError =
     apply().as[ValueType]
 
 case class XmlNode(head: Int, path: XmlPath, root: XmlAst.Root) extends Xml, Dynamic:
