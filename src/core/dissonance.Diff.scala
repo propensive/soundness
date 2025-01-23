@@ -27,7 +27,7 @@ import vacuous.*
 object Diff:
   def parse(lines: LazyList[Text])(using Tactic[DiffError]): Diff[Text] =
     def recur(todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
-            : Diff[Text] =
+    :     Diff[Text] =
       if pos < target
       then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
       else todo match
@@ -78,7 +78,7 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
   def map[ElemType2](lambda: ElemType => ElemType2): Diff[ElemType2^{lambda}] = Diff(edits.map(_.map(lambda))*)
 
   def patch(seq: Seq[ElemType], update: (ElemType, ElemType) -> ElemType = { (left, right) => left })
-          : LazyList[ElemType] =
+  :     LazyList[ElemType] =
 
     def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match
       case Nil                   => seq.to(LazyList)
