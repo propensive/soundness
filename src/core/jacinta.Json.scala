@@ -66,7 +66,7 @@ trait Json2:
 
   object DecodableDerivation extends Derivable[Decodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
-            : DerivationType is Decodable in Json =
+    :     DerivationType is Decodable in Json =
       (json, omit) =>
         summonInline[Foci[JsonPointer]].give:
           summonInline[Tactic[JsonError]].give:
@@ -97,7 +97,7 @@ trait Json2:
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
-            : DerivationType is Encodable in Json =
+    :     DerivationType is Encodable in Json =
       value =>
         summonInline[Foci[JsonPointer]].give:
           val labels = fields(value): [FieldType] =>
@@ -168,7 +168,7 @@ object Json extends Json2, Dynamic:
   given array: [CollectionType <: Iterable, ElementType: Decodable in Json]
   => (factory:    Factory[ElementType, CollectionType[ElementType]],
       jsonAccess: Tactic[JsonError],
-      foci:       Foci[JsonPointer])
+      foci:      Foci[JsonPointer])
       => (CollectionType[ElementType] is Decodable in Json) =
     (value, omit) =>
       val builder = factory.newBuilder
@@ -227,7 +227,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
     apply(field.tt)
 
   def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
-          : Json raises JsonError =
+  :     Json raises JsonError =
     apply(field.tt)(index)
 
   def apply(field: Text): Json raises JsonError =
