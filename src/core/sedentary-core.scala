@@ -27,13 +27,13 @@ extension [TestType](test: Test[TestType])
      (confidence: Optional[Benchmark.Percentiles] = Unset,
       iterations: Optional[Int]                   = Unset,
       duration:   Optional[DurationType]          = Unset,
-      warmup:     Optional[DurationType]          = Unset,
+      warmup:    Optional[DurationType]          = Unset,
       baseline:   Optional[Baseline]              = Unset)
-     (using runner:           Runner[ReportType],
-            inc:              Inclusion[ReportType, Benchmark],
+     (using runner:        Runner[ReportType],
+            inc:           Inclusion[ReportType, Benchmark],
             specificDuration: DurationType is SpecificDuration = durationApi.javaLong,
             genericDuration:  DurationType is GenericDuration  = durationApi.javaLong)
-          : Unit =
+  :     Unit =
 
     val action = test.action
     var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
