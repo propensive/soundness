@@ -37,7 +37,7 @@ object Mosquito:
         case head :: tail => take(tail, size - 1).let(head *: _)
 
     given showable: [SizeType <: Int: ValueOf, ElemType: Showable] => TextMetrics
-        => Vector[ElemType, SizeType] is Showable =
+    =>    Vector[ElemType, SizeType] is Showable =
 
       vector =>
         val items = vector.list.map(_.show)
