@@ -81,8 +81,13 @@ object TabCompletions:
           val fish: TabCompletionsInstallation.InstallResult =
             if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
             then TabCompletionsInstallation.InstallResult.ShellNotInstalled(Shell.Fish)
-            else install(Shell.Fish, command, Name[Posix](t"$command.fish"), List(Xdg.dataDirs.last /
-                n"fish" / n"vendor_completions.d", Xdg.configHome / n"fish" / n"completions"))
+            else install
+                  (Shell.Fish,
+                    command,
+                    Name[Posix](t"$command.fish"),
+                    List
+                     (Xdg.dataDirs.last / n"fish" / n"vendor_completions.d",
+                      Xdg.configHome / n"fish" / n"completions"))
 
           TabCompletionsInstallation.Shells(zsh, bash, fish)
 
