@@ -65,7 +65,7 @@ object Sh:
             escaping with '\\' is not allowed immediately before a substitution
           """)
 
-          state.runtimeChecked match
+          state.absolve match
             case State(Awaiting, false, arguments) =>
               State(Unquoted, false, arguments ++ (h :: t))
 
@@ -82,7 +82,7 @@ object Sh:
           state
 
     def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
-      (state, next).runtimeChecked match
+      (state, next).absolve match
         case (State(Awaiting, _, arguments), ' ') =>
           State(Awaiting, false, arguments)
 

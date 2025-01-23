@@ -29,6 +29,6 @@ object Guillotine:
     val execType = ConstantType(StringConstant(context.value.get.parts.head.split(" ").nn.head.nn))
     val bounds = TypeBounds(execType, execType)
 
-    Refinement(TypeRepr.of[Command], "Exec", bounds).asType.runtimeChecked match
+    Refinement(TypeRepr.of[Command], "Exec", bounds).asType.absolve match
       case '[type commandType <: Command; commandType] =>
         '{${Sh.Prefix.expand(context, parts)}.asInstanceOf[commandType]}
