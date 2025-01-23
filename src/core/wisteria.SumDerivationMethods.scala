@@ -151,7 +151,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
         case _: (labelType *: moreLabelsType) =>
           type VariantType = variantType & DerivationType
           if index >= size then Unset else
-            valueOf[labelType].asMatchable.runtimeChecked match
+            valueOf[labelType].asMatchable.absolve match
               case label: String =>
                 val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
 
@@ -190,7 +190,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
         case _: (labelType *: moreLabelsType) =>
           type VariantType = variantType & DerivationType
           if index >= size then Unset else
-            valueOf[labelType].asMatchable.runtimeChecked match
+            valueOf[labelType].asMatchable.absolve match
               case label: String =>
                 val index2: Int & VariantIndex[DerivationType] = VariantIndex[DerivationType](index)
 
