@@ -27,6 +27,7 @@ import scala.deriving.*
 
 import anticipation.*
 import denominative.*
+import prepositional.*
 import vacuous.*
 
 type Nat = Int & Singleton
@@ -144,8 +145,8 @@ extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType])
     cofunctor.contramap(value, lambda)
 
 extension (value: Any)
-  def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
-    summon[Irrefutable[value.type, ResultType]].unapply(value)
+  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
+    irrefutable.unapply(value)
 
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])

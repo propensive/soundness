@@ -23,71 +23,97 @@ import anticipation.*
 import prepositional.*
 import vacuous.*
 
+infix type isAbove[SelfType, TypeclassType] = TypeclassType { type Self <: SelfType }
+
 object Extractable:
   given optional: [MatchType: Extractable]
   =>  Optional[MatchType] is Extractable into MatchType.Result =
     value => value.let(MatchType.extract(_))
 
-  given [ResultType]
-  => (irrefutable: Irrefutable[Text, ResultType])
-  =>  Irrefutable[String, ResultType] =
+  given irrefutable: [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
+  =>  String is Irrefutable into ResultType =
     value => irrefutable.unapply(value.tt)
 
-  given textChar: Text is Extractable into Char =
+  given textChar: [TextType <: Text] => TextType is Extractable into Char =
     text => if text.s.length == 1 then text.s.head else Unset
 
-  given textByte: Text is Extractable into Byte =
+  given textByte: [TextType <: Text] => TextType is Extractable into Byte =
     text => try text.s.toByte catch case _: NumberFormatException => Unset
 
-  given textShort: Text is Extractable into Short =
+  given textShort: [TextType <: Text] => TextType is Extractable into Short =
     text => try text.s.toShort catch case _: NumberFormatException => Unset
 
   given textInt: [TextType <: Text] => TextType is Extractable into Int =
-    v => try v.s.toInt catch case e: NumberFormatException => Unset
+    text => try text.s.toInt catch case e: NumberFormatException => Unset
 
-  given textLong: Text is Extractable into Long =
-    v => try v.s.toLong catch case e: NumberFormatException => Unset
+  given textLong: [TextType <: Text] => TextType is Extractable into Long =
+    text => try text.s.toLong catch case e: NumberFormatException => Unset
 
-  given textFloat: Text is Extractable into Float = v =>
-    try v.s.toFloat catch case e: NumberFormatException => Unset
+  given textFloat: [TextType <: Text] => TextType is Extractable into Float = text =>
+    try text.s.toFloat catch case e: NumberFormatException => Unset
 
-  given textDouble: Text is Extractable into Double = v =>
-    try v.s.toDouble catch case _: NumberFormatException => Unset
+  given textDouble: [TextType <: Text] => TextType is Extractable into Double = text =>
+    try text.s.toDouble catch case _: NumberFormatException => Unset
 
-  given textBoolean: Text is Extractable into Boolean = v =>
+  given textBoolean: [TextType <: Text] => TextType is Extractable into Boolean = v =>
     if v.s == "true" then true else if v.s == "false" then false else Unset
 
-  given shortByte: Short is Extractable into Byte = v => if v.toByte.toShort == v then v.toByte else Unset
+  given shortByte: [ShortType <: Short] => ShortType is Extractable into Byte =
+    short => short.toByte.unless(_.toInt != short)
 
-  given intByte: Int is Extractable into Byte =
-    v => if v.toByte.toInt == v then (v.toByte) else Unset
+  given intByte: [IntType <: Int] => IntType is Extractable into Byte =
+    int => int.toByte.unless(_.toInt != int)
 
-  given intShort: Int is Extractable into Short =
-    v => if v.toShort.toInt == v then v.toShort else Unset
+  given intShort: [IntType <: Int] => IntType is Extractable into Short =
+    int => int.toShort.unless(_.toInt != int)
 
-  given intFloat: Int is Extractable into Float =
-    v => if v.toFloat.toInt == v then v.toFloat else Unset
+  given intFloat: [IntType <: Int] => IntType is Extractable into Float =
+    int => int.toFloat.unless(_.toInt != int)
 
-  given longByte: Long is Extractable into Byte =
-    v => if v.toByte.toLong == v then v.toByte else Unset
+  given longByte: [LongType <: Long] => LongType is Extractable into Byte =
+    long => long.toByte.unless(_.toLong != long)
 
-  given longShort: Long is Extractable into Short = v => if v.toShort.toLong == v then v.toShort else Unset
-  given longInt: Long is Extractable into Int = v => if v.toInt.toLong == v then v.toInt else Unset
-  given longFloat: Long is Extractable into Float = v => if v.toFloat.toLong == v then v.toFloat else Unset
-  given longDouble: Long is Extractable into Double = v => if v.toDouble.toLong == v then v.toDouble else Unset
+  given longShort: [LongType <: Long] => LongType is Extractable into Short =
+    long => long.toShort.unless(_.toLong != long)
 
-  given floatByte: Float is Extractable into Byte = v => if v.toByte.toFloat == v then v.toByte else Unset
-  given floatShort: Float is Extractable into Short = v => if v.toShort.toFloat == v then v.toShort else Unset
-  given floatInt: Float is Extractable into Int = v => if v.toInt.toFloat == v then v.toInt else Unset
-  given floatLong: Float is Extractable into Long = v => if v.toLong.toFloat == v then v.toLong else Unset
+  given longInt: [LongType <: Long] => LongType is Extractable into Int =
+    long => long.toInt.unless(_.toLong != long)
 
-  given doubleByte: Double is Extractable into Byte = v => if v.toByte.toDouble == v then v.toByte else Unset
-  given doubleShort: Double is Extractable into Short = v => if v.toShort.toDouble == v then v.toShort else Unset
-  given doubleInt: Double is Extractable into Int = v => if v.toInt.toDouble == v then v.toInt else Unset
-  given doubleLong: Double is Extractable into Long = v => if v.toLong.toDouble == v then v.toLong else Unset
-  given doubleFloat: Double is Extractable into Float = v => if v.toFloat.toDouble == v then v.toFloat else Unset
+  given longFloat: [LongType <: Long] => LongType is Extractable into Float =
+    long => long.toFloat.unless(_.toLong != long)
 
-  given valueOf: [EnumType <: Enum: Mirror.SumOf as mirror] => Text is Extractable into EnumType =
+  given longDouble: [LongType <: Long] => LongType is Extractable into Double =
+    long => long.toDouble.unless(_.toLong != long)
+
+  given floatByte: [FloatType <: Float] => FloatType is Extractable into Byte =
+    float => float.toByte.unless(_.toFloat != float)
+
+  given floatShort: [FloatType <: Float] => FloatType is Extractable into Short =
+    float => float.toShort.unless(_.toFloat != float)
+
+  given floatInt: [FloatType <: Float] => FloatType is Extractable into Int =
+    float => float.toInt.unless(_.toFloat != float)
+
+  given floatLong: [FloatType <: Float] => FloatType is Extractable into Long =
+    float => float.toLong.unless(_.toFloat != float)
+
+  given doubleByte: [DoubleType <: Double] => DoubleType is Extractable into Byte =
+    double => double.toByte.unless(_.toDouble != double)
+
+  given doubleShort: [DoubleType <: Double] => DoubleType is Extractable into Short =
+    double => double.toShort.unless(_.toDouble != double)
+
+  given doubleInt: [DoubleType <: Double] => DoubleType is Extractable into Int =
+    double => double.toInt.unless(_.toDouble != double)
+
+  given doubleLong: [DoubleType <: Double] => DoubleType is Extractable into Long =
+    double => double.toLong.unless(_.toDouble != double)
+
+  given doubleFloat: [DoubleType <: Double] => DoubleType is Extractable into Float =
+    double => double.toFloat.unless(_.toDouble != double)
+
+  given valueOf: [EnumType <: Enum: Mirror.SumOf as mirror, TextType <: Text]
+  =>  TextType is Extractable into EnumType =
     text =>
       import Selectable.reflectiveSelectable
 
@@ -95,8 +121,8 @@ object Extractable:
         case mirror: { def valueOf(name: String): EnumType } @unchecked =>
           try mirror.valueOf(text.s) catch case error: Exception => Unset
 
-  given fromOrdinal: [EnumType <: Enum: Mirror.SumOf as mirror]
-  => Int is Extractable into EnumType =
+  given fromOrdinal: [EnumType <: Enum: Mirror.SumOf as mirror, IntType <: Int]
+  =>  IntType is Extractable into EnumType =
     ordinal =>
       import Selectable.reflectiveSelectable
       mirror match
