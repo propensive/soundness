@@ -35,7 +35,7 @@ class LruCache[KeyType, ValueType](maxSize: Int):
     ids -= key
     keys -= id
     values -= id
-  
+
   protected def touch(oldId: Int, newId: Int, key: KeyType, value: ValueType): Unit =
     keys(newId) = key
     values(newId) = value
@@ -53,7 +53,7 @@ class LruCache[KeyType, ValueType](maxSize: Int):
 
   def apply(key: KeyType)(value: => ValueType): ValueType =
     val newId = counter.getAndIncrement()
-    
+
     ids.getOrElse(key, Unset).let: oldId =>
       values(oldId).tap(touch(oldId, newId, key, _))
 
