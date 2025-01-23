@@ -60,7 +60,7 @@ object Printer:
             schema match
               case Field(_, _) =>
                 children.each: child =>
-                  child.runtimeChecked match
+                  child.absolve match
                     case CodlNode(Data(key, _, layout, _), _) =>
                       out.write("  ")
                       out.write(key.s)
@@ -70,7 +70,7 @@ object Printer:
                 val ps = children.take(if layout.multiline then layout.params - 1 else layout.params)
                 var col = indent - doc.margin + key.or(t"").length
                 ps.each: param =>
-                  param.runtimeChecked match
+                  param.absolve match
                     case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
                       if layout.multiline then
                         out.write('\n')
@@ -100,7 +100,7 @@ object Printer:
                 if layout.multiline then
                   out.write('\n')
 
-                  if children.length >= layout.params then children(layout.params - 1).runtimeChecked match
+                  if children.length >= layout.params then children(layout.params - 1).absolve match
                     case CodlNode(Data(key, _, _, _), _) =>
                       for i <- 0 until (indent + 4) do out.write(' ')
                       for ch <- key.chars do

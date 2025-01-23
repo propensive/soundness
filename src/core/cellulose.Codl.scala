@@ -302,7 +302,7 @@ object Codl:
       def put(next: State, stop: Boolean = false, padding: Boolean = padding): LazyList[CodlToken] =
         token() #:: irecur(next, padding = padding)
 
-      def token(): CodlToken = state.runtimeChecked match
+      def token(): CodlToken = state.absolve match
         case Comment =>
           CodlToken.Comment(reader.get(), reader.start()(0), reader.start()(1) - 1)
 
