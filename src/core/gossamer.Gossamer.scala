@@ -69,7 +69,7 @@ object Gossamer:
           ascii.slice(interval.start.n0, interval.end.n0)
 
   def ascii(context: Expr[StringContext], parts: Expr[Seq[Ascii]])(using Quotes): Expr[Ascii] =
-    val dynamicParts: List[Expr[Ascii]] = (parts: @unchecked) match
+    val dynamicParts: List[Expr[Ascii]] = parts.runtimeChecked match
       case Varargs(parts) => parts.to(List)
 
     val staticParts: List[Expr[Ascii]] = context.value.get.parts.to(List).map: part =>
