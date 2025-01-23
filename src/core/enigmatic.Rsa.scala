@@ -33,7 +33,8 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
   def keySize: BitsType = valueOf[BitsType]
 
   def privateToPublic(bytes: Bytes): Bytes =
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn match
+    val javaKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn
+    val key = javaKey match
       case key: jsi.RSAPrivateCrtKey => key
       case key: js.PrivateKey        => panic(m"unexpected private key type")
 
@@ -42,7 +43,10 @@ class Rsa[BitsType <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
 
   def decrypt(bytes: Bytes, key: Bytes): Bytes =
     val cipher = init().nn
-    val privateKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
+
+    val privateKey =
+      keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
+
     cipher.init(jc.Cipher.DECRYPT_MODE, privateKey)
     cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
