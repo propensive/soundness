@@ -45,5 +45,5 @@ object Cataclysm:
       case _ =>
         Nil
 
-    properties.runtimeChecked match
+    properties.absolve match
       case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
