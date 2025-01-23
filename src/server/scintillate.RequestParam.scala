@@ -21,6 +21,7 @@ import contingency.*
 import gossamer.*
 import rudiments.*
 import telekinesis.*
+import vacuous.*
 
 object RequestParam:
   given name: ("name" is GenericHtmlAttribute[RequestParam[?]]):
@@ -29,7 +30,7 @@ object RequestParam:
 
 case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
   def opt(using HttpRequest): Option[ParamType] =
-    summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_))
+    summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_).option)
 
   def unapply(req: HttpRequest): Option[ParamType] = opt(using req)
 

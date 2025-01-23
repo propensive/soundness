@@ -17,11 +17,15 @@
 package scintillate
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
+import vacuous.*
 
 object ParamReader:
-  given [ParamType](using ext: Unapply[Text, ParamType]): ParamReader[ParamType] = ext.unapply(_)
-  given ParamReader[Text] = Some(_)
+  given [ParamType](using extractable: Text is Extractable into ParamType): ParamReader[ParamType] =
+    extractable.extract(_)
+
+  given ParamReader[Text] = identity(_)
 
 trait ParamReader[ParamType]:
-  def read(value: Text): Option[ParamType]
+  def read(value: Text): Optional[ParamType]
