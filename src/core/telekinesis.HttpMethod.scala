@@ -23,15 +23,15 @@ import rudiments.*
 import spectacular.*
 
 object HttpMethod:
-  given ("formmethod" is GenericHtmlAttribute[HttpMethod]) as formmethod:
+  given formmethod: ("formmethod" is GenericHtmlAttribute[HttpMethod]):
     def name: Text = t"formmethod"
     def serialize(method: HttpMethod): Text = method.show
 
-  given ("method" is GenericHtmlAttribute[HttpMethod]) as method:
+  given method: ("method" is GenericHtmlAttribute[HttpMethod]):
     def name: Text = t"method"
     def serialize(method: HttpMethod): Text = method.show
 
-  given HttpMethod is Communicable as communicable = method => Message(method.show.upper)
+  given communicable: HttpMethod is Communicable = method => Message(method.show.upper)
 
   given HttpMethod is Showable =
     case HttpHead => t"HEAD"

@@ -21,7 +21,7 @@ import gossamer.*
 import spectacular.*
 
 object HttpVersion:
-  given HttpVersion is Showable as showable =
+  given showable: HttpVersion is Showable =
     case 0.9 => t"HTTP/0.9"
     case 1.0 => t"HTTP/1.0"
     case 1.1 => t"HTTP/1.1"

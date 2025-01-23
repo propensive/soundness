@@ -22,15 +22,15 @@ import rudiments.*
 import turbulence.*
 
 object Receivable:
-  given Text is Receivable as text = (status, body) => body.read[Bytes].utf8
-  given Bytes is Receivable as bytes = (status, body) => body.read[Bytes]
-  given LazyList[Bytes] is Receivable as byteStream = (status, body) => body
+  given text: Text is Receivable = (status, body) => body.read[Bytes].utf8
+  given bytes: Bytes is Receivable = (status, body) => body.read[Bytes]
+  given byteStream: LazyList[Bytes] is Receivable = (status, body) => body
 
-  given [ContentType: GenericHttpReader as readable]
-      => ContentType is Receivable as genericHttpReader =
+  given genericHttpReader: [ContentType: GenericHttpReader as readable]
+      => ContentType is Receivable =
     (status, body) => readable.read(body.read[Bytes].utf8)
 
-  given HttpStatus is Receivable as httpStatus:
+  given httpStatus: HttpStatus is Receivable:
     def read(status: HttpStatus, body: LazyList[Bytes]) = status
 
 trait Receivable:
