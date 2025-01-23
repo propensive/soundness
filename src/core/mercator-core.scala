@@ -37,10 +37,10 @@ extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemTyp
    (using monad: Monad[MonadType])
 
   def sequence(using buildFrom: BuildFrom[List[ElemType], ElemType, CollectionType[ElemType]])
-          : MonadType[CollectionType[ElemType]] =
+  :     MonadType[CollectionType[ElemType]] =
 
     def recur(todo: Iterable[MonadType[ElemType]], accumulator: MonadType[List[ElemType]])
-            : MonadType[List[ElemType]] =
+    :     MonadType[List[ElemType]] =
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => todo.head.map(_ :: xs) })
 
@@ -50,12 +50,12 @@ extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
    (elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
-     (using monad:     Monad[MonadType],
+     (using monad:    Monad[MonadType],
             buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
-          : MonadType[CollectionType[ElemType2]] =
+  :     MonadType[CollectionType[ElemType2]] =
 
     def recur(todo: Iterable[ElemType], accumulator: MonadType[List[ElemType2]])
-            : MonadType[List[ElemType2]] =
+    :     MonadType[List[ElemType2]] =
       if todo.isEmpty then accumulator
       else recur(todo.tail, accumulator.flatMap { xs => lambda(todo.head).map(_ :: xs) })
 

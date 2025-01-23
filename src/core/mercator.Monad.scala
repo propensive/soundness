@@ -21,4 +21,4 @@ object Monad:
 
 trait Monad[MonadType[_]] extends Functor[MonadType]:
   def flatMap[ValueType, ValueType2](value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
-          : MonadType[ValueType2]
+  :     MonadType[ValueType2]

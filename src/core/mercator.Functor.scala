@@ -23,4 +23,4 @@ trait Functor[FunctorType[_]]:
   def point[ValueType](value: ValueType): FunctorType[ValueType]
 
   def map[ValueType, ValueType2](value: FunctorType[ValueType])(lambda: ValueType => ValueType2)
-          : FunctorType[ValueType2]
+  :     FunctorType[ValueType2]

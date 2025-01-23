@@ -78,7 +78,7 @@ object Mercator:
 
         def map[ValueType, ValueType2](value: FunctorType[ValueType])
            (lambda: ValueType => ValueType2)
-                : FunctorType[ValueType2] =
+        :     FunctorType[ValueType2] =
           ${'value.asTerm.select(mapMethods(0)).appliedToType(TypeRepr.of[ValueType2])
             . appliedTo('lambda.asTerm).asExprOf[FunctorType[ValueType2]]}
     }
@@ -111,7 +111,7 @@ object Mercator:
         def flatMap
            [ValueType, ValueType2]
            (value: MonadType[ValueType])(lambda: ValueType => MonadType[ValueType2])
-                : MonadType[ValueType2] =
+        :     MonadType[ValueType2] =
           ${'value.asTerm
             . select(flatMapMethods(0))
             . appliedToType(TypeRepr.of[ValueType2])
