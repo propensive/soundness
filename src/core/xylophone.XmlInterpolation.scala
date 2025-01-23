@@ -197,7 +197,7 @@ object XmlInterpolation:
           case ':' =>
             if state.ns then throw
               InterpolationError
-                (m"the attribute name can contain at most one ':' character to indicate a namespace",
+                (m"the attribute name can contain at most one ':' character indicating a namespace",
                  state.offset,
                  1)
             else state(char).namespace
@@ -227,7 +227,8 @@ object XmlInterpolation:
                 (m"the tag uses a namespace that has not been declared with an xmlns attribute")
 
           case char =>
-            throw InterpolationError(m"character $char is not permitted in a tag name", state.offset)
+            throw InterpolationError
+                   (m"character $char is not permitted in a tag name", state.offset)
 
         case TagClose => char match
           case '>' => state.pop(Body)

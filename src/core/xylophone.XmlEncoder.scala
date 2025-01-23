@@ -38,24 +38,23 @@ object XmlEncoder extends Derivation[XmlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] = value =>
     val elements = fields(value) { [FieldType] => field => context.write(field).copy(name = XmlName(label)) }
     XmlAst.Element(XmlName(typeName), elements.to(List))
-  
+
   inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
         val xml = context.write(variant)
-        
+
         XmlAst.Element
           (XmlName(typeName),
            xml.children,
            xml.attributes.updated(XmlName("type".tt), xml.name.name),
            xml.namespaces)
-    
+
   private def textElements(value: XmlAst.Element): Text =
     value.children.collect { case XmlAst.Textual(txt) => txt }.join
 
 trait XmlEncoder[-ValueType]:
   def write(value: ValueType): XmlAst.Element
-  
+
   def contramap[ValueType2](lambda: ValueType2 => ValueType): XmlEncoder[ValueType2] =
     value => write(lambda(value))
-

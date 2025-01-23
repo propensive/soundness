@@ -35,19 +35,20 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     value.absolve match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[ValueType]
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] = list =>
-    val elements = childElements(list)
+  inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] =
+    list =>
+      val elements = childElements(list)
 
-    construct:
-      [FieldType] => context =>
-        val element =
-          elements.find:
-            case element: XmlAst.Element if element.name.name == label => true
-            case _                                                     => false
+      construct:
+        [FieldType] => context =>
+          val element =
+            elements.find:
+              case element: XmlAst.Element if element.name.name == label => true
+              case _                                                     => false
 
-          . get
+            . get
 
-        context.read(List(element))
+          context.read(List(element))
 
   inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
     list.head.absolve match
