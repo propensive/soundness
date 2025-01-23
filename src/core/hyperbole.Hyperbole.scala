@@ -61,7 +61,7 @@ object Hyperbole:
     object TastyTree:
       def apply
          (name: Text, tree: Tree, children: List[TastyTree], parameter: Optional[Text] = Unset)
-              : TastyTree =
+      :     TastyTree =
 
         TastyTree(name, tree.show.show, source(tree).plain, children, parameter)
 
