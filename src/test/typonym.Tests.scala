@@ -16,16 +16,14 @@
 
 package typonym
 
-import gossamer.*
-import probably.*
-import rudiments.*
+import soundness.*
 
 object Tests extends Suite(t"Typonym tests"):
   def run(): Unit =
     test(t"Get a list of strings"):
       reify[TypeList[("one", "two", "three")]]
     .assert(_ == List("one", "two", "three"))
-    
+
     test(t"Get a map of strings"):
       reify[TypeMap[((1, "one"), (2, "two"), (3, "three"))]]
     .assert(_ == Map(1 -> "one", 2 -> "two", 3 -> "three"))
