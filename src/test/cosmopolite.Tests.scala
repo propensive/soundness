@@ -30,12 +30,12 @@ object Tests extends Suite(t"Cosmopolite Tests"):
       val two = en"two" & fr"deux"
       two[En]
     .assert(_ == t"two")
-    
+
     test(t"extract language from string (French)"):
       val two = en"two" & fr"deux"
       two[Fr]
     .assert(_ == t"deux")
-    
+
     test(t"extract default language"):
       val two = en"two" & fr"deux"
       given Language[Fr] = Language[Fr]("fr")
