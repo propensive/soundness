@@ -102,7 +102,7 @@ extends Cli:
             val hiddenParam = if hidden then sh"-n" else sh""
             val aliasText = aliases.join(t" ").fit(aliasesWidth)
 
-            val mainLine = description.runtimeChecked match
+            val mainLine = description.absolve match
               case Unset =>
                 sh"'' $hiddenParam -- $text"
 
@@ -115,7 +115,7 @@ extends Cli:
             val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
 
             val aliasLines = aliases.map: text =>
-              description.runtimeChecked match
+              description.absolve match
                 case Unset             =>
                   sh"'' -n -- $text"
 
@@ -139,7 +139,7 @@ extends Cli:
         items.flatMap:
           case Suggestion(text, description, hidden, incomplete, aliases) =>
             (text :: aliases).map: text =>
-              description.runtimeChecked match
+              description.absolve match
                 case Unset                 => t"$text"
                 case description: Text     => t"$text\t$description"
                 case description: Teletype => t"$text\t${description.plain}"

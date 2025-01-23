@@ -28,7 +28,7 @@ object FlagInterpreter:
     def interpret(arguments: List[Argument]): Unit = ()
 
   given decoder: [OperandType: Decoder] => FlagInterpreter[OperandType] = arguments =>
-    arguments.take(1).runtimeChecked match
+    arguments.take(1).absolve match
       case List(value) => value().decode[OperandType]
 
 trait FlagInterpreter[OperandType]:

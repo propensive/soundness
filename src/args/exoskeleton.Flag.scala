@@ -27,11 +27,11 @@ import vacuous.*
 import language.experimental.pureFunctions
 
 object Flag:
-  def serialize(name: Text | Char): Text = name.runtimeChecked match
+  def serialize(name: Text | Char): Text = name.absolve match
     case char: Char => t"-$char"
     case text: Text => t"--$text"
 
-  given Flag is Communicable = flag => flag.name.runtimeChecked match
+  given Flag is Communicable = flag => flag.name.absolve match
     case name: Text => Message(t"--$name")
     case name: Char => Message(t"-$name")
 

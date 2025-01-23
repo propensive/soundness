@@ -25,7 +25,7 @@ import turbulence.*
 import vacuous.*
 
 def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
-  cli.runtimeChecked match
+  cli.absolve match
     case completion: CliCompletion => Execution(Exit.Ok)
     case invocation: CliInvocation => Execution(block(using ###)(using invocation))
 
@@ -58,7 +58,7 @@ package executives:
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)
 
-    def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.runtimeChecked match
+    def process(cli: Cli)(execution: Cli ?=> Execution): Exit = cli.absolve match
       case completion: CliCompletion =>
         given Stdio = completion.stdio
         completion.serialize.each(Out.println(_))
