@@ -61,13 +61,13 @@ def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): 
   Daemon(evaluate(using _))
 
 def async[ResultType](using Codepoint)(evaluate: Worker ?=> ResultType)(using Monitor, Codicil)
-        : Task[ResultType] =
+:     Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = Unset)
 
 def task[ResultType](using Codepoint)(name: into Text)(evaluate: Worker ?=> ResultType)
    (using Monitor, Codicil)
-        : Task[ResultType] =
+:     Task[ResultType] =
 
   Task(evaluate(using _), daemon = false, name = name)
 
@@ -105,12 +105,12 @@ extension [ResultType](stream: LazyList[ResultType])
 
 def supervise[ResultType](block: Monitor ?=> ResultType)
    (using model: ThreadModel, codepoint: Codepoint)
-        : ResultType raises AsyncError =
+:     ResultType raises AsyncError =
   block(using model.supervisor())
 
 def retry[ValueType](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> ValueType)
    (using Tenacity, Monitor)
-        : ValueType raises RetryError =
+:     ValueType raises RetryError =
 
   @tailrec
   def recur(attempt: Ordinal): ValueType =

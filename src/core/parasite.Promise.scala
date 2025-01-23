@@ -57,7 +57,7 @@ final case class Promise[ValueType]():
     case _           => false
 
   private def completeIncomplete(supplied: ValueType)(current: State[ValueType] | Null)
-          : State[ValueType] =
+  :     State[ValueType] =
     current.nn match
       case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
       case current             => current
@@ -97,7 +97,7 @@ final case class Promise[ValueType]():
     case _                   => ()
 
   def await[DurationType: GenericDuration](duration: DurationType)
-          : ValueType raises AsyncError =
+  :     ValueType raises AsyncError =
     val deadline = System.nanoTime() + duration.milliseconds*1000000L
 
     @tailrec

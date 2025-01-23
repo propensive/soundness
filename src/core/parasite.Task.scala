@@ -28,7 +28,7 @@ object Task:
   def apply[ResultType]
      (evaluate: Worker => ResultType, daemon: Boolean, name: Optional[Text])
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
-          : Task[ResultType] =
+  :     Task[ResultType] =
     inline def evaluate0: Worker => ResultType = evaluate
     inline def name0: Optional[Text] = name
 
@@ -47,7 +47,7 @@ trait Task[+ResultType]:
   def await[DurationType: GenericDuration](duration: DurationType): ResultType raises AsyncError
 
   def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
-          : Task[ResultType2] raises AsyncError
+  :     Task[ResultType2] raises AsyncError
 
   def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Codicil)
-          : Task[ResultType2] raises AsyncError
+  :     Task[ResultType2] raises AsyncError

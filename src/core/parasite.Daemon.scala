@@ -26,7 +26,7 @@ import vacuous.*
 object Daemon:
   def apply(evaluate: Worker => Unit)
      (using monitor: Monitor, codepoint: Codepoint, codicil: Codicil)
-          : Daemon =
+  :     Daemon =
     inline def evaluate0: Worker => Unit = evaluate
 
     new Worker(codepoint, monitor, codicil, Unset) with Daemon:

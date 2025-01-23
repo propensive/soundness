@@ -149,13 +149,13 @@ extends Monitor:
       case Cancelled       => panic(m"should not be relenting after cancellation")
 
   def map[ResultType2](lambda: Result => ResultType2)(using Monitor, Codicil)
-          : Task[ResultType2] raises AsyncError =
+  :     Task[ResultType2] raises AsyncError =
 
     async(lambda(await()))
 
   def flatMap[ResultType2](lambda: Result => Task[ResultType2])
      (using Monitor, Codicil)
-          : Task[ResultType2] raises AsyncError =
+  :     Task[ResultType2] raises AsyncError =
 
     async(lambda(await()).await())
 
