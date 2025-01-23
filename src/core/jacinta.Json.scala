@@ -114,7 +114,7 @@ trait Json2:
       variant(value): [VariantType <: DerivationType] =>
         value =>
           Json.ast:
-            (context.encode(value).root.asMatchable: @unchecked) match
+            context.encode(value).root.asMatchable.runtimeChecked match
               case (labels, values) => labels.asMatchable.runtimeChecked match
                 case labels: IArray[String] => values.asMatchable.runtimeChecked match
                   case values: IArray[JsonAst] =>
