@@ -32,14 +32,20 @@ object colorProfiles:
   given daylightFluorescentF1: ColorProfile = ColorProfile(92.834, 100, 103.665, 94.791, 100, 103.191)
   given coolFluorescent: ColorProfile = ColorProfile(99.187, 100, 67.395, 103.280, 100, 69.026)
   given whiteFluorescent: ColorProfile = ColorProfile(103.754, 100, 49.861, 108.968, 100, 51.965)
-  given warmWhiteFluorescent: ColorProfile = ColorProfile(109.147, 100, 38.813, 114.961, 100, 40.963)
+
+  given warmWhiteFluorescent: ColorProfile =
+    ColorProfile(109.147, 100, 38.813, 114.961, 100, 40.963)
+
   given daylightFluorescentF5: ColorProfile = ColorProfile(90.872, 100, 98.723, 93.369, 100, 98.636)
   given liteWhiteFluorescent: ColorProfile = ColorProfile(97.309, 100, 60.191, 102.148, 100, 62.074)
   given daylightFluorescentF7: ColorProfile = ColorProfile(95.044, 100, 108.755, 95.792, 100, 107.687)
   given d65Simulator: ColorProfile = daylightFluorescentF7
   given sylvaniaF40: ColorProfile = ColorProfile(96.413, 100, 82.333, 97.115, 100, 81.135)
   given d50Simulator: ColorProfile = sylvaniaF40
-  given coolWhiteFluorescent: ColorProfile = ColorProfile(100.365, 100, 67.868, 102.116, 100, 67.826)
+
+  given coolWhiteFluorescent: ColorProfile =
+    ColorProfile(100.365, 100, 67.868, 102.116, 100, 67.826)
+
   given philipsTl85: ColorProfile = ColorProfile(96.174, 100, 81.712, 99.001, 100, 83.134)
   given ultralume50: ColorProfile = philipsTl85
   given philipsTl84: ColorProfile = ColorProfile(100.966, 100, 64.370, 103.866, 100, 65.627)
