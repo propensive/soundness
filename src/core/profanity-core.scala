@@ -43,7 +43,9 @@ def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
 
   try
     if context.stdio.platform then
-      val processBuilder = ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+      val processBuilder =
+        ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+
       processBuilder.inheritIO()
       if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
     block(using terminal)

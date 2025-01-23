@@ -30,7 +30,8 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
-    case CharKey(ch)      => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
+    case CharKey(ch)      => copy
+                              (t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
     case Ctrl('U')        => copy(value.skip(position), 0)
 
     case Ctrl('W')        => val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse

@@ -51,7 +51,7 @@ trait Interaction[ResultType, QuestionType]:
     recur(stream, state, Unset)(key).also(after())
 
 object Interaction:
-  given selectMenu[ItemType: Showable](using Stdio): Interaction[ItemType, SelectMenu[ItemType]] with
+  given selectMenu: [ItemType: Showable] => Stdio => Interaction[ItemType, SelectMenu[ItemType]]:
     override def before(): Unit = Out.print(t"\e[?25l")
     override def after(): Unit = Out.print(t"\e[J\e[?25h")
 
