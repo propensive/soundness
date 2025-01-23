@@ -44,7 +44,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   def * [RightType](right: RightType)
      (using multiplication: ElementType is Multiplicable by RightType)
      (using ClassTag[multiplication.Result])
-          : Matrix[multiplication.Result, RowsType, ColumnsType] =
+  :     Matrix[multiplication.Result, RowsType, ColumnsType] =
 
     val elements2 = IArray.create[multiplication.Result](elements.length): array =>
       elements.indices.foreach: index =>
@@ -55,7 +55,7 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   @targetName("scalarDiv")
   def / [RightType](right: RightType)(using div: ElementType is Divisible by RightType)
      (using ClassTag[div.Result])
-          : Matrix[div.Result, RowsType, ColumnsType] =
+  :     Matrix[div.Result, RowsType, ColumnsType] =
 
     val elements2 = IArray.create[div.Result](elements.length): array =>
       elements.indices.foreach: index =>
@@ -67,12 +67,12 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   def * [RightType, RightColumnsType <: Int: ValueOf]
      (right: Matrix[RightType, ColumnsType, RightColumnsType])
      (using multiplication: ElementType is Multiplicable by RightType,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            equality:       addition.Result =:= multiplication.Result,
-            rowValue:       ValueOf[RowsType],
+            addition:      multiplication.Result is Addable by multiplication.Result,
+            equality:      addition.Result =:= multiplication.Result,
+            rowValue:      ValueOf[RowsType],
             columnValue:    ValueOf[ColumnsType],
-            classTag:       ClassTag[multiplication.Result])
-          : Matrix[multiplication.Result, RowsType, RightColumnsType] =
+            classTag:      ClassTag[multiplication.Result])
+  :     Matrix[multiplication.Result, RowsType, RightColumnsType] =
 
     val columns2 = valueOf[RightColumnsType]
     val inner = valueOf[ColumnsType]

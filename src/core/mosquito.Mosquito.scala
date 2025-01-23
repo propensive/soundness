@@ -56,9 +56,9 @@ object Mosquito:
   extension [LeftType](left: Vector[LeftType, 3])
     def cross[RightType](right: Vector[RightType, 3])
        (using multiplication: LeftType is Multiplicable by RightType,
-              addition:       multiplication.Result is Addable by multiplication.Result,
+              addition:      multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-            : Vector[addition.Result, 3] =
+    :     Vector[addition.Result, 3] =
 
       (left(1)*right(2) - left(2)*right(1)) *:
           (left(2)*right(0) - left(0)*right(2)) *:
@@ -73,9 +73,9 @@ object Mosquito:
 
     def norm[SquareType]
        (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
-              addable:       SquareType is Addable by SquareType into SquareType,
-              rootable:      SquareType is Rootable[2] into LeftType)
-            : LeftType =
+              addable:      SquareType is Addable by SquareType into SquareType,
+              rootable:     SquareType is Rootable[2] into LeftType)
+    :     LeftType =
 
       def recur(sum: multiplicable.Result, i: Int): LeftType =
         if i == 0 then sum.sqrt else recur(sum + left(i)*left(i), i - 1)
@@ -91,10 +91,10 @@ object Mosquito:
 
     def unitary[SquareType]
        (using multiplicable: LeftType is Multiplicable by LeftType into SquareType,
-              addable:       SquareType is Addable by SquareType into SquareType,
-              rootable:      SquareType is Rootable[2] into LeftType,
-              divisible:     LeftType is Divisible by LeftType into Double)
-            : Vector[Double, SizeType] =
+              addable:      SquareType is Addable by SquareType into SquareType,
+              rootable:     SquareType is Rootable[2] into LeftType,
+              divisible:    LeftType is Divisible by LeftType into Double)
+    :     Vector[Double, SizeType] =
 
       val magnitude: LeftType = left.norm
 
@@ -107,7 +107,7 @@ object Mosquito:
     @targetName("add")
     def + [RightType](right: Vector[RightType, SizeType])
        (using addition: LeftType is Addable by RightType)
-            : Vector[addition.Result, SizeType] =
+    :     Vector[addition.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
@@ -124,7 +124,7 @@ object Mosquito:
 
     @targetName("sub")
     def - [RightType](right: Vector[RightType, SizeType])(using sub: LeftType is Subtractable by RightType)
-            : Vector[sub.Result, SizeType] =
+    :     Vector[sub.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
@@ -139,22 +139,22 @@ object Mosquito:
 
     @targetName("scalarMul")
     def * [RightType](right: RightType)(using multiplication: LeftType is Multiplicable by RightType)
-            : Vector[multiplication.Result, SizeType] =
+    :     Vector[multiplication.Result, SizeType] =
 
       map(_*right)
 
     @targetName("scalarDiv")
     def / [RightType](right: RightType)(using div: LeftType is Divisible by RightType)
-            : Vector[div.Result, SizeType] =
+    :     Vector[div.Result, SizeType] =
 
       map(_/right)
 
     def dot[RightType](right: Vector[RightType, SizeType])
        (using multiply: LeftType is Multiplicable by RightType,
-              size:     ValueOf[SizeType],
-              addition:      multiply.Result is Addable by multiply.Result,
+              size:    ValueOf[SizeType],
+              addition:     multiply.Result is Addable by multiply.Result,
               equality: addition.Result =:= multiply.Result)
-            : multiply.Result =
+    :     multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =
         if index < 0 then sum else recur(index - 1, sum + left(index)*right(index))
