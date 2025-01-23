@@ -28,12 +28,12 @@ import vacuous.*
 
 trait Compression:
   type Self <: CompressionAlgorithm
-  def compress(lazyList: LazyList[Bytes]): LazyList[Bytes]
-  def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes]
+  def compress(stream: LazyList[Bytes]): LazyList[Bytes]
+  def decompress(stream: LazyList[Bytes]): LazyList[Bytes]
 
 object Compression:
   given Gzip is Compression:
-    def compress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
+    def compress(stream: LazyList[Bytes]): LazyList[Bytes] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
 
@@ -49,7 +49,7 @@ object Compression:
           out2.close()
           if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
 
-      recur(lazyList)
+      recur(stream)
 
-    def decompress(lazyList: LazyList[Bytes]): LazyList[Bytes] =
-      unsafely(juz.GZIPInputStream(lazyList.inputStream).stream[Bytes])
+    def decompress(stream: LazyList[Bytes]): LazyList[Bytes] =
+      unsafely(juz.GZIPInputStream(stream.inputStream).stream[Bytes])

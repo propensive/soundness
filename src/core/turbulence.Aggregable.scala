@@ -40,7 +40,7 @@ object Aggregable:
     source.each { chunk => buffer.append(chunk.s) }
     buffer.toString.tt
 
-  given lazyList: [ElementType, ElementType2]
+  given stream: [ElementType, ElementType2]
   => (aggregable: ElementType2 is Aggregable by ElementType)
   =>  LazyList[ElementType2] is Aggregable by ElementType =
     element => LazyList(aggregable.aggregate(element))

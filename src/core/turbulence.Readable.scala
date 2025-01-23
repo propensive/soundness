@@ -40,7 +40,7 @@ object Readable:
 
     source => decoder.decode(SourceType.stream(source))
 
-  given lazyList: [ElementType] => LazyList[ElementType] is Readable by ElementType = identity(_)
+  given stream: [ElementType] => LazyList[ElementType] is Readable by ElementType = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Readable by Char = in =>
     def recur(count: Memory): LazyList[Char] =
