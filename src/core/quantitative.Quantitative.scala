@@ -126,11 +126,11 @@ object Quantitative extends Quantitative2:
       type Operand = Quantity[UnitsType2]
 
       inline def compare
-         (inline left:        Quantity[UnitsType],
-          inline right:       Quantity[UnitsType2],
-          inline strict:      Boolean,
+         (inline left:     Quantity[UnitsType],
+          inline right:      Quantity[UnitsType2],
+          inline strict:     Boolean,
           inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         ${Quantitative.greaterThan[UnitsType, UnitsType2]('left, 'right, 'strict, 'greaterThan)}
 

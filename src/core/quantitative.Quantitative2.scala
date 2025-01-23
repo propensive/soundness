@@ -205,7 +205,7 @@ trait Quantitative2:
 
   def ratio(using Quotes)
      (from: UnitRef, to: UnitRef, power: Int, retry: Boolean = true, viaPrincipal: Boolean = true)
-          : Expr[Double] =
+  :     Expr[Double] =
 
     import quotes.reflect.*
 
@@ -241,10 +241,10 @@ trait Quantitative2:
 
   private def normalize(using Quotes)
      (units: UnitsMap, other: UnitsMap, init: Expr[Double], force: Boolean = false)
-          : (UnitsMap, Expr[Double]) =
+  :     (UnitsMap, Expr[Double]) =
 
     def recur(dimensions: List[DimensionRef], target: UnitsMap, expr: Expr[Double])
-            : (UnitsMap, Expr[Double]) =
+    :     (UnitsMap, Expr[Double]) =
 
       dimensions match
         case Nil =>
@@ -287,7 +287,7 @@ trait Quantitative2:
   def multiply[LeftType <: Measure: Type, RightType <: Measure: Type]
      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], division: Boolean)
      (using Quotes)
-          : Expr[Any] =
+  :     Expr[Any] =
 
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
@@ -313,7 +313,7 @@ trait Quantitative2:
         halt(m"the operands represent different physical quantities")
 
   def mulTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Multiplicable by Quantity[RightType]] =
+  :     Expr[Quantity[LeftType] is Multiplicable by Quantity[RightType]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -333,7 +333,7 @@ trait Quantitative2:
 
 
   def divTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Divisible by Quantity[RightType]] =
+  :     Expr[Quantity[LeftType] is Divisible by Quantity[RightType]] =
 
     val left = UnitsMap[LeftType]
     val right = UnitsMap[RightType]
@@ -352,7 +352,7 @@ trait Quantitative2:
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes)
-          : Expr[Quantity[ValueType] is Rootable[2]] =
+  :     Expr[Quantity[ValueType] is Rootable[2]] =
 
     val units = UnitsMap[ValueType]
 
@@ -373,7 +373,7 @@ trait Quantitative2:
           '{Rootable.Basic[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def cbrtTypeclass[ValueType <: Measure: Type](using Quotes)
-          : Expr[Quantity[ValueType] is Rootable[3]] =
+  :     Expr[Quantity[ValueType] is Rootable[3]] =
 
     val units = UnitsMap[ValueType]
 
@@ -400,7 +400,7 @@ trait Quantitative2:
       strict:    Expr[Boolean],
       invert:    Expr[Boolean])
      (using Quotes)
-          : Expr[Boolean] =
+  :     Expr[Boolean] =
 
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
@@ -418,7 +418,7 @@ trait Quantitative2:
   def add[LeftType <: Measure: Type, RightType <: Measure: Type]
      (leftExpr: Expr[Quantity[LeftType]], rightExpr: Expr[Quantity[RightType]], sub: Expr[Boolean])
      (using Quotes)
-          : Expr[Any] =
+  :     Expr[Any] =
 
     val left: UnitsMap = UnitsMap[LeftType]
     val right: UnitsMap = UnitsMap[RightType]
@@ -437,7 +437,7 @@ trait Quantitative2:
       case _                                             => resultValue
 
   def subTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Subtractable by Quantity[RightType]] =
+  :     Expr[Quantity[LeftType] is Subtractable by Quantity[RightType]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
@@ -448,7 +448,7 @@ trait Quantitative2:
               ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} } }
 
   def addTypeclass[LeftType <: Measure: Type, RightType <: Measure: Type](using Quotes)
-          : Expr[Quantity[LeftType] is Addable by Quantity[RightType]] =
+  :     Expr[Quantity[LeftType] is Addable by Quantity[RightType]] =
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
@@ -461,7 +461,7 @@ trait Quantitative2:
   def norm[UnitsType <: Measure: Type, NormType[power <: Nat] <: Units[power, ?]: Type]
      (expr: Expr[Quantity[UnitsType]])
      (using Quotes)
-          : Expr[Any] =
+  :     Expr[Any] =
 
     val units: UnitsMap = UnitsMap[UnitsType]
     val norm: UnitsMap = UnitsMap[NormType[1]]

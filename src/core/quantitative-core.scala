@@ -40,7 +40,7 @@ extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
 
   @targetName("times2")
   transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
-          : Any =
+  :     Any =
 
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, false)}
 
@@ -50,7 +50,7 @@ extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
 
   @targetName("divide2")
   transparent inline infix def / [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
-          : Any =
+  :     Any =
 
     ${Quantitative.multiply[UnitsType, UnitsType2]('quantity, 'quantity2, true)}
 
