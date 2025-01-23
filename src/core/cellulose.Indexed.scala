@@ -69,6 +69,6 @@ trait Indexed extends Dynamic:
       case data: Data => data
 
   def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Tactic[MissingValueError])
-          : Data =
+  :     Data =
 
     selectDynamic(key)(idx)

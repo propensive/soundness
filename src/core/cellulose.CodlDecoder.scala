@@ -34,7 +34,7 @@ object CodlDecoder:
 
   def apply[ValueType]
      (schema0: => CodlSchema, decode0: Tactic[CodlReadError] ?=> List[Indexed] => ValueType)
-          : CodlDecoder[ValueType] = new:
+  :     CodlDecoder[ValueType] = new:
     def decode(value: List[Indexed]): ValueType raises CodlReadError = decode0(value)
     def schema: CodlSchema  = schema0
 

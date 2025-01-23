@@ -61,7 +61,7 @@ extends Dynamic:
 
   def parse[SourceType](source: SourceType)
      (using aggregate: Tactic[CodlError], readable: SourceType is Readable by Text)
-          : CodlDoc/*^{aggregate, readable}*/ =
+  :     CodlDoc/*^{aggregate, readable}*/ =
     Codl.parse(source, this)
 
   def apply(key: Text): Optional[CodlSchema] = dictionary.at(key).or(dictionary.at(Unset)).or(Unset)

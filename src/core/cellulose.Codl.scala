@@ -33,27 +33,27 @@ object Codl:
      [ValueType: CodlDecoder]
      (source: Any)
      (using readable:  source.type is Readable by Text)
-          : ValueType raises CodlError raises CodlReadError =
+  :     ValueType raises CodlError raises CodlReadError =
 
     summon[CodlDecoder[ValueType]].schema.parse(readable.stream(source)).as[ValueType]
 
   def parse[SourceType]
      (source:    SourceType,
       schema:    CodlSchema = CodlSchema.Free,
-      subs:      List[Data] = Nil,
+      subs:     List[Data] = Nil,
       fromStart: Boolean    = false)
      (using readable: SourceType is Readable by Text, aggregate: Tactic[CodlError])
-          : CodlDoc =
+  :     CodlDoc =
 
     val (margin, stream) = tokenize(readable.stream(source), fromStart)(using aggregate.diagnostics)
     val baseSchema: CodlSchema = schema
 
     case class Proto
-       (key:       Optional[Text] = Unset,
-        line:      Int            = 0,
-        col:       Int            = 0,
+       (key:      Optional[Text] = Unset,
+        line:     Int            = 0,
+        col:      Int            = 0,
         children:  List[CodlNode] = Nil,
-        meta:      Optional[Meta] = Unset,
+        meta:     Optional[Meta] = Unset,
         schema:    CodlSchema     = CodlSchema.Free,
         params:    Int            = 0,
         multiline: Boolean        = false):
@@ -102,7 +102,7 @@ object Codl:
         subs:    List[Data],
         body:    LazyList[Char],
         tabs:    List[Int])
-            : CodlDoc =
+    :     CodlDoc =
 
       def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema.option.get)
 
@@ -116,7 +116,7 @@ object Codl:
           subs:    List[Data]                    = subs,
           body:    LazyList[Char]                = LazyList(),
           tabs:    List[Int]                     = Nil)
-              : CodlDoc =
+      :     CodlDoc =
         recur(tokens, focus, peers, peerIds, stack, lines, subs, body, tabs)
 
       tokens match
@@ -248,7 +248,7 @@ object Codl:
     then CodlDoc() else recur(stream, Proto(), Nil, Map(), Nil, 0, subs.reverse, LazyList(), Nil)
 
   def tokenize(in: LazyList[Text]/*^*/, fromStart: Boolean = false)(using Diagnostics)
-          : (Int, LazyList[CodlToken]) =
+  :     (Int, LazyList[CodlToken]) =
 
     val reader: PositionReader = new PositionReader(in.map(identity))
 
@@ -267,19 +267,19 @@ object Codl:
     val margin: Int = first.column
 
     def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
-            : LazyList[CodlToken] =
+    :     LazyList[CodlToken] =
       stream(char, state, indent, count, padding)
 
     @tailrec
     def stream
        (char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
-            : LazyList[CodlToken] =
+    :     LazyList[CodlToken] =
 
       inline def next(): Character =
         try throwErrors(reader.next()) catch case err: CodlError => Character('\n', err.line, err.col)
 
       inline def recur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
-              : LazyList[CodlToken] =
+      :     LazyList[CodlToken] =
 
         stream(next(), state, indent, count, padding)
 
@@ -292,7 +292,7 @@ object Codl:
         else if char == Character.End then LazyList() else LazyList(CodlToken.Body(reader.charStream()))
 
       inline def irecur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
-              : LazyList[CodlToken] =
+      :     LazyList[CodlToken] =
 
         istream(next(), state, indent, count, padding)
 

@@ -32,7 +32,7 @@ trait CodlEncoder[ValueType]:
 
 object CodlEncoder:
   def apply[ValueType](schema0: CodlSchema, encode0: ValueType => List[IArray[CodlNode]])
-          : CodlEncoder[ValueType] =
+  :     CodlEncoder[ValueType] =
     new:
       def schema: CodlSchema = schema0
       def encode(value: ValueType): List[IArray[CodlNode]] = encode0(value)
