@@ -26,7 +26,12 @@ extension (double: Double)
   def rad: Radians = Radians(double)
   def deg: Degrees = Degrees(double)
 
-export CardinalWind.*, IntercardinalWind.*, HalfWind.*
+export CardinalWind.*
+export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}
+
+export HalfWind
+. { NorthNortheast, EastNortheast, EastSoutheast, SouthSoutheast, SouthSouthwest, WestSouthwest,
+    WestNorthwest, NorthNorthwest }
 
 package compassBearings:
   given fourPointCompass: Bearing[Compass[4]] = Compass[4](_)
