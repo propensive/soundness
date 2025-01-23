@@ -19,6 +19,7 @@ package coaxial
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 
@@ -28,4 +29,5 @@ trait Transmissible[-MessageType]:
 object Transmissible:
   given bytes: Transmissible[Bytes] = identity(_)
   given text(using CharEncoder): Transmissible[Text] = _.bytes
-  given encoder[MessageType: Encoder](using CharEncoder): Transmissible[MessageType] = _.encode.bytes
+  given encoder: [MessageType: Encodable in Text] => CharEncoder => Transmissible[MessageType] =
+    _.encode.bytes
