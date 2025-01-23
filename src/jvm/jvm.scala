@@ -32,7 +32,7 @@ object remote extends Dispatcher:
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
     import workingDirectories.virtualMachine
     import logging.silent
-    
+
     dispatch.remote: input =>
       val cmd = sh"java -classpath ${dispatch.classpath()} ${dispatch.mainClass} $input"
       unsafely(cmd.exec[Text]())
