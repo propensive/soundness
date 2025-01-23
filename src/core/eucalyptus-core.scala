@@ -99,11 +99,11 @@ package logging:
   given silent: [FormatType] => FormatType is Loggable = Log.silent[FormatType]
 
   given stdout: [FormatType: Printable, EventType: Inscribable in FormatType] => Stdio
-      => EventType is Loggable =
+  =>    EventType is Loggable =
     (level, realm, timestamp, event) =>
       Out.println(EventType.formatter(event, level, realm, timestamp))
 
   given stderr: [EventType: Inscribable in FormatType, FormatType: Printable] => Stdio
-      => EventType is Loggable =
+  =>    EventType is Loggable =
     (level, realm, timestamp, event) =>
       Err.println(EventType.formatter(event, level, realm, timestamp))
