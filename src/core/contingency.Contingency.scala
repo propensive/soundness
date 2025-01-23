@@ -229,7 +229,8 @@ object Contingency:
                 case Apply(_, List(Inlined(_, _, matches))) => matches
 
                 case _ =>
-                  halt(m"argument to `mend` should be a partial function implemented as match cases")
+                  halt:
+                    m"argument to `mend` should be a partial function implemented as match cases"
 
               val pfExpr = partialFunction.asExprOf[Exception ~> ResultType]
 
