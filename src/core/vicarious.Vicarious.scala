@@ -43,7 +43,7 @@ object Vicarious:
     import quotes.reflect.*
     TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
       val label = if prefix == "" then field.name else prefix+"."+field.name
-      (field.info.asType: @unchecked) match
+      field.info.asType.runtimeChecked match
         case '[fieldType] => label :: fieldNames[fieldType](label)
 
   def dereference[KeyType: Type, ValueType: Type, IdType <: Nat: Type]
@@ -52,7 +52,7 @@ object Vicarious:
 
     import quotes.reflect.*
 
-    val index = (TypeRepr.of[IdType].asMatchable: @unchecked) match
+    val index = TypeRepr.of[IdType].asMatchable.runtimeChecked match
       case ConstantType(IntConstant(index)) => index
 
     val fields = fieldNames[KeyType]("")
