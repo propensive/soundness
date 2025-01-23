@@ -25,7 +25,7 @@ import vacuous.*
 case class HtmlDoc(root: Node["html"])
 
 object HtmlDoc:
-  given (using encoder: CharEncoder) => HtmlDoc is GenericHttpResponseStream as generic:
+  given generic: (encoder: CharEncoder) => HtmlDoc is GenericHttpResponseStream:
     def mediaType: Text = t"text/html; charset=${encoder.encoding.name}"
     def content(value: HtmlDoc): LazyList[Bytes] = LazyList(HtmlDoc.serialize(value).bytes)
 
