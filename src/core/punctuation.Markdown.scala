@@ -40,7 +40,7 @@ case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
     val buf = StringBuilder()
 
     nodes.each: value =>
-      value.runtimeChecked match
+      value.absolve match
         case node: Markdown.Ast.Inline => node.serialize(buf)
         case node: Markdown.Ast.Block  => node.serialize(buf)
 

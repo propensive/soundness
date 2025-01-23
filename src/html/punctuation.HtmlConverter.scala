@@ -41,7 +41,7 @@ open class HtmlConverter(renderers: Renderer*):
 
         case node: Markdown.Ast.Inline =>
           if fresh then (false, Markdown.Ast.Block.Paragraph(node) :: acc) else
-            val content = acc.head.runtimeChecked match
+            val content = acc.head.absolve match
               case Markdown.Ast.Block.Paragraph(nodes*) =>
                 Markdown.Ast.Block.Paragraph((nodes :+ node)*) :: acc.tail
 
@@ -115,7 +115,7 @@ open class HtmlConverter(renderers: Renderer*):
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>
 
-      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node.runtimeChecked match
+      def interactive(node: Html[Phrasing]): Option[Html[NonInteractive]] = node.absolve match
         case node: Node[NonInteractive] => Some(node)
         case text: Text                 => Some(text)
         case int: Int                   => Some(int)
