@@ -37,11 +37,11 @@ object Panopticon:
   extension [FromType](initLens: InitLens[FromType])
     def apply[PathType <: Tuple, ToType]
        (lambda: Target[FromType, EmptyTuple] => Target[ToType, PathType])
-            : Lens[FromType, PathType, ToType] =
+    :     Lens[FromType, PathType, ToType] =
       0
 
   private def getPath[TupleType <: Tuple: Type](path: List[String] = Nil)(using Quotes)
-          : List[String] =
+  :     List[String] =
     import quotes.reflect.*
 
     Type.of[TupleType] match
@@ -53,7 +53,7 @@ object Panopticon:
         path
 
   def getPaths[TupleType <: Tuple: Type](paths: List[List[String]] = Nil)(using Quotes)
-          : List[List[String]] =
+  :     List[List[String]] =
     Type.of[TupleType] match
       case '[type tail <: Tuple; head *: tail] =>
         Type.of[head].absolve match
@@ -65,7 +65,7 @@ object Panopticon:
 
   def get[FromType: Type, PathType <: Tuple: Type, ToType: Type](value: Expr[FromType])
      (using Quotes)
-          : Expr[ToType] =
+  :     Expr[ToType] =
 
     import quotes.reflect.*
 
@@ -91,7 +91,7 @@ object Panopticon:
   def set[FromType: Type, PathType <: Tuple: Type, ToType: Type]
      (value: Expr[FromType], newValue: Expr[ToType])
      (using Quotes)
-          : Expr[FromType] =
+  :     Expr[FromType] =
 
     import quotes.reflect.*
 
@@ -120,7 +120,7 @@ object Panopticon:
     rewrite(getPath[PathType](), value.asTerm).asExprOf[FromType]
 
   def dereference[TargetType: Type, TupleType <: Tuple: Type](member: Expr[String])(using Quotes)
-          : Expr[Any] =
+  :     Expr[Any] =
     import quotes.reflect.*
 
     val fieldName = member.valueOrAbort
