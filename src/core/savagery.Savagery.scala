@@ -30,7 +30,7 @@ object Savagery:
   object Degrees:
     def apply(degrees: Double): Degrees = degrees
 
-    given Degrees is Encodable in Text as encodable = _.toString.tt
+    given encodable: Degrees is Encodable in Text = _.toString.tt
 
   extension (point: Point)
     @targetName("plus")

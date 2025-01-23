@@ -21,7 +21,7 @@ import gossamer.*
 import spectacular.*
 
 object Point:
-  given Point is Showable as showable =
+  given showable: Point is Showable =
     value => t"${value.x.toString} ${value.y.toString}"
 
 case class Point(x: Float, y: Float)
