@@ -48,8 +48,12 @@ object Tests extends Suite(t"Hypotenuse tests"):
       test(t"Check first three bits of 6")(B64(Bytes(6))(Prim ~ Ter)).assert(_ == B64(6))
       test(t"Check first four bits of 6")(B64(Bytes(6))(Prim ~ Quat)).assert(_ == B64(6))
       test(t"Check middle two bits of 6")(B64(Bytes(6))(Sec ~ Ter)).assert(_ == B64(3))
-      test(t"Check middle two bits as subsequent")(B64(Bytes(6))(Prim.subsequent(2))).assert(_ == B64(3))
-      test(t"Check first two bits as preceding")(B64(Bytes(6))(Ter.preceding(2))).assert(_ == B64(2))
+
+      test(t"Check middle two bits as subsequent")(B64(Bytes(6))(Prim.subsequent(2))
+      . assert(_ == B64(3))
+
+      test(t"Check first two bits as preceding")(B64(Bytes(6))(Ter.preceding(2)))
+      . assert(_ == B64(2))
 
 
     // suite(t"Inequality tests"):

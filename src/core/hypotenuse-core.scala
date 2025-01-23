@@ -412,7 +412,10 @@ package arithmeticOptions:
   object division:
     inline given unchecked: DivisionByZero:
       type Wrap[ResultType] = ResultType
-      inline def divideU64(left: U64, right: U64): U64 = U64((Long(left.bits)/Long(right.bits)).bits)
+
+      inline def divideU64(left: U64, right: U64): U64 =
+        U64((Long(left.bits)/Long(right.bits)).bits)
+
       inline def divideS64(left: S64, right: S64): S64 = S64((left.long/right.long).bits)
       inline def divideU32(left: U32, right: U32): U32 = U32((Int(left.bits)/Int(right.bits)).bits)
       inline def divideS32(left: S32, right: S32): S32 = S32((left.int/right.int).bits)
