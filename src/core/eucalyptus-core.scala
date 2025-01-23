@@ -54,14 +54,14 @@ val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
 def mute[FormatType](using erased DummyImplicit)[ResultType]
    (lambda: (FormatType is Loggable) ?=> ResultType)
-        : ResultType =
+:     ResultType =
   lambda(using Log.silent[FormatType])
 
 extension (logObject: Log.type)
   def envelop[TagType, EventType: {Taggable by TagType, Loggable as loggable}](value: TagType)
      [ResultType]
      (lambda: (EventType is Loggable) ?=> ResultType)
-          : ResultType =
+  :     ResultType =
     lambda(using loggable.contramap(_.tag(value)))
 
   def ignore[EventType, MessageType]: MessageType transcribes EventType = new Transcribable:
@@ -79,7 +79,7 @@ extension (logObject: Log.type)
      [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
      (target: TargetType)
      (using Monitor)
-          : EntryType is Loggable =
+  :     EntryType is Loggable =
 
     new:
       type Self = EntryType
