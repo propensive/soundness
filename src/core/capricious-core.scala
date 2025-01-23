@@ -55,7 +55,7 @@ package randomization:
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
 def stochastic[ResultType](using randomization: Randomization)(block: Random ?=> ResultType)
-        : ResultType =
+:     ResultType =
   block(using new Random(randomization.make()))
 
 def arbitrary[ValueType: Randomizable]()(using Random): ValueType = ValueType()
