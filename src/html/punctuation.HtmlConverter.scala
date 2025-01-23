@@ -77,8 +77,10 @@ open class HtmlConverter(renderers: Renderer*):
   def tableRows(heading: Boolean, rows: Seq[Markdown.Ast.Block.Row]): Seq[Node["tr"]] = rows.map:
     case Markdown.Ast.Block.Row(cells*) => Tr(tableCells(heading, cells))
 
-  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] = cells.map:
-    case Markdown.Ast.Block.Cell(content*) => (if heading then Th else Td)(content.flatMap(phrasing))
+  def tableCells(heading: Boolean, cells: Seq[Markdown.Ast.Block.Cell]): Seq[Node["th" | "td"]] =
+    cells.map:
+      case Markdown.Ast.Block.Cell(content*) =>
+        (if heading then Th else Td)(content.flatMap(phrasing))
 
   def listItem(node: Markdown.Ast.ListItem): Seq[Node["li"]] = node match
     case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))

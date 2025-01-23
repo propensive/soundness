@@ -196,10 +196,15 @@ object Markdown:
     case node: cvfa.Code           => SourceCode(node.getText.toString.show)
     case node: cvfa.HardLineBreak  => LineBreak
     case node: cvfa.Image          => Image(node.getText.toString.show, node.getUrl.toString.show)
-    case node: cvfa.ImageRef       => Image(node.getText.toString.show, resolveReference(root, node))
-    case node: cvfa.Link           => Weblink(node.getUrl.toString.show, phraseChildren(root, node)*)
-    case node: cvfa.LinkRef        => Weblink(resolveReference(root, node), phraseChildren(root, node)*)
-    case node: cvfa.MailLink       => Weblink(node.getText.toString.show, Copy(s"mailto:${node.getText.nn}".tt))
+    case node: cvfa.ImageRef       => Image
+                                       (node.getText.toString.show, resolveReference(root, node))
+    case node: cvfa.Link           => Weblink
+                                       (node.getUrl.toString.show, phraseChildren(root, node)*)
+    case node: cvfa.LinkRef        => Weblink
+                                       (resolveReference(root, node), phraseChildren(root, node)*)
+    case node: cvfa.MailLink       => Weblink
+                                       (node.getText.toString.show,
+                                        Copy(s"mailto:${node.getText.nn}".tt))
     case node: cvfa.Text           => Copy(format(node.getChars.toString.show))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
@@ -211,10 +216,15 @@ object Markdown:
     case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
                                             listItems(root, node)*)
 
-    case node: cvfa.CodeBlock         => FencedCode(Unset, Unset, node.getContentChars.toString.show)
-    case node: cvfa.IndentedCodeBlock => FencedCode(Unset, Unset, node.getContentChars.toString.show)
+    case node: cvfa.CodeBlock         => FencedCode
+                                          (Unset, Unset, node.getContentChars.toString.show)
+    case node: cvfa.IndentedCodeBlock => FencedCode
+                                          (Unset, Unset, node.getContentChars.toString.show)
     case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
-    case node: cvfa.OrderedList       => BulletList(numbered = 1, loose = node.isLoose, listItems(root, node)*)
+    case node: cvfa.OrderedList       => BulletList
+                                          (numbered = 1,
+                                           loose    = node.isLoose,
+                                           listItems(root, node)*)
     case node: cvfa.ThematicBreak     => ThematicBreak()
 
     case node: cvfa.FencedCodeBlock =>
