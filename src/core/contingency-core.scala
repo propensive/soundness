@@ -57,13 +57,13 @@ given realm: Realm = realm"contingency"
 def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType]
    (error: Diagnostics ?=> ErrorType)
    (using tactic: Tactic[ErrorType])
-        : SuccessType =
+:     SuccessType =
   tactic.record(error)
   ErrorType.recover(error(using tactic.diagnostics))
 
 def raise[SuccessType, ErrorType <: Exception: Tactic]
    (error: Diagnostics ?=> ErrorType, ersatz: => SuccessType)
-        : SuccessType =
+:     SuccessType =
   ErrorType.record(error)
   ersatz
 
@@ -73,7 +73,7 @@ def abort[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> Er
 def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
    (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                 SuccessType)
-        : Optional[SuccessType] =
+:     Optional[SuccessType] =
 
   try boundary: label ?=>
     block(using Diagnostics.omit, OptionalTactic(label))
@@ -81,7 +81,7 @@ def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 
 def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
    (block: Unsafe ?=> ThrowTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
-        : SuccessType =
+:     SuccessType =
 
   boundary: label ?=>
     import unsafeExceptions.canThrowAny
@@ -89,14 +89,14 @@ def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 
 def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
    (block: ThrowTactic[ErrorType, SuccessType] ?=> SuccessType)
-        : SuccessType =
+:     SuccessType =
 
   block(using ThrowTactic())
 
 def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
    (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Tactic[ExpectationError[SuccessType]], Diagnostics)
-        : ErrorType =
+:     ErrorType =
   val value: Either[ErrorType, SuccessType] = boundary: label ?=>
     Right(block(using EitherTactic(label)))
 
@@ -107,7 +107,7 @@ def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
    (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Diagnostics)
-        : Attempt[SuccessType, ErrorType] =
+:     Attempt[SuccessType, ErrorType] =
 
   boundary: label ?=>
     Attempt.Success(block(using AttemptTactic(label)))
@@ -115,13 +115,13 @@ def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
 def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
    (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Diagnostics)
-        : SuccessType | ErrorType =
+:     SuccessType | ErrorType =
   boundary: label ?=>
     block(using AmalgamateTactic(label))
 
 def haltingly[ErrorType <: Error](using Quotes, Realm)[SuccessType]
    (block: Diagnostics ?=> HaltTactic[ErrorType, SuccessType] ?=> SuccessType)
-        : SuccessType =
+:     SuccessType =
 
   given HaltTactic[ErrorType, SuccessType]()
   given Diagnostics = Diagnostics.omit
@@ -137,7 +137,7 @@ infix type tracks [ResultType, FocusType] = Foci[FocusType] ?=> ResultType
 inline def focus[FocusType, ResultType](using inline track: Foci[FocusType])
    (transform: (prior: Optional[FocusType]) ?=> FocusType)
    (block: => ResultType)
-        : ResultType =
+:     ResultType =
   val length = track.length
   block.also:
     track.supplement(track.length - length, transform(using _))
@@ -154,25 +154,25 @@ transparent inline def mend[ResultType](inline block: Exception ~> ResultType): 
 
 extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
   inline def within[ResultType2 >: ResultType](inline lambda: LambdaType[ResultType2])
-          : ResultType2 =
+  :     ResultType2 =
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
 transparent inline def track[FocusType](using DummyImplicit)[AccrualType <: Exception, ResultType]
    (accrual: AccrualType)
    (inline block: (focus:   Optional[FocusType],
                    accrual: AccrualType) ?=> Exception ~> AccrualType)
-        : Any =
+:     Any =
   ${Contingency.track[AccrualType, FocusType]('accrual, 'block)}
 
 transparent inline def accrue[AccrualType <: Exception](accrual: AccrualType)[ResultType]
    (inline block: (accrual: AccrualType) ?=> Exception ~> AccrualType)
-        : Any =
+:     Any =
   ${Contingency.accrue[AccrualType]('accrual, 'block)}
 
 extension [AccrualType <: Exception,  LambdaType[_]](inline accrue: Accrue[AccrualType, LambdaType])
   inline def within[ResultType](inline lambda: LambdaType[ResultType])
      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
-          : ResultType =
+  :     ResultType =
     ${Contingency.accrueWithin[AccrualType, LambdaType, ResultType]('accrue, 'lambda, 'tactic,
         'diagnostics)}
 
@@ -180,19 +180,19 @@ extension [AccrualType <: Exception,  LambdaType[_], FocusType]
    (inline track: Tracking[AccrualType, LambdaType, FocusType])
   inline def within[ResultType](inline lambda: Foci[FocusType] ?=> LambdaType[ResultType])
      (using tactic: Tactic[AccrualType], diagnostics: Diagnostics)
-          : ResultType =
+  :     ResultType =
     ${Contingency.trackWithin[AccrualType, LambdaType, ResultType, FocusType]('track, 'lambda,
         'tactic, 'diagnostics)}
 
 extension [ValueType](optional: Optional[ValueType])
   def lest[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType)
-          : ValueType =
+  :     ValueType =
     optional.or(abort(error))
 
   def dare[ErrorType <: Exception](using DummyImplicit)[SuccessType]
      (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                   ValueType => SuccessType)
-        : Optional[SuccessType] =
+  :     Optional[SuccessType] =
 
     try boundary: label ?=>
       optional.let(block(using Diagnostics.omit, OptionalTactic(label)))

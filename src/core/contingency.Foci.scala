@@ -29,7 +29,7 @@ object Foci:
 
     def fold[AccrualType](initial: AccrualType)
        (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-            : AccrualType =
+    :     AccrualType =
       initial
 
     def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit = ()
@@ -41,7 +41,7 @@ trait Foci[FocusType]:
 
   def fold[AccrualType](initial: AccrualType)
      (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-          : AccrualType
+  :     AccrualType
 
   def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit
 
@@ -58,7 +58,7 @@ class TrackFoci[FocusType]() extends Foci[FocusType]:
 
   def fold[AccrualType](initial: AccrualType)
      (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
-          : AccrualType =
+  :     AccrualType =
     (0 until errors.length).foldLeft(initial): (accrual, index) =>
       lambda(focuses(index), accrual)(errors(index))
 

@@ -52,7 +52,7 @@ enum Attempt[+SuccessType, +ErrorType <: Exception]:
     case Failure(error) => abort(error)
 
   def recover[SuccessType2 >: SuccessType](block: ErrorType ~> SuccessType2)
-          : SuccessType2 =
+  :     SuccessType2 =
 
     this match
       case Success(value) => value
