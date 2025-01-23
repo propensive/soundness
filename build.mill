@@ -6,7 +6,7 @@ import os.Path
 
 object settings {
   val scalaVersion = "3.6.0"
-  //val scalaVersion = "3.7.0-RC1-bin-20250118-b801042-NIGHTLY"
+  //val scalaVersion = "3.7.0-RC1-bin-20250121-3f2365d-NIGHTLY"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -112,6 +112,11 @@ object soundness extends ScalaModule {
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
         telekinesis.core, plutocrat.core)
+    def scalaVersion = settings.scalaVersion
+  }
+
+  object all extends ScalaModule {
+    def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
     def scalaVersion = settings.scalaVersion
   }
 }
