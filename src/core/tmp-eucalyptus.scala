@@ -76,7 +76,7 @@ package eucalyptus
 //               case Inlined(_, _, Block(List(defDef), term)) => defDef match
 //                 case DefDef(ident, scrutineeType, returnType, Some(Match(matchId, caseDefs))) =>
 //                   val caseDef = caseDefs(index) match
-//                     case CaseDef(pattern, guard, target) => (target.asExpr: @unchecked) match
+//                     case CaseDef(pattern, guard, target) => target.asExpr.runtimeChecked match
 //                       case '{$target: targetType} =>
 //                         def typeName = TypeRepr.of[targetType].show
 
