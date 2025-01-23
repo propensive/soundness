@@ -42,8 +42,9 @@ object Openable:
     protected type Carrier = jnc.FileChannel
 
     def init(path: Path on PlatformType, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
-      val options = read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
-          extraOptions
+      val options =
+        read.options() ++ write.options() ++ dereference.options() ++ create.options()
+        ++ extraOptions
 
       import jnf.StandardOpenOption as jnfsoo
 
