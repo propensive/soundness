@@ -33,7 +33,8 @@ object TreeDiagram:
     (diagram, termcap) =>
       (diagram.render[Text] { node => t"▪ $node" }).join(t"\n")
 
-  def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*): TreeDiagram[NodeType] =
+  def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*)
+  :     TreeDiagram[NodeType] =
     def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(List[TreeTile], NodeType)] =
       val last = input.size - 1
       input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
