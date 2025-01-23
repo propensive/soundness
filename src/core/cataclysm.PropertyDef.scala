@@ -236,7 +236,10 @@ object PropertyDef:
   erased given margin1: ("margin" is PropertyDef[Dimension]) = ###
   erased given margin2: ("margin" is PropertyDef[(Dimension, Dimension)]) = ###
   erased given margin3: ("margin" is PropertyDef[(Dimension, Dimension, Dimension)]) = ###
-  erased given margin4: ("margin" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) = ###
+
+  erased given margin4: ("margin" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) =
+    ###
+
   erased given marginBottom: ("marginBottom" is PropertyDef[Dimension]) = ###
   erased given marginLeft: ("marginLeft" is PropertyDef[Dimension]) = ###
   erased given marginRight: ("marginRight" is PropertyDef[Dimension]) = ###
@@ -301,7 +304,10 @@ object PropertyDef:
   erased given textDecorationColor1: [ColorType] => (erased ColorType is Chromatic) => ("textDecorationColor" is PropertyDef[ColorType]) = ###
   erased given textDecorationColor2: ("textDecorationColor" is PropertyDef[Transparent.type]) = ###
   erased given textDecorationLine: ("textDecorationLine" is PropertyDef[TextDecorationLine]) = ###
-  erased given textDecorationStyle: ("textDecorationStyle" is PropertyDef[TextDecorationStyle]) = ###
+
+  erased given textDecorationStyle: ("textDecorationStyle" is PropertyDef[TextDecorationStyle]) =
+    ###
+
   erased given textIndent: ("textIndent" is PropertyDef[Dimension]) = ###
   erased given textJustify: ("textJustify" is PropertyDef[Text]) = ###
   erased given textOrientation: ("textOrientation" is PropertyDef[Text]) = ###
