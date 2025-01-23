@@ -107,7 +107,7 @@ object Xml:
       case id =>
         XmlAst.Comment(t"unrecognized node $id")
 
-    (readNode(root.getDocumentElement.nn): @unchecked) match
+    readNode(root.getDocumentElement.nn).runtimeChecked match
       case elem@XmlAst.Element(_, _, _, _) => XmlDoc(XmlAst.Root(elem))
 
   def normalize(xml: Xml): List[XmlAst] raises XmlAccessError =
