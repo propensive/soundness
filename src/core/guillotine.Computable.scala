@@ -30,7 +30,7 @@ import spectacular.*
 import turbulence.*
 
 object Computable:
-  given lazyList: LazyList[Text] is Computable = proc =>
+  given stream: LazyList[Text] is Computable = proc =>
     val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
     reader.lines().nn.toScala(LazyList).map(_.tt)
 
@@ -39,10 +39,10 @@ object Computable:
     reader.lines().nn.toScala(List).map(_.tt)
 
   given text: Text is Computable = proc =>
-    Text.construct(lazyList.compute(proc).map(_.s).each(append(_)))
+    Text.construct(stream.compute(proc).map(_.s).each(append(_)))
 
   given string: String is Computable = proc =>
-    Text.construct(lazyList.compute(proc).map(_.s).each(append(_))).s
+    Text.construct(stream.compute(proc).map(_.s).each(append(_))).s
 
   given dataStream: Tactic[StreamError] => LazyList[Bytes] is Computable =
     proc => Readable.inputStream.stream(proc.getInputStream.nn)
