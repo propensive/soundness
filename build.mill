@@ -28,7 +28,8 @@ object settings {
     "-language:experimental.erasedDefinitions",
     "-language:experimental.saferExceptions",
     "-language:experimental.namedTypeArguments",
-    "-language:implicitConversions"
+    "-language:implicitConversions",
+    "-Xpluginsdir", "FIXME: path to out/larceny/plugin/assembly.dest/out.jar"
   )
 }
 
@@ -762,7 +763,7 @@ object probably extends SoundnessModule {
   }
 
   object cli extends SoundnessSubModule {
-    def moduleDeps = Seq(core, escritoire.core)
+    def moduleDeps = Seq(core, escritoire.core, larceny.plugin)
   }
 
   object coverage extends SoundnessSubModule {
