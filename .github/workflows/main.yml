@@ -12,9 +12,10 @@ jobs:
       uses: actions/checkout@v2
       with:
         submodules: recursive
-    - name: Mill Build
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: 'temurin' # See 'Supported distributions' for available options
         java-version: '21'
+    - name: Mill Build
       run: ./mill soundness.all
