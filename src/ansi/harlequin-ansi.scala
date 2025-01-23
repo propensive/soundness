@@ -46,8 +46,10 @@ package syntaxHighlighting:
     val markup = source.focus.lay(e""):
       case ((startLine, startColumn), (endLine, endColumn)) =>
         if startLine != endLine then e"\n" else
-          if startColumn == endColumn then e"\n${t" "*(startColumn + indent + 2)}${rgb"#ff0033"}(╱╲)"
-          else e"\n${t" "*(startColumn + indent + 3)}${rgb"#ff0033"}(${t"‾"*(endColumn - startColumn)})"
+          val foreground = rgb"#ff0033"
+          if startColumn == endColumn
+          then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
+          else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
 
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.teletype).join
