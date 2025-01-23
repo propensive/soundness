@@ -36,7 +36,8 @@ object Abacist:
     val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 
-    def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
+    def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long])
+    :     Expr[Long] =
       values match
         case Nil =>
           expr
@@ -63,7 +64,8 @@ object Abacist:
   def describeCount[CountUnits <: Tuple: Type](count: Expr[Count[CountUnits]])(using Quotes)
   :     Expr[ListMap[Text, Long]] =
 
-    def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]]): Expr[ListMap[Text, Long]] =
+    def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
+    :     Expr[ListMap[Text, Long]] =
       slices match
         case Nil =>
           expr
