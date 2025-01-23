@@ -28,11 +28,11 @@ object Commensurable:
     type Operand = OperandType
 
     inline def compare
-       (inline left:        Boolean,
-        inline right:       OperandType,
-        inline strict:      Boolean,
+       (inline left:     Boolean,
+        inline right:      OperandType,
+        inline strict:     Boolean,
         inline greaterThan: Boolean)
-            : Boolean =
+    :     Boolean =
 
       ${Hypotenuse2.commensurable('left, 'right, 'strict, 'greaterThan)}
 
@@ -42,7 +42,7 @@ object Commensurable:
         inline right:   Memory,
         inline strict:  Boolean,
         inline greater: Boolean)
-            : Boolean =
+    :     Boolean =
 
       !strict && left.long == right.long || (left.long < right.long) ^ greater
 
@@ -52,7 +52,7 @@ object Commensurable:
         inline right:   Countback,
         inline strict:  Boolean,
         inline greater: Boolean)
-            : Boolean =
+    :     Boolean =
 
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
       else inline if strict then left.lt(right) else left.le(right)
@@ -63,7 +63,7 @@ object Commensurable:
         inline right:   Ordinal,
         inline strict:  Boolean,
         inline greater: Boolean)
-            : Boolean =
+    :     Boolean =
 
       inline if greater then inline if strict then left.gt(right) else left.ge(right)
       else inline if strict then left.lt(right) else left.le(right)
@@ -74,4 +74,4 @@ trait Commensurable:
 
   inline def compare
      (inline left: Self, inline right: Operand, inline strict: Boolean, inline greaterThan: Boolean)
-          : Boolean
+  :     Boolean

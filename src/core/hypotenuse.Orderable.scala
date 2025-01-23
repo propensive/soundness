@@ -27,7 +27,7 @@ object Orderable:
         inline right:   ValueType,
         inline strict:  Boolean,
         inline greater: Boolean)
-            : Boolean =
+    :     Boolean =
       val n = ValueType.compare(left, right)
       inline if greater
       then inline if strict then n > 0 else n >= 0

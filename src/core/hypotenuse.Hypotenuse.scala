@@ -73,7 +73,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: F64, inline right: F64, inline strict: Boolean, inline greater: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greater
         then inline if strict then left > right else left >= right
@@ -84,7 +84,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: F64, inline right: Int, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -143,7 +143,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: F32, inline right: F32, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -191,7 +191,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: U64, inline right: U64, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan then
           inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -215,7 +215,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: S64, inline right: S64, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -235,7 +235,7 @@ object Hypotenuse:
     inline given orderable: U32 is Orderable:
       inline def compare
          (inline left: U32, inline right: U32, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan then
           inline if strict then JLong.compareUnsigned(left, right) == 1
@@ -259,7 +259,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: S32, inline right: S32, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then (left: Int) > (right: Int) else (left: Int) >= (right: Int)
@@ -279,7 +279,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: U16, inline right: U16, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         val left2 = JShort.toUnsignedInt(left)
         val right2 = JShort.toUnsignedInt(right)
@@ -304,7 +304,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: S16, inline right: S16, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right
@@ -323,7 +323,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: U8, inline right: U8, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         val left2 = JByte.toUnsignedInt(left)
         val right2 = JByte.toUnsignedInt(right)
@@ -348,7 +348,7 @@ object Hypotenuse:
 
       inline def compare
          (inline left: S8, inline right: S8, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
 
         inline if greaterThan
         then inline if strict then left > right else left >= right

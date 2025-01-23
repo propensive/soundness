@@ -377,28 +377,28 @@ extension [LeftType](inline left: LeftType)
   @targetName("lt")
   inline infix def < [RightType](inline right: RightType)
      (using inline commensurable: LeftType is Commensurable by RightType)
-          : Boolean =
+  :     Boolean =
 
     commensurable.compare(left, right, true, false)
 
   @targetName("lte")
   inline infix def <= [RightType](inline right: RightType)
      (using inline commensurable: LeftType is Commensurable by RightType)
-          : Boolean =
+  :     Boolean =
 
     commensurable.compare(left, right, false, false)
 
   @targetName("gt")
   inline infix def > [RightType](inline right: RightType)
      (using inline commensurable: LeftType is Commensurable by RightType)
-          : Boolean =
+  :     Boolean =
 
     commensurable.compare(left, right, true, true)
 
   @targetName("gte")
   inline infix def >= [RightType](inline right: RightType)
     (using inline commensurable: LeftType is Commensurable by RightType)
-          : Boolean =
+  :     Boolean =
 
     commensurable.compare(left, right, false, true)
 
