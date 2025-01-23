@@ -38,7 +38,7 @@ object Nomenclature:
             check[tail](name)
 
     inline def apply[PlatformType](name: Text)(using nominative: PlatformType is Nominative)
-            : Name[PlatformType] raises NameError =
+    :     Name[PlatformType] raises NameError =
 
       inline disintersect[nominative.Constraint] match
         case v => check[v.type](name)

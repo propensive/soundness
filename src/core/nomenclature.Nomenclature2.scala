@@ -43,7 +43,7 @@ object Nomenclature2:
 
   def parse2[PlatformType: Type, NameType <: String: Type](scrutinee: Expr[Name[PlatformType]])
      (using Quotes)
-          : Expr[Boolean] =
+  :     Expr[Boolean] =
     parse[PlatformType, NameType]
     '{${Expr(constant[NameType])}.tt == $scrutinee.text}
 
@@ -53,7 +53,7 @@ object Nomenclature2:
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[TextType]
 
   def companion[CompanionType: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
-          : CompanionType =
+  :     CompanionType =
     Class.forName(s"${symbol.companionModule.fullName}$$").nn.getField("MODULE$").nn.get(null) match
       case module: CompanionType => module
       case _                     => halt(m"The companion object did not have the expected type.")
