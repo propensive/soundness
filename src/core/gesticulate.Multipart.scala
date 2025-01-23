@@ -128,9 +128,14 @@ object Multipart:
           part #:: { part.body.strict; conduit.next(); parts() }
 
         case '-' =>
-          if !conduit.next() || conduit.datum != '-' then raise(MultipartError(Reason.Expected('-')))
-          if !conduit.next() || conduit.datum != '\r' then raise(MultipartError(Reason.Expected('\r')))
-          if !conduit.next() || conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          if !conduit.next() || conduit.datum != '-'
+          then raise(MultipartError(Reason.Expected('-')))
+
+          if !conduit.next() || conduit.datum != '\r'
+          then raise(MultipartError(Reason.Expected('\r')))
+
+          if !conduit.next() || conduit.datum != '\n'
+          then raise(MultipartError(Reason.Expected('\n')))
           //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
           LazyList(part)
 
