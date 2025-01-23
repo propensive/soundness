@@ -39,7 +39,7 @@ extension [RemoteType: Connectable](value: RemoteType)
 extension [PortType](port: PortType)
   def serve[ProtocolType: Protocolic over PortType]
      (handler: ProtocolType.Request ?=> ProtocolType.Response)
-          : ProtocolType.Server =
+  :     ProtocolType.Server =
     ProtocolType.server(port)(handler)
 
 def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): ResultType =

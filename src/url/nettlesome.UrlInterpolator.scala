@@ -31,7 +31,7 @@ import errorDiagnostics.empty
 object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[Label]]:
 
   def refined(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes)
-          : Expr[Url[Label]] =
+  :     Expr[Url[Label]] =
     import quotes.reflect.*
 
     val constant = context.value.get.parts.head.split(":").nn.head.nn
