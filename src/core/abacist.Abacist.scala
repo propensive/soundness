@@ -90,7 +90,7 @@ object Abacist:
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
-    (quantityUnit.power(1).asType: @unchecked) match
+    quantityUnit.power(1).asType.runtimeChecked match
       case '[type quantityType <: Measure; quantityType] =>
         '{Quantity[quantityType]($count.longValue*$ratioExpr)}
 
