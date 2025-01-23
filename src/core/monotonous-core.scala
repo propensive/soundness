@@ -130,12 +130,12 @@ package alphabets:
 
 extension (value: Text)
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
-          : Bytes =
+  :     Bytes =
     deserializable.deserialize(value)
 
 extension (stream: LazyList[Text])
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
-          : LazyList[Bytes] =
+  :     LazyList[Bytes] =
     deserializable.deserialize(stream)
 
 extension [ValueType: Encodable in Bytes](value: ValueType)

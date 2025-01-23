@@ -22,7 +22,7 @@ import rudiments.*
 
 object Serializable:
   def base[BaseType <: Serialization](bits: Int)(using alphabet: Alphabet[BaseType])
-          : Serializable in BaseType = new:
+  :     Serializable in BaseType = new:
 
     def encode(bytes: Bytes): Text =
       val mask = (1 << bits) - 1

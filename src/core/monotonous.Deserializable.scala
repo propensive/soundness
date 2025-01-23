@@ -47,7 +47,7 @@ trait Deserializable:
 
 object Deserializable:
   def base[BaseType <: Serialization](base: Int)(using alphabet: Alphabet[BaseType])
-          : Deserializable in BaseType raises SerializationError =
+  :     Deserializable in BaseType raises SerializationError =
     new:
       override protected val atomicity = 8.lcm(base)/base
 
