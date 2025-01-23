@@ -48,7 +48,7 @@ object Xml:
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
   def pathString(path: XmlPath): Text = if path.isEmpty then t"/" else path.map: value =>
-    value.runtimeChecked match
+    value.absolve match
       case idx: Int    => t"[$idx]"
       case label: Text => t"/$label"
       case unit: Unit  => t"/*"
@@ -107,11 +107,11 @@ object Xml:
       case id =>
         XmlAst.Comment(t"unrecognized node $id")
 
-    readNode(root.getDocumentElement.nn).runtimeChecked match
+    readNode(root.getDocumentElement.nn).absolve match
       case elem@XmlAst.Element(_, _, _, _) => XmlDoc(XmlAst.Root(elem))
 
   def normalize(xml: Xml): List[XmlAst] raises XmlAccessError =
-    def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = path.runtimeChecked match
+    def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = path.absolve match
       case Nil =>
         current
 
