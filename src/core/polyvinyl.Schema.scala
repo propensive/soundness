@@ -51,7 +51,7 @@ trait Schema[DataType, RecordType <: Record in DataType]:
           (refinedType, caseDefs)
 
         case (name, RecordField.Value(typeName, params*)) :: tail =>
-          (ConstantType(StringConstant(typeName)).asType: @unchecked) match
+          ConstantType(StringConstant(typeName)).asType.runtimeChecked match
             case '[type typeName <: Label; typeName] =>
               Expr.summon[Schematic[RecordType, DataType, typeName, ?]].runtimeChecked match
                 case None =>
@@ -71,7 +71,7 @@ trait Schema[DataType, RecordType <: Record in DataType]:
                   refine(value, tail, refinement, caseDefs2)
 
         case (name, RecordField.Record(typeName, map)) :: tail =>
-          (ConstantType(StringConstant(typeName)).asType: @unchecked) match
+          ConstantType(StringConstant(typeName)).asType.runtimeChecked match
             case '[type typeName <: Label; typeName] =>
               Expr.summon[RecordAccessor[RecordType, DataType, typeName, ?]].runtimeChecked match
                 case None =>
