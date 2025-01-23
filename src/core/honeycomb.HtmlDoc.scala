@@ -32,13 +32,13 @@ object HtmlDoc:
 
   def serialize[OutputType](doc: HtmlDoc, maxWidth: Int = -1)
      (using serializer: HtmlSerializer[OutputType])
-          : OutputType =
+  :     OutputType =
     serializer.serialize(doc, maxWidth)
 
   def simple[Stylesheet](title: Text, stylesheet: Stylesheet = false)
      (content: (Optional[Html[Flow]] | Seq[Html[Flow]])*)
      (using att: "href" is HtmlAttribute[Stylesheet])
-          : HtmlDoc =
+  :     HtmlDoc =
 
     val link = att.convert(stylesheet).absolve match
       case Unset      => Nil

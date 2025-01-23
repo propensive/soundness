@@ -36,12 +36,12 @@ extends Node[NameType], Dynamic:
   def label: Text = labelString.tt
 
   inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
-          : StartTag[NameType, ChildType] =
+  :     StartTag[NameType, ChildType] =
 
     ${  Honeycomb.read[NameType, ChildType, ChildType]('this, 'method, 'labelString, 'attributes)  }
 
   def applyDynamic[Return <: Label](method: "apply")
      (children: (Optional[Html[Return]] | Seq[Html[Return]])*)
-          : Element[Return] =
+  :     Element[Return] =
 
     Element(labelString, Map(), children)

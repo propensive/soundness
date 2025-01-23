@@ -28,17 +28,17 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-     (node:       Expr[Node[NameType]],
+     (node:      Expr[Node[NameType]],
       className:  Expr[String],
-      name:       Expr[NameType],
+      name:      Expr[NameType],
       attributes: Expr[Seq[(Label, Any)]])
      (using Quotes)
-          : Expr[StartTag[NameType, ReturnType]] =
+  :     Expr[StartTag[NameType, ReturnType]] =
 
     import quotes.reflect.*
 
     def recur(exprs: Seq[Expr[(Label, Any)]])
-            : List[Expr[Optional[(String, Optional[Text])]]] =
+    :     List[Expr[Optional[(String, Optional[Text])]]] =
       exprs match
         case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
           val attribute: String = key.value.get

@@ -29,13 +29,13 @@ object Element:
      (labelString: String,
       attributes:  Attributes,
       children:    Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]] = Nil)
-          : Element[NodeType] =
+  :     Element[NodeType] =
 
     new Element(labelString, attributes, flatten(children))
 
   private def flatten[ChildType <: Label]
      (nodes: Seq[Optional[Html[ChildType]] | Seq[Html[ChildType]]])
-          : Seq[Html[ChildType]] =
+  :     Seq[Html[ChildType]] =
 
     nodes.flatMap:
       case Unset                                => Seq()
