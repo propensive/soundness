@@ -16,32 +16,34 @@
 
 package rudiments
 
-import language.experimental.captureChecking
-
 import anticipation.*
+import prepositional.*
 
 object Irrefutable:
-  given stringText: Irrefutable[String, Text] = _.tt
+  given stringText: String is Irrefutable into Text = _.tt
 
-  given [ResultType](using ext: Irrefutable[Text, ResultType]): Irrefutable[String, ResultType] = v =>
-    ext.unapply(v.tt)
+  given [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
+  =>  String is Irrefutable into ResultType =
+    string => irrefutable.unapply(string.tt)
 
-  given textString: Irrefutable[Text, String] = _.s
-  given ident[ResultType]: Irrefutable[ResultType, ResultType] = identity(_)
+  given textString: [TextType <: Text] => TextType is Irrefutable into String = _.s
+  given ident: [ResultType] => ResultType is Irrefutable into ResultType = identity(_)
 
-  given byteShort: Irrefutable[Byte, Short] = _.toShort
-  given byteInt: Irrefutable[Byte, Int] = _.toInt
-  given byteLong: Irrefutable[Byte, Long] = _.toLong
-  given byteFloat: Irrefutable[Byte, Float] = _.toFloat
-  given byteDouble: Irrefutable[Byte, Double] = _.toDouble
+  given byteShort: Byte is Irrefutable into Short = _.toShort
+  given byteInt: Byte is Irrefutable into Int = _.toInt
+  given byteLong: Byte is Irrefutable into Long = _.toLong
+  given byteFloat: Byte is Irrefutable into Float = _.toFloat
+  given byteDouble: Byte is Irrefutable into Double = _.toDouble
 
-  given shortInt: Irrefutable[Short, Int] = _.toInt
-  given shortLong: Irrefutable[Short, Long] = _.toLong
-  given shortFloat: Irrefutable[Short, Float] = _.toShort
-  given shortDouble: Irrefutable[Short, Double] = _.toDouble
-  given intLong: Irrefutable[Int, Long] = _.toLong
-  given intDoule: Irrefutable[Int, Double] = _.toDouble
-  given floatDouble: Irrefutable[Float, Double] = _.toDouble
+  given shortInt: Short is Irrefutable into Int = _.toInt
+  given shortLong: Short is Irrefutable into Long = _.toLong
+  given shortFloat: Short is Irrefutable into Float = _.toShort
+  given shortDouble: Short is Irrefutable into Double = _.toDouble
+  given intLong: Int is Irrefutable into Long = _.toLong
+  given intDoule: Int is Irrefutable into Double = _.toDouble
+  given floatDouble: Float is Irrefutable into Double = _.toDouble
 
-trait Irrefutable[-ValueType, +ResultType]:
-  def unapply(value: ValueType): ResultType
+trait Irrefutable:
+  type Self
+  type Result
+  def unapply(value: Self): Result

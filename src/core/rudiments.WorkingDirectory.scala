@@ -22,7 +22,8 @@ import anticipation.*
 
 object WorkingDirectory:
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
-  def apply[PathType](path: PathType)(using GenericPath { type Self = PathType }): WorkingDirectory = () => path.pathText
+
+  def apply[PathType: GenericPath](path: PathType): WorkingDirectory = () => path.pathText
 
 trait WorkingDirectory:
   def directory(): Text

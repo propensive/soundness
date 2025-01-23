@@ -25,7 +25,7 @@ import denominative.*
 import prepositional.*
 
 object Indexable:
-  given [ElementType] => IArray[ElementType] is Indexable by Ordinal into ElementType as iarray =
+  given iarray: [ElementType] => IArray[ElementType] is Indexable by Ordinal into ElementType =
     new Indexable:
       type Self = IArray[ElementType]
       type Operand = Ordinal
@@ -36,7 +36,7 @@ object Indexable:
 
       def access(array: IArray[ElementType], index: Ordinal): Result = array(index.n0)
 
-  given [ElementType] => IndexedSeq[ElementType] is Indexable by Ordinal into ElementType as seq =
+  given seq: [ElementType] => IndexedSeq[ElementType] is Indexable by Ordinal into ElementType =
     new Indexable:
       type Self = IndexedSeq[ElementType]
       type Operand = Ordinal
@@ -47,19 +47,18 @@ object Indexable:
 
       def access(seq: IndexedSeq[ElementType], index: Ordinal): Result = seq(index.n0)
 
-  given [ElementType] => Text is Indexable by Ordinal into Char =
-    new Indexable:
-      type Self = Text
-      type Operand = Ordinal
-      type Result = Char
+  given [ElementType] => Text is Indexable by Ordinal into Char = new Indexable:
+    type Self = Text
+    type Operand = Ordinal
+    type Result = Char
 
-      def contains(text: Text, index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 <= Ult.of(text).n0
+    def contains(text: Text, index: Ordinal): Boolean =
+      index.n0 >= 0 && index.n0 <= Ult.of(text).n0
 
-      def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
+    def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
   given [KeyType, ValueType]
-      => Map[KeyType, ValueType] is Indexable by KeyType into ValueType as map =
+  =>  Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
       type Self = Map[KeyType, ValueType]
       type Operand = KeyType
@@ -68,8 +67,8 @@ object Indexable:
       def contains(value: Self, index: KeyType): Boolean = value.contains(index)
       def access(value: Self, index: KeyType): ValueType = value(index)
 
-  given [KeyType, ValueType]
-      => Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType as bijection =
+  given bijection: [KeyType, ValueType]
+  =>  Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
       type Self = Bijection[KeyType, ValueType]
       type Operand = KeyType
@@ -78,8 +77,8 @@ object Indexable:
       def contains(value: Self, index: KeyType): Boolean = value.map.contains(index)
       def access(value: Self, index: KeyType): ValueType = value.map(index)
 
-  given [KeyType, ValueType]
-      => scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType as hashMap =
+  given hashMap: [KeyType, ValueType]
+  =>  scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType =
 
     new Indexable:
       type Self = scm.HashMap[KeyType, ValueType]

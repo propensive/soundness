@@ -16,8 +16,7 @@
 
 package rudiments
 
-import language.experimental.captureChecking
-
 trait Cofunctor[CofunctorType[-_]]:
-  def contramap[ValueType, ValueType2](value: CofunctorType[ValueType]^, lambda: ValueType2 => ValueType)
-               : CofunctorType[ValueType2]^{value, lambda}
+  def contramap[ValueType, ValueType2]
+     (value: CofunctorType[ValueType], lambda: ValueType2 => ValueType)
+  :       CofunctorType[ValueType2]

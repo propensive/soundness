@@ -16,18 +16,20 @@
 
 package soundness
 
-export rudiments.{Memory, bin, hex, Hex, b, kib, mib, gib, tib, memory, sift, has, //where,
+export rudiments
+. { Memory, bin, hex, Hex, b, kib, mib, gib, tib, memory, sift, has,
     interleave, each, all, sumBy, bi, tri, indexBy, longestTrain, mutable, immutable, snapshot,
     place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
-    cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as, Irrefutable,
-    Unapply, As, ClassTag, Typeable, Set, List, ListMap, Map, TreeSet, TreeMap, TrieMap, NonFatal,
+    cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as,
+    Irrefutable, Extractable, As, ClassTag, Typeable, Set, List, ListMap, Map, TreeSet, TreeMap,
+    TrieMap, NonFatal,
     boundary, break, IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
     EnumerationHasAsScala, tailrec, missingContext, targetName, switch, StaticAnnotation,
     uncheckedVariance, uncheckedCaptures, uncheckedStable, ###, map, contramap, Functor, Cofunctor,
     Exit, Pid, Quickstart, Nat, Label, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
-    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable, Digit}
+    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable, Digit }
 
 package quickstart:
   export rudiments.quickstart.defaults as defaults

@@ -17,7 +17,6 @@
 package rudiments
 
 import language.dynamics
-import language.experimental.captureChecking
 
 import java.io as ji
 
@@ -28,18 +27,20 @@ import scala.deriving.*
 
 import anticipation.*
 import denominative.*
+import prepositional.*
 import vacuous.*
 
 type Nat = Int & Singleton
 type Label = String & Singleton
 
+@targetName("partialFn")
 infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
 
 def fixpoint[ValueType](initial: ValueType)
    (fn: (recur: (ValueType => ValueType)) ?=> (ValueType => ValueType)): ValueType =
 
   def recurrence(fn: (recur: ValueType => ValueType) ?=> ValueType => ValueType)
-          : ValueType => ValueType =
+  :       ValueType => ValueType =
     fn(using recurrence(fn(_)))
 
   recurrence(fn)(initial)
@@ -54,7 +55,7 @@ extension [ValueType](value: ValueType)
     if predicate then lambda(value) else value
 
   inline def iff(inline predicate: ValueType => Boolean)(inline lambda: ValueType => ValueType)
-          : ValueType =
+  :       ValueType =
     if predicate(value) then lambda(value) else value
 
   inline def is[ValueSubtype <: ValueType]: Boolean = value.isInstanceOf[ValueSubtype]
@@ -85,15 +86,15 @@ extension (inline statement: => Unit)
     statement
     block
 
-def loop(block: => Unit): Loop^{block} = Loop({ () => block })
+def loop(block: => Unit): Loop = Loop({ () => block })
 
 export Rudiments.&
 
-extension [ProductType <: Product](product: ProductType)(using mirror: Mirror.ProductOf[ProductType])
-  def tuple: mirror.MirroredElemTypes = Tuple.fromProductTyped(product)
+extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
+  def tuple: ProductType.MirroredElemTypes = Tuple.fromProductTyped(product)
 
 extension [TupleType <: Tuple](tuple: TupleType)
-  def to[ProductType](using mirror: Mirror.ProductOf[ProductType]): ProductType = mirror.fromProduct(tuple)
+  def to[ProductType: Mirror.ProductOf]: ProductType = ProductType.fromProduct(tuple)
 
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
@@ -102,8 +103,7 @@ extension (inline context: StringContext)
 infix type binds[ResultType, TypeclassType <: Any { type Self }] =
   Bond[TypeclassType] ?=> ResultType
 
-inline def bound[TypeclassType <: Any { type Self }](using bond: Bond[TypeclassType]): bond.Value =
-  bond.value
+inline def bound[BoundType <: Any { type Self }: Bond]: BoundType.Value = BoundType.value
 
 inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
 
@@ -111,37 +111,42 @@ export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
 export scala.collection.concurrent.TrieMap
 
-export Predef.{nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper, shortWrapper,
-    byteWrapper, valueOf, doubleWrapper, floatWrapper, classOf, locally}
+export Predef
+. { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,
+    shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, classOf, locally }
 
 export scala.util.control.NonFatal
 
 export scala.util.boundary, boundary.break
 
-export scala.jdk.CollectionConverters.{IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava,
-    MapHasAsJava, EnumerationHasAsScala}
+export scala.jdk.CollectionConverters
+. { IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
+    EnumerationHasAsScala }
 
 export caps.Cap as Capability
 
-export scala.annotation.{tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation}
+export scala.annotation
+. { tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation }
 
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
-extension [FunctorType[+_], ValueType](value: FunctorType[ValueType]^)(using functor: Functor[FunctorType])
-  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2]^{value, lambda} =
+extension [FunctorType[+_], ValueType](value: FunctorType[ValueType])
+   (using functor: Functor[FunctorType])
+
+  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] =
     functor.map(value, lambda)
 
-extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType]^)
+extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType])
           (using cofunctor: Cofunctor[CofunctorType])
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2]^{value, lambda} =
+  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2] =
     cofunctor.contramap(value, lambda)
 
 extension (value: Any)
-  def as[ResultType](using Irrefutable[value.type, ResultType]): ResultType =
-    summon[Irrefutable[value.type, ResultType]].unapply(value)
+  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
+    irrefutable.unapply(value)
 
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
@@ -172,32 +177,36 @@ extension [ValueType](iterable: Iterable[ValueType])
       lambda(using ordinal)(value)
       ordinal += 1
 
-  def sumBy[NumberType](lambda: ValueType => NumberType)(using numeric: Numeric[NumberType]): NumberType =
-    var count = numeric.zero
+  def sumBy[NumberType: Numeric](lambda: ValueType => NumberType): NumberType =
+    var count = NumberType.zero
 
     iterable.foreach: value =>
-      count = numeric.plus(count, lambda(value))
+      count = NumberType.plus(count, lambda(value))
 
     count
 
   inline def all(predicate: ValueType => Boolean): Boolean = iterable.forall(predicate)
   transparent inline def bi: Iterable[(ValueType, ValueType)] = iterable.map { x => (x, x) }
-  transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] = iterable.map { x => (x, x, x) }
 
-  def indexBy[ValueType2](lambda: ValueType -> ValueType2): Map[ValueType2, ValueType] =
+  transparent inline def tri: Iterable[(ValueType, ValueType, ValueType)] =
+    iterable.map { x => (x, x, x) }
+
+  def indexBy[ValueType2](lambda: ValueType => ValueType2): Map[ValueType2, ValueType] =
     iterable.map: value =>
       (lambda(value), value)
 
     . to(Map)
 
-  def longestTrain(predicate: ValueType -> Boolean): (Int, Int) =
+  def longestTrain(predicate: ValueType => Boolean): (Int, Int) =
     @tailrec
-    def recur(index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
-            : (Int, Int) =
+    def recur
+       (index: Int, iterable: Iterable[ValueType], bestStart: Int, bestLength: Int, length: Int)
+    :       (Int, Int) =
 
       if iterable.isEmpty then (bestStart, bestLength) else
         if predicate(iterable.head) then
-          if length >= bestLength then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
+          if length >= bestLength
+          then recur(index + 1, iterable.tail, index - length, length + 1, length + 1)
           else recur(index + 1, iterable.tail, bestStart, bestLength, length + 1)
         else recur(index + 1, iterable.tail, bestStart, bestLength, 0)
 
@@ -227,14 +236,16 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def upsert(key: KeyType, op: Optional[ValueType] => ValueType): Map[KeyType, ValueType] =
     map.updated(key, op(if map.contains(key) then map(key) else Unset))
 
-  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) -> ValueType)
-          : Map[KeyType, ValueType] =
+  def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
+  :       Map[KeyType, ValueType] =
 
     right.foldLeft(map): (accumulator, keyValue) =>
-      accumulator.updated(keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
+      accumulator.updated
+       (keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
 
 extension [KeyType, ValueType](map: scm.Map[KeyType, ValueType])
-  def establish(key: KeyType)(evaluate: => ValueType): ValueType = map.getOrElseUpdate(key, evaluate)
+  inline def establish(key: KeyType)(evaluate: => ValueType): ValueType =
+    map.getOrElseUpdate(key, evaluate)
 
 extension [KeyType, ValueType](map: Map[KeyType, List[ValueType]])
   def plus(key: KeyType, value: ValueType): Map[KeyType, List[ValueType]] =
@@ -254,7 +265,7 @@ extension [ElemType](seq: Seq[ElemType])
   def runsBy(lambda: ElemType => Any): List[List[ElemType]] =
     @tailrec
     def recur(current: Any, todo: Seq[ElemType], run: List[ElemType], done: List[List[ElemType]])
-             : List[List[ElemType]] =
+    :       List[List[ElemType]] =
       if todo.isEmpty then (run.reverse :: done).reverse
       else
         val focus = lambda(todo.head)
@@ -263,18 +274,21 @@ extension [ElemType](seq: Seq[ElemType])
 
     if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
-inline def cursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-        : ElemType =
+inline def cursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+:       ElemType =
 
   cursor.of(seq)
 
-inline def precursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-        : Optional[ElemType] =
+inline def precursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+:       Optional[ElemType] =
 
   cursor.of(seq, -1)
 
-inline def postcursor[ElemType](using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-        : Optional[ElemType] =
+inline def postcursor[ElemType]
+   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
+:       Optional[ElemType] =
 
   cursor.of(seq, 1)
 
@@ -282,13 +296,13 @@ inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
 
 inline def cursorOffset[ElemType](offset: Int)
    (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-        : Optional[ElemType] =
+:       Optional[ElemType] =
   cursor.of(seq, offset)
 
 extension [ElemType](seq: IndexedSeq[ElemType])
   transparent inline def curse[ElemType2]
      (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
-          : IndexedSeq[ElemType2] =
+  :       IndexedSeq[ElemType2] =
     Cursor.curse(seq)(block)
 
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
@@ -329,13 +343,15 @@ extension (bs: Long)
 extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
-def workingDirectory[PathType](using directory: WorkingDirectory, specific: SpecificPath { type Self = PathType })
-        : PathType =
+def workingDirectory[PathType]
+   (using directory: WorkingDirectory, specific: PathType is SpecificPath)
+:       PathType =
 
   directory.path[PathType]
 
-def homeDirectory[PathType](using directory: HomeDirectory, specific: SpecificPath { type Self = PathType })
-        : PathType =
+def homeDirectory[PathType]
+   (using directory: HomeDirectory, specific: PathType is SpecificPath)
+:       PathType =
 
   directory.path[PathType]
 

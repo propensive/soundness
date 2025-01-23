@@ -23,7 +23,7 @@ object Segmentable:
   given [ElementType] => IndexedSeq[ElementType] is Segmentable =
     (seq, interval) => seq.slice(interval.start.n0, interval.end.n0)
 
-  given [ElementType] => IArray[ElementType] is Segmentable as iarray =
+  given iarray: [ElementType] => IArray[ElementType] is Segmentable =
     (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)
 
   given Text is Segmentable = (text, interval) =>

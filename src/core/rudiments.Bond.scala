@@ -29,6 +29,7 @@ trait Bond[TypeclassType <: Any { type Self }]:
 
 object Bond:
   inline given [TypeclassType <: Any { type Self }]
-     (using typeclass0: TypeclassType, value0: typeclass0.Self) => Bond[TypeclassType]:
+  => (typeclass0: TypeclassType, value0: typeclass0.Self)
+  =>  Bond[TypeclassType]:
     val typeclass: typeclass0.type = typeclass0
     val value: typeclass.Self = value0

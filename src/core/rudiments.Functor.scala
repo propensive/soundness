@@ -20,15 +20,15 @@ import language.experimental.captureChecking
 
 trait Functor[FunctorType[+_]]:
   def map[ValueType, ValueType2](value: FunctorType[ValueType]^, lambda: ValueType => ValueType2)
-          : FunctorType[ValueType2]^{value, lambda}
+  :       FunctorType[ValueType2]^{value, lambda}
 
 object Functor:
   given list: Functor[List] with
     def map[ElemType, ElemType2](list: List[ElemType]^, lambda: ElemType => ElemType2)
-            : List[ElemType2]^{list, lambda} =
+    :       List[ElemType2]^{list, lambda} =
       list.map(lambda)
 
   given option: Functor[Option] with
     def map[ValueType, ValueType2](option: Option[ValueType]^, lambda: ValueType => ValueType2)
-            : Option[ValueType2]^{option, lambda} =
+    :       Option[ValueType2]^{option, lambda} =
       option.map(lambda)
