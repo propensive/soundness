@@ -155,7 +155,11 @@ object Url:
 
               case _ =>
                 Url
-                 (scheme, auth, value.segment(pathStart ~ qmark.previous), value.after(qmark), Unset)
+                 (scheme,
+                  auth,
+                  value.segment(pathStart ~ qmark.previous),
+                  value.after(qmark),
+                  Unset)
 
           case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
             case Zerary(hash) =>
