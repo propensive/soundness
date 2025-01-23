@@ -25,7 +25,8 @@ sealed trait Sha2[BitsType <: 224 | 256 | 384 | 512] extends Algorithm:
 
 object Sha2:
   given hashFunction: [BitsType <: 224 | 256 | 384 | 512: ValueOf]
-      => JavaHashFunction in Sha2[BitsType]:
+  =>    JavaHashFunction in Sha2[BitsType]:
+
     private val bits: Int = valueOf[BitsType]
     val name: Text = t"SHA-$bits"
     val hmacName: Text = t"HmacSHA$bits"

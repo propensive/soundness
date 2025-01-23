@@ -42,15 +42,15 @@ object Digestible extends Derivable[Digestible]:
           context.digest(digestion, variant)
 
   given optional: [ValueType: Digestible] => util.NotGiven[Unset.type <:< ValueType]
-      => Optional[ValueType] is Digestible =
+  =>    Optional[ValueType] is Digestible =
     (acc, value) => value.let(ValueType.digest(acc, _))
 
   given iterable: [IterableType <: Iterable, ValueType: Digestible]
-      => IterableType[ValueType] is Digestible =
+  =>    IterableType[ValueType] is Digestible =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
   given map: [KeyType: Digestible, ValueType: Digestible]
-      => Map[KeyType, ValueType] is Digestible =
+  =>    Map[KeyType, ValueType] is Digestible =
     (digestion, map) => map.each: (key, value) =>
       KeyType.digest(digestion, key)
       ValueType.digest(digestion, value)
