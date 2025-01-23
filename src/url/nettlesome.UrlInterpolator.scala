@@ -36,7 +36,7 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
 
     val constant = context.value.get.parts.head.split(":").nn.head.nn
 
-    (ConstantType(StringConstant(constant)).asType: @unchecked) match
+    ConstantType(StringConstant(constant)).asType.runtimeChecked match
       case '[type labelType <: Label; labelType] =>
         '{${expand(context, parts)}.asInstanceOf[Url[labelType]]}
 
