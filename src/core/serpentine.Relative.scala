@@ -45,7 +45,7 @@ object Relative:
     parse(_)
 
   def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
-          : Relative by ElementType =
+  :     Relative by ElementType =
     def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
       if start >= text.length then Relative(ascent, elements)
       else
@@ -62,11 +62,11 @@ object Relative:
 
   def apply[ElementType](using navigable: Navigable by ElementType)
      (ascent0: Int, descent0: List[ElementType])
-          : Relative by ElementType =
+  :     Relative by ElementType =
     Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
 
   private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
-          : Relative by ElementType =
+  :     Relative by ElementType =
     new Relative(ascent0, descent0, separator):
       type Operand = ElementType
 

@@ -71,7 +71,7 @@ object Path:
       ElementType,
       PlatformType: {Navigable by ElementType, Radical from RootType}]
      (root0: RootType, elements: List[ElementType])
-          : Path on PlatformType =
+  :     Path on PlatformType =
     if elements.isEmpty then root0 else
       Path.from[PlatformType]
        (PlatformType.rootText(root0),
@@ -81,7 +81,7 @@ object Path:
 
   private def from[PlatformType]
      (root0: Text, elements: List[Text], separator: Text, caseSensitivity: Case)
-          : Path on PlatformType =
+  :     Path on PlatformType =
     new Path(root0, elements, separator, caseSensitivity):
       type Platform = PlatformType
 
@@ -128,7 +128,7 @@ extends Pathlike:
     textDescent.prim.let(navigable.element(_))
 
   def peer(using navigable: Platform is Navigable)(name: navigable.Operand)
-          : Path on Platform raises PathError =
+  :     Path on Platform raises PathError =
     parent.let(_ / name).lest(PathError(PathError.Reason.RootParent))
 
   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
@@ -175,7 +175,7 @@ extends Pathlike:
     val right0 = right.textDescent.drop(-difference)
 
     def recur(left: List[Text], right: List[Text], size: Int, count: Int)
-            : Path on Platform =
+    :     Path on Platform =
       if left.isEmpty
       then Path.from(textRoot, left0.drop(size - count), separator, caseSensitivity)
       else if left.head == right.head then recur(left.tail, right.tail, size + 1, count + 1)
@@ -190,12 +190,12 @@ extends Pathlike:
      (textRoot, textDescent.drop(depth - count), separator, caseSensitivity)
 
   def relativeTo(right: Path on Platform)(using navigable: Platform is Navigable)
-          : Relative by navigable.Operand raises PathError =
+  :     Relative by navigable.Operand raises PathError =
     if textRoot != right.textRoot then abort(PathError(PathError.Reason.DifferentRoots))
     val common = conjunction(right).depth
     Relative(right.depth - common, textDescent.dropRight(common).map(navigable.element(_)))
 
   def resolve(text: Text)(using Platform is Navigable, Platform is Radical)
-          : Path on Platform raises PathError =
+  :     Path on Platform raises PathError =
     safely(Path.parse(text)).or(safely(this + Relative.parse(text))).or:
       abort(PathError(PathError.Reason.InvalidRoot))
