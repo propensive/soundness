@@ -22,7 +22,7 @@ import rudiments.*
 import vacuous.*
 
 object Enumerable:
-  inline given [EnumType <: reflect.Enum] => EnumType is Enumerable as derived =
+  inline given derived: [EnumType <: reflect.Enum] => EnumType is Enumerable =
     ${Spectacular.enumerable[EnumType]}
 
 trait Enumerable:

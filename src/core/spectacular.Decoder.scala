@@ -21,6 +21,7 @@ import contingency.*
 import denominative.*
 import digression.*
 import inimitable.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -28,51 +29,58 @@ import wisteria.*
 import language.experimental.pureFunctions
 
 object Decoder:
-  given (using number: Tactic[NumberError]) => Decoder[Int] as int = text =>
+  given int: (number: Tactic[NumberError]) => Decoder[Int] = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int), 0)
 
-  given (using Tactic[FqcnError]) => Decoder[Fqcn] as fqcn = Fqcn(_)
-  given (using Tactic[UuidError]) => Decoder[Uuid] as uuid = Uuid.parse(_)
+  given fqcn: Tactic[FqcnError] => Decoder[Fqcn] = Fqcn(_)
+  given uuid: Tactic[UuidError] => Decoder[Uuid] = Uuid.parse(_)
 
-  given (using Tactic[NumberError]) => Decoder[Byte] as byte = text =>
+  given byte: Decoder[Byte] raises NumberError = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Byte), 0)
 
     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
     else int.toByte
 
-  given (using Tactic[NumberError]) => Decoder[Short] as short = text =>
+  given short: Tactic[NumberError] => Decoder[Short] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Short), 0)
 
     if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
     else int.toShort
 
-  given (using Tactic[NumberError]) => Decoder[Long] as long = text =>
+  given long: Tactic[NumberError] => Decoder[Long] = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long), 0L)
 
-  given (using Tactic[NumberError]) => Decoder[Double] as double = text =>
+  given double: Tactic[NumberError] => Decoder[Double] = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double), 0.0)
 
-  given (using Tactic[NumberError]) => Decoder[Float] = text =>
+  given float: Tactic[NumberError] => Decoder[Float] = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Float), 0.0F)
 
-  given Decoder[Char] as char = _.s(0)
-  given Decoder[Text] as text = identity(_)
-  given Decoder[String] as string = _.s
-  given (using number: Tactic[NumberError]) => Decoder[Pid] as pid = long.map(Pid(_))
+  given char: Decoder[Char] = _.s(0)
+  given text: Decoder[Text] = identity(_)
+  given string: Decoder[String] = _.s
+  given pid: (number: Tactic[NumberError]) => Decoder[Pid] = long.map(Pid(_))
 
-  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}](using Tactic[VariantError])
+  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Tactic[VariantError]
       => Decoder[EnumType] = value =>
     EnumType.value(EnumType.decode(value)).or:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
       raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
 
-trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
-  def unapply(text: Text): Option[ValueType] = try Some(decode(text)) catch case error: Exception => None
+trait Decoder[ValueType] extends Extractable:
+  type Self = Text
+  type Result = ValueType
+
+  def extract(text: Text): Optional[ValueType] =
+    try decode(text) catch case error: Exception => Unset
+
   def decode(text: Text): ValueType
-  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] = text => lambda(decode(text))
+
+  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] =
+    text => lambda(decode(text))

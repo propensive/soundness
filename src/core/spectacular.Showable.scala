@@ -29,10 +29,10 @@ trait Showable extends TextConversion:
   type Self
 
 object Showable:
-  given Specializable is Showable as specializable = value =>
+  given specializable: Specializable is Showable = value =>
     value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt
 
-  given Ordinal is Showable as zerary = ordinal => s"${ordinal.n0}.₀".tt
+  given zerary: Ordinal is Showable = ordinal => s"${ordinal.n0}.₀".tt
 
   given StackTrace is Showable = stack =>
     val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)

@@ -32,7 +32,7 @@ extension [ValueType: Encodable](value: ValueType)
   def encode: ValueType.Format = ValueType.encode(value)
 
 package booleanStyles:
-  given BooleanStyle as yesNo = BooleanStyle("yes".tt, "no".tt)
-  given BooleanStyle as onOff = BooleanStyle("on".tt, "off".tt)
-  given BooleanStyle as trueFalse = BooleanStyle("true".tt, "false".tt)
-  given BooleanStyle as oneZero = BooleanStyle("1".tt, "0".tt)
+  given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)
+  given onOff: BooleanStyle = BooleanStyle("on".tt, "off".tt)
+  given trueFalse: BooleanStyle = BooleanStyle("true".tt, "false".tt)
+  given oneZero: BooleanStyle = BooleanStyle("1".tt, "0".tt)

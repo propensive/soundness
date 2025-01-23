@@ -24,35 +24,35 @@ import rudiments.*
 object TextConversion:
   given [ValueType: Textualizer] => ValueType is Showable = ValueType.textual(_)
 
-  given Text is Showable as text = identity(_)
-  given String is Showable as string = _.tt
-  given Char is Showable as char = char => char.toString.tt
-  given Long is Showable as long = long => long.toString.tt
-  given Int is Showable as int = int => int.toString.tt
-  given Short is Showable as short = short => short.toString.tt
-  given Byte is Showable as byte = byte => byte.toString.tt
-  given Message is Showable as message = _.text
-  given (using decimalizer: DecimalConverter) => Double is Showable as double = decimalizer.decimalize(_)
-  given Pid is Showable as pid = pid => ("\u21af"+pid.value).tt
-  given (using booleanStyle: BooleanStyle) => Boolean is Showable as boolean = booleanStyle(_)
+  given Text is Showable = identity(_)
+  given string: String is Showable = _.tt
+  given char: Char is Showable = char => char.toString.tt
+  given long: Long is Showable = long => long.toString.tt
+  given int: Int is Showable = int => int.toString.tt
+  given short: Short is Showable = short => short.toString.tt
+  given byte: Byte is Showable = byte => byte.toString.tt
+  given message: Message is Showable = _.text
+  given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
+  given pid: Pid is Showable = pid => ("\u21af"+pid.value).tt
+  given boolean: (booleanStyle: BooleanStyle) => Boolean is Showable = booleanStyle(_)
 
-  given [ValueType: Showable] => Option[ValueType] is Showable as option =
+  given option: [ValueType: Showable] => Option[ValueType] is Showable =
     _.fold("none".tt)(ValueType.text(_))
 
-  given Uuid is Showable as uuid = _.text
-  given Memory is Showable as memory = _.text
-  given [EnumType <: reflect.Enum] => EnumType is Showable as reflectEnum = _.toString.tt
+  given uid: Uuid is Showable = _.text
+  given memory: Memory is Showable = _.text
+  given enumeration: [EnumType <: reflect.Enum] => EnumType is Showable = _.toString.tt
 
-  given [ElemType: Showable] => Set[ElemType] is Showable as set =
+  given set: [ElemType: Showable] => Set[ElemType] is Showable =
     _.map(_.show).mkString("{", ", ", "}").tt
 
-  given [ElemType: Showable] => List[ElemType] is Showable as list =
+  given list: [ElemType: Showable] => List[ElemType] is Showable =
     _.map(_.show).mkString("[", ", ", "]").tt
 
-  given [ElemType: Showable] => Trie[ElemType] is Showable as trie =
+  given trie: [ElemType: Showable] => Trie[ElemType] is Showable =
     _.map(_.show).mkString("[ ", " ", " ]").tt
 
-  given None.type is Showable as none = none => "none".tt
+  given none: None.type is Showable = none => "none".tt
 
 trait TextConversion:
   type Self
