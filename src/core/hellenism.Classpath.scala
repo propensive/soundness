@@ -54,7 +54,7 @@ object Classpath:
         case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
   given readableBytes: (Tactic[ClasspathError], Classpath is Radical from Classloader)
-      => (Path on Classpath) is Readable by Bytes =
+  =>    (Path on Classpath) is Readable by Bytes =
     unsafely:
       Readable.inputStream.contramap: resource =>
         resource.root.inputStream(resource.text)
