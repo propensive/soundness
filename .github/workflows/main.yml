@@ -13,4 +13,4 @@ jobs:
       with:
         submodules: recursive
     - name: Build
-      run: ./irk
+      run: ./mill soundness.all
