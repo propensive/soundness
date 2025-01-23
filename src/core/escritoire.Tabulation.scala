@@ -29,8 +29,8 @@ import language.experimental.pureFunctions
 
 object Tabulation:
   given [TextType: {Textual as textual, Printable as printable}]
-  => (TextMetrics, TableStyle, Attenuation)
-  =>  Tabulation[TextType] is Printable =
+  =>   (TextMetrics, TableStyle, Attenuation)
+  =>    Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
 

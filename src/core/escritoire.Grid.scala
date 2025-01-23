@@ -30,7 +30,7 @@ import language.experimental.pureFunctions
 
 object Grid:
   given [TextType: {Textual, Printable as printable}] => TextMetrics
-      => Grid[TextType] is Printable =
+  =>    Grid[TextType] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
