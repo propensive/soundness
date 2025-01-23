@@ -99,7 +99,7 @@ object Bindable:
       val socket = binding.receive(packet)
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
-      val ip = (address.getAddress.nn: @unchecked) match
+      val ip = address.getAddress.nn.runtimeChecked match
         case ip: jn.Inet4Address =>
           val bytes: Array[Byte] = ip.getAddress.nn
           Ipv4(bytes(0), bytes(1), bytes(2), bytes(3))
@@ -116,7 +116,7 @@ object Bindable:
       case UdpResponse.Reply(data) =>
         val sender = input.sender
 
-        val ip: jn.InetAddress = (input.sender: @unchecked) match
+        val ip: jn.InetAddress = input.sender.runtimeChecked match
           case ip: Ipv4 =>
             val array = Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
             jn.InetAddress.getByAddress(array).nn
