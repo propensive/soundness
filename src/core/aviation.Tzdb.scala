@@ -34,7 +34,7 @@ object Tzdb:
     case Rule
        (name:    Text,
         from:    Int,
-        end:     Int,
+        end:    Int,
         change:  MonthDate,
         time:    Time,
         save:    Duration,
@@ -162,7 +162,7 @@ object Tzdb:
         lines:   LazyList[Text],
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None)
-            : List[Tzdb.Entry] =
+    :     List[Tzdb.Entry] =
       if lines.isEmpty then entries ++ zone
       else
         val line: Text = lines.head.upto(_ == '#')

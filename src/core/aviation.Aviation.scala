@@ -62,7 +62,7 @@ object Aviation:
     def of(day: Int): Date = day
 
     def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day)
-            : Date raises DateError =
+    :     Date raises DateError =
       cal.julianDay(year, month, day)
 
     given show: Date is Showable = d =>
@@ -82,11 +82,11 @@ object Aviation:
 
     inline given orderable: Date is Orderable:
       inline def compare
-         (inline left:        Date,
-          inline right:       Date,
-          inline strict:      Boolean,
+         (inline left:     Date,
+          inline right:      Date,
+          inline strict:     Boolean,
           inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
     given ordering: Ordering[Date] = Ordering.Int

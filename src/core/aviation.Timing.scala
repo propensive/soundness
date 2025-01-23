@@ -50,7 +50,7 @@ object Timing:
     inline given orderable: Instant is Orderable:
       inline def compare
          (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
-              : Boolean =
+      :     Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
     given ordering: Ordering[Instant] = Ordering.Long

@@ -45,7 +45,7 @@ object Timespan:
   def fixed
      (denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
       n: Int)
-          : Timespan & FixedDuration =
+  :     Timespan & FixedDuration =
     denomination match
       case StandardTime.Hour   => new Timespan(0, 0, 0, n, 0, 0) with FixedDuration
       case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0) with FixedDuration
@@ -80,9 +80,9 @@ case class Timespan
    (override val years:  Int,
     override val months: Int,
     override val days:   Int,
-    hours:               Int,
-    minutes:             Int,
-    seconds:             Int)
+    hours:            Int,
+    minutes:          Int,
+    seconds:          Int)
 extends DiurnalTimespan, TemporalTimespan:
   def simplify(using timeSys: TimeSystem[StandardTime]): Timespan = timeSys.simplify(this)
 
