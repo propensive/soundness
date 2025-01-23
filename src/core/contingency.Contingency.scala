@@ -94,7 +94,7 @@ object Contingency:
         halt(m"this pattern could not be recognized as a distinct `Error` type")
 
     caseDefs(handler).flatMap:
-      case CaseDef(pattern, _, rhs) => rhs.asExpr.runtimeChecked match
+      case CaseDef(pattern, _, rhs) => rhs.asExpr.absolve match
         case '{$rhs: rhsType} =>
           patternType(pattern).map(_.typeSymbol -> TypeRepr.of[rhsType].typeSymbol)
 
@@ -122,7 +122,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
-    typeLambda.asType.runtimeChecked match
+    typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Tend[typeLambda]($handler)}
 
   def track[AccrualType <: Exception: Type, FocusType: Type]
@@ -143,7 +143,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
-    typeLambda.asType.runtimeChecked match
+    typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
         '{Tracking[AccrualType, typeLambda, FocusType]($accrual, (focus, accrual) ?=> $handler(using
             focus, accrual))}
@@ -166,7 +166,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
-    typeLambda.asType.runtimeChecked match
+    typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
         '{Accrue[AccrualType, typeLambda]($accrual, accrual ?=> $handler(using accrual))}
 
@@ -185,7 +185,7 @@ object Contingency:
         _ => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)))
 
-    typeLambda.asType.runtimeChecked match
+    typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Mend[ResultType, typeLambda]($handler)}
 
   def tendWithin[ContextType[_]: Type, ResultType: Type]
@@ -199,7 +199,7 @@ object Contingency:
           val partialFunction = matches.asExprOf[Exception ~> Exception]
 
           mapping(partialFunction.asTerm).values.map: errorType =>
-            errorType.typeRef.asType.runtimeChecked match
+            errorType.typeRef.asType.absolve match
               case '[type errorType <: Exception; errorType] =>
                 Expr.summon[Tactic[errorType]] match
                   case Some(errorTactic) =>
