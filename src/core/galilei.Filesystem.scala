@@ -46,7 +46,7 @@ object Filesystem:
       if os.starts(t"Windows") then Windows.radical
       else if os.starts(t"Mac") then MacOs.radical else Linux.radical
 
-    delegate.runtimeChecked match
+    delegate.absolve match
       case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
 
   given navigable: Tactic[NameError]
@@ -57,5 +57,5 @@ object Filesystem:
       if os.starts(t"Windows") then Windows.navigable
       else if os.starts(t"Mac") then MacOs.navigable else Linux.navigable
 
-    delegate.runtimeChecked match
+    delegate.absolve match
       case navigable: (Filesystem is Navigable by Name[Filesystem] under Rules) => navigable
