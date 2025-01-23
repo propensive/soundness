@@ -38,7 +38,7 @@ import JsonError.Reason
 
 trait Json2:
   given optionalEncodable: [ValueType: Encodable in Json as encodable]
-      => Optional[ValueType] is Encodable in Json =
+  =>    Optional[ValueType] is Encodable in Json =
     new Encodable:
       type Self = Optional[ValueType]
       type Format = Json
@@ -49,7 +49,7 @@ trait Json2:
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
   given optional: [ValueType: Decodable in Json] => Tactic[JsonError]
-      => Optional[ValueType] is Decodable in Json = (json, omit) =>
+  =>    Optional[ValueType] is Decodable in Json = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)
 
   inline given decodable: [ValueType] => ValueType is Decodable in Json = summonFrom:
@@ -143,7 +143,7 @@ object Json extends Json2, Dynamic:
   given string: Tactic[JsonError] => String is Decodable in Json = (value, omit) => value.root.string.s
 
   given option: [ValueType: Decodable in Json] => Tactic[JsonError]
-      => Option[ValueType] is Decodable in Json = (json, omit) =>
+  =>    Option[ValueType] is Decodable in Json = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
   given optionEncodable: [ValueType: Encodable in Json as encodable] => Option[ValueType] is Encodable in Json =
@@ -169,14 +169,14 @@ object Json extends Json2, Dynamic:
   given jsonEncodable: Json is Encodable in Json = identity(_)
 
   given [CollectionType <: Iterable, ElementType: Encodable in Json as encodable]
-      => CollectionType[ElementType] is Encodable in Json =
+  =>    CollectionType[ElementType] is Encodable in Json =
     values => Json.ast(JsonAst(IArray.from(values.map(encodable.encode(_).root))))
 
   given array: [CollectionType <: Iterable, ElementType: Decodable in Json]
-  => (factory:    Factory[ElementType, CollectionType[ElementType]],
-      jsonAccess: Tactic[JsonError],
-      foci:      Foci[JsonPointer])
-      => (CollectionType[ElementType] is Decodable in Json) =
+  =>   (factory:    Factory[ElementType, CollectionType[ElementType]],
+        jsonAccess: Tactic[JsonError],
+        foci:       Foci[JsonPointer])
+  =>    CollectionType[ElementType] is Decodable in Json =
     (value, omit) =>
       val builder = factory.newBuilder
       value.root.array.each: json =>
@@ -186,7 +186,7 @@ object Json extends Json2, Dynamic:
       builder.result()
 
   given map: [ElementType: Decodable in Json] => Tactic[JsonError]
-      => (Map[Text, ElementType] is Decodable in Json) =
+  =>    Map[Text, ElementType] is Decodable in Json =
 
     (value, omit) =>
       val (keys, values) = value.root.obj
@@ -207,7 +207,7 @@ object Json extends Json2, Dynamic:
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
   given (encoder: CharEncoder, printer: JsonPrinter)
-      => (Json is GenericHttpResponseStream) = new:
+  =>    Json is GenericHttpResponseStream = new:
     def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
     def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
 
@@ -218,7 +218,7 @@ object Json extends Json2, Dynamic:
     text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
 
   given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
-  =>  Json is Aggregable by Bytes =
+  =>    Json is Aggregable by Bytes =
     Json.parse(_)
 
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
