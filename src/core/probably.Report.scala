@@ -98,7 +98,7 @@ class Report(using Environment):
 
   def resolve(suite: Optional[Testable]): ReportLine.Suite =
     suite.option.map: suite =>
-      (resolve(suite.parent).tests(suite.id): @unchecked) match
+      resolve(suite.parent).tests(suite.id).runtimeChecked match
         case suite@ReportLine.Suite(_, _) => suite
 
     . getOrElse(lines)
@@ -120,8 +120,7 @@ class Report(using Environment):
   def addOutcome(testId: TestId, outcome: Outcome): Report = this.also:
     val tests = resolve(testId.suite).tests
 
-    (tests.getOrElseUpdate
-      (testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())): @unchecked) match
+    tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())).runtimeChecked match
       case ReportLine.Test(_, buf) => buf.append(outcome)
 
   def addDetails(testId: TestId, info: Details): Report =
