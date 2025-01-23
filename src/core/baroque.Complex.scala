@@ -47,7 +47,7 @@ object Complex:
 
   inline given multiplicable: [ComponentType]
   => (multiplication: ComponentType is Multiplicable by ComponentType,
-      addition:       multiplication.Result is Addable by multiplication.Result,
+      addition:      multiplication.Result is Addable by multiplication.Result,
       subtraction:    multiplication.Result is Subtractable by multiplication.Result)
   =>  Complex[ComponentType] is Multiplicable by Complex[ComponentType] =
     new Multiplicable:
@@ -56,7 +56,7 @@ object Complex:
       type Operand = Complex[ComponentType]
 
       def multiply(left: Complex[ComponentType], right: Complex[ComponentType])
-              : Complex[addition.Result | subtraction.Result] =
+      :     Complex[addition.Result | subtraction.Result] =
 
         Complex
          (left.real*right.real - left.imaginary*right.imaginary,
@@ -64,28 +64,28 @@ object Complex:
 
   def polar[ComponentType: Multiplicable by Double as multiplication]
      (modulus: ComponentType, argument: Double)
-          : Complex[multiplication.Result] =
+  :     Complex[multiplication.Result] =
     Complex(modulus*math.cos(argument), modulus*math.sin(argument))
 
 case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType):
   @targetName("add")
   inline infix def + [ComponentType2](right: Complex[ComponentType2])
      (using addition: ComponentType is Addable by ComponentType2)
-          : Complex[addition.Result] =
+  :     Complex[addition.Result] =
     Complex(this.real + right.real, this.imaginary + right.imaginary)
 
   @targetName("sub")
   inline infix def - [ComponentType2](right: Complex[ComponentType2])
      (using subtraction: ComponentType is Subtractable by ComponentType2)
-          : Complex[subtraction.Result] =
+  :     Complex[subtraction.Result] =
     Complex(this.real - right.real, this.imaginary - right.imaginary)
 
   @targetName("mul")
   inline infix def * [ComponentType2](right: Complex[ComponentType2])
      (using multiplication: ComponentType is Multiplicable by ComponentType2,
-            addition:       multiplication.Result is Addable by multiplication.Result,
+            addition:      multiplication.Result is Addable by multiplication.Result,
             subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-          : Complex[subtraction.Result | addition.Result] =
+  :     Complex[subtraction.Result | addition.Result] =
 
     Complex(real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
 
@@ -93,11 +93,11 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
   inline infix def / [ComponentType2](right: Complex[ComponentType2])
      (using multiplication:  ComponentType is Multiplicable by ComponentType2,
             multiplication2: ComponentType2 is Multiplicable by ComponentType2,
-            addition:        multiplication.Result is Addable by multiplication.Result,
-            addition2:       multiplication2.Result is Addable by multiplication2.Result,
-            subtraction:     multiplication.Result is Subtractable by multiplication.Result,
-            divisible:       subtraction.Result | addition.Result is Divisible by addition2.Result)
-          : Complex[divisible.Result] =
+            addition:     multiplication.Result is Addable by multiplication.Result,
+            addition2:      multiplication2.Result is Addable by multiplication2.Result,
+            subtraction:    multiplication.Result is Subtractable by multiplication.Result,
+            divisible:      subtraction.Result | addition.Result is Divisible by addition2.Result)
+  :     Complex[divisible.Result] =
 
     val divisor = right.real*right.real + right.imaginary*right.imaginary
 
@@ -107,30 +107,30 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
 
   inline def argument
      (using multiplication: ComponentType is Multiplicable by ComponentType,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            sqrt:           addition.Result is Rootable[2],
-            division:       ComponentType is Divisible by sqrt.Result,
-            equality:       division.Result =:= Double)
-          : Double =
+            addition:      multiplication.Result is Addable by multiplication.Result,
+            sqrt:        addition.Result is Rootable[2],
+            division:      ComponentType is Divisible by sqrt.Result,
+            equality:      division.Result =:= Double)
+  :     Double =
 
     scala.math.atan2(imaginary/modulus, real/modulus)
 
   inline def modulus
      (using multiplication: ComponentType is Multiplicable by ComponentType,
-            addition:       multiplication.Result is Addable by multiplication.Result,
-            squareRoot:     addition.Result is Rootable[2])
-          : squareRoot.Result =
+            addition:      multiplication.Result is Addable by multiplication.Result,
+            squareRoot:    addition.Result is Rootable[2])
+  :     squareRoot.Result =
     squareRoot.root(real*real + imaginary*imaginary)
 
   inline def sqrt
      (using multiplication:  ComponentType is Multiplicable by ComponentType,
-            addition:        multiplication.Result is Addable by multiplication.Result,
-            sqrt:            addition.Result is Rootable[2],
-            division:        ComponentType is Divisible by sqrt.Result,
-            equality:        division.Result =:= Double,
-            sqrt2:           sqrt.Result is Rootable[2],
+            addition:     multiplication.Result is Addable by multiplication.Result,
+            sqrt:         addition.Result is Rootable[2],
+            division:     ComponentType is Divisible by sqrt.Result,
+            equality:     division.Result =:= Double,
+            sqrt2:        sqrt.Result is Rootable[2],
             multiplication2: sqrt2.Result is Multiplicable by Double)
-          : Complex[multiplication2.Result] =
+  :     Complex[multiplication2.Result] =
     Complex.polar(modulus.sqrt, argument/2.0)
 
   @targetName("conjugate")
