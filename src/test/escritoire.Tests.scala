@@ -27,27 +27,27 @@ object Tests extends Suite(t"Escritoire tests"):
     test(t"Constrain to full width plus one is single line"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 20).left
     .assert(_ == 1)
-    
+
     test(t"Constrain to full width is still single line"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 19).left
     .assert(_ == 1)
-    
+
     test(t"Constrain to narrow column is two lines"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 18).left
     .assert(_ == 2)
-    
+
     test(t"Constrain to narrow column suggests better max"):
       Column.constrain(t"the quick brown fox", Breaks.Space, 18).right
     .assert(_ == 15)
-    
+
     test(t"Constrain to very narrow column needs three lines"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 10).left
     .assert(_ == 3)
-    
+
     test(t"Constrain to very narrow column can shrink slightly further"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 10).right
     .assert(_ == 9)
-    
+
     test(t"Constrain to narrowest column cannot do better"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 5).right
     .assert(_ == 5)
@@ -55,20 +55,19 @@ object Tests extends Suite(t"Escritoire tests"):
     test(t"Constrain to narrowest column needs four lines"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 5).left
     .assert(_ == 4)
-    
+
     test(t"Slightly wider column does not help"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 6).left
     .assert(_ == 4)
-    
+
     test(t"Even wider column does not help"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 8).left
     .assert(_ == 4)
-    
+
     test(t"Even wider column does not help and suggests max"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 8).right
     .assert(_ == 5)
-    
+
     test(t"Even wider column still does help"):
       Column.constrain(t"the quick brown foxes", Breaks.Space, 9).left
     .assert(_ == 3)
-  
