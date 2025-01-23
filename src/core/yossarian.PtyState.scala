@@ -20,12 +20,12 @@ import anticipation.*
 import gossamer.*
 
 case class PtyState
-   (cursor:             Int     = 0,
-    savedCursor:        Int     = 0,
-    style:              Style   = Style(),
+   (cursor:          Int     = 0,
+    savedCursor:     Int     = 0,
+    style:           Style   = Style(),
     focusDetectionMode: Boolean = false,
-    focus:              Boolean = true,
+    focus:           Boolean = true,
     bracketedPasteMode: Boolean = false,
-    hideCursor:         Boolean = false,
-    title:              Text    = t"",
-    link:               Text    = t"")
+    hideCursor:      Boolean = false,
+    title:           Text    = t"",
+    link:            Text    = t"")
