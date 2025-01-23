@@ -21,10 +21,10 @@ import scala.compiletime.*
 object Compass:
   val points4: IArray[CardinalWind] =
     IArray(North, East, South, West)
-  
+
   val points8: IArray[CardinalWind | IntercardinalWind] =
     IArray(North, Northeast, East, Southeast, South, Southwest, West, Southwest)
-  
+
   val points16: IArray[CardinalWind | IntercardinalWind | HalfWind] =
     IArray
      (North, NorthNortheast, Northeast, EastNortheast, East, EastSoutheast, Southeast,
