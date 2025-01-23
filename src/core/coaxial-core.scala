@@ -45,7 +45,8 @@ extension [SocketType](socket: SocketType)
         safely(task.await())
 
 extension [EndpointType](endpoint: EndpointType)
-  def connect[StateType](initialState: StateType)[MessageType](initialMessage: MessageType = Bytes())
+  def connect[StateType](initialState: StateType)[MessageType]
+     (initialMessage: MessageType = Bytes())
      (handle: (state: StateType) ?=> MessageType => Control[StateType])
      (using serviceable: Serviceable[EndpointType], receivable: Receivable[MessageType])
   :     StateType =
