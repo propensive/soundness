@@ -30,7 +30,9 @@ object TzdbError:
     case Reason.BadZoneInfo(line)       => m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
     case Reason.BadName(name)           => m"the name $name is not valid"
     case Reason.UnparsableDate          => m"the date could not be parsed"
-    case Reason.ZoneFileMissing(name)   => m"the zone file $name could not be found on the classpath"
+
+    case Reason.ZoneFileMissing(name) =>
+      m"the zone file $name could not be found on the classpath"
 
   enum Reason:
     case CouldNotParseTime(time: Text)
