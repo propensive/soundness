@@ -183,7 +183,7 @@ object HtmlAttribute:
   given srcset: ("srcset" is HtmlAttribute[Text]) = identity(_) // This should be provided by Cataclysm
   given start: ("start" is HtmlAttribute[Int]) = _.show
   given step: ("step" is HtmlAttribute[Double]) = _.toString.show
-  given style: ("style" is HtmlAttribute[Text]) = identity(_) // This should be provided by Cataclysm
+  given style: ("style" is HtmlAttribute[Text]) = identity(_) // Should be provided by Cataclysm
   given tabindex: ("tabindex" is HtmlAttribute[Int]) = _.show
   given target: ("target" is HtmlAttribute[Target]) = _.show
   given title: ("title" is HtmlAttribute[Text]) = identity(_)
