@@ -94,7 +94,7 @@ object Geodesy:
           longMin: Long,
           longMax: Long,
           count: Int)
-              : Long =
+      :     Long =
 
         if count >= bits then value else (count%2).absolve match
           case 0 =>

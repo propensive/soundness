@@ -97,6 +97,6 @@ object Geolocation:
 case class Geolocation
    (location:    Location,
     altitude:    Optional[Double] = Unset,
-    crs:         Optional[Text]   = Unset,
+    crs:      Optional[Text]   = Unset,
     uncertainty: Optional[Double] = Unset,
     parameters:  Map[Text, Text]  = Map())
