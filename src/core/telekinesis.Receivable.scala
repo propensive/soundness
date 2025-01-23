@@ -27,7 +27,7 @@ object Receivable:
   given byteStream: LazyList[Bytes] is Receivable = (status, body) => body
 
   given genericHttpReader: [ContentType: GenericHttpReader as readable]
-      => ContentType is Receivable =
+  =>    ContentType is Receivable =
     (status, body) => readable.read(body.read[Bytes].utf8)
 
   given httpStatus: HttpStatus is Receivable:
