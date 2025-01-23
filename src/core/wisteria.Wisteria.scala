@@ -25,7 +25,7 @@ object Wisteria:
     ${getDefault[ProductType, FieldType]('index)}
 
   def getDefault[ProductType: Type, FieldType: Type](index: Expr[Int])(using Quotes)
-          : Expr[Optional[FieldType]] =
+  :     Expr[Optional[FieldType]] =
 
     import quotes.reflect.*
 

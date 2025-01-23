@@ -26,7 +26,7 @@ import scala.compiletime.*
 object VariantError:
   inline def apply[DerivationType](inputLabel: Text)
      (using reflection: SumReflection[DerivationType], diagnostics: Diagnostics)
-          : VariantError =
+  :     VariantError =
 
     val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
     val sum = constValue[reflection.MirroredLabel].tt
