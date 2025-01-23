@@ -63,19 +63,19 @@ trait Quantitative2:
       (recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType: @unchecked) match
         case '[type units <: Units[?, ?]; units] =>
           Expr.summon[PhysicalQuantity[units, ?]].map: value =>
-            (value: @unchecked) match
-              case '{$name: dimensionType} => (Type.of[dimensionType]: @unchecked) match
+            value.runtimeChecked match
+              case '{$name: dimensionType} => Type.of[dimensionType].runtimeChecked match
                 case '[PhysicalQuantity[?, name]] =>
-                  (TypeRepr.of[name].asMatchable: @unchecked) match
+                  TypeRepr.of[name].asMatchable.runtimeChecked match
                     case ConstantType(StringConstant(name)) => name
 
   def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
 
-    (typeRepr.asMatchable: @unchecked) match
-      case AppliedType(unit, List(constantType)) => (constantType.asMatchable: @unchecked) match
-        case ConstantType(constant) => (constant: @unchecked) match
-          case IntConstant(power) => (unit.asMatchable: @unchecked) match
+    typeRepr.asMatchable.runtimeChecked match
+      case AppliedType(unit, List(constantType)) => constantType.asMatchable.runtimeChecked match
+        case ConstantType(constant) => constant.runtimeChecked match
+          case IntConstant(power) => unit.asMatchable.runtimeChecked match
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
 
@@ -134,13 +134,13 @@ trait Quantitative2:
         case Some(name) => '{$name.text}
 
     def ref(using Quotes): quotes.reflect.TypeRepr =
-      (unitType: @unchecked) match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
+      unitType.runtimeChecked match { case '[ref] => quotes.reflect.TypeRepr.of[ref] }
 
     def dimensionRef(using Quotes): DimensionRef =
       import quotes.reflect.*
 
-      (unitType: @unchecked) match
-        case '[Units[power, unitType]] => (TypeRepr.of[unitType].asMatchable: @unchecked) match
+      unitType.runtimeChecked match
+        case '[Units[power, unitType]] => TypeRepr.of[unitType].asMatchable.runtimeChecked match
           case ref@TypeRef(_, _) => DimensionRef(ref.asType, ref.show)
 
     def power(n: Int)(using Quotes): quotes.reflect.TypeRepr =
@@ -156,7 +156,7 @@ trait Quantitative2:
 
   class DimensionRef(val dimensionType: Type[?], val name: String):
     def ref(using Quotes): quotes.reflect.TypeRepr =
-      (dimensionType: @unchecked) match
+      dimensionType.runtimeChecked match
         case '[ref] => quotes.reflect.TypeRepr.of[ref]
 
     def dimensionality(using Quotes): Dimensionality = Dimensionality(Map(this -> 1))
@@ -171,9 +171,9 @@ trait Quantitative2:
     def principal(using Quotes): UnitRef =
       import quotes.reflect.*
 
-      (dimensionType: @unchecked) match
+      dimensionType.runtimeChecked match
         case '[type dimensionType <: Dimension; dimensionType] =>
-          (Expr.summon[PrincipalUnit[dimensionType, ?]]: @unchecked) match
+          Expr.summon[PrincipalUnit[dimensionType, ?]].runtimeChecked match
             case None =>
               val dimensionName =
                 dimensionality.quantityName.map: name =>
@@ -185,11 +185,11 @@ trait Quantitative2:
                 m"""the operands both represent ${dimensionName}, but there is no principal unit
                       specified for this dimension"""
 
-            case Some('{$expr: principalUnit}) => (Type.of[principalUnit]: @unchecked) match
+            case Some('{$expr: principalUnit}) => Type.of[principalUnit].runtimeChecked match
               case '[PrincipalUnit[dimensionType, units]] =>
-                (TypeRepr.of[units].asMatchable: @unchecked) match
-                  case TypeLambda(_, _, appliedType) => (appliedType.asMatchable: @unchecked) match
-                    case AppliedType(typeRef, _) => (typeRef.asMatchable: @unchecked) match
+                TypeRepr.of[units].asMatchable.runtimeChecked match
+                  case TypeLambda(_, _, appliedType) => appliedType.asMatchable.runtimeChecked match
+                    case AppliedType(typeRef, _) => typeRef.asMatchable.runtimeChecked match
                       case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
 
                   case other =>
@@ -213,7 +213,7 @@ trait Quantitative2:
     if from == to then Expr(1.0)
     else ((from.power(-1).asType, to.power(1).asType): @unchecked) match
       case ('[type fromType <: Measure; fromType], '[type toType <: Measure; toType]) =>
-        (Expr.summon[Ratio[fromType & toType, ?]]: @unchecked) match
+        Expr.summon[Ratio[fromType & toType, ?]].runtimeChecked match
           case None =>
             if retry then ratio(to, from, -power, false)
             else if viaPrincipal && from != principalUnit && to != principalUnit then
@@ -234,9 +234,9 @@ trait Quantitative2:
                       scope, with the type, `Ratio[${from.name}[1] & ${to.name}[-1]]`, or
                       `Ratio[${to.name}[1] & ${from.name}[-1]]`."""
 
-          case Some('{$ratio: ratioType}) => (Type.of[ratioType]: @unchecked) match
-            case '[Ratio[?, double]] => (TypeRepr.of[double].asMatchable: @unchecked) match
-              case ConstantType(constant) => (constant: @unchecked) match
+          case Some('{$ratio: ratioType}) => Type.of[ratioType].runtimeChecked match
+            case '[Ratio[?, double]] => TypeRepr.of[double].asMatchable.runtimeChecked match
+              case ConstantType(constant) => constant.runtimeChecked match
                 case DoubleConstant(double) => Expr(double**power)
 
   private def normalize(using Quotes)
@@ -278,7 +278,7 @@ trait Quantitative2:
               val unitName = Expr.summon[UnitName[refType]].get
               recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
 
-    (Expr.summon[SubstituteUnits[UnitsType]]: @unchecked) match
+    Expr.summon[SubstituteUnits[UnitsType]].runtimeChecked match
       case Some('{$substitute: SubstituteUnits[?]}) => '{Map[Text, Int](($substitute.name -> 1))}
 
       case None =>
@@ -365,7 +365,7 @@ trait Quantitative2:
 
         . repr.get.asType
 
-      (unitsType: @unchecked) match
+      unitsType.runtimeChecked match
         case '[type resultType <: Measure; resultType] =>
           val sqrt = '{ (value: Quantity[ValueType]) => Quantity(math.sqrt(value.value)) }
           val cast = sqrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
@@ -387,7 +387,7 @@ trait Quantitative2:
 
         . repr.get.asType
 
-      (unitsType: @unchecked) match
+      unitsType.runtimeChecked match
         case '[type resultType <: Measure; resultType] =>
           val cbrt = '{ (value: Quantity[ValueType]) => Quantity(math.cbrt(value.value)) }
           val cast = cbrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
