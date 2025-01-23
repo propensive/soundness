@@ -49,7 +49,7 @@ object Tests extends Suite(t"Adversaria tests"):
     test(t"access field annotations"):
       Annotations.field[Employee](_.code)
     .assert(_.contains(unique()))
-    
+
     test(t"check nonexistant annotations"):
       Annotations.field[Employee](_.person)
     .assert(_ == Nil)
@@ -58,7 +58,7 @@ object Tests extends Suite(t"Adversaria tests"):
       val letters = Letters(5, 6, 7, 8)
       Annotations.fields[Letters, ref].map(_(letters))
     .assert(_ == List(5, 6, 6, 8))
-    
+
     test(t"get field annotations"):
       val letters = Letters(5, 6, 7, 8)
       Annotations.fields[Letters, ref].map(_.annotation)
@@ -78,11 +78,11 @@ object Tests extends Suite(t"Adversaria tests"):
       val person = Person(t"John Smith", t"test@example.com")
       ann(person)
     .assert(_ == t"test@example.com")
-    
+
     test(t"check the name of the field found by an annotation"):
       summon[CaseField[Person, id]].name
     .assert(_ == t"email")
-    
+
     /*test(t"check that given for missing annotation is not resolved"):
       demilitarize:
         summon[CaseField[Company, id]]

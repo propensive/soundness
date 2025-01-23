@@ -25,7 +25,8 @@ import scala.quoted.*
 import language.experimental.captureChecking
 
 object Adversaria:
-  def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
+  def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type]
+     (using Quotes)
   :     Expr[CaseField[TargetType, AnnotationType]] =
 
     import quotes.reflect.*
