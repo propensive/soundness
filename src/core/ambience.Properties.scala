@@ -28,10 +28,10 @@ object Properties extends Dynamic:
   given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
 
   def apply[PropertyType](property: Text)
-     (using properties:     SystemProperties,
-            reader:         SystemProperty[String, PropertyType],
+     (using properties:    SystemProperties,
+            reader:      SystemProperty[String, PropertyType],
             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType =
+  :     PropertyType =
 
     properties(property).let(reader.read).lest(SystemPropertyError(property))
 

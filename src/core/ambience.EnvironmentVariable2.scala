@@ -28,6 +28,6 @@ trait EnvironmentVariable2:
     identity(_)
 
   given decoder[UnknownType <: Label, VariableType](using decoder: Decoder[VariableType])
-          : EnvironmentVariable[UnknownType, VariableType] =
+  :     EnvironmentVariable[UnknownType, VariableType] =
 
     decoder.decode(_)

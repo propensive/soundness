@@ -31,10 +31,10 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
     PropertyAccess[NameType+"."+key.type](property+"."+key)
 
   def applyDynamic[PropertyType](key: String)()
-     (using properties:     SystemProperties,
-            reader:         SystemProperty[NameType+"."+key.type, PropertyType],
+     (using properties:    SystemProperties,
+            reader:      SystemProperty[NameType+"."+key.type, PropertyType],
             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType =
+  :     PropertyType =
 
     properties((property+"."+key).tt).let(reader.read(_)).or:
       abort(SystemPropertyError((property+"."+key).tt))
@@ -43,7 +43,7 @@ case class PropertyAccess[NameType <: String](property: String) extends Dynamic:
      (using properties: SystemProperties,
             reader: SystemProperty[NameType, PropertyType],
             systemProperty: Tactic[SystemPropertyError])
-          : PropertyType =
+  :     PropertyType =
 
     properties(valueOf[NameType].tt).let(reader.read(_)).or:
       abort(SystemPropertyError(valueOf[NameType].tt))

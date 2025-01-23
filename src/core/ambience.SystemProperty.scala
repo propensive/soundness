@@ -39,13 +39,13 @@ object SystemProperty:
 
   given javaLibraryPath[PathType: SpecificPath]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-          : SystemProperty["java.library.path", List[PathType]] =
+  :     SystemProperty["java.library.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given javaClassPath[PathType: SpecificPath]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-          : SystemProperty["java.class.path", List[PathType]] =
+  :     SystemProperty["java.class.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
@@ -54,7 +54,7 @@ object SystemProperty:
 
   given javaExtDirs[PathType: SpecificPath]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
-          : SystemProperty["java.ext.dirs", List[PathType]] =
+  :     SystemProperty["java.ext.dirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
@@ -71,6 +71,6 @@ object SystemProperty:
   given osArch: SystemProperty["os.arch", Text] = identity(_)
 
   given decoder[UnknownType <: String & Singleton, PropertyType](using decoder: Decoder[PropertyType])
-          : SystemProperty[UnknownType, PropertyType] =
+  :     SystemProperty[UnknownType, PropertyType] =
 
     decoder.decode(_)

@@ -26,20 +26,20 @@ import vacuous.*
 
 object Xdg:
   def dataHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-          : PathType =
+  :     PathType =
     safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
 
   def configHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-          : PathType =
+  :     PathType =
     safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
 
   def cacheHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-          : PathType =
+  :     PathType =
 
     safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
 
   def stateHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-          : PathType =
+  :     PathType =
 
     safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
 
