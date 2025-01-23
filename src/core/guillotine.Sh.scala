@@ -65,7 +65,7 @@ object Sh:
             escaping with '\\' is not allowed immediately before a substitution
           """)
 
-          (state: @unchecked) match
+          state.runtimeChecked match
             case State(Awaiting, false, arguments) =>
               State(Unquoted, false, arguments ++ (h :: t))
 
