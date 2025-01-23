@@ -40,7 +40,7 @@ object Xml:
   given Xml is Showable = xml =>
     safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
-  given (using enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
+  given (enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
     def mediaType: Text = t"application/xml; charset=${enc.name}"
     def content(xml: Xml): LazyList[IArray[Byte]] =
       LazyList(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
