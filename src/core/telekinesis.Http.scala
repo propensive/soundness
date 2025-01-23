@@ -73,7 +73,7 @@ object Http:
 
         val responseHeaders: List[(Text, Text)] =
           connection.getHeaderFields.nn.asScala.to(List).flatMap: pair =>
-            (pair: @unchecked) match
+            pair.runtimeChecked match
               case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
               case _                     => Nil
 
