@@ -15,8 +15,8 @@ object Nomenclature2:
 
     todo match
       case Nil          => TypeRepr.of[EmptyTuple]
-      case next :: todo => next.asType.runtimeChecked match
-        case '[next] => build(todo).asType.runtimeChecked match
+      case next :: todo => next.asType.absolve match
+        case '[next] => build(todo).asType.absolve match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
 
   def decompose(using Quotes)(repr: quotes.reflect.TypeRepr): Set[quotes.reflect.TypeRepr] =
@@ -29,7 +29,7 @@ object Nomenclature2:
   def disintersection[IntersectionType: Type](using Quotes): Expr[Tuple] =
     import quotes.reflect.*
 
-    build(decompose(TypeRepr.of[IntersectionType]).to(List)).asType.runtimeChecked match
+    build(decompose(TypeRepr.of[IntersectionType]).to(List)).asType.absolve match
       case '[type tupleType <: Tuple; tupleType] => '{null.asInstanceOf[tupleType]}
 
   def extractor(context: Expr[StringContext])(using Quotes): Expr[Any] =
@@ -49,7 +49,7 @@ object Nomenclature2:
 
   def constant[TextType <: String: Type](using Quotes): TextType =
     import quotes.reflect.*
-    TypeRepr.of[TextType].asMatchable.runtimeChecked match
+    TypeRepr.of[TextType].asMatchable.absolve match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[TextType]
 
   def companion[CompanionType: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
