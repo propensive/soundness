@@ -20,7 +20,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import hieroglyph.{lower as _, upper as _, *}, charEncoders.utf8, textMetrics.uniform
-//import larceny.*
+import larceny.*
 import probably.*
 import rudiments.{where as _, *}
 import spectacular.*
@@ -165,7 +165,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"get bytes from empty Text"):
         t"".sysBytes.to(List)
 
-      . assert(_ == List())
+      . assert(_.isEmpty)
 
       test(t"get Text length"):
         t"hello world".length
@@ -379,7 +379,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       test(t"Get camel-case words"):
         t"oneTwoThree".uncamel
 
-      . assert(_ == List(t"one", "two", "three"))
+      . assert(_ == Seq(t"one", "two", "three"))
 
       test(t"Camel-case to dashed words"):
         t"oneTwoThree".uncamel.kebab
@@ -531,12 +531,12 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       . assert(_ == t"HELLO")
 
-    /*suite(t"Compile errors"):
+    suite(t"Compile errors"):
       test(t"Check that Text and String are incompatible"):
         demilitarize:
           val x: String = Text("text")
 
-      . assert(_.head.id == CompileErrorId.TypeMismatch)*/
+      . assert(!_.isEmpty)
 
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):
