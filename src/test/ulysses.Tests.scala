@@ -29,12 +29,12 @@ object Tests extends Suite(t"Ulysses tests"):
       val bloom = BloomFilter[Text](100, 0.01)
       bloom.bitSize
     .assert(_ == 663)
-    
+
     test(t"Check that more bits are required to store more elements"):
       val bloom = BloomFilter[Text](1000, 0.01)
       bloom.bitSize
     .assert(_ == 6631)
-    
+
     test(t"Check that more bits are required to store with more certainty"):
       val bloom = BloomFilter[Text](100, 0.001)
       bloom.bitSize
@@ -51,5 +51,3 @@ object Tests extends Suite(t"Ulysses tests"):
     val bloom2 = test(t"Add multiple elements to a Bloom filter"):
       bloom ++ List(t"hello", t"world")
     .assert { b => b.mayContain(t"hello") && b.mayContain(t"world") }
-
-      
