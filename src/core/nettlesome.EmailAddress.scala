@@ -47,7 +47,7 @@ object EmailAddress:
       case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
       case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
 
-    address.domain.asMatchable.runtimeChecked match
+    address.domain.asMatchable.absolve match
       case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
       case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
       case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
@@ -134,7 +134,7 @@ case class EmailAddress
       case LocalPart.Quoted(quoted)     => t"\"$quoted\""
       case LocalPart.Unquoted(unquoted) => unquoted
 
-    val remote = domain.runtimeChecked match
+    val remote = domain.absolve match
       case host: Hostname => host.show
       case ipv4: Ipv4     => ipv4.show
       case ipv6: Ipv6     => ipv6.show
