@@ -79,7 +79,8 @@ package stdioSources:
 extension [ElementType](stream: LazyList[ElementType])
   def deduplicate: LazyList[ElementType] =
     def recur(last: ElementType, stream: LazyList[ElementType]): LazyList[ElementType] =
-      stream.flow(LazyList())(if last == head then recur(last, tail) else head #:: recur(head, tail))
+      stream.flow(LazyList()):
+        if last == head then recur(last, tail) else head #:: recur(head, tail)
 
     stream.flow(LazyList())(head #:: recur(head, tail))
 
