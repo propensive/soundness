@@ -84,7 +84,7 @@ class Watch():
                      val filter: Text => Boolean):
 
     def put(event: jnf.WatchEvent[?]): Unit =
-      (event.context.nn: @unchecked) match
+      event.context.nn.runtimeChecked match
         case path: jnf.Path =>
           val name = path.toString.tt
           if filter(name) then try event.kind match
