@@ -43,14 +43,14 @@ object PropertyDef:
   erased given backgroundClip: ("backgroundClip" is PropertyDef[Text]) = ###
 
   erased given backgroundColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("backgroundColor" is PropertyDef[ColorType]) = ###
+  =>    ("backgroundColor" is PropertyDef[ColorType]) = ###
 
   erased given backgroundColor2: ("backgroundColor" is PropertyDef[Transparent.type]) = ###
   erased given backgroundImage: ("backgroundImage" is PropertyDef[Text]) = ###
   //given backgroundImage2: ("backgroundImage" is PropertyDef[Relative]) = ###
 
   erased given backgroundImage3: [PathType] => (erased PathType is GenericPath)
-      => ("backgroundImage" is PropertyDef[PathType]) = ###
+  =>    ("backgroundImage" is PropertyDef[PathType]) = ###
 
   //erased given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = ###
   erased given backgroundOrigin: ("backgroundOrigin" is PropertyDef[Text]) = ###
@@ -67,13 +67,13 @@ object PropertyDef:
   erased given backgroundSize2: ("backgroundSize" is PropertyDef[Dimension]) = ###
 
   erased given border: [ColorType] => (erased ColorType is Chromatic)
-      => ("border" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
+  =>    ("border" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
 
   erased given borderBottom: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderBottom" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
+  =>    ("borderBottom" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
 
   erased given borderBottomColor: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderBottomColor" is PropertyDef[ColorType]) = ###
+  =>    ("borderBottomColor" is PropertyDef[ColorType]) = ###
 
   erased given borderBottomColor2: ("borderBottomColor" is PropertyDef[Transparent.type]) = ###
   erased given borderBottomLeftRadius: ("borderBottomLeftRadius" is PropertyDef[Dimension]) = ###
@@ -83,7 +83,7 @@ object PropertyDef:
   erased given borderCollapse: ("borderCollapse" is PropertyDef[Text]) = ###
 
   erased given borderColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderColor" is PropertyDef[ColorType]) = ###
+  =>    ("borderColor" is PropertyDef[ColorType]) = ###
 
   erased given borderColor2: ("borderColor" is PropertyDef[Transparent.type]) = ###
   erased given borderImage: ("borderImage" is PropertyDef[Text]) = ###
@@ -94,10 +94,10 @@ object PropertyDef:
   erased given borderImageWidth: ("borderImageWidth" is PropertyDef[Dimension]) = ###
 
   erased given borderLeft: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderLeft" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
+  =>    ("borderLeft" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
 
   erased given borderLeftColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderLeftColor" is PropertyDef[ColorType]) = ###
+  =>    ("borderLeftColor" is PropertyDef[ColorType]) = ###
 
   erased given borderLeftColor2: ("borderLeftColor" is PropertyDef[Transparent.type]) = ###
   erased given borderLeftStyle: ("borderLeftStyle" is PropertyDef[BorderStyle]) = ###
@@ -105,10 +105,10 @@ object PropertyDef:
   erased given borderRadius: ("borderRadius" is PropertyDef[Dimension]) = ###
 
   erased given borderRight: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderRight" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
+  =>    ("borderRight" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
 
   erased given borderRightColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderRightColor" is PropertyDef[ColorType]) = ###
+  =>    ("borderRightColor" is PropertyDef[ColorType]) = ###
 
   erased given borderRightColor2: ("borderRightColor" is PropertyDef[Transparent.type]) = ###
   erased given borderRightStyle: ("borderRightStyle" is PropertyDef[BorderStyle]) = ###
@@ -117,10 +117,10 @@ object PropertyDef:
   erased given borderStyle: ("borderStyle" is PropertyDef[BorderStyle]) = ###
 
   erased given borderTop: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderTop" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
+  =>    ("borderTop" is PropertyDef[(BorderStyle, Dimension, ColorType)]) = ###
 
   erased given borderTopColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("borderTopColor" is PropertyDef[ColorType]) = ###
+  =>    ("borderTopColor" is PropertyDef[ColorType]) = ###
 
   erased given borderTopColor2: ("borderTopColor" is PropertyDef[Transparent.type]) = ###
   erased given borderTopLeftRadius: ("borderTopLeftRadius" is PropertyDef[Dimension]) = ###
@@ -132,7 +132,7 @@ object PropertyDef:
   erased given boxDecorationBreak: ("boxDecorationBreak" is PropertyDef[Text]) = ###
 
   erased given boxShadow: [ColorType] => (erased ColorType is Chromatic)
-       => ("boxShadow" is PropertyDef[(Dimension, Dimension, Dimension, ColorType)]) = ###
+  =>    ("boxShadow" is PropertyDef[(Dimension, Dimension, Dimension, ColorType)]) = ###
 
   erased given boxSizing: ("boxSizing" is PropertyDef[Text]) = ###
   erased given breakAfter: ("breakAfter" is PropertyDef[Text]) = ###
@@ -141,14 +141,14 @@ object PropertyDef:
   erased given captionSide: ("captionSide" is PropertyDef[Text]) = ###
 
   erased given caretColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("caretColor" is PropertyDef[ColorType]) = ###
+  =>    ("caretColor" is PropertyDef[ColorType]) = ###
 
   erased given caretColor2: ("caretColor" is PropertyDef[Transparent.type]) = ###
   erased given clear: ("clear" is PropertyDef[Text]) = ###
   erased given clip: ("clip" is PropertyDef[Text]) = ###
 
   erased given color1: [ColorType] => (erased ColorType is Chromatic)
-      => ("color" is PropertyDef[ColorType]) = ###
+  =>    ("color" is PropertyDef[ColorType]) = ###
 
   erased given color2: ("color" is PropertyDef[Transparent.type]) = ###
   erased given columnCount: ("columnCount" is PropertyDef[Text]) = ###
@@ -157,7 +157,7 @@ object PropertyDef:
   erased given columnRule: ("columnRule" is PropertyDef[Text]) = ###
 
   erased given columnRuleColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("columnRuleColor" is PropertyDef[ColorType]) = ###
+  =>    ("columnRuleColor" is PropertyDef[ColorType]) = ###
 
   erased given columnRuleColor2: ("columnRuleColor" is PropertyDef[Transparent.type]) = ###
   erased given columnRuleStyle: ("columnRuleStyle" is PropertyDef[Text]) = ###
@@ -259,7 +259,7 @@ object PropertyDef:
   erased given outline: ("outline" is PropertyDef[Text]) = ###
 
   erased given outlineColor1: [ColorType] => (erased ColorType is Chromatic)
-      => ("outlineColor" is PropertyDef[ColorType]) = ###
+  =>    ("outlineColor" is PropertyDef[ColorType]) = ###
 
   erased given outlineColor2: ("outlineColor" is PropertyDef[Transparent.type]) = ###
   erased given outlineOffset: ("outlineOffset" is PropertyDef[Text]) = ###
