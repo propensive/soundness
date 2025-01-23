@@ -32,7 +32,7 @@ object Vicarious:
 
     def fields[ProductType: Type](term: Term): List[Term] =
       TypeRepr.of[ProductType].typeSymbol.caseFields.flatMap: field =>
-        (term.select(field).asExpr: @unchecked) match
+        term.select(field).asExpr.runtimeChecked match
           case '{ $field: fieldType } =>
             '{$lambda[fieldType]($field)}.asTerm :: fields[fieldType](field.asTerm)
 
@@ -58,7 +58,7 @@ object Vicarious:
     val fields = fieldNames[KeyType]("")
 
     val label = fields(index)+"."+key.valueOrAbort
-    (ConstantType(IntConstant(fields.indexOf(label))).asType: @unchecked) match
+    ConstantType(IntConstant(fields.indexOf(label))).asType.runtimeChecked match
       case '[ type idType <: Nat; idType ] => '{Proxy[KeyType, ValueType, idType]()}
 
   def proxy[KeyType: Type, ValueType: Type](using Quotes): Expr[Proxy[KeyType, ValueType, 0]] =
@@ -78,6 +78,6 @@ object Vicarious:
         val fieldType: TypeRepr = field.info
         Refinement(repr, field.name, recur(label, fieldType))
 
-    (recur("", TypeRepr.of[KeyType]).asType: @unchecked) match
+    recur("", TypeRepr.of[KeyType]).asType.runtimeChecked match
       case '[type proxyType <: Proxy[KeyType, ValueType, 0]; proxyType] =>
         '{Proxy().asInstanceOf[proxyType]}
