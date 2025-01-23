@@ -24,7 +24,7 @@ import vacuous.*
 import language.experimental.captureChecking
 
 object Presentational:
-  given Text is Textual as text:
+  given text: Text is Textual:
     type Show[ValueType] = ValueType is spectacular.Showable
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
     def show[ValueType](value: ValueType)(using show: Show[ValueType]): Text = show.text(value)

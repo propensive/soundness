@@ -300,7 +300,7 @@ extension [TextType: Textual](text: TextType)
   inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
 
 package proximityMeasures:
-  given Proximity as jaroDistance = (left, right) =>
+  given jaroDistance: Proximity = (left, right) =>
    if left == right then 1.0 else
      val maxDist: Int = left.length.max(right.length)/2 - 1
      val found1 = new scm.BitSet(left.length)
@@ -332,7 +332,7 @@ package proximityMeasures:
      else (matches.toDouble/left.length + matches.toDouble/right.length +
          (matches - count/2.0)/matches)/3
 
-  given Proximity as prefixMatch = (left, right) =>
+  given prefixMatch: Proximity = (left, right) =>
     val limit = left.length.min(right.length)
 
     def recur(index: Int = 0): Int = if index >= limit then index else
@@ -340,12 +340,12 @@ package proximityMeasures:
 
     recur()
 
-  given Proximity as jaroWinklerDistance = (left, right) =>
+  given jaroWinklerDistance: Proximity = (left, right) =>
     val scale = 0.1
     val distance = jaroDistance.distance(left, right)
     distance + scale*prefixMatch.distance(left, right).min(4.0)*(1.0 - distance)
 
-  given Proximity as levenshteinDistance = (left, right) =>
+  given levenshteinDistance: Proximity = (left, right) =>
     val m = left.s.length
     val n = right.length
     val old = new Array[Int](n + 1)
@@ -364,7 +364,7 @@ package proximityMeasures:
 
     dist(n)
 
-  given Proximity as normalizedLevenshteinDistance = (left, right) =>
+  given normalizedLevenshteinDistance: Proximity = (left, right) =>
     levenshteinDistance.distance(left, right)/left.length.max(right.length)
 
 extension (text: into Text)
@@ -410,18 +410,18 @@ extension (buf: StringBuilder)
   def text: Text = buf.toString.tt
 
 package decimalFormatters:
-  given DecimalConverter as java:
+  given java: DecimalConverter:
     def decimalize(double: Double): Text = double.toString.tt
 
 package enumIdentification:
-  given [EnumType <: reflect.Enum] => EnumType is Identifiable as kebabCase =
+  given kebabCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
     Identifiable(_.uncamel.kebab, _.unkebab.pascal)
 
-  given [EnumType <: reflect.Enum] => EnumType is Identifiable as snakeCase =
+  given snakeCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
     Identifiable(_.uncamel.snake, _.unsnake.pascal)
 
-  given [EnumType <: reflect.Enum] => EnumType is Identifiable as pascalCase =
+  given pascalCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
     Identifiable(identity(_), identity(_))
 
-  given [EnumType <: reflect.Enum] => EnumType is Identifiable as camelCase =
+  given camelCase: [EnumType <: reflect.Enum] => EnumType is Identifiable =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
