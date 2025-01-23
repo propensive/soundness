@@ -116,7 +116,7 @@ case class WebDriver(server: Browser#Server):
 
     @targetName("at")
     infix def / [ElementType: Focusable](value: ElementType)
-            : List[Element] logs Text =
+    :     List[Element] logs Text =
 
       case class Data(`using`: Text, value: Text)
 
@@ -127,7 +127,7 @@ case class WebDriver(server: Browser#Server):
       . map(Element(_))
 
     def element[ElementType: Focusable](value: ElementType)
-            : Element logs Text =
+    :     Element logs Text =
 
       case class Data(`using`: Text, value: Text)
       val e = post(t"element", Data(ElementType.strategy, ElementType.value(value)).json)
