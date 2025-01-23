@@ -33,34 +33,34 @@ trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
 
 object EnvironmentVariable extends EnvironmentVariable2:
   given path: [PathType: SpecificPath] => (systemProperties: SystemProperties)
-      => EnvironmentVariable["path", List[PathType]] =
+  =>    EnvironmentVariable["path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given xdgDataDirs: [PathType: SpecificPath] => (systemProperties: SystemProperties)
-      => EnvironmentVariable["xdgDataDirs", List[PathType]] =
+  =>    EnvironmentVariable["xdgDataDirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given xdgConfigDirs: [PathType: SpecificPath] => (systemProperties: SystemProperties)
-      => EnvironmentVariable["xdgConfigDirs", List[PathType]] =
+  =>    EnvironmentVariable["xdgConfigDirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
 
   given xdgDataHome: [PathType: SpecificPath as specific]
-      => EnvironmentVariable["xdgDataHome", PathType] =
+  =>    EnvironmentVariable["xdgDataHome", PathType] =
 
     SpecificPath(_)
 
   given xdgConfigHome: [PathType: SpecificPath as specific]
-      => EnvironmentVariable["xdgConfigHome", PathType] =
+  =>    EnvironmentVariable["xdgConfigHome", PathType] =
     SpecificPath(_)
 
   given xdgStateHome: [PathType: SpecificPath] => (EnvironmentVariable["xdgStateHome", PathType]) =
     SpecificPath(_)
 
   given xdgCacheHome: [PathType: SpecificPath as specific]
-  =>  EnvironmentVariable["xdgCacheHome", PathType] =
+  =>    EnvironmentVariable["xdgCacheHome", PathType] =
 
     SpecificPath(_)
 
