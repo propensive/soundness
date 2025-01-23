@@ -37,7 +37,7 @@ object Http:
     Log.info(HttpEvent.Send(method, url, headers))
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
-    URI(url.show.s).toURL.nn.openConnection.nn.runtimeChecked match
+    URI(url.show.s).toURL.nn.openConnection.nn.absolve match
       case connection: HttpURLConnection =>
         connection.setRequestMethod(method.toString.show.upper.s)
 
@@ -73,7 +73,7 @@ object Http:
 
         val responseHeaders: List[(Text, Text)] =
           connection.getHeaderFields.nn.asScala.to(List).flatMap: pair =>
-            pair.runtimeChecked match
+            pair.absolve match
               case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
               case _                     => Nil
 

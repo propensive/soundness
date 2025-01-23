@@ -49,7 +49,7 @@ case class HttpResponse
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
 
-  def as[BodyType: Receivable as receivable]: BodyType raises HttpError = status.runtimeChecked match
+  def as[BodyType: Receivable as receivable]: BodyType raises HttpError = status.absolve match
     case status: FailureCase => abort(HttpError(status, headers: List[(Text, Text)]))
     case status              => receivable.read(status, body)
 
