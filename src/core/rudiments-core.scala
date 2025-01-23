@@ -213,11 +213,11 @@ extension [ValueType](iterable: Iterable[ValueType])
     recur(0, iterable, 0, 0, 0)
 
 extension [ElemType](value: IArray[ElemType])
-  inline def mutable(using Unsafe): Array[ElemType] = (value.asMatchable: @unchecked) match
+  inline def mutable(using Unsafe): Array[ElemType] = value.asMatchable.runtimeChecked match
     case array: Array[ElemType] => array
 
 extension [ElemType](array: Array[ElemType])
-  def immutable(using Unsafe): IArray[ElemType] = (array: @unchecked) match
+  def immutable(using Unsafe): IArray[ElemType] = array.runtimeChecked match
     case array: IArray[ElemType] => array
 
   def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
