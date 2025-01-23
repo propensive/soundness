@@ -55,7 +55,7 @@ object Digestible extends Derivable[Digestible]:
       KeyType.digest(digestion, key)
       ValueType.digest(digestion, value)
 
-  given lazyList: [ValueType: Digestible] => LazyList[ValueType] is Digestible =
+  given stream: [ValueType: Digestible] => LazyList[ValueType] is Digestible =
     (digestion, iterable) => iterable.each(ValueType.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>
