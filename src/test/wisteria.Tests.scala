@@ -71,7 +71,7 @@ object Presentation extends Derivation[Presentation]:
       .mkString((prefix.s+"("), ", ", ")").tt
 
   inline def split[DerivationType: SumReflection]: Presentation[DerivationType] = value =>
-    variant(value): 
+    variant(value):
       [VariantType <: DerivationType] =>
         variant => (typeName.s+"."+variant.present).tt
 
@@ -95,7 +95,7 @@ object Readable extends Derivation[Readable]:
   given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    IArray.from(text.s.split(",")).pipe: 
+    IArray.from(text.s.split(",")).pipe:
       array =>
         construct:
           [FieldType] =>
@@ -105,7 +105,7 @@ object Readable extends Derivation[Readable]:
 
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
     text.s.split(":").to(List).map(_.tt) match
-      case List(variant, text2) => delegate(variant): 
+      case List(variant, text2) => delegate(variant):
         [VariantType <: DerivationType] =>
           context => context.read(text2)
 
@@ -155,16 +155,14 @@ object Parser extends ProductDerivation[Parser] {
   given Parser[Boolean] with
     def parse(s: String): Option[Boolean] = s.toBooleanOption
 
-  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = inputStr =>
-    IArray.from(inputStr.split(',')).pipe: inputArr =>
+  inline def join[DerivationType <: Product: ProductReflection]: Parser[DerivationType] = input =>
+    IArray.from(input.split(',')).pipe: inputArr =>
       constructWith[Option](
         [MonadicTypeIn, MonadicTypeOut] => _.flatMap,
         [MonadicType] => Some(_),
         [FieldType] => context =>
-          if index < inputArr.length then
-            context.parse(inputArr(index))
-          else
-            None
+          if index < inputArr.length then context.parse(inputArr(index))
+          else None
       )
 }
 
@@ -185,7 +183,7 @@ object Show extends Derivation[Show] {
 
   inline def split[DerivationType: SumReflection]: Show[DerivationType] = value =>
     inline if choice then
-      variant(value): 
+      variant(value):
         [VariantType <: DerivationType] =>
           variant => typeName.s+"."+variant.show
     else
