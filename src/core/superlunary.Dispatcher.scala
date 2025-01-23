@@ -90,7 +90,7 @@ trait Dispatcher:
         Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
 
-    val classpath = (classloaders.threadContext.classpath: @unchecked) match
+    val classpath = classloaders.threadContext.classpath.runtimeChecked match
       case classpath: LocalClasspath => LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
 
     invoke[OutputType]
