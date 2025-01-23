@@ -44,7 +44,7 @@ object Randomizable extends Derivation[[DerivationType] =>> DerivationType is Ra
       Set.fill(size.generate(random))(arbitrary[ElementType]())
 
   given [ElementType: {Randomizable, ClassTag}] => (size: RandomSize)
-      => IArray[ElementType] is Randomizable =
+  =>    IArray[ElementType] is Randomizable =
     random =>
       given Random = random
       IArray.fill(size.generate(random))(arbitrary[ElementType]())
