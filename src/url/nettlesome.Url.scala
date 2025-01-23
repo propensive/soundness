@@ -55,7 +55,8 @@ object Url:
     def rootText(url: HttpUrl): Text = url.show
 
   given navigable: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
-      => HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
+  =>    HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
+
     type Operand = Name[HttpUrl]
     type Self = HttpUrl
     type Constraint = Rules
@@ -79,7 +80,7 @@ object Url:
   given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
 
   given [SchemeType <: Label] => (Tactic[UrlError], Tactic[HostnameError])
-      => Decoder[Url[SchemeType]] =
+  =>    Decoder[Url[SchemeType]] =
     parse(_)
 
   given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show
@@ -107,7 +108,7 @@ object Url:
     def serialize(url: Url[SchemeType]): Text = url.show
 
   given formaction: [SchemeType <: Label]
-      => ("formaction" is GenericHtmlAttribute[Url[SchemeType]]):
+  =>    ("formaction" is GenericHtmlAttribute[Url[SchemeType]]):
     def name: Text = t"formaction"
     def serialize(url: Url[SchemeType]): Text = url.show
 
