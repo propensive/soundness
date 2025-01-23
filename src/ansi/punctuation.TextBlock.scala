@@ -18,9 +18,12 @@ package punctuation
 
 import denominative.*
 import escapade.*, escapes.*
+import fulminate.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
+
+import errorDiagnostics.stackTraces
 
 case class BodyText(blocks: TextBlock*):
   def serialize(width: Int): Teletype = blocks.map(_.render(width)).join(e"\n\n")
@@ -34,7 +37,9 @@ case class TextBlock(indent: Int, text: Teletype):
       if text.length == 0 then lines.reverse
       else
         try
-          val pt = text.plain.where(_ == ' ', (width - indent*2).z, Rtl).or(throw RangeError(0, 0, 0))
+          val pt = text.plain.where(_ == ' ', (width - indent*2).z, Rtl).or:
+            throw RangeError(0, 0, 0)
+
           rest(text.after(pt), text.before(pt) :: lines)
         catch case err: RangeError =>
           rest(text.skip(width - indent*2), text.keep(width - indent*2) :: lines)

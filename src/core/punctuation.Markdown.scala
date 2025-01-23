@@ -20,7 +20,6 @@ import scala.annotation.tailrec
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
@@ -48,8 +47,8 @@ case class Markdown[+MdType <: Markdown.Ast.Node](nodes: MdType*):
     buf.text
 
 object Markdown:
-  given (using Tactic[MarkdownError]) => Decoder[InlineMd] as decoder = parseInline(_)
-  given InlineMd is Encodable in Text as encodable = _.serialize
+  given decoder: Tactic[MarkdownError] => Decoder[InlineMd] = parseInline(_)
+  given encodable: InlineMd is Encodable in Text = _.serialize
   given InlineMd is Showable = _.serialize
 
   object Ast:
