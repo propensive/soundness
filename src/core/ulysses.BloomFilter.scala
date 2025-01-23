@@ -30,7 +30,7 @@ object BloomFilter:
   def apply[ElementType: Digestible](approximateSize: Int, targetErrorRate: 0.0 ~ 1.0)
     [HashType <: Algorithm]
     (using HashFunction in HashType)
-          : BloomFilter[ElementType, HashType] =
+  :     BloomFilter[ElementType, HashType] =
 
     val bitSize: Int = (-1.44*approximateSize*ln(targetErrorRate.double).double).toInt
     val hashCount: Int = ((bitSize.toDouble/approximateSize.toDouble)*ln(2.0).double + 0.5).toInt
