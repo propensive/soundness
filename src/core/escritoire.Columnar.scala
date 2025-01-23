@@ -23,4 +23,4 @@ trait Columnar:
   def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double): Optional[Int]
 
   def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-          : IndexedSeq[TextType]
+  :     IndexedSeq[TextType]

@@ -21,14 +21,14 @@ import vacuous.*
 
 object Column:
   def apply[RowType, CellType, TextType: Textual]
-     (title:         TextType,
-      textAlign:     Optional[TextAlignment]     = Unset,
+     (title:      TextType,
+      textAlign:    Optional[TextAlignment]     = Unset,
       verticalAlign: Optional[VerticalAlignment] = Unset,
-      sizing:        Columnar                    = columnar.Prose)
+      sizing:     Columnar                    = columnar.Prose)
      (get: RowType => CellType)
      (using columnAlignment: ColumnAlignment[CellType] = ColumnAlignment.topLeft)
      (using TextType.Show[CellType])
-          : Column[RowType, TextType] =
+  :     Column[RowType, TextType] =
 
     def contents(row: RowType): TextType = TextType.show(get(row))
 
@@ -40,11 +40,11 @@ object Column:
       sizing)
 
 case class Column[RowType, TextType: Textual]
-   (title:         TextType,
-    get:           RowType => TextType,
-    textAlign:     TextAlignment,
+   (title:      TextType,
+    get:        RowType => TextType,
+    textAlign:    TextAlignment,
     verticalAlign: VerticalAlignment,
-    sizing:        Columnar):
+    sizing:     Columnar):
 
   def contramap[RowType2](lambda: RowType2 => RowType): Column[RowType2, TextType] =
     Column[RowType2, TextType](title, row => get(lambda(row)), textAlign, verticalAlign, sizing)

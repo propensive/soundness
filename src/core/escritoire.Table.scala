@@ -26,7 +26,7 @@ object Table:
   @targetName("make")
   def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual]
      (columns0: Column[RowType, TextType]*)
-          : Table[RowType, TextType] =
+  :     Table[RowType, TextType] =
 
     new Table(columns0*)
 

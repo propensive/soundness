@@ -44,7 +44,7 @@ abstract class Tabulation[TextType: ClassTag]():
 
   def grid(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: TextType is Textual)
      (using attenuation: Attenuation)
-          : Grid[TextType] =
+  :     Grid[TextType] =
 
     case class Layout(slack: Double, indices: IArray[Int], widths: IArray[Int], totalWidth: Int):
       lazy val include: sci.BitSet = indices.to(sci.BitSet)

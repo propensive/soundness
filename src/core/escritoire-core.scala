@@ -25,13 +25,13 @@ import vacuous.*
 
 extension [RowType](data: Seq[RowType])
   def table[TextType: Textual](using tabulable: RowType is Tabulable[TextType])
-        : Tabulation[TextType] =
+  :     Tabulation[TextType] =
 
     tabulable.tabulate(data)
 
 extension [ValueType](value: ValueType)
   def table[TextType: Textual](using tabular: ValueType is Tabular[TextType])
-          : Tabulation[TextType] =
+  :     Tabulation[TextType] =
     tabular.tabulate(value)
 
 package columnAttenuation:
@@ -52,7 +52,7 @@ package tableStyles:
 package columnar:
   object Prose extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
-            : Optional[Int] =
+    :     Optional[Int] =
 
       def longestWord(text: TextType, position: Int, lastStart: Int, max: Int): Int =
         if position < text.length then
@@ -65,11 +65,11 @@ package columnar:
       lines.map(longestWord(_, 0, 0, 0)).max.max((slack*maxWidth).toInt).min(longestLine)
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-            : IndexedSeq[TextType] =
+    :     IndexedSeq[TextType] =
 
       def format
          (text: TextType, position: Int, lineStart: Int, lastSpace: Int, lines: List[TextType])
-              : List[TextType] =
+      :     List[TextType] =
 
         if position < text.length then
           if TextType.unsafeChar(text, position.z) == ' '
@@ -91,33 +91,33 @@ package columnar:
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
-            : Optional[Int] =
+    :     Optional[Int] =
       fixedWidth
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-            : IndexedSeq[TextType] =
+    :     IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Shortened(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
-            : Optional[Int] =
+    :     Optional[Int] =
       val naturalWidth = lines.map(_.length).max
       (maxWidth*slack).toInt.min(naturalWidth)
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-            : IndexedSeq[TextType] =
+    :     IndexedSeq[TextType] =
 
       lines.to(IndexedSeq).map: line =>
         if line.length > width then line.keep(width - ellipsis.length)+TextType(ellipsis) else line
 
   case class Collapsible(threshold: Double) extends Columnar:
     def width[TextType: Textual](lines: IArray[TextType], maxWidth: Int, slack: Double)
-            : Optional[Int] =
+    :     Optional[Int] =
       if slack > threshold then lines.map(_.length).max else Unset
 
     def fit[TextType: Textual](lines: IArray[TextType], width: Int, textAlign: TextAlignment)
-            : IndexedSeq[TextType] =
+    :     IndexedSeq[TextType] =
 
       lines.to(IndexedSeq)

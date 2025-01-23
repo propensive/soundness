@@ -29,5 +29,5 @@ enum LineCharset:
       right: BoxLine = BoxLine.Blank,
       bottom: BoxLine = BoxLine.Blank,
       left: BoxLine = BoxLine.Blank)
-          : Char =
+  :     Char =
     this()(left.ordinal + bottom.ordinal*4 + right.ordinal*16 + top.ordinal*64)

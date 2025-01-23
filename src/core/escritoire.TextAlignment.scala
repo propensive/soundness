@@ -24,17 +24,17 @@ import rudiments.*
 object TextAlignment:
   object Right extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
-            : TextType =
+    :     TextType =
       Textual(t" "*(width - text.metrics))+text
 
   object Left extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
-            : TextType =
+    :     TextType =
       text+Textual(t" "*(width - text.metrics))
 
   object Center extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
-            : TextType =
+    :     TextType =
       val space = width - text.metrics
       val before = Textual(t" "*(space/2))
       val after = Textual(t" "*(space - space/2))
@@ -43,7 +43,7 @@ object TextAlignment:
 
   object Justify extends TextAlignment:
     def pad[TextType: Textual](text: TextType, width: Int, last: Boolean)(using TextMetrics)
-            : TextType =
+    :     TextType =
       if last then text+Textual(t" "*(width - text.metrics))
       else
         val words = text.cut(t" ")
