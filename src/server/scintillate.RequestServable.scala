@@ -22,4 +22,4 @@ import telekinesis.*
 
 trait RequestServable:
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil)
-          : HttpService logs HttpServerEvent
+  :     HttpService logs HttpServerEvent

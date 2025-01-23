@@ -37,7 +37,7 @@ def header(using request: HttpRequest)(header: RequestHeader[?]): Optional[List[
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
    (using connection: HttpConnection)
-        : HttpResponse =
+:     HttpResponse =
   connection.request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
     case List(s"Basic $credentials") =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
@@ -64,13 +64,13 @@ given realm: Realm = realm"scintillate"
 extension (value: Http.type)
   def listen(handle: (connection: HttpConnection) ?=> HttpResponse)
      (using RequestServable, Monitor, Codicil)
-          : HttpService logs HttpServerEvent =
+  :     HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
 extension (request: HttpRequest)
   def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)
 
   def path(using connection: HttpConnection)
-          : HttpUrl raises PathError raises UrlError raises HostnameError =
+  :     HttpUrl raises PathError raises UrlError raises HostnameError =
     val scheme = if connection.secure then t"https" else t"http"
     Url.parse(t"$scheme://${request.host}${request.pathText}")

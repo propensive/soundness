@@ -33,7 +33,7 @@ import com.sun.net.httpserver as csnh
 case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServable:
   def listen(handler: (connection: HttpConnection) ?=> HttpResponse)
      (using Monitor, Codicil)
-          : HttpService logs HttpServerEvent =
+  :     HttpService logs HttpServerEvent =
 
     def handle(exchange: csnh.HttpExchange | Null) =
       try

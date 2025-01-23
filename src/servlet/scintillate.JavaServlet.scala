@@ -37,7 +37,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
 
   protected def makeConnection
      (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
-          : HttpConnection raises StreamError =
+  :     HttpConnection raises StreamError =
     val uri = request.getRequestURI.nn.tt
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")

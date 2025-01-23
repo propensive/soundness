@@ -28,7 +28,7 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
   def stream(response: Self): LazyList[Bytes]
 
   final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
-          : Unit =
+  :     Unit =
 
     responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
     headers.each(responder.addHeader)

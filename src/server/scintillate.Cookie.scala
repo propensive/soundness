@@ -39,12 +39,12 @@ object Cookie:
 
   def apply[ValueType: {Encodable in Text, Decoder}](using DummyImplicit)
      [DurationType: GenericDuration]
-     (name:     Text,
+     (name:    Text,
       domain:   Optional[Hostname]     = Unset,
       expiry:   Optional[DurationType] = Unset,
       secure:   Boolean                = false,
       httpOnly: Boolean                = false,
-      path:     Optional[Text]         = Unset) =
+      path:    Optional[Text]         = Unset) =
   new Cookie[ValueType](name, domain, expiry.let(_.milliseconds), secure, httpOnly, path)
 
   object Value:
@@ -66,21 +66,21 @@ object Cookie:
       response.copy(headers = (t"set-cookie", cookie.show) :: response.headers)
 
   case class Value
-     (name:     Text,
+     (name:    Text,
       value:    Text,
       domain:   Optional[Text] = Unset,
-      path:     Optional[Text] = Unset,
+      path:    Optional[Text] = Unset,
       expiry:   Optional[Long] = Unset,
       secure:   Boolean        = false,
       httpOnly: Boolean        = false)
 
 case class Cookie[ValueType: {Encodable in Text, Decoder}]
-   (name:     Text,
+   (name:    Text,
     domain:   Optional[Hostname],
     expiry:   Optional[Long],
     secure:   Boolean,
     httpOnly: Boolean,
-    path:     Optional[Text]):
+    path:    Optional[Text]):
 
   def apply(value: ValueType): Cookie.Value =
     Cookie.Value
