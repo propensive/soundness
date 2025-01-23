@@ -82,7 +82,7 @@ object Sh:
           state
 
     def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
-      ((state, next): @unchecked) match
+      (state, next).runtimeChecked match
         case (State(Awaiting, _, arguments), ' ') =>
           State(Awaiting, false, arguments)
 
