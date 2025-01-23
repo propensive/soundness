@@ -24,11 +24,11 @@ import turbulence.*
 import vacuous.*
 
 case class CliInvocation
-   (arguments:        List[Argument],
-    environment:      Environment,
+   (arguments:     List[Argument],
+    environment:     Environment,
     workingDirectory: WorkingDirectory,
-    stdio:            Stdio,
-    signals:          Spool[Signal])
+    stdio:         Stdio,
+    signals:       Spool[Signal])
    (using interpreter: CliInterpreter)
 extends Cli, Stdio:
 

@@ -50,18 +50,18 @@ case class Flag
     flag == name || aliases.contains(flag)
 
   def apply[OperandType]()
-     (using cli:             Cli,
-            interpreter:     CliInterpreter,
+     (using cli:          Cli,
+            interpreter:    CliInterpreter,
             flagInterpreter: FlagInterpreter[OperandType],
-            suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
-          : Optional[OperandType] =
+            suggestions:    Suggestions[OperandType] = Suggestions.noSuggestions)
+  :     Optional[OperandType] =
 
     cli.register(this, suggestions)
     cli.readParameter(this)
 
   def select[OperandType](options: Iterable[OperandType])
      (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
-          : Optional[OperandType] =
+  :     Optional[OperandType] =
 
     val mapping: Map[Text, OperandType] =
       options.map { option => (suggestible.suggest(option).text, option) }.to(Map)

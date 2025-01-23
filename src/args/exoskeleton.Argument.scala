@@ -33,7 +33,7 @@ case class Argument(position: Int, value: Text, cursor: Optional[Int]):
 
   def select[OperandType](options: Seq[OperandType])
      (using cli: Cli, interpreter: CliInterpreter, suggestible: OperandType is Suggestible)
-          : Optional[OperandType] =
+  :     Optional[OperandType] =
 
     val mapping: Map[Text, OperandType] =
       options.map { option => (suggestible.suggest(option).text, option) }.to(Map)

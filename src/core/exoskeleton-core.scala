@@ -70,13 +70,13 @@ package executives:
     type CliType = CliInvocation
 
     def invocation
-       (arguments:        Iterable[Text],
-        environment:      Environment,
+       (arguments:     Iterable[Text],
+        environment:     Environment,
         workingDirectory: WorkingDirectory,
-        stdio:            Stdio,
-        signals:          Spool[Signal])
+        stdio:         Stdio,
+        signals:       Spool[Signal])
        (using interpreter: CliInterpreter)
-            : CliInvocation =
+    :     CliInvocation =
 
       CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
 
@@ -88,7 +88,7 @@ package executives:
 def application(using executive: Executive, interpreter: CliInterpreter)
    (arguments: Iterable[Text], signals: List[Signal] = Nil)
    (block: Cli ?=> executive.Return)
-        : Unit =
+:     Unit =
 
   val spool: Spool[Signal] = Spool()
   signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal)) }

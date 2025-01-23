@@ -32,14 +32,14 @@ import scala.collection.mutable as scm
 
 case class CliCompletion
    (fullArguments:    List[Argument],
-    arguments:        List[Argument],
-    environment:      Environment,
+    arguments:     List[Argument],
+    environment:     Environment,
     workingDirectory: WorkingDirectory,
-    shell:            Shell,
+    shell:         Shell,
     currentArgument:  Int,
     focusPosition:    Int,
-    stdio:            Stdio,
-    signals:          Spool[Signal])
+    stdio:         Stdio,
+    signals:       Spool[Signal])
    (using interpreter: CliInterpreter)
 extends Cli:
   private lazy val parameters: interpreter.Parameters = interpreter.interpret(arguments)
@@ -51,7 +51,7 @@ extends Cli:
 
   def readParameter[OperandType](flag: Flag)
      (using FlagInterpreter[OperandType], Suggestions[OperandType])
-          : Optional[OperandType] =
+  :     Optional[OperandType] =
 
     given Cli = this
     parameters.read(flag)

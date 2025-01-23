@@ -28,11 +28,11 @@ trait Executive:
 
   def invocation
      (fullArguments:    Iterable[Text],
-      environment:      Environment,
+      environment:     Environment,
       workingDirectory: WorkingDirectory,
-      stdio:            Stdio,
-      signals:          Spool[Signal])
+      stdio:         Stdio,
+      signals:       Spool[Signal])
      (using interpreter: CliInterpreter)
-          : CliType
+  :     CliType
 
   def process(cli: CliType)(result: CliType ?=> Return): Exit

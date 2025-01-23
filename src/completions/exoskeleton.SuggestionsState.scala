@@ -23,5 +23,5 @@ import vacuous.*
 case class SuggestionsState
    (suggestions: Map[Argument, () => List[Suggestion]],
     explanation: Optional[Text],
-    known:       Set[Flag],
-    present:     Set[Flag])
+    known:      Set[Flag],
+    present:    Set[Flag])
