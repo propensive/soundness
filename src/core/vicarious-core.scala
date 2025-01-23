@@ -25,5 +25,5 @@ given Realm = realm"vicarious"
 inline def catalog[KeyType](key: KeyType)[ValueType]
    (inline lambda: [FieldType] => (field: FieldType) => ValueType)
    (using classTag: ClassTag[ValueType])
-        : Catalog[KeyType, ValueType] =
+:     Catalog[KeyType, ValueType] =
   ${Vicarious.catalog[KeyType, ValueType]('lambda, 'key, 'classTag)}

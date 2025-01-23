@@ -26,7 +26,7 @@ case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[KeyType, ValueType, 0]) ?=> Proxy[KeyType, ValueType, ?])
-          : ValueType =
+  :     ValueType =
     values(accessor(using Proxy()).id.vouch(using Unsafe))
 
   def map[ValueType2: ClassTag](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
@@ -34,18 +34,18 @@ case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
 
   def tie[ResultType](using proxy: Proxy[KeyType, ValueType, 0])
      (lambda: (catalog: this.type, `*`: proxy.type) ?=> ResultType)
-          : ResultType =
+  :     ResultType =
     lambda(using this, proxy)
 
   def braid[ValueType2: ClassTag](right: Catalog[KeyType, ValueType2])[ResultType: ClassTag]
      (lambda: (ValueType, ValueType2) => ResultType)
-          : Catalog[KeyType, ResultType] =
+  :     Catalog[KeyType, ResultType] =
     Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
 
 extension [KeyType, ValueType: ClassTag](catalog: Catalog[KeyType, ValueType])
   def brush(using proxy: Proxy[KeyType, ValueType, Nat])
      (lambda: (`*`: proxy.type) ?=> Proxy[KeyType, ValueType, Nat] ~> ValueType)
-          : Catalog[KeyType, ValueType] =
+  :     Catalog[KeyType, ValueType] =
 
     val partialFunction = lambda(using proxy)
 

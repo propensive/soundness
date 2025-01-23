@@ -24,7 +24,7 @@ object Proxy:
 
 class Proxy[KeyType, ValueType, +IdType <: Nat]() extends Selectable:
   transparent inline def selectDynamic(key: String)(using catalog: Catalog[KeyType, ValueType])
-          : ValueType | Proxy[KeyType, ValueType, Nat] =
+  :     ValueType | Proxy[KeyType, ValueType, Nat] =
     ${Vicarious.dereference[KeyType, ValueType, IdType]('key)}
 
   inline def id: Int = compiletime.summonInline[ValueOf[IdType]].value
