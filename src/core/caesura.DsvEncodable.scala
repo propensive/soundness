@@ -22,9 +22,15 @@ import rudiments.*
 import wisteria.*
 
 object DsvEncodable extends ProductDerivable[DsvEncodable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvEncodable = value =>
-    val cells = fields(value) { [FieldType] => field => context.encode(field).data }.to(List).flatten
-    Row(cells)
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvEncodable =
+    value =>
+      val cells =
+        fields(value):
+          [FieldType] => field => context.encode(field).data
+        . to(List)
+        . flatten
+
+      Row(cells)
 
   given encoder: [ValueType: Encodable in Text] => ValueType is DsvEncodable =
     value => Row(ValueType.encode(value))
