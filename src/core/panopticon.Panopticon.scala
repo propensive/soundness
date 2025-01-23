@@ -46,7 +46,7 @@ object Panopticon:
 
     Type.of[TupleType] match
       case '[type tail <: Tuple; head *: tail] =>
-        (TypeRepr.of[head].asMatchable: @unchecked) match
+        TypeRepr.of[head].asMatchable.runtimeChecked match
           case ConstantType(StringConstant(str)) => getPath[tail](str :: path)
 
       case _ =>
@@ -56,7 +56,7 @@ object Panopticon:
           : List[List[String]] =
     Type.of[TupleType] match
       case '[type tail <: Tuple; head *: tail] =>
-        (Type.of[head]: @unchecked) match
+        Type.of[head].runtimeChecked match
           case '[type tupleType <: Tuple; tupleType] =>
             getPath[tupleType]() :: getPaths[tail]()
 
@@ -127,7 +127,7 @@ object Panopticon:
     val fieldNameType = ConstantType(StringConstant(fieldName)).asType
     val targetType = TypeRepr.of[TargetType]
 
-    (fieldNameType: @unchecked) match
+    fieldNameType.runtimeChecked match
       case '[type fieldNameType <: Label; fieldNameType] =>
         Expr.summon[Dereferencer[TargetType, fieldNameType]] match
           case Some('{ type fieldType
@@ -140,5 +140,5 @@ object Panopticon:
               case None =>
                 halt(m"the field $fieldName is not a member of ${targetType.show}")
 
-              case Some(symbol) => (symbol.info.asType: @unchecked) match
+              case Some(symbol) => symbol.info.asType.runtimeChecked match
                 case '[returnType] => '{Target[returnType, fieldNameType *: TupleType]()}
