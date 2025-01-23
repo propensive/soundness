@@ -67,7 +67,7 @@ object Decoder:
   given pid: (number: Tactic[NumberError]) => Decoder[Pid] = long.map(Pid(_))
 
   given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Tactic[VariantError]
-      => Decoder[EnumType] = value =>
+  =>    Decoder[EnumType] = value =>
     EnumType.value(EnumType.decode(value)).or:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
       raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
