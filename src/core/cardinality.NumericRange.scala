@@ -26,13 +26,12 @@ import language.experimental.genericNumberLiterals
 import Cardinality.{Asym, Min4, Max4}
 
 object NumericRange:
-  @targetName("Range")
-  opaque infix type ~[MinValueType <: Double, MaxValueType <: Double] = Double
+  opaque infix type ~ [MinValueType <: Double, MaxValueType <: Double] = Double
 
-  def apply[MinValueType <: Double, MaxValueType <: Double](value: Double): MinValueType ~ MaxValueType =
+  def apply[MinValueType <: Double, MaxValueType <: Double](value: Double)
+          : MinValueType ~ MaxValueType =
     value
 
-  @targetName("Range")
   object `~`:
     given comparable[MinValueType <: Double & Singleton, MaxValueType <: Double & Singleton]
        (using min: ValueOf[MinValueType], max: ValueOf[MaxValueType])
@@ -61,7 +60,8 @@ object NumericRange:
         left + right
 
       @targetName("add2")
-      infix def + [E <: Double & Singleton](right: E): (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
+      infix def + [E <: Double & Singleton](right: E)
+              : (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
         left + right
 
       @targetName("add3")
