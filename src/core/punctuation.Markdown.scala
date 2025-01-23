@@ -147,7 +147,7 @@ object Markdown:
   @tailrec
   private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
      (xs: List[MdType], done: List[MdType] = Nil)
-          : List[MdType] =
+  :     List[MdType] =
 
     xs match
       case Nil                             => done.reverse
@@ -166,7 +166,7 @@ object Markdown:
     . tt
 
   private def resolveReference(root: cvfua.Document, node: cvfa.ImageRef | cvfa.LinkRef)
-          : Text raises MarkdownError =
+  :     Text raises MarkdownError =
 
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
       raise(MarkdownError(MarkdownError.Reason.BrokenImageRef), t"https://example.com/")
@@ -184,7 +184,7 @@ object Markdown:
       case node: FlowInput => flow(root, node)
 
   def listItems(root: cvfua.Document, node: cvfa.BulletList | cvfa.OrderedList)
-          : Seq[ListItem] raises MarkdownError =
+  :     Seq[ListItem] raises MarkdownError =
 
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
@@ -231,7 +231,7 @@ object Markdown:
           Heading(6, phraseChildren(root, node)*))
 
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
-          : Markdown.Ast.Node raises MarkdownError =
+  :     Markdown.Ast.Node raises MarkdownError =
     node match
       case node: cvfa.HardLineBreak => LineBreak
       case node: cvfa.SoftLineBreak => Copy(t"\n")
@@ -243,7 +243,7 @@ object Markdown:
       case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode), Copy(t"?"))
 
   def table(root: cvfua.Document, node: tables.TableBlock)
-          : List[Markdown.Ast.TablePart] raises MarkdownError =
+  :     List[Markdown.Ast.TablePart] raises MarkdownError =
 
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (tables.TableHead | tables.TableBody) =>
