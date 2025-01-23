@@ -17,7 +17,7 @@
 package profanity
 
 object BackgroundColorDetection:
-  given BackgroundColorDetection as default = () => false
+  given default: BackgroundColorDetection = () => false
 
 trait BackgroundColorDetection:
   def apply(): Boolean

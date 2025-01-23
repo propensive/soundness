@@ -25,8 +25,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
   type Keypress = profanity.Keypress | TerminalInfo
 

@@ -17,7 +17,7 @@
 package profanity
 
 object TerminalFocusDetection:
-  given TerminalFocusDetection as default = () => false
+  given default: TerminalFocusDetection = () => false
 
 trait TerminalFocusDetection:
   def apply(): Boolean

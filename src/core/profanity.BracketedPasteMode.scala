@@ -17,7 +17,7 @@
 package profanity
 
 object BracketedPasteMode:
-  given BracketedPasteMode as default = () => false
+  given default: BracketedPasteMode = () => false
 
 trait BracketedPasteMode:
   def apply(): Boolean

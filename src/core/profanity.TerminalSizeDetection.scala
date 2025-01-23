@@ -17,7 +17,7 @@
 package profanity
 
 object TerminalSizeDetection:
-  given TerminalSizeDetection as default = () => false
+  given default: TerminalSizeDetection = () => false
 
 trait TerminalSizeDetection:
   def apply(): Boolean
