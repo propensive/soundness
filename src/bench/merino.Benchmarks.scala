@@ -41,42 +41,42 @@ object Benchmarks extends Suite(t"Merino tests"):
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample1).nn)
 
       . benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
-      
+
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample1.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
-    
+
     suite(t"Parse example 2"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample2).nn)
 
       . benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
-      
+
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample2.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
-    
+
     suite(t"Parse example 3"):
       test(t"Parse file with Jawn"):
         import org.typelevel.jawn.*, ast.*
         JParser.parseFromByteBuffer(java.nio.ByteBuffer.wrap(jsonExample3).nn)
 
       . benchmark(warmup = 1000L, duration = 1000L, baseline = Baseline(compare = Min), confidence = 99)
-      
+
       test(t"Parse file with Merino"):
         JsonAst.parse(jsonExample3.nn.immutable(using Unsafe))
 
       . benchmark(warmup = 1000L, duration = 1000L, confidence = 99)
-        
+
 given realm: Realm = Realm(t"tests")
 
 lazy val jsonExample1 = """
 
 {"web-app": {
-  "servlet": [   
+  "servlet": [
     {
       "servlet-name": "cofaxCDS",
       "servlet-class": "org.cofax.cds.CDSServlet",
@@ -132,7 +132,7 @@ lazy val jsonExample1 = """
     {
       "servlet-name": "cofaxAdmin",
       "servlet-class": "org.cofax.cds.AdminServlet"},
- 
+
     {
       "servlet-name": "fileServlet",
       "servlet-class": "org.cofax.cds.FileServlet"},
@@ -159,7 +159,7 @@ lazy val jsonExample1 = """
     "cofaxAdmin": "/admin/*",
     "fileServlet": "/static/*",
     "cofaxTools": "/tools/*"},
- 
+
   "taglib": {
     "taglib-uri": "cofax.tld",
     "taglib-location": "/WEB-INF/tlds/cofax.tld"}}}
@@ -198,4 +198,3 @@ lazy val jsonExample3 = """
     ]
 }}
 """.getBytes("UTF-8")
-
