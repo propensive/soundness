@@ -57,10 +57,10 @@ trait Quantitative2:
           current
 
         case (dimension, n) :: tail =>
-          ((current.asType, dimension.power(n).asType): @unchecked) match
+          (current.asType, dimension.power(n).asType).runtimeChecked match
             case ('[current], '[next]) => recur(tail, TypeRepr.of[current & next])
 
-      (recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType: @unchecked) match
+      recur(map.to(List), TypeRepr.of[Units[?, ?]]).asType.runtimeChecked match
         case '[type units <: Units[?, ?]; units] =>
           Expr.summon[PhysicalQuantity[units, ?]].map: value =>
             value.runtimeChecked match
@@ -128,7 +128,7 @@ trait Quantitative2:
     def unitPower(dimension: DimensionRef): Int = map.get(dimension).map(_.power).getOrElse(0)
 
   class UnitRef(val unitType: Type[?], val name: String):
-    def unitName(using Quotes): Expr[Text] = (power(1).asType: @unchecked) match
+    def unitName(using Quotes): Expr[Text] = power(1).asType.runtimeChecked match
       case '[unitType] => Expr.summon[UnitName[unitType]] match
         case None       => '{${Expr(name)}.tt}
         case Some(name) => '{$name.text}
@@ -164,7 +164,7 @@ trait Quantitative2:
     def power(n: Int)(using Quotes): quotes.reflect.TypeRepr =
       import quotes.reflect.*
 
-      ((ConstantType(IntConstant(n)).asType, ref.asType): @unchecked) match
+      (ConstantType(IntConstant(n)).asType, ref.asType).runtimeChecked match
         case ('[type power <: Nat; power], '[type dimension <: Dimension; dimension]) =>
           TypeRepr.of[Units[power, dimension]]
 
@@ -211,7 +211,7 @@ trait Quantitative2:
 
     val principalUnit = from.dimensionRef.principal
     if from == to then Expr(1.0)
-    else ((from.power(-1).asType, to.power(1).asType): @unchecked) match
+    else (from.power(-1).asType, to.power(1).asType).runtimeChecked match
       case ('[type fromType <: Measure; fromType], '[type toType <: Measure; toType]) =>
         Expr.summon[Ratio[fromType & toType, ?]].runtimeChecked match
           case None =>
@@ -273,7 +273,7 @@ trait Quantitative2:
           expr
 
         case UnitPower(unit, power) :: todo2 =>
-          (unit.power(1).asType: @unchecked) match
+          unit.power(1).asType.runtimeChecked match
             case '[refType] =>
               val unitName = Expr.summon[UnitName[refType]].get
               recur('{$expr.updated($unitName.text, ${Expr(power)})}, todo2)
@@ -298,7 +298,7 @@ trait Quantitative2:
     val resultUnits = if division then left2/right2 else left2*right2
     val resultValue = if division then '{$leftValue/$rightValue} else '{$leftValue*$rightValue}
 
-    (resultUnits.repr.map(_.asType): @unchecked) match
+    resultUnits.repr.map(_.asType).runtimeChecked match
       case Some('[type units <: Measure; units]) => '{Quantity[units]($resultValue)}
       case _                                     => resultValue
 
@@ -321,7 +321,7 @@ trait Quantitative2:
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
-    ((leftNorm*rightNorm).repr.map(_.asType): @unchecked) match
+    (leftNorm*rightNorm).repr.map(_.asType).runtimeChecked match
       case Some('[type resultType <: Measure; resultType]) =>
        '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
@@ -341,7 +341,7 @@ trait Quantitative2:
     val (leftNorm, _) = normalize(left, right, '{1.0})
     val (rightNorm, _) = normalize(right, left, '{1.0})
 
-    ((leftNorm/rightNorm).repr.map(_.asType): @unchecked) match
+    (leftNorm/rightNorm).repr.map(_.asType).runtimeChecked match
       case Some('[type resultType <: Measure; resultType]) =>
        '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
@@ -432,7 +432,7 @@ trait Quantitative2:
       case Some(sub) => if sub then '{$leftValue - $rightValue} else '{$leftValue + $rightValue}
       case None      => '{if $sub then $leftValue - $rightValue else $leftValue + $rightValue}
 
-    (left2.repr.map(_.asType): @unchecked) match
+    left2.repr.map(_.asType).runtimeChecked match
       case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($resultValue)}
       case _                                             => resultValue
 
@@ -441,7 +441,7 @@ trait Quantitative2:
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
-    (units.repr.map(_.asType): @unchecked) match
+    units.repr.map(_.asType).runtimeChecked match
       case Some('[type measureType <: Measure; measureType]) =>
        '{ Subtractable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[measureType]] {
             (left, right) =>
@@ -452,7 +452,7 @@ trait Quantitative2:
 
     val (units, _) = normalize(UnitsMap[LeftType], UnitsMap[RightType], '{0.0})
 
-    (units.repr.map(_.asType): @unchecked) match
+    units.repr.map(_.asType).runtimeChecked match
       case Some('[type resultType <: Measure; resultType]) =>
        '{ Addable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
@@ -467,7 +467,7 @@ trait Quantitative2:
     val norm: UnitsMap = UnitsMap[NormType[1]]
     val (units2, value) = normalize(units, norm, '{$expr.underlying}, true)
 
-    (units2.repr.map(_.asType): @unchecked) match
+    units2.repr.map(_.asType).runtimeChecked match
       case Some('[type unitsType <: Measure; unitsType]) => '{Quantity[unitsType]($value)}
       case None                                          => value
 
