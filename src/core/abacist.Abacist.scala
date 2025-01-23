@@ -33,7 +33,7 @@ object Abacist:
   import Quantitative.*
 
   def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
-    val inputs: List[Expr[Int]] = (values: @unchecked) match
+    val inputs: List[Expr[Int]] = values.runtimeChecked match
       case Varargs(values) => values.to(List).reverse
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
