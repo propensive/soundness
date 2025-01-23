@@ -21,6 +21,7 @@ import contingency.*
 import denominative.*
 import digression.*
 import inimitable.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 import wisteria.*
@@ -72,9 +73,12 @@ object Decoder:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
       raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
 
-trait Decoder[+ValueType] extends Unapply[Text, ValueType]:
-  def unapply(text: Text): Option[ValueType] =
-    try Some(decode(text)) catch case error: Exception => None
+trait Decoder[ValueType] extends Extractable:
+  type Self = Text
+  type Result = ValueType
+
+  def extract(text: Text): Optional[ValueType] =
+    try decode(text) catch case error: Exception => Unset
 
   def decode(text: Text): ValueType
 
