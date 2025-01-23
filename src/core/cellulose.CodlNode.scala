@@ -35,7 +35,7 @@ object CodlNode:
   val empty: CodlNode = CodlNode()
   def apply(key: Text)(child: CodlNode*): CodlNode = CodlNode(Data(key, IArray.from(child)))
 
-  given (using CodlNode is Inspectable) => CodlNode is Contrastable as contrast = (left, right) =>
+  given contrastable: (CodlNode is Inspectable) => CodlNode is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.inspect) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:

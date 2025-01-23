@@ -37,7 +37,7 @@ object CodlEncoder:
       def schema: CodlSchema = schema0
       def encode(value: ValueType): List[IArray[CodlNode]] = encode0(value)
 
-  inline given [ValueType] => CodlEncoder[ValueType] as derived = compiletime.summonFrom:
+  inline given derived: [ValueType] => CodlEncoder[ValueType] = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) => field[ValueType]
     case given ProductReflection[ValueType]     => CodlEncoderDerivation.derived[ValueType]
 
@@ -47,7 +47,7 @@ object CodlEncoder:
     def encode(value: ValueType): List[IArray[CodlNode]] =
       List(IArray(CodlNode(Data(ValueType.encode(value)))))
 
-  given [ValueType: CodlEncoder] => CodlEncoder[Optional[ValueType]] as optional:
+  given optional: [ValueType: CodlEncoder] => CodlEncoder[Optional[ValueType]]:
     def schema: CodlSchema = ValueType.schema.optional
 
     def encode(value: Optional[ValueType]): List[IArray[CodlNode]] =
@@ -56,14 +56,14 @@ object CodlEncoder:
   given boolean: CodlFieldWriter[Boolean] = if _ then t"yes" else t"no"
   given text: CodlFieldWriter[Text] = _.show
 
-  given [ValueType: CodlEncoder] => CodlEncoder[Option[ValueType]] as option:
+  given option: [ValueType: CodlEncoder] => CodlEncoder[Option[ValueType]]:
     def schema: CodlSchema = ValueType.schema.optional
 
     def encode(value: Option[ValueType]): List[IArray[CodlNode]] = value match
       case None        => List()
       case Some(value) => ValueType.encode(value)
 
-  given [ElementType: CodlEncoder] => CodlEncoder[List[ElementType]] as list:
+  given list: [ElementType: CodlEncoder] => CodlEncoder[List[ElementType]]:
     def schema: CodlSchema = ElementType.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
@@ -71,7 +71,7 @@ object CodlEncoder:
     def encode(value: List[ElementType]): List[IArray[CodlNode]] =
       value.map(ElementType.encode(_).head)
 
-  given [ElementType: CodlEncoder] => CodlEncoder[Set[ElementType]] as set:
+  given set: [ElementType: CodlEncoder] => CodlEncoder[Set[ElementType]]:
     def schema: CodlSchema = ElementType.schema match
       case Field(_, validator) => Field(Arity.Many, validator)
       case struct: Struct      => struct.copy(structArity = Arity.Many)
