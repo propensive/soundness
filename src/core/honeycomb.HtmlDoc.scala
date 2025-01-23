@@ -19,6 +19,7 @@ package honeycomb
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -39,7 +40,7 @@ object HtmlDoc:
      (using att: "href" is HtmlAttribute[Stylesheet])
           : HtmlDoc =
 
-    val link = att.convert(stylesheet).runtimeChecked match
+    val link = att.convert(stylesheet).absolve match
       case Unset      => Nil
       case text: Text => Seq(html5.Link.Stylesheet(href = text))
 

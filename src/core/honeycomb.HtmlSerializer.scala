@@ -52,7 +52,7 @@ object HtmlSerializer:
       linebreak = false
       emptyLine = true
 
-    def next(node: Html[?], verbatim: Boolean): Unit = node.runtimeChecked match
+    def next(node: Html[?], verbatim: Boolean): Unit = node.absolve match
       case HtmlXml(xml) =>
         append(Xml.print(xml))
 
@@ -60,7 +60,7 @@ object HtmlSerializer:
         whitespace()
         append(t"<", node.label)
 
-        for attribute <- node.attributes do attribute.runtimeChecked match
+        for attribute <- node.attributes do attribute.absolve match
           case (key: Text, value: Text) => append(t" ", key, t"=\"", value, t"\"")
           case (key: Text, Unset)       => append(t" ", key)
 

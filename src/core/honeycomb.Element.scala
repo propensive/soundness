@@ -49,7 +49,7 @@ extends Node[NameType]:
   def label: Text = labelString.show
 
   // val block: Boolean = tagBlock || children.exists: child =>
-  //   child.runtimeChecked match
+  //   child.absolve match
   //     case node: Node[?] => node.block
   //     case _: Text       => false
   //     case _: Int        => false

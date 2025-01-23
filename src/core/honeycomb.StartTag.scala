@@ -25,7 +25,7 @@ import vacuous.*
 object StartTag:
   given StartTag[?, ?] is GenericCssSelection = elem =>
     val tail = elem.attributes.map: (key, value) =>
-      (key, value).runtimeChecked match
+      (key, value).absolve match
         case (key, value: Text) => t"[$key=$value]"
         case (key, Unset)       => t"[$key]"
 

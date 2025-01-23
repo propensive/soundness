@@ -59,7 +59,7 @@ object Honeycomb:
         case _ =>
           if className.value == Some("apply") then Nil else List('{("class", $className.tt)})
 
-    attributes.runtimeChecked match
+    attributes.absolve match
       case Varargs(exprs) =>
         '{
             StartTag
