@@ -45,7 +45,7 @@ object LocalClasspath:
   def apply
      (entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar |
                 ClasspathEntry.JavaRuntime.type])
-          : LocalClasspath =
+  :     LocalClasspath =
     new LocalClasspath(entries, entries.to(Set))
 
   given [PathType: GenericPath]

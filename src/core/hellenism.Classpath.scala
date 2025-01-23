@@ -37,7 +37,7 @@ object Classpath:
 
   @targetName("child")
   infix def / (child: Name[Classpath])(using classloader: Classloader)
-          : Path on Classpath raises NameError =
+  :     Path on Classpath raises NameError =
     Path(classloader, List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
