@@ -36,7 +36,7 @@ trait Schema[DataType, RecordType <: Record in DataType]:
 
     given Realm = realm"polyvinyl"
 
-    val target = thisType.runtimeChecked match
+    val target = thisType.absolve match
       case '[thisType] =>
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[DataType, RecordType]]
 
@@ -51,9 +51,9 @@ trait Schema[DataType, RecordType <: Record in DataType]:
           (refinedType, caseDefs)
 
         case (name, RecordField.Value(typeName, params*)) :: tail =>
-          ConstantType(StringConstant(typeName)).asType.runtimeChecked match
+          ConstantType(StringConstant(typeName)).asType.absolve match
             case '[type typeName <: Label; typeName] =>
-              Expr.summon[Schematic[RecordType, DataType, typeName, ?]].runtimeChecked match
+              Expr.summon[Schematic[RecordType, DataType, typeName, ?]].absolve match
                 case None =>
                   halt(m"could not find a Schematic instance for the field $name with type $typeName")
 
@@ -71,9 +71,9 @@ trait Schema[DataType, RecordType <: Record in DataType]:
                   refine(value, tail, refinement, caseDefs2)
 
         case (name, RecordField.Record(typeName, map)) :: tail =>
-          ConstantType(StringConstant(typeName)).asType.runtimeChecked match
+          ConstantType(StringConstant(typeName)).asType.absolve match
             case '[type typeName <: Label; typeName] =>
-              Expr.summon[RecordAccessor[RecordType, DataType, typeName, ?]].runtimeChecked match
+              Expr.summon[RecordAccessor[RecordType, DataType, typeName, ?]].absolve match
                 case None =>
                   halt(m"""could not find a RecordAccessor instance for the field $name with type
                         $typeName""")
@@ -95,7 +95,7 @@ trait Schema[DataType, RecordType <: Record in DataType]:
 
                   val caseDef = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm)
 
-                  nestedType.asType.runtimeChecked match
+                  nestedType.asType.absolve match
                     case '[nestedRecordType] =>
                       val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
                       refine(value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
@@ -105,6 +105,6 @@ trait Schema[DataType, RecordType <: Record in DataType]:
     val matchFn: Expr[String => DataType => Any] =
       '{ (name: String) => ${Match('name.asTerm, caseDefs).asExprOf[DataType => Any]} }
 
-    refinedType.asType.runtimeChecked match
+    refinedType.asType.absolve match
       case '[type refinedType <: RecordType; refinedType] =>
         '{$target.make($value, $matchFn).asInstanceOf[refinedType]}
