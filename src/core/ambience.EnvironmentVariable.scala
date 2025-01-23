@@ -70,16 +70,27 @@ object EnvironmentVariable extends EnvironmentVariable2:
   given home: [PathType: SpecificPath] => EnvironmentVariable["home", PathType] = SpecificPath(_)
   given mail: [PathType: SpecificPath] => EnvironmentVariable["mail", PathType] = SpecificPath(_)
   given shell: [PathType: SpecificPath] => EnvironmentVariable["shell", PathType] = SpecificPath(_)
-  given oldpwd: [PathType: SpecificPath] => EnvironmentVariable["oldpwd", PathType] = SpecificPath(_)
-  given windowid: [PathType: SpecificPath] => EnvironmentVariable["windowid", PathType] = SpecificPath(_)
-  given editor: [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] = SpecificPath(_)
+
+  given oldpwd: [PathType: SpecificPath] => EnvironmentVariable["oldpwd", PathType] =
+    SpecificPath(_)
+
+  given windowid: [PathType: SpecificPath] => EnvironmentVariable["windowid", PathType] =
+    SpecificPath(_)
+
+  given editor: [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] =
+    SpecificPath(_)
+
   given pager: [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] = SpecificPath(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
-  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] = SpecificPath(_)
-  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] = SpecificPath(_)
+  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] =
+    SpecificPath(_)
+
+  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] =
+    SpecificPath(_)
+
   given columns: Decoder[Int] => EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)
   given display: EnvironmentVariable["display", Text] = identity(_)
