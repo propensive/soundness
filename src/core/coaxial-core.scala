@@ -28,7 +28,7 @@ import Control.*
 extension [SocketType](socket: SocketType)
   def listen[InputType](using bindable: Bindable[SocketType])(using Monitor, Codicil)[ResultType]
      (lambda: bindable.Input => bindable.Output)
-          : SocketService raises BindError =
+  :     SocketService raises BindError =
 
     val binding = bindable.bind(socket)
 
@@ -48,7 +48,7 @@ extension [EndpointType](endpoint: EndpointType)
   def connect[StateType](initialState: StateType)[MessageType](initialMessage: MessageType = Bytes())
      (handle: (state: StateType) ?=> MessageType => Control[StateType])
      (using serviceable: Serviceable[EndpointType], receivable: Receivable[MessageType])
-          : StateType =
+  :     StateType =
 
     val connection = serviceable.connect(endpoint)
 
@@ -71,6 +71,6 @@ extension [EndpointType](endpoint: EndpointType)
   def transmit[MessageType](message: MessageType)
      (using transmissible: Transmissible[MessageType], addressable: Addressable[EndpointType])
      (using Monitor)
-          : Unit raises StreamError =
+  :     Unit raises StreamError =
 
     addressable.transmit(addressable.connect(endpoint), transmissible.serialize(message))
