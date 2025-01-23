@@ -37,7 +37,7 @@ object Http:
     Log.info(HttpEvent.Send(method, url, headers))
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
-    (URI(url.show.s).toURL.nn.openConnection.nn: @unchecked) match
+    URI(url.show.s).toURL.nn.openConnection.nn.runtimeChecked match
       case connection: HttpURLConnection =>
         connection.setRequestMethod(method.toString.show.upper.s)
 
