@@ -62,19 +62,19 @@ object Quantitative extends Quantitative2:
       long => Quantity(long/1000.0)
 
     transparent inline given addable: [LeftType <: Measure, RightType <: Measure]
-        => Quantity[LeftType] is Addable by Quantity[RightType] =
+    =>    Quantity[LeftType] is Addable by Quantity[RightType] =
       ${Quantitative.addTypeclass[LeftType, RightType]}
 
     transparent inline given subtractable: [LeftType <: Measure, RightType <: Measure]
-        => Quantity[LeftType] is Subtractable by Quantity[RightType] =
+    =>    Quantity[LeftType] is Subtractable by Quantity[RightType] =
       ${Quantitative.subTypeclass[LeftType, RightType]}
 
     transparent inline given multiplicable: [LeftType <: Measure, RightType <: Measure]
-        => Quantity[LeftType] is Multiplicable by Quantity[RightType] =
+    =>    Quantity[LeftType] is Multiplicable by Quantity[RightType] =
       ${Quantitative.mulTypeclass[LeftType, RightType]}
 
     given multiplicable2: [LeftType <: Measure]
-        => Quantity[LeftType] is Multiplicable by Double into Quantity[LeftType] =
+    =>    Quantity[LeftType] is Multiplicable by Double into Quantity[LeftType] =
       new Multiplicable:
         type Self = Quantity[LeftType]
         type Operand = Double
@@ -84,7 +84,7 @@ object Quantitative extends Quantitative2:
           left*right
 
     given multiplicable3: [RightType <: Measure]
-        => Double is Multiplicable by Quantity[RightType] into Quantity[RightType] =
+    =>    Double is Multiplicable by Quantity[RightType] into Quantity[RightType] =
       new Multiplicable:
         type Self = Double
         type Operand = Quantity[RightType]
@@ -94,7 +94,7 @@ object Quantitative extends Quantitative2:
           left*right
 
     transparent inline given divisible: [LeftType <: Measure, RightType <: Measure]
-        => Quantity[LeftType] is Divisible by Quantity[RightType] =
+    =>    Quantity[LeftType] is Divisible by Quantity[RightType] =
       ${Quantitative.divTypeclass[LeftType, RightType]}
 
     given divisibleDouble: [LeftType <: Measure] => Quantity[LeftType] is Divisible by Double =
@@ -105,11 +105,11 @@ object Quantitative extends Quantitative2:
         inline def divide(left: Quantity[LeftType], right: Double): Quantity[LeftType] = left/right
 
     transparent inline given squareRoot: [ValueType <: Measure]
-        => Quantity[ValueType] is Rootable[2] =
+    =>    Quantity[ValueType] is Rootable[2] =
       ${Quantitative.sqrtTypeclass[ValueType]}
 
     transparent inline given cubeRoot: [ValueType <: Measure]
-        => Quantity[ValueType] is Rootable[3] =
+    =>    Quantity[ValueType] is Rootable[3] =
       ${Quantitative.cbrtTypeclass[ValueType]}
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
@@ -121,7 +121,7 @@ object Quantitative extends Quantitative2:
       int => Quantity(int.toDouble)
 
     given commensurable: [UnitsType <: Measure, UnitsType2 <: Measure]
-        => Quantity[UnitsType] is Commensurable:
+    =>    Quantity[UnitsType] is Commensurable:
 
       type Operand = Quantity[UnitsType2]
 
