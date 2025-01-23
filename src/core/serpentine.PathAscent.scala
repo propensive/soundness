@@ -24,7 +24,7 @@ import symbolism.*
 
 object PathAscent:
   given [ElementType] => (Navigable by ElementType)
-      => PathAscent is Divisible by ElementType into (Relative by ElementType) =
+  =>    PathAscent is Divisible by ElementType into (Relative by ElementType) =
     new Divisible:
       type Self = PathAscent
       type Result = Relative by ElementType

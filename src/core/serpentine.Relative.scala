@@ -28,7 +28,7 @@ import scala.compiletime.*
 
 object Relative:
   given encodable: [RelativeType <: Relative] => (navigable: Navigable)
-      => RelativeType is Encodable in Text = relative =>
+  =>    RelativeType is Encodable in Text = relative =>
     if relative.textDescent.isEmpty then
       if relative.ascent == 0 then navigable.selfText
       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)

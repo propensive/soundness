@@ -21,7 +21,7 @@ import serpentine.*
 
 package filesystemApi:
   given serpentinePath: [PlatformType: {Navigable, Radical}]
-      => (Path on PlatformType) is GenericPath & SpecificPath =
+  =>    (Path on PlatformType) is GenericPath & SpecificPath =
     new GenericPath with SpecificPath:
       type Self = Path on PlatformType
       def pathText(path: Path on PlatformType): Text = path.text

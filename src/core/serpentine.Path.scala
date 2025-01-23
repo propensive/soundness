@@ -46,7 +46,7 @@ object Path:
     Message(path.textDescent.reverse.join(path.textRoot, path.separator, t""))
 
   given addable: [PlatformType: Navigable] => Tactic[PathError]
-      => (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
+  =>    (Path on PlatformType) is Addable by (Relative by PlatformType.Operand) into
         (Path on PlatformType) =
     (left, right) =>
       def recur(descent: List[Text], ascent: Int): Path on PlatformType =
@@ -99,7 +99,7 @@ object Path:
     Path(root, descent)
 
   given [PlatformType: Navigable]
-      => (Path on PlatformType) is Divisible by PlatformType.Operand into (Path on PlatformType) =
+  =>    (Path on PlatformType) is Divisible by PlatformType.Operand into (Path on PlatformType) =
     new Divisible:
       type Operand = PlatformType.Operand
       type Self = Path on PlatformType
