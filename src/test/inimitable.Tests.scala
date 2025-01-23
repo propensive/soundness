@@ -31,7 +31,7 @@ object Tests extends Suite(t"Inimitable Tests"):
         Uuid()
       .matches:
         case Uuid(a, b) => (a, b)
-      
+
       test(t"Get bytes from UUID"):
         Uuid().bytes
       .assert(_.length == 16)
@@ -39,51 +39,48 @@ object Tests extends Suite(t"Inimitable Tests"):
       test(t"Parse a UUID at compiletime"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"
       .assert()
-      
+
       test(t"Get the most significant bits from a UUID"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".msb
       .assert(_ == -6860364383762101208L)
-      
+
       test(t"Get the least significant bits from a UUID"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".lsb
       .assert(_ == -8777588922722300788L)
-      
+
       test(t"Get the Java UUID"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".java
       .assert(_ == java.util.UUID.fromString("a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"))
-      
+
       test(t"Get the bytes from a UUID"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".bytes.to(List)
       .assert(_ == List[Byte](-96, -53, 22, -16, -44, 30, 76, 40, -122, 47, -67, 97, 100, -69, -52, -116))
-      
+
       test(t"Convert a UUID to Text"):
         uuid"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c".text
       .assert(_ == t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c")
-      
+
       test(t"Parse a UUID at runtime"):
         unsafely(Uuid.parse(t"a0cb16f0-d41e-4c28-862f-bd6164bbcc8c"))
       .assert(_ == Uuid(-6860364383762101208L, -8777588922722300788L))
-      
+
       test(t"Parse a bad UUID at runtime"):
         unsafely(capture[UuidError](Uuid.parse(t"not-a-uuid")))
       .assert(_ == UuidError(t"not-a-uuid"))
-      
+
       val uuid1 = Uuid()
       val uuid2 = Uuid()
-      
+
       test(t"XOR two UUIDs"):
         uuid1 ^ uuid2
       .assert { uuid => uuid != uuid1 && uuid != uuid2 }
-      
+
       test(t"Invert a UUID"):
         ~uuid1
       .assert(_ != uuid1)
-      
+
       test(t"Parse a bad UUID at compiletime"):
         demilitarize:
           uuid"not-a-uuid"
         .map(_.message)
       .assert(_ == List(t"inimitable: not-a-uuid is not a valid UUID"))
-
-
-
