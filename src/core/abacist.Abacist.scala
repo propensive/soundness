@@ -33,7 +33,7 @@ object Abacist:
   import Quantitative.*
 
   def make[UnitsType <: Tuple: Type](values: Expr[Seq[Int]])(using Quotes): Expr[Count[UnitsType]] =
-    val inputs: List[Expr[Int]] = values.runtimeChecked match
+    val inputs: List[Expr[Int]] = values.absolve match
       case Varargs(values) => values.to(List).reverse
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long]): Expr[Long] =
@@ -90,7 +90,7 @@ object Abacist:
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
-    quantityUnit.power(1).asType.runtimeChecked match
+    quantityUnit.power(1).asType.absolve match
       case '[type quantityType <: Measure; quantityType] =>
         '{Quantity[quantityType]($count.longValue*$ratioExpr)}
 
