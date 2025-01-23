@@ -15,7 +15,7 @@ object Nomenclature2:
 
     todo match
       case Nil          => TypeRepr.of[EmptyTuple]
-      case next :: todo => (next.asType: @unchecked) match
+      case next :: todo => next.asType.runtimeChecked match
         case '[next] => (build(todo).asType: @unchecked) match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]
 
@@ -49,7 +49,7 @@ object Nomenclature2:
 
   def constant[TextType <: String: Type](using Quotes): TextType =
     import quotes.reflect.*
-    (TypeRepr.of[TextType].asMatchable: @unchecked) match
+    TypeRepr.of[TextType].asMatchable.runtimeChecked match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[TextType]
 
   def companion[CompanionType: Typeable](using Quotes)(symbol: quotes.reflect.Symbol)
