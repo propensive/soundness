@@ -41,8 +41,8 @@ object Aggregable:
     buffer.toString.tt
 
   given stream: [ElementType, ElementType2]
-  => (aggregable: ElementType2 is Aggregable by ElementType)
-  =>  LazyList[ElementType2] is Aggregable by ElementType =
+  =>   (aggregable: ElementType2 is Aggregable by ElementType)
+  =>    LazyList[ElementType2] is Aggregable by ElementType =
     element => LazyList(aggregable.aggregate(element))
 
 trait Aggregable:

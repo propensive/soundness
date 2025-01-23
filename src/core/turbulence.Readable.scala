@@ -32,11 +32,11 @@ object Readable:
   given text: [TextType <: Text] => TextType is Readable by Text = LazyList(_)
 
   given encodingAdapter: [SourceType: Readable by Text] => (encoder: CharEncoder)
-      => SourceType is Readable by Bytes =
+  =>    SourceType is Readable by Bytes =
     source => encoder.encode(SourceType.stream(source))
 
   given decodingAdapter: [SourceType: Readable by Bytes] => (decoder: CharDecoder)
-      => SourceType is Readable by Text =
+  =>    SourceType is Readable by Text =
 
     source => decoder.decode(SourceType.stream(source))
 
@@ -70,8 +70,8 @@ object Readable:
     LazyList.defer(recur(0L.b))
 
   given bufferedReader: [InType <: ji.BufferedReader]
-  =>  Tactic[StreamError]
-  =>  InType is Readable by Line =
+  =>    Tactic[StreamError]
+  =>    InType is Readable by Line =
     reader =>
       def recur(count: Memory): LazyList[Line] =
         try reader.readLine() match
@@ -84,8 +84,8 @@ object Readable:
       LazyList.defer(recur(0L.b))
 
   given inputStream: [InType <: ji.InputStream]
-      => Tactic[StreamError]
-      => InType is Readable by Bytes =
+  =>    Tactic[StreamError]
+  =>    InType is Readable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes = channel =>

@@ -28,7 +28,7 @@ import vacuous.*
 
 object Writable:
   given outputStreamBytes: [OutType <: ji.OutputStream] => (streamCut: Tactic[StreamError])
-      => OutType is Writable by Bytes =
+  =>    OutType is Writable by Bytes =
     (outputStream, stream) =>
       stream.each: bytes =>
         outputStream.write(bytes.mutable(using Unsafe))
@@ -37,7 +37,7 @@ object Writable:
       outputStream.close()
 
   given outputStreamText: (streamCut: Tactic[StreamError], encoder: CharEncoder)
-          => ji.OutputStream is Writable by Text =
+  =>    ji.OutputStream is Writable by Text =
 
     (outputStream, stream) =>
       stream.each: text =>
@@ -47,15 +47,15 @@ object Writable:
       outputStream.close()
 
   given decodingAdapter: [TargetType: Writable by Text] => (decoder: CharDecoder)
-      => TargetType is Writable by Bytes =
+  =>    TargetType is Writable by Bytes =
     (target, stream) => TargetType.write(target, decoder.decode(stream))
 
   given encodingAdapter: [TargetType: Writable by Bytes] => (encoder: CharEncoder)
-      => TargetType is Writable by Text =
+  =>    TargetType is Writable by Text =
     (target, stream) => TargetType.write(target, encoder.encode(stream))
 
   given channel: Tactic[StreamError]
-      => jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
+  =>    jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
     @tailrec
     def recur(total: Memory, todo: LazyList[jn.ByteBuffer]): Unit =
       todo.flow(()):
