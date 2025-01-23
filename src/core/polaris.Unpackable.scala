@@ -19,7 +19,7 @@ package polaris
 import rudiments.*
 
 object Unpackable:
-  given [PackType: Debufferable](using ClassTag[PackType]) => IArray[PackType] is Unpackable:
+  given [PackType: Debufferable] => ClassTag[PackType] => IArray[PackType] is Unpackable:
     type Wrap[Type] = Int => Type
     def unpack(buffer: Buffer): Int => IArray[PackType] = count =>
       IArray.create[PackType](count): array =>
