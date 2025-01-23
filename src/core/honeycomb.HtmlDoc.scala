@@ -39,7 +39,7 @@ object HtmlDoc:
      (using att: "href" is HtmlAttribute[Stylesheet])
           : HtmlDoc =
 
-    val link = (att.convert(stylesheet): @unchecked) match
+    val link = att.convert(stylesheet).runtimeChecked match
       case Unset      => Nil
       case text: Text => Seq(html5.Link.Stylesheet(href = text))
 
