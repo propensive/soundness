@@ -32,48 +32,48 @@ import JsonParseError.Reason
 
 object JsonAst:
   object AsciiByte:
-    inline final val Tab:          9   = 9   // '\t'
-    inline final val Newline:      10  = 10  // '\n'
-    inline final val Return:       13  = 13  // '\r'
-    inline final val Space:        32  = 32  // ' '
-    inline final val Comma:        44  = 44  // ','
-    inline final val Quote:        34  = 34  // '"'
-    inline final val Minus:        45  = 45  // '-'
-    inline final val Plus:         43  = 43  // '+'
-    inline final val Slash:        47  = 47  // '/'
-    inline final val Period:       46  = 46  // '.'
-    inline final val Num0:         48  = 48  //'0'
-    inline final val Num1:         49  = 49  //'1'
-    inline final val Num2:         50  = 50  //'2'
-    inline final val Num3:         51  = 51  //'3'
-    inline final val Num4:         52  = 52  //'4'
-    inline final val Num5:         53  = 53  //'5'
-    inline final val Num6:         54  = 54  //'6'
-    inline final val Num7:         55  = 55  //'7'
-    inline final val Num8:         56  = 56  //'8'
-    inline final val Num9:         57  = 57  //'9'
-    inline final val Colon:        58  = 58  // ':'
-    inline final val UpperA:       65  = 65  // 'A'
-    inline final val UpperB:       66  = 66  // 'B'
-    inline final val UpperC:       67  = 67  // 'C'
-    inline final val UpperD:       68  = 68  // 'D'
-    inline final val UpperE:       69  = 69  // 'E'
-    inline final val UpperF:       70  = 70  // 'F'
+    inline final val Tab:       9   = 9   // '\t'
+    inline final val Newline:     10  = 10  // '\n'
+    inline final val Return:      13  = 13  // '\r'
+    inline final val Space:     32  = 32  // ' '
+    inline final val Comma:     44  = 44  // ','
+    inline final val Quote:     34  = 34  // '"'
+    inline final val Minus:     45  = 45  // '-'
+    inline final val Plus:      43  = 43  // '+'
+    inline final val Slash:     47  = 47  // '/'
+    inline final val Period:      46  = 46  // '.'
+    inline final val Num0:      48  = 48  //'0'
+    inline final val Num1:      49  = 49  //'1'
+    inline final val Num2:      50  = 50  //'2'
+    inline final val Num3:      51  = 51  //'3'
+    inline final val Num4:      52  = 52  //'4'
+    inline final val Num5:      53  = 53  //'5'
+    inline final val Num6:      54  = 54  //'6'
+    inline final val Num7:      55  = 55  //'7'
+    inline final val Num8:      56  = 56  //'8'
+    inline final val Num9:      57  = 57  //'9'
+    inline final val Colon:     58  = 58  // ':'
+    inline final val UpperA:      65  = 65  // 'A'
+    inline final val UpperB:      66  = 66  // 'B'
+    inline final val UpperC:      67  = 67  // 'C'
+    inline final val UpperD:      68  = 68  // 'D'
+    inline final val UpperE:      69  = 69  // 'E'
+    inline final val UpperF:      70  = 70  // 'F'
     inline final val OpenBracket:  91  = 91  // '['
     inline final val CloseBracket: 93  = 93  // ']'
     inline final val Backslash:    92  = 92  // '\\'
-    inline final val LowerA:       97  = 97  // 'a'
-    inline final val LowerB:       98  = 98  // 'b'
-    inline final val LowerC:       99  = 99  // 'c'
-    inline final val LowerD:       100 = 100 // 'd'
-    inline final val LowerE:       101 = 101 // 'e'
-    inline final val LowerF:       102 = 102 // 'f'
-    inline final val LowerL:       108 = 108 // 'l'
-    inline final val LowerN:       110 = 110 // 'n'
-    inline final val LowerR:       114 = 114 // 'r'
-    inline final val LowerS:       115 = 115 // 's'
-    inline final val LowerT:       116 = 116 // 't'
-    inline final val LowerU:       117 = 117 // 'u'
+    inline final val LowerA:      97  = 97  // 'a'
+    inline final val LowerB:      98  = 98  // 'b'
+    inline final val LowerC:      99  = 99  // 'c'
+    inline final val LowerD:      100 = 100 // 'd'
+    inline final val LowerE:      101 = 101 // 'e'
+    inline final val LowerF:      102 = 102 // 'f'
+    inline final val LowerL:      108 = 108 // 'l'
+    inline final val LowerN:      110 = 110 // 'n'
+    inline final val LowerR:      114 = 114 // 'r'
+    inline final val LowerS:      115 = 115 // 's'
+    inline final val LowerT:      116 = 116 // 't'
+    inline final val LowerU:      117 = 117 // 'u'
     inline final val OpenBrace:    123 = 123 // '{'
     inline final val CloseBrace:   125 = 125 // '}'
 
@@ -83,13 +83,13 @@ object JsonAst:
   def apply
      (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] |
               Boolean | Null | Unset.type)
-          : JsonAst =
+  :     JsonAst =
 
     value
 
   def parse[SourceType: Readable by Bytes](source: SourceType)
      (using jsonParse: Tactic[JsonParseError])
-          : JsonAst/*^{readable, jsonParse}*/ =
+  :     JsonAst/*^{readable, jsonParse}*/ =
 
     // FIXME: This is a horrible hack to avoid the problems with streaming
     val stream: LazyList[Bytes] = LazyList(SourceType.stream(source).read[Bytes])
