@@ -35,7 +35,8 @@ object Tests extends Suite(t"Telekinesis tests"):
     suite(t"Parsing tests"):
       test(t"parse Authority with username and password"):
         Authority.parse(t"username:password@example.com")
-      .assert(_ == Authority(Hostname(DnsLabel(t"example"), DnsLabel(t"com")), t"username:password"))
+      .assert: value =>
+        value == Authority(Hostname(DnsLabel(t"example"), DnsLabel(t"com")), t"username:password"))
 
       test(t"parse Authority with username but not password"):
         Authority.parse(t"username@example.com")
