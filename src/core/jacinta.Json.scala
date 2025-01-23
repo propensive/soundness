@@ -114,9 +114,9 @@ trait Json2:
       variant(value): [VariantType <: DerivationType] =>
         value =>
           Json.ast:
-            context.encode(value).root.asMatchable.runtimeChecked match
-              case (labels, values) => labels.asMatchable.runtimeChecked match
-                case labels: IArray[String] => values.asMatchable.runtimeChecked match
+            context.encode(value).root.asMatchable.absolve match
+              case (labels, values) => labels.asMatchable.absolve match
+                case labels: IArray[String] => values.asMatchable.absolve match
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
@@ -246,8 +246,8 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: IArray[JsonAst] @unchecked =>
         value.foldLeft(value.length.hashCode)(_*31^recur(_))
 
-      case (keys, values) => keys.asMatchable.runtimeChecked match
-        case keys: IArray[String] @unchecked => values.asMatchable.runtimeChecked match
+      case (keys, values) => keys.asMatchable.absolve match
+        case keys: IArray[String] @unchecked => values.asMatchable.absolve match
           case values: IArray[JsonAst] @unchecked =>
             keys.zip(values).to(Map).view.mapValues(recur(_)).hashCode
 
@@ -293,12 +293,12 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
           case _ =>
             false
 
-        case (rightKeys, rightValues) => rightKeys.asMatchable.runtimeChecked match
-          case rightKeys: IArray[String] => rightValues.asMatchable.runtimeChecked match
-            case rightValues: IArray[JsonAst] @unchecked => left.asMatchable.runtimeChecked match
-              case (leftKeys, leftValues) => leftKeys.asMatchable.runtimeChecked match
+        case (rightKeys, rightValues) => rightKeys.asMatchable.absolve match
+          case rightKeys: IArray[String] => rightValues.asMatchable.absolve match
+            case rightValues: IArray[JsonAst] @unchecked => left.asMatchable.absolve match
+              case (leftKeys, leftValues) => leftKeys.asMatchable.absolve match
                 case leftKeys: IArray[String] @unchecked =>
-                  leftValues.asMatchable.runtimeChecked match
+                  leftValues.asMatchable.absolve match
                     case leftValues: IArray[JsonAst] @unchecked =>
                       val leftMap = leftKeys.zip(leftValues).to(Map)
                       val rightMap = rightKeys.zip(rightValues).to(Map)

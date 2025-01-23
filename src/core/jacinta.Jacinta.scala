@@ -31,9 +31,9 @@ object Jacinta:
   object JsonPointer:
     given JsonPointer is Showable = pointer =>
       def recur(elements: List[Ordinal | Text], result: Text): Text =
-        elements.asMatchable.runtimeChecked match
+        elements.asMatchable.absolve match
           case Nil         => if result.empty then t"." else result
-          case key :: tail => key.asMatchable.runtimeChecked match
+          case key :: tail => key.asMatchable.absolve match
             case index: Ordinal => recur(tail, t"[${index.n0}]$result")
             case key: Text      => recur(tail, t".$key$result")
 
