@@ -36,7 +36,7 @@ case class SourceCode
   def apply(line: Int): List[SourceToken] = lines(line - offset)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-          : SourceCode =
+  :     SourceCode =
     SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)
 
 object SourceCode:
