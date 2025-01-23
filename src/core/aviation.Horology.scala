@@ -29,7 +29,7 @@ trait Horology:
   def addTertiary(time: Clockface, n: Tertiary): Clockface
 
 object Horology:
-  given Horology as sexagesimal:
+  given sexagesimal: Horology:
     type Primary = Base24
     type Secondary = Base60
     type Tertiary = Base60

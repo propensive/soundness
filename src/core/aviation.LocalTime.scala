@@ -22,7 +22,7 @@ import rudiments.*
 import java.time as jt
 
 object LocalTime:
-  given (using RomanCalendar) => LocalTime is GenericInstant as generic =
+  given generic: RomanCalendar => LocalTime is GenericInstant =
     _.instant.millisecondsSinceEpoch
 
 case class LocalTime(date: Date, time: Clockface, timezone: Timezone):

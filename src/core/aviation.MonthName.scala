@@ -31,7 +31,7 @@ object MonthName:
   def unapply(value: Int): Option[MonthName] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
 
-  given Int is Subtractable as monthOfYear:
+  given monthOfYear: Int is Subtractable:
     type Result = YearMonth
     type Operand = MonthName
     def subtract(year: Int, month: MonthName) = new YearMonth(year, month)

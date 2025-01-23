@@ -19,13 +19,13 @@ package anticipation
 import aviation.*
 
 package instantApi:
-  given Timing.Instant is GenericInstant & SpecificInstant as aviationInstant =
+  given aviationInstant: Timing.Instant is GenericInstant & SpecificInstant =
     new GenericInstant with SpecificInstant:
       type Self = Timing.Instant
       export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
 
 package durationApi:
-  given Timing.Duration is GenericDuration & SpecificDuration as aviationDuration =
+  given aviationDuration: Timing.Duration is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
       type Self = Timing.Duration
       export Timing.Duration.generic.{duration, milliseconds}

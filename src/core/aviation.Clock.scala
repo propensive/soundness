@@ -20,7 +20,7 @@ abstract class Clock():
   def apply(): Instant
 
 object Clock:
-  given Clock as current:
+  given current: Clock:
     def apply(): Instant = Instant.of(System.currentTimeMillis)
 
   def fixed(instant: Instant): Clock = new Clock():
