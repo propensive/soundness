@@ -18,7 +18,7 @@ package aviation
 
 object Base60:
   def apply(int: Int): Base60 =
-    ((((int%60) + 60)%60): @unchecked) match
+    (((int%60) + 60)%60).runtimeChecked match
       case value: Base60 => value
 
   def unapply(value: Int): Option[Base60] =

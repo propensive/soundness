@@ -91,7 +91,7 @@ object Timing:
       val date = zonedTime.getMonthValue.runtimeChecked match
         case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
 
-      val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match
+      val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).runtimeChecked match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
 
       LocalTime(date, time, timezone)

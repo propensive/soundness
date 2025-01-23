@@ -18,7 +18,7 @@ package aviation
 
 object Base24:
   def apply(int: Int): Base24 =
-    ((((int%24) + 24)%24): @unchecked) match
+    (((int%24) + 24)%24).runtimeChecked match
       case value: Base24 => value
 
   def unapply(value: Int): Option[Base24] =
