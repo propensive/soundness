@@ -87,7 +87,8 @@ case class Complex[ComponentType](real: ComponentType, imaginary: ComponentType)
             subtraction:    multiplication.Result is Subtractable by multiplication.Result)
   :     Complex[subtraction.Result | addition.Result] =
 
-    Complex(real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
+    Complex
+     (real*right.real - imaginary*right.imaginary, real*right.imaginary + imaginary*right.real)
 
   @targetName("div")
   inline infix def / [ComponentType2](right: Complex[ComponentType2])
