@@ -54,7 +54,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
   def stdin[ChunkType](stream: LazyList[ChunkType])
      (using writable: ji.OutputStream is Writable by ChunkType)
-          : Unit =
+  :     Unit =
 
     writable.write(process.getOutputStream.nn, stream)
 
