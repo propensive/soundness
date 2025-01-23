@@ -32,7 +32,7 @@ given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
    (using context: ProcessContext, monitor: Monitor, codicil: Codicil)
    (using BracketedPasteMode, BackgroundColorDetection, TerminalFocusDetection, TerminalSizeDetection)
-        : ResultType raises TerminalError =
+:     ResultType raises TerminalError =
 
   given terminal: Terminal = Terminal(context.signals)
 

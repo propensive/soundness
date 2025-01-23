@@ -40,7 +40,7 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
             interaction: Interaction[ItemType, SelectMenu[ItemType]])
      [ResultType]
      (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
-          : ResultType raises DismissError =
+  :     ResultType raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
       lambda(using Interactivity(stream))(result)

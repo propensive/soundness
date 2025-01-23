@@ -54,7 +54,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   def ask(using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
      [ResultType]
      (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
-          : ResultType raises DismissError =
+  :     ResultType raises DismissError =
 
     interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
       lambda(using Interactivity(stream))(result)
