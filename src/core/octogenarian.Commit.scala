@@ -22,7 +22,7 @@ import vacuous.*
 
 case class Commit
    (commit:    CommitHash,
-    tree:      CommitHash,
+    tree:     CommitHash,
     parent:    List[CommitHash],
     author:    Text,
     committer: Text,

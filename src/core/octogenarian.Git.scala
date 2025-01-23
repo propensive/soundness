@@ -61,7 +61,7 @@ object Git:
      (targetPath: PathType, bare: Boolean = false)
      (using WorkingDirectory, Tactic[GitError], Decoder[Path on Posix], Tactic[ExecError])
      (using command: GitCommand)
-          : GitRepo logs GitEvent raises NameError =
+  :     GitRepo logs GitEvent raises NameError =
     try
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
@@ -82,7 +82,7 @@ object Git:
             Tactic[GitError],
             Tactic[ExecError],
             WorkingDirectory)
-          : GitProcess[GitRepo] logs GitEvent raises NameError =
+  :     GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -93,14 +93,14 @@ object Git:
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
   inline def clone[SourceType <: Matchable, PathType: GenericPath]
-     (source:     SourceType,
+     (source:    SourceType,
       targetPath: PathType,
-      bare:       Boolean          = false,
-      branch:     Optional[Branch] = Unset,
+      bare:      Boolean          = false,
+      branch:    Optional[Branch] = Unset,
       recursive:  Boolean          = false)
      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
      (using gitError: Tactic[GitError])
-          : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
+  :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -113,10 +113,10 @@ object Git:
   private def uncheckedCloneCommit[PathType: GenericPath]
      (source: Text, targetPath: PathType, commit: CommitHash)
      (using Internet, Decoder[Path on Posix], GitCommand)
-     (using gitError:         Tactic[GitError],
-            exec:             Tactic[ExecError],
+     (using gitError:      Tactic[GitError],
+            exec:          Tactic[ExecError],
             workingDirectory: WorkingDirectory)
-          : GitProcess[GitRepo] logs GitEvent raises NameError =
+  :     GitProcess[GitRepo] logs GitEvent raises NameError =
 
     val gitRepo = init(targetPath)
     val fetch = gitRepo.fetch(1, source, commit)
@@ -127,14 +127,14 @@ object Git:
       gitRepo
 
   private def uncheckedClone[PathType: GenericPath]
-     (source:     Text,
+     (source:    Text,
       targetPath: PathType,
-      bare:       Boolean          = false,
-      branch:     Optional[Branch] = Unset,
+      bare:      Boolean          = false,
+      branch:    Optional[Branch] = Unset,
       recursive:  Boolean          = false)
      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
      (using gitError: Tactic[GitError])
-          : GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
+  :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val target: Path on Posix =
       try targetPath.pathText.decode[Path on Posix]
