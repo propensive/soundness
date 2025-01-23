@@ -25,13 +25,13 @@ import rudiments.*
 import DagTile.*
 
 case class TextualDagStyle[LineType: Textual]
-   (space:      Text,
-    corner:     Text,
+   (space:     Text,
+    corner:    Text,
     vertical:   Text,
     firstMid:   Text,
     horizontal: Text,
     midLast:    Text,
-    cross:      Text,
+    cross:     Text,
     overlap:    Text)
 extends DagStyle[LineType]:
   def serialize(tiles: List[DagTile], node: LineType): LineType =
