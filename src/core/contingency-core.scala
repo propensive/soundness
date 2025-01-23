@@ -32,12 +32,12 @@ package strategies:
     ThrowTactic()(using unsafeExceptions.canThrowAny)
 
   given throwSafely: [ErrorType <: Exception: CanThrow, SuccessType]
-      =>  ThrowTactic[ErrorType, SuccessType] =
+  =>    ThrowTactic[ErrorType, SuccessType] =
     ThrowTactic()
 
   given mitigation: [ErrorType <: Exception: Tactic,
                      ErrorType2 <: Exception: Mitigable into ErrorType]
-      =>  Tactic[ErrorType2] =
+  =>    Tactic[ErrorType2] =
     ErrorType.contramap(ErrorType2.mitigate(_))
 
   given fatalErrors: [ErrorType <: Exception: Fatal] => Tactic[ErrorType]:
@@ -46,7 +46,7 @@ package strategies:
     def abort(error: Diagnostics ?=> ErrorType): Nothing = ErrorType.status(error).terminate()
 
   given uncheckedErrors: [ErrorType <: Exception]
-  => (erased ErrorType is Unchecked) => Tactic[ErrorType]:
+  =>   (erased ErrorType is Unchecked) => Tactic[ErrorType]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTraces
     given CanThrow[Exception] = unsafeExceptions.canThrowAny
     def record(error: Diagnostics ?=> ErrorType): Unit = throw error
