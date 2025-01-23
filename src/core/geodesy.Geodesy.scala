@@ -96,7 +96,7 @@ object Geodesy:
           count: Int)
               : Long =
 
-        if count >= bits then value else (count%2).runtimeChecked match
+        if count >= bits then value else (count%2).absolve match
           case 0 =>
             val midpoint = (longMin + longMax)/2
             if long < midpoint
