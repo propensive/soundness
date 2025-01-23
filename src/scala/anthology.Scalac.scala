@@ -49,7 +49,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
   def apply(classpath: LocalClasspath)[PathType: GenericPath]
      (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
-          : CompileProcess logs CompileEvent raises CompilerError =
+  :     CompileProcess logs CompileEvent raises CompilerError =
 
     val scalacProcess: CompileProcess = CompileProcess()
 
@@ -65,7 +65,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
       override def informUnitStarting(stage: String, unit: dtd.CompilationUnit): Unit = ()
 
       override def progress(current: Int, total: Int, currentStage: String, nextStage: String)
-              : Boolean =
+      :     Boolean =
 
         val int = (100.0*current/total).toInt
 

@@ -44,7 +44,7 @@ case class Javac(options: List[JavacOption]):
 
   def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
-          : CompileProcess logs CompileEvent raises CompilerError =
+  :     CompileProcess logs CompileEvent raises CompilerError =
     Log.info(CompileEvent.Start)
     val process: CompileProcess = CompileProcess()
 

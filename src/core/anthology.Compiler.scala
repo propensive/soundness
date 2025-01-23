@@ -27,4 +27,4 @@ trait Compiler:
   def apply(classpath: LocalClasspath)[PathType: GenericPath]
      (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor)
-          : CompileProcess logs CompileEvent raises CompilerError
+  :     CompileProcess logs CompileEvent raises CompilerError
