@@ -19,9 +19,9 @@ package savagery
 import quantitative.*
 
 case class Svg
-   (width:      Quantity[Units[1, Length]],
-    height:     Quantity[Units[1, Length]],
+   (width:     Quantity[Units[1, Length]],
+    height:    Quantity[Units[1, Length]],
     viewWidth:  Float,
     viewHeight: Float,
-    defs:       List[SvgDef],
-    shapes:     List[Shape])
+    defs:      List[SvgDef],
+    shapes:    List[Shape])

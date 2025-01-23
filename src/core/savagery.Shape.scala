@@ -32,9 +32,9 @@ case class Rectangle(position: Point, width: Float, height: Float) extends Shape
   def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
 
 case class Line
-   (ops:       List[Stroke]       = Nil,
-    style:     Optional[CssStyle] = Unset,
-    id:        Optional[SvgId]    = Unset,
+   (ops:      List[Stroke]       = Nil,
+    style:    Optional[CssStyle] = Unset,
+    id:     Optional[SvgId]    = Unset,
     transform: List[Transform]    = Nil)
 extends Shape:
   import Stroke.*
