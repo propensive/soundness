@@ -27,11 +27,11 @@ infix type isAbove[SelfType, TypeclassType] = TypeclassType { type Self <: SelfT
 
 object Extractable:
   given optional: [MatchType: Extractable]
-  =>  Optional[MatchType] is Extractable into MatchType.Result =
+  =>    Optional[MatchType] is Extractable into MatchType.Result =
     value => value.let(MatchType.extract(_))
 
   given irrefutable: [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
-  =>  String is Irrefutable into ResultType =
+  =>    String is Irrefutable into ResultType =
     value => irrefutable.unapply(value.tt)
 
   given textChar: [TextType <: Text] => TextType is Extractable into Char =
@@ -113,7 +113,7 @@ object Extractable:
     double => double.toFloat.unless(_.toDouble != double)
 
   given valueOf: [EnumType <: Enum: Mirror.SumOf as mirror, TextType <: Text]
-  =>  TextType is Extractable into EnumType =
+  =>    TextType is Extractable into EnumType =
     text =>
       import Selectable.reflectiveSelectable
 
@@ -122,7 +122,7 @@ object Extractable:
           try mirror.valueOf(text.s) catch case error: Exception => Unset
 
   given fromOrdinal: [EnumType <: Enum: Mirror.SumOf as mirror, IntType <: Int]
-  =>  IntType is Extractable into EnumType =
+  =>    IntType is Extractable into EnumType =
     ordinal =>
       import Selectable.reflectiveSelectable
       mirror match

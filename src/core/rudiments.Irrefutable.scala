@@ -23,7 +23,7 @@ object Irrefutable:
   given stringText: String is Irrefutable into Text = _.tt
 
   given [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
-  =>  String is Irrefutable into ResultType =
+  =>    String is Irrefutable into ResultType =
     string => irrefutable.unapply(string.tt)
 
   given textString: [TextType <: Text] => TextType is Irrefutable into String = _.s

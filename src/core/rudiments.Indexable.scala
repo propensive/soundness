@@ -58,7 +58,7 @@ object Indexable:
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 
   given [KeyType, ValueType]
-  =>  Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  =>    Map[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
       type Self = Map[KeyType, ValueType]
       type Operand = KeyType
@@ -68,7 +68,7 @@ object Indexable:
       def access(value: Self, index: KeyType): ValueType = value(index)
 
   given bijection: [KeyType, ValueType]
-  =>  Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType =
+  =>    Bijection[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
       type Self = Bijection[KeyType, ValueType]
       type Operand = KeyType
@@ -78,8 +78,7 @@ object Indexable:
       def access(value: Self, index: KeyType): ValueType = value.map(index)
 
   given hashMap: [KeyType, ValueType]
-  =>  scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType =
-
+  =>    scm.HashMap[KeyType, ValueType] is Indexable by KeyType into ValueType =
     new Indexable:
       type Self = scm.HashMap[KeyType, ValueType]
       type Operand = KeyType
