@@ -27,7 +27,7 @@ object Part:
 
 case class Part
    (disposition: Multipart.Disposition,
-    headers:     Map[Text, Text],
-    name:        Optional[Text],
+    headers:    Map[Text, Text],
+    name:     Optional[Text],
     filename:    Optional[Text],
-    body:        LazyList[Bytes])
+    body:     LazyList[Bytes])

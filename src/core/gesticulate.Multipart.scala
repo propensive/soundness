@@ -34,7 +34,7 @@ object Multipart:
     case Inline, Attachment, FormData
 
   def parse[InputType: Readable by Bytes](input: InputType, boundary0: Optional[Text] = Unset)
-          : Multipart raises MultipartError =
+  :     Multipart raises MultipartError =
     val conduit = Conduit(input.stream)
     conduit.mark()
     conduit.next()
