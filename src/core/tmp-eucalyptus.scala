@@ -106,9 +106,10 @@ package eucalyptus
 //               case _ =>
 //                 invalidRoutes()
 
-//             def recur(index: Int, expr: Expr[Unit]): Expr[Unit] = if index >= count then expr else
-//              '{  $expr
-//                  ${partialFunction(index)}.lift(entry)  }
+//             def recur(index: Int, expr: Expr[Unit]): Expr[Unit] =
+//               if index >= count then expr else
+//                 '{  $expr
+//                     ${partialFunction(index)}.lift(entry)  }
 
 //             recur(0, '{()})
 //           }
