@@ -25,7 +25,7 @@ import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
   override def apply[PathType: SpecificPath]()(using SystemProperties, Environment)
-          : PathType raises SystemPropertyError raises EnvironmentError =
+  :     PathType raises SystemPropertyError raises EnvironmentError =
 
     SpecificPath(t"/")
 
