@@ -28,12 +28,12 @@ import java.nio.file as jnf
 
 object Openable:
   given [PlatformType <: Filesystem]
-  => (read:        ReadAccess,
-      write:       WriteAccess,
+  => (read:     ReadAccess,
+      write:      WriteAccess,
       dereference: DereferenceSymlinks,
-      create:      CreateNonexistent on PlatformType,
+      create:     CreateNonexistent on PlatformType,
       streamError: Tactic[StreamError],
-      ioError:     Tactic[IoError])
+      ioError:    Tactic[IoError])
   =>  (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
 
     type Self = Path on PlatformType
@@ -85,7 +85,7 @@ trait Openable:
   def handle(carrier: Carrier): Result
 
   def open[ResultType](value: Self, lambda: Result => ResultType, options: List[Operand])
-          : ResultType =
+  :     ResultType =
     val carrier = init(value, options)
     try lambda(handle(carrier)) finally close(carrier)
 
