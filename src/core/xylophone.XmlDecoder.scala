@@ -32,7 +32,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     if elements.length == 0 then raise(XmlReadError(), "".tt) else elements.head
 
   given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
-    (value: @unchecked) match
+    value.runtimeChecked match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[ValueType]
 
   inline def join[DerivationType <: Product: ProductReflection]: XmlDecoder[DerivationType] = list =>
@@ -50,7 +50,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
         context.read(List(element))
 
   inline def split[DerivationType: SumReflection]: XmlDecoder[DerivationType] = list =>
-    (list.head: @unchecked) match
+    list.head.runtimeChecked match
       case XmlAst.Element(_, children, attributes, _) =>
         delegate(attributes.get(XmlName("type".tt)).get):
           [VariantType <: DerivationType] => decoder =>

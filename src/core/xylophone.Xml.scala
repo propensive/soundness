@@ -48,7 +48,7 @@ object Xml:
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
   def pathString(path: XmlPath): Text = if path.isEmpty then t"/" else path.map: value =>
-    (value: @unchecked) match
+    value.runtimeChecked match
       case idx: Int    => t"[$idx]"
       case label: Text => t"/$label"
       case unit: Unit  => t"/*"
@@ -111,7 +111,7 @@ object Xml:
       case elem@XmlAst.Element(_, _, _, _) => XmlDoc(XmlAst.Root(elem))
 
   def normalize(xml: Xml): List[XmlAst] raises XmlAccessError =
-    def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = (path: @unchecked) match
+    def recur(path: XmlPath, current: List[XmlAst]): List[XmlAst] = path.runtimeChecked match
       case Nil =>
         current
 
