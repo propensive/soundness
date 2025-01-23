@@ -35,7 +35,7 @@ object HtmlAttribute:
   object NotShown
 
   given [LabelType <: Label: GenericHtmlAttribute[ValueType], ValueType]
-      => LabelType is HtmlAttribute[ValueType]:
+  =>    LabelType is HtmlAttribute[ValueType]:
 
     def convert(value: ValueType): Optional[Text] = LabelType.serialize(value).show
     override def rename: Optional[Text] = LabelType.name.show
