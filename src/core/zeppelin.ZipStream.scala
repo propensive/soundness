@@ -69,7 +69,7 @@ class ZipStream(stream: () => LazyList[Bytes], filter: (Path on Zip) => Boolean)
               val count = zipIn.read(array, 0, array.length)
               if count == 0 then LazyList()
               else (if count < size then array.take(count) else array).immutable(using Unsafe) #:: read()
-            
+
           ZipEntry(ref, read()) #:: recur()
 
     recur().map(lambda)
