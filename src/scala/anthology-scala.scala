@@ -42,7 +42,7 @@ package scalacOptions:
     val valueDiscard = ScalacOption[3.4 | 3.5 | 3.6](t"-Wvalue-discard")
 
     def unused[VersionType <: Scalac.All](selection: Unused[VersionType]) =
-      val option = (selection: @unchecked) match
+      val option = selection.runtimeChecked match
         case Unused.All              => t"-Wunused:all"
         case Unused.None             => t"-Wunused:none"
         case Unused.Subset(features) => features.map(_.name).join(t"-Wunused:", t",", t"")
