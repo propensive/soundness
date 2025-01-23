@@ -21,7 +21,7 @@ import scala.quoted.*
 object Vacuous:
   def optimizeOr[ValueType: Type]
      (optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
-          : Expr[ValueType] =
+  :     Expr[ValueType] =
 
     import quotes.reflect.*
 

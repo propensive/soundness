@@ -26,7 +26,7 @@ import fulminate.*
 inline def default[ValueType]: ValueType = summonInline[Default[ValueType]]()
 
 inline def optimizable[ValueType](lambda: Optional[ValueType] => Optional[ValueType])
-        : Optional[ValueType] =
+:     Optional[ValueType] =
   lambda(Unset)
 
 extension [ValueType](iterable: Iterable[Optional[ValueType]])
