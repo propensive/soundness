@@ -38,31 +38,31 @@ object CodlDoc:
 
   given similarity: Similarity[CodlDoc] = _.schema == _.schema
 
-  given contrastable: CodlDoc is Contrastable:
-      type Self = CodlDoc
-      def apply(left: CodlDoc, right: CodlDoc) =
-        if left == right then Juxtaposition.Same(left.inspect) else
-          val comparison = IArray.from:
-            (t"[schema]", left.schema.juxtapose(right.schema)) +:
-            (t"[margin]", left.margin.juxtapose(right.margin)) +:
-            diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-              case Par(_, _, v)      =>
-                v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
+  // given contrastable: CodlDoc is Contrastable:
+  //     type Self = CodlDoc
+  //     def apply(left: CodlDoc, right: CodlDoc) =
+  //       if left == right then Juxtaposition.Same(left.inspect) else
+  //         val comparison = IArray.from:
+  //           (t"[schema]", left.schema.juxtapose(right.schema)) +:
+  //           (t"[margin]", left.margin.juxtapose(right.margin)) +:
+  //           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
+  //             case Par(_, _, v)      =>
+  //               v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
 
-              case Ins(_, v)         =>
-                v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
+  //             case Ins(_, v)         =>
+  //               v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
 
-              case Del(_, v)         =>
-                v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
+  //             case Del(_, v)         =>
+  //               v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
-              case Sub(_, v, lv, rv) =>
-                val key =
-                  if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—")
-                  else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
+  //             case Sub(_, v, lv, rv) =>
+  //               val key =
+  //                 if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—")
+  //                 else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
 
-                key -> lv.juxtapose(rv)
+  //               key -> lv.juxtapose(rv)
 
-          Juxtaposition.Collation(comparison, t"", t"")
+  //         Juxtaposition.Collation(comparison, t"", t"")
 
 case class CodlDoc
    (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Char] = LazyList())
