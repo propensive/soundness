@@ -40,7 +40,7 @@ object Windows:
       MustNotEqual["(?i)COM[0-9](\\.[^.]+)?"] & MustNotEqual["(?i)LPT[0-9](\\.[^.]+)?"]
 
   given navigable: Tactic[NameError]
-  => Windows is Navigable by Name[Windows] under Rules =
+  =>    Windows is Navigable by Name[Windows] under Rules =
     new Navigable:
       type Operand = Name[Windows]
       type Self = Windows

@@ -39,7 +39,7 @@ object Filesystem:
     path => jnf.Files.exists(path.javaPath)
 
   given radical: Tactic[PathError]
-      => Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
+  =>    Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =
@@ -50,7 +50,7 @@ object Filesystem:
       case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
 
   given navigable: Tactic[NameError]
-  => Filesystem is Navigable by Name[Filesystem] under Rules =
+  =>    Filesystem is Navigable by Name[Filesystem] under Rules =
     val os = System.getProperty("os.name").nn.tt
 
     val delegate =

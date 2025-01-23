@@ -28,13 +28,13 @@ import java.nio.file as jnf
 
 object Openable:
   given [PlatformType <: Filesystem]
-  => (read:     ReadAccess,
-      write:      WriteAccess,
-      dereference: DereferenceSymlinks,
-      create:     CreateNonexistent on PlatformType,
-      streamError: Tactic[StreamError],
-      ioError:    Tactic[IoError])
-  =>  (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
+  =>   (read:        ReadAccess,
+        write:       WriteAccess,
+        dereference: DereferenceSymlinks,
+        create:      CreateNonexistent on PlatformType,
+        streamError: Tactic[StreamError],
+        ioError:     Tactic[IoError])
+  =>    (Path on PlatformType) is Openable by jnf.OpenOption into Handle = new Openable:
 
     type Self = Path on PlatformType
     type Operand = jnf.OpenOption
@@ -64,7 +64,7 @@ object Openable:
     def close(channel: jnc.FileChannel): Unit = channel.close()
 
   given openable: [FileType] => (openable: FileType is Openable by jnf.OpenOption)
-  => Eof[FileType] is Openable by jnf.OpenOption into openable.Result = new Openable:
+  =>   Eof[FileType] is Openable by jnf.OpenOption into openable.Result = new Openable:
     type Self = Eof[FileType]
     type Operand = jnf.OpenOption
     type Result = openable.Result

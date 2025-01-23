@@ -293,7 +293,7 @@ package filesystemOptions:
 
   object deleteRecursively:
     given enabled: [PlatformType <: Filesystem] => Tactic[IoError]
-    =>  DeleteRecursively on PlatformType:
+    =>    DeleteRecursively on PlatformType:
 
       import filesystemOptions.dereferenceSymlinks.disabled
 
@@ -307,7 +307,7 @@ package filesystemOptions:
         path.children.each(recur(_)) yet operation
 
     given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
-        => DeleteRecursively on PlatformType:
+    =>    DeleteRecursively on PlatformType:
 
       type Platform = PlatformType
 
@@ -319,15 +319,15 @@ package filesystemOptions:
 
   object overwritePreexisting:
     given enabled: [PlatformType <: Filesystem]
-    => (deleteRecursively: DeleteRecursively on PlatformType)
-    =>  OverwritePreexisting on PlatformType:
+    =>   (deleteRecursively: DeleteRecursively on PlatformType)
+    =>    OverwritePreexisting on PlatformType:
       type Platform = PlatformType
 
       def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType =
         deleteRecursively.conditionally(path)(operation)
 
     given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
-        => OverwritePreexisting on PlatformType:
+    =>   OverwritePreexisting on PlatformType:
 
       type Platform = PlatformType
 
@@ -337,8 +337,8 @@ package filesystemOptions:
 
   object createNonexistentParents:
     given enabled: [PlatformType <: Filesystem] => Tactic[IoError]
-    => (Path on PlatformType) is Substantiable
-    =>  CreateNonexistentParents on PlatformType:
+    =>   (Path on PlatformType) is Substantiable
+    =>    CreateNonexistentParents on PlatformType:
 
       def apply[ResultType](path: Path on PlatformType)(operation: => ResultType): ResultType =
         path.parent.let: parent =>
@@ -350,7 +350,7 @@ package filesystemOptions:
         operation
 
     given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
-        => CreateNonexistentParents on PlatformType:
+    =>    CreateNonexistentParents on PlatformType:
       type Platform = PlatformType
 
       def apply[ResultType](path: Path on PlatformType)(block: => ResultType): ResultType =
@@ -358,9 +358,9 @@ package filesystemOptions:
 
   object createNonexistent:
     given enabled: [PlatformType <: Filesystem]
-    => (create: CreateNonexistentParents on PlatformType)
-    =>  (Path on PlatformType) is Substantiable
-    =>  CreateNonexistent on PlatformType:
+    =>   (create: CreateNonexistentParents on PlatformType)
+    =>    (Path on PlatformType) is Substantiable
+    =>    CreateNonexistent on PlatformType:
       type Platform = PlatformType
 
       def error(path: Path on Platform, operation: IoError.Operation): Nothing =
@@ -373,7 +373,7 @@ package filesystemOptions:
       def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
 
     given disabled: [PlatformType <: Filesystem] => Tactic[IoError]
-        => CreateNonexistent on PlatformType:
+    =>    CreateNonexistent on PlatformType:
 
       type Platform = PlatformType
 

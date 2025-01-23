@@ -35,10 +35,10 @@ import language.experimental.pureFunctions
 
 object Makable:
   given [PlatformType <: Filesystem]
-  => (createNonexistentParents: CreateNonexistentParents on PlatformType,
-      overwritePreexisting:    OverwritePreexisting on PlatformType,
-      tactic:                Tactic[IoError])
-  =>  Directory is Makable on PlatformType into (Path on PlatformType) =
+  =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
+        overwritePreexisting:     OverwritePreexisting on PlatformType,
+        tactic:                   Tactic[IoError])
+  =>    Directory is Makable on PlatformType into (Path on PlatformType) =
     new Makable:
       type Self = Directory
       type Result = Path on Platform
@@ -51,10 +51,10 @@ object Makable:
             path
 
   given socket: [PlatformType <: Posix]
-  => (createNonexistentParents: CreateNonexistentParents on PlatformType,
-      overwritePreexisting:    OverwritePreexisting on PlatformType,
-      tactic:                Tactic[IoError])
-  => Socket is Makable into Socket =
+  =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
+        overwritePreexisting:     OverwritePreexisting on PlatformType,
+        tactic:                   Tactic[IoError])
+  =>    Socket is Makable into Socket =
     new Makable:
       type Platform = PlatformType
       type Self = Socket
@@ -69,10 +69,10 @@ object Makable:
             Socket(channel)
 
   given file: [PlatformType <: Filesystem]
-  => (createNonexistentParents: CreateNonexistentParents on PlatformType,
-      overwritePreexisting:    OverwritePreexisting on PlatformType,
-      tactic:                Tactic[IoError])
-  =>  File is Makable on PlatformType into (Path on PlatformType) =
+  =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
+        overwritePreexisting:     OverwritePreexisting on PlatformType,
+        tactic:                   Tactic[IoError])
+  =>    File is Makable on PlatformType into (Path on PlatformType) =
     new Makable:
       type Platform = PlatformType
       type Self = File
@@ -84,12 +84,12 @@ object Makable:
             jnf.Files.createFile(path.javaPath)
 
   given fifo: [PlatformType <: Filesystem]
-  => (createNonexistentParents: CreateNonexistentParents on PlatformType,
-      overwritePreexisting:    OverwritePreexisting on PlatformType,
-      working:               WorkingDirectory,
-      tactic:                Tactic[IoError],
-      loggable:              ExecEvent is Loggable)
-      => Fifo is Makable into (Path on PlatformType) =
+  =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
+        overwritePreexisting:     OverwritePreexisting on PlatformType,
+        working:                  WorkingDirectory,
+        tactic:                   Tactic[IoError],
+        loggable:                 ExecEvent is Loggable)
+  =>    Fifo is Makable into (Path on PlatformType) =
     new Makable:
       type Self = Fifo
       type Result = Path on Platform
