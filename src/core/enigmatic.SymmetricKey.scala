@@ -22,7 +22,7 @@ import prepositional.*
 object SymmetricKey:
   given [CipherType <: Cipher] => SymmetricKey[CipherType] is Encodable in Bytes = _.bytes
   def generate[CipherType <: Cipher & Symmetric]()(using cipher: CipherType)
-          : SymmetricKey[CipherType] =
+  :     SymmetricKey[CipherType] =
 
     SymmetricKey(cipher.genKey())
 
@@ -33,6 +33,6 @@ extends PrivateKey[CipherType](bytes):
 
   def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])
      (using CipherType & Signing)
-          : Boolean =
+  :     Boolean =
 
     public.verify(value, signature)

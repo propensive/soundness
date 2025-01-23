@@ -37,12 +37,12 @@ open case class PrivateKey[CipherType <: Cipher](private[enigmatic] val privateB
     PublicKey(cipher.privateToPublic(privateBytes))
 
   def decrypt[ValueType: Decodable in Bytes](bytes: Bytes)(using cipher: CipherType & Encryption)
-          : ValueType raises CryptoError =
+  :     ValueType raises CryptoError =
 
     ValueType.decode(cipher.decrypt(bytes, privateBytes), false)
 
   def sign[ValueType: Encodable in Bytes](value: ValueType)(using cipher: CipherType & Signing)
-          : Signature[CipherType] =
+  :     Signature[CipherType] =
 
     Signature(cipher.sign(ValueType.encode(value), privateBytes))
 
