@@ -88,7 +88,7 @@ object Timing:
     infix def in (using RomanCalendar)(timezone: Timezone): LocalTime =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
 
-      val date = (zonedTime.getMonthValue: @unchecked) match
+      val date = zonedTime.getMonthValue.runtimeChecked match
         case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
 
       val time = ((zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond): @unchecked) match

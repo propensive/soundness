@@ -34,7 +34,7 @@ object Timespan:
       def milliseconds(period: Timespan & FixedDuration): Long =
         period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
 
-  def apply(denomination: StandardTime, n: Int): Timespan = (denomination: @unchecked) match
+  def apply(denomination: StandardTime, n: Int): Timespan = denomination.runtimeChecked match
     case StandardTime.Year   => Timespan(n, 0, 0, 0, 0, 0)
     case StandardTime.Month  => Timespan(0, n, 0, 0, 0, 0)
     case StandardTime.Day    => Timespan(0, 0, n, 0, 0, 0)
