@@ -31,14 +31,20 @@ object Tzdb:
   case class Duration(hours: Int, minutes: Int, seconds: Int)
 
   enum Entry:
-    case Rule(name: Text, from: Int, end: Int, change: MonthDate, time: Time,
-                  save: Duration, letters: Option[Text])
+    case Rule
+       (name:    Text,
+        from:    Int,
+        end:     Int,
+        change:  MonthDate,
+        time:    Time,
+        save:    Duration,
+        letters: Option[Text])
+
     case Leap(year: Int, month: MonthName, day: Int, time: Time, addition: Boolean)
     case Zone(area: Text, location: Option[Text], info: Trie[ZoneInfo])
     case Link(from: Text, to: Text)
 
-  case class ZoneInfo(stdoff: Duration, rules: Text, format: Text => Text,
-                          until: Option[Text])
+  case class ZoneInfo(stdoff: Duration, rules: Text, format: Text => Text, until: Option[Text])
 
   enum MonthDate:
     case Last(month: MonthName, day: Weekday)
@@ -52,25 +58,25 @@ object Tzdb:
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
 
-      Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower).to(LazyList)
+      Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
+      . to(LazyList)
 
     parse(name, lines)
 
   def parse(name: Text, lines: LazyList[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
-
     def parseDuration(lineNo: Int, str: Text) = str.cut(t":").to(List) match
-      case As[Int](h) :: Nil                             => Duration(h, 0, 0)
-      case As[Int](h) :: As[Int](m) :: Nil               => Duration(h, m, 0)
-      case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil => Duration(h, m, s)
+      case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
+      case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
+      case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Duration(h, m, s)
 
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseTime(lineNo: Int, str: Text) = str.cut(t":").to(List) match
-      case As[Int](h) :: r"${As[Int](m)}([0-9]*)s" :: Nil => Time(h, m, 0, 's')
-      case As[Int](h) :: r"${As[Int](m)}([0-9]*)u" :: Nil => Time(h, m, 0, 'u')
-      case As[Int](h) :: As[Int](m) :: Nil                => Time(h, m, 0, Unset)
-      case As[Int](h) :: As[Int](m) :: As[Int](s) :: Nil  => Time(h, m, s, Unset)
+      case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)s" :: Nil   => Time(h, m, 0, 's')
+      case As[Base24](h) :: r"${As[Base60](m)}([0-9]*)u" :: Nil   => Time(h, m, 0, 'u')
+      case As[Base24](h) :: As[Base60](m) :: Nil                  => Time(h, m, 0, Unset)
+      case As[Base24](h) :: As[Base60](m) :: As[Base60](s) :: Nil => Time(h, m, s, Unset)
 
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
@@ -126,7 +132,7 @@ object Tzdb:
 
     def parseRule(lineNo: Int, args: List[Text]): Tzdb.Entry.Rule = args match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>
-        try throwErrors:
+        try unsafely:
           val end = to match
             case t"max"  => Int.MaxValue
             case t"only" => from.decode[Int]
@@ -136,6 +142,7 @@ object Tzdb:
           val t = parseTime(lineNo, time)
           val s = parseDuration(lineNo, save)
           Tzdb.Entry.Rule(name, from.decode[Int], end, d, t, s, parseLetters(letters))
+
         catch case err: NumberError =>
           abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
@@ -156,9 +163,7 @@ object Tzdb:
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None)
             : List[Tzdb.Entry] =
-      if lines.isEmpty then
-        //Log.fine(t"Finished parsing $lineNo lines of $name, and got ${entries.size} entries")
-        entries ++ zone
+      if lines.isEmpty then entries ++ zone
       else
         val line: Text = lines.head.upto(_ == '#')
         line.cut(unsafely(r"\s+")).to(List) match

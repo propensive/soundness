@@ -18,7 +18,9 @@ package aviation
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
 import rudiments.*
+import vacuous.*
 
 export Timing.{Instant, Duration}
 export Aviation.Date
@@ -36,18 +38,20 @@ package calendars:
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
 def now()(using clock: Clock): Instant = clock()
-def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date = (now() in timezone).date
+
+def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
+  (now() in timezone).date
+
+given [TextType <: Text] => (Text is Extractable into Int) => TextType is Extractable into Base60 =
+  case As[Int](value: Base60) => value
+  case _                      => Unset
+
+given [TextType <: Text] => (Text is Extractable into Int) => TextType is Extractable into Base24 =
+  case As[Int](value: Base24) => value
+  case _                      => Unset
 
 enum TimeEvent:
   case ParseStart
-
-given (using Unapply[Text, Int]): Unapply[Text, Base60] =
-  case As[Int](value: Base60) => Some(value)
-  case _                      => None
-
-given (using Unapply[Text, Int]): Unapply[Text, Base24] =
-  case As[Int](value: Base24) => Some(value)
-  case _                      => None
 
 extension (inline double: Double)
   inline def am: Clockface = ${Aviation.validTime('double, false)}
