@@ -26,7 +26,7 @@ import language.experimental.captureChecking
 
 object Adversaria:
   def firstField[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
-          : Expr[CaseField[TargetType, AnnotationType]] =
+  :     Expr[CaseField[TargetType, AnnotationType]] =
 
     import quotes.reflect.*
 
@@ -44,7 +44,7 @@ object Adversaria:
     . head
 
   def fields[TargetType <: Product: Type, AnnotationType <: StaticAnnotation: Type](using Quotes)
-          : Expr[List[CaseField[TargetType, AnnotationType]]] =
+  :     Expr[List[CaseField[TargetType, AnnotationType]]] =
 
     import quotes.reflect.*
 
@@ -65,7 +65,7 @@ object Adversaria:
     Expr.ofList(elements)
 
   def fieldAnnotations[TargetType: Type](lambda: Expr[TargetType => Any])(using Quotes)
-          : Expr[List[StaticAnnotation]] =
+  :     Expr[List[StaticAnnotation]] =
 
     import quotes.reflect.*
 
@@ -84,7 +84,7 @@ object Adversaria:
         case '{ $annotation: StaticAnnotation } => annotation
 
   def typeAnnotations[AnnotationType <: StaticAnnotation: Type, TargetType: Type](using Quotes)
-          : Expr[Annotations[AnnotationType, TargetType]] =
+  :     Expr[Annotations[AnnotationType, TargetType]] =
 
     import quotes.reflect.*
 

@@ -26,7 +26,7 @@ case class Annotations[AnnotationType <: StaticAnnotation, TargetType](annotatio
 
 object Annotations:
   inline given[AnnotationType <: StaticAnnotation, TargetType]
-          : Annotations[AnnotationType, TargetType] =
+  :     Annotations[AnnotationType, TargetType] =
 
     ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
 
@@ -34,11 +34,11 @@ object Annotations:
     ${Adversaria.fieldAnnotations[TargetType]('lambda)}
 
   transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : List[CaseField[TargetType, AnnotationType]] =
+  :     List[CaseField[TargetType, AnnotationType]] =
 
     ${Adversaria.fields[TargetType, AnnotationType]}
 
   transparent inline def firstField[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : CaseField[TargetType, AnnotationType] =
+  :     CaseField[TargetType, AnnotationType] =
 
     ${Adversaria.firstField[TargetType, AnnotationType]}

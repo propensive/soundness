@@ -24,7 +24,7 @@ import language.experimental.captureChecking
 object CaseField:
   def apply[TargetType <: Product, AnnotationType <: StaticAnnotation, InitFieldType]
      (name: Text, access: TargetType -> InitFieldType, annotation: AnnotationType)
-          : CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
+  :     CaseField[TargetType, AnnotationType] { type FieldType = InitFieldType } =
 
     inline def annotation0 = annotation
 
@@ -34,7 +34,7 @@ object CaseField:
       def annotation: AnnotationType = annotation0
 
   transparent inline given[TargetType <: Product, AnnotationType <: StaticAnnotation]
-          : CaseField[TargetType, AnnotationType] =
+  :     CaseField[TargetType, AnnotationType] =
 
     Annotations.firstField[TargetType, AnnotationType]
 
