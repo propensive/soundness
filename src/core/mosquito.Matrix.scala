@@ -128,4 +128,5 @@ object Matrix:
         for row <- 0 until rowCount; column <- 0 until columnCount
         do rows.productElement(row).asMatchable.absolve match
           case tuple: Tuple =>
-            array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType])
+            array(columnCount*row + column) =
+              tuple.productElement(column).asInstanceOf[ElementType])

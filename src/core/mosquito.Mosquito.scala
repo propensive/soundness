@@ -138,7 +138,8 @@ object Mosquito:
       recur(left, right)
 
     @targetName("scalarMul")
-    def * [RightType](right: RightType)(using multiplication: LeftType is Multiplicable by RightType)
+    def * [RightType](right: RightType)
+       (using multiplication: LeftType is Multiplicable by RightType)
     :     Vector[multiplication.Result, SizeType] =
 
       map(_*right)
