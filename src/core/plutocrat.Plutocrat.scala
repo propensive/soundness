@@ -40,7 +40,7 @@ object Plutocrat:
       Ordering.Long match
         case ordering: Ordering[Money[CurrencyType]] => ordering
 
-    given [CurrencyType <: Currency & Singleton: ValueOf](using currencyStyle: CurrencyStyle)
+    given [CurrencyType <: Currency & Singleton: ValueOf] => (currencyStyle: CurrencyStyle)
         => Money[CurrencyType] is Showable =
 
       money =>
@@ -50,16 +50,16 @@ object Plutocrat:
 
         currencyStyle.format(currency, units, subunit)
 
-    given [CurrencyType <: Currency & Singleton]
-        => Money[CurrencyType] is Addable by Money[CurrencyType] into Money[CurrencyType] as addable =
+    given addable: [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Addable by Money[CurrencyType] into Money[CurrencyType] =
       _ + _
 
-    given [CurrencyType <: Currency & Singleton]
-        => Money[CurrencyType] is Subtractable by Money[CurrencyType] into Money[CurrencyType] as subtractable =
+    given subtractable: [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Subtractable by Money[CurrencyType] into Money[CurrencyType] =
       _ - _
 
-    given [CurrencyType <: Currency & Singleton]
-        => Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] as multiplicable =
+    given multiplicable: [CurrencyType <: Currency & Singleton]
+        => Money[CurrencyType] is Multiplicable by Double into Money[CurrencyType] =
       (left, right) =>
         val value = left*right
         (value + value.signum/2).toLong
