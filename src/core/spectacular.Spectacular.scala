@@ -31,7 +31,7 @@ object Spectacular:
           type Self = EnumType
           val name: Text = ${Expr(TypeRepr.of[EnumType].show)}.tt
           val values: IArray[EnumType] =
-            ${  (companion: @unchecked) match
+            ${  companion.runtimeChecked match
                   case '{ $companion: companionType } =>
                     val ref = TypeRepr.of[companionType].typeSymbol.declaredMethod("values").head
                     companion.asTerm.select(ref).asExprOf[Array[EnumType]]
