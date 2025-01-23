@@ -26,7 +26,7 @@ extension (double: Double)
   def rad: Radians = Radians(double)
   def deg: Degrees = Degrees(double)
 
-export CardinalWind.*
+export CardinalWind.{North, South, East, West}
 export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}
 
 export HalfWind
