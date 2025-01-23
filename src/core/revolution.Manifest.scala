@@ -54,7 +54,7 @@ object Manifest:
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
-          : Optional[KeyType.Subject] =
+  :     Optional[KeyType.Subject] =
 
     if entries.contains(attribute.key) then KeyType.decode(entries(attribute.key)) else Unset
 
