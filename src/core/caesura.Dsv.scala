@@ -71,7 +71,7 @@ object Dsv:
           Column[Row, Text, Text](name.or(t""), sizing = columnar.Collapsible(0.5))(_[Text](name).or(t"")))*)
 
   def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat)
-          : Dsv raises DsvError =
+  :     Dsv raises DsvError =
     val rows = recur(source.stream[Text])
     if format.header then Dsv(rows, format, rows.prim.let(_.header)) else Dsv(rows, format)
 
@@ -86,7 +86,7 @@ object Dsv:
       state:    State                    = State.Fresh,
       headings: Optional[Map[Text, Int]] = Unset)
      (using format: DsvFormat, tactic: Tactic[DsvError])
-          : LazyList[Row] =
+  :     LazyList[Row] =
 
     inline def putCell(): Array[Text] =
       val cells2 = if cells.length <= column then cells :+ buffer() else
