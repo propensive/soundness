@@ -16,9 +16,11 @@
 
 package aviation
 
+import rudiments.*
+
 object Base24:
   def apply(int: Int): Base24 =
-    (((int%24) + 24)%24).runtimeChecked match
+    (((int%24) + 24)%24).absolve match
       case value: Base24 => value
 
   def unapply(value: Int): Option[Base24] =

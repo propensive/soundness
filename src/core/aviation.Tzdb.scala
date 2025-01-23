@@ -119,7 +119,7 @@ object Tzdb:
       case stdoff :: rules :: format :: until =>
         val s = parseDuration(lineNo, stdoff)
 
-        def f(str: Text) = format.cut(t"%s", 2).to(List).runtimeChecked match
+        def f(str: Text) = format.cut(t"%s", 2).to(List).absolve match
           case value :: Nil           => value
           case before :: after :: Nil => before+str+after
 
