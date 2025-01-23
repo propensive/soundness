@@ -41,12 +41,12 @@ export Gossamer.opaques.Ascii
 
 def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
-        : Unit =
+:     Unit =
   buffer.append(TextType.show(value))
 
 def appendln[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
-        : Unit =
+:     Unit =
   buffer.append(TextType.show(value))
   buffer.append(TextType("\n".tt))
 
@@ -93,7 +93,7 @@ extension (bytes: Bytes)
 extension [TextType](text: TextType)
   def cut[DelimiterType](delimiter: DelimiterType, limit: Int = Int.MaxValue)
      (using cuttable: TextType is Cuttable by DelimiterType)
-          : List[TextType] =
+  :     List[TextType] =
 
     cuttable.cut(text, delimiter, limit)
 
@@ -190,7 +190,7 @@ extension [TextType: Textual](text: TextType)
     regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
 
   def extract[ValueType](start: Ordinal)(lambda: Matching ?=> TextType ~> ValueType)
-          : LazyList[ValueType] =
+  :     LazyList[ValueType] =
 
     val input = TextType.text(text)
     if start.n0 < input.s.length then
@@ -209,7 +209,7 @@ extension [TextType: Textual](text: TextType)
     text.segment(start ~ end)
 
   def where(pred: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
-          : Optional[Ordinal] =
+  :     Optional[Ordinal] =
     val step: Int = bidi match
       case Ltr => 1
       case Rtl => -1

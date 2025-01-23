@@ -80,7 +80,7 @@ object Gossamer:
       '{Ascii(Bytes(${Varargs(bytes)}*))}
 
     def recur(first: List[Expr[Ascii]], second: List[Expr[Ascii]], expr: Expr[Ascii])
-            : Expr[Ascii] =
+    :     Expr[Ascii] =
       first match
         case head :: tail => recur(second, tail, '{$expr+$head})
         case Nil          => expr
