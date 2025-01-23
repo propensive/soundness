@@ -92,7 +92,7 @@ object Denominative:
 
     inline def foldLeft[ValueType](inline initial: ValueType)
        (inline lambda: (ValueType, Ordinal) => ValueType)
-            : ValueType =
+    :     ValueType =
 
       var i: Ordinal = start
       var acc: ValueType = initial
@@ -107,7 +107,7 @@ object Denominative:
   object Interval:
     inline def initial(size: Int): Interval = size.toLong
     inline def empty: Interval = 0L
-    
+
     inline def zerary(inline start: Int, inline end: Int): Interval =
       (start & 0xffffffffL) << 32 | end & 0xffffffffL
 
