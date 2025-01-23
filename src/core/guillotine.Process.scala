@@ -32,13 +32,13 @@ import vacuous.*
 
 object Process:
   given writable: [ChunkType, CommandType <: Label, ResultType]
-  => (ji.OutputStream is Writable by ChunkType)
-  => Process[CommandType, ResultType] is Writable by ChunkType =
+  =>    ji.OutputStream is Writable by ChunkType
+  =>    Process[CommandType, ResultType] is Writable by ChunkType =
 
     (process, stream) => process.stdin(stream)
 
   given writableText: [CommandType <: Label, ResultType] => Tactic[StreamError]
-  => Process[CommandType, ResultType] is Writable by Text =
+  =>    Process[CommandType, ResultType] is Writable by Text =
     (process, stream) => process.stdin(stream.map(_.sysBytes))
 
 class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extends ProcessRef:

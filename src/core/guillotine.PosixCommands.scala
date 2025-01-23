@@ -120,7 +120,7 @@ trait PosixCommands:
   erased given wc: ("wc" is Intelligible into Text) = ###
 
   erased given which: [PathType] => (erased PathType is SpecificPath)
-  =>  ("which" is Intelligible into PathType) = ###
+  =>    ("which" is Intelligible into PathType) = ###
 
   erased given who: ("who" is Intelligible into Text) = ###
   erased given write: ("write" is Intelligible into Text) = ###
