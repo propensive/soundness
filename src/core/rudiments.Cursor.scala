@@ -35,6 +35,6 @@ object Cursor:
 
   inline def curse[ElemType, ElemType2](seq: IndexedSeq[ElemType])
      (inline block: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
-          : IndexedSeq[ElemType2] =
+  :       IndexedSeq[ElemType2] =
 
     seq.indices.map { index => block(using seq, index) }

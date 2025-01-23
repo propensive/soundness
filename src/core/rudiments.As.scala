@@ -18,6 +18,10 @@ package rudiments
 
 import language.experimental.captureChecking
 
+import prepositional.*
+
 object As:
-  def unapply[MatchType](scrutinee: Any)(using Unapply[scrutinee.type, MatchType]): Option[MatchType] =
-    summon[Unapply[scrutinee.type, MatchType]].unapply(scrutinee)
+  def unapply[MatchType](scrutinee: Any)
+     (using extractable: scrutinee.type is Extractable into MatchType)
+  :       Option[MatchType] =
+    extractable.unapply(scrutinee)

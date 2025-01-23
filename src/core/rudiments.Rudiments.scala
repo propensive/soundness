@@ -50,7 +50,9 @@ object Rudiments:
     def apply(long: Long): Memory = long
     given ("content-length" is GenericHttpRequestParam[Memory]) = _.long.toString.tt
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
-    given communicable[MemoryType <: Memory]: (Communicable { type Self = MemoryType }) = memory => Message(memory.text)
+
+    given communicable: [MemoryType <: Memory] => MemoryType is Communicable =
+      memory => Message(memory.text)
 
     given addable: Memory is Addable by Memory into Memory = _ + _
     given subtractable: Memory is Subtractable by Memory into Memory = _ - _
