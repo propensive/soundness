@@ -30,7 +30,7 @@ object Dag:
   def create[NodeType](start: NodeType)(dependencies: NodeType => Set[NodeType]): Dag[NodeType] =
     @tailrec
     def recur(map: Map[NodeType, Set[NodeType]], todo: Set[NodeType], done: Set[NodeType])
-            : Dag[NodeType] =
+    :     Dag[NodeType] =
 
       if todo.isEmpty then new Dag(map) else
         val key = todo.head
@@ -74,7 +74,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def has(key: NodeType): Boolean = edgeMap.contains(key)
 
   def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2)
-          : Map[NodeType, NodeType2] =
+  :     Map[NodeType, NodeType2] =
 
     sorted.foldLeft(Map[NodeType, NodeType2]()):
       (map, next) => map.updated(next, lambda(apply(next).map(map), next))
@@ -134,7 +134,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   private def findCycle(start: NodeType): Option[List[NodeType]] =
     @tailrec
     def recur(queue: List[(NodeType, List[NodeType])], finished: Set[NodeType])
-            : Option[List[NodeType]] =
+    :     Option[List[NodeType]] =
 
       queue match
         case Nil => None
