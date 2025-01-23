@@ -238,7 +238,8 @@ def cli[BusType <: Matchable](using executive: Executive)
               else ColorDepth(safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
 
           val stdio: Stdio =
-            Stdio(ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
+            Stdio
+             (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
 
           def deliver(sourcePid: Pid, message: BusType): Unit = clients.use: clients =>
             clients.each: (pid, client) =>
