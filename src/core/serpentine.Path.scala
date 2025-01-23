@@ -160,7 +160,8 @@ extends Pathlike:
 
     recur(n, this)
 
-  def ancestors: List[Path on Platform] = parent.let { parent => parent :: parent.ancestors }.or(Nil)
+  def ancestors: List[Path on Platform] =
+    parent.let { parent => parent :: parent.ancestors }.or(Nil)
 
   transparent inline def on [PlatformType]: Path on PlatformType =
     inline erasedValue[PlatformType & Matchable] match
