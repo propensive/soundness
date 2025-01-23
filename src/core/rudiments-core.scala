@@ -90,6 +90,8 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 
 export Rudiments.&
 
+export Predef.runtimeChecked as absolve
+
 extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
   def tuple: ProductType.MirroredElemTypes = Tuple.fromProductTyped(product)
 
@@ -104,7 +106,6 @@ infix type binds[ResultType, TypeclassType <: Any { type Self }] =
   Bond[TypeclassType] ?=> ResultType
 
 inline def bound[BoundType <: Any { type Self }: Bond]: BoundType.Value = BoundType.value
-
 inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
 
 export scala.reflect.{ClassTag, Typeable}
