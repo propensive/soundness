@@ -34,22 +34,22 @@ object Complex:
       t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.renderUnits(value.real.units)}"
 
   inline given addable: [ComponentType: Addable by ComponentType as addable]
-  => Complex[ComponentType] is Addable by Complex[ComponentType] =
+  =>    Complex[ComponentType] is Addable by Complex[ComponentType] =
     new Addable.Basic[Complex[ComponentType], Complex[ComponentType], Complex[addable.Result]]
       ({ (left, right) =>
            Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary) })
 
   inline given subtractable: [ComponentType: Subtractable by ComponentType as subtractable]
-  => Complex[ComponentType] is Subtractable by Complex[ComponentType] =
+  =>   Complex[ComponentType] is Subtractable by Complex[ComponentType] =
     new Subtractable.Basic[Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]
       ({ (left, right) =>
            Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary) })
 
   inline given multiplicable: [ComponentType]
-  => (multiplication: ComponentType is Multiplicable by ComponentType,
+  =>   (multiplication: ComponentType is Multiplicable by ComponentType,
       addition:      multiplication.Result is Addable by multiplication.Result,
       subtraction:    multiplication.Result is Subtractable by multiplication.Result)
-  =>  Complex[ComponentType] is Multiplicable by Complex[ComponentType] =
+  =>    Complex[ComponentType] is Multiplicable by Complex[ComponentType] =
     new Multiplicable:
       type Self = Complex[ComponentType]
       type Result = Complex[addition.Result | subtraction.Result]
