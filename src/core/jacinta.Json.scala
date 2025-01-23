@@ -127,9 +127,16 @@ object Json extends Json2, Dynamic:
   def ast(value: JsonAst): Json = new Json(value)
 
   given boolean: Json is Decodable in Json = (value, omit) => value
-  given boolean: Tactic[JsonError] => Boolean is Decodable in Json = (value, omit) => value.root.boolean
-  given double: Tactic[JsonError] => Double is Decodable in Json = (value, omit) => value.root.double
-  given float: Tactic[JsonError] => Float is Decodable in Json = (value, omit) => value.root.double.toFloat
+
+  given boolean: Tactic[JsonError] => Boolean is Decodable in Json =
+    (value, omit) => value.root.boolean
+
+  given double: Tactic[JsonError] => Double is Decodable in Json =
+    (value, omit) => value.root.double
+
+  given float: Tactic[JsonError] => Float is Decodable in Json =
+    (value, omit) => value.root.double.toFloat
+
   given long: Tactic[JsonError] => Long is Decodable in Json = (value, omit) => value.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = (value, omit) => value.root.long.toInt
   given text: Tactic[JsonError] => Text is Decodable in Json = (value, omit) => value.root.string
