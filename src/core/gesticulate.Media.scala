@@ -130,7 +130,7 @@ object Media:
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
 
-      (xs: @unchecked) match
+      xs.runtimeChecked match
       case (h: Text) :: _ => (parseSubtype(h), parseSuffixes(xs.tail))
 
     def parseBasic(str: Text): (Group, Subtype, List[Suffix]) = str.cut(t"/").to(List) match
@@ -161,7 +161,7 @@ object Media:
 
     val xs: List[Text] = string.cut(t";").to(List).map(_.trim)
 
-    (xs: @unchecked) match
+    xs.runtimeChecked match
       case (h: Text) :: _ =>
         val basic = parseBasic(h)
         MediaType(basic(0), basic(1), basic(2), parseParams(xs.tail))
