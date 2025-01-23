@@ -66,7 +66,7 @@ case class Permutation(factoradic: Factoradic):
         list:    List[ElementType],
         current: Int,
         result:  List[ElementType])
-            : List[ElementType] =
+    :     List[ElementType] =
 
       lehmer match
         case head :: tail =>
