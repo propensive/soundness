@@ -25,19 +25,19 @@ import rudiments.*
 object Tests extends Suite(t"Cardinality tests"):
   def run(): Unit =
     suite(t"Compile-time tests"):
-      
+
       test(t"Value is less than lower bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = -1.01
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
-      
+
       test(t"Value is greater than upper bound"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 1.01
         .map(_.errorId)
       .assert(_ == List(ErrorId.TypeMismatchID))
-      
+
       test(t"Doubling a number doubles its range"):
         demilitarize:
           val x: -1.0 ~ 1.0 = 0.0
