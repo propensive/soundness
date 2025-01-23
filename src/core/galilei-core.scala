@@ -127,7 +127,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
     else if jnf.Files.isDirectory(javaPath) then Directory
     else
       val mode = jnf.Files.getAttribute(javaPath, "unix:mode", symlinks.options()*)
-      (mode: @unchecked) match
+      mode.runtimeChecked match
         case mode: Int => (mode & 61440) match
           case  4096 => Fifo
           case  8192 => CharDevice
