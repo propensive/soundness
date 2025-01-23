@@ -23,7 +23,7 @@ import spectacular.*
 import vacuous.*
 
 object Node:
-  given html: [HtmlType <: Html[?]] => HtmlType is Showable = html => (html: @unchecked) match
+  given html: [HtmlType <: Html[?]] => HtmlType is Showable = html => html.runtimeChecked match
     case text: Text    => text
     case int: Int      => int.show
     case node: Node[?] => node.show
@@ -33,7 +33,7 @@ object Node:
   given node: [NodeType <: Node[?]] => NodeType is Showable = item =>
     val filling =
       item.attributes.map: keyValue =>
-        (keyValue: @unchecked) match
+        keyValue.runtimeChecked match
           case (key, Unset)       => t" $key"
           case (key, value: Text) => t""" $key="$value""""
 
