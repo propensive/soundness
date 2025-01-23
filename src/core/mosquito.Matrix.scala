@@ -126,6 +126,6 @@ object Matrix:
       columnCount,
       IArray.create[ElementType](columnCount*rowCount): array =>
         for row <- 0 until rowCount; column <- 0 until columnCount
-        do rows.productElement(row).asMatchable.runtimeChecked match
+        do rows.productElement(row).asMatchable.absolve match
           case tuple: Tuple =>
             array(columnCount*row + column) = tuple.productElement(column).asInstanceOf[ElementType])
