@@ -32,7 +32,8 @@ trait SystemProperty[NameType <: String, PropertyType]:
   def read(value: Text): PropertyType
 
 object SystemProperty:
-  given generic[UnknownType <: String & Singleton](using DummyImplicit): SystemProperty[UnknownType, Text] =
+  given generic: [UnknownType <: String & Singleton] => DummyImplicit
+  =>    SystemProperty[UnknownType, Text] =
     identity(_)
 
   given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] = SpecificPath(_)
@@ -70,7 +71,8 @@ object SystemProperty:
   given osVersion: SystemProperty["os.version", Text] = identity(_)
   given osArch: SystemProperty["os.arch", Text] = identity(_)
 
-  given decoder[UnknownType <: String & Singleton, PropertyType](using decoder: Decoder[PropertyType])
-  :     SystemProperty[UnknownType, PropertyType] =
+  given decoder: [UnknownType <: String & Singleton, PropertyType]
+  =>   (decoder: Decoder[PropertyType])
+  =>    SystemProperty[UnknownType, PropertyType] =
 
     decoder.decode(_)

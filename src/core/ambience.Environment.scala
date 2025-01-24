@@ -36,7 +36,8 @@ object Environment extends Dynamic:
             environmentError: Tactic[EnvironmentError])
   :     VariableType =
 
-    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable), reader.read(Text(""))))
+    environment.variable(variable).let(reader.read).or(raise(EnvironmentError(variable)))
+    . yet(reader.read("".tt))
 
   inline def selectDynamic[VariableType](key: String)
      (using environment:     Environment,
