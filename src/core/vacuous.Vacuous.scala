@@ -33,6 +33,9 @@ object Vacuous:
 
     import quotes.reflect.*
 
+    optional match
+      case '{ $optional: optionalType } => check[optionalType]
+
     def optimize(term: Term): Term = term match
       case inlined@Inlined
             (call@Some(Apply(TypeApply(Ident("optimizable"), _), _)), bindings, term) =>
