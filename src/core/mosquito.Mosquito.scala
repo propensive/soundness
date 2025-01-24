@@ -164,6 +164,6 @@ object Mosquito:
       recur(start - 1, left(start)*right(start))
 
 extension [ElementType](list: List[ElementType])
-  def slide(size: Int): LazyList[Vector[ElementType, size.type]] = list match
-    case Nil          => LazyList()
-    case head :: tail => Vector.take(list, size).lay(LazyList())(_ #:: tail.slide(size))
+  def slide(size: Int): Stream[Vector[ElementType, size.type]] = list match
+    case Nil          => Stream()
+    case head :: tail => Vector.take(list, size).lay(Stream())(_ #:: tail.slide(size))
