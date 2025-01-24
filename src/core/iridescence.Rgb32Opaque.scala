@@ -28,7 +28,8 @@ object Rgb32Opaque:
     given underlying: Underlying[Rgb32, Int] = ###
     given Rgb32 is Chromatic = _.srgb.rgb24.asInt
 
-    def apply(red: Int, green: Int, blue: Int): Rgb32 = ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
+    def apply(red: Int, green: Int, blue: Int): Rgb32 =
+      ((red&1023) << 22) + ((green&4095) << 10) + (blue&1023)
 
   extension (color: Rgb32)
     def red: Int = (color >> 22)&1023

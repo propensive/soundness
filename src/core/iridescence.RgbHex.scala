@@ -45,7 +45,8 @@ object RgbHex extends Interpolator[Nothing, Option[Rgb24], Rgb24]:
         rgb"rrggbb" where rr, gg and bb are 2-digit hex values""", 0)
 
   def insert(state: Option[Rgb24], value: Nothing): Option[Rgb24] =
-    throw InterpolationError(m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported")
+    throw InterpolationError:
+      m"substitutions into an ${Text("rgb\"\"")} interpolator are not supported"
 
   def skip(state: Option[Rgb24]): Option[Rgb24] = state
   def complete(color: Option[Rgb24]): Rgb24 = color.get

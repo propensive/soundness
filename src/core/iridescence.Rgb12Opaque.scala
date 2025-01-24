@@ -28,7 +28,8 @@ object Rgb12Opaque:
     given underlying: Underlying[Rgb12, Int] = ###
     given Rgb12 is Chromatic = _.srgb.rgb24.asInt
 
-    def apply(red: Int, green: Int, blue: Int): Rgb12 = ((red&15) << 8) + ((green&15) << 4) + (blue&15)
+    def apply(red: Int, green: Int, blue: Int): Rgb12 =
+      ((red&15) << 8) + ((green&15) << 4) + (blue&15)
 
   extension (color: Rgb12)
     def red: Int = (color >> 8)&15
