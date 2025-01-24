@@ -32,4 +32,4 @@ object YearMonth:
 
     def subtract(yearMonth: YearMonth, day: Int): Date =
       safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day))
-      . vouch(using Unsafe)
+      . vouch
