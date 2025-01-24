@@ -104,7 +104,7 @@ class Watch():
 
           catch case err: Exception => ()
 
-  def stream: LazyList[WatchEvent] = spool.stream
+  def stream: Stream[WatchEvent] = spool.stream
 
   def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
     val watches2 = paths.map:
