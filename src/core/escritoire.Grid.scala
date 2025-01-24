@@ -67,7 +67,7 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
           Stream()
 
     def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): TextType =
-      val width = above.or(below).vouch(using Unsafe).pipe: widths =>
+      val width = above.or(below).vouch.pipe: widths =>
         widths.sum + style.cost(widths.length)
 
       val ascenders =
