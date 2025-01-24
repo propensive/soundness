@@ -42,8 +42,8 @@ object Xml:
 
   given (enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
     def mediaType: Text = t"application/xml; charset=${enc.name}"
-    def content(xml: Xml): LazyList[IArray[Byte]] =
-      LazyList(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
+    def content(xml: Xml): Stream[IArray[Byte]] =
+      Stream(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
 
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
