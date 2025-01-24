@@ -264,7 +264,8 @@ object Contingency:
                   m"argument to `accrue` should be a partial function implemented as match cases"
 
               val tactics = cases.map: (_, _) =>
-                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}.asTerm
+                '{AccrueTactic(label, ref, $accrue.initial)($accrue.lambda)(using $diagnostics)}
+                . asTerm
 
               val contextTypeRepr = TypeRepr.of[ContextType[ResultType]]
               val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
