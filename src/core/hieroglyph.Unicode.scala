@@ -83,7 +83,7 @@ object Unicode:
         else map.updated(range, width)
 
     @tailrec
-    def recur(stream: LazyList[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
+    def recur(stream: Stream[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
       stream match
         case r"${Hex(from)}([0-9A-F]{4})\.\.${Hex(to)}([0-9A-F]{4});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>
           recur(tail, map.append(CharRange(from, to), w))
@@ -101,6 +101,6 @@ object Unicode:
       Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
         panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
 
-    val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(LazyList)
+    val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(Stream)
 
     recur(stream, TreeMap())

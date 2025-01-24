@@ -42,17 +42,17 @@ extends Decodable:
 
   def decode(bytes: Bytes, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()
-    decode(LazyList(bytes)).each { text => buf.append(text.s) }
+    decode(Stream(bytes)).each { text => buf.append(text.s) }
     buf.toString.tt
 
   def decode(bytes: Bytes): Text = decode(bytes, false)
 
-  def decode(stream: LazyList[Bytes]): LazyList[Text] =
+  def decode(stream: Stream[Bytes]): Stream[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: LazyList[Array[Byte]], offset: Int = 0, total: Int = 0): LazyList[Text] =
+    def recur(todo: Stream[Array[Byte]], offset: Int = 0, total: Int = 0): Stream[Text] =
       val count = in.remaining
 
       if !todo.isEmpty then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
@@ -72,7 +72,7 @@ extends Decodable:
       out.clear()
 
       def continue =
-        if todo.isEmpty && !status.isOverflow then LazyList()
+        if todo.isEmpty && !status.isOverflow then Stream()
         else if !todo.isEmpty && count >= todo.head.length - offset
         then recur(todo.tail, 0, total + todo.head.length - offset)
         else recur(todo, offset + count, total + count)

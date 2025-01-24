@@ -54,7 +54,7 @@ object Tests extends Suite(t"Hieroglyph tests"):
       for chunk <- 1 to 25 do
         test(t"Decode Japanese text in chunks of size $chunk"):
           import textSanitizers.skip
-          charDecoders.utf8.decode(japaneseBytes.grouped(chunk).to(LazyList)).join
+          charDecoders.utf8.decode(japaneseBytes.grouped(chunk).to(Stream)).join
         .assert(_ == japanese)
 
       val badUtf8 = Bytes(45, -62, 49, 48)

@@ -36,4 +36,4 @@ extends Encodable:
   type Self = Text
   type Format = Bytes
   def encode(text: Text): Bytes = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
-  def encode(stream: LazyList[Text]): LazyList[Bytes] = stream.map(encode)
+  def encode(stream: Stream[Text]): Stream[Bytes] = stream.map(encode)
