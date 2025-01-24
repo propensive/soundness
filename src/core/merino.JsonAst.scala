@@ -78,7 +78,8 @@ object JsonAst:
     inline final val CloseBrace:   125 = 125 // '}'
 
   opaque type RawJson =
-      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean | Null | Unset.type
+      Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] | Boolean
+      | Null | Unset.type
 
   def apply
      (value: Long | Double | BigDecimal | String | (IArray[String], IArray[Any]) | IArray[Any] |
