@@ -373,7 +373,7 @@ class Report(using Environment):
             e"${opsPerS(s.benchmark)}")
        ::: comparisons.map: c =>
           import Baseline.*
-          val baseline = c.benchmark.baseline.vouch(using Unsafe)
+          val baseline = c.benchmark.baseline.vouch
           Column(e"$Bold($CadetBlue(${c.test.id}))", textAlign = TextAlignment.Right):
             (bench: ReportLine.Bench) =>
               def op(left: Double, right: Double): Double = baseline.mode match

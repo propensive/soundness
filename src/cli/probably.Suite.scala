@@ -28,7 +28,7 @@ import vacuous.*
 import language.adhocExtensions
 
 abstract class Suite(suiteName: Text) extends Testable(suiteName):
-  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch(using Unsafe)
+  val suiteIo = safely(stdioSources.virtualMachine.ansi).vouch
 
   given runner: Runner[Report] =
     given Stdio = suiteIo
