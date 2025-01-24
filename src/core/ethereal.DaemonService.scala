@@ -31,7 +31,7 @@ case class DaemonService[BusType <: Matchable]
     cliInput:   CliInput,
     script:    Path on Linux,
     deliver:    BusType => Unit,
-    bus:     LazyList[BusType],
+    bus:     Stream[BusType],
     scriptName: Text)
 extends ShellContext:
 
