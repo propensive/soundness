@@ -91,7 +91,8 @@ trait Dispatcher:
         (out, fn)
 
     val classpath = classloaders.threadContext.classpath.absolve match
-      case classpath: LocalClasspath => LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
+      case classpath: LocalClasspath =>
+        LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
 
     invoke[OutputType]
      (Dispatch
