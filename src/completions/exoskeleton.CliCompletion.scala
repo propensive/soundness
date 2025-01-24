@@ -80,14 +80,22 @@ extends Cli:
       if longOnly then
         allFlags.collect { case text: Text => text }.match
           case main :: aliases =>
-            List(Suggestion(Flag.serialize(main), flag.description, aliases = aliases.map(Flag.serialize(_))))
+            List
+             (Suggestion
+               (Flag.serialize(main),
+                flag.description,
+                aliases = aliases.map(Flag.serialize(_))))
+
           case Nil => Nil
 
       else List(Suggestion(Flag.serialize(flag.name), flag.description, aliases =
           flag.aliases.map(Flag.serialize(_))))
 
   def serialize: List[Text] =
-    val items = if cursorSuggestions.isEmpty && parameters.focusFlag.absent then flagSuggestions(focus().starts(t"--")) else cursorSuggestions
+    val items =
+      if cursorSuggestions.isEmpty && parameters.focusFlag.absent
+      then flagSuggestions(focus().starts(t"--"))
+      else cursorSuggestions
 
     shell match
       case Shell.Zsh =>

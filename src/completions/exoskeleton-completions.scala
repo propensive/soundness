@@ -46,14 +46,25 @@ package executives:
        (using interpreter: CliInterpreter)
     :     Cli =
       arguments match
-        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--" :: command :: rest =>
+        case t"{completions}" :: shellName :: As[Int](focus) :: As[Int](position) :: t"--"
+             :: command
+             :: rest =>
+
           val shell = shellName match
             case t"zsh"  => Shell.Zsh
             case t"fish" => Shell.Fish
             case _       => Shell.Bash
 
-          CliCompletion(Cli.arguments(arguments, focus - 1, position), Cli.arguments(rest, focus - 1, position), environment,
-              workingDirectory, shell, focus - 1, position, stdio, signals)
+          CliCompletion
+           (Cli.arguments(arguments, focus - 1, position),
+            Cli.arguments(rest, focus - 1, position),
+            environment,
+            workingDirectory,
+            shell,
+            focus - 1,
+            position,
+            stdio,
+            signals)
 
         case other =>
           CliInvocation(Cli.arguments(arguments), environment, workingDirectory, stdio, signals)

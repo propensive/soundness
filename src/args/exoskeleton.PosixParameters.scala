@@ -30,7 +30,9 @@ case class PosixParameters
 extends FlagParameters:
 
   def read[OperandType](flag: Flag)
-     (using cli: Cli, interpreter: FlagInterpreter[OperandType], suggestions: Suggestions[OperandType])
+     (using cli:         Cli,
+            interpreter: FlagInterpreter[OperandType],
+            suggestions: Suggestions[OperandType])
   :     Optional[OperandType] =
 
     cli.register(flag, suggestions)

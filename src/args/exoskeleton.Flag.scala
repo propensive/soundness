@@ -42,11 +42,15 @@ case class Flag
     description: Optional[Text] = Unset,
     secret: Boolean             = false):
 
-  def suggest[OperandType: FlagInterpreter](suggestions: Suggestions[OperandType])(using cli: Cli): Unit =
+  def suggest[OperandType: FlagInterpreter](suggestions: Suggestions[OperandType])(using cli: Cli)
+  :     Unit =
     cli.register(this, suggestions)
 
   def matches(key: Argument): Boolean =
-    val flag = if key().starts(t"--") then key().skip(2) else if key().starts(t"-") then key().at(Sec) else Unset
+    val flag =
+      if key().starts(t"--") then key().skip(2) else if key().starts(t"-")
+      then key().at(Sec) else Unset
+
     flag == name || aliases.contains(flag)
 
   def apply[OperandType]()

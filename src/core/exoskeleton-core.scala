@@ -78,7 +78,12 @@ package executives:
        (using interpreter: CliInterpreter)
     :     CliInvocation =
 
-      CliInvocation(Cli.arguments(arguments), environments.virtualMachine, workingDirectories.default, stdio, signals)
+      CliInvocation
+       (Cli.arguments(arguments),
+        environments.virtualMachine,
+        workingDirectories.default,
+        stdio,
+        signals)
 
     def process(cli: CliInvocation)(exitStatus: CliType ?=> Exit): Exit =
       try exitStatus(using cli)
@@ -91,9 +96,11 @@ def application(using executive: Executive, interpreter: CliInterpreter)
 :     Unit =
 
   val spool: Spool[Signal] = Spool()
-  signals.each { signal => sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal)) }
+  signals.each: signal =>
+    sm.Signal.handle(sm.Signal(signal.shortName.s), event => spool.put(signal))
 
-  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment variables
+  // FIXME: We shouldn't assume so much about the STDIO. Instead, we should check the environment
+  // variables
   val cli =
     executive.invocation
      (arguments,
