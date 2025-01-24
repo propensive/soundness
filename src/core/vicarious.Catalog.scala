@@ -27,7 +27,7 @@ case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
 
   inline def apply(accessor: (`*`: Proxy[KeyType, ValueType, 0]) ?=> Proxy[KeyType, ValueType, ?])
   :     ValueType =
-    values(accessor(using Proxy()).id.vouch(using Unsafe))
+    values(accessor(using Proxy()).id.vouch)
 
   def map[ValueType2: ClassTag](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
     Catalog(values.map(lambda))
