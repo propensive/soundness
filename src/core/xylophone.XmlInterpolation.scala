@@ -53,7 +53,9 @@ object XmlInterpolation:
     def apply(newContext: ContextType, char: Char) =
       copy(context = newContext, current = t"$current$char", offset = offset + 1)
 
-    def apply(newContext: ContextType): ParseState = copy(context = newContext, offset = offset + 1, ns = false)
+    def apply(newContext: ContextType): ParseState =
+      copy(context = newContext, offset = offset + 1, ns = false)
+
     def apply(char: Char): ParseState = copy(offset = offset + 1, current = t"$current$char")
     def apply(): ParseState = copy(offset = offset + 1)
     def reset: ParseState = copy(current = t"")
@@ -64,13 +66,15 @@ object XmlInterpolation:
       copy(stack = stack.head.copy(namespaces = stack.head.namespaces + ns) :: stack.tail)
 
     def checkNs: Boolean =
-      !stack.head.name.contains(":") || stack.flatMap(_.namespaces).contains(stack.head.name.cut(t":")(0))
+      !stack.head.name.contains(":")
+      || stack.flatMap(_.namespaces).contains(stack.head.name.cut(t":")(0))
 
     def rollback(difference: Int): ParseState = copy(offset = offset - difference)
 
     def pop: ParseState throws InterpolationError =
       val tag = stack.prim.or:
-        throw InterpolationError(m"spurious closing tag: $current", offset - current.length, current.length)
+        throw InterpolationError
+               (m"spurious closing tag: $current", offset - current.length, current.length)
 
       if tag.name == current then copy(stack = stack.tail) else
         throw
@@ -82,8 +86,9 @@ object XmlInterpolation:
   given Substitution[XmlInput, Text, "t"] with
     def embed(value: Text) = XmlInput.Flat(value)
 
-  given genInsert[ValueType](using writer: XmlEncoder[ValueType]): Insertion[XmlInput, ValueType] = value =>
-    XmlInput.Structured(writer.write(value))
+  given genInsert: [ValueType] => (writer: XmlEncoder[ValueType])
+  =>    Insertion[XmlInput, ValueType] =
+    value => XmlInput.Structured(writer.write(value))
 
   object XmlInterpolator extends Interpolator[XmlInput, ParseState, XmlDoc]:
     import ContextType.*
@@ -94,7 +99,12 @@ object XmlInterpolation:
     def initial: ParseState = ParseState(0, ContextType.Body, Nil, t"", t"", false)
 
     private def escape(str: Text): Text =
-      str.sub(t"\"", t"&quot;").sub(t"'", t"&apos;").sub(t"<", t"&lt;").sub(t">", t"&gt;").sub(t"&", t"&amp;")
+      str
+      . sub(t"\"", t"&quot;")
+      . sub(t"'", t"&apos;")
+      . sub(t"<", t"&lt;")
+      . sub(t">", t"&gt;")
+      . sub(t"&", t"&amp;")
 
     def skip(state: ParseState): ParseState = state.context match
       case AttributeValue | Body => parse(state, t"")
@@ -191,7 +201,8 @@ object XmlInterpolation:
             throw InterpolationError(m"attribute value has not been specified", state.offset, 1)
 
           case '=' =>
-            if state.current.starts(t"xmlns:") then state.addNamespace(state.current.skip(6))(AttributeEquals)
+            if state.current.starts(t"xmlns:")
+            then state.addNamespace(state.current.skip(6))(AttributeEquals)
             else state(AttributeEquals)
 
           case ':' =>
@@ -203,12 +214,15 @@ object XmlInterpolation:
             else state(char).namespace
 
           case char =>
-            throw InterpolationError(m"character $char is not valid in an attribute name", state.offset, 1)
+            throw InterpolationError
+                   (m"character $char is not valid in an attribute name", state.offset, 1)
 
         case AttributeEquals => char match
           case ' ' | '\n' | '\r' | '\t' => state()
           case '"'                      => state(AttributeValue)
-          case _                        => throw InterpolationError(m"expected '\"'", state.offset, 1)
+
+          case _ =>
+            throw InterpolationError(m"expected '\"'", state.offset, 1)
 
         case AttributeValue => char match
           case '"'  => state(InTagBody)
@@ -243,13 +257,15 @@ object XmlInterpolation:
           case ';' => state()
 
           case char =>
-            throw InterpolationError(m"character $char is not valid in an entity name", state.offset, 1)
+            throw InterpolationError
+                   (m"character $char is not valid in an entity name", state.offset, 1)
 
         case InAttributeEntity  => char match
           case ';'       => state()
           case TagChar() => state()
 
           case char =>
-            throw InterpolationError(m"character $char is not valid in an entity name", state.offset, 1)
+            throw InterpolationError
+                   (m"character $char is not valid in an entity name", state.offset, 1)
 
     . copy(source = t"${state.source}$string")

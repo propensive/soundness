@@ -27,7 +27,9 @@ object XmlAst:
     case ProcessingInstruction(target, content) => t"<?$target $content?>"
     case Textual(content)                       => content
     case CData(content)                         => t"<![CDATA[$content]]>"
-    case Root(content*)                         => t"""<?xml version = "1.0"?>${content.map(_.show).join}"""
+
+    case Root(content*) =>
+      t"""<?xml version = "1.0"?>${content.map(_.show).join}"""
 
     case Element(name, children, attributes, _) =>
       val inside = children.map(_.show).join

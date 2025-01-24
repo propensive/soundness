@@ -89,7 +89,10 @@ object Xml:
       case ELEMENT_NODE =>
         val xmlName = XmlName(node.getLocalName.nn.tt, getNamespace(node))
         val childNodes = node.getChildNodes
-        val children = List.range(0, childNodes.nn.getLength).map(childNodes.nn.item(_).nn).map(readNode(_))
+
+        val children =
+          List.range(0, childNodes.nn.getLength).map(childNodes.nn.item(_).nn).map(readNode(_))
+
         val atts = (0 until node.getAttributes.nn.getLength).map(node.getAttributes.nn.item(_).nn)
         val attributes = atts.map { att =>
           val alias: Optional[Namespace] = getNamespace(att)

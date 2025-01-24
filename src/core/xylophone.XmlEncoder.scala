@@ -24,20 +24,25 @@ import wisteria.*
 
 object XmlEncoder extends Derivation[XmlEncoder]:
   given XmlEncoder[Text] = text => XmlAst.Element(XmlName(t"Text"), List(XmlAst.Textual(text)))
-  given XmlEncoder[String] = string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
+
+  given XmlEncoder[String] =
+    string => XmlAst.Element(XmlName(t"String"), List(XmlAst.Textual(string.tt)))
 
   given [ValueType: XmlEncoder, CollectionType[ElementType] <: Seq[ElementType]]
-      : XmlEncoder[CollectionType[ValueType]] =
-    elements => XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
+  =>    XmlEncoder[CollectionType[ValueType]] = elements =>
+      XmlAst.Element(XmlName(t"Seq"), elements.to(List).map(summon[XmlEncoder[ValueType]].write(_)))
 
   given XmlEncoder[Int] = int =>
     XmlAst.Element(XmlName(t"Int"), List(XmlAst.Textual(int.show)))
 
   private val attributeAttribute = xmlAttribute()
 
-  inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] = value =>
-    val elements = fields(value) { [FieldType] => field => context.write(field).copy(name = XmlName(label)) }
-    XmlAst.Element(XmlName(typeName), elements.to(List))
+  inline def join[DerivationType <: Product: ProductReflection]: XmlEncoder[DerivationType] =
+    value =>
+      val elements = fields(value):
+        [FieldType] => field => context.write(field).copy(name = XmlName(label))
+
+      XmlAst.Element(XmlName(typeName), elements.to(List))
 
   inline def split[DerivationType: SumReflection]: XmlEncoder[DerivationType] = value =>
     variant(value):

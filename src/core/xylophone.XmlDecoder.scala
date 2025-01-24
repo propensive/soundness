@@ -24,7 +24,9 @@ import wisteria.*
 
 trait XmlDecoder[ValueType]:
   def read(xml: List[XmlAst]): ValueType
-  def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] = list => lambda(read(list))
+
+  def map[ValueType2](lambda: ValueType => ValueType2): XmlDecoder[ValueType2] =
+    list => lambda(read(list))
 
 object XmlDecoder extends Derivation[XmlDecoder]:
   given text(using Tactic[XmlReadError]): XmlDecoder[Text] = list =>
