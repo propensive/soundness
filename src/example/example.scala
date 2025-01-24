@@ -31,8 +31,18 @@ given Decimalizer = Decimalizer(3)
 case class Library(id: Text, name: Text, linesOfCode: Int, year: Int, description: Text)
 
 val libraries: List[Library] = List
- (Library(t"wisteria", t"Wisteria", 581, 2017, t"Simple, fast and transparant generic derivation for typeclasses"),
-  Library(t"quantitative", t"Quantitative", 1271, 2023, t"Statically-checked physical units with seamless syntax"),
+ (Library
+   (t"wisteria",
+    t"Wisteria",
+    581,
+    2017,
+    t"Simple, fast and transparant generic derivation for typeclasses"),
+  Library
+   (t"quantitative",
+    t"Quantitative",
+    1271,
+    2023,
+    t"Statically-checked physical units with seamless syntax"),
   Library(t"turbulence", t"Turbulence", 1047, 2022, t"Simple tools for working with data streams"),
   Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables"))
 
@@ -49,8 +59,8 @@ def run(): Unit =
       Column(e"$Bold(Year)", sizing = columnar.Collapsible(0.5)): lib =>
         if lib.year > 2020 then e"${webColors.SandyBrown}(${lib.year})"
         else e"${webColors.Chocolate}(${lib.year})",
-      Column(e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Prose): lib =>
-       e"$Italic(${lib.description})")
+      Column(e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Prose):
+        lib => e"$Italic(${lib.description})")
 
   // given TableRelabelling[Person] = () => Map(
   //   t"name" -> t"Addressee",
@@ -79,7 +89,9 @@ def run(): Unit =
     case class Member(name: Text, handle: Text, age: Int)
 
     val pinkFloyd =
-      List(Member(t"Nick Mason", t"@nickmasondrums", 80), Member(t"David Gilmour", t"@davidgilmour", 78))
+      List
+       (Member(t"Nick Mason", t"@nickmasondrums", 80),
+        Member(t"David Gilmour", t"@davidgilmour", 78))
 
     Out.println(pinkFloyd.table)
 
