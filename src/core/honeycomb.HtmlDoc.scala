@@ -28,7 +28,7 @@ case class HtmlDoc(root: Node["html"])
 object HtmlDoc:
   given generic: (encoder: CharEncoder) => HtmlDoc is GenericHttpResponseStream:
     def mediaType: Text = t"text/html; charset=${encoder.encoding.name}"
-    def content(value: HtmlDoc): LazyList[Bytes] = LazyList(HtmlDoc.serialize(value).bytes)
+    def content(value: HtmlDoc): Stream[Bytes] = Stream(HtmlDoc.serialize(value).bytes)
 
   def serialize[OutputType](doc: HtmlDoc, maxWidth: Int = -1)
      (using serializer: HtmlSerializer[OutputType])
