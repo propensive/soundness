@@ -123,9 +123,10 @@ object Media:
       then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
       ps.map(_.cut(t"=", 2).to(List)).map { p => p(0).show -> p(1).show }
 
-    def parseSuffixes(suffixes: List[Text]): List[Suffix] = suffixes.map(_.lower.capitalize).flatMap: suffix =>
-      try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)), Nil)
+    def parseSuffixes(suffixes: List[Text]): List[Suffix] =
+      suffixes.map(_.lower.capitalize).flatMap: suffix =>
+        try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
+          raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)), Nil)
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
@@ -146,7 +147,8 @@ object Media:
         raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup), Group.Text)
 
     def parseSubtype(str: Text): Subtype =
-      def notAllowed(char: Char): Boolean = char.isWhitespace || char.isControl || specials.contains(char)
+      def notAllowed(char: Char): Boolean =
+        char.isWhitespace || char.isControl || specials.contains(char)
 
       str.chars.find(notAllowed(_)).map: char =>
         raise

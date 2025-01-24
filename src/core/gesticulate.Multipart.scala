@@ -124,7 +124,9 @@ object Multipart:
 
       conduit.datum match
         case '\r' =>
-          if !conduit.next() || conduit.datum != '\n' then raise(MultipartError(Reason.Expected('\n')))
+          if !conduit.next() || conduit.datum != '\n'
+          then raise(MultipartError(Reason.Expected('\n')))
+
           part #:: { part.body.strict; conduit.next(); parts() }
 
         case '-' =>
