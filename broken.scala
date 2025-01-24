@@ -39,9 +39,9 @@ object CasualDiffError:
 case class Replace(context: List[Text], original: List[Text], replacement: List[Text])
 
 object CasualDiff:
-  def parse(stream: LazyList[Text])(using Tactic[CasualDiffError]): CasualDiff =
+  def parse(stream: Stream[Text])(using Tactic[CasualDiffError]): CasualDiff =
     def recur
-       (stream:     LazyList[Text],
+       (stream:     Stream[Text],
         context:    List[Text],
         original:    List[Text],
         replacement: List[Text],
@@ -75,26 +75,26 @@ object CasualDiff:
     CasualDiff(recur(stream, Nil, Nil, Nil, Nil, 1))
 
 case class CasualDiff(replacements: List[Replace]):
-  def patch(original: Iterable[Text]): LazyList[Text] raises CasualDiffError =
-    def recur(stream: LazyList[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
-    :     LazyList[Text] =
+  def patch(original: Iterable[Text]): Stream[Text] raises CasualDiffError =
+    def recur(stream: Stream[Text], focus: List[Text], todo: List[Replace], lineNo: Int)
+    :     Stream[Text] =
       todo match
         case Nil =>
-          LazyList()
+          Stream()
 
         case Replace(Nil, original, replacement) :: tail => focus match
           case Nil => tail match
             case Replace(context, next, _) :: tail =>
               val lineNo2 = lineNo + original.length + replacement.length
-              replacement.to(LazyList) #::: recur(stream, next, todo.tail, lineNo2)
+              replacement.to(Stream) #::: recur(stream, next, todo.tail, lineNo2)
 
             case Nil =>
-              replacement.to(LazyList) #::: stream
+              replacement.to(Stream) #::: stream
 
           case line :: rest => stream match
             case head #:: tail =>
               if head == line then recur(tail, rest, todo, lineNo)
-              else original.dropRight(focus.length).to(LazyList) #::: head #::
+              else original.dropRight(focus.length).to(Stream) #::: head #::
                   recur(tail, original, todo, lineNo)
 
             case _ =>
@@ -108,12 +108,12 @@ case class CasualDiff(replacements: List[Replace]):
               else recur(tail, focus, Replace(rest, original, replacement) :: todoTail, lineNo + 1)
             }
 
-    if replacements.isEmpty then original.to(LazyList)
-    else recur(original.to(LazyList), replacements.head.original, replacements, 1)
+    if replacements.isEmpty then original.to(Stream)
+    else recur(original.to(Stream), replacements.head.original, replacements, 1)
 
-  def serialize: LazyList[Text] = replacements.to(LazyList).flatMap:
+  def serialize: Stream[Text] = replacements.to(Stream).flatMap:
     case Replace(context, original, replacement) =>
-      (context.to(LazyList).map("  "+_) #::: original.to(LazyList).map("- "+_) #:::
-          replacement.to(LazyList).map("+ "+_)).map(_.tt)
+      (context.to(Stream).map("  "+_) #::: original.to(Stream).map("- "+_) #:::
+          replacement.to(Stream).map("+ "+_)).map(_.tt)
 
 */
