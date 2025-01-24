@@ -47,7 +47,7 @@ extends Indexed:
 
   def id: Optional[Text] = schema.subschemas.where(_.schema.arity == Arity.Unique) match
     case CodlSchema.Entry(name: Text, schema) =>
-      index(name).let(_.prim).let(children(_).fieldValue)
+      index(name).prim.let(children(_).fieldValue)
     case _ => key
 
   def promote(n: Int): Data = copy(layout = layout.copy(params = n))

@@ -58,7 +58,7 @@ trait Indexed extends Dynamic:
     paramIndex.lift(key) match
       case None => index.lift(key) match
         case None       => Nil
-        case Some(idxs) => idxs.map(children(_).data.vouch(using Unsafe))
+        case Some(idxs) => idxs.map(children(_).data.vouch)
 
       case Some(idx) =>
         List.range(idx, layout.params).map: idx =>

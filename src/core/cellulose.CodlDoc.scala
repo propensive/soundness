@@ -20,7 +20,6 @@ import anticipation.*
 import chiaroscuro.*
 import contingency.*
 import dissonance.*
-import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

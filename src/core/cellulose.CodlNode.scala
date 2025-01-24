@@ -40,7 +40,7 @@ object CodlNode:
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
           case Par(_, _, v) => v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
-          case Ins(_, v)    => v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
+          case Ins(_, v)    => Optional(v).let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
           case Del(_, v)    => v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
           case Sub(_, v, lv, rv) =>

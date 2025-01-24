@@ -63,7 +63,7 @@ object Codl:
 
         val uniqueId2 =
           if child.schema.arity == Arity.Unique
-          then (child.key.vouch(using Unsafe), (child.line, child.col)) else Unset
+          then (child.key.vouch, (child.line, child.col)) else Unset
 
         (uniqueId2, copy(children = closed :: children, params = params + 1))
 
@@ -104,7 +104,7 @@ object Codl:
         tabs:    List[Int])
     :     CodlDoc =
 
-      def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema.option.get)
+      def schema: CodlSchema = stack.prim.lay(baseSchema)(_.head.schema)
 
       inline def go
          (tokens:  Stream[CodlToken]           = tokens.tail,
