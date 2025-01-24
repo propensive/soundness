@@ -55,7 +55,8 @@ object NumericRange:
       def double: Double = left
 
       @targetName("add")
-      infix def + [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
+      infix def + [RightMinType <: Double, RightMaxType <: Double]
+         (right: RightMinType ~ RightMaxType)
       :     (LeftMinType + RightMinType) ~ (LeftMaxType + RightMaxType) =
         left + right
 
@@ -68,16 +69,27 @@ object NumericRange:
       infix def + (right: Double): Double = left + right
 
       @targetName("times")
-      infix def * [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
-      :     (Min4[LeftMinType*RightMinType, LeftMinType*RightMaxType, LeftMaxType*RightMaxType,
-                    LeftMaxType*RightMinType]) ~ (Max4[LeftMinType*RightMinType, LeftMinType*RightMaxType,
-                    LeftMaxType*RightMaxType, LeftMaxType*RightMinType]) =
+      infix def * [RightMinType <: Double, RightMaxType <: Double]
+         (right: RightMinType ~ RightMaxType)
+      :     (Min4
+              [LeftMinType*RightMinType,
+               LeftMinType*RightMaxType,
+               LeftMaxType*RightMaxType,
+               LeftMaxType*RightMinType]) ~ (Max4
+                                              [LeftMinType*RightMinType,
+                                               LeftMinType*RightMaxType,
+                                               LeftMaxType*RightMaxType,
+                                               LeftMaxType*RightMinType]) =
 
         left*right
 
       @targetName("times2")
       infix def * [RightType <: Double & Singleton](right: RightType)
-      :     Min[LeftMinType*RightType, LeftMaxType*RightType] ~ Max[LeftMinType*RightType, LeftMaxType*RightType] =
+      :     Min
+             [LeftMinType*RightType,
+              LeftMaxType*RightType] ~ Max
+                                        [LeftMinType*RightType,
+                                         LeftMaxType*RightType] =
 
         left*right
 
@@ -85,14 +97,22 @@ object NumericRange:
       infix def * (right: Double): Double = left*right
 
       @targetName("minus")
-      infix def - [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
-      :     Min[LeftMinType - RightMinType, LeftMinType - RightMaxType] ~ Max[LeftMaxType -
-                    RightMinType, LeftMaxType - RightMaxType] =
+      infix def - [RightMinType <: Double, RightMaxType <: Double]
+         (right: RightMinType ~ RightMaxType)
+      :     Min
+             [LeftMinType - RightMinType,
+              LeftMinType - RightMaxType] ~ Max
+                                             [LeftMaxType - RightMinType,
+                                              LeftMaxType - RightMaxType] =
         left - right
 
       @targetName("minus2")
       infix def - [RightType <: Double & Singleton](right: RightType)
-      :     Min[LeftMinType - RightType, LeftMaxType - RightType] ~ Max[LeftMinType - RightType, LeftMaxType - RightType] =
+      :     Min
+             [LeftMinType - RightType,
+              LeftMaxType - RightType] ~ Max
+                                          [LeftMinType - RightType,
+                                           LeftMaxType - RightType] =
 
         left - right
 
@@ -101,16 +121,32 @@ object NumericRange:
 
       @targetName("divide")
       infix def / [RightType <: Double & Singleton](right: RightType)
-      :     Min[LeftMinType/RightType, LeftMaxType/RightType] ~ Max[LeftMinType/RightType, LeftMaxType/RightType] =
+      :     Min
+             [LeftMinType/RightType,
+              LeftMaxType/RightType] ~ Max
+                                        [LeftMinType/RightType,
+                                         LeftMaxType/RightType] =
 
         left/right
 
       @targetName("divide2")
-      infix def / [RightMinType <: Double, RightMaxType <: Double](right: RightMinType ~ RightMaxType)
-      :     Asym[RightMinType*RightMaxType, Min4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
-                    LeftMinType/RightMaxType, LeftMaxType/RightMaxType], -1.0/0.0] ~ Asym[
-                    RightMinType*RightMaxType, Max4[LeftMinType/RightMinType, LeftMaxType/RightMinType,
-                    LeftMinType/RightMaxType, LeftMaxType/RightMaxType], 1.0/0.0] =
+      infix def / [RightMinType <: Double, RightMaxType <: Double]
+         (right: RightMinType ~ RightMaxType)
+      :     Asym
+             [RightMinType*RightMaxType,
+              Min4
+               [LeftMinType/RightMinType,
+                LeftMaxType/RightMinType,
+                LeftMinType/RightMaxType,
+                LeftMaxType/RightMaxType],
+              -1.0/0.0] ~ Asym
+                           [RightMinType*RightMaxType,
+                            Max4
+                             [LeftMinType/RightMinType,
+                              LeftMaxType/RightMinType,
+                              LeftMinType/RightMaxType,
+                              LeftMaxType/RightMaxType],
+                            1.0/0.0] =
         left/right
 
       @targetName("divide3")
