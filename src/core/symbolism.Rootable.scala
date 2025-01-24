@@ -21,7 +21,8 @@ import prepositional.*
 import language.experimental.captureChecking
 
 object Rootable:
-  class Basic[RootType <: Int & Singleton, OperandType, ResultType](lambda: OperandType => ResultType)
+  class Basic[RootType <: Int & Singleton, OperandType, ResultType]
+     (lambda: OperandType => ResultType)
   extends Rootable[RootType]:
     type Self = OperandType
     type Result = ResultType

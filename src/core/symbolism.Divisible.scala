@@ -23,7 +23,8 @@ import language.experimental.captureChecking
 import scala.annotation.targetName
 
 object Divisible:
-  class Basic[DividendType, DivisorType, ResultType](lambda: (DividendType, DivisorType) => ResultType)
+  class Basic[DividendType, DivisorType, ResultType]
+     (lambda: (DividendType, DivisorType) => ResultType)
   extends Divisible:
     type Self = DividendType
     type Result = ResultType
