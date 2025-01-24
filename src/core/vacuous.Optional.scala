@@ -35,11 +35,11 @@ type Optional[ValueType] = Unset.type | ValueType
 extension [ValueType](inline optional: Optional[ValueType])
   inline def or(inline value: => ValueType): ValueType = ${Vacuous.optimizeOr('optional, 'value)}
 
-extension [ValueType](optional: Optional[ValueType])
+extension [ValueType](optional: Optional[ValueType])(using Optionality[optional.type])
   inline def absent: Boolean = optional == Unset
   inline def present: Boolean = optional != Unset
-  inline def vouch(using Unsafe): ValueType =
-    optional.or(panic(m"a value was vouched but was absent"))
+
+  inline def vouch: ValueType = optional.or(panic(m"a value was vouched but was absent"))
 
   inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
     optional.let { value => if predicate(value) then Unset else value }
@@ -48,28 +48,35 @@ extension [ValueType](optional: Optional[ValueType])
     optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
 
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())
-  def option: Option[ValueType] = if absent then None else Some(vouch(using Unsafe))
+  def option: Option[ValueType] = if absent then None else Some(vouch)
   def assume(using absentValue: CanThrow[UnsetError]): ValueType = optional.or(throw UnsetError())
 
   inline def lay[ValueType2](inline alternative: => ValueType2)
      (inline lambda: ValueType => ValueType2)
   :     ValueType2 =
 
-    if absent then alternative else lambda(vouch(using Unsafe))
+    if absent then alternative else lambda(vouch)
 
 
   inline def layGiven[ValueType2](inline alternative: => ValueType2)
      (inline block: ValueType ?=> ValueType2)
   :     ValueType2 =
 
-    if absent then alternative else block(using vouch(using Unsafe))
+    if absent then alternative else block(using vouch)
 
   def let[ValueType2](lambda: ValueType => ValueType2): Optional[ValueType2] =
-    if absent then Unset else lambda(vouch(using Unsafe))
+    if absent then Unset else lambda(vouch)
 
   inline def letGiven[ValueType2](inline block: ValueType ?=> ValueType2): Optional[ValueType2] =
-    if absent then Unset else block(using vouch(using Unsafe))
+    if absent then Unset else block(using vouch)
 
 object Optional:
   inline def apply[ValueType](value: ValueType | Null): Optional[ValueType] =
     if value == null then Unset else value
+
+  inline def check[ValueType]: Unit = ${Vacuous.check[ValueType]}
+
+object Optionality:
+  inline given [ValueType] => Optionality[ValueType] = ${Vacuous.check[ValueType]}
+
+erased trait Optionality[-ValueType]

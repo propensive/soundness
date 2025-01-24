@@ -18,7 +18,15 @@ package vacuous
 
 import scala.quoted.*
 
+import fulminate.*
+
 object Vacuous:
+  def check[ValueType: Type](using Quotes): Expr[Optionality[ValueType]] =
+    import quotes.reflect.*
+    if TypeRepr.of[Unset.type] <:< TypeRepr.of[ValueType].widen
+    then '{null.asInstanceOf[Optionality[ValueType]]}
+    else halt(m"the type ${TypeRepr.of[ValueType].widen.show} is not an `Optional`")
+
   def optimizeOr[ValueType: Type]
      (optional: Expr[Optional[ValueType]], default: Expr[ValueType])(using Quotes)
   :     Expr[ValueType] =
