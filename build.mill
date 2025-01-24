@@ -11,6 +11,7 @@ object settings {
     "-experimental",
     "-new-syntax",
     "-feature",
+    //"-explain",
     "-deprecation",
     "-Wunused:imports",
     "-Wimplausible-patterns",
