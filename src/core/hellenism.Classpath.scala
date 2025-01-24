@@ -41,7 +41,7 @@ object Classpath:
     Path(classloader, List(child))
 
   def apply(classloader: jn.URLClassLoader): Classpath =
-    val entries = classloader.let(_.getURLs.nn.to(List)).or(Nil).map(_.nn).flatMap(ClasspathEntry(_).option)
+    val entries = classloader.getURLs.nn.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
 
     if entries.exists:
       case _: ClasspathEntry.Url => true
