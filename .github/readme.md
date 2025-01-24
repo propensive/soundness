@@ -46,7 +46,7 @@ as long as caution is taken to avoid a mismatch between the project's stability
 level and the required stability and maintainability of your own project.
 
 Enigmatic is designed to be _small_. Its entire source code currently consists
-of 409 lines of code.
+of 410 lines of code.
 
 ## Building
 
