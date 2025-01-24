@@ -34,14 +34,14 @@ trait Deserializable:
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Bytes
   def deserialize(value: Text): Bytes = deserialize(t"", value, 0, true)
 
-  def deserialize(stream: LazyList[Text]): LazyList[Bytes] =
-    def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Bytes] = stream match
+  def deserialize(stream: Stream[Text]): Stream[Bytes] =
+    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Bytes] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity
         deserialize(previous, head, -carry, tail.isEmpty) #:: recur(tail, head, carry2)
 
       case _ =>
-        if carry > 0 then LazyList(deserialize(previous, t"", -carry, true)) else LazyList()
+        if carry > 0 then Stream(deserialize(previous, t"", -carry, true)) else Stream()
 
     recur(stream, t"", 0)
 

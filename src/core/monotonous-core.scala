@@ -20,6 +20,7 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
 
 package alphabets:
   package binary:
@@ -133,9 +134,9 @@ extension (value: Text)
   :     Bytes =
     deserializable.deserialize(value)
 
-extension (stream: LazyList[Text])
+extension (stream: Stream[Text])
   def deserialize[SchemeType <: Serialization](using deserializable: Deserializable in SchemeType)
-  :     LazyList[Bytes] =
+  :     Stream[Bytes] =
     deserializable.deserialize(stream)
 
 extension [ValueType: Encodable in Bytes](value: ValueType)
