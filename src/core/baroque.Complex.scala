@@ -41,7 +41,8 @@ object Complex:
 
   inline given subtractable: [ComponentType: Subtractable by ComponentType as subtractable]
   =>   Complex[ComponentType] is Subtractable by Complex[ComponentType] =
-    new Subtractable.Basic[Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]
+    new Subtractable.Basic
+         [Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]
       ({ (left, right) =>
            Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary) })
 
