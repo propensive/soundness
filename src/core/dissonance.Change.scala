@@ -16,12 +16,12 @@
 
 package dissonance
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 import vacuous.*
 
 sealed trait Change[+ElemType] extends Product:
-  def map[ElemType2](lambda: ElemType => ElemType2): Change[ElemType2^{lambda}] = this match
+  def map[ElemType2](lambda: ElemType => ElemType2): Change[ElemType2] = this match
     case Sub(left, right, leftValue, rightValue) =>
       Sub(left, right, leftValue.let(lambda), rightValue.let(lambda))
 
@@ -31,7 +31,7 @@ sealed trait Change[+ElemType] extends Product:
 sealed trait Edit[+ElemType] extends Change[ElemType]:
   def value: Optional[ElemType]
 
-  override def map[ElemType2](lambda: ElemType => ElemType2): Edit[ElemType2^{lambda}] = this match
+  override def map[ElemType2](lambda: ElemType => ElemType2): Edit[ElemType2] = this match
     case Par(left, right, value) => Par(left, right, value.let(lambda))
     case Del(left, value)        => Del(left, value.let(lambda))
     case Ins(right, value)       => Ins(right, lambda(value))
