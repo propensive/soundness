@@ -143,7 +143,8 @@ object Bootstrapper:
 
           val verbosity = BurdockVerbosity(t"silent")
 
-          manifest2 - MainClass + require + burdockMain + verbosity + MainClass(fqcn"burdock.Bootstrap")
+          manifest2 - MainClass + require + burdockMain + verbosity
+          + MainClass(fqcn"burdock.Bootstrap")
 
         val tmpFile = jarfile.parent.vouch / Name(jarfile.name.vouch.text+t".tmp")
 
