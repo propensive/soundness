@@ -80,35 +80,35 @@ object SourceCode:
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): LazyList[SourceToken] =
-      LazyList(SourceToken(text.sub(t"\t", t"  "), Accent.Unparsed), SourceToken.Newline)
+    def untab(text: Text): Stream[SourceToken] =
+      Stream(SourceToken(text.sub(t"\t", t"  "), Accent.Unparsed), SourceToken.Newline)
 
-    def stream(lastEnd: Int = 0): LazyList[SourceToken] = scanner.token match
+    def stream(lastEnd: Int = 0): Stream[SourceToken] = scanner.token match
       case Tokens.EOF =>
         untab(text.segment(lastEnd.z ~ Ult.of(text))).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
 
-        val unparsed: LazyList[SourceToken] =
+        val unparsed: Stream[SourceToken] =
           if lastEnd != start
           then
             text.segment(lastEnd.z ~ Ordinal.natural(start))
             . cut(t"\n")
-            . to(LazyList)
+            . to(Stream)
             . flatMap(untab(_).filter(_.length > 0))
             . init
 
-          else LazyList()
+          else Stream()
 
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
-        val content: LazyList[SourceToken] =
-          if start == end then LazyList()
+        val content: Stream[SourceToken] =
+          if start == end then Stream()
           else
-            text.segment(start.z ~ Ordinal.natural(end)).cut(t"\n").to(LazyList).flatMap: line =>
-              LazyList
+            text.segment(start.z ~ Ordinal.natural(end)).cut(t"\n").to(Stream).flatMap: line =>
+              Stream
                (SourceToken(line, trees(start, end).getOrElse(accent(token))), SourceToken.Newline)
             . init
 
