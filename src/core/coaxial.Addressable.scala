@@ -46,8 +46,11 @@ object Addressable:
       Connection(port.number, jn.DatagramSocket())
 
     def transmit(connection: Connection, input: Bytes): Unit =
-      val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, jn.InetAddress.getLocalHost.nn,
-          connection.port)
+      val packet = jn.DatagramPacket
+                    (input.mutable(using Unsafe),
+                     input.length,
+                     jn.InetAddress.getLocalHost.nn,
+                     connection.port)
 
       connection.socket.send(packet)
 

@@ -24,9 +24,13 @@ sealed trait Control[+StateType]
 object Control:
   sealed trait Interactive
 
-  case class Conclude[+StateType](message: Bytes, state: Optional[StateType]) extends Control[StateType]
+  case class Conclude[+StateType](message: Bytes, state: Optional[StateType])
+  extends Control[StateType]
+
   case object Terminate extends Control[Nothing]
-  case class Continue[+StateType](state: Optional[StateType] = Unset) extends Control[StateType], Interactive
+
+  case class Continue[+StateType](state: Optional[StateType] = Unset)
+  extends Control[StateType], Interactive
 
   case class Reply[+StateType](message: Bytes, state: Optional[StateType])
   extends Control[StateType], Interactive
