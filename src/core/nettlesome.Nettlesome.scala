@@ -74,8 +74,9 @@ object Nettlesome:
 
           . within:
               bytes.map(Decoder.int.decode(_)).pipe: bytes =>
-                for byte <- bytes
-                do if !(0 <= byte <= 255) then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
+                for byte <- bytes do
+                  if !(0 <= byte <= 255)
+                  then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
 
                 Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
@@ -212,7 +213,8 @@ object Nettlesome:
     lazy val Localhost: Ipv6 = apply(0, 0, 0, 0, 0, 0, 0, 1)
 
     given toExpr: ToExpr[Ipv6]:
-      def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] = '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
+      def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] =
+        '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
     given Ipv6 is Showable = ip =>
       def unpack(long: Long, groups: List[Int] = Nil): List[Int] =
@@ -252,7 +254,8 @@ object Nettlesome:
           val rightGroups = right.cut(t":").to(List).filter(_ != t"")
 
           if leftGroups.length + rightGroups.length > 7
-          then raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
+          then
+            raise(IpAddressError(Ipv6TooManyNonzeroGroups(leftGroups.length + rightGroups.length)))
 
           leftGroups ++ List.fill((8 - leftGroups.length - rightGroups.length))(t"0") ++ rightGroups
 
@@ -260,7 +263,8 @@ object Nettlesome:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)), zeroes) else groups.to(List)
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)), zeroes)
+          else groups.to(List)
 
         case _ =>
           raise(IpAddressError(Ipv6MultipleDoubleColons), zeroes)

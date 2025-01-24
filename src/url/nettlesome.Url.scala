@@ -46,7 +46,8 @@ extends Root(t"${scheme.name}://${authority.lay(t"")(_.show)}$pathText", t"/", C
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
-  given radical: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError]) => HttpUrl is Radical from HttpUrl = new Radical:
+  given radical: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+  =>    HttpUrl is Radical from HttpUrl = new Radical:
     type Self = HttpUrl
     type Source = HttpUrl
 
