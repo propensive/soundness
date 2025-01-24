@@ -70,7 +70,7 @@ object Decoder:
   =>    Decoder[EnumType] = value =>
     EnumType.value(EnumType.decode(value)).or:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
-      raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch(using Unsafe))
+      raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch)
 
 trait Decoder[ValueType] extends Extractable:
   type Self = Text
