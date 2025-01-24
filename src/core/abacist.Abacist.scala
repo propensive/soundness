@@ -47,9 +47,11 @@ object Abacist:
             unitValue.value match
               case Some(unitValue) =>
                 if unitValue < 0
-                then halt(m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative")
+                then halt:
+                  m"the value for the ${unitPower.ref.name} unit ($unitValue) cannot be negative"
                 else if unitValue >= max
-                then halt(m"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max")
+                then halt:
+                  m"the value for the ${unitPower.ref.name} unit $unitValue must be less than $max"
 
                 recur(tail, valuesTail, '{$expr + (${Expr(unitValue.toLong)}*${Expr(subdivision)})})
 
@@ -57,7 +59,8 @@ object Abacist:
                 recur(tail, valuesTail, '{$expr + ($unitValue.toLong*${Expr(subdivision)})})
 
           case Nil => halt:
-            m"${inputs.length} unit values were provided, but this Count only has ${multipliers.length} units"
+            m"""${inputs.length} unit values were provided, but this Count only has
+                ${multipliers.length} units"""
 
     '{Count.fromLong[UnitsType](${recur(multipliers[UnitsType].reverse, inputs, '{0L})})}
 
@@ -87,7 +90,8 @@ object Abacist:
     if division then '{Count.fromLong[CountUnitsType](($count.longValue/$multiplier + 0.5).toLong)}
     else '{Count.fromLong[CountUnitsType](($count.longValue*$multiplier + 0.5).toLong)}
 
-  def toQuantity[CountUnitsType <: Tuple: Type](count: Expr[Count[CountUnitsType]])(using Quotes): Expr[Any] =
+  def toQuantity[CountUnitsType <: Tuple: Type](count: Expr[Count[CountUnitsType]])(using Quotes)
+  :     Expr[Any] =
     val lastUnit = multipliers[CountUnitsType].last
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
@@ -109,7 +113,8 @@ object Abacist:
 
     '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Count[CountUnitsType]]}
 
-  def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type](value: Expr[Count[UnitsType]])
+  def get[UnitsType <: Tuple: Type, UnitType <: Units[1, ? <: Dimension]: Type]
+     (value: Expr[Count[UnitsType]])
      (using Quotes)
   :     Expr[Int] =
 
@@ -127,16 +132,17 @@ object Abacist:
   private def multipliers[UnitsType: Type](using Quotes): List[Multiplier] =
     import quotes.reflect.*
 
-    def untuple[TupleType: Type](dimension: Optional[DimensionRef], result: List[UnitPower]): List[UnitPower] =
+    def untuple[TupleType: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
+    :     List[UnitPower] =
       TypeRepr.of[TupleType].dealias.asType match
         case '[head *: tail] =>
           val unitPower = readUnitPower(TypeRepr.of[head])
 
           dimension.let: current =>
             if unitPower.ref.dimensionRef != current
-            then halt(m"""
-              the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and ${current.name}
-            """)
+            then halt:
+              m"""the Count type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+                  ${current.name}"""
 
           untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
 
@@ -152,6 +158,8 @@ object Abacist:
       case head :: tail =>
         val value = ratio(head.ref, cascade.head.ref, head.power).valueOrAbort
         val value2 = tail.prim.let(_.ref).let(ratio(_, head.ref, head.power).valueOrAbort + 0.5)
-        recur(tail, Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units)
+        recur
+         (tail,
+          Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units)
 
     recur(cascade)
