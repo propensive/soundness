@@ -16,6 +16,8 @@
 
 package octogenarian
 
-class GitProcess[+ResultType](val progress: LazyList[Progress])(closure: => ResultType):
+import rudiments.*
+
+class GitProcess[+ResultType](val progress: Stream[Progress])(closure: => ResultType):
   lazy val result: ResultType/*^{closure*}*/ = closure
   def complete(): ResultType/*^{closure*}*/ = result

@@ -124,7 +124,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     List[Branch] logs GitEvent =
     sh"$git $repoOptions branch"
-    . exec[LazyList[Text]]()
+    . exec[Stream[Text]]()
     . map(_.skip(2))
     . to(List)
     . map(Branch.unsafe(_))
@@ -169,7 +169,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Tag] logs GitEvent =
-    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(Tag.unsafe(_))
+    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(Tag.unsafe(_))
 
   def tag(name: Tag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Tag logs GitEvent =
@@ -179,9 +179,9 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
-  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): LazyList[Commit] logs GitEvent =
+  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
     def recur
-       (stream:    LazyList[Text],
+       (stream:    Stream[Text],
         hash:     Optional[CommitHash] = Unset,
         tree:     Optional[CommitHash] = Unset,
         parents:   List[CommitHash]     = Nil,
@@ -189,15 +189,15 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
         committer: Optional[Text]       = Unset,
         signature: List[Text]           = Nil,
         lines:    List[Text]           = Nil)
-    :     LazyList[Commit] =
+    :     Stream[Commit] =
 
-      def commit(): LazyList[Commit] =
-        if hash.absent || tree.absent || author.absent || committer.absent then LazyList()
+      def commit(): Stream[Commit] =
+        if hash.absent || tree.absent || author.absent || committer.absent then Stream()
         else
           given Unsafe = Unsafe
           val pem = parsePem(signature.join(t"\n"))
 
-          LazyList:
+          Stream:
             Commit
              (hash.vouch,
               tree.vouch,
@@ -207,7 +207,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
               pem,
               lines.reverse)
 
-      def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
+      def read(stream: Stream[Text], lines: List[Text]): (List[Text], Stream[Text]) =
         stream match
           case r" $line(.*)" #:: tail => read(tail, line :: lines)
           case _                      => (lines.reverse, stream)
@@ -247,7 +247,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
         case _ =>
           commit()
 
-    recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
+    recur(sh"$git $repoOptions log --format=raw --color=never".exec[Stream[Text]]())
 
   def reflog(): Unit = ()
 
