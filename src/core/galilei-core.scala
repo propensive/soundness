@@ -76,18 +76,18 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
   def javaFile: ji.File = javaPath.toFile.nn
 
-  def children(using symlinks: DereferenceSymlinks): LazyList[Path on PlatformType] raises IoError =
-    val list = safely(jnf.Files.list(path.javaPath).nn.toScala(LazyList)).or(LazyList())
+  def children(using symlinks: DereferenceSymlinks): Stream[Path on PlatformType] raises IoError =
+    val list = safely(jnf.Files.list(path.javaPath).nn.toScala(Stream)).or(Stream())
 
     list.map: child =>
       unsafely(path.child(child.getFileName.nn.toString.nn.tt))
 
   def descendants(using DereferenceSymlinks, TraversalOrder)
-      : LazyList[Path on PlatformType] raises IoError =
+      : Stream[Path on PlatformType] raises IoError =
     children.flatMap: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
-        case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
+        case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
 
   def size(): Memory raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled

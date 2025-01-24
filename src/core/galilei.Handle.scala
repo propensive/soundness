@@ -19,10 +19,11 @@ package galilei
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 
 object Handle:
   given readable: Tactic[StreamError] => Handle is Readable by Bytes = _.reader()
   given writable: Tactic[StreamError] => Handle is Writable by Bytes = _.writer(_)
 
-class Handle(val reader: () => LazyList[Bytes], val writer: LazyList[Bytes] => Unit)
+class Handle(val reader: () => Stream[Bytes], val writer: Stream[Bytes] => Unit)
