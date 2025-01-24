@@ -419,7 +419,10 @@ package arithmeticOptions:
       inline def divideS64(left: S64, right: S64): S64 = S64((left.long/right.long).bits)
       inline def divideU32(left: U32, right: U32): U32 = U32((Int(left.bits)/Int(right.bits)).bits)
       inline def divideS32(left: S32, right: S32): S32 = S32((left.int/right.int).bits)
-      inline def divideU16(left: U16, right: U16): U16 = U16((Short(left.bits)/Short(right.bits)).toShort.bits)
+
+      inline def divideU16(left: U16, right: U16): U16 =
+        U16((Short(left.bits)/Short(right.bits)).toShort.bits)
+
       inline def divideS16(left: S16, right: S16): S16 = S16((left.short/right.short).toShort.bits)
       inline def divideU8(left: U8, right: U8): U8 = U8((left.byte/right.byte).toByte.bits)
       inline def divideS8(left: S8, right: S8): S8 = S8((left.byte/right.byte).toByte.bits)
@@ -432,14 +435,16 @@ package arithmeticOptions:
         else U64((Long(left.bits)/Long(right.bits)).bits)
 
       inline def divideS64(left: S64, right: S64): S64 raises DivisionError =
-        if right.long == 0 then raise(DivisionError(), S64(0.bits)) else S64((left.long/right.long).bits)
+        if right.long == 0 then raise(DivisionError(), S64(0.bits))
+        else S64((left.long/right.long).bits)
 
       inline def divideU32(left: U32, right: U32): U32 raises DivisionError =
         if right.long == 0 then raise(DivisionError(), U32(0.bits))
         else U32((Int(left.bits)/Int(right.bits)).bits)
 
       inline def divideS32(left: S32, right: S32): S32 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), S32(0.bits)) else S32((left.int/right.int).bits)
+        if right.int == 0 then raise(DivisionError(), S32(0.bits))
+        else S32((left.int/right.int).bits)
 
       inline def divideU16(left: U16, right: U16): U16 raises DivisionError =
         if right.int == 0 then raise(DivisionError(), U16(0.bits))
@@ -450,10 +455,12 @@ package arithmeticOptions:
         else S16((left.short/right.short).toShort.bits)
 
       inline def divideU8(left: U8, right: U8): U8 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), U8(0.bits)) else U8((left.byte/right.byte).toByte.bits)
+        if right.int == 0 then raise(DivisionError(), U8(0.bits))
+        else U8((left.byte/right.byte).toByte.bits)
 
       inline def divideS8(left: S8, right: S8): S8 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), S8(0.bits)) else S8((left.byte/right.byte).toByte.bits)
+        if right.int == 0 then raise(DivisionError(), S8(0.bits))
+        else S8((left.byte/right.byte).toByte.bits)
 
   object overflow:
     inline given unchecked: CheckOverflow:
@@ -462,7 +469,10 @@ package arithmeticOptions:
       inline def addS64(left: S64, right: S64): S64 = S64((left.long + right.long).bits)
       inline def addU32(left: U32, right: U32): U32 = U32((Int(left.bits) + Int(right.bits)).bits)
       inline def addS32(left: S32, right: S32): S32 = S32((left.int + right.int).bits)
-      inline def addU16(left: U16, right: U16): U16 = U16((Short(left.bits) + Short(right.bits)).toShort.bits)
+
+      inline def addU16(left: U16, right: U16): U16 =
+        U16((Short(left.bits) + Short(right.bits)).toShort.bits)
+
       inline def addS16(left: S16, right: S16): S16 = S16((left.short + right.short).toShort.bits)
       inline def addU8(left: U8, right: U8): U8 = U8((left.byte + right.byte).toByte.bits)
       inline def addS8(left: S8, right: S8): S8 = S8((left.byte + right.byte).toByte.bits)

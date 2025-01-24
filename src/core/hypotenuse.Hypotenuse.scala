@@ -60,11 +60,13 @@ object Hypotenuse:
   object F64:
     erased given underlying: Underlying[F64, Double] = erasedValue
 
-    inline given canEqual: CanEqual[F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual
+                            [F64, F64 | S64 | S32 | S16 | S8 | Double | Long | Int | Short | Byte] =
       erasedValue
 
-    inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 =
-      F64((if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) | (mantissa & 0xfffffffffffffL))
+    inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
+      (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52)
+      | (mantissa & 0xfffffffffffffL)
 
     inline def apply(inline bits: B64): F64 = JDouble.longBitsToDouble(bits)
     inline def apply(inline double: Double): F64 = double
@@ -136,7 +138,8 @@ object Hypotenuse:
   object F32:
     erased given underlying: Underlying[F32, Float] = erasedValue
 
-    inline given canEqual: CanEqual[F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual
+                            [F32, F32 | S64 | S32 | S16 | S8 | Float | Long | Int | Short | Byte] =
       erasedValue
 
     inline given orderable: F32 is Orderable:
@@ -202,7 +205,8 @@ object Hypotenuse:
 
   object S64:
     erased given underlying: Underlying[S64, Long] = erasedValue
-    inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
+                                    | Int | Short | Byte] =
       erasedValue
 
     given fromDigits: FromDigits[S64]:
@@ -246,7 +250,8 @@ object Hypotenuse:
 
   object S32:
     erased given underlying: Underlying[S32, Int] = erasedValue
-    inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
+                                    | Int | Short | Byte] =
       erasedValue
 
     given fromDigits: FromDigits[S32]:
@@ -291,7 +296,8 @@ object Hypotenuse:
   object S16:
     erased given underlying: Underlying[S16, Short] = erasedValue
 
-    inline given canEqual: CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S16, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
+                                    | Int | Short | Byte] =
       erasedValue
 
     given fromDigits: FromDigits[S16]:
@@ -335,7 +341,8 @@ object Hypotenuse:
   object S8:
     erased given underlying: Underlying[S8, Byte] = erasedValue
 
-    inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
+                                    | Int | Short | Byte] =
       erasedValue
 
     given fromDigits: FromDigits[S8]:
@@ -690,10 +697,12 @@ object Hypotenuse:
     inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB8")
-    inline infix def <<< (inline count: Int): B8 = ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
+    inline infix def <<< (inline count: Int): B8 =
+      ((bitmap << count%%8) | (bitmap >>> (8 - count%%8))).toByte
 
     @targetName("rotateRightB8")
-    inline infix def >>> (inline count: Int): B8 = ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
+    inline infix def >>> (inline count: Int): B8 =
+      ((bitmap >>> count%%8) | (bitmap << (8 - count%%8))).toByte
 
     @targetName("shiftLeftB8")
     inline infix def << (inline count: Int): B8 = (bitmap << count).toByte
@@ -779,10 +788,12 @@ object Hypotenuse:
     inline def apply(inline index: Ordinal): Boolean = ((bitmap >> index.n0) & 1) == 1
 
     @targetName("rotateLeftB16")
-    inline infix def <<< (count: Int): B16 = ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
+    inline infix def <<< (count: Int): B16 =
+      ((bitmap << count%%16) | (bitmap >>> (16 - count%%16))).toShort
 
     @targetName("rotateRightB16")
-    inline infix def >>> (count: Int): B16 = ((bitmap >>> count%%16) | (bitmap << (16 - count%%16))).toShort
+    inline infix def >>> (count: Int): B16 =
+      ((bitmap >>> count%%16) | (bitmap << (16 - count%%16))).toShort
 
     @targetName("shiftLeftB16")
     inline infix def << (count: Int): B16 = (bitmap << count).toShort
