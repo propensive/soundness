@@ -68,7 +68,9 @@ class ZipStream(stream: () => Stream[Bytes], filter: (Path on Zip) => Boolean):
               val array: Array[Byte] = new Array[Byte](size)
               val count = zipIn.read(array, 0, array.length)
               if count == 0 then Stream()
-              else (if count < size then array.take(count) else array).immutable(using Unsafe) #:: read()
+              else
+                (if count < size then array.take(count) else array).immutable(using Unsafe)
+                #:: read()
 
           ZipEntry(ref, read()) #:: recur()
 

@@ -42,7 +42,8 @@ object Zip:
       MustNotContain[":"] & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] &
       MustNotContain[">"] & MustNotContain["|"]
 
-  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset) extends Root(t"", t"/", Case.Sensitive):
+  class ZipRoot(private val filesystem: Optional[jnf.FileSystem] = Unset)
+  extends Root(t"", t"/", Case.Sensitive):
     type Platform = Zip
 
   given Tactic[NameError] => Zip is Radical from Zip.ZipRoot = new Radical:
