@@ -63,7 +63,8 @@ package daemonConfig:
   given doNotSupportStderr: StderrSupport = () => false
   given supportStderr: StderrSupport = () => true
 
-def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] = service
+def service[BusType <: Matchable](using service: DaemonService[BusType]): DaemonService[BusType] =
+  service
 
 def cli[BusType <: Matchable](using executive: Executive)
    (block: DaemonService[BusType] ?=> executive.CliType ?=> executive.Return)
@@ -235,7 +236,8 @@ def cli[BusType <: Matchable](using executive: Executive)
             lazy val color: ColorDepth =
               import workingDirectories.default
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
-              else ColorDepth(safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
+              else ColorDepth
+                    (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
 
           val stdio: Stdio =
             Stdio

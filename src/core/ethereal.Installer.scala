@@ -51,7 +51,9 @@ object Installer:
     given Result is Communicable =
       case AlreadyOnPath(script, path) => m"The $script command is already installed at $path."
       case Installed(script, path)     => m"The $script command was installed to $path."
-      case PathNotWritable             => m"No directory on the PATH environment variable was writable"
+
+      case PathNotWritable =>
+        m"No directory on the PATH environment variable was writable"
 
   enum Result:
     case AlreadyOnPath(script: Text, path: Text)
