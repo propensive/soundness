@@ -39,12 +39,15 @@ object TreeDiagram:
       val last = input.size - 1
       input.zipWithIndex.to(Stream).flatMap: (item, idx) =>
         val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
-        (tiles, item) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
+
+        (tiles, item)
+        #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
 
     new TreeDiagram(recur(Nil, roots))
 
 case class TreeDiagram[NodeType](lines: Stream[(List[TreeTile], NodeType)]):
-  def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): Stream[LineType] =
+  def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType])
+  :     Stream[LineType] =
     map[LineType] { node => style.serialize(tiles, line(node)) }
 
   def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): Stream[RowType] =
