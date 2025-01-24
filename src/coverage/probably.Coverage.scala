@@ -55,9 +55,9 @@ object Coverage:
 
   private def spec(dir: Text): IArray[Juncture] =
     val file = java.io.File(java.io.File(dir.s), "scoverage.coverage")
-    val lines = Source.fromFile(file).getLines.to(LazyList).map(Text(_))
+    val lines = Source.fromFile(file).getLines.to(Stream).map(Text(_))
 
-    def recur(lines: LazyList[Text], junctures: List[Juncture] = Nil): List[Juncture] =
+    def recur(lines: Stream[Text], junctures: List[Juncture] = Nil): List[Juncture] =
       lines match
         case As[Int](id) #:: path #:: _ #:: _ #:: _ #:: className #:: methodName #::
             As[Int](start) #:: As[Int](end) #:: As[Int](lineNo) #:: symbolName #:: treeName #::
@@ -76,7 +76,7 @@ object Coverage:
   private def measurements(file: File): Set[Int] =
     val ids = BitSet()
     if !file.exists() then Set()
-    else Source.fromFile(file).getLines.to(LazyList).each: id =>
+    else Source.fromFile(file).getLines.to(Stream).each: id =>
       ids(id.toInt) = true
 
     ids.to(Set)
