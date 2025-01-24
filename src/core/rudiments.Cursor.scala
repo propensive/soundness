@@ -29,8 +29,10 @@ object Cursor:
 
     inline def of[ElemType](inline seq: CursorSeq[ElemType]): ElemType = seq(cursor.index)
 
-    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int): Optional[ElemType] =
-      if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length then seq(cursor.index + offset)
+    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int)
+    :     Optional[ElemType] =
+      if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length
+      then seq(cursor.index + offset)
       else Unset
 
   inline def curse[ElemType, ElemType2](seq: IndexedSeq[ElemType])

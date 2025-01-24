@@ -24,7 +24,8 @@ trait Bond[TypeclassType <: Any { type Self }]:
   def apply(): typeclass.Self = value
   type Value = value.type
 
-  def over[InputType, ResultType](lambda: TypeclassType ?=> typeclass.Self ?=> ResultType): ResultType =
+  def over[InputType, ResultType](lambda: TypeclassType ?=> typeclass.Self ?=> ResultType)
+  :     ResultType =
     lambda(using typeclass)(using value)
 
 object Bond:
