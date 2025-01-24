@@ -325,10 +325,10 @@ object Codl:
         else if char.char == ' ' then recur(Margin, padding = false)
         else token() #:: istream(char, count = count + 1, indent = indent, padding = false)
 
-      inline def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset): Stream[CodlToken] =
+      def fail(next: State, error: CodlError, adjust: Optional[Int] = Unset): Stream[CodlToken] =
         CodlToken.Error(error) #:: irecur(next, indent = adjust.or(char.column))
 
-      inline def newline(next: State): Stream[CodlToken] =
+      def newline(next: State): Stream[CodlToken] =
         if diff > 4 then fail(Margin, CodlError(char.line, col(char), 1, SurplusIndent), indent)
         else if char.column < margin then fail(Indent, CodlError(char.line, col(char), 1, InsufficientIndent), margin)
         else if diff%2 != 0 then fail(Indent, CodlError(char.line, col(char), 1, UnevenIndent(margin, char.column)), char.column + 1)

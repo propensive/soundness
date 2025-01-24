@@ -70,7 +70,7 @@ object Printer:
                 val ps = children.take:
                   if layout.multiline then layout.params - 1 else layout.params
 
-                var col = indent - doc.margin + key.or(t"").length
+                var col = indent - doc.margin + key.length
                 ps.each: param =>
                   param.absolve match
                     case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
