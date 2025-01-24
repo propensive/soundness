@@ -55,17 +55,21 @@ trait Schema[DataType, RecordType <: Record in DataType]:
             case '[type typeName <: Label; typeName] =>
               Expr.summon[Schematic[RecordType, DataType, typeName, ?]].absolve match
                 case None =>
-                  halt(m"could not find a Schematic instance for the field $name with type $typeName")
+                  halt:
+                    m"could not find a Schematic instance for the field $name with type $typeName"
 
                 case Some('{$accessor: Schematic[RecordType, DataType, typeName, valueType]}) =>
 
                   val rhs: Expr[DataType => Any] =
                     '{
                       (data: DataType) =>
-                        $accessor.transform($target.access(${Expr(name)}, data), ${Expr(params.to(List))})
+                        $accessor.transform
+                         ($target.access(${Expr(name)}, data), ${Expr(params.to(List))})
                     }
 
-                  val caseDefs2 = CaseDef(Literal(StringConstant(name)), None, rhs.asTerm) :: caseDefs
+                  val caseDefs2 =
+                    CaseDef(Literal(StringConstant(name)), None, rhs.asTerm) :: caseDefs
+
                   val refinement = Refinement(refinedType, name, TypeRepr.of[valueType])
 
                   refine(value, tail, refinement, caseDefs2)
@@ -79,14 +83,16 @@ trait Schema[DataType, RecordType <: Record in DataType]:
                         $typeName""")
 
                 case Some('{ type typeConstructor[_]
-                             $accessor: RecordAccessor[RecordType, DataType, typeName, typeConstructor] }) =>
+                             $accessor: RecordAccessor
+                                         [RecordType, DataType, typeName, typeConstructor] }) =>
 
                   val nested = '{$target.access(${Expr(name)}, $value)}
                   val recordTypeRepr = TypeRepr.of[RecordType]
                   val (nestedType, nestedCaseDefs) = refine(nested, map.to(List), recordTypeRepr)
 
                   val matchFn: Expr[String => DataType => Any] =
-                    '{ (name: String) => ${Match('name.asTerm, nestedCaseDefs).asExprOf[DataType => Any]} }
+                    '{ (name: String) =>
+                         ${Match('name.asTerm, nestedCaseDefs).asExprOf[DataType => Any]} }
 
                   val maker: Expr[DataType => RecordType] = '{ field => $target.make(field, $matchFn) }
 
@@ -98,7 +104,9 @@ trait Schema[DataType, RecordType <: Record in DataType]:
                   nestedType.asType.absolve match
                     case '[nestedRecordType] =>
                       val typeRepr = TypeRepr.of[typeConstructor[nestedRecordType]]
-                      refine(value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
+
+                      refine
+                       (value, tail, Refinement(refinedType, name, typeRepr), caseDef :: caseDefs)
 
     val (refinedType, caseDefs) = refine(value, fields.to(List), TypeRepr.of[RecordType])
 
