@@ -126,8 +126,8 @@ object Tests extends Suite(t"Dissonance tests"):
     suite(t"Diff parsing tests"):
       erased given CanThrow[DiffParseError] = unsafeExceptions.canThrowAny
 
-      val diffStream = LazyList(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
-      val reverseStream = LazyList(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
+      val diffStream = Stream(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
+      val reverseStream = Stream(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
 
       test(t"Parse a simple diff file"):
         Diff.parse(diffStream)
@@ -215,22 +215,22 @@ object Tests extends Suite(t"Dissonance tests"):
     suite(t"Casual diff tests"):
       test(t"Parse a simple casual diff"):
         import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(LazyList))
+        CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(Stream))
       .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
       test(t"Parse a slightly longer casual diff"):
         import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(LazyList))
+        CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(Stream))
       .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
 
       test(t"Parse a longer casual diff"):
         import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList))
+        CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream))
       .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
       test(t"Fail to parse a problematic casual diff"):
         import unsafeExceptions.canThrowAny
-        capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
+        capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream)))
       .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
 
     suite(t"Invariance tests"):

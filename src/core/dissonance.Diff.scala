@@ -23,8 +23,8 @@ import rudiments.*
 import vacuous.*
 
 object Diff:
-  def parse(lines: LazyList[Text])(using Tactic[DiffError]): Diff[Text] =
-    def recur(todo: LazyList[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
+  def parse(lines: Stream[Text])(using Tactic[DiffError]): Diff[Text] =
+    def recur(todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
     :     Diff[Text] =
       if pos < target
       then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
@@ -77,10 +77,10 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
     Diff(edits.map(_.map(lambda))*)
 
   def patch(seq: Seq[ElemType], update: (ElemType, ElemType) => ElemType = (left, right) => left)
-  :     LazyList[ElemType] =
+  :     Stream[ElemType] =
 
-    def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): LazyList[ElemType] = todo match
-      case Nil                   => seq.to(LazyList)
+    def recur(todo: List[Edit[ElemType]], seq: Seq[ElemType]): Stream[ElemType] = todo match
+      case Nil                   => seq.to(Stream)
       case Ins(_, value) :: tail => value #:: recur(tail, seq)
       case Del(_, _) :: tail     => recur(tail, seq.tail)
 
@@ -121,10 +121,10 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
                                         (xs.collect { case del: Del[ElemType] => del },
                                          xs.collect { case ins: Ins[ElemType] => ins })
 
-  def chunks: LazyList[Chunk[ElemType]] =
-    def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): LazyList[Chunk[ElemType]] =
+  def chunks: Stream[Chunk[ElemType]] =
+    def recur(todo: List[Edit[ElemType]], pos: Int, rpos: Int): Stream[Chunk[ElemType]] =
       todo match
-        case Nil                         => LazyList()
+        case Nil                         => Stream()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>
