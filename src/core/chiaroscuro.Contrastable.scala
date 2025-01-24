@@ -48,7 +48,8 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       Juxtaposition.Different(left.show, right.show, sizeText)
 
   inline def general[ValueType]: ValueType is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.inspect) else Juxtaposition.Different(left.inspect, right.inspect)
+    if left == right then Juxtaposition.Same(left.inspect)
+    else Juxtaposition.Different(left.inspect, right.inspect)
 
   given Exception is Contrastable:
     def apply(left: Exception, right: Exception): Juxtaposition =
@@ -59,9 +60,11 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       else Juxtaposition.Different(leftMsg, rightMsg)
 
   given Char is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.show) else Juxtaposition.Different(left.show, right.show)
+    if left == right then Juxtaposition.Same(left.show)
+    else Juxtaposition.Different(left.show, right.show)
 
-  given Text is Contrastable = (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
+  given Text is Contrastable =
+    (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
 
   def compareSeq[ValueType: Contrastable: Similarity]
      (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
