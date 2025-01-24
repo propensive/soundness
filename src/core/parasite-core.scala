@@ -99,9 +99,9 @@ extension [ResultType](tasks: Iterable[Task[ResultType]])
 
     promise.await()
 
-extension [ResultType](stream: LazyList[ResultType])
-  def concurrent(using Monitor, Codicil): LazyList[ResultType] raises AsyncError =
-    if async(stream.isEmpty).await() then LazyList() else stream.head #:: stream.tail.concurrent
+extension [ResultType](stream: Stream[ResultType])
+  def concurrent(using Monitor, Codicil): Stream[ResultType] raises AsyncError =
+    if async(stream.isEmpty).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 def supervise[ResultType](block: Monitor ?=> ResultType)
    (using model: ThreadModel, codepoint: Codepoint)

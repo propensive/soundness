@@ -287,9 +287,9 @@ object Tests extends Suite(t"Parasite tests"):
           value
         .assert(_ == 2)
 
-        test(t"Cancel read on slow LazyList"):
+        test(t"Cancel read on slow Stream"):
           var count = 0
-          val ll = LazyList.continually:
+          val ll = Stream.continually:
             count += 1
             sleep(20L)
           .take(10)
