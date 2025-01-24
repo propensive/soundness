@@ -52,9 +52,9 @@ object HttpConnection:
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
 
-    def stream(): LazyList[Bytes] =
+    def stream(): Stream[Bytes] =
       val len = in.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: stream() else LazyList.empty
+      if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
 
     val request =
       HttpRequest
@@ -75,8 +75,8 @@ object HttpConnection:
         exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = response.body match
-        case LazyList()     => -1
-        case LazyList(data) => data.length
+        case Stream()     => -1
+        case Stream(data) => data.length
         case _              => 0
 
       exchange.sendResponseHeaders(response.status.code, length)

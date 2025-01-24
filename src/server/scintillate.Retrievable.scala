@@ -25,7 +25,7 @@ import telekinesis.*
 trait Retrievable(val mediaType: MediaType) extends Servable:
   type Self
 
-  def stream(response: Self): LazyList[Bytes]
+  def stream(response: Self): Stream[Bytes]
 
   final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
   :     Unit =

@@ -17,7 +17,8 @@
 package scintillate
 
 import anticipation.*
+import rudiments.*
 
 trait Responder:
-  def sendBody(status: Int, body: LazyList[Bytes]): Unit
+  def sendBody(status: Int, body: Stream[Bytes]): Unit
   def addHeader(key: Text, value: Text): Unit

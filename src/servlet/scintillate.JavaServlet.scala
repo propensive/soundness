@@ -29,7 +29,7 @@ import vacuous.*
 import jakarta.servlet as js, js.http as jsh
 
 open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.HttpServlet:
-  protected def streamBody(request: jsh.HttpServletRequest): LazyList[Bytes] raises StreamError =
+  protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
 
@@ -68,8 +68,8 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       val out = servletResponse.getOutputStream.nn
 
       response.body match
-        case LazyList()     => servletResponse.addHeader("content-length", "0")
-        case LazyList(data) => servletResponse.addHeader("content-length", data.length.show.s)
+        case Stream()     => servletResponse.addHeader("content-length", "0")
+        case Stream(data) => servletResponse.addHeader("content-length", data.length.show.s)
                                out.write(data.mutable(using Unsafe))
         case body           => servletResponse.addHeader("transfer-encoding", "chunked")
                                body.map(_.mutable(using Unsafe)).each(out.write(_))

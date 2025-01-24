@@ -45,13 +45,13 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
           response
 
         case _ =>
-          HttpResponse(1.1, HttpStatus.Forbidden, Nil, LazyList())
+          HttpResponse(1.1, HttpStatus.Forbidden, Nil, Stream())
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
 
       HttpResponse
-       (1.1, HttpStatus.Unauthorized, List(ResponseHeader.WwwAuthenticate.show -> auth), LazyList())
+       (1.1, HttpStatus.Unauthorized, List(ResponseHeader.WwwAuthenticate.show -> auth), Stream())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
 

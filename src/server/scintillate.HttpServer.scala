@@ -41,10 +41,10 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
           def addHeader(key: Text, value: Text): Unit =
             exchange.nn.getResponseHeaders.nn.add(key.s, value.s)
 
-          def sendBody(status: Int, body: LazyList[Bytes]): Unit =
+          def sendBody(status: Int, body: Stream[Bytes]): Unit =
             val length = body match
-              case LazyList()     => -1
-              case LazyList(data) => data.length
+              case Stream()     => -1
+              case Stream(data) => data.length
               case _              => 0
 
             exchange.nn.sendResponseHeaders(status, length)
@@ -81,12 +81,12 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
 
     HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
 
-  private def streamBody(exchange: csnh.HttpExchange): LazyList[Bytes] =
+  private def streamBody(exchange: csnh.HttpExchange): Stream[Bytes] =
     val in = exchange.getRequestBody.nn
     val buffer = new Array[Byte](65536)
 
-    def recur(): LazyList[Bytes] =
+    def recur(): Stream[Bytes] =
       val len = in.read(buffer)
-      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else LazyList.empty
+      if len > 0 then buffer.slice(0, len).snapshot #:: recur() else Stream.empty
 
     recur()
