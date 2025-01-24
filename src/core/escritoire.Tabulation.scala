@@ -32,7 +32,7 @@ object Tabulation:
   =>   (TextMetrics, TableStyle, Attenuation)
   =>    Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
-      tabulation.grid(termcap.width.or(100)).render.map(printable.print(_, termcap)).join(t"\n")
+      tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
 
 abstract class Tabulation[TextType: ClassTag]():
   type Row
