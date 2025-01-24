@@ -66,6 +66,7 @@ extension [TestType](test: Test[TestType])
     val stdDev: Double = math.sqrt(variance)
 
     val benchmark =
-      Benchmark(total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
+      Benchmark
+       (total, times.size, min.toDouble, mean, max.toDouble, stdDev, confidence.or(95), baseline)
 
     inc.include(runner.report, test.id, benchmark)
