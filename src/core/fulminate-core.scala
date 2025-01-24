@@ -52,15 +52,19 @@ def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
 
   if pos == null then report.errorAndAbort(text) else report.errorAndAbort(text, pos)
 
-def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm): Unit =
+def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
+:     Unit =
   import quotes.reflect.*
   import dotty.tools.dotc.config.Settings.Setting.value
 
   val esc = 27.toChar
 
   val useColor: Boolean = quotes match
-    case quotes: runtime.impl.QuotesImpl => value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
-    case _                               => false
+    case quotes: runtime.impl.QuotesImpl =>
+      value(quotes.ctx.settings.color)(using quotes.ctx) != "never"
+
+    case _ =>
+      false
 
   val text =
     if useColor

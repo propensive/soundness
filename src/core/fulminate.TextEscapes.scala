@@ -39,8 +39,14 @@ object TextEscapes:
       case 'e' if esc   => ('\u001b', cur + 1, false)
       case '"' if esc   => ('"', cur + 1, false)
       case '\'' if esc  => ('\'', cur + 1, false)
-      case ch if esc    => throw EscapeError(Message(List("the character ".tt, " should not be escaped".tt), List(Message(ch.toString.tt))))
-      case ch           => (ch, cur + 1, false)
+      case ch if esc    =>
+        throw EscapeError
+               (Message
+                 (List("the character ".tt, " should not be escaped".tt),
+                  List(Message(ch.toString.tt))))
+
+      case ch =>
+        (ch, cur + 1, false)
 
   private def parseUnicode(chars: String): Char throws EscapeError =
     if chars.length < 4
