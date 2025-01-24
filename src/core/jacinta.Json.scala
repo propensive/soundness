@@ -120,7 +120,8 @@ trait Json2:
                   case values: IArray[JsonAst] =>
                     JsonAst((("_type" +: labels), (label.asInstanceOf[JsonAst] +: values)))
 
-  // given integral: [IntegralType: Numeric](using Tactic[JsonError]) => IntegralType is Decodable in Json =
+  // given integral: [IntegralType: Numeric](using Tactic[JsonError])
+  // =>    IntegralType is Decodable in Json =
   //   (value, omit) => IntegralType.fromInt(value.root.long.toInt)
 
 object Json extends Json2, Dynamic:
@@ -140,13 +141,16 @@ object Json extends Json2, Dynamic:
   given long: Tactic[JsonError] => Long is Decodable in Json = (value, omit) => value.root.long
   given int: Tactic[JsonError] => Int is Decodable in Json = (value, omit) => value.root.long.toInt
   given text: Tactic[JsonError] => Text is Decodable in Json = (value, omit) => value.root.string
-  given string: Tactic[JsonError] => String is Decodable in Json = (value, omit) => value.root.string.s
+
+  given string: Tactic[JsonError] => String is Decodable in Json =
+    (value, omit) => value.root.string.s
 
   given option: [ValueType: Decodable in Json] => Tactic[JsonError]
   =>    Option[ValueType] is Decodable in Json = (json, omit) =>
     if omit then None else Some(ValueType.decode(json, false))
 
-  given optionEncodable: [ValueType: Encodable in Json as encodable] => Option[ValueType] is Encodable in Json =
+  given optionEncodable: [ValueType: Encodable in Json as encodable]
+  =>    Option[ValueType] is Encodable in Json =
     new Encodable:
       type Self = Option[ValueType]
       type Format = Json
