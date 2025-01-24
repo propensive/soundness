@@ -54,7 +54,8 @@ package syntaxHighlighting:
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.teletype).join
       source.focus.mask:
-        case ((startLine, _), (endLine, _)) => startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
+        case ((startLine, _), (endLine, _)) =>
+          startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
 
       . let: focus =>
           e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋))  $content"
