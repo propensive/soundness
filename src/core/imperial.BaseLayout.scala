@@ -38,7 +38,7 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
   def absolutePath(using Environment, SystemProperties)
   :     Text raises EnvironmentError raises SystemPropertyError =
 
-    val home: Text = Environment.home[Text].or(Properties.user.home[Text]())
+    val home: Text = Environment.home[Text]
     val home2: Text = if home.ends(t"/") then home.skip(1, Rtl) else home
     part.let(baseDir / _).or(baseDir).render(home2)
 
