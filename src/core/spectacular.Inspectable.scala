@@ -96,10 +96,10 @@ object Inspectable extends Inspectable2:
 
     . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
 
-  given stream: [ElemType: Inspectable] => LazyList[ElemType] is Inspectable = stream =>
-    def recur(stream: LazyList[ElemType], todo: Int): Text =
+  given stream: [ElemType: Inspectable] => Stream[ElemType] is Inspectable = stream =>
+    def recur(stream: Stream[ElemType], todo: Int): Text =
       if todo <= 0 then "..?".tt
-      else if stream.toString == "LazyList(<not computed>)" then "∿∿∿".tt
+      else if stream.toString == "Stream(<not computed>)" then "∿∿∿".tt
       else if stream.isEmpty then "⯁ ".tt
       else (stream.head.inspect.s+" ⋰ "+recur(stream.tail, todo - 1)).tt
 
