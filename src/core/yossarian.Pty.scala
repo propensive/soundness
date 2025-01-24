@@ -34,15 +34,15 @@ import PtyEscapeError.Reason, Reason.*
 object Pty:
   def apply(width: Int, height: Int): Pty = Pty(Screen(width, height), PtyState(), Spool())
 
-  def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
+  def stream(pty: Pty, in: Stream[Text]): Stream[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
 
-    case _ => LazyList()
+    case _ => Stream()
 
 case class Pty(buffer: Screen, state0: PtyState, output: Spool[Text]):
-  def stream: LazyList[Text] = output.stream
+  def stream: Stream[Text] = output.stream
 
   def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
