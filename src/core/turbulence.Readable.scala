@@ -58,7 +58,8 @@ object Readable:
 
     Stream.defer(recur(0L.b))
 
-  given reader: [InType <: ji.Reader] => Tactic[StreamError] => InType is Readable by Char = reader =>
+  given reader: [InType <: ji.Reader] => Tactic[StreamError]
+  =>    InType is Readable by Char = reader =>
     def recur(count: Memory): Stream[Char] =
       try reader.read() match
         case -1  => Stream()

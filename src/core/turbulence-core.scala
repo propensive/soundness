@@ -32,7 +32,8 @@ import symbolism.*
 import vacuous.*
 
 extension [ValueType](value: ValueType)
-  def stream[ElementType](using readable: ValueType is Readable by ElementType): Stream[ElementType] =
+  def stream[ElementType](using readable: ValueType is Readable by ElementType)
+  :     Stream[ElementType] =
     readable.stream(value)
 
   inline def read[ResultType]: ResultType =
@@ -46,7 +47,8 @@ extension [ValueType](value: ValueType)
           aggregable.aggregate(value.stream[Text])
 
   def writeTo[TargetType](target: TargetType)[ElementType]
-     (using readable: ValueType is Readable by ElementType, writable: TargetType is Writable by ElementType)
+     (using readable: ValueType is Readable by ElementType,
+            writable: TargetType is Writable by ElementType)
   :     Unit =
 
     writable.write(target, readable.stream(value))
