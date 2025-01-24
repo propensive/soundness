@@ -92,7 +92,7 @@ object JsonAst:
   :     JsonAst/*^{readable, jsonParse}*/ =
 
     // FIXME: This is a horrible hack to avoid the problems with streaming
-    val stream: LazyList[Bytes] = LazyList(SourceType.stream(source).read[Bytes])
+    val stream: Stream[Bytes] = Stream(SourceType.stream(source).read[Bytes])
     var line: Int = 0
     var colStart: Int = 0
 
