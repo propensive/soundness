@@ -38,7 +38,8 @@ object Timing:
 
 
   object Instant:
-    def apply[InstantType: GenericInstant](instant: InstantType): Instant = of(instant.millisecondsSinceEpoch)
+    def apply[InstantType: GenericInstant](instant: InstantType): Instant =
+      of(instant.millisecondsSinceEpoch)
 
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
@@ -49,7 +50,10 @@ object Timing:
 
     inline given orderable: Instant is Orderable:
       inline def compare
-         (inline left: Instant, inline right: Instant, inline strict: Boolean, inline greaterThan: Boolean)
+         (inline left: Instant,
+          inline right: Instant,
+          inline strict: Boolean,
+          inline greaterThan: Boolean)
       :     Boolean =
         if left == right then !strict else (left < right)^greaterThan
 
