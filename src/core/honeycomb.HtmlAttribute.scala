@@ -75,7 +75,10 @@ object HtmlAttribute:
   given cols: ("cols" is HtmlAttribute[Int]) = _.show
   given colspan: ("colspan" is HtmlAttribute[Int]) = _.show
   given content: ("content" is HtmlAttribute[Text]) = identity(_)
-  given contenteditable: ("contenteditable" is HtmlAttribute[Boolean]) = if _ then t"true" else t"false"
+
+  given contenteditable: ("contenteditable" is HtmlAttribute[Boolean]) =
+    if _ then t"true" else t"false"
+
   given controls: ("controls" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given coords: ("coords" is HtmlAttribute[Seq[Double]]) = _.map(_.toString.show).join(t",")
   given crossorigin: ("crossorigin" is HtmlAttribute[Crossorigin]) = _.show
@@ -123,7 +126,9 @@ object HtmlAttribute:
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
   given href2: [UrlType: GenericUrl] => ("href" is HtmlAttribute[UrlType]) = UrlType.text(_)
-  given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_) // Needs to be provided by Cosmopolite
+
+  // Needs to be provided by Cosmopolite
+  given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
 
   given httpEquiv: ("httpEquiv" is HtmlAttribute[HttpEquiv]):
     override def rename: Optional[Text] = t"http-equiv"
@@ -147,7 +152,10 @@ object HtmlAttribute:
   given min: ("min" is HtmlAttribute[Double | Int]) = _.toString.show
   given multiple: ("multiple" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given muted: ("muted" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
-  given name: ("name" is HtmlAttribute[Text]) = identity(_) // Should provide special `name` identifiers
+
+  // Should provide special `name` identifiers
+  given name: ("name" is HtmlAttribute[Text]) = identity(_)
+
   given name2: ("name" is HtmlAttribute[Target] onto "object") = _.show
   given name3: ("name" is HtmlAttribute[Target] onto "iframe") = _.show
   given nonce: ("nonce" is HtmlAttribute[Text]) = identity(_) // Should be provided by Gastronomy
@@ -180,7 +188,10 @@ object HtmlAttribute:
   given src2: [PathType: GenericPath] => ("src" is HtmlAttribute[PathType]) = _.pathText
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
-  given srcset: ("srcset" is HtmlAttribute[Text]) = identity(_) // This should be provided by Cataclysm
+
+  // This should be provided by Cataclysm
+  given srcset: ("srcset" is HtmlAttribute[Text]) = identity(_)
+
   given start: ("start" is HtmlAttribute[Int]) = _.show
   given step: ("step" is HtmlAttribute[Double]) = _.toString.show
   given style: ("style" is HtmlAttribute[Text]) = identity(_) // Should be provided by Cataclysm
@@ -190,7 +201,10 @@ object HtmlAttribute:
   given translate: ("translate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given linkType: ("type" is HtmlAttribute[MediaType] onto "link") = _.show
   given capture: ("capture" is HtmlAttribute[Capture]) = _.show
-  given usemap: ("usemap" is HtmlAttribute[Text]) = identity(_) // This needs a representation of HTML names
+
+  // This needs a representation of HTML names
+  given usemap: ("usemap" is HtmlAttribute[Text]) = identity(_)
+
   given value: ("value" is HtmlAttribute[Double]) = _.toString.show
   given valueInt: ("value" is HtmlAttribute[Int]) = _.show
   given valueText: ("value" is HtmlAttribute[Text]) = identity(_)

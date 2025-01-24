@@ -261,8 +261,8 @@ object html5:
     Tag
      ["textarea",
       Nothing,
-      Global | "autocomplete" | "cols" | "dirname" | "disabled" | "form" | "maxlength" | "minlength" |
-          "name" | "readonly" | "placeholder" | "required" | "rows" | "wrap"]
+      Global | "autocomplete" | "cols" | "dirname" | "disabled" | "form" | "maxlength"
+      | "minlength" | "name" | "readonly" | "placeholder" | "required" | "rows" | "wrap"]
      ("textarea")
 
   val Tfoot = Tag["tfoot", "tr" | ScriptSupporting, Global]("tfoot")
