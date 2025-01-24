@@ -25,14 +25,16 @@ import language.experimental.captureChecking
 
 object Fqcn:
   def valid(char: Char): Boolean =
-    char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9' || char == '_'
+    char >= 'A' && char <= 'Z' || char >= 'a' && char <= 'z' || char >= '0' && char <= '9'
+    || char == '_'
 
   def apply(name: Text): Fqcn raises FqcnError =
     val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))
 
     parts.foreach: part =>
       if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName), ())
-      if Digression.javaKeywords.has(part) then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)), ())
+      if Digression.javaKeywords.has(part)
+      then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)), ())
 
       part.foreach: char =>
         if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)), ())

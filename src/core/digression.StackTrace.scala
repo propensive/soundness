@@ -222,7 +222,9 @@ case class StackTrace
     cause:    Optional[StackTrace]):
 
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
-    val frames2 = frames.takeWhile { f => f.method.className != cutClassName || f.method.method != cutMethod }
+    val frames2 = frames.takeWhile: f =>
+      f.method.className != cutClassName || f.method.method != cutMethod
+
     StackTrace(component, className, message, frames2, cause)
 
   def drop(n: Int): StackTrace =
