@@ -19,13 +19,14 @@ package cataclysm
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import rudiments.*
 
 import language.dynamics
 
 object CssStylesheet:
   given (charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
     def mediaType: Text = t"text/css; charset=${charEncoder.encoding.name}"
-    def content(stylesheet: CssStylesheet): LazyList[IArray[Byte]] = LazyList(stylesheet.text.bytes)
+    def content(stylesheet: CssStylesheet): Stream[IArray[Byte]] = Stream(stylesheet.text.bytes)
 
   trait Item:
     def text: Text
