@@ -26,11 +26,11 @@ import anticipation.*
 import rudiments.*
 import vacuous.*
 
-class LazyListOutputStream() extends ji.OutputStream:
+class StreamOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Spool[Bytes] = Spool()
 
-  def stream: LazyList[Bytes] = chunks.stream
+  def stream: Stream[Bytes] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)
 
   override def close(): Unit = flush().also(chunks.stop())

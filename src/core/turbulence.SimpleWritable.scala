@@ -22,7 +22,7 @@ trait SimpleWritable[TargetType, ElementType] extends Writable:
   type Operand = ElementType
   type Self = TargetType
 
-  def write(target: Self, stream: LazyList[ElementType]): Unit =
+  def write(target: Self, stream: Stream[ElementType]): Unit =
     stream.flow(())(writeElement(target, head) yet write(target, tail))
 
   def writeElement(target: Self, element: ElementType): Unit

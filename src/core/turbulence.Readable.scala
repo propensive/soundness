@@ -28,8 +28,8 @@ import symbolism.*
 import vacuous.*
 
 object Readable:
-  given bytes: Bytes is Readable by Bytes = LazyList(_)
-  given text: [TextType <: Text] => TextType is Readable by Text = LazyList(_)
+  given bytes: Bytes is Readable by Bytes = Stream(_)
+  given text: [TextType <: Text] => TextType is Readable by Text = Stream(_)
 
   given encodingAdapter: [SourceType: Readable by Text] => (encoder: CharEncoder)
   =>    SourceType is Readable by Bytes =
@@ -40,48 +40,48 @@ object Readable:
 
     source => decoder.decode(SourceType.stream(source))
 
-  given stream: [ElementType] => LazyList[ElementType] is Readable by ElementType = identity(_)
+  given stream: [ElementType] => Stream[ElementType] is Readable by ElementType = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Readable by Char = in =>
-    def recur(count: Memory): LazyList[Char] =
+    def recur(count: Memory): Stream[Char] =
       stdio.reader.read() match
-        case -1  => LazyList()
+        case -1  => Stream()
         case int => int.toChar #:: recur(count + 1.b)
 
-    LazyList.defer(recur(0L.b))
+    Stream.defer(recur(0L.b))
 
   given inByteReader: (stdio: Stdio) => In.type is Readable by Byte = in =>
-    def recur(count: Memory): LazyList[Byte] =
+    def recur(count: Memory): Stream[Byte] =
       stdio.in.read() match
-        case -1  => LazyList()
+        case -1  => Stream()
         case int => int.toByte #:: recur(count + 1.b)
 
-    LazyList.defer(recur(0L.b))
+    Stream.defer(recur(0L.b))
 
   given reader: [InType <: ji.Reader] => Tactic[StreamError] => InType is Readable by Char = reader =>
-    def recur(count: Memory): LazyList[Char] =
+    def recur(count: Memory): Stream[Char] =
       try reader.read() match
-        case -1  => LazyList()
+        case -1  => Stream()
         case int => int.toChar #:: recur(count + 1.b)
       catch case err: ji.IOException =>
         reader.close()
-        raise(StreamError(count), LazyList())
+        raise(StreamError(count), Stream())
 
-    LazyList.defer(recur(0L.b))
+    Stream.defer(recur(0L.b))
 
   given bufferedReader: [InType <: ji.BufferedReader]
   =>    Tactic[StreamError]
   =>    InType is Readable by Line =
     reader =>
-      def recur(count: Memory): LazyList[Line] =
+      def recur(count: Memory): Stream[Line] =
         try reader.readLine() match
-          case null         => LazyList()
+          case null         => Stream()
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException =>
           reader.close()
-          raise(StreamError(count), LazyList())
+          raise(StreamError(count), Stream())
 
-      LazyList.defer(recur(0L.b))
+      Stream.defer(recur(0L.b))
 
   given inputStream: [InType <: ji.InputStream]
   =>    Tactic[StreamError]
@@ -91,9 +91,9 @@ object Readable:
   given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes = channel =>
     val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
-    def recur(total: Long): LazyList[Bytes] =
+    def recur(total: Long): Stream[Bytes] =
       try channel.read(buf) match
-        case -1 => LazyList().also(try channel.close() catch case err: Exception => ())
+        case -1 => Stream().also(try channel.close() catch case err: Exception => ())
         case 0  => recur(total)
 
         case count =>
@@ -105,14 +105,14 @@ object Readable:
 
           array.immutable(using Unsafe) #:: recur(total + count)
 
-      catch case e: Exception => LazyList(raise(StreamError(total.b), Bytes()))
+      catch case e: Exception => Stream(raise(StreamError(total.b), Bytes()))
 
-    LazyList.defer(recur(0))
+    Stream.defer(recur(0))
 
 trait Readable:
   type Self
   type Operand
-  def stream(value: Self): LazyList[Operand]
+  def stream(value: Self): Stream[Operand]
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Readable by Operand =
     source => stream(lambda(source))

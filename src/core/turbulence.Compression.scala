@@ -28,16 +28,16 @@ import vacuous.*
 
 trait Compression:
   type Self <: CompressionAlgorithm
-  def compress(stream: LazyList[Bytes]): LazyList[Bytes]
-  def decompress(stream: LazyList[Bytes]): LazyList[Bytes]
+  def compress(stream: Stream[Bytes]): Stream[Bytes]
+  def decompress(stream: Stream[Bytes]): Stream[Bytes]
 
 object Compression:
   given Gzip is Compression:
-    def compress(stream: LazyList[Bytes]): LazyList[Bytes] =
+    def compress(stream: Stream[Bytes]): Stream[Bytes] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
 
-      def recur(stream: LazyList[Bytes]): LazyList[Bytes] = stream match
+      def recur(stream: Stream[Bytes]): Stream[Bytes] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
           if out.size == 0 then recur(tail) else
@@ -47,9 +47,9 @@ object Compression:
 
         case _ =>
           out2.close()
-          if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
+          if out.size == 0 then Stream() else Stream(out.toByteArray().nn.immutable(using Unsafe))
 
       recur(stream)
 
-    def decompress(stream: LazyList[Bytes]): LazyList[Bytes] =
+    def decompress(stream: Stream[Bytes]): Stream[Bytes] =
       unsafely(juz.GZIPInputStream(stream.inputStream).stream[Bytes])

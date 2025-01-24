@@ -20,13 +20,14 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import parasite.*
+import rudiments.*
 
 class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true
   def stop(): Unit = continue = false
 
-  def stream(using Monitor): LazyList[Unit] =
-    if !continue then LazyList() else try
+  def stream(using Monitor): Stream[Unit] =
+    if !continue then Stream() else try
       snooze(duration)
       () #:: stream
-    catch case err: AsyncError => LazyList()
+    catch case err: AsyncError => Stream()

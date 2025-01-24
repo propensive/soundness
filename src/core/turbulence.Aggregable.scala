@@ -26,7 +26,7 @@ import vacuous.*
 
 object Aggregable:
   given bytesBytes: Bytes is Aggregable by Bytes = source =>
-    def recur(buf: ji.ByteArrayOutputStream, source: LazyList[Bytes]): Bytes =
+    def recur(buf: ji.ByteArrayOutputStream, source: Stream[Bytes]): Bytes =
       source.flow(buf.toByteArray().nn.immutable(using Unsafe)):
         buf.write(head.mutable(using Unsafe)); recur(buf, tail)
 
@@ -42,14 +42,14 @@ object Aggregable:
 
   given stream: [ElementType, ElementType2]
   =>   (aggregable: ElementType2 is Aggregable by ElementType)
-  =>    LazyList[ElementType2] is Aggregable by ElementType =
-    element => LazyList(aggregable.aggregate(element))
+  =>    Stream[ElementType2] is Aggregable by ElementType =
+    element => Stream(aggregable.aggregate(element))
 
 trait Aggregable:
   aggregable =>
   type Self
   type Operand
-  def aggregate(source: LazyList[Operand]): Self
+  def aggregate(source: Stream[Operand]): Self
 
   def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Aggregable by Operand = source =>
     lambda(aggregable.aggregate(source))

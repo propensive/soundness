@@ -28,14 +28,14 @@ object Conduit:
   enum State:
     case Data, Clutch, End
 
-class Conduit(input: LazyList[Bytes]):
+class Conduit(input: Stream[Bytes]):
   private var current: Bytes = if input.isEmpty then Bytes() else input.head
-  private var stream: LazyList[Bytes] = if input.isEmpty then LazyList() else input.tail
+  private var stream: Stream[Bytes] = if input.isEmpty then Stream() else input.tail
   private var index: Ordinal = Prim
   private var done: Int = 0
   private var clutch: Boolean = false
 
-  private var stream0: LazyList[Bytes] = stream
+  private var stream0: Stream[Bytes] = stream
   private var current0: Bytes = current
   private var index0: Ordinal = index
   private var done0: Int = done

@@ -18,6 +18,8 @@ package turbulence
 
 import java.util.concurrent as juc
 
+import rudiments.*
+
 object Spool:
   private object Termination
 
@@ -28,6 +30,6 @@ class Spool[ItemType]():
   def put(item: ItemType): Unit = queue.put(item)
   def stop(): Unit = queue.put(Spool.Termination)
 
-  def stream: LazyList[ItemType] =
-    LazyList.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[LazyList[ItemType]]
+  def stream: Stream[ItemType] =
+    Stream.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
+    . asInstanceOf[Stream[ItemType]]

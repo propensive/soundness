@@ -36,18 +36,18 @@ case class Multiplexer[KeyType, ElementType]()(using Monitor):
   def close(): Unit = tasks.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: KeyType, stream: LazyList[ElementType])(using Worker): Unit =
+  private def pump(key: KeyType, stream: Stream[ElementType])(using Worker): Unit =
     if stream.isEmpty then remove(key) else
       relent()
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: KeyType, stream: LazyList[ElementType]): Unit = tasks(key) = async(pump(key, stream))
+  def add(key: KeyType, stream: Stream[ElementType]): Unit = tasks(key) = async(pump(key, stream))
 
   private def remove(key: KeyType): Unit = synchronized:
     tasks -= key
     if tasks.isEmpty then queue.put(Multiplexer.Termination)
 
-  def stream: LazyList[ElementType] =
-    LazyList.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
-    . asInstanceOf[LazyList[ElementType]]
+  def stream: Stream[ElementType] =
+    Stream.continually(queue.take().nn).takeWhile(_ != Multiplexer.Termination)
+    . asInstanceOf[Stream[ElementType]]

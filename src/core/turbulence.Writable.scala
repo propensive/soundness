@@ -57,7 +57,7 @@ object Writable:
   given channel: Tactic[StreamError]
   =>    jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
     @tailrec
-    def recur(total: Memory, todo: LazyList[jn.ByteBuffer]): Unit =
+    def recur(total: Memory, todo: Stream[jn.ByteBuffer]): Unit =
       todo.flow(()):
         val count = try channel.write(head) catch case e: Exception => -1
 
@@ -69,7 +69,7 @@ object Writable:
 trait Writable:
   type Self
   type Operand
-  def write(target: Self, stream: LazyList[Operand]): Unit
+  def write(target: Self, stream: Stream[Operand]): Unit
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Writable by Operand =
     (target, stream) => write(lambda(target), stream)
