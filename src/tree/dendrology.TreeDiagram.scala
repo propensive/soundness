@@ -35,20 +35,20 @@ object TreeDiagram:
 
   def by[NodeType](getChildren: NodeType => Seq[NodeType])(roots: NodeType*)
   :     TreeDiagram[NodeType] =
-    def recur(level: List[TreeTile], input: Seq[NodeType]): LazyList[(List[TreeTile], NodeType)] =
+    def recur(level: List[TreeTile], input: Seq[NodeType]): Stream[(List[TreeTile], NodeType)] =
       val last = input.size - 1
-      input.zipWithIndex.to(LazyList).flatMap: (item, idx) =>
+      input.zipWithIndex.to(Stream).flatMap: (item, idx) =>
         val tiles: List[TreeTile] = ((if idx == last then Last else Branch) :: level).reverse
         (tiles, item) #:: recur((if idx == last then Space else Extender) :: level, getChildren(item))
 
     new TreeDiagram(recur(Nil, roots))
 
-case class TreeDiagram[NodeType](lines: LazyList[(List[TreeTile], NodeType)]):
-  def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): LazyList[LineType] =
+case class TreeDiagram[NodeType](lines: Stream[(List[TreeTile], NodeType)]):
+  def render[LineType](line: NodeType => LineType)(using style: TreeStyle[LineType]): Stream[LineType] =
     map[LineType] { node => style.serialize(tiles, line(node)) }
 
-  def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): LazyList[RowType] =
+  def map[RowType](line: (tiles: List[TreeTile]) ?=> NodeType => RowType): Stream[RowType] =
     lines.map(line(using _)(_))
 
-  def nodes: LazyList[NodeType] = lines.map(_(1))
-  def tiles: LazyList[List[TreeTile]] = lines.map(_(0))
+  def nodes: Stream[NodeType] = lines.map(_(1))
+  def tiles: Stream[List[TreeTile]] = lines.map(_(0))
