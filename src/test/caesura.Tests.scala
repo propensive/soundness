@@ -76,42 +76,42 @@ object Tests extends Suite(t"Caesura tests"):
 
       test(t"multi-line CSV without trailing newline"):
         Dsv.parse(t"""foo,bar\nbaz,quux""").rows
-      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+      .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
       test(t"multi-line CSV with trailing newline"):
         Dsv.parse(t"""foo,bar\nbaz,quux\n""").rows
-      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+      .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
       test(t"multi-line CSV with CR and LF"):
         Dsv.parse(t"""foo,bar\r\nbaz,quux\r\n""").rows
-      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+      .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
       test(t"multi-line CSV with quoted newlines"):
         Dsv.parse(t""""foo","bar"\n"baz","quux"\n""").rows
-      .assert(_ == LazyList(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
+      .assert(_ == Stream(Row(t"foo", t"bar"), Row(t"baz", t"quux")))
 
       test(t"multi-line CSV with newlines and quotes in cells"):
         Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""").rows
-      .assert(_ == LazyList(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\n2\n3\n")))
+      .assert(_ == Stream(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\n2\n3\n")))
 
       test(t"multi-line CSV with quoted quotes adjacent to newlines"):
         Dsv.parse(t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""").rows
-      .assert(_ == LazyList(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\"\n\"2\n3\n")))
+      .assert(_ == Stream(Row(t"f\"oo", t"Hello\nWorld"), Row(t"baz", t"1\"\n\"2\n3\n")))
 
       test(t"multi-line CSV with quoted quotes adjacent to open/close quotes"):
         Dsv.parse(t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""").rows
-      .assert(_ == LazyList(Row(t"f\"oo", t"\"Hello\nWorld\"")))
+      .assert(_ == Stream(Row(t"f\"oo", t"\"Hello\nWorld\"")))
 
     suite(t"Alternative formats"):
       test(t"Parse TSV data"):
         import dsvFormats.tsv
         Dsv.parse(t"Hello\tWorld\n").rows
-      .assert(_ == LazyList(Row(t"Hello", t"World")))
+      .assert(_ == Stream(Row(t"Hello", t"World")))
 
       test(t"Parse TSV data"):
         import dsvFormats.tsvWithHeader
         Dsv.parse(t"Greeting\tAddressee\nHello\tWorld\n")
-      .assert(_ == Dsv(LazyList(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
+      .assert(_ == Dsv(Stream(Row(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
 
     suite(t"Dynamic JSON access"):
       import dynamicDsvAccess.enabled
@@ -157,23 +157,23 @@ object Tests extends Suite(t"Caesura tests"):
 
     test(t"convert simple row to string"):
       import dsvFormats.csv
-      Dsv(LazyList(Row(t"hello", t"world"))).show
+      Dsv(Stream(Row(t"hello", t"world"))).show
     .assert(_ == t"""hello,world""")
 
     test(t"convert complex row to string"):
       import dsvFormats.csv
-      Dsv(LazyList(Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
+      Dsv(Stream(Row(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     .assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(t"convert row with escaped quote"):
       import dsvFormats.csv
-      Dsv(LazyList(Row(t"hello\"world"))).show
+      Dsv(Stream(Row(t"hello\"world"))).show
     .assert(_ == t""""hello""world"""")
 
     test(t"simple parse TSV"):
       import dsvFormats.tsv
       Dsv.parse(t"hello\tworld")
-    .assert(_ == Dsv(LazyList(Row(t"hello", t"world")), format = dsvFormats.tsv))
+    .assert(_ == Dsv(Stream(Row(t"hello", t"world")), format = dsvFormats.tsv))
 
     test(t"decode case class from TSV"):
       import dsvFormats.tsv

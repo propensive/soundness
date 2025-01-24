@@ -17,6 +17,7 @@
 package caesura
 
 import gossamer.*
+import rudiments.*
 
 package dsvFormats:
   given csv: DsvFormat = DsvFormat(false, ',', '"', '"')
@@ -36,4 +37,4 @@ package dsvRedesignations:
 extension [ValueType: DsvEncodable](value: ValueType) def dsv: Row = ValueType.encode(value)
 
 extension [ValueType: DsvEncodable](value: Seq[ValueType])
-  def dsv: Dsv = Dsv(value.to(LazyList).map(ValueType.encode(_)))
+  def dsv: Dsv = Dsv(value.to(Stream).map(ValueType.encode(_)))

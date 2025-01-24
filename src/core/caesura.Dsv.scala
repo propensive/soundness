@@ -32,11 +32,11 @@ import scala.compiletime.*
 import java.util as ju
 
 case class Dsv
-   (rows:    LazyList[Row],
+   (rows:    Stream[Row],
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset):
 
-  def as[ValueType: DsvDecodable]: LazyList[ValueType] tracks CellRef = rows.map(_.as[ValueType])
+  def as[ValueType: DsvDecodable]: Stream[ValueType] tracks CellRef = rows.map(_.as[ValueType])
 
   override def hashCode: Int =
     (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
@@ -78,7 +78,7 @@ object Dsv:
   given DsvFormat => Dsv is Showable = _.rows.map(_.show).join(t"\n")
 
   private def recur
-     (content:  LazyList[Text],
+     (content:  Stream[Text],
       index:    Ordinal                  = Prim,
       column:   Int                      = 0,
       cells:    Array[Text]              = new Array[Text](0),
@@ -86,7 +86,7 @@ object Dsv:
       state:    State                    = State.Fresh,
       headings: Optional[Map[Text, Int]] = Unset)
      (using format: DsvFormat, tactic: Tactic[DsvError])
-  :     LazyList[Row] =
+  :     Stream[Row] =
 
     inline def putCell(): Array[Text] =
       val cells2 = if cells.length <= column then cells :+ buffer() else
@@ -99,10 +99,10 @@ object Dsv:
       val cells = putCell()
       recur(content, index + 1, column + 1, cells, buffer, State.Fresh, headings)
 
-    inline def next(char: Char): LazyList[Row] =
+    inline def next(char: Char): Stream[Row] =
       buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state, headings)
 
-    inline def quote(): LazyList[Row] = state match
+    inline def quote(): Stream[Row] = state match
       case State.Fresh =>
         if !buffer.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
         recur(content, index + 1, column, cells, buffer, State.Quoted, headings)
@@ -116,7 +116,7 @@ object Dsv:
 
     inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
-    inline def putRow(): LazyList[Row] =
+    inline def putRow(): Stream[Row] =
       val cells = putCell()
 
       if format.header && headings.absent then
@@ -129,7 +129,7 @@ object Dsv:
         val row = Row(unsafely(cells.immutable), headings)
         row #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh, headings)
 
-    content.flow(if column == 0 && buffer.empty then LazyList() else putRow()):
+    content.flow(if column == 0 && buffer.empty then Stream() else putRow()):
       if !head.has(index) then recur(tail, Prim, column, cells, buffer, state, headings) else
         head.s.charAt(index.n0) match
           case format.Delimiter =>
