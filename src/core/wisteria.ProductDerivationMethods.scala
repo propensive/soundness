@@ -121,7 +121,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
       accumulator => [FieldType2] => field =>
         if index == fieldIndex then field.asInstanceOf[FieldType] else accumulator
 
-    . vouch(using Unsafe)
+    . vouch
 
   protected transparent inline def fields[DerivationType <: Product](inline product: DerivationType)
      (using requirement: ContextRequirement)

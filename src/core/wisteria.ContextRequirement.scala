@@ -25,7 +25,7 @@ object ContextRequirement:
   given required: ContextRequirement:
     type Optionality[Type] = Type
     type Required = true
-    def wrap[ValueType](optional: Optional[ValueType]): ValueType = optional.vouch(using Unsafe)
+    def wrap[ValueType](optional: Optional[ValueType]): ValueType = optional.vouch
 
   object relaxed extends ContextRequirement:
     type Optionality[Type] = Optional[Type]
