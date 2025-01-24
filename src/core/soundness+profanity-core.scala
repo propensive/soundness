@@ -17,8 +17,8 @@
 package soundness
 
 export profanity.{BackgroundColorDetection, BracketedPasteMode, DismissError, Interaction,
-    Interactivity, Keyboard, Keypress, LineEditor, ProcessContext, Question, SelectMenu, StandardKeyboard,
-    Terminal, TerminalError, TerminalEvent, TerminalFocusDetection, TerminalMode,
+    Interactivity, Keyboard, Keypress, LineEditor, ProcessContext, Question, SelectMenu,
+    StandardKeyboard, Terminal, TerminalError, TerminalEvent, TerminalFocusDetection, TerminalMode,
     TerminalSizeDetection, terminal}
 
 package keyboards:

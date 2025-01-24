@@ -30,7 +30,8 @@ trait Interaction[ResultType, QuestionType]:
   def result(state: QuestionType): ResultType
 
   @tailrec
-  final def recur(stream: Stream[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
+  final def recur
+     (stream: Stream[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
      (key: (QuestionType, TerminalEvent) => QuestionType)
   :     Optional[(ResultType, Stream[TerminalEvent])] =
 

@@ -30,13 +30,10 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   import Keypress.*
 
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
-    case CharKey(ch)      => copy
-                              (t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
-    case Ctrl('U')        => copy(value.skip(position), 0)
-
-    case Ctrl('W')        => val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
-                             copy(t"$prefix${value.skip(position)}", prefix.length)
-
+    case CharKey(ch) => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
+    case Ctrl('U')   => copy(value.skip(position), 0)
+    case Ctrl('W')   => val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+                        copy(t"$prefix${value.skip(position)}", prefix.length)
     case Delete      => copy(t"${value.keep(position)}${value.skip(position + 1)}")
     case Backspace   => copy(t"${value.keep(position - 1)}${value.skip(position)}", (position - 1) max 0)
     case Home        => copy(position0 = 0)
@@ -52,10 +49,11 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
 
   catch case e: RangeError => this
 
-  def ask(using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
+  def ask
+     (using interactivity: Interactivity[TerminalEvent], interaction: Interaction[Text, LineEditor])
      [ResultType]
      (lambda: Interactivity[TerminalEvent] ?=> Text => ResultType)
   :     ResultType raises DismissError =
 
-    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
-      lambda(using Interactivity(stream))(result)
+    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):
+      (result, stream) => lambda(using Interactivity(stream))(result)

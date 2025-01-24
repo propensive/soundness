@@ -23,7 +23,8 @@ import gossamer.{where as _, *}
 import rudiments.*
 import vacuous.*
 
-case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) extends Question[ItemType]:
+case class SelectMenu[ItemType](options: List[ItemType], current: ItemType)
+extends Question[ItemType]:
   import Keypress.*
 
   def apply(keypress: TerminalEvent): SelectMenu[ItemType] = try keypress match
@@ -42,5 +43,5 @@ case class SelectMenu[ItemType](options: List[ItemType], current: ItemType) exte
      (lambda: Interactivity[TerminalEvent] ?=> ItemType => ResultType)
   :     ResultType raises DismissError =
 
-    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())): (result, stream) =>
-      lambda(using Interactivity(stream))(result)
+    interaction(interactivity.eventStream(), this)(_(_)).lay(abort(DismissError())):
+      (result, stream) => lambda(using Interactivity(stream))(result)
