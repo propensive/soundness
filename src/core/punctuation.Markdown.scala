@@ -171,15 +171,18 @@ object Markdown:
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
       raise(MarkdownError(MarkdownError.Reason.BrokenImageRef), t"https://example.com/")
 
-  type PhrasingInput = cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak |
-      cvfa.Image | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
+  type PhrasingInput =
+    cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak | cvfa.Image
+    | cvfa.ImageRef | cvfa.Link | cvfa.LinkRef | cvfa.MailLink | cvfa.Text | cvfa.SoftLineBreak
 
-  def phraseChildren(root: cvfua.Document, node: cvfua.Node): Seq[Markdown.Ast.Inline] raises MarkdownError =
+  def phraseChildren(root: cvfua.Document, node: cvfua.Node)
+  :     Seq[Markdown.Ast.Inline] raises MarkdownError =
     coalesce:
       node.getChildren.nn.iterator.nn.asScala.to(List).collect:
         case node: PhrasingInput => phrasing(root, node)
 
-  def flowChildren(root: cvfua.Document, node: cvfua.Node): Seq[Markdown.Ast.Block] raises MarkdownError =
+  def flowChildren(root: cvfua.Document, node: cvfua.Node)
+  :     Seq[Markdown.Ast.Block] raises MarkdownError =
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: FlowInput => flow(root, node)
 
@@ -189,7 +192,9 @@ object Markdown:
     node.getChildren.nn.iterator.nn.asScala.to(List).collect:
       case node: (cvfa.BulletListItem | cvfa.OrderedListItem) => ListItem(flowChildren(root, node)*)
 
-  def phrasing(root: cvfua.Document, node: PhrasingInput): Markdown.Ast.Inline raises MarkdownError = node match
+  def phrasing
+     (root: cvfua.Document, node: PhrasingInput)
+  :     Markdown.Ast.Inline raises MarkdownError = node match
     case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
     case node: cvfa.SoftLineBreak  => Copy(t"\n")
     case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)

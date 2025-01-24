@@ -61,8 +61,8 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Block.Table(parts*)             => Seq(Table(parts.flatMap(tableParts)))
 
     case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
-      renderersMap.get(syntax).optional.lay(Seq(Div.amok(Pre(html5.Code(escape(value)))))): renderer =>
-        renderer.render(meta, value)
+      renderersMap.get(syntax).optional.lay(Seq(Div.amok(Pre(html5.Code(escape(value)))))):
+        renderer => renderer.render(meta, value)
 
     case Markdown.Ast.Block.BulletList(num, _, items*) =>
       Seq((if num.absent then Ul else Ol)(items.flatMap(listItem)*))
