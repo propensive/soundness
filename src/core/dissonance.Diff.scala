@@ -24,7 +24,8 @@ import vacuous.*
 
 object Diff:
   def parse(lines: Stream[Text])(using Tactic[DiffError]): Diff[Text] =
-    def recur(todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
+    def recur
+       (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
     :     Diff[Text] =
       if pos < target
       then recur(todo, line + 1, Par(pos, rpos, Unset) :: edits, pos + 1, rpos + 1, target)
@@ -116,7 +117,8 @@ case class Diff[ElemType](edits: Edit[ElemType]*):
       case Par(_, _, _) => true
       case _            => false
     . map:
-        case xs@(Par(_, _, _) :: _) => Region.Unchanged(xs.collect { case par: Par[ElemType] => par })
+        case xs@(Par(_, _, _) :: _) => Region.Unchanged
+                                        (xs.collect { case par: Par[ElemType] => par })
         case xs                     => Region.Changed
                                         (xs.collect { case del: Del[ElemType] => del },
                                          xs.collect { case ins: Ins[ElemType] => ins })
