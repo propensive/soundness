@@ -18,7 +18,8 @@ package guillotine
 
 import anticipation.*
 import fulminate.*
+import rudiments.*
 
-case class ExecError(command: Command, stdout: LazyList[Bytes], stderr: LazyList[Bytes])
+case class ExecError(command: Command, stdout: Stream[Bytes], stderr: Stream[Bytes])
    (using Diagnostics)
 extends Error(m"execution of the command $command failed")

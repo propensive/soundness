@@ -96,7 +96,7 @@ case class Command(arguments: Text*) extends Executable:
     Log.info(ExecEvent.ProcessStart(this))
 
     try new Process(processBuilder.start().nn)
-    catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
+    catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
 
 object Pipeline:
   given Pipeline is Communicable =

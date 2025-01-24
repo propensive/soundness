@@ -188,11 +188,11 @@ object Tests extends Suite(t"Guillotine tests"):
       .check(_ == t"Hallo world")
 
       test(t"read stream of strings"):
-        sh"echo 'Hello world'".exec[LazyList[Text]]().to(List)
+        sh"echo 'Hello world'".exec[Stream[Text]]().to(List)
       .assert(_ == List("Hello world"))
 
       test(t"read stream of bytes"):
-        sh"echo 'Hello world'".exec[LazyList[Bytes]]().read[Bytes].to(List)
+        sh"echo 'Hello world'".exec[Stream[Bytes]]().read[Bytes].to(List)
       .assert(_ == Bytes(72, 101, 108, 108, 111, 32, 119, 111, 114, 108, 100, 10).to(List))
 
       test(t"fork sleeping process"):

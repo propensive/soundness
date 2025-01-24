@@ -46,13 +46,13 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
 
-  def stdout(): LazyList[Bytes] raises StreamError =
+  def stdout(): Stream[Bytes] raises StreamError =
     Readable.inputStream.stream(process.getInputStream.nn)
 
-  def stderr(): LazyList[Bytes] raises StreamError =
+  def stderr(): Stream[Bytes] raises StreamError =
     Readable.inputStream.stream(process.getErrorStream.nn)
 
-  def stdin[ChunkType](stream: LazyList[ChunkType])
+  def stdin[ChunkType](stream: Stream[ChunkType])
      (using writable: ji.OutputStream is Writable by ChunkType)
   :     Unit =
 
