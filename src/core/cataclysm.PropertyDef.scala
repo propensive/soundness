@@ -56,11 +56,15 @@ object PropertyDef:
   erased given backgroundOrigin: ("backgroundOrigin" is PropertyDef[Text]) = ###
   erased given backgroundPosition: ("backgroundPosition" is PropertyDef[Text]) = ###
   erased given backgroundPosition2: ("backgroundPosition" is PropertyDef[Dimension]) = ###
-  erased given backgroundPosition3: ("backgroundPosition" is PropertyDef[(Dimension, Dimension)]) = ###
+
+  erased given backgroundPosition3: ("backgroundPosition" is PropertyDef[(Dimension, Dimension)]) =
+    ###
+
   erased given backgroundRepeat: ("backgroundRepeat" is PropertyDef[Text]) = ###
   erased given backgroundRepeat2: ("backgroundRepeat" is PropertyDef[BackgroundRepeat]) = ###
 
-  erased given backgroundRepeat3: ("backgroundRepeat" is PropertyDef[(BackgroundRepeat, BackgroundRepeat)]) =
+  erased given backgroundRepeat3: ("backgroundRepeat" is PropertyDef
+                                                          [(BackgroundRepeat, BackgroundRepeat)]) =
       ###
 
   erased given backgroundSize: ("backgroundSize" is PropertyDef[Text]) = ###
@@ -298,10 +302,15 @@ object PropertyDef:
   erased given textCombineUpright: ("textCombineUpright" is PropertyDef[Text]) = ###
   erased given textDecoration1: ("textDecoration" is PropertyDef[TextDecorationLine]) = ###
 
-  erased given textDecoration2: ("textDecoration" is PropertyDef[(TextDecorationLine, Text, TextDecorationStyle)]) =
+  erased given textDecoration2: ("textDecoration" is PropertyDef
+                                                      [(TextDecorationLine,
+                                                        Text,
+                                                        TextDecorationStyle)]) =
     ###
 
-  erased given textDecorationColor1: [ColorType] => (erased ColorType is Chromatic) => ("textDecorationColor" is PropertyDef[ColorType]) = ###
+  erased given textDecorationColor1: [ColorType] => (erased ColorType is Chromatic)
+  =>    ("textDecorationColor" is PropertyDef[ColorType]) = ###
+
   erased given textDecorationColor2: ("textDecorationColor" is PropertyDef[Transparent.type]) = ###
   erased given textDecorationLine: ("textDecorationLine" is PropertyDef[TextDecorationLine]) = ###
 
