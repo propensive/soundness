@@ -50,7 +50,7 @@ object Serviceable:
       connection.out.write(input.mutable(using Unsafe))
       connection.out.flush()
 
-    def receive(connection: Connection): LazyList[Bytes] =
+    def receive(connection: Connection): Stream[Bytes] =
       connection.in.stream[Bytes]
 
     def close(connection: Connection): Unit = connection.channel.close()
@@ -69,7 +69,7 @@ object Serviceable:
 
     def close(socket: jn.Socket): Unit = socket.close()
 
-    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+    def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
   given tcpPort(using Tactic[StreamError]): Serviceable[TcpPort] with
     type Output = Bytes
@@ -77,7 +77,7 @@ object Serviceable:
 
     def connect(port: TcpPort): jn.Socket = jn.Socket(jn.InetAddress.getLocalHost.nn, port.number)
     def close(socket: jn.Socket): Unit = socket.close()
-    def receive(socket: jn.Socket): LazyList[Bytes] = socket.getInputStream.nn.stream[Bytes]
+    def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
     def transmit(socket: jn.Socket, input: Bytes): Unit =
       val out = socket.getOutputStream.nn
@@ -85,5 +85,5 @@ object Serviceable:
       out.flush()
 
 trait Serviceable[EndpointType] extends Addressable[EndpointType]:
-  def receive(connection: Connection): LazyList[Bytes]
+  def receive(connection: Connection): Stream[Bytes]
   def close(connection: Connection): Unit

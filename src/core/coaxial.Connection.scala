@@ -18,6 +18,7 @@ package coaxial
 
 import anticipation.*
 import contingency.*
+import rudiments.*
 import turbulence.*
 
 import java.io as ji
@@ -25,4 +26,4 @@ import java.io as ji
 import Control.*
 
 case class Connection(private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream):
-  def stream(): LazyList[Bytes] raises StreamError = in.stream[Bytes]
+  def stream(): Stream[Bytes] raises StreamError = in.stream[Bytes]

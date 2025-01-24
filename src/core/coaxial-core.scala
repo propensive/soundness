@@ -53,7 +53,7 @@ extension [EndpointType](endpoint: EndpointType)
 
     val connection = serviceable.connect(endpoint)
 
-    def recur(input: LazyList[Bytes], state: StateType): StateType = input.flow(state):
+    def recur(input: Stream[Bytes], state: StateType): StateType = input.flow(state):
       handle(using state)(receivable.deserialize(head)) match
         case Continue(state2) => recur(tail, state2.or(state))
         case Terminate        => state
