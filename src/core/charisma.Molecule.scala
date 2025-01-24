@@ -24,7 +24,8 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-case class Molecule(elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset)
+case class Molecule
+   (elements: Map[ChemicalElement, Int], charge: Int, state: Optional[PhysicalState] = Unset)
 extends Molecular:
   def molecule: Molecule = this
 
