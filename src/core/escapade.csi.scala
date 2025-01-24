@@ -33,7 +33,10 @@ object csi:
   def cnl(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}E"
   def cpl(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}F"
   def cha(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}G"
-  def cup(n: Optional[Int] = Unset, m: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")};${m.let(_.show).or(t"")}H"
+
+  def cup(n: Optional[Int] = Unset, m: Optional[Int] = Unset): Text =
+    t"$csi${n.let(_.show).or(t"")};${m.let(_.show).or(t"")}H"
+
   def ed(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}J"
   def el(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}K"
   def su(n: Optional[Int] = Unset): Text = t"$csi${n.let(_.show).or(t"")}S"

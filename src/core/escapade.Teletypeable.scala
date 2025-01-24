@@ -66,7 +66,10 @@ object Teletypeable:
         val drop = if obj then 1 else 0
         val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(fileWidth, Rtl)})"
         val dot = if obj then t"." else t"#"
-        val className = e"${Fg(0xc61485)}(${frame.method.className.skip(drop, Rtl).fit(classWidth, Rtl)})"
+
+        val className =
+          e"${Fg(0xc61485)}(${frame.method.className.skip(drop, Rtl).fit(classWidth, Rtl)})"
+
         val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
         val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
 

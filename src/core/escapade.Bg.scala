@@ -29,8 +29,9 @@ object Bg:
 case class Bg(color: Int):
   def fg: Fg = Fg(color)
 
-  def highContrast: Fg =
-    Fg(if ((color&255)*0.07 + ((color >> 8)&255)*0.72 + ((color >> 16)&255)*0.21) > 128 then 0 else 16777215)
+  def highContrast: Fg = Fg:
+    if ((color&255)*0.07 + ((color >> 8)&255)*0.72 + ((color >> 16)&255)*0.21) > 128
+    then 0 else 16777215
 
   def ansi(colorDepth: ColorDepth): Text =
     val red = (color >> 16)&255
