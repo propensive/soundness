@@ -65,7 +65,7 @@ object Juxtaposition:
         Column(e"")(_.treeLine),
         Column(e"Expected", textAlign = TextAlignment.Right)(_.left),
         Column(e"Found")(_.right),
-        Column(e"Difference")(_.difference.or(e""))
+        Column(e"Difference")(_.difference)
       )
 
       table.tabulate(TreeDiagram.by(children(_))(cmp*).render(mkLine)).grid(200).render.join(e"\n")
