@@ -16,4 +16,6 @@
 
 package soundness
 
-export anticipation.{GenericHttpResponseStream, GenericHttpReader, GenericHttpRequestParam, GenericHttpResponseParam}
+export anticipation .
+  { GenericHttpResponseStream, GenericHttpReader, GenericHttpRequestParam,
+    GenericHttpResponseParam }
