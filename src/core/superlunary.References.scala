@@ -41,7 +41,7 @@ class References():
   private var allocations: List[Json] = List()
 
   def setRef(expr: Expr[List[Json]]): Unit = ref = expr
-  def array: Expr[List[Json]] = ref.vouch(using Unsafe)
+  def array: Expr[List[Json]] = ref.vouch
   def current: Int = allocations.length
 
   def allocate[ValueType](value: => ValueType)(using ValueType is Encodable in Json): Int =
