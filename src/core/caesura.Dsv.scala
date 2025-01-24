@@ -68,7 +68,8 @@ object Dsv:
 
       Table[Row]
        ((columns.map: name =>
-          Column[Row, Text, Text](name.or(t""), sizing = columnar.Collapsible(0.5))(_[Text](name).or(t"")))*)
+          Column[Row, Text, Text](name, sizing = columnar.Collapsible(0.5))
+           (_[Text](name).or(t"")))*)
 
   def parse[SourceType: Readable by Text](source: SourceType)(using format: DsvFormat)
   :     Dsv raises DsvError =
