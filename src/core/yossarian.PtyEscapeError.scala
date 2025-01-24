@@ -23,13 +23,16 @@ object PtyEscapeError:
   object Reason:
     given communicable: Reason is Communicable =
       case BadSgrParameters(ns)         => m"${ns} is not a valid SGR parameter sequence"
-      case BadCsiParameter(n, command)  => m"$n is not a valid CSI parameter for the $command command"
       case NonintegerSgrParameter(text) => m"$text is not a numerical SGR parameter"
       case BadColor(n)                  => m"$n is not a valid color number"
       case BadOscParameter(parameter)   => m"$parameter is not a recognized OSC parameter"
-      case BadCsiCommand(param, char)   => m"$char (with parameter $param) is not a valid CSI command"
       case BadCsiEscape(char)           => m"$char is not valid in a CSI escape sequence"
       case BadFeEscape(char)            => m"$char is not a valid Fe escape"
+      case BadCsiCommand(param, char) =>
+        m"$char (with parameter $param) is not a valid CSI command"
+
+      case BadCsiParameter(n, command) =>
+        m"$n is not a valid CSI parameter for the $command command"
 
   enum Reason:
     case BadSgrParameters(n: Text)
