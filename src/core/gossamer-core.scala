@@ -186,20 +186,20 @@ extension [TextType: Textual](text: TextType)
   def contains(substring: into Text): Boolean = TextType.indexOf(text, substring).present
   def contains(char: Char): Boolean = TextType.indexOf(text, char.show).present
 
-  def search(regex: Regex, overlap: Boolean = false): LazyList[TextType] =
+  def search(regex: Regex, overlap: Boolean = false): Stream[TextType] =
     regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
 
   def extract[ValueType](start: Ordinal)(lambda: Matching ?=> TextType ~> ValueType)
-  :     LazyList[ValueType] =
+  :     Stream[ValueType] =
 
     val input = TextType.text(text)
     if start.n0 < input.s.length then
       val matching = Matching(start.n0)
       lambda(using matching).lift(text) match
         case Some(head) => head #:: extract(matching.nextStart.or(0).z)(lambda)
-        case _          => LazyList()
+        case _          => Stream()
 
-    else LazyList()
+    else Stream()
 
   def seek(regex: Regex): Optional[TextType] = regex.seek(TextType.text(text)).let(text.segment(_))
 
