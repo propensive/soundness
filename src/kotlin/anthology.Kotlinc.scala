@@ -39,4 +39,5 @@ case class Kotlinc
     val configuration = CompilerConfiguration().apply: _ =>
       put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, MessageCollector.NONE)
 
-    compiler.exec(MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code))
+    compiler.exec
+     (MessageCollector.NONE, configuration, kotlin.collections.CollectionsKt.listOf(code))

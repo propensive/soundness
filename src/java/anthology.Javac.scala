@@ -39,10 +39,12 @@ object Javac:
 
 case class Javac(options: List[JavacOption]):
   case class JavaSource(name: Text, code: Text)
-  extends jt.SimpleJavaFileObject(jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
+  extends jt.SimpleJavaFileObject
+     (jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
-  def apply(classpath: LocalClasspath)[PathType: GenericPath](sources: Map[Text, Text], out: PathType)
+  def apply(classpath: LocalClasspath)[PathType: GenericPath]
+     (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
   :     CompileProcess logs CompileEvent raises CompilerError =
     Log.info(CompileEvent.Start)
@@ -57,15 +59,18 @@ case class Javac(options: List[JavacOption]):
           case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
           case _                                    => Importance.Info
 
-        val codeRange: Optional[CodeRange] = if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
-          CodeRange
-           (diagnostic.getLineNumber.toInt,
-            diagnostic.getColumnNumber.toInt,
-            diagnostic.getLineNumber.toInt,
-            (diagnostic.getColumnNumber + diagnostic.getEndPosition - diagnostic.getPosition).toInt)
+        val codeRange: Optional[CodeRange] =
+          if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
+            CodeRange
+             (diagnostic.getLineNumber.toInt,
+              diagnostic.getColumnNumber.toInt,
+              diagnostic.getLineNumber.toInt,
+              (diagnostic.getColumnNumber + diagnostic.getEndPosition
+               - diagnostic.getPosition).toInt)
 
         process.put:
-          Notice(importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
+          Notice
+           (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
 
     val options = List(t"-classpath", classpath(), t"-d", out.pathText)
     val javaSources = sources.map(JavaSource(_, _)).asJava
