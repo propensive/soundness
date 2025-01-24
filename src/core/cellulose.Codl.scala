@@ -134,7 +134,8 @@ object Codl:
               go(focus = Proto(), peers = closed :: peers)
 
             case _ =>
-              go(focus = Proto(Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
+              go(focus = Proto
+                          (Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
 
           case CodlToken.Indent =>
             if focus.key.absent then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))
@@ -165,7 +166,8 @@ object Codl:
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
           case CodlToken.Item(word, line, col, block) =>
-            val meta2: Optional[Meta] = focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
+            val meta2: Optional[Meta] =
+              focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
 
             focus.key match
               case key: Text => focus.schema match
@@ -266,19 +268,26 @@ object Codl:
     val (first: Character, start: Int) = try throwErrors(cue(0)) catch case err: CodlError => ???
     val margin: Int = first.column
 
-    def istream(char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
+    def istream
+       (char: Character, state: State = Indent, indent: Int = margin, count: Int, padding: Boolean)
     :     Stream[CodlToken] =
       stream(char, state, indent, count, padding)
 
     @tailrec
     def stream
-       (char: Character, state: State = Indent, indent: Int = margin, count: Int = start, padding: Boolean)
+       (char:    Character,
+        state:   State     = Indent,
+        indent:  Int       = margin,
+        count:   Int       = start,
+        padding: Boolean)
     :     Stream[CodlToken] =
 
       inline def next(): Character =
-        try throwErrors(reader.next()) catch case err: CodlError => Character('\n', err.line, err.col)
+        try throwErrors(reader.next())
+        catch case err: CodlError => Character('\n', err.line, err.col)
 
-      inline def recur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+      inline def recur
+         (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
       :     Stream[CodlToken] =
 
         stream(next(), state, indent, count, padding)
@@ -291,7 +300,8 @@ object Codl:
         then fail(Comment, CodlError(char.line, col(char), 1, BadTermination))
         else if char == Character.End then Stream() else Stream(CodlToken.Body(reader.charStream()))
 
-      inline def irecur(state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
+      inline def irecur
+         (state: State, indent: Int = indent, count: Int = count + 1, padding: Boolean = padding)
       :     Stream[CodlToken] =
 
         istream(next(), state, indent, count, padding)
@@ -330,8 +340,13 @@ object Codl:
 
       def newline(next: State): Stream[CodlToken] =
         if diff > 4 then fail(Margin, CodlError(char.line, col(char), 1, SurplusIndent), indent)
-        else if char.column < margin then fail(Indent, CodlError(char.line, col(char), 1, InsufficientIndent), margin)
-        else if diff%2 != 0 then fail(Indent, CodlError(char.line, col(char), 1, UnevenIndent(margin, char.column)), char.column + 1)
+        else if char.column < margin
+        then fail(Indent, CodlError(char.line, col(char), 1, InsufficientIndent), margin)
+        else if diff%2 != 0 then
+          fail
+           (Indent,
+            CodlError(char.line, col(char), 1, UnevenIndent(margin, char.column)),
+            char.column + 1)
         else diff match
           case 2 => CodlToken.Indent #:: irecur(next, indent = char.column)
           case 0 => CodlToken.Peer #:: irecur(next, indent = char.column)
@@ -389,5 +404,9 @@ object Codl:
 
     def initial: State = State(Nil, Nil)
     def skip(state: State): State = insert(state, List(Data(t"_")))
-    def insert(state: State, data: List[Data]): State = state.copy(subs = data.reverse ::: state.subs)
-    def parse(state: State, next: Text): State = state.copy(parts = next :: state.parts).tap(complete(_))
+
+    def insert(state: State, data: List[Data]): State =
+      state.copy(subs = data.reverse ::: state.subs)
+
+    def parse(state: State, next: Text): State =
+      state.copy(parts = next :: state.parts).tap(complete(_))

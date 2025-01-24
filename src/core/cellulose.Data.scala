@@ -27,7 +27,9 @@ import language.dynamics
 
 object Data:
   given insertion[T: CodlEncoder]: Insertion[List[Data], T] =
-    value => summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect { case data: Data => data }
+    value =>
+      summon[CodlEncoder[T]].encode(value).head.to(List).map(_.data).collect:
+        case data: Data => data
 
   given Data is Inspectable = data => t"Data(${data.key}, ${data.children.length})"
 
@@ -55,8 +57,12 @@ extends Indexed:
   def has(key: Text): Boolean = index.contains(key) || paramIndex.contains(key)
 
   override def equals(that: Any) = that.matchable(using Unsafe) match
-    case that: Data => key == that.key && children.sameElements(that.children) && layout == that.layout &&
-                           schema == that.schema
-    case _          => false
+    case that: Data =>
+      key == that.key && children.sameElements(that.children) && layout == that.layout
+      && schema == that.schema
 
-  override def hashCode: Int = key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode
+    case _ =>
+      false
+
+  override def hashCode: Int =
+    key.hashCode ^ children.toSeq.hashCode ^ layout.hashCode ^ schema.hashCode

@@ -73,7 +73,8 @@ object Printer:
                 var col = indent - doc.margin + key.length
                 ps.each: param =>
                   param.absolve match
-                    case CodlNode(Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
+                    case CodlNode
+                          (Data(key, IArray(CodlNode(Data(value, _, layout, _), _)), _, _), _) =>
                       if layout.multiline then
                         out.write('\n')
                         printBlock(indent + 4, key)

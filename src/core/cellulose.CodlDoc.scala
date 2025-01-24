@@ -51,7 +51,8 @@ object CodlDoc:
   //               v.let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
 
   //             case Del(_, v)         =>
-  //               v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
+  //               v.let(_.key).or(t"—")
+  //               -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
   //             case Sub(_, v, lv, rv) =>
   //               val key =
