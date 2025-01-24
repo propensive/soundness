@@ -29,7 +29,10 @@ object Benchmarks extends Suite(t"Serpentine Benchmarks"):
         val p2 = ^ / p"foo" / p"baz"
         p1.conjunction(p2)
 
-      . benchmark(warmup = 500L, duration = 500L, baseline = Baseline(ratio = Ratio.Time, compare = Compare.Min))
+      . benchmark
+         (warmup   = 500L,
+          duration = 500L,
+          baseline = Baseline(ratio = Ratio.Time, compare = Compare.Min))
 
       test(t"Find conjunction of 3-element paths"):
         val p1 = ^ / p"foo" / p"bar" / p"quux"
