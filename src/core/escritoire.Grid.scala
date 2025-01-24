@@ -36,7 +36,7 @@ object Grid:
 
 case class Grid[TextType](sections: List[TableSection[TextType]], style: TableStyle):
 
-  def render(using metrics: TextMetrics, textual: TextType is Textual): LazyList[TextType] =
+  def render(using metrics: TextMetrics, textual: TextType is Textual): Stream[TextType] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 
@@ -46,7 +46,7 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
     val midEdge =
       Textual(t"$pad${style.charset(top = style.innerLines, bottom = style.innerLines)}$pad")
 
-    def recur(widths: IArray[Int], rows: LazyList[TableRow[TextType]]): LazyList[TextType] =
+    def recur(widths: IArray[Int], rows: Stream[TableRow[TextType]]): Stream[TextType] =
       rows match
         case row #:: tail =>
           val lines = (0 until row.height).map: lineNumber =>
@@ -61,10 +61,10 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
 
             . join(leftEdge, midEdge, rightEdge)
 
-          lines.to(LazyList) #::: recur(widths, tail)
+          lines.to(Stream) #::: recur(widths, tail)
 
         case _ =>
-          LazyList()
+          Stream()
 
     def rule(above: Optional[IArray[Int]], below: Optional[IArray[Int]]): TextType =
       val width = above.or(below).vouch(using Unsafe).pipe: widths =>
@@ -106,14 +106,14 @@ case class Grid[TextType](sections: List[TableSection[TextType]], style: TableSt
                left   = horizontal.or(BoxLine.Blank))
 
     val topLine =
-      if style.topLine.absent then LazyList() else LazyList(rule(Unset, sections.head.widths))
+      if style.topLine.absent then Stream() else Stream(rule(Unset, sections.head.widths))
 
     val midRule = rule(sections.head.widths, sections.head.widths)
 
     val bottomLine =
-      if style.bottomLine.absent then LazyList() else LazyList(rule(sections.head.widths, Unset))
+      if style.bottomLine.absent then Stream() else Stream(rule(sections.head.widths, Unset))
 
     val body =
-      sections.to(LazyList).flatMap { section => midRule #:: recur(section.widths, section.rows) }
+      sections.to(Stream).flatMap { section => midRule #:: recur(section.widths, section.rows) }
 
     topLine #::: body.tail #::: bottomLine

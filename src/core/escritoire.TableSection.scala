@@ -16,4 +16,6 @@
 
 package escritoire
 
-case class TableSection[TextType](widths: IArray[Int], rows: LazyList[TableRow[TextType]])
+import rudiments.*
+
+case class TableSection[TextType](widths: IArray[Int], rows: Stream[TableRow[TextType]])
