@@ -28,7 +28,8 @@ object SymmetricKey:
 
 class SymmetricKey[CipherType <: Cipher](private[enigmatic] val bytes: Bytes)
 extends PrivateKey[CipherType](bytes):
-  def encrypt[ValueType: Encodable in Bytes](value: ValueType)(using CipherType & Encryption): Bytes =
+  def encrypt[ValueType: Encodable in Bytes](value: ValueType)(using CipherType & Encryption)
+  :     Bytes =
     public.encrypt(value)
 
   def verify[ValueType: Encodable in Bytes](value: ValueType, signature: Signature[CipherType])

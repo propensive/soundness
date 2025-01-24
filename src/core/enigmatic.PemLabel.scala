@@ -32,8 +32,8 @@ object PemLabel:
   def unapply(text: Text): Some[PemLabel] = Some(index.get(text).getOrElse(Proprietary(text)))
 
 enum PemLabel:
-  case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey, DsaPrivateKey,
-      EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters, X509Crl, AttributeCertificate,
-      EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
+  case Certificate, CertificateRequest, NewCertificateRequest, PrivateKey, RsaPrivateKey,
+      DsaPrivateKey, EcPrivateKey, EncryptedPrivateKey, PublicKey, Pkcs7, Cms, DhParameters,
+      X509Crl, AttributeCertificate, EncryptedMessage, SignedMessage, RsaPublicKey, DsaPublicKey
 
   case Proprietary(label: Text)
