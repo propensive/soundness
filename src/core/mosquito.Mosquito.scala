@@ -31,7 +31,8 @@ object Mosquito:
   object Vector:
     def apply(elems: Tuple): Vector[Tuple.Union[elems.type], Tuple.Size[elems.type]] = elems
 
-    def take[ElementType](list: List[ElementType], size: Int): Optional[Vector[ElementType, size.type]] =
+    def take[ElementType](list: List[ElementType], size: Int)
+    :     Optional[Vector[ElementType, size.type]] =
       if size == 0 then EmptyTuple else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
@@ -112,7 +113,8 @@ object Mosquito:
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
           case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[LeftType] + rightHead.asInstanceOf[RightType]) *: recur(leftTail, rightTail)
+            (leftHead.asInstanceOf[LeftType] + rightHead.asInstanceOf[RightType])
+            *: recur(leftTail, rightTail)
 
           case _ =>
             EmptyTuple
@@ -123,13 +125,15 @@ object Mosquito:
       recur(left, right)
 
     @targetName("sub")
-    def - [RightType](right: Vector[RightType, SizeType])(using sub: LeftType is Subtractable by RightType)
+    def - [RightType](right: Vector[RightType, SizeType])
+       (using sub: LeftType is Subtractable by RightType)
     :     Vector[sub.Result, SizeType] =
 
       def recur(left: Tuple, right: Tuple): Tuple = left match
         case leftHead *: leftTail => right match
           case rightHead *: rightTail =>
-            (leftHead.asInstanceOf[LeftType] - rightHead.asInstanceOf[RightType]) *: recur(leftTail, rightTail)
+            (leftHead.asInstanceOf[LeftType] - rightHead.asInstanceOf[RightType])
+            *: recur(leftTail, rightTail)
           case _ =>
             EmptyTuple
         case _ =>

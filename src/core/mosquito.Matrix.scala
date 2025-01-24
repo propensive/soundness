@@ -36,7 +36,8 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
     case matrix: Matrix[?, ?, ?] => elements.sameElements(matrix.elements)
     case _                       => false
 
-  override def hashCode: Int = scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
+  override def hashCode: Int =
+    scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
 
   override def toString(): String = t"[${elements.inspect}]".s
 
@@ -91,7 +92,9 @@ object Matrix:
 
     val columnWidths: IArray[Int] = IArray.from:
       (0 until matrix.columns).map: column =>
-        sizes(column + matrix.columns*(0 until matrix.rows).maxBy { row => sizes(matrix.columns*row + column) })
+        sizes:
+          column + matrix.columns*(0 until matrix.rows).maxBy: row =>
+            sizes(matrix.columns*row + column)
 
     (0 until matrix.rows).map: row =>
       val before = if row == 0 then t"⎡ " else if row == matrix.rows - 1 then t"⎣ " else t"⎪ "
