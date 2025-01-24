@@ -23,8 +23,11 @@ object Typonym:
     import quotes.reflect.*
 
     Type.of[TupleType] match
-      case '[type tailType <: Tuple; headType *: tailType] => TypeRepr.of[headType] :: untuple[tailType]
-      case _                                               => Nil
+      case '[type tailType <: Tuple; headType *: tailType] =>
+        TypeRepr.of[headType] :: untuple[tailType]
+
+      case _ =>
+        Nil
 
   def reify[PhantomType: Type](using Quotes): Expr[Any] =
     import quotes.reflect.*
