@@ -34,6 +34,6 @@ class Cache[ValueType](lifetime: Optional[Long]):
   def establish(block: => ValueType): ValueType = value.synchronized:
     if expiry < System.currentTimeMillis then value = Promise()
 
-    if value.ready then value().vouch(using Unsafe) else block.tap: result =>
+    if value.ready then value().vouch else block.tap: result =>
       value.offer(result)
       expiry = lifetime.lay(Long.MaxValue)(_ + System.currentTimeMillis)
