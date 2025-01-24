@@ -25,7 +25,7 @@ import rudiments.*
 
 object Permutation:
 
-  def bySize(n: Int): LazyList[Permutation] = LazyList.range[BigInt](0, Factorial(n)).map: i =>
+  def bySize(n: Int): Stream[Permutation] = Stream.range[BigInt](0, Factorial(n)).map: i =>
     Permutation(Factoradic(i))
 
   def apply(sequence: IndexedSeq[Int]): Permutation raises PermutationError =
