@@ -19,6 +19,7 @@ package cellulose
 import anticipation.*
 import contextual.*
 import gossamer.*
+import rudiments.*
 import spectacular.*, booleanStyles.trueFalse
 
 enum CodlToken:
@@ -27,7 +28,7 @@ enum CodlToken:
   case Item(text: Text, line: Int, col: Int, block: Boolean = false)
   case Comment(text: Text, line: Int, col: Int)
   case Error(error: CodlError)
-  case Body(stream: LazyList[Char])
+  case Body(stream: Stream[Char])
 
 object CodlToken:
   given CodlToken is Inspectable =

@@ -45,7 +45,7 @@ object Tests extends Suite(t"CoDL tests"):
     import Arity.*
 
     suite(t"Reader tests"):
-      def interpret(text: Text)(using Log[Text]): PositionReader = PositionReader(LazyList(text))
+      def interpret(text: Text)(using Log[Text]): PositionReader = PositionReader(Stream(text))
 
       test(t"Character can store line"):
         Character('©', 123, 456).line
@@ -190,87 +190,87 @@ object Tests extends Suite(t"CoDL tests"):
       //   case _: IllegalStateException =>
 
     suite(t"Tokenizer tests"):
-      def parseText(text: Text)(using Log[Text]): (Int, LazyList[CodlToken]) =
-        val result = Codl.tokenize(LazyList(text))
+      def parseText(text: Text)(using Log[Text]): (Int, Stream[CodlToken]) =
+        val result = Codl.tokenize(Stream(text))
         result(1).length
         result
 
       test(t"Parse two words with single space"):
         parseText(t"alpha beta")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
       test(t"Parse a completely empty document"):
         parseText(t"")
-      .assert(_ == (0, LazyList()))
+      .assert(_ == (0, Stream()))
 
       test(t"Parse two words with trailing spaces"):
         parseText(t"alpha beta   ")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
       test(t"Parse two words with three spaces"):
         parseText(t"alpha   beta")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Item(t"beta", 0, 8))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 8))))
 
       test(t"Parse two words with newline"):
         parseText(t"alpha beta\n")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Item(t"beta", 0, 6))))
 
       test(t"Parse two words with two lines"):
         parseText(t"alpha\nbeta")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Peer, Item(t"beta", 1, 0))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Peer, Item(t"beta", 1, 0))))
 
       test(t"Parse two words on two lines with indentation"):
         parseText(t"alpha\n  beta")
-      .assert(_ == (0, LazyList(Item(t"alpha", 0, 0), Indent, Item(t"beta", 1, 2))))
+      .assert(_ == (0, Stream(Item(t"alpha", 0, 0), Indent, Item(t"beta", 1, 2))))
 
       test(t"Parse two words on two lines with initial indentation"):
         parseText(t" alpha\n   beta")
-      .assert(_ == (1, LazyList(Item(t"alpha", 0, 1), Indent, Item(t"beta", 1, 3))))
+      .assert(_ == (1, Stream(Item(t"alpha", 0, 1), Indent, Item(t"beta", 1, 3))))
 
       test(t"Parse two words on two lines with initial newline"):
         parseText(t"\nalpha\n  beta")
-      .assert(_ == (0, LazyList(Item(t"alpha", 1, 0), Indent, Item(t"beta", 2, 2))))
+      .assert(_ == (0, Stream(Item(t"alpha", 1, 0), Indent, Item(t"beta", 2, 2))))
 
       test(t"Parse text with whitespace on blank lines"):
         parseText(t"root\n  two\n\n \npeer")
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Indent, Item(t"two", 1, 2), Blank, Blank,
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Indent, Item(t"two", 1, 2), Blank, Blank,
           Outdent(1), Item(t"peer", 4, 0))))
 
       test(t"Parse shebang"):
         parseText(t"""|#!/bin/bash
                       |root
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Comment(t"!/bin/bash", 0, 0), Peer, Item(t"root", 1, 0))))
+      .assert(_ == (0, Stream(Comment(t"!/bin/bash", 0, 0), Peer, Item(t"root", 1, 0))))
 
       test(t"Parse initial comment"):
         parseText(t"""|# Initial comment
                       |root""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Comment(t" Initial comment", 0, 0), Peer, Item(t"root", 1, 0))))
+      .assert(_ == (0, Stream(Comment(t" Initial comment", 0, 0), Peer, Item(t"root", 1, 0))))
 
       test(t"Parse two-line comment"):
         parseText(t"""|# Line 1
                       |# Line 2
                       |root""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Comment(t" Line 1", 0, 0), Peer, Comment(t" Line 2", 1, 0),
+      .assert(_ == (0, Stream(Comment(t" Line 1", 0, 0), Peer, Comment(t" Line 2", 1, 0),
           Peer, Item(t"root", 2, 0))))
 
       test(t"Parse remark"):
         parseText(t"""|root # remark""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Comment(t"remark", 0, 6))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Comment(t"remark", 0, 6))))
 
       test(t"Parse non-remark"):
         parseText(t"""|root #not-a-remark""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"#not-a-remark", 0, 5))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"#not-a-remark", 0, 5))))
 
       test(t"Parse multi-word remark"):
         parseText(t"""|root # remark words""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Comment(t"remark words", 0, 6))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Comment(t"remark words", 0, 6))))
 
       test(t"Parse double indentation"):
         parseText(t"""|root
                       |    child content
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content", 1, 4, true))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content", 1, 4, true))))
 
       test(t"Unindented line does not terminate long content"):
         parseText(t"""|root
@@ -278,7 +278,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |    two
                       |
                       |    three""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"one\ntwo\n\nthree", 1, 4, true))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"one\ntwo\n\nthree", 1, 4, true))))
 
 
       test(t"Parse double indentation then peer"):
@@ -286,7 +286,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |    child content
                       |next
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content", 1, 4, true), Peer,
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content", 1, 4, true), Peer,
           Item(t"next", 2, 0))))
 
       test(t"Parse double indentation then peer as children"):
@@ -305,7 +305,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |        content
                       |    next
                       |""".s.stripMargin.show)(1).to(List)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false), Indent,
+      .assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2, false), Indent,
           Item(t"grandchild", 2, 4, false), Item(t"content", 3, 8, true), Peer,
           Item(t"next", 4, 4, false)).to(List))
 
@@ -336,7 +336,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |     child content
                       | next
                       |""".s.stripMargin.show)
-      .assert(_ == (1, LazyList(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Peer,
+      .assert(_ == (1, Stream(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Peer,
           Item(t"next", 2, 1))))
 
       test(t"Parse double indentation then peer with margin and indent"):
@@ -344,7 +344,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |     child content
                       |   next
                       |""".s.stripMargin.show)
-      .assert(_ == (1, LazyList(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Indent,
+      .assert(_ == (1, Stream(Item(t"root", 0, 1), Item(t"child content", 1, 5, true), Indent,
           Item(t"next", 2, 3))))
 
       test(t"Parse multiline content"):
@@ -352,7 +352,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |    child content
                       |    more
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true))))
 
       test(t"Parse multiline content then peer"):
         parseText(t"""|root
@@ -360,45 +360,45 @@ object Tests extends Suite(t"CoDL tests"):
                       |    more
                       |next
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Peer,
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Peer,
           Item(t"next", 3, 0))))
 
       test(t"Terminated content"):
         parseText(t"""|root child
                       |##
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 0, 5), Peer, Body(LazyList())))
+      .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 0, 5), Peer, Body(Stream())))
 
       test(t"Terminated content 2"):
         parseText(t"root\n  one two\n##\n")(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(LazyList())))
+      .assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(Stream())))
 
       test(t"Terminated content after child"):
         parseText(t"""|root
                       |  child
                       |##
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2), Outdent(1), Body(LazyList())))
+      .assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"child", 1, 2), Outdent(1), Body(Stream())))
 
       test(t"Terminated content after long parameter"):
         parseText(t"""|root
                       |    child
                       |##
                       |""".s.stripMargin.show)(1).to(List)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(LazyList())).to(List))
+      .assert(_ == Stream(Item(t"root", 0, 0), Item(t"child", 1, 4, true), Peer, Body(Stream())).to(List))
 
       test(t"Terminated content with body"):
         parseText(t"""|root
                       |##
                       | follow""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Body(LazyList(' ', 'f', 'o', 'l', 'l', 'o', 'w'))))
+      .assert(_ == Stream(Item(t"root", 0, 0), Peer, Body(Stream(' ', 'f', 'o', 'l', 'l', 'o', 'w'))))
 
       test(t"Terminated content with body and newline"):
         parseText(t"""|root
                       |##
                       | follow
                       |""".s.stripMargin.show)(1)
-      .assert(_ == LazyList(Item(t"root", 0, 0), Peer, Body(LazyList(' ', 'f', 'o', 'l', 'l', 'o', 'w', '\n'))))
+      .assert(_ == Stream(Item(t"root", 0, 0), Peer, Body(Stream(' ', 'f', 'o', 'l', 'l', 'o', 'w', '\n'))))
 
       test(t"Parse multiline content then indent"):
         parseText(t"""|root
@@ -406,7 +406,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |    more
                       |  next
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
           Item(t"next", 3, 2))))
 
       test(t"Parse multiline content then indented comment"):
@@ -415,7 +415,7 @@ object Tests extends Suite(t"CoDL tests"):
                       |    more
                       |  # comment
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"child content\nmore", 1, 4, true), Indent,
           Comment(t" comment", 3, 2))))
 
       test(t"Parse multiline content including a hash"):
@@ -424,14 +424,14 @@ object Tests extends Suite(t"CoDL tests"):
                       |    # not a comment
                       |""".s.stripMargin.show)
       .assert: value =>
-        value == (0, LazyList(Item(t"root", 0, 0), Item(t"content\n# not a comment", 1, 4, true)))
+        value == (0, Stream(Item(t"root", 0, 0), Item(t"content\n# not a comment", 1, 4, true)))
 
       test(t"Parse multiline content including a additional indentation"):
         parseText(t"""|root
                       |    content
                       |     indented
                       |""".s.stripMargin.show)
-      .assert(_ == (0, LazyList(Item(t"root", 0, 0), Item(t"content\n indented", 1, 4, true))))
+      .assert(_ == (0, Stream(Item(t"root", 0, 0), Item(t"content\n indented", 1, 4, true))))
 
       test(t"Surplus indentation"):
         parseText(t"""|root
@@ -616,15 +616,15 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Terminated content with body"):
         read(t"root\n    one two\n##\nunparsed").body
-      .assert(_ == LazyList('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
+      .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 
       test(t"Terminated content with newline before body"):
         read(t"root\n    one two\n##\n\nunparsed").body
-      .assert(_ == LazyList('\n', 'u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
+      .assert(_ == Stream('\n', 'u', 'n', 'p', 'a', 'r', 's', 'e', 'd'))
 
       test(t"Terminated content with newline after body"):
         read(t"root\n    one two\n##\nunparsed\n").body
-      .assert(_ == LazyList('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
+      .assert(_ == Stream('u', 'n', 'p', 'a', 'r', 's', 'e', 'd', '\n'))
 
       test(t"Teminator without newline and spurious content"):
         capture(read(t"root\n    one two\n##spurious"))

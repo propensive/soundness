@@ -29,7 +29,7 @@ import language.experimental.captureChecking
 
 import Character.*
 
-class PositionReader(private var in: LazyList[Text]):
+class PositionReader(private var in: Stream[Text]):
   private var lastLine: Int = 0
   private var lastCol: Int = 0
   private var startLine: Int = 0
@@ -40,7 +40,7 @@ class PositionReader(private var in: LazyList[Text]):
 
   private var current: Ordinal = Prim - 1
 
-  def charStream(): LazyList[Char] = LazyList.continually(read()).takeWhile(_ != -1).map(_.toChar)
+  def charStream(): Stream[Char] = Stream.continually(read()).takeWhile(_ != -1).map(_.toChar)
 
   private var text: Text =
     if in.isEmpty then t""

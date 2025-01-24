@@ -18,10 +18,9 @@ package cellulose
 
 import anticipation.*
 import chiaroscuro.*
-import contextual.*
 import contingency.*
 import dissonance.*
-import gossamer.{where as _, *}
+import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -65,7 +64,7 @@ object CodlDoc:
   //         Juxtaposition.Collation(comparison, t"", t"")
 
 case class CodlDoc
-   (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: LazyList[Char] = LazyList())
+   (children: IArray[CodlNode], schema: CodlSchema, margin: Int, body: Stream[Char] = Stream())
 extends Indexed:
   override def equals(that: Any) = that.matchable(using Unsafe) match
     case that: CodlDoc =>
