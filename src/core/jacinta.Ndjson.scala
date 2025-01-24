@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import merino.*
 import prepositional.*
+import rudiments.*
 import turbulence.*
 
 object Ndjson:
@@ -28,4 +29,4 @@ object Ndjson:
 
     Ndjson(value.stream[Line].map { line => Json.parse(line.content) })
 
-case class Ndjson(stream: LazyList[Json])
+case class Ndjson(stream: Stream[Json])

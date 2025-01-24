@@ -209,13 +209,13 @@ object Json extends Json2, Dynamic:
   given (encoder: CharEncoder, printer: JsonPrinter)
   =>    Json is GenericHttpResponseStream = new:
     def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
-    def content(json: Json): LazyList[Bytes] = LazyList(json.show.bytes)
+    def content(json: Json): Stream[Bytes] = Stream(json.show.bytes)
 
   given Tactic[JsonParseError] => Decoder[Json] =
-    text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
+    text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   given Tactic[JsonParseError] => ((Json is GenericHttpReader)) =
-    text => Json.parse(LazyList(text.bytes(using charEncoders.utf8)))
+    text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
   =>    Json is Aggregable by Bytes =
