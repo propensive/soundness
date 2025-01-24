@@ -30,7 +30,8 @@ object Annotations:
 
     ${Adversaria.typeAnnotations[AnnotationType, TargetType]}
 
-  transparent inline def field[TargetType](inline lambda: TargetType => Any): List[StaticAnnotation] =
+  transparent inline def field[TargetType](inline lambda: TargetType => Any)
+  :     List[StaticAnnotation] =
     ${Adversaria.fieldAnnotations[TargetType]('lambda)}
 
   transparent inline def fields[TargetType <: Product, AnnotationType <: StaticAnnotation]
