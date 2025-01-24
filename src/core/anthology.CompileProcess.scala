@@ -19,6 +19,7 @@ package anthology
 import anticipation.*
 import contingency.*
 import parasite.*
+import rudiments.*
 import turbulence.*
 import vacuous.*
 
@@ -52,5 +53,5 @@ class CompileProcess():
   def abort(): Unit = continue = false
   def cancelled: Boolean = !continue
 
-  lazy val progress: LazyList[CompileProgress] = progressSpool.stream
-  lazy val notices: LazyList[Notice] = noticesSpool.stream
+  lazy val progress: Stream[CompileProgress] = progressSpool.stream
+  lazy val notices: Stream[Notice] = noticesSpool.stream
