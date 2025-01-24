@@ -38,7 +38,7 @@ def header(using request: HttpRequest)(header: RequestHeader[?]): Optional[List[
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
    (using connection: HttpConnection)
 :     HttpResponse =
-  connection.request.header(RequestHeader.Authorization).let(_.map(_.value)).or(Nil) match
+  connection.request.header(RequestHeader.Authorization).map(_.value) match
     case List(s"Basic $credentials") =>
       safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
         case List(username: Text, password: Text) if validate(username, password) =>
