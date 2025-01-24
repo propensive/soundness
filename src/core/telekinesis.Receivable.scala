@@ -24,15 +24,15 @@ import turbulence.*
 object Receivable:
   given text: Text is Receivable = (status, body) => body.read[Bytes].utf8
   given bytes: Bytes is Receivable = (status, body) => body.read[Bytes]
-  given byteStream: LazyList[Bytes] is Receivable = (status, body) => body
+  given byteStream: Stream[Bytes] is Receivable = (status, body) => body
 
   given genericHttpReader: [ContentType: GenericHttpReader as readable]
   =>    ContentType is Receivable =
     (status, body) => readable.read(body.read[Bytes].utf8)
 
   given httpStatus: HttpStatus is Receivable:
-    def read(status: HttpStatus, body: LazyList[Bytes]) = status
+    def read(status: HttpStatus, body: Stream[Bytes]) = status
 
 trait Receivable:
   type Self
-  def read(status: HttpStatus, body: LazyList[Bytes]): Self
+  def read(status: HttpStatus, body: Stream[Bytes]): Self

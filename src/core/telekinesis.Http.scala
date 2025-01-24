@@ -59,22 +59,21 @@ object Http:
 
         val buf = new Array[Byte](65536)
 
-        def read(in: InputStream): LazyList[Bytes] =
+        def read(in: InputStream): Stream[Bytes] =
           val len = in.read(buf, 0, buf.length)
 
-          if len < 0 then LazyList() else IArray(buf.slice(0, len)*) #:: read(in)
+          if len < 0 then Stream() else IArray(buf.slice(0, len)*) #:: read(in)
 
-        def body: LazyList[Bytes] =
+        def body: Stream[Bytes] =
           try read(connection.getInputStream.nn) catch case _: Exception =>
-            try read(connection.getErrorStream.nn) catch case _: Exception => LazyList()
+            try read(connection.getErrorStream.nn) catch case _: Exception => Stream()
 
         val HttpStatus(status) = connection.getResponseCode: @unchecked
         Log.fine(HttpEvent.Response(status))
 
         val responseHeaders: List[(Text, Text)] =
-          connection.getHeaderFields.nn.asScala.to(List).flatMap: pair =>
-            pair.absolve match
-              case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
-              case _                     => Nil
+          connection.getHeaderFields.nn.asScala.to(List).flatMap:
+            case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
+            case _                     => Nil
 
         HttpResponse(1.1, status, responseHeaders, body)

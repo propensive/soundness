@@ -64,9 +64,9 @@ case class HttpRequest
     host:    Hostname,
     target:  Text,
     headers: List[RequestHeader.Value],
-    body:    LazyList[Bytes]):
+    body:    Stream[Bytes]):
 
-  def serialize: LazyList[Bytes] =
+  def serialize: Stream[Bytes] =
     import charEncoders.ascii
     val text: Text = Text.construct:
       def newline(): Unit = append(t"\r\n")
@@ -81,8 +81,8 @@ case class HttpRequest
       newline()
 
       body match
-        case LazyList()     => append(t"Content-Length: 0")
-        case LazyList(data) => append(t"Content-Length: ${data.length}")
+        case Stream()     => append(t"Content-Length: 0")
+        case Stream(data) => append(t"Content-Length: ${data.length}")
         case _              => append(t"Transfer-Encoding: chunked")
 
       headers.map: parameter =>

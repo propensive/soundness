@@ -44,7 +44,7 @@ object HttpResponse:
     response.copy(headers = headers2 ++ response.headers)
 
 case class HttpResponse
-   (version: HttpVersion, status:  HttpStatus, headers: List[(Text, Text)], body: LazyList[Bytes]):
+   (version: HttpVersion, status:  HttpStatus, headers: List[(Text, Text)], body: Stream[Bytes]):
 
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))

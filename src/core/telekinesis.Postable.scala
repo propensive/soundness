@@ -32,18 +32,18 @@ import language.dynamics
 trait FallbackPostable:
   given [QueryType](using serializer: QueryEncoder[QueryType]): Postable[QueryType] =
     Postable(media"application/x-www-form-urlencoded", value =>
-        LazyList(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
+        Stream(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
 
 object Postable extends FallbackPostable:
   given text(using encoder: CharEncoder): Postable[Text] =
-    Postable(media"text/plain", value => LazyList(IArray.from(value.bytes)))
+    Postable(media"text/plain", value => Stream(IArray.from(value.bytes)))
 
-  given textStream(using encoder: CharEncoder): Postable[LazyList[Text]] =
+  given textStream(using encoder: CharEncoder): Postable[Stream[Text]] =
     Postable(media"application/octet-stream", _.map(_.bytes))
 
-  given unit: Postable[Unit] = Postable(media"text/plain", unit => LazyList())
-  given bytes: Postable[Bytes] = Postable(media"application/octet-stream", LazyList(_))
-  given byteStream: Postable[LazyList[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
+  given unit: Postable[Unit] = Postable(media"text/plain", unit => Stream())
+  given bytes: Postable[Bytes] = Postable(media"application/octet-stream", Stream(_))
+  given byteStream: Postable[Stream[Bytes]] = Postable(media"application/octet-stream", _.map(identity(_)))
 
   given dataStream: [ResponseType: GenericHttpResponseStream] => Tactic[MediaTypeError]
   =>    Postable[ResponseType] =
@@ -51,7 +51,7 @@ object Postable extends FallbackPostable:
     // FIXME: Check if mapping `identity` is necessary
     Postable(Media.parse(ResponseType.mediaType.show), ResponseType.content(_).map(identity))
 
-class Postable[PostType](val contentType: MediaType, val content: PostType => LazyList[Bytes]):
+class Postable[PostType](val contentType: MediaType, val content: PostType => Stream[Bytes]):
   def preview(value: PostType): Text = content(value).prim.lay(t""): bytes =>
     val sample = bytes.take(1024)
     val string: Text = sample.serialize[Base256]
