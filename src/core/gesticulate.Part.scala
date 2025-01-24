@@ -30,4 +30,4 @@ case class Part
     headers:    Map[Text, Text],
     name:     Optional[Text],
     filename:    Optional[Text],
-    body:     LazyList[Bytes])
+    body:     Stream[Bytes])

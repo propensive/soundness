@@ -71,13 +71,13 @@ object Multipart:
           conduit.next()
           headers((key, value) :: list)
 
-    def body(): LazyList[Bytes] = conduit.step() match
+    def body(): Stream[Bytes] = conduit.step() match
       case Conduit.State.Clutch =>
         val block = conduit.block
         conduit.cue()
         block #:: body()
       case Conduit.State.End =>
-        LazyList()
+        Stream()
       case Conduit.State.Data   => conduit.datum match
         case '\r' =>
           if conduit.lookahead:
@@ -85,13 +85,13 @@ object Multipart:
               conduit.next() && conduit.datum == char
           then
             conduit.breakBefore()
-            LazyList(conduit.block).also:
+            Stream(conduit.block).also:
               conduit.skip(boundary.length + 3)
           else body()
         case other =>
           body()
 
-    def parsePart(headers: Map[Text, Text], stream: LazyList[Bytes]): Part =
+    def parsePart(headers: Map[Text, Text], stream: Stream[Bytes]): Part =
       headers.at(t"Content-Disposition").let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
@@ -119,7 +119,7 @@ object Multipart:
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-    def parts(): LazyList[Part] =
+    def parts(): Stream[Part] =
       val part = parsePart(headers(Nil), body())
 
       conduit.datum match
@@ -137,13 +137,13 @@ object Multipart:
           if !conduit.next() || conduit.datum != '\n'
           then raise(MultipartError(Reason.Expected('\n')))
           //if conduit.next() then raise(MultipartError(Reason.StreamContinues))
-          LazyList(part)
+          Stream(part)
 
         case other =>
           raise(MultipartError(Reason.Expected('-')))
-          LazyList()
+          Stream()
 
     Multipart(parts())
 
-case class Multipart(parts: LazyList[Part]):
+case class Multipart(parts: Stream[Part]):
   def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)

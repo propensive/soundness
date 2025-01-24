@@ -17,5 +17,6 @@
 package gesticulate
 
 import anticipation.*
+import rudiments.*
 
-case class Content(media: MediaType, stream: LazyList[Bytes])
+case class Content(media: MediaType, stream: Stream[Bytes])
