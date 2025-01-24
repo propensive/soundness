@@ -64,7 +64,9 @@ object Nomenclature2:
     val name: Text = constant[NameType].tt
 
     Expr.summon[PlatformType is Nominative] match
-      case Some('{type constraintType; type nominativeType <: Nominative { type Constraint = constraintType }; $value: nominativeType }) =>
+      case Some('{ type constraintType
+                   type nominativeType <: Nominative { type Constraint = constraintType }
+                   $value: nominativeType }) =>
         decompose(TypeRepr.of[constraintType]).to(List).each: repr =>
           val text = repr.asMatchable match
             case AppliedType(_, List(param)) => param.asMatchable match
