@@ -46,7 +46,8 @@ object CodlSchema:
     override def optional = Free
     override def toString(): String = "%"
 
-  def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema = Struct(subschemas.map(Entry(_, _)), Arity.AtMostOne)
+  def apply(subschemas: List[(Text, CodlSchema)]): CodlSchema =
+    Struct(subschemas.map(Entry(_, _)), Arity.AtMostOne)
 
 sealed trait CodlSchema(val subschemas: IArray[CodlSchema.Entry], val arity: Arity,
                         val validator: Optional[Text => Boolean])

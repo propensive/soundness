@@ -39,9 +39,14 @@ object CodlNode:
     if left == right then Juxtaposition.Same(left.inspect) else
       val comparison = IArray.from:
         diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
-          case Par(_, _, v) => v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
-          case Ins(_, v)    => Optional(v).let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
-          case Del(_, v)    => v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
+          case Par(_, _, v) =>
+            v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
+
+          case Ins(_, v) =>
+            Optional(v).let(_.key).or(t"—") -> Juxtaposition.Different(t"—", v.inspect)
+
+          case Del(_, v) =>
+            v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
           case Sub(_, v, lv, rv) =>
             if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.juxtapose(rv)
@@ -66,17 +71,24 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
   def apply(key: Text): List[Data] = data.lay(List[CodlNode]())(_(key)).map(_.data).collect:
     case data: Data => data
 
-  def selectDynamic(key: String)(using erased DynamicCodlEnabler)(using Tactic[MissingValueError]): List[Data] =
+  def selectDynamic(key: String)(using erased DynamicCodlEnabler)
+     (using Tactic[MissingValueError])
+  :     List[Data] =
     data.lest(MissingValueError(key.show)).selectDynamic(key)
 
-  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)(using Tactic[MissingValueError]): Data = selectDynamic(key)(idx)
+  def applyDynamic(key: String)(idx: Int = 0)(using erased DynamicCodlEnabler)
+     (using Tactic[MissingValueError])
+  :     Data =
+    selectDynamic(key)(idx)
 
   def untyped: CodlNode =
     val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
     CodlNode(data2, meta)
 
   def uncommented: CodlNode =
-    val data2 = data.let { data => Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema) }
+    val data2 = data.let: data =>
+       Data(data.key, children = data.children.map(_.uncommented), Layout.empty, data.schema)
+
     CodlNode(data2, Unset)
 
   def wiped: CodlNode = untyped.uncommented
