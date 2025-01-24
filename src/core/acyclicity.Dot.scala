@@ -76,7 +76,7 @@ object Dot:
     case Assignment(id: Id, id2: Id)
     case Subgraph(id: Option[Id], statements: Statement*)
 
-  def serialize(tokens: LazyList[Text]): Text = Text.construct:
+  def serialize(tokens: Stream[Text]): Text = Text.construct:
     var level: Int = 0
     var end: Boolean = true
 
@@ -101,46 +101,46 @@ object Dot:
       case t";" => newline()
       case word => whitespace(); append(word)
 
-  private def tokenize(graph: Ref | Dot | Target | Statement | Property): LazyList[Text] = graph match
+  private def tokenize(graph: Ref | Dot | Target | Statement | Property): Stream[Text] = graph match
     case Ref(id, port) =>
-      LazyList(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
+      Stream(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
 
     case Property(key, value) =>
-      LazyList(t"$key=\"$value\"")
+      Stream(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
       val op = if directed then t"->" else t"--"
-      op #:: tokenize(dest) #::: link.to(LazyList).flatMap(tokenize(_)) #::: LazyList(t";")
+      op #:: tokenize(dest) #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
 
     case Statement.Node(id, attrs*) =>
-      t"\"${id.key}\"" #:: (if attrs.isEmpty then LazyList() else (LazyList(t"[") #:::
-          attrs.to(LazyList).flatMap(tokenize(_) :+ t",").init #::: LazyList(t"]"))) #:::
-          LazyList(t";")
+      t"\"${id.key}\"" #:: (if attrs.isEmpty then Stream() else (Stream(t"[") #:::
+          attrs.to(Stream).flatMap(tokenize(_) :+ t",").init #::: Stream(t"]"))) #:::
+          Stream(t";")
 
     case Statement.Edge(id, rhs, attrs*) =>
       tokenize(id) #::: tokenize(rhs)
 
     case Statement.Assignment(id, id2) =>
-      LazyList(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
+      Stream(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" #:: id.to(LazyList).map(_.key) #::: t"{" #::
-          statements.to(LazyList).flatMap(tokenize(_)) #::: LazyList(t"}")
+      t"subgraph" #:: id.to(Stream).map(_.key) #::: t"{" #::
+          statements.to(Stream).flatMap(tokenize(_)) #::: Stream(t"}")
 
     case Dot.Graph(id, strict, statements*) =>
-      LazyList(
-        if strict then LazyList(t"strict") else LazyList(),
-        LazyList(t"graph"),
-        id.to(LazyList).map(_.key), LazyList(t"{"),
-        statements.flatMap(tokenize(_)), LazyList(t"}")
+      Stream(
+        if strict then Stream(t"strict") else Stream(),
+        Stream(t"graph"),
+        id.to(Stream).map(_.key), Stream(t"{"),
+        statements.flatMap(tokenize(_)), Stream(t"}")
       ).flatten
 
     case Dot.Digraph(id, strict, statements*) =>
-      LazyList(
-        if strict then LazyList(t"strict") else LazyList(),
-        LazyList(t"digraph"),
-        id.to(LazyList).map(_.key),
-        LazyList(t"{"),
+      Stream(
+        if strict then Stream(t"strict") else Stream(),
+        Stream(t"digraph"),
+        id.to(Stream).map(_.key),
+        Stream(t"{"),
         statements.flatMap(tokenize(_)),
-        LazyList(t"}")
+        Stream(t"}")
       ).flatten
