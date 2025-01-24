@@ -29,7 +29,8 @@ export rudiments
     Exit, Pid, Quickstart, Nat, Label, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
-    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable, Digit }
+    ter, unwind, at, Indexable, yet, Capability, Bijection, bijection, segment, Segmentable, Digit,
+    Stream }
 
 package quickstart:
   export rudiments.quickstart.defaults as defaults
