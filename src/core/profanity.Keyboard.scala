@@ -18,9 +18,11 @@ package profanity
 
 import language.experimental.captureChecking
 
+import rudiments.*
+
 trait Keyboard:
   type Keypress
-  def process(stream: LazyList[Char]): LazyList[Keypress]
+  def process(stream: Stream[Char]): Stream[Keypress]
 
 object Keyboard:
   import Keypress.*

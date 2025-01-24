@@ -61,11 +61,11 @@ def terminal[ResultType](block: (terminal: Terminal) ?=> ResultType)
 package keyboards:
   given raw: Keyboard:
     type Keypress = Char
-    def process(stream: LazyList[Char]): LazyList[Keypress] = stream
+    def process(stream: Stream[Char]): Stream[Keypress] = stream
 
   given numeric: Keyboard:
     type Keypress = Int
-    def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
+    def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
   given standard: (monitor: Monitor, codicil: Codicil) => StandardKeyboard = StandardKeyboard()
 

@@ -62,7 +62,7 @@ extends Interactivity[TerminalEvent]:
     val in = context.stdio.in
 
   val events: Spool[TerminalEvent] = Spool()
-  def eventStream(): LazyList[TerminalEvent] = events.stream
+  def eventStream(): Stream[TerminalEvent] = events.stream
 
   val pumpSignals: Daemon = daemon:
     signals.stream.each:

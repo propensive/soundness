@@ -16,8 +16,10 @@
 
 package profanity
 
+import rudiments.*
+
 object Interactivity:
-  def apply[EventType](stream: LazyList[EventType]): Interactivity[EventType] = () => stream
+  def apply[EventType](stream: Stream[EventType]): Interactivity[EventType] = () => stream
 
 trait Interactivity[EventType]:
-  def eventStream(): LazyList[EventType]
+  def eventStream(): Stream[EventType]

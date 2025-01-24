@@ -30,9 +30,9 @@ trait Interaction[ResultType, QuestionType]:
   def result(state: QuestionType): ResultType
 
   @tailrec
-  final def recur(stream: LazyList[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
+  final def recur(stream: Stream[TerminalEvent], state: QuestionType, oldState: Optional[QuestionType])
      (key: (QuestionType, TerminalEvent) => QuestionType)
-  :     Optional[(ResultType, LazyList[TerminalEvent])] =
+  :     Optional[(ResultType, Stream[TerminalEvent])] =
 
     render(oldState, state)
 
@@ -43,9 +43,9 @@ trait Interaction[ResultType, QuestionType]:
       case other #:: tail                    => recur(tail, key(state, other), state)(key)
       case _                                 => Unset
 
-  def apply(stream: LazyList[TerminalEvent], state: QuestionType)
+  def apply(stream: Stream[TerminalEvent], state: QuestionType)
      (key: (QuestionType, TerminalEvent) => QuestionType)
-  :     Optional[(ResultType, LazyList[TerminalEvent])] =
+  :     Optional[(ResultType, Stream[TerminalEvent])] =
 
     before()
     recur(stream, state, Unset)(key).also(after())
