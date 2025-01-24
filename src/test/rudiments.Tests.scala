@@ -232,7 +232,7 @@ object Tests extends Suite(t"Rudiments Tests"):
       .assert(_ == false)
 
       test(t"Unsafely vouch a set value"):
-        val x: Int = setInt.vouch(using Unsafe)
+        val x: Int = setInt.vouch
         x
       .assert(_ == 42)
 
