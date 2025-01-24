@@ -109,7 +109,8 @@ class Watch():
   def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
     val watches2 = paths.map:
       case (path, filter) =>
-        val key = path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+        val key =
+          path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
 
         new PathWatch(key, path, spool, filter).tap: watch =>
           Watch.watches.isolate: map =>
