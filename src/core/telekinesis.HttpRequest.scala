@@ -150,7 +150,8 @@ case class HttpRequest
     catch case err: NumberError => abort(StreamError(0.b))
 
   lazy val contentType: Optional[MediaType] =
-    headers.find(_.header == RequestHeader.ContentType).map(_.value).flatMap(MediaType.unapply(_)).optional
+    headers.find(_.header == RequestHeader.ContentType).map(_.value).flatMap(MediaType.unapply(_))
+    . optional
 
   lazy val cookies: Map[Text, Text] =
     header(RequestHeader.Cookie).map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>

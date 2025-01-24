@@ -55,7 +55,10 @@ enum HttpStatus(val code: Int, val description: Text):
   case NotFound extends HttpStatus(404, t"Not Found"), FailureCase
   case MethodNotAllowed extends HttpStatus(405, t"Method Not Allowed"), FailureCase
   case NotAcceptable extends HttpStatus(406, t"Not Acceptable"), FailureCase
-  case ProxyAuthenticationRequired extends HttpStatus(407, t"Proxy Authentication Required"), FailureCase
+
+  case ProxyAuthenticationRequired
+  extends HttpStatus(407, t"Proxy Authentication Required"), FailureCase
+
   case RequestTimeout extends HttpStatus(408, t"Request Timeout"), FailureCase
   case Conflict extends HttpStatus(409, t"Conflict"), FailureCase
   case Gone extends HttpStatus(410, t"Gone"), FailureCase
@@ -71,8 +74,13 @@ enum HttpStatus(val code: Int, val description: Text):
   case UpgradeRequired extends HttpStatus(426, t"Upgrade Required"), FailureCase
   case PreconditionRequired extends HttpStatus(428, t"Precondition Required"), FailureCase
   case TooManyRequests extends HttpStatus(429, t"Too Many Requests"), FailureCase
-  case RequestHeaderFieldsTooLarge extends HttpStatus(431, t"Request Header Fields Too Large"), FailureCase
-  case UnavailableForLegalReasons extends HttpStatus(451, t"Unavailable For Legal Reasons"), FailureCase
+
+  case RequestHeaderFieldsTooLarge
+  extends HttpStatus(431, t"Request Header Fields Too Large"), FailureCase
+
+  case UnavailableForLegalReasons
+  extends HttpStatus(451, t"Unavailable For Legal Reasons"), FailureCase
+
   case InternalServerError extends HttpStatus(500, t"Internal Server Error"), FailureCase
   case NotImplemented extends HttpStatus(501, t"Not Implemented"), FailureCase
   case BadGateway extends HttpStatus(502, t"Bad Gateway"), FailureCase
@@ -83,4 +91,6 @@ enum HttpStatus(val code: Int, val description: Text):
   case InsufficientStorage extends HttpStatus(507, t"Insufficient Storage"), FailureCase
   case LoopDetected extends HttpStatus(508, t"Loop Detected"), FailureCase
   case NotExtended extends HttpStatus(510, t"Not Extended"), FailureCase
-  case NetworkAuthenticationRequired extends HttpStatus(511, t"Network Authentication Required"), FailureCase
+
+  case NetworkAuthenticationRequired
+  extends HttpStatus(511, t"Network Authentication Required"), FailureCase

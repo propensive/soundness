@@ -25,7 +25,8 @@ import vacuous.*
 trait RequestHeader[LabelType <: Label]():
   def header: Text
 
-  def apply[ValueType](content: ValueType)(using param: LabelType is GenericHttpRequestParam[ValueType])
+  def apply[ValueType](content: ValueType)
+     (using param: LabelType is GenericHttpRequestParam[ValueType])
   :     RequestHeader.Value =
 
     RequestHeader.Value(this, param(content))
