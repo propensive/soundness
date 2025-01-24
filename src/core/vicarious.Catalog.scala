@@ -50,4 +50,5 @@ extension [KeyType, ValueType: ClassTag](catalog: Catalog[KeyType, ValueType])
     val partialFunction = lambda(using proxy)
 
     Catalog(IArray.tabulate(catalog.size): index =>
-      partialFunction.applyOrElse(Proxy[KeyType, ValueType, index.type](), _ => catalog.values(index)))
+      partialFunction.applyOrElse
+       (Proxy[KeyType, ValueType, index.type](), _ => catalog.values(index)))
