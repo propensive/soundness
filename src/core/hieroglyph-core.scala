@@ -20,7 +20,7 @@ import anticipation.*
 import contingency.*
 import vacuous.*
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncoder =
   CharEncoder(encoding)

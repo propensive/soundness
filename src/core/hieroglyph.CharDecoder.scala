@@ -24,7 +24,7 @@ import scala.collection.mutable as scm
 
 import java.nio as jn, jn.charset as jnc
 
-import language.experimental.captureChecking
+import language.experimental.pureFunctions
 
 object CharDecoder:
   given default: Quickstart => CharDecoder = charDecoders.utf8
