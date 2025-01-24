@@ -40,7 +40,10 @@ object Cataclysm:
             val typeName = TypeRepr.of[valueType].show
             halt(m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists")
 
-        '{CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[valueType]].show($value))} :: recur(tail)
+        '{
+            CssProperty(Text($key).uncamel.kebab, compiletime.summonInline[ShowProperty[valueType]]
+            . show($value))  }
+        :: recur(tail)
 
       case _ =>
         Nil

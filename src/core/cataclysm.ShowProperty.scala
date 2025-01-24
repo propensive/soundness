@@ -43,8 +43,11 @@ object ShowProperty:
         PropertyType3.show(tuple(2)))
       . join(t" ")
 
-  given [PropertyType: ShowProperty, PropertyType2: ShowProperty, PropertyType3: ShowProperty, PropertyType4: ShowProperty]
-  :     ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
+  given [PropertyType:  ShowProperty,
+         PropertyType2: ShowProperty,
+         PropertyType3: ShowProperty,
+         PropertyType4: ShowProperty]
+  =>    ShowProperty[(PropertyType, PropertyType2, PropertyType3, PropertyType4)] = tuple =>
     List
      (PropertyType.show(tuple(0)),
       PropertyType2.show(tuple(1)),

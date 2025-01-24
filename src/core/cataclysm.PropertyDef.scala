@@ -277,7 +277,10 @@ object PropertyDef:
   erased given padding1: ("padding" is PropertyDef[Dimension]) = ###
   erased given padding2: ("padding" is PropertyDef[(Dimension, Dimension)]) = ###
   erased given padding3: ("padding" is PropertyDef[(Dimension, Dimension, Dimension)]) = ###
-  erased given padding4: ("padding" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) = ###
+
+  erased given padding4: ("padding" is PropertyDef[(Dimension, Dimension, Dimension, Dimension)]) =
+    ###
+
   erased given paddingBottom: ("paddingBottom" is PropertyDef[Dimension]) = ###
   erased given paddingLeft: ("paddingLeft" is PropertyDef[Dimension]) = ###
   erased given paddingRight: ("paddingRight" is PropertyDef[Dimension]) = ###
