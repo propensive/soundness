@@ -39,5 +39,6 @@ class Classloader(val java: ClassLoader) extends Root("/".tt, "/".tt, Case.Sensi
 
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
 
-  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError]): ji.InputStream =
+  private[hellenism] def inputStream(path: Text)(using notFound: Tactic[ClasspathError])
+  :     ji.InputStream =
     Optional(java.getResourceAsStream(path.s)).or(abort(ClasspathError(path)))
