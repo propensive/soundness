@@ -46,7 +46,7 @@ object Tests extends Suite(t"Zeppelin tests"):
       val path = File.createTempFile("tmp", ".zip").nn
       val entry = ZipEntry(ZipRef / p"hello.txt", t"Hello world")
       val zip = ZipFile.create(path)
-      zip.append(LazyList(entry))
+      zip.append(Stream(entry))
       path
     .check(_.length > 0)
 
@@ -64,7 +64,7 @@ object Tests extends Suite(t"Zeppelin tests"):
       newFile.delete()
       java.nio.file.Files.copy(simpleFile.toPath, newFile.toPath)
       val zip = ZipFile(newFile)
-      zip.append(LazyList(entry))
+      zip.append(Stream(entry))
       newFile
     .check(_.length > 0)
 

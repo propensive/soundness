@@ -33,4 +33,4 @@ object ZipEntry:
   // 00:00:00, 1 January 2000
   val epoch: jnf.attribute.FileTime = jnf.attribute.FileTime.fromMillis(946684800000L).nn
 
-case class ZipEntry(ref: Path on Zip, content: () => LazyList[Bytes])
+case class ZipEntry(ref: Path on Zip, content: () => Stream[Bytes])
