@@ -43,8 +43,8 @@ open case class Image(private[hallucination] val image: jai.BufferedImage):
       for x <- 0 until width do append(e"${apply(x, y)}(${Bg(apply(x, y + 1))}(▀))".render(termcap))
       append('\n')
 
-  def serialize(using codec: ImageCodec[Format]): LazyList[Bytes] =
-    val out = LazyListOutputStream()
+  def serialize(using codec: ImageCodec[Format]): Stream[Bytes] =
+    val out = StreamOutputStream()
     ji.ImageIO.createImageOutputStream(out)
     out.stream
 

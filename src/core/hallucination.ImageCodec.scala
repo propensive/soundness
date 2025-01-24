@@ -33,7 +33,7 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
 
   given response: (Image in ImageFormatType) is GenericHttpResponseStream:
     def mediaType = mediaType.show
-    def content(image: Image in ImageFormatType): LazyList[Bytes] = image.serialize(using codec)
+    def content(image: Image in ImageFormatType): Stream[Bytes] = image.serialize(using codec)
 
   def read[InputType: Readable by Bytes](inputType: InputType): Image in ImageFormatType =
     reader.synchronized:
