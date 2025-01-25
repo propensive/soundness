@@ -343,12 +343,12 @@ trait Quantitative2:
 
     (leftNorm/rightNorm).repr.map(_.asType).absolve match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+       '{ Divisible[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
               ${Quantitative.multiply('left, 'right, true).asExprOf[Quantity[resultType]]} } }
 
       case None =>
-       '{ Divisible.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+       '{ Divisible[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, true).asExprOf[Double]} }
 
   def sqrtTypeclass[ValueType <: Measure: Type](using Quotes)
@@ -370,7 +370,7 @@ trait Quantitative2:
           val sqrt = '{ (value: Quantity[ValueType]) => Quantity(math.sqrt(value.value)) }
           val cast = sqrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
 
-          '{Rootable.Basic[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
+          '{Rootable[2, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def cbrtTypeclass[ValueType <: Measure: Type](using Quotes)
   :     Expr[Quantity[ValueType] is Rootable[3]] =
@@ -392,7 +392,7 @@ trait Quantitative2:
           val cbrt = '{ (value: Quantity[ValueType]) => Quantity(math.cbrt(value.value)) }
           val cast = cbrt.asExprOf[Quantity[ValueType] => Quantity[resultType]]
 
-          '{Rootable.Basic[3, Quantity[ValueType], Quantity[resultType]]($cast(_))}
+          '{Rootable[3, Quantity[ValueType], Quantity[resultType]]($cast(_))}
 
   def greaterThan[LeftType <: Measure: Type, RightType <: Measure: Type]
      (leftExpr:  Expr[Quantity[LeftType]],
@@ -443,7 +443,7 @@ trait Quantitative2:
 
     units.repr.map(_.asType).absolve match
       case Some('[type measureType <: Measure; measureType]) =>
-       '{ Subtractable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[measureType]] {
+       '{ Subtractable[Quantity[LeftType], Quantity[RightType], Quantity[measureType]] {
             (left, right) =>
               ${Quantitative.add('left, 'right, '{true}).asExprOf[Quantity[measureType]]} } }
 
@@ -454,7 +454,7 @@ trait Quantitative2:
 
     units.repr.map(_.asType).absolve match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Addable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+       '{ Addable[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
               ${Quantitative.add('left, 'right, '{false}).asExprOf[Quantity[resultType]]} } }
 
