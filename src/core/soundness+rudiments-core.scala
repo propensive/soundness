@@ -22,7 +22,7 @@ export rudiments
     place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as,
     Irrefutable, Extractable, As, ClassTag, Typeable, Set, List, ListMap, Map, TreeSet, TreeMap,
-    TrieMap, NonFatal,
+    TrieMap, NonFatal, absolve,
     boundary, break, IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
     EnumerationHasAsScala, tailrec, missingContext, targetName, switch, StaticAnnotation,
     uncheckedVariance, uncheckedCaptures, uncheckedStable, ###, map, contramap, Functor, Cofunctor,
