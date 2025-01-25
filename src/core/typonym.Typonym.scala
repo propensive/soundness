@@ -34,7 +34,10 @@ object Typonym:
 
     Type.of[PhantomType] match
       case '[type listType <: Tuple; TypeList[listType]] =>
-        untuple[listType].map(_.asType).map { case '[elementType] => reify[elementType] }
+        untuple[listType].map(_.asType).map:
+          _.runtimeChecked.match
+            case '[elementType] => reify[elementType]
+
         . reverse
         . foldLeft('{Nil}) { (list, next) => '{$next :: $list} }
 
@@ -43,7 +46,8 @@ object Typonym:
           val pairs: List[TypeRepr] = untuple[mapType]
 
           val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
-            case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
+            _.runtimeChecked.match
+              case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
 
           def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
             case Nil => '{Nil}
@@ -53,7 +57,7 @@ object Typonym:
 
         '{$entries.to(Map)}
 
-      case other => TypeRepr.of[PhantomType] match
+      case other => TypeRepr.of[PhantomType].runtimeChecked match
         case ConstantType(BooleanConstant(boolean)) => Expr(boolean)
         case ConstantType(IntConstant(int))         => Expr(int)
         case ConstantType(DoubleConstant(double))   => Expr(double)
@@ -62,7 +66,7 @@ object Typonym:
   def reflect(value: Any)(using Quotes): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    value match
+    value.runtimeChecked match
       case string: String   => ConstantType(StringConstant(string))
       case int: Int         => ConstantType(IntConstant(int))
       case double: Double   => ConstantType(DoubleConstant(double))
@@ -70,9 +74,9 @@ object Typonym:
 
       case list: List[?] =>
         val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[EmptyTuple]): (tuple, next) =>
-          tuple.asType match
-            case '[type tupleType <: Tuple; tupleType] => next.asType match
+          tuple.asType.runtimeChecked match
+            case '[type tupleType <: Tuple; tupleType] => next.asType.runtimeChecked match
               case '[nextType] => TypeRepr.of[nextType *: tupleType]
 
-        tuple.asType match
+        tuple.asType.runtimeChecked match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[TypeList[tupleType]]
