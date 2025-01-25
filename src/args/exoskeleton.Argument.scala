@@ -21,8 +21,6 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 case class Argument(position: Int, value: Text, cursor: Optional[Int]):
   def apply(): Text = value
   def prefix: Optional[Text] = cursor.let(value.keep(_))
