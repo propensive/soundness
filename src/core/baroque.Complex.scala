@@ -35,16 +35,15 @@ object Complex:
 
   inline given addable: [ComponentType: Addable by ComponentType as addable]
   =>    Complex[ComponentType] is Addable by Complex[ComponentType] =
-    new Addable.Basic[Complex[ComponentType], Complex[ComponentType], Complex[addable.Result]]
-      ({ (left, right) =>
-           Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary) })
+    Addable[Complex[ComponentType], Complex[ComponentType], Complex[addable.Result]]:
+      (left, right) =>
+        Complex[addable.Result](left.real + right.real, left.imaginary + right.imaginary)
 
   inline given subtractable: [ComponentType: Subtractable by ComponentType as subtractable]
   =>   Complex[ComponentType] is Subtractable by Complex[ComponentType] =
-    new Subtractable.Basic
-         [Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]
-      ({ (left, right) =>
-           Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary) })
+    Subtractable[Complex[ComponentType], Complex[ComponentType], Complex[subtractable.Result]]:
+      (left, right) =>
+        Complex[subtractable.Result](left.real - right.real, left.imaginary - right.imaginary)
 
   inline given multiplicable: [ComponentType]
   =>   (multiplication: ComponentType is Multiplicable by ComponentType,
