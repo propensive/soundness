@@ -305,7 +305,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
             false
 
         case (rightKeys, rightValues) => rightKeys.asMatchable.absolve match
-          case rightKeys: IArray[String] => rightValues.asMatchable.absolve match
+           case rightKeys: IArray[String] @unchecked => rightValues.asMatchable.absolve match
             case rightValues: IArray[JsonAst] @unchecked => left.asMatchable.absolve match
               case (leftKeys, leftValues) => leftKeys.asMatchable.absolve match
                 case leftKeys: IArray[String] @unchecked =>
