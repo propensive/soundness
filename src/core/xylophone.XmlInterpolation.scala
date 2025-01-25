@@ -134,8 +134,9 @@ object XmlInterpolation:
       safely(Xml.parse(state.source)).or:
         throw InterpolationError(m"the XML could not be parsed")
 
-    def parse(state: ParseState, string: Text): ParseState = string.chars.foldLeft(state.copy(offset = 0)):
-      case (state@ParseState(_, _, _, _, _, _), char) => state.context match
+    def parse(state: ParseState, string: Text): ParseState =
+      string.chars.foldLeft(state.copy(offset = 0)):
+        case (state@ParseState(_, _, _, _, _, _), char) => state.context match
 
         case InTagName => char match
           case TagChar()                => state(char)
