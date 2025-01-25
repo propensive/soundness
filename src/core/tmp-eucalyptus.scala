@@ -44,7 +44,13 @@ package eucalyptus
 
 //         try
 //           val castShow = $show.asInstanceOf[presentationalValue.Show[MessageType]]
-//           $log.record(Entry($realm, $level, presentationalValue.show($message)(using castShow), time, $log.envelopes))
+//           $log.record
+//            (Entry
+//              ($realm,
+//               $level,
+//               presentationalValue.show($message)(using castShow),
+//               time,
+//               $log.envelopes))
 //         catch case e: Exception => ()  }
 
 //   def route[TextType: Type]
@@ -96,7 +102,9 @@ package eucalyptus
 //                         CaseDef(pattern, guard, action.asTerm)
 
 //                   val matchCase = Some(Match(matchId, List(caseDef)))
-//                   val definition = DefDef.copy(defDef)(ident, scrutineeType, returnType, matchCase)
+//
+//                   val definition =
+//                     DefDef.copy(defDef)(ident, scrutineeType, returnType, matchCase)
 
 //                   Block(List(definition), term).asExprOf[PartialFunction[Entry[TextType], Any]]
 
