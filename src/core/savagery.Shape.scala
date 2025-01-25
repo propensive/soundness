@@ -29,7 +29,10 @@ sealed trait Shape:
   val transforms: List[Transform] = Nil
 
 case class Rectangle(position: Point, width: Float, height: Float) extends Shape:
-  def xml: Xml = unsafely(Xml.parse(t"""<rect x="${position.x.toDouble} y="${position.y.toDouble}" width="${width.toDouble}" height="${height.toDouble}"/>"""))
+  def xml: Xml = unsafely:
+    Xml.parse:
+      given Float is Showable = _.toString.tt
+      t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>"""
 
 case class Line
    (ops:      List[Stroke]       = Nil,
@@ -81,6 +84,7 @@ case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Degrees
 
   def xml: Xml = unsafely:
     Xml.parse:
+      given Float is Showable = _.toString.tt
       if circle
-      then t"""<circle cx="${center.x.toDouble}" cy="${center.y.toDouble}" r="${xRadius.toDouble}"/>"""
-      else t"""<ellipse cx="${center.x.toDouble}" cy="${center.y.toDouble}" rx="${xRadius.toDouble}" ry="${yRadius.toDouble}"/>"""
+      then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
+      else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="${xRadius}" ry="${yRadius}"/>"""
