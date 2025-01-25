@@ -89,26 +89,27 @@ object Readable:
   =>    InType is Readable by Bytes =
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
-  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes = channel =>
-    val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
+  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Readable by Bytes =
+    channel =>
+      val buf: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
-    def recur(total: Long): Stream[Bytes] =
-      try channel.read(buf) match
-        case -1 => Stream().also(try channel.close() catch case err: Exception => ())
-        case 0  => recur(total)
+      def recur(total: Long): Stream[Bytes] =
+        try channel.read(buf) match
+          case -1 => Stream().also(try channel.close() catch case err: Exception => ())
+          case 0  => recur(total)
 
-        case count =>
-          buf.flip()
-          val size: Int = count.min(1024)
-          val array: Array[Byte] = new Array[Byte](size)
-          buf.get(array)
-          buf.clear()
+          case count =>
+            buf.flip()
+            val size: Int = count.min(1024)
+            val array: Array[Byte] = new Array[Byte](size)
+            buf.get(array)
+            buf.clear()
 
-          array.immutable(using Unsafe) #:: recur(total + count)
+            array.immutable(using Unsafe) #:: recur(total + count)
 
-      catch case e: Exception => Stream(raise(StreamError(total.b), Bytes()))
+        catch case e: Exception => Stream(raise(StreamError(total.b), Bytes()))
 
-    Stream.defer(recur(0))
+      Stream.defer(recur(0))
 
 trait Readable:
   type Self
