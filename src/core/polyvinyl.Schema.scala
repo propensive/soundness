@@ -94,7 +94,8 @@ trait Schema[DataType, RecordType <: Record in DataType]:
                     '{ (name: String) =>
                          ${Match('name.asTerm, nestedCaseDefs).asExprOf[DataType => Any]} }
 
-                  val maker: Expr[DataType => RecordType] = '{ field => $target.make(field, $matchFn) }
+                  val maker: Expr[DataType => RecordType] =
+                    '{ field => $target.make(field, $matchFn) }
 
                   val rhs: Expr[DataType => Any] =
                     '{ data => $accessor.transform($target.access(${Expr(name)}, data), $maker) }
