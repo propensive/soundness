@@ -18,55 +18,35 @@ package symbolism
 
 import prepositional.*
 
-import language.experimental.captureChecking
-
 import scala.annotation.targetName
 
 object Divisible:
-  class Basic[DividendType, DivisorType, ResultType]
+  def apply[DividendType, DivisorType, ResultType]
      (lambda: (DividendType, DivisorType) => ResultType)
-  extends Divisible:
+  :     DividendType is Divisible by DivisorType into ResultType = new Divisible:
     type Self = DividendType
     type Result = ResultType
     type Operand = DivisorType
 
     def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
 
-  given Double is Divisible by Double into Double = new Divisible:
-    type Self = Double
-    type Operand = Double
-    type Result = Double
-    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+  given Double is Divisible by Double into Double = Divisible:
+    (dividend, divisor) => dividend/divisor
 
-  given Float is Divisible by Float into Float = new Divisible:
-    type Self = Float
-    type Operand = Float
-    type Result = Float
-    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+  given Float is Divisible by Float into Float = Divisible:
+    (dividend, divisor) => dividend/divisor
 
-  given Long is Divisible by Long into Long = new Divisible:
-    type Self = Long
-    type Operand = Long
-    type Result = Long
-    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+  given Long is Divisible by Long into Long = Divisible:
+    (dividend, divisor) => dividend/divisor
 
-  given Int is Divisible by Int into Int = new Divisible:
-    type Self = Int
-    type Operand = Int
-    type Result = Int
-    def divide(dividend: Dividend, divisor: Divisor): Result = dividend/divisor
+  given Int is Divisible by Int into Int = Divisible:
+    (dividend, divisor) => dividend/divisor
 
-  given Short is Divisible by Short into Short = new Divisible:
-    type Self = Short
-    type Operand = Short
-    type Result = Short
-    def divide(dividend: Dividend, divisor: Divisor): Result = (dividend/divisor).toShort
+  given Short is Divisible by Short into Short = Divisible:
+    (dividend, divisor) => (dividend/divisor).toShort
 
-  given Byte is Divisible by Byte into Byte = new Divisible:
-    type Self = Byte
-    type Operand = Byte
-    type Result = Byte
-    def divide(dividend: Dividend, divisor: Divisor): Result = (dividend/divisor).toByte
+  given Byte is Divisible by Byte into Byte = Divisible:
+    (dividend, divisor) => (dividend/divisor).toByte
 
 
 trait Divisible:

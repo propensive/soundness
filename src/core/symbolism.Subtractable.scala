@@ -18,14 +18,12 @@ package symbolism
 
 import prepositional.*
 
-import language.experimental.captureChecking
-
 import scala.annotation.targetName
 
 object Subtractable:
-  class Basic[MinuendType, SubtrahendType, ResultType]
+  def apply[MinuendType, SubtrahendType, ResultType]
      (lambda: (MinuendType, SubtrahendType) => ResultType)
-  extends Subtractable:
+  :     MinuendType is Subtractable by SubtrahendType into ResultType = new Subtractable:
     type Self = MinuendType
     type Result = ResultType
     type Operand = SubtrahendType
@@ -33,41 +31,23 @@ object Subtractable:
     def subtract(minuend: MinuendType, subtrahend: SubtrahendType): ResultType =
       lambda(minuend, subtrahend)
 
-  given Double is Subtractable by Double into Double = new Subtractable:
-    type Self = Double
-    type Result = Double
-    type Operand = Double
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+  given Double is Subtractable by Double into Double = Subtractable:
+    (minuend, subtrahend) => minuend - subtrahend
 
-  given Float is Subtractable by Float into Float = new Subtractable:
-    type Self = Float
-    type Result = Float
-    type Operand = Float
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+  given Float is Subtractable by Float into Float = Subtractable:
+    (minuend, subtrahend) => minuend - subtrahend
 
-  given Long is Subtractable by Long into Long = new Subtractable:
-    type Self = Long
-    type Result = Long
-    type Operand = Long
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+  given Long is Subtractable by Long into Long = Subtractable:
+    (minuend, subtrahend) => minuend - subtrahend
 
-  given Int is Subtractable by Int into Int = new Subtractable:
-    type Self = Int
-    type Result = Int
-    type Operand = Int
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = minuend - subtrahend
+  given Int is Subtractable by Int into Int = Subtractable:
+    (minuend, subtrahend) => minuend - subtrahend
 
-  given Short is Subtractable by Short into Short = new Subtractable:
-    type Self = Short
-    type Result = Short
-    type Operand = Short
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = (minuend - subtrahend).toShort
+  given Short is Subtractable by Short into Short = Subtractable:
+    (minuend, subtrahend) => (minuend - subtrahend).toShort
 
-  given Byte is Subtractable by Byte into Byte = new Subtractable:
-    type Self = Byte
-    type Result = Byte
-    type Operand = Byte
-    def subtract(minuend: Minuend, subtrahend: Subtrahend): Result = (minuend - subtrahend).toByte
+  given Byte is Subtractable by Byte into Byte = Subtractable:
+    (minuend, subtrahend) => (minuend - subtrahend).toByte
 
 trait Subtractable:
   type Self

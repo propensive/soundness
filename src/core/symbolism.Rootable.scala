@@ -18,12 +18,9 @@ package symbolism
 
 import prepositional.*
 
-import language.experimental.captureChecking
-
 object Rootable:
-  class Basic[RootType <: Int & Singleton, OperandType, ResultType]
-     (lambda: OperandType => ResultType)
-  extends Rootable[RootType]:
+  def apply[RootType <: Int & Singleton, OperandType, ResultType](lambda: OperandType => ResultType)
+  :     OperandType is Rootable[RootType] into ResultType = new Rootable[RootType]:
     type Self = OperandType
     type Result = ResultType
 

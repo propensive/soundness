@@ -18,55 +18,34 @@ package symbolism
 
 import prepositional.*
 
-import language.experimental.captureChecking
-
 import scala.annotation.targetName
 
 object Addable:
-  class Basic[AugendType, AddendType, ResultType]
-     (lambda: (AugendType, AddendType) => ResultType)
-  extends Addable:
+  def apply[AugendType, AddendType, ResultType](lambda: (AugendType, AddendType) => ResultType)
+  :     AugendType is Addable by AddendType into ResultType = new Addable:
     type Self = AugendType
     type Result = ResultType
     type Operand = AddendType
 
     def add(augend: AugendType, addend: AddendType): ResultType = lambda(augend, addend)
 
-  given Double is Addable by Double into Double = new Addable:
-    type Self = Double
-    type Operand = Double
-    type Result = Double
-    def add(augend: Augend, addend: Addend): Result = augend + addend
+  given Double is Addable by Double into Double = Addable:
+    (augend, addend) => augend + addend
 
-  given Float is Addable by Float into Float = new Addable:
-    type Self = Float
-    type Operand = Float
-    type Result = Float
-    def add(augend: Augend, addend: Addend): Result = augend + addend
+  given Float is Addable by Float into Float = Addable:
+    (augend, addend) => augend + addend
 
-  given Long is Addable by Long into Long = new Addable:
-    type Self = Long
-    type Operand = Long
-    type Result = Long
-    def add(augend: Augend, addend: Addend): Result = augend + addend
+  given Long is Addable by Long into Long = Addable:
+    (augend, addend) => augend + addend
 
-  given Int is Addable by Int into Int = new Addable:
-    type Self = Int
-    type Operand = Int
-    type Result = Int
-    def add(augend: Augend, addend: Addend): Result = augend + addend
+  given Int is Addable by Int into Int = Addable:
+    (augend, addend) => augend + addend
 
-  given Short is Addable by Short into Short = new Addable:
-    type Self = Short
-    type Operand = Short
-    type Result = Short
-    def add(augend: Augend, addend: Addend): Result = (augend + addend).toShort
+  given Short is Addable by Short into Short = Addable:
+    (augend, addend) => (augend + addend).toShort
 
-  given Byte is Addable by Byte into Byte = new Addable:
-    type Self = Byte
-    type Operand = Byte
-    type Result = Byte
-    def add(augend: Augend, addend: Addend): Result = (augend + addend).toByte
+  given Byte is Addable by Byte into Byte = Addable:
+    (augend, addend) => (augend + addend).toByte
 
 trait Addable:
   type Self
