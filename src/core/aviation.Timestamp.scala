@@ -28,7 +28,7 @@ object Timestamp:
 
   given Tactic[TimestampError] => Decoder[Timestamp] = text =>
     text match
-      case r"$year([0-9]{4})-$month([0-9]{2})-$day([0-9]{2})T$hour([0-9]{2}):$minute([0-9]{2}):$second([0-9]{2})" =>
+      case r"$year(\d{4})-$month(\d{2})-$day(\d{2})T$hour(\d{2}):$minute(\d{2}):$second(\d{2})" =>
         tend:
           case NumberError(_, _) => TimestampError(text)
           case DateError(_)      => TimestampError(text)
