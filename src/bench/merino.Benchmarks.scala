@@ -169,7 +169,8 @@ lazy val jsonExample1 = """
 """.getBytes("UTF-8")
 
 val jsonExample2 = """
-{"menu":{"id":"file","value":"File","popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()"},{"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
+{"menu":{"id":"file","value":"File","popup":{"menuitem":[{"value":"New","onclick":"CreateNewDoc()"},
+{"value":"Open","onclick":"OpenDoc()"},{"value":"Close","onclick":"CloseDoc()"}]}}}
 """.getBytes("UTF-8")
 
 lazy val jsonExample3 = """
