@@ -24,6 +24,8 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
+import scala.compiletime.*
+
 import java.net as jn
 import java.nio.channels as jnc
 
@@ -122,7 +124,7 @@ object Bindable:
           val sender = input.sender
 
           val ip: jn.InetAddress = input.sender.absolve match
-            case ip: Ipv4 =>
+            case ip: (Ipv4 @unchecked) =>
               val array =
                 Array[Byte](ip.byte0.toByte, ip.byte1.toByte, ip.byte2.toByte, ip.byte3.toByte)
 
