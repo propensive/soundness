@@ -1017,7 +1017,7 @@ object Hypotenuse:
     inline def reverse: B64 = JLong.reverse(bitmap)
 
     @targetName("onesB64")
-    inline def ones: S32 = JLong.bitCount(bitmap.toInt)
+    inline def ones: S32 = JLong.bitCount(bitmap)
 
     @targetName("zerosB64")
     inline def zeros: S32 = 64 - JLong.bitCount(bitmap.toInt)
