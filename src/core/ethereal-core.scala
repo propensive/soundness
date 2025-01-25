@@ -89,7 +89,7 @@ def cli[BusType <: Matchable](using executive: Executive)
             val work: Path on Linux = workingDirectory
             work + jarFile.decode[Relative by Name[Linux]]
 
-        safely(Properties.build.executable[Text]()) match
+        safely(Properties.build.executable[Text]()).absolve match
           case Unset =>
             Out.println(e"$Bold(This application must be invoked with the Ethereal launch script)")
             Out.println(e"To build an Ethereal executable, run:")
