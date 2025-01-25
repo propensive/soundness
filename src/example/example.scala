@@ -95,7 +95,13 @@ def run(): Unit =
 
     Out.println(pinkFloyd.table)
 
-  // for style <- List(tableStyles.default, tableStyles.thinRounded, tableStyles.horizontal, tableStyles.midOnly, tableStyles.vertical, tableStyles.minimal)
+  // for style <- List
+  //               (tableStyles.default,
+  //                tableStyles.thinRounded,
+  //                tableStyles.horizontal,
+  //                tableStyles.midOnly,
+  //                tableStyles.vertical,
+  //                tableStyles.minimal)
   // do style.give(Out.println(table.tabulate(libraries.take(2)).grid(50)))
 
 case class Fruit(chinese: Text, english: Text, russian: Text, japanese: Text, color: Rgb24)
