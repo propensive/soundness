@@ -33,7 +33,7 @@ object Vacuous:
 
     import quotes.reflect.*
 
-    optional match
+    optional.runtimeChecked match
       case '{ $optional: optionalType } => check[optionalType]
 
     def optimize(term: Term): Term = term match
