@@ -48,8 +48,10 @@ object Aviation:
         val h: Base24 = (hour + (if pm then 12 else 0)).asInstanceOf[Base24]
         val length = lit.pos.endColumn - lit.pos.startColumn
 
-        if (hour < 10 && length != 4) || (hour >= 10 && length != 5)
-        then halt(m"the time should have exactly two minutes digits", lit.pos)
+        if (hour < 10 && length != 4) || (hour >= 10 && length != 5) then
+          if length == 0
+          then warn(m"time is unchecked because range positions are not available")
+          else halt(m"the time should have exactly two minutes digits", lit.pos)
 
         val m: Base60 = minutes.asInstanceOf[Base60]
         '{Clockface(${Expr[Base24](h)}, ${Expr[Base60](m)}, 0)}

@@ -32,11 +32,11 @@ object LeapSeconds:
     if midYear then june |= (Long.MinValue >> (year - 1972))
     else december |= (Long.MinValue >> (year - 1972))
 
-  def before(year: Int, plusSixMonths: Boolean): Int =
+  def during(year: Int, plusSixMonths: Boolean): Int =
     before((year - 1972)*2 + (if plusSixMonths then 1 else 0))
 
   private def before(n: Int): Int =
-    inline def ones(long: Long): Int = long.bits.ones.int
+    inline def ones(long: Long): Int = java.lang.Long.bitCount(long)
     val decemberShift = n.min(127)/2
     val juneShift = decemberShift + n%2
 
