@@ -16,7 +16,6 @@
 
 package cardinality
 
-import scala.annotation.*
 import scala.compiletime.ops.double.*
 import scala.reflect.TypeTest
 import scala.util.FromDigits
@@ -26,12 +25,14 @@ import language.experimental.genericNumberLiterals
 import Cardinality.{Asym, Min4, Max4}
 
 object NumericRange:
+  @annotation.targetName("Range")
   opaque infix type ~ [MinValueType <: Double, MaxValueType <: Double] = Double
 
   def apply[MinValueType <: Double, MaxValueType <: Double](value: Double)
   :     MinValueType ~ MaxValueType =
     value
 
+  @annotation.targetName("Range")
   object `~`:
     given comparable[MinValueType <: Double & Singleton, MaxValueType <: Double & Singleton]
        (using min: ValueOf[MinValueType], max: ValueOf[MaxValueType])
@@ -54,21 +55,21 @@ object NumericRange:
     extension [LeftMinType <: Double, LeftMaxType <: Double](left: LeftMinType ~ LeftMaxType)
       def double: Double = left
 
-      @targetName("add")
+      @annotation.targetName("add")
       infix def + [RightMinType <: Double, RightMaxType <: Double]
          (right: RightMinType ~ RightMaxType)
       :     (LeftMinType + RightMinType) ~ (LeftMaxType + RightMaxType) =
         left + right
 
-      @targetName("add2")
+      @annotation.targetName("add2")
       infix def + [E <: Double & Singleton](right: E)
       :     (LeftMinType + right.type) ~ (LeftMaxType + right.type) =
         left + right
 
-      @targetName("add3")
+      @annotation.targetName("add3")
       infix def + (right: Double): Double = left + right
 
-      @targetName("times")
+      @annotation.targetName("times")
       infix def * [RightMinType <: Double, RightMaxType <: Double]
          (right: RightMinType ~ RightMaxType)
       :     (Min4
@@ -83,7 +84,7 @@ object NumericRange:
 
         left*right
 
-      @targetName("times2")
+      @annotation.targetName("times2")
       infix def * [RightType <: Double & Singleton](right: RightType)
       :     Min
              [LeftMinType*RightType,
@@ -93,10 +94,10 @@ object NumericRange:
 
         left*right
 
-      @targetName("times3")
+      @annotation.targetName("times3")
       infix def * (right: Double): Double = left*right
 
-      @targetName("minus")
+      @annotation.targetName("minus")
       infix def - [RightMinType <: Double, RightMaxType <: Double]
          (right: RightMinType ~ RightMaxType)
       :     Min
@@ -106,7 +107,7 @@ object NumericRange:
                                               LeftMaxType - RightMaxType] =
         left - right
 
-      @targetName("minus2")
+      @annotation.targetName("minus2")
       infix def - [RightType <: Double & Singleton](right: RightType)
       :     Min
              [LeftMinType - RightType,
@@ -116,10 +117,10 @@ object NumericRange:
 
         left - right
 
-      @targetName("minus3")
+      @annotation.targetName("minus3")
       infix def - (right: Double): Double = left - right
 
-      @targetName("divide")
+      @annotation.targetName("divide")
       infix def / [RightType <: Double & Singleton](right: RightType)
       :     Min
              [LeftMinType/RightType,
@@ -129,7 +130,7 @@ object NumericRange:
 
         left/right
 
-      @targetName("divide2")
+      @annotation.targetName("divide2")
       infix def / [RightMinType <: Double, RightMaxType <: Double]
          (right: RightMinType ~ RightMaxType)
       :     Asym
@@ -149,5 +150,5 @@ object NumericRange:
                             1.0/0.0] =
         left/right
 
-      @targetName("divide3")
+      @annotation.targetName("divide3")
       infix def / (right: Double): Double = left/right
