@@ -118,7 +118,8 @@ extends Cli:
                 sh"'${text.fit(width)} $aliasText -- $description' -d desc -l $hiddenParam -- $text"
 
               case description: Teletype =>
-                sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l $hiddenParam -- $text"
+                val desc = description.render(termcap)
+                sh"'${text.fit(width)} $aliasText -- $desc' -d desc -l $hiddenParam -- $text"
 
             val duplicateLine = if !incomplete then List() else List(sh"'' -U -S '' -- ${text}")
 
@@ -131,7 +132,8 @@ extends Cli:
                   sh"'${text.fit(width)} $aliasText -- $description' -d desc -l -n -- $text"
 
                 case description: Teletype =>
-                  sh"'${text.fit(width)} $aliasText -- ${description.render(termcap)}' -d desc -l -n -- $text"
+                  val desc = description.render(termcap)
+                  sh"'${text.fit(width)} $aliasText -- $desc' -d desc -l -n -- $text"
 
             mainLine :: duplicateLine ::: aliasLines
 
