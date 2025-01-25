@@ -27,8 +27,8 @@ import scala.deriving.*
 object Inspectable extends Inspectable2:
   inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) => _.encode
-    case given Reflection[ValueType]            => InspectableDerivation.derived[ValueType].text(_)
     case given (ValueType is Showable)          => _.show
+    //case given Reflection[ValueType]            => InspectableDerivation.derived[ValueType].text(_)
     case _                                      => value => s"⸉${value.toString.tt}⸊".tt
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
