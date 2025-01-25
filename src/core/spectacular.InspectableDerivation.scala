@@ -18,7 +18,6 @@ package spectacular
 
 import anticipation.*
 import rudiments.*
-import vacuous.*
 import wisteria.*
 
 import scala.deriving.*
@@ -38,4 +37,4 @@ object InspectableDerivation extends Derivable[Inspectable]:
   inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
     variant(value):
       [VariantType <: DerivationType] => variant =>
-        context.let(_.give(variant.inspect)).or(variant.inspect)
+        context.give(variant.inspect)
