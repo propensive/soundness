@@ -18,14 +18,12 @@ package symbolism
 
 import prepositional.*
 
-import language.experimental.captureChecking
-
 import scala.annotation.targetName
 
 object Multiplicable:
-  class Basic[MultiplicandType, MultiplierType, ResultType]
+  def apply[MultiplicandType, MultiplierType, ResultType]
      (lambda: (MultiplicandType, MultiplierType) => ResultType)
-  extends Multiplicable:
+  :     MultiplicandType is Multiplicable by MultiplierType into ResultType = new Multiplicable:
     type Self = MultiplicandType
     type Result = ResultType
     type Operand = MultiplierType
