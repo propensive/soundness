@@ -323,12 +323,12 @@ trait Quantitative2:
 
     (leftNorm*rightNorm).repr.map(_.asType).absolve match
       case Some('[type resultType <: Measure; resultType]) =>
-       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
+       '{ Multiplicable[Quantity[LeftType], Quantity[RightType], Quantity[resultType]] {
             (left, right) =>
               ${Quantitative.multiply('left, 'right, false).asExprOf[Quantity[resultType]]} } }
 
       case None =>
-       '{ Multiplicable.Basic[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
+       '{ Multiplicable[Quantity[LeftType], Quantity[RightType], Double]: (left, right) =>
             ${Quantitative.multiply('left, 'right, false).asExprOf[Double]} }
 
 
