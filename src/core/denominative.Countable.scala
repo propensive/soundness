@@ -21,6 +21,7 @@ import anticipation.*
 object Countable:
   given [ElementType] => Seq[ElementType] is Countable = _.length
   given [ElementType] => IArray[ElementType] is Countable = _.length
+  given [ElementType] => IndexedSeq[ElementType] is Countable = _.length
   given Text is Countable = _.s.length
   given Int is Countable = identity(_)
 
