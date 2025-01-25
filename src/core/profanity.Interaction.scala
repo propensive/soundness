@@ -70,7 +70,10 @@ object Interaction:
       Text.construct:
         editor.let { editor => if editor.position > 0 then append(t"\e[${editor.position}D") }
         append(t"\e[K")
-        val line = t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
+
+        val line =
+          t"${editor2.value}${t" "*(editor.or(editor2).value.length - editor2.value.length)}"
+
         append(line)
         if line.length > 0 then append(t"\e[${line.length}D")
         if editor2.position > 0 then append(t"\e[${editor2.position}C")

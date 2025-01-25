@@ -32,19 +32,30 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
   def apply(keypress: TerminalEvent): LineEditor = try keypress match
     case CharKey(ch) => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
     case Ctrl('U')   => copy(value.skip(position), 0)
-    case Ctrl('W')   => val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
-                        copy(t"$prefix${value.skip(position)}", prefix.length)
     case Delete      => copy(t"${value.keep(position)}${value.skip(position + 1)}")
-    case Backspace   => copy(t"${value.keep(position - 1)}${value.skip(position)}", (position - 1) max 0)
     case Home        => copy(position0 = 0)
     case End         => copy(position0 = value.length)
     case Left        => copy(position0 = (position - 1) `max` 0)
-    case Ctrl(Left)  => copy(position0 = ((position - 2 `max` 0) to 0 by -1).where { index => value.at(index.z) == ' ' }.lay(0)(_ + 1))
-
-    case Ctrl(Right) => val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
-                        val position2 = range.where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
-                        copy(position0 = position2 `min` value.length)
     case Right       => copy(position0 = (position + 1) `min` value.length)
+
+    case Ctrl('W') =>
+      val prefix = value.keep(0 max (position - 1)).reverse.dropWhile(_ != ' ').reverse
+      copy(t"$prefix${value.skip(position)}", prefix.length)
+    case Backspace =>
+      copy(t"${value.keep(position - 1)}${value.skip(position)}", (position - 1) max 0)
+
+    case Ctrl(Left) =>
+      val position2 =
+        ((position - 2 `max` 0) to 0 by -1).where: index =>
+          value.at(index.z) == ' '
+
+      copy(position0 = position2.lay(0)(_ + 1))
+
+    case Ctrl(Right) =>
+      val range = ((position + 1) `min` (value.length - 1)) to (value.length - 1)
+      val position2 = range.where { index => value.at(index.z) == ' ' }.lay(value.length)(_ + 1)
+      copy(position0 = position2 `min` value.length)
+
     case _           => this
 
   catch case e: RangeError => this
