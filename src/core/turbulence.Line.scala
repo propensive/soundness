@@ -16,8 +16,6 @@
 
 package turbulence
 
-import language.experimental.captureChecking
-
 import anticipation.*
 
 case class Line(content: Text):
