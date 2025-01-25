@@ -20,9 +20,6 @@ import anticipation.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import wisteria.*
-
-import scala.deriving.*
 
 object Inspectable extends Inspectable2:
   inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
