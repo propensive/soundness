@@ -33,11 +33,13 @@ case class Polyglot[+ValueType, +LocalizationType <: Localization](value: Map[St
 
   def ap(polyglotFn: Polyglot[ValueType => ValueType2, LocalizationType])
 
-  infix def & [ValueType2 >: ValueType, LocalizationType2](other: Polyglot[ValueType2, LocalizationType2])
+  infix def & [ValueType2 >: ValueType, LocalizationType2]
+     (other: Polyglot[ValueType2, LocalizationType2])
   :     Polyglot[ValueType2, LocalizationType2]
 
 object Cosmopolite:
-  def access[ValueType: Type, LocalizationType <: Localization: Type](value: Expr[Map[String, ValueType]])
+  def access[ValueType: Type, LocalizationType <: Localization: Type]
+     (value: Expr[Map[String, ValueType]])
      (using Quotes)
   :     Expr[ValueType] =
 
@@ -79,7 +81,8 @@ object Cosmopolite:
 
 // case class Messages[-L <: String](text: Map[Text, Text]):
 //   @targetName("and")
-//   infix def &[L2 <: String & Singleton](messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
+//   infix def &[L2 <: String & Singleton]
+//      (messages: Messages[L2])(using NotGiven[L2 <:< L]): Messages[L | L2] =
 //     Messages(text ++ messages.text)
 
 //   def apply[L2 <: L: ValueOf]: Text = text(summon[ValueOf[L2]].value.show)
