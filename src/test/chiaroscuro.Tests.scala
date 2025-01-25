@@ -16,15 +16,7 @@
 
 package chiaroscuro
 
-import anticipation.*
-import contingency.*
-import dissonance.*
-import gossamer.*
-import probably.*
-import rudiments.*
-
-import unsafeExceptions.canThrowAny
-import strategies.throwUnsafely
+import soundness.*
 
 case class Person(name: Text, age: Int)
 case class Organization(name: Text, ceo: Person, staff: List[Person])
@@ -32,51 +24,64 @@ case class Organization(name: Text, ceo: Person, staff: List[Person])
 case class IdName(id: Text, name: Text)
 
 given Similarity[IdName] = _.id == _.id
-
-import Semblance.*
+import Juxtaposition.*
 
 object Tests extends Suite(t"Chiaroscuro tests"):
   def run(): Unit =
     suite(t"RDiff tests"):
       test(t"Two identical, short Vectors"):
-        Vector(1, 2, 3).contrastWith(Vector(1, 2, 3))
-      .assert(_ == Identical(t"⟨ 1 2 3 ⟩"))
+        Vector(1, 2, 3).juxtapose(Vector(1, 2, 3))
+
+      . assert(_ == Same(t"⟨ 1 2 3 ⟩"))
 
       test(t"compare two two-parameter case class instances"):
         Person(t"Jack", 12)
-      .assert(_ == Person(t"Jill", 12))
+
+      . assert(_ == Person(t"Jill", 12))
 
       test(t"nested comparison"):
         Organization(t"Acme Inc", Person(t"Jack", 12), Nil)
-      .assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
+
+      . assert(_ == Organization(t"Acme Inc", Person(t"Jill", 12), Nil))
 
       test(t"nested comparison 2"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), Nil)
-      .assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
+
+      . assert(_ == Organization(t"Acme Inc", Person(t"Jack", 12), Nil))
 
       test(t"nested comparison 3"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
-      .assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jill", 32), Person(t"Jerry", 18))))
+
+      . assert(_ == Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jill", 32), Person(t"Jerry", 18))))
 
       test(t"nested comparison 4"):
         Organization(t"Acme Inc.", Person(t"Jack", 12), List(Person(t"Jerry", 18)))
-      .assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person(t"Jerry", 18))))
+
+      . assert(_ == Organization(t"Acme", Person(t"Jack", 12), List(Person(t"Jerry", 18))))
 
       test(t"diff list"):
         val xs = List(t"one", t"two", t"three", t"four")
         val ys = List(t"one", t"two", t"three", t"vier")
         diff(xs.to(Vector), ys.to(Vector)).edits
-      .assert(_ == List(Par(0, 0, t"one"), Par(1, 1, t"two"), Par(2, 2, t"three"), Del(3, t"four"), Ins(3, t"vier")))
+
+      . assert: value =>
+        value == List
+                  (Par(0, 0, t"one"),
+                   Par(1, 1, t"two"),
+                   Par(2, 2, t"three"),
+                   Del(3, t"four"),
+                   Ins(3, t"vier"))
 
       test(t"recurse on similar list entries"):
         val xs = List(IdName(t"one", t"One"), IdName(t"two", t"Two"),  IdName(t"three", t"Three"), IdName(t"four", t"Four"))
         val ys = List(IdName(t"one", t"Ein"), IdName(t"two", t"Zwei"),  IdName(t"three", t"Three"), IdName(t"vier", t"Vier"))
-        val result = xs.contrastWith(ys)
+        val result = xs.juxtapose(ys)
         import hieroglyph.textMetrics.uniform
         import escapade.*
         import turbulence.*
-        import stdioSources.virtualMachine
+        import stdioSources.virtualMachine.textOnly
         Out.println(result.teletype)
 
         result
-      .assert(_ == Identical(t""))
+
+      . assert(_ == Same(t""))
