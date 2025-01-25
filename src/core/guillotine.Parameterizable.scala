@@ -18,18 +18,18 @@ package guillotine
 
 import language.experimental.pureFunctions
 
+import compiletime.summonFrom
+
 import anticipation.*
 import prepositional.*
 import spectacular.*
 
 object Parameterizable:
-  given [PathType: GenericPath] => PathType is Parameterizable = _.pathText
-
-  given Int is Parameterizable = _.show
-
   given [ValueType: Encodable in Text] => ValueType is Parameterizable:
     type Self = ValueType
     def show(value: ValueType): Text = value.encode
+
+  given [PathType: GenericPath] => PathType is Parameterizable = _.pathText
 
 trait Parameterizable:
   type Self
