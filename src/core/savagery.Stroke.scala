@@ -19,6 +19,7 @@ package savagery
 import anticipation.*
 import gossamer.*, decimalFormatters.java
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -39,26 +40,27 @@ object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
 
   given encodable: Stroke is Encodable in Text =
-    case Move(shift: Shift)                              => t"m $shift"
-    case Move(point: Point)                              => t"M $point"
-    case Draw(Shift(0.0f, v))                            => t"v ${v.toDouble}"
-    case Draw(Shift(h, 0.0f))                            => t"h ${h.toDouble}"
-    case Draw(shift: Shift)                              => t"l $shift"
-    case Draw(point: Point)                              => t"L $point"
-    case Close                                           => t"Z"
-    case Cubic(Unset, ctrl2: Point, point: Point)        => t"S $ctrl2, $point"
-    case Cubic(Unset, ctrl2: Shift, shift: Shift)        => t"s $ctrl2, $shift"
-    case Cubic(ctrl1: Point, ctrl2: Point, point: Point) => t"C $ctrl1, $ctrl2, $point"
-    case Cubic(ctrl1: Shift, ctrl2: Shift, shift: Shift) => t"c $ctrl1, $ctrl2, $shift"
-    case Quadratic(Unset, point: Point)                  => t"T $point"
-    case Quadratic(Unset, shift: Shift)                  => t"t $shift"
-    case Quadratic(ctrl1: Point, point: Point)           => t"Q $ctrl1, $point"
-    case Quadratic(ctrl1: Point, shift: Shift)           => t"q $ctrl1, $shift"
+    _.absolve match
+      case Move(shift: Shift)                              => t"m $shift"
+      case Move(point: Point)                              => t"M $point"
+      case Draw(Shift(0.0f, v))                            => t"v ${v.toDouble}"
+      case Draw(Shift(h, 0.0f))                            => t"h ${h.toDouble}"
+      case Draw(shift: Shift)                              => t"l $shift"
+      case Draw(point: Point)                              => t"L $point"
+      case Close                                           => t"Z"
+      case Cubic(Unset, ctrl2: Point, point: Point)        => t"S $ctrl2, $point"
+      case Cubic(Unset, ctrl2: Shift, shift: Shift)        => t"s $ctrl2, $shift"
+      case Cubic(ctrl1: Point, ctrl2: Point, point: Point) => t"C $ctrl1, $ctrl2, $point"
+      case Cubic(ctrl1: Shift, ctrl2: Shift, shift: Shift) => t"c $ctrl1, $ctrl2, $shift"
+      case Quadratic(Unset, point: Point)                  => t"T $point"
+      case Quadratic(Unset, shift: Shift)                  => t"t $shift"
+      case Quadratic(ctrl1: Point, point: Point)           => t"Q $ctrl1, $point"
+      case Quadratic(ctrl1: Point, shift: Shift)           => t"q $ctrl1, $shift"
 
-    case Arc(rx, ry, angle, largeArc, sweep, point: Point) =>
-      val clockwise = sweep == Sweep.Clockwise
-      t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $point"
+      case Arc(rx, ry, angle, largeArc, sweep, point: Point) =>
+        val clockwise = sweep == Sweep.Clockwise
+        t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $point"
 
-    case Arc(rx, ry, angle, largeArc, sweep, shift: Shift) =>
-      val clockwise = sweep == Sweep.Clockwise
-      t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $shift"
+      case Arc(rx, ry, angle, largeArc, sweep, shift: Shift) =>
+        val clockwise = sweep == Sweep.Clockwise
+        t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $shift"

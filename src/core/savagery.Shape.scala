@@ -19,7 +19,7 @@ package savagery
 import anticipation.*
 import cataclysm.{Float as _, Length as _, *}
 import contingency.*
-import gossamer.*, decimalFormatters.java
+import gossamer.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
