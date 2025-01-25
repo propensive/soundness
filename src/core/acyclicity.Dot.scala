@@ -17,7 +17,6 @@
 package acyclicity
 
 import language.dynamics
-import language.experimental.captureChecking
 
 import anticipation.*
 import contextual.*
