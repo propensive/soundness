@@ -32,7 +32,7 @@ object Indexable:
       type Result = ElementType
 
       def contains(array: IArray[ElementType], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 <= Ult.of(array.length).n0
+        index.n0 >= 0 && index.n0 <= Ult.of(array).n0
 
       def access(array: IArray[ElementType], index: Ordinal): Result = array(index.n0)
 
@@ -43,7 +43,7 @@ object Indexable:
       type Result = ElementType
 
       def contains(seq: IndexedSeq[ElementType], index: Ordinal): Boolean =
-        index.n0 >= 0 && index.n0 <= Ult.of(seq.length).n0
+        index.n0 >= 0 && index.n0 <= Ult.of(seq).n0
 
       def access(seq: IndexedSeq[ElementType], index: Ordinal): Result = seq(index.n0)
 
@@ -53,7 +53,7 @@ object Indexable:
     type Result = Char
 
     def contains(text: Text, index: Ordinal): Boolean =
-      index.n0 >= 0 && index.n0 <= Ult.of(text).n0
+      index.n0 >= 0 && index.n0 < text.s.length
 
     def access(text: Text, index: Ordinal): Result = text.s.charAt(index.n0)
 

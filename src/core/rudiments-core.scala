@@ -217,11 +217,11 @@ extension [ValueType](iterable: Iterable[ValueType])
 
 extension [ElemType](value: IArray[ElemType])
   inline def mutable(using Unsafe): Array[ElemType] = value.asMatchable.runtimeChecked match
-    case array: Array[ElemType] => array
+    case array: (Array[ElemType] @unchecked) => array
 
 extension [ElemType](array: Array[ElemType])
   def immutable(using Unsafe): IArray[ElemType] = array.runtimeChecked match
-    case array: IArray[ElemType] => array
+    case array: (IArray[ElemType] @unchecked) => array
 
   def snapshot(using ClassTag[ElemType]): IArray[ElemType] =
     val newArray = new Array[ElemType](array.length)
