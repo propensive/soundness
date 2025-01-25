@@ -16,6 +16,7 @@ object settings {
     "-Wunused:imports",
     "-Wimplausible-patterns",
     "-Wsafe-init",
+    "-Xmax-inlines", "100",
     "-Yrequire-targetName",
     "-Ycc-new",
     "-Yno-flexible-types",
