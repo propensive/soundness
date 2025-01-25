@@ -215,47 +215,52 @@ object Markdown:
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
 
-  def flow(root: cvfua.Document, node: FlowInput)(using Tactic[MarkdownError]): Markdown.Ast.Block = node match
-    case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
+  def flow(root: cvfua.Document, node: FlowInput): Markdown.Ast.Block raises MarkdownError =
+    node match
+      case node: cvfa.BlockQuote        => Blockquote(flowChildren(root, node)*)
 
-    case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
-                                            listItems(root, node)*)
+      case node: cvfa.BulletList        => BulletList(numbered = Unset, loose = node.isLoose,
+                                              listItems(root, node)*)
 
-    case node: cvfa.CodeBlock         => FencedCode
-                                          (Unset, Unset, node.getContentChars.toString.show)
-    case node: cvfa.IndentedCodeBlock => FencedCode
-                                          (Unset, Unset, node.getContentChars.toString.show)
-    case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
-    case node: cvfa.OrderedList       => BulletList
-                                          (numbered = 1,
-                                           loose    = node.isLoose,
-                                           listItems(root, node)*)
-    case node: cvfa.ThematicBreak     => ThematicBreak()
+      case node: cvfa.CodeBlock         => FencedCode
+                                            (Unset, Unset, node.getContentChars.toString.show)
+      case node: cvfa.IndentedCodeBlock => FencedCode
+                                            (Unset, Unset, node.getContentChars.toString.show)
+      case node: cvfa.Paragraph         => Paragraph(phraseChildren(root, node)*)
+      case node: cvfa.OrderedList       => BulletList
+                                            (numbered = 1,
+                                             loose    = node.isLoose,
+                                             listItems(root, node)*)
+      case node: cvfa.ThematicBreak     => ThematicBreak()
 
-    case node: cvfa.FencedCodeBlock =>
-      FencedCode
-        (if node.getInfo.toString.show == t"" then Unset else node.getInfo.toString.show, Unset,
-         node.getContentChars.toString.show)
+      case node: cvfa.FencedCodeBlock =>
+        FencedCode
+          (if node.getInfo.toString.show == t"" then Unset else node.getInfo.toString.show, Unset,
+           node.getContentChars.toString.show)
 
-    case node: cvfa.Heading => node.getLevel match
-      case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
+      case node: cvfa.Heading => node.getLevel match
+        case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
 
-      case _ =>
-        raise
-         (MarkdownError(MarkdownError.Reason.BadHeadingLevel),
-          Heading(6, phraseChildren(root, node)*))
+        case _ =>
+          raise
+           (MarkdownError(MarkdownError.Reason.BadHeadingLevel),
+            Heading(6, phraseChildren(root, node)*))
 
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
   :     Markdown.Ast.Node raises MarkdownError =
     node match
       case node: cvfa.HardLineBreak => LineBreak
       case node: cvfa.SoftLineBreak => Copy(t"\n")
-      case node: cvfa.Reference     => Reference(node.getReference.toString.show, node.getUrl.toString.show)
       case node: cvfa.ThematicBreak => ThematicBreak()
       case node: tables.TableBlock  => Table(table(root, node)*)
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
-      case node: cvfua.Node         => raise(MarkdownError(MarkdownError.Reason.UnexpectedNode), Copy(t"?"))
+
+      case node: cvfua.Node =>
+        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode), Copy(t"?"))
+
+      case node: cvfa.Reference =>
+        Reference(node.getReference.toString.show, node.getUrl.toString.show)
 
   def table(root: cvfua.Document, node: tables.TableBlock)
   :     List[Markdown.Ast.TablePart] raises MarkdownError =

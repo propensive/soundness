@@ -96,23 +96,31 @@ open class HtmlConverter(renderers: Renderer*):
     case Markdown.Ast.Block.ThematicBreak()         => t""
     case Markdown.Ast.Inline.Emphasis(children*)    => text(children)
     case Markdown.Ast.Inline.Strong(children*)      => text(children)
-    case Markdown.Ast.Inline.SourceCode(code)       => code.broken(_.isLetterOrDigit != _.isLetterOrDigit)
     case Markdown.Ast.Block.Paragraph(children*)    => text(children)
     case Markdown.Ast.Block.Heading(_, children*)   => text(children)
     case Markdown.Ast.Block.Blockquote(children*)   => text(children)
     case Markdown.Ast.Block.FencedCode(_, _, code)  => code
     case Markdown.Ast.Inline.Copy(text)             => text
     case Markdown.Ast.Block.Cell(content*)          => text(content)
-    case _                                          => t""
+
+    case Markdown.Ast.Inline.SourceCode(code) =>
+      code.broken(_.isLetterOrDigit != _.isLetterOrDigit)
+
+    case _ =>
+      t""
 
   def nonInteractive(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Image(altText, location) => List(Img(src = location, alt = altText))
     case Markdown.Ast.Inline.LineBreak                => List(Br)
     case Markdown.Ast.Inline.Emphasis(children*)      => List(Em(children.flatMap(phrasing)))
     case Markdown.Ast.Inline.Strong(children*)        => List(Strong(children.flatMap(phrasing)))
-    case Markdown.Ast.Inline.SourceCode(code)         => List(html5.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
     case Markdown.Ast.Inline.Copy(str)                => List(escape(str))
-    case _                                            => Nil
+
+    case Markdown.Ast.Inline.SourceCode(code) =>
+      List(html5.Code(code.broken(_.isLetterOrDigit != _.isLetterOrDigit)))
+
+    case _ =>
+      Nil
 
   def phrasing(node: Markdown.Ast.Inline): Seq[Html[Phrasing]] = node match
     case Markdown.Ast.Inline.Weblink(location, content) =>

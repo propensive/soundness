@@ -121,23 +121,32 @@ open class TextConverter():
   // def listItem(node: Markdown.Ast.ListItem): Seq[Item["li"]] = node match
   //   case Markdown.Ast.ListItem(children*) => List(Li(convert(children)*))
 
-  def text(node: Seq[Markdown.Ast.Node]): Teletype = node.map:
-    case Markdown.Ast.Inline.Image(text, _)         => e"[ $text ]"
-    case Markdown.Ast.Inline.Weblink(s, desc)       => e"${webColors.DeepSkyBlue}($Underline(${text(Seq(desc))})${webColors.DarkGray}([)${webColors.RoyalBlue}($Underline($s))${webColors.DarkGray}(])) "
-    case Markdown.Ast.Inline.LineBreak              => e""
-    case Markdown.Ast.Inline.Emphasis(children*)    => e"$Italic(${text(children)})"
-    case Markdown.Ast.Inline.Strong(children*)      => e"$Bold(${text(children)})"
-    case Markdown.Ast.Inline.SourceCode(code)       => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-    case Markdown.Ast.Inline.Copy(text)             => e"$text"
-    case Markdown.Ast.Block.BulletList(_, _, _, _*) => e""
-    case Markdown.Ast.Block.Reference(_, _)         => e""
-    case Markdown.Ast.Block.ThematicBreak()         => e""
-    case Markdown.Ast.Block.Paragraph(children*)    => text(children)
-    case Markdown.Ast.Block.Heading(_, children*)   => text(children)
-    case Markdown.Ast.Block.Blockquote(children*)   => text(children)
-    case Markdown.Ast.Block.FencedCode(_, _, code)  => e"${webColors.YellowGreen}($code)"
-    case Markdown.Ast.Block.Cell(content*)          => text(content)
-    case _                                          => e""
+  def text(node: Seq[Markdown.Ast.Node]): Teletype =
+    import Markdown.Ast.Inline.*, Markdown.Ast.Block.*
+    node.map:
+      case Image(text, _)          => e"[ $text ]"
+      case LineBreak               => e""
+      case Emphasis(children*)     => e"$Italic(${text(children)})"
+      case Strong(children*)       => e"$Bold(${text(children)})"
+      case SourceCode(code)        => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+      case Copy(text)              => e"$text"
+      case BulletList(_, _, _, _*) => e""
+      case Reference(_, _)         => e""
+      case ThematicBreak()         => e""
+      case Paragraph(children*)    => text(children)
+      case Heading(_, children*)   => text(children)
+      case Blockquote(children*)   => text(children)
+      case FencedCode(_, _, code)  => e"${webColors.YellowGreen}($code)"
+      case Cell(content*)          => text(content)
+
+      case Weblink(s, desc) =>
+        import webColors.*
+        val content = text(Seq(desc))
+
+        e"$DeepSkyBlue($Underline($content)$DarkGray([)$RoyalBlue($Underline($s))$DarkGray(])) "
+
+      case _ =>
+        e""
 
   . join
 
@@ -146,6 +155,10 @@ open class TextConverter():
     case Markdown.Ast.Inline.LineBreak                => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => e"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.SourceCode(code)         => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
     case Markdown.Ast.Inline.Copy(str)                => e"${str.sub(t"\n", t" ")}"
-    case _                                            => text(Seq(node))
+
+    case Markdown.Ast.Inline.SourceCode(code) =>
+      e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
+
+    case _ =>
+      text(Seq(node))
