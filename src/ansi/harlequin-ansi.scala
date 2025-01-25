@@ -58,9 +58,11 @@ package syntaxHighlighting:
           startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
 
       . let: focus =>
-          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋))  $content"
+          val prefix = lineNo.show.pad(indent, Rtl)
+          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋))  $content"
       . or:
-          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}(${lineNo.show.pad(indent, Rtl)})${rgb"#336666"}(┋)) $error$content"
+          val prefix = lineNo.show.pad(indent, Rtl)
+          e"${Bg(rgb"#003333")}(${rgb"#99cc99"}($prefix)${rgb"#336666"}(┋)) $error$content"
 
     . join(e"", e"\n", markup)
 
