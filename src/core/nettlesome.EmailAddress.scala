@@ -135,9 +135,9 @@ case class EmailAddress
       case LocalPart.Unquoted(unquoted) => unquoted
 
     val remote = domain.absolve match
-      case host: Hostname => host.show
-      case ipv4: Ipv4     => ipv4.show
-      case ipv6: Ipv6     => ipv6.show
+      case host: Hostname          => host.show
+      case ipv4: (Ipv4 @unchecked) => ipv4.show
+      case ipv6: Ipv6              => ipv6.show
 
     val address = t"$local@$remote"
 
