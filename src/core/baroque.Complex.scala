@@ -48,17 +48,13 @@ object Complex:
 
   inline given multiplicable: [ComponentType]
   =>   (multiplication: ComponentType is Multiplicable by ComponentType,
-      addition:      multiplication.Result is Addable by multiplication.Result,
-      subtraction:    multiplication.Result is Subtractable by multiplication.Result)
+        addition:       multiplication.Result is Addable by multiplication.Result,
+        subtraction:    multiplication.Result is Subtractable by multiplication.Result)
   =>    Complex[ComponentType] is Multiplicable by Complex[ComponentType] =
-    new Multiplicable:
-      type Self = Complex[ComponentType]
-      type Result = Complex[addition.Result | subtraction.Result]
-      type Operand = Complex[ComponentType]
-
-      def multiply(left: Complex[ComponentType], right: Complex[ComponentType])
-      :     Complex[addition.Result | subtraction.Result] =
-
+    Multiplicable[Complex[ComponentType],
+                  Complex[ComponentType],
+                  Complex[addition.Result | subtraction.Result]]:
+      (left, right) =>
         Complex
          (left.real*right.real - left.imaginary*right.imaginary,
           left.real*right.imaginary + left.imaginary*right.real)
