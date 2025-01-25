@@ -81,46 +81,47 @@ object Sh:
         case _ =>
           state
 
-    def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state): (state, next) =>
-      (state, next).absolve match
-        case (State(Awaiting, _, arguments), ' ') =>
-          State(Awaiting, false, arguments)
+    def parse(state: State, next: Text): State = next.chars.to(List).foldLeft(state):
+      (state, next) =>
+        (state, next).absolve match
+          case (State(Awaiting, _, arguments), ' ') =>
+            State(Awaiting, false, arguments)
 
-        case (State(Quotes1, false, more :+ current), '\\') =>
-          State(Quotes1, false, more :+ t"$current\\")
+          case (State(Quotes1, false, more :+ current), '\\') =>
+            State(Quotes1, false, more :+ t"$current\\")
 
-        case (State(context, false, arguments), '\\') =>
-          State(context, true, arguments)
+          case (State(context, false, arguments), '\\') =>
+            State(context, true, arguments)
 
-        case (State(Unquoted, _, arguments), ' ') =>
-          State(Awaiting, false, arguments)
+          case (State(Unquoted, _, arguments), ' ') =>
+            State(Awaiting, false, arguments)
 
-        case (State(Quotes1, _, arguments), '\'') =>
-          State(Unquoted, false, arguments)
+          case (State(Quotes1, _, arguments), '\'') =>
+            State(Unquoted, false, arguments)
 
-        case (State(Quotes2, false, arguments), '"') =>
-          State(Unquoted, false, arguments)
+          case (State(Quotes2, false, arguments), '"') =>
+            State(Unquoted, false, arguments)
 
-        case (State(Unquoted, false, arguments), '"') =>
-          State(Quotes2, false, arguments)
+          case (State(Unquoted, false, arguments), '"') =>
+            State(Quotes2, false, arguments)
 
-        case (State(Unquoted, false, arguments), '\'') =>
-          State(Quotes1, false, arguments)
+          case (State(Unquoted, false, arguments), '\'') =>
+            State(Quotes1, false, arguments)
 
-        case (State(Awaiting, false, arguments), '"') =>
-          State(Quotes2, false, arguments :+ t"")
+          case (State(Awaiting, false, arguments), '"') =>
+            State(Quotes2, false, arguments :+ t"")
 
-        case (State(Awaiting, false, arguments), '\'') =>
-          State(Quotes1, false, arguments :+ t"")
+          case (State(Awaiting, false, arguments), '\'') =>
+            State(Quotes1, false, arguments :+ t"")
 
-        case (State(Awaiting, _, arguments), char) =>
-          State(Unquoted, false, arguments :+ t"$char")
+          case (State(Awaiting, _, arguments), char) =>
+            State(Unquoted, false, arguments :+ t"$char")
 
-        case (State(context, _, Nil), char) =>
-          State(context, false, List(t"$char"))
+          case (State(context, _, Nil), char) =>
+            State(context, false, List(t"$char"))
 
-        case (State(context, _, more :+ current), char) =>
-          State(context, false, more :+ t"$current$char")
+          case (State(context, _, more :+ current), char) =>
+            State(context, false, more :+ t"$current$char")
 
   given Insertion[Parameters, Nothing] = value => Parameters(t"")
   given Insertion[Parameters, Text] = value => Parameters(value)
