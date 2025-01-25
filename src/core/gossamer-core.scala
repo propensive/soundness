@@ -285,8 +285,8 @@ extension [TextType: Textual](text: TextType)
 
   def starts(prefix: into Text): Boolean =
     def recur(index: Ordinal): Boolean =
-      index > Ult.of(prefix) ||
-          TextType.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
+      index > (prefix.length - 1).z
+      || TextType.unsafeChar(text, index) == prefix.s.charAt(index.n0) && recur(index + 1)
 
     prefix.length <= text.length && recur(Prim)
 
