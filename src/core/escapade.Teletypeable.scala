@@ -25,8 +25,6 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import language.experimental.captureChecking
-
 object Teletypeable:
   given Teletype is Teletypeable = identity(_)
   given Text is Teletypeable = text => Teletype(text)
@@ -72,8 +70,8 @@ object Teletypeable:
 
         val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(methodWidth)})"
         val line = e"${Fg(0x47d1cc)}(${frame.line.let(_.show).or(t"?")})"
-
-        e"$msg\n  ${Fg(0x808080)}(at) $className${Fg(0x808080)}($dot)$method $file${Fg(0x808080)}(:)$line"
+        val gray = Fg(0x808080)
+        e"$msg\n  $gray(at) $className$gray($dot)$method $file$gray(:)$line"
 
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"

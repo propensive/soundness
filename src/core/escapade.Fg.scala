@@ -36,7 +36,8 @@ case class Fg(color: Int):
         t"\e[38;2;$red;$green;${blue}m"
 
       case _ =>
-        val n = 16 +
-          (if blue == red && red == green then 216 + red*23/255 else red*5/255*36 + green*5/255*6 + blue*5/255)
+        val n =
+          if blue == red && red == green then 232 + red*23/255
+          else 16 + red*5/255*36 + green*5/255*6 + blue*5/255
 
         t"\e[38;5;${n}m"
