@@ -35,7 +35,7 @@ object Typonym:
     Type.of[PhantomType] match
       case '[type listType <: Tuple; TypeList[listType]] =>
         untuple[listType].map(_.asType).map:
-          _.runtimeChecked.match
+          _.runtimeChecked match
             case '[elementType] => reify[elementType]
 
         . reverse
@@ -46,7 +46,7 @@ object Typonym:
           val pairs: List[TypeRepr] = untuple[mapType]
 
           val keyValues: List[Expr[(Any, Any)]] = pairs.map(_.asType).map:
-            _.runtimeChecked.match
+            _.runtimeChecked match
               case '[(keyType, valueType)] => '{(${reify[keyType]}, ${reify[valueType]})}
 
           def recur(todo: List[Expr[(Any, Any)]]): Expr[List[(Any, Any)]] = todo match
