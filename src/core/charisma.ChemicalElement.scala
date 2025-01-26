@@ -17,7 +17,7 @@
 package charisma
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 object ChemicalElement:

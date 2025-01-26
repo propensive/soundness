@@ -16,7 +16,7 @@
 
 package charisma
 
-import rudiments.*
+import proscenium.*
 
 trait Formulable:
   def formula: ChemicalFormula

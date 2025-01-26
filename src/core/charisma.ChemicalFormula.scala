@@ -18,7 +18,7 @@ package charisma
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 object ChemicalFormula:

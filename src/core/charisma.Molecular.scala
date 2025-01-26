@@ -16,7 +16,7 @@
 
 package charisma
 
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 trait Molecular extends Formulable:
