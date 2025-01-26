@@ -19,7 +19,7 @@ package dissonance
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 def diff[ElemType]
    (left:    IndexedSeq[ElemType],

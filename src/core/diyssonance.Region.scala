@@ -18,8 +18,6 @@ package dissonance
 
 import language.experimental.captureChecking
 
-import rudiments.*
-
 enum Region[ElemType]:
   case Changed(deletions: List[Del[ElemType]], insertions: List[Ins[ElemType]])
   case Unchanged(retentions: List[Par[ElemType]])

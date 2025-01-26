@@ -18,7 +18,7 @@ package dissonance
 
 import language.experimental.captureChecking
 
-import rudiments.*
+import proscenium.*
 
 case class Chunk[ElemType]
    (pos: Int, rpos: Int, dels: List[Del[ElemType]], inss: List[Ins[ElemType]])
