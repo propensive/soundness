@@ -17,7 +17,6 @@
 package cellulose
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 trait CodlRelabelling[+TargetType]:

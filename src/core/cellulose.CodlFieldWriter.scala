@@ -17,7 +17,6 @@
 package cellulose
 
 import anticipation.*
-import rudiments.*
 
 trait CodlFieldWriter[ValueType] extends CodlEncoder[ValueType]:
   def schema: CodlSchema = Field(Arity.One)

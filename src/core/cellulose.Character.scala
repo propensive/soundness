@@ -21,6 +21,7 @@ import denominative.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

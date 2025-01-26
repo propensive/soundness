@@ -19,7 +19,7 @@ package cellulose
 import anticipation.*
 import contextual.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*, booleanStyles.trueFalse
 
 enum CodlToken:

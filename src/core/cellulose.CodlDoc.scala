@@ -20,6 +20,7 @@ import anticipation.*
 import chiaroscuro.*
 import contingency.*
 import dissonance.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

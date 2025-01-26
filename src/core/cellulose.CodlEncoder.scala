@@ -19,7 +19,6 @@ package cellulose
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*

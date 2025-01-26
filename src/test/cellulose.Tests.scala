@@ -24,6 +24,7 @@ import gossamer.*
 import hieroglyph.*
 import parasite.*, threadModels.virtual
 import probably.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*, stdioSources.virtualMachine
