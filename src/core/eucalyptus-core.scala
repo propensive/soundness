@@ -25,6 +25,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import parasite.*, asyncTermination.cancel
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
