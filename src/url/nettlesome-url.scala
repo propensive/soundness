@@ -16,7 +16,7 @@
 
 package nettlesome
 
-import rudiments.*
+import proscenium.*
 
 extension (inline ctx: StringContext)
   transparent inline def url(inline parts: Any*): Url[Label] =

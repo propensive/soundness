@@ -19,7 +19,7 @@ package nettlesome
 import anticipation.*
 import contextual.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 object Scheme:

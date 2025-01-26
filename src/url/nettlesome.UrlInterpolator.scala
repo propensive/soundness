@@ -21,7 +21,7 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 import scala.quoted.*

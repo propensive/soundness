@@ -27,6 +27,7 @@ import fulminate.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
