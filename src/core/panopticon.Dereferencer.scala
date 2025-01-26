@@ -16,7 +16,7 @@
 
 package panopticon
 
-import rudiments.*
+import proscenium.*
 
 trait Dereferencer[TargetType, LabelType <: Label]:
   type FieldType

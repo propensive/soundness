@@ -16,7 +16,7 @@
 
 package panopticon
 
-import rudiments.*
+import proscenium.*
 
 import scala.quoted.*
 
