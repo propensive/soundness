@@ -20,7 +20,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 object BaseLayout:
