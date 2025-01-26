@@ -23,7 +23,7 @@ import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import serpentine.*
 
 erased trait Filesystem

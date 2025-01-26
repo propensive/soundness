@@ -22,6 +22,7 @@ import contingency.*
 import fulminate.*
 import guillotine.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 
