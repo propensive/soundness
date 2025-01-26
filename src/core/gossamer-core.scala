@@ -194,9 +194,9 @@ extension [TextType: Textual](text: TextType)
 
     val input = TextType.text(text)
     if start.n0 < input.s.length then
-      val scanner = Scanner(true, start.n0)
+      val scanner = Scanner(start.n0)
       lambda(using scanner).lift(text) match
-        case Some(head) => head #:: extract(scanner.start.z)(lambda)
+        case Some(head) => head #:: extract(scanner.nextStart.or(0).z)(lambda)
         case _          => Stream()
 
     else Stream()
