@@ -21,7 +21,6 @@ import language.experimental.pureFunctions
 
 import scala.reflect.*
 
-import rudiments.*
 import fulminate.*
 import anticipation.*
 import spectacular.*

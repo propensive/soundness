@@ -19,6 +19,7 @@ package gossamer
 import anticipation.*
 import denominative.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

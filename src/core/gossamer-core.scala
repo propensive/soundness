@@ -23,6 +23,7 @@ import hieroglyph.*
 import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

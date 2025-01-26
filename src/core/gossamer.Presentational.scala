@@ -18,7 +18,7 @@ package gossamer
 
 import anticipation.*
 import denominative.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 import language.experimental.captureChecking
