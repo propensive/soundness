@@ -17,7 +17,6 @@
 package aviation
 
 import anticipation.*
-import rudiments.*
 
 import java.time as jt
 

@@ -19,7 +19,6 @@ package aviation
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 
 object TzdbError:
   given Reason is Communicable =

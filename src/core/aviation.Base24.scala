@@ -16,7 +16,7 @@
 
 package aviation
 
-import rudiments.*
+import proscenium.*
 
 object Base24:
   def apply(int: Int): Base24 =

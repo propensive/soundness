@@ -18,7 +18,6 @@ package aviation
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import symbolism.*
 
 object MonthName:

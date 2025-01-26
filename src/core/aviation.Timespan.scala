@@ -17,7 +17,7 @@
 package aviation
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 import symbolism.*
 
 object Timespan:
