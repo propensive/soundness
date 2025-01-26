@@ -17,7 +17,6 @@
 package abacist
 
 import anticipation.*
-import rudiments.*
 
 trait UnitsNames[UnitsType <: Tuple]:
   def prefix: Text = "".tt

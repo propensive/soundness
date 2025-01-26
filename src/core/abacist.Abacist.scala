@@ -24,6 +24,7 @@ import fulminate.*
 import gossamer.{where as _, *}
 import hieroglyph.*
 import quantitative.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
