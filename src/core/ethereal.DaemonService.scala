@@ -20,6 +20,7 @@ import anticipation.*
 import exoskeleton.*
 import galilei.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 

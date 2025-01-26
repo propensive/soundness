@@ -36,6 +36,7 @@ import nomenclature.*
 import parasite.*
 import prepositional.*
 import profanity.*
+import proscenium.*
 import rudiments.*, homeDirectories.default
 import serpentine.*
 import spectacular.*
