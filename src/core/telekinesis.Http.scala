@@ -20,6 +20,7 @@ import anticipation.*
 import gesticulate.*
 import gossamer.*
 import nettlesome.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 

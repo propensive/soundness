@@ -17,7 +17,6 @@
 package telekinesis
 
 import nettlesome.*
-import rudiments.*
 
 object Fetchable:
   given httpUrl: Fetchable[HttpUrl] = identity(_)

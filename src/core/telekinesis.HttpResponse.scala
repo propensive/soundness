@@ -19,6 +19,7 @@ package telekinesis
 import anticipation.*
 import contingency.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

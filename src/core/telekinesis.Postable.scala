@@ -23,6 +23,7 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import monotonous.*, alphabets.base256.alphanumericOrBraille
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

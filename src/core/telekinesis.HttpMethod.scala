@@ -19,7 +19,6 @@ package telekinesis
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 
 object HttpMethod:
