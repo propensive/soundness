@@ -52,7 +52,7 @@ package logFormats:
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-def mute[FormatType](using erased DummyImplicit)[ResultType]
+def mute[FormatType](using erased Void)[ResultType]
    (lambda: (FormatType is Loggable) ?=> ResultType)
 :     ResultType =
   lambda(using Log.silent[FormatType])
@@ -75,7 +75,7 @@ extension (logObject: Log.type)
     type Self = FormatType
     def log(level: Level, realm: Realm, timestamp: Long, event: FormatType): Unit = ()
 
-  def route[FormatType](using DummyImplicit)
+  def route[FormatType](using erased Void)
      [EntryType: Inscribable in FormatType, TargetType: Writable by FormatType]
      (target: TargetType)
      (using Monitor)
