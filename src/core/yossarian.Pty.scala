@@ -23,6 +23,7 @@ import gossamer.*
 import hypotenuse.*
 import iridescence.*
 import kaleidoscope.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
