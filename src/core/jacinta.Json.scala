@@ -28,6 +28,7 @@ import gossamer.*
 import hieroglyph.*
 import merino.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

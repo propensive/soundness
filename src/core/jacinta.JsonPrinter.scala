@@ -19,6 +19,7 @@ package jacinta
 import anticipation.*
 import gossamer.*
 import merino.*
+import proscenium.*
 import rudiments.*
 
 import scala.compiletime.*

@@ -21,7 +21,7 @@ import scala.compiletime.*
 import anticipation.*
 import denominative.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

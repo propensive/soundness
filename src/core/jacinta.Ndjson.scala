@@ -20,7 +20,7 @@ import anticipation.*
 import contingency.*
 import merino.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import turbulence.*
 
 object Ndjson:
