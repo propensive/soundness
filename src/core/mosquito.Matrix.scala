@@ -106,8 +106,7 @@ object Matrix:
       . join(before, t" ", after)
     . join(t"\n")
 
-  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf]
-     (using erased DummyImplicit)
+  transparent inline def apply[Rows <: Int: ValueOf, Columns <: Int: ValueOf](using erased Void)
      [ElementType]
      (rows: Tuple)
      (using Tuple.Union
