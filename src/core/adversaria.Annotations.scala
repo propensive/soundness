@@ -16,7 +16,7 @@
 
 package adversaria
 
-import rudiments.*
+import proscenium.*
 
 import scala.quoted.*
 
