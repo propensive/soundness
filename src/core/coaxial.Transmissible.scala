@@ -20,7 +20,6 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 
 trait Transmissible[-MessageType]:

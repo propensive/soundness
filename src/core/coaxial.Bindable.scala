@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import hypotenuse.*
 import nettlesome.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

@@ -19,6 +19,7 @@ package coaxial
 import anticipation.*
 import contingency.*
 import parasite.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

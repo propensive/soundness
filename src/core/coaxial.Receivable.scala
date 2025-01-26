@@ -19,7 +19,6 @@ package coaxial
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.*
 import spectacular.*
 
 trait Receivable[+MessageType]:
