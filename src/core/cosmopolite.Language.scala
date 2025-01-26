@@ -17,7 +17,6 @@
 package cosmopolite
 
 import anticipation.*
-import rudiments.*
 
 transparent trait Language(val code: Text):
   type Code

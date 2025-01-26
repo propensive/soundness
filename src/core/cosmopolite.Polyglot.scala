@@ -16,7 +16,7 @@
 
 package cosmopolite
 
-import rudiments.*
+import proscenium.*
 
 case class Polyglot[+ValueType, LanguageType](values: Map[Language, ValueType]):
   @targetName("or")
