@@ -30,8 +30,7 @@ object settings {
     "-language:experimental.erasedDefinitions",
     "-language:experimental.saferExceptions",
     "-language:experimental.namedTypeArguments",
-    "-language:implicitConversions",
-    "-Xpluginsdir", "FIXME: path to out/larceny/plugin/assembly.dest/out.jar"
+    "-language:implicitConversions"
   )
 }
 
@@ -57,6 +56,16 @@ trait SoundnessSubModule extends BaseScalaModule {
 trait ProbablyTestModule extends SoundnessSubModule {
   def finalMainClass = (millSourcePath / ".." / "..").last + ".Tests"
   def moduleDeps = Seq(probably.cli)
+
+  def compile = Task {
+    larceny.plugin.assembly()
+    super.compile()
+  }
+
+  def scalacOptions = settings.scalaOptions ++ Seq(
+    "-Xplugin", 
+    (larceny.plugin.assembly().path).toString()
+  )
 }
 
 // ------------------------ GROUPS ------------------------
@@ -636,6 +645,10 @@ object larceny extends SoundnessModule {
   object plugin extends SoundnessSubModule {
     def moduleDeps = Seq()
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+  }
+
+  object test extends ProbablyTestModule {
+    override def finalMainClass: Target[String] = "run"
   }
 }
 
