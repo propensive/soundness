@@ -21,7 +21,7 @@ import language.experimental.into
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import symbolism.*
 
 extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])

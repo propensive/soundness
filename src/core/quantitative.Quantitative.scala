@@ -20,6 +20,7 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*

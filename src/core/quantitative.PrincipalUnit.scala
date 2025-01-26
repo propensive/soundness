@@ -18,7 +18,7 @@ package quantitative
 
 import language.experimental.captureChecking
 
-import rudiments.*
+import proscenium.*
 
 trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
 

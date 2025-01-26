@@ -19,6 +19,7 @@ package quantitative
 import language.experimental.captureChecking
 
 import anticipation.*
+import proscenium.*
 import rudiments.*
 
 trait Points[Power <: Nat] extends Units[Power, Length]

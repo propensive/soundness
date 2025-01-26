@@ -20,6 +20,7 @@ import anticipation.*
 import fulminate.*
 import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import symbolism.*
 

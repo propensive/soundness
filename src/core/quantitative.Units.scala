@@ -16,7 +16,7 @@
 
 package quantitative
 
-import rudiments.*
+import proscenium.*
 
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
 

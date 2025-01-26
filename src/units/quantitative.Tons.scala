@@ -18,6 +18,7 @@ package quantitative
 
 import language.experimental.captureChecking
 
+import proscenium.*
 import rudiments.*
 
 trait Tons[Power <: Nat] extends Units[Power, Mass]

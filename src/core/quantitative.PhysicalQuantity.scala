@@ -19,6 +19,7 @@ package quantitative
 import language.experimental.captureChecking
 import language.implicitConversions
 
+import proscenium.*
 import rudiments.*
 
 erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label]()
