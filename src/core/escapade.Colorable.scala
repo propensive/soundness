@@ -21,13 +21,13 @@ import anticipation.*
 import language.experimental.pureFunctions
 
 object Colorable:
-  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic](color0: ColorType)
+  def apply[ValueType](using erased Void)[ColorType: Chromatic](color0: ColorType)
   :     ValueType is Colorable =
     new Colorable:
       type Self = ValueType
       extension (value: ValueType) def color: Fg = Fg(color0.asRgb24Int)
 
-  def apply[ValueType](using DummyImplicit)[ColorType: Chromatic]
+  def apply[ValueType](using erased Void)[ColorType: Chromatic]
      (chooseColor: ValueType -> ColorType)
   :     ValueType is Colorable =
     new Colorable:
