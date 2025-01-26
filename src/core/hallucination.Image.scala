@@ -21,6 +21,7 @@ import escapade.*
 import gossamer.*
 import iridescence.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

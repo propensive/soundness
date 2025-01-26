@@ -20,6 +20,7 @@ import anticipation.*
 import gesticulate.*
 import prepositional.*
 import rudiments.*
+import proscenium.*
 import spectacular.*
 import turbulence.*
 
