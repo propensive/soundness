@@ -16,8 +16,6 @@
 
 package polyvinyl
 
-import rudiments.*
-
 enum RecordField:
   case Value(fieldType: String, params: String*)
   case Record(fieldType: String, map: Map[String, RecordField])

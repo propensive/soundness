@@ -17,7 +17,7 @@
 package polyvinyl
 
 import prepositional.*
-import rudiments.*
+import proscenium.*
 
 trait Schematic[RecordType <: Record in DataType, DataType, LabelType <: Label, ValueType]:
   def transform(data: DataType, params: List[String]): ValueType

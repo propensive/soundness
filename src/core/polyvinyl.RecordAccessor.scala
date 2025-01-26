@@ -17,7 +17,7 @@
 package polyvinyl
 
 import prepositional.*
-import rudiments.*
+import proscenium.*
 
 trait RecordAccessor
    [RecordType <: Record in DataType, DataType, LabelType <: Label, TypeConstructorType[_]]:
