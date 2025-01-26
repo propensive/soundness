@@ -21,6 +21,7 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

@@ -17,6 +17,6 @@
 package gesticulate
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 case class Content(media: MediaType, stream: Stream[Bytes])

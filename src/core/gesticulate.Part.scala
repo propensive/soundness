@@ -18,7 +18,7 @@ package gesticulate
 
 import anticipation.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import turbulence.*
 import vacuous.*
 
