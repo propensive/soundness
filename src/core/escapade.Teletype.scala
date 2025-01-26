@@ -21,6 +21,7 @@ import contextual.*
 import denominative.*
 import gossamer.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
