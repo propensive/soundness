@@ -44,3 +44,4 @@ export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheck
 export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
+export proscenium.{Nat, Label, `~>`}

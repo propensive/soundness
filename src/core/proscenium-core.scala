@@ -44,3 +44,8 @@ export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheck
 export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
+type Nat = Int & Singleton
+type Label = String & Singleton
+
+@targetName("partialFn")
+infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
