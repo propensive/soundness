@@ -19,7 +19,7 @@ package anthology
 import anticipation.*
 import contingency.*
 import parasite.*
-import rudiments.*
+import proscenium.*
 import turbulence.*
 import vacuous.*
 

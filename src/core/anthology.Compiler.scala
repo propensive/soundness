@@ -21,7 +21,6 @@ import anticipation.*
 import contingency.*
 import hellenism.*
 import parasite.*
-import rudiments.*
 
 trait Compiler:
   def apply(classpath: LocalClasspath)[PathType: GenericPath]

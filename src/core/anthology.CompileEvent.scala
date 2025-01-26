@@ -19,7 +19,6 @@ package anthology
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 
 enum CompileEvent:
   case Start
