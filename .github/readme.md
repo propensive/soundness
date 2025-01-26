@@ -86,7 +86,7 @@ level and the required stability and maintainability of your own project.
 
 Merino
 jawn is designed to be _small_. Its entire source code currently consists
-of 823 lines of code.
+of 824 lines of code.
 
 ## Building
 
