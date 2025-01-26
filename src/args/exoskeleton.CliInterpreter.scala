@@ -16,8 +16,6 @@
 
 package exoskeleton
 
-import rudiments.*
-
 import language.experimental.captureChecking
 
 trait CliInterpreter:

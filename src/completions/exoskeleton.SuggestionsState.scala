@@ -17,7 +17,6 @@
 package exoskeleton
 
 import anticipation.*
-import rudiments.*
 import vacuous.*
 
 case class SuggestionsState

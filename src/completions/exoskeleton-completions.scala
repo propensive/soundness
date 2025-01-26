@@ -20,6 +20,7 @@ import ambience.*
 import anticipation.*
 import gossamer.*
 import profanity.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

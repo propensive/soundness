@@ -23,6 +23,7 @@ import gossamer.*
 import guillotine.*
 import hieroglyph.*, textMetrics.uniform
 import profanity.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

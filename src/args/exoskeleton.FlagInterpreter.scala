@@ -16,7 +16,7 @@
 
 package exoskeleton
 
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

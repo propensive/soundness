@@ -20,7 +20,6 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 
 import language.experimental.captureChecking
