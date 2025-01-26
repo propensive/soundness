@@ -28,13 +28,8 @@ import scala.deriving.*
 import anticipation.*
 import denominative.*
 import prepositional.*
+import proscenium.*
 import vacuous.*
-
-type Nat = Int & Singleton
-type Label = String & Singleton
-
-@targetName("partialFn")
-infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
 
 def fixpoint[ValueType](initial: ValueType)
    (fn: (recur: (ValueType => ValueType)) ?=> (ValueType => ValueType)): ValueType =
@@ -90,14 +85,6 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 
 export Rudiments.&
 
-export Predef.runtimeChecked as absolve
-
-extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
-  def tuple: ProductType.MirroredElemTypes = Tuple.fromProductTyped(product)
-
-extension [TupleType <: Tuple](tuple: TupleType)
-  def to[ProductType: Mirror.ProductOf]: ProductType = ProductType.fromProduct(tuple)
-
 extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
@@ -107,32 +94,6 @@ infix type binds[ResultType, TypeclassType <: Any { type Self }] =
 
 inline def bound[BoundType <: Any { type Self }: Bond]: BoundType.Value = BoundType.value
 inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
-
-export scala.reflect.{ClassTag, Typeable}
-export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
-export scala.collection.concurrent.TrieMap
-
-export Predef
-. { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,
-    shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, classOf, locally }
-
-export scala.util.control.NonFatal
-
-export scala.util.boundary, boundary.break
-
-export scala.jdk.CollectionConverters
-. { IteratorHasAsScala, ListHasAsScala, MapHasAsScala, SeqHasAsJava, MapHasAsJava,
-    EnumerationHasAsScala }
-
-export caps.Cap as Capability
-
-export scala.annotation
-. { tailrec, implicitNotFound as missingContext, targetName, switch, StaticAnnotation }
-
-export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
-
-export scala.LazyList as Stream
-export scala.DummyImplicit as Void
 
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
@@ -359,18 +320,6 @@ def homeDirectory[PathType]
 
   directory.path[PathType]
 
-extension [ValueType: Countable](inline value: ValueType)
-  inline def ult: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 1).z else Unset
-
-  inline def pen: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 2).z else Unset
-
-  inline def ant: Optional[Ordinal] =
-    if ValueType.size(value) >= 1 then (ValueType.size(value) - 3).z else Unset
-
-export scala.collection.immutable.Vector as Trie
-
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
   //given none(using Tactic[WorkingDirectoryError]): WorkingDirectory =
@@ -382,3 +331,19 @@ package homeDirectories:
 
 package quickstart:
   erased given defaults: Quickstart = ###
+
+extension [ValueType: Countable](inline value: ValueType)
+  inline def ult: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 1).z else Unset
+
+  inline def pen: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 2).z else Unset
+
+  inline def ant: Optional[Ordinal] =
+    if ValueType.size(value) >= 1 then (ValueType.size(value) - 3).z else Unset
+
+extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
+  def tuple: ProductType.MirroredElemTypes = Tuple.fromProductTyped(product)
+
+extension [TupleType <: Tuple](tuple: TupleType)
+  def to[ProductType: Mirror.ProductOf]: ProductType = ProductType.fromProduct(tuple)
