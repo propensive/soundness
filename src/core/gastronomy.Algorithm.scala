@@ -16,7 +16,7 @@
 
 package gastronomy
 
-import rudiments.*
+import proscenium.*
 
 trait Algorithm:
   type Of <: Nat

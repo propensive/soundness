@@ -16,8 +16,6 @@
 
 package gastronomy
 
-import rudiments.*
-
 object Feistel:
   def apply(subkeys: List[Int], round: (Int, Int) => Int)(input: Long): Long =
     def recur(value: Long, subkeys: List[Int]): Long = subkeys match

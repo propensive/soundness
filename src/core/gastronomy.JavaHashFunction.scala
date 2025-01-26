@@ -22,7 +22,6 @@ import javax.crypto as jc
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
-import rudiments.*
 
 trait JavaHashFunction extends HashFunction:
   def init(): Digestion = new MessageDigestion(js.MessageDigest.getInstance(name.s).nn)
