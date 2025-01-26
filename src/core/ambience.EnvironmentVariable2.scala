@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 import language.dynamics
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 trait EnvironmentVariable2:

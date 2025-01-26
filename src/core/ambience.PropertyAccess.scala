@@ -23,7 +23,7 @@ import scala.compiletime.ops.string.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 case class PropertyAccess[NameType <: String](property: String) extends Dynamic:

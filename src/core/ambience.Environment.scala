@@ -20,6 +20,7 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

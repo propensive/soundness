@@ -24,7 +24,7 @@ import scala.compiletime.ops.string.*
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

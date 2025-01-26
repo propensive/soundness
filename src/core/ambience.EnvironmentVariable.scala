@@ -22,6 +22,7 @@ import language.dynamics
 import anticipation.*
 import contingency.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
