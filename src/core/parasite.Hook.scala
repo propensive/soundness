@@ -19,7 +19,6 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import rudiments.*
 
 class Hook(private val thread: Thread):
   def cancel(): Unit = Runtime.getRuntime.nn.removeShutdownHook(thread)

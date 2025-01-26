@@ -25,6 +25,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import digression.*
+import proscenium.*
 import rudiments.*
 import fulminate.*
 import vacuous.*

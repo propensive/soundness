@@ -21,6 +21,7 @@ import contingency.*
 import digression.*
 import gossamer.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 
