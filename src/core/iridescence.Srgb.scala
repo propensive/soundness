@@ -22,7 +22,6 @@ import scala.util.chaining.*
 
 import anticipation.*
 import hypotenuse.*
-import rudiments.*
 
 
 object Srgb:
