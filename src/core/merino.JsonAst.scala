@@ -22,6 +22,7 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import scala.collection.mutable.ArrayBuffer
 import turbulence.*
