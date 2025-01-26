@@ -132,6 +132,7 @@ export scala.annotation
 export scala.annotation.unchecked.{uncheckedVariance, uncheckedCaptures, uncheckedStable}
 
 export scala.LazyList as Stream
+export scala.DummyImplicit as Void
 
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
