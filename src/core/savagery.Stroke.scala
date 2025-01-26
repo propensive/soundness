@@ -19,7 +19,7 @@ package savagery
 import anticipation.*
 import gossamer.*, decimalFormatters.java
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

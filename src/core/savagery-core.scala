@@ -16,7 +16,7 @@
 
 package savagery
 
-import rudiments.*
+import proscenium.*
 
 extension (left: Float)
   @targetName("makeCoordinates")

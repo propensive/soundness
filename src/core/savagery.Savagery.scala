@@ -18,7 +18,7 @@ package savagery
 
 import anticipation.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 
 object Savagery:
   opaque type Degrees = Double

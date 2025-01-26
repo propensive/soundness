@@ -20,7 +20,6 @@ import anticipation.*
 import cataclysm.{Float as _, Length as _, *}
 import contingency.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 import xylophone.*
