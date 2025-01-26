@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import gossamer.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 

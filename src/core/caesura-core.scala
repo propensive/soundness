@@ -17,7 +17,7 @@
 package caesura
 
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 package dsvFormats:
   given csv: DsvFormat = DsvFormat(false, ',', '"', '"')

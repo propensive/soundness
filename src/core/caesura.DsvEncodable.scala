@@ -18,7 +18,6 @@ package caesura
 
 import anticipation.*
 import prepositional.*
-import rudiments.*
 import wisteria.*
 
 object DsvEncodable extends ProductDerivable[DsvEncodable]:
