@@ -16,6 +16,6 @@
 
 package escritoire
 
-import rudiments.*
+import proscenium.*
 
 case class TableSection[TextType](widths: IArray[Int], rows: Stream[TableRow[TextType]])

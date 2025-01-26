@@ -18,6 +18,7 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 import wisteria.*, derivationContext.required

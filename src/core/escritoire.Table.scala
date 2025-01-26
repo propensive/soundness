@@ -18,7 +18,7 @@ package escritoire
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 import scala.collection.immutable as sci
 

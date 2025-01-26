@@ -20,6 +20,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
