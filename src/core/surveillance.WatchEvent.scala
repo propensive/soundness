@@ -20,7 +20,6 @@ import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 import anticipation.*
 import contingency.*
-import rudiments.*
 import spectacular.*
 
 enum WatchEvent:

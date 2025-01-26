@@ -24,6 +24,7 @@ import anticipation.*
 import contingency.*
 import feudalism.*
 import parasite.*, threadModels.platform
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
