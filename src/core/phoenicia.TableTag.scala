@@ -19,7 +19,7 @@ package phoenicia
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 sealed trait TableTag:

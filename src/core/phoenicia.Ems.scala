@@ -18,8 +18,8 @@ package phoenicia
 
 import anticipation.*
 import gossamer.*
+import proscenium.*
 import quantitative.*
-import rudiments.*
 
 object Ems:
   given UnitName[Ems[1]] = () => t"ems"
