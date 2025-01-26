@@ -20,7 +20,6 @@ import anticipation.*
 import denominative.*
 import digression.*
 import fulminate.*
-import rudiments.*
 import vacuous.*
 
 import language.experimental.captureChecking

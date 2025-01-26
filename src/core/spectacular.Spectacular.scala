@@ -19,7 +19,7 @@ package spectacular
 import scala.quoted.*
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 object Spectacular:
   def enumerable[EnumType <: reflect.Enum: Type](using Quotes): Expr[EnumType is Enumerable] =

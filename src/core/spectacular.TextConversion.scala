@@ -19,6 +19,7 @@ package spectacular
 import anticipation.*
 import fulminate.*
 import inimitable.*
+import proscenium.*
 import rudiments.*
 
 object TextConversion:
