@@ -23,7 +23,6 @@ import escritoire.*, columnAttenuation.ignore
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 
