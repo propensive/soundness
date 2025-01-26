@@ -70,7 +70,7 @@ def raise[SuccessType, ErrorType <: Exception: Tactic]
 def abort[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType): Nothing =
   ErrorType.abort(error)
 
-def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+def safely[ErrorType <: Exception](using erased Void)[SuccessType]
    (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                 SuccessType)
 :     Optional[SuccessType] =
@@ -79,7 +79,7 @@ def safely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     block(using Diagnostics.omit, OptionalTactic(label))
   catch case error: Exception => Unset
 
-def unsafely[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+def unsafely[ErrorType <: Exception](using erased Void)[SuccessType]
    (block: Unsafe ?=> ThrowTactic[ErrorType, SuccessType] ?=> CanThrow[Exception] ?=> SuccessType)
 :     SuccessType =
 
@@ -93,7 +93,7 @@ def throwErrors[ErrorType <: Exception](using CanThrow[ErrorType])[SuccessType]
 
   block(using ThrowTactic())
 
-def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+def capture[ErrorType <: Exception](using erased Void)[SuccessType]
    (block: EitherTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Tactic[ExpectationError[SuccessType]], Diagnostics)
 :     ErrorType =
@@ -104,7 +104,7 @@ def capture[ErrorType <: Exception](using DummyImplicit)[SuccessType]
     case Left(error)  => error
     case Right(value) => abort(ExpectationError(value))
 
-def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+def attempt[ErrorType <: Exception](using erased Void)[SuccessType]
    (block: AttemptTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Diagnostics)
 :     Attempt[SuccessType, ErrorType] =
@@ -112,7 +112,7 @@ def attempt[ErrorType <: Exception](using DummyImplicit)[SuccessType]
   boundary: label ?=>
     Attempt.Success(block(using AttemptTactic(label)))
 
-def amalgamate[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+def amalgamate[ErrorType <: Exception](using erased Void)[SuccessType]
    (block: AmalgamateTactic[ErrorType, SuccessType] ?=> SuccessType)
    (using Diagnostics)
 :     SuccessType | ErrorType =
@@ -157,7 +157,7 @@ extension [ResultType, LambdaType[_]](inline mend: Mend[ResultType, LambdaType])
   :     ResultType2 =
     ${Contingency.mendWithin[LambdaType, ResultType2]('mend, 'lambda)}
 
-transparent inline def track[FocusType](using DummyImplicit)[AccrualType <: Exception, ResultType]
+transparent inline def track[FocusType](using erased Void)[AccrualType <: Exception, ResultType]
    (accrual: AccrualType)
    (inline block: (focus:   Optional[FocusType],
                    accrual: AccrualType) ?=> Exception ~> AccrualType)
@@ -189,7 +189,7 @@ extension [ValueType](optional: Optional[ValueType])
   :     ValueType =
     optional.or(abort(error))
 
-  def dare[ErrorType <: Exception](using DummyImplicit)[SuccessType]
+  def dare[ErrorType <: Exception](using erased Void)[SuccessType]
      (block: (Diagnostics, OptionalTactic[ErrorType, SuccessType]) ?=> CanThrow[Exception] ?=>
                   ValueType => SuccessType)
   :     Optional[SuccessType] =
