@@ -16,7 +16,7 @@
 
 package guillotine
 
-import rudiments.*
+import proscenium.*
 
 object Intelligible extends PosixCommands
 

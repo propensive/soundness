@@ -24,7 +24,7 @@ import anticipation.*
 import contextual.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 import errorDiagnostics.empty

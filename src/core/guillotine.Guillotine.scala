@@ -20,7 +20,7 @@ import language.experimental.pureFunctions
 
 import scala.quoted.*
 
-import rudiments.*
+import proscenium.*
 
 object Guillotine:
   def sh(context: Expr[StringContext], parts: Expr[Seq[Any]])(using Quotes): Expr[Command] =

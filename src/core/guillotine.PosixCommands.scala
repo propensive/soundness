@@ -20,6 +20,7 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 
 trait PosixCommands:

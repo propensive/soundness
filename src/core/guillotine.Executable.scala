@@ -29,6 +29,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 

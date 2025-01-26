@@ -24,6 +24,7 @@ import eucalyptus.*
 import galilei.*, filesystemOptions.{doNotCreateNonexistent, dereferenceSymlinks}
 import gossamer.*
 import probably.*
+import proscenium.*
 import rudiments.*, workingDirectories.virtualMachine
 import serpentine.*, pathHierarchies.unix
 import spectacular.*

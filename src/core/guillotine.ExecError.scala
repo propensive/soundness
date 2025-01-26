@@ -18,7 +18,7 @@ package guillotine
 
 import anticipation.*
 import fulminate.*
-import rudiments.*
+import proscenium.*
 
 case class ExecError(command: Command, stdout: Stream[Bytes], stderr: Stream[Bytes])
    (using Diagnostics)
