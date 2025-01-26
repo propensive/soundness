@@ -19,7 +19,7 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import rudiments.*
+import proscenium.*
 
 class TrackTactic
    [ErrorType <: Exception, AccrualType, ResultType, SupplementType]

@@ -17,7 +17,7 @@
 package contingency
 
 import fulminate.*
-import rudiments.*
+import proscenium.*
 
 class EscapeTactic[ResultType](label: boundary.Label[ResultType])
 extends Tactic[Break[ResultType]]:

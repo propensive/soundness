@@ -19,7 +19,7 @@ package contingency
 import language.experimental.pureFunctions
 
 import fulminate.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 class OptionalTactic[ErrorType <: Exception, SuccessType]

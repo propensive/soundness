@@ -16,6 +16,6 @@
 
 package contingency
 
-import rudiments.*
+import proscenium.*
 
 class Mend[ResultType, LambdaType[_]](val lambda: Exception ~> ResultType)

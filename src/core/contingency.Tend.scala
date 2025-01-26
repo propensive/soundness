@@ -16,6 +16,6 @@
 
 package contingency
 
-import rudiments.*
+import proscenium.*
 
 class Tend[LambdaType[_]](val lambda: Exception ~> Exception)

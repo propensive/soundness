@@ -16,7 +16,7 @@
 
 package contingency
 
-import rudiments.*
+import proscenium.*
 
 import language.experimental.pureFunctions
 

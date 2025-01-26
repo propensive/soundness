@@ -16,7 +16,7 @@
 
 package contingency
 
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 class Tracking[AccrualType <: Exception, LambdaType[_], FocusType]

@@ -23,6 +23,7 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

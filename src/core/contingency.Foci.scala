@@ -16,7 +16,7 @@
 
 package contingency
 
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 import scala.collection.mutable as scm

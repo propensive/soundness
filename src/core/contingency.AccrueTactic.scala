@@ -21,7 +21,7 @@ import language.experimental.pureFunctions
 import java.util.concurrent.atomic as juca
 
 import fulminate.*
-import rudiments.*
+import proscenium.*
 
 class AccrueTactic
    [ErrorType <: Exception, AccrualType, ResultType]
