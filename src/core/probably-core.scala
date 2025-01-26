@@ -20,7 +20,7 @@ import anticipation.*
 import digression.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 given realm: Realm = realm"probably"

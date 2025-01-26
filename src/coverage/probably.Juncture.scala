@@ -19,7 +19,6 @@ package probably
 import anticipation.*
 import digression.*
 import gossamer.*
-import rudiments.*
 
 object Juncture:
   given Ordering[Juncture] = Ordering.by[Juncture, Int](_.start).orElseBy(-_.end)

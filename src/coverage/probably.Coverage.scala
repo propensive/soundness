@@ -18,6 +18,7 @@ package probably
 
 import anticipation.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 
 import scala.collection.mutable.BitSet

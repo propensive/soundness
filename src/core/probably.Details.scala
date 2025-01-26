@@ -19,7 +19,6 @@ package probably
 import anticipation.*
 import chiaroscuro.*
 import digression.*
-import rudiments.*
 
 enum Details:
   case Throws(stack: StackTrace)

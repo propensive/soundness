@@ -17,7 +17,6 @@
 package probably
 
 import anticipation.*
-import rudiments.*
 
 enum Trial[+T]:
   case Returns(result: T, duration: Long, context: Map[Text, Text])

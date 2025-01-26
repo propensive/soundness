@@ -21,7 +21,6 @@ import digression.*
 import gossamer.*
 import hieroglyph.*
 import hypotenuse.*
-import rudiments.*
 import vacuous.*
 
 object TestId:

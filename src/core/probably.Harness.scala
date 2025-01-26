@@ -17,7 +17,6 @@
 package probably
 
 import anticipation.*
-import rudiments.*
 import spectacular.*
 
 import scala.collection.mutable as scm

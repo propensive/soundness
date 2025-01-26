@@ -28,6 +28,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*, webColors.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
