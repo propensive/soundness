@@ -24,6 +24,7 @@ import contingency.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

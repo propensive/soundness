@@ -20,7 +20,7 @@ import anticipation.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 
 package alphabets:
   package binary:

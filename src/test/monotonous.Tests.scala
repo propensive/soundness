@@ -21,6 +21,7 @@ import capricious.*, randomization.seeded, randomization.lengths.uniformUpto1000
 import contingency.*
 import gossamer.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import turbulence.*

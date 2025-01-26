@@ -19,7 +19,6 @@ package monotonous
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
 
 case class Alphabet[EncodingType <: Serialization]
    (chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map()):
