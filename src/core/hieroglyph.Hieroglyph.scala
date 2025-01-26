@@ -22,7 +22,6 @@ import scala.quoted.*
 
 import anticipation.*
 import fulminate.*
-import rudiments.*
 
 object Hieroglyph:
   given Realm = realm"hieroglyph"

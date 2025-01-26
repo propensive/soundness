@@ -20,6 +20,7 @@ import contingency.*, strategies.throwUnsafely
 import gossamer.{displayWidth as _, *}
 import larceny.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

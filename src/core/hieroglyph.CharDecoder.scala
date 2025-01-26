@@ -17,6 +17,7 @@
 package hieroglyph
 
 import anticipation.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

@@ -18,7 +18,7 @@ package hieroglyph
 
 import language.experimental.captureChecking
 
-import rudiments.*
+import proscenium.*
 
 object Chars:
   val superscript: Char ~> Char =
