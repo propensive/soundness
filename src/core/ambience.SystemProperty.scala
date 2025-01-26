@@ -32,7 +32,7 @@ trait SystemProperty[NameType <: String, PropertyType]:
   def read(value: Text): PropertyType
 
 object SystemProperty:
-  given generic: [UnknownType <: String & Singleton] => DummyImplicit
+  given generic: [UnknownType <: String & Singleton] => (erased Void)
   =>    SystemProperty[UnknownType, Text] =
     identity(_)
 
