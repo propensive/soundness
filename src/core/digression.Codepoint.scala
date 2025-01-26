@@ -19,7 +19,6 @@ package digression
 import language.experimental.pureFunctions
 
 import anticipation.*
-import rudiments.*
 
 object Codepoint:
   inline given Codepoint = ${Digression.location}

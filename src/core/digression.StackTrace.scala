@@ -20,6 +20,7 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
