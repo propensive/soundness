@@ -16,7 +16,7 @@
 
 package vicarious
 
-import rudiments.*
+import proscenium.*
 
 import scala.compiletime.*
 import scala.quoted.*

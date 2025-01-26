@@ -16,7 +16,7 @@
 
 package vicarious
 
-import rudiments.*
+import proscenium.*
 
 object Proxy:
   transparent inline given derived[KeyType, ValueType]: Proxy[KeyType, ValueType, 0] =

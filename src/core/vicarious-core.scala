@@ -17,7 +17,7 @@
 package vicarious
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 import fulminate.*
 
 given Realm = realm"vicarious"
