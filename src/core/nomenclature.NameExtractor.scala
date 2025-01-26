@@ -1,6 +1,6 @@
 package nomenclature
 
-import rudiments.*
+import proscenium.*
 
 import scala.quoted.*
 

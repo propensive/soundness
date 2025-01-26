@@ -3,7 +3,7 @@ package nomenclature
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 object MustContain extends Rule({ text => m"must contain $text" }, _.contains(_))
 

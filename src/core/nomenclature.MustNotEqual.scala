@@ -2,7 +2,7 @@ package nomenclature
 
 import anticipation.*
 import fulminate.*
-import rudiments.*
+import proscenium.*
 
 object MustNotEqual extends Rule({ text => m"must not equal $text"}, _ != _)
 

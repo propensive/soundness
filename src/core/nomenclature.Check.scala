@@ -1,5 +1,5 @@
 package nomenclature
 
-import rudiments.*
+import proscenium.*
 
 trait Check[ParamType <: Label]

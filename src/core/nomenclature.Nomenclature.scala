@@ -4,7 +4,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 import scala.compiletime.*

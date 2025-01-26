@@ -3,7 +3,7 @@ package nomenclature
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 object MustNotEnd extends Rule({ text => m"must not end with $text"}, !_.ends(_))
 

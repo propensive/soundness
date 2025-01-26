@@ -3,7 +3,7 @@ package nomenclature
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 object MustNotStart extends Rule({ text => m"must not start with $text"}, !_.starts(_))
 

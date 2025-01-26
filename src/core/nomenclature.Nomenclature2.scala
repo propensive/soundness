@@ -2,6 +2,7 @@ package nomenclature
 
 import anticipation.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 
 import scala.quoted.*
