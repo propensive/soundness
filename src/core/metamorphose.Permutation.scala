@@ -21,6 +21,7 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
+import proscenium.*
 import rudiments.*
 
 object Permutation:
