@@ -17,7 +17,7 @@
 package plutocrat
 
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import symbolism.*
 
 case class Price[CurrencyType <: Currency & Singleton: ValueOf]

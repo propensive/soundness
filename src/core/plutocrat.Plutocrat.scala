@@ -21,6 +21,7 @@ import gossamer.*
 import hieroglyph.*, textMetrics.uniform
 import hypotenuse.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
