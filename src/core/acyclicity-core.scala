@@ -19,7 +19,6 @@ package acyclicity
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
 import spectacular.*
 
 extension (dag: Dag[Text])

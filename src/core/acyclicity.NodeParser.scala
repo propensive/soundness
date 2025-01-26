@@ -22,7 +22,6 @@ import anticipation.*
 import contextual.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 
 object NodeParser extends Interpolator[Unit, Option[Dot.Ref], Dot.Ref]:

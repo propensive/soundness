@@ -20,6 +20,7 @@ import language.experimental.captureChecking
 
 import scala.collection.mutable as scm
 
+import proscenium.*
 import rudiments.*
 
 object Dag:
