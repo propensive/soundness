@@ -21,6 +21,7 @@ import java.io as ji
 import anticipation.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

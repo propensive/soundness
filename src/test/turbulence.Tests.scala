@@ -22,6 +22,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
 import parasite.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 

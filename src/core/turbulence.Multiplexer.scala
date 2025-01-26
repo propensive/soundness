@@ -22,6 +22,7 @@ import java.util.concurrent as juc
 
 import anticipation.*
 import parasite.*, asyncTermination.await
+import proscenium.*
 import rudiments.*
 
 object Multiplexer:

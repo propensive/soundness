@@ -27,6 +27,7 @@ import contingency.*
 import hypotenuse.*
 import parasite.*, asyncTermination.await
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import symbolism.*
 import vacuous.*

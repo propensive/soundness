@@ -21,6 +21,7 @@ import scala.reflect.*
 import anticipation.*
 import denominative.*
 import hypotenuse.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

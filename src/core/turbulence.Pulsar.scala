@@ -20,7 +20,7 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import parasite.*
-import rudiments.*
+import proscenium.*
 
 class Pulsar[DurationType: GenericDuration](duration: DurationType):
   private var continue: Boolean = true

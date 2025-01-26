@@ -16,6 +16,7 @@
 
 package turbulence
 
+import proscenium.*
 import rudiments.*
 
 trait SimpleWritable[TargetType, ElementType] extends Writable:
