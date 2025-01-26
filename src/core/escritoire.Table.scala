@@ -24,7 +24,7 @@ import scala.collection.immutable as sci
 
 object Table:
   @targetName("make")
-  def apply[RowType](using DummyImplicit)[TextType: ClassTag: Textual]
+  def apply[RowType](using erased Void)[TextType: ClassTag: Textual]
      (columns0: Column[RowType, TextType]*)
   :     Table[RowType, TextType] =
 
