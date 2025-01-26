@@ -18,7 +18,7 @@ package cataclysm
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 
 object ShowProperty:

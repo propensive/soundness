@@ -17,7 +17,7 @@
 package cataclysm
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 object Selectable:
   given ident: Selector is Selectable = identity(_)

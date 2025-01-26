@@ -19,7 +19,7 @@ package cataclysm
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.*
+import proscenium.*
 
 import language.dynamics
 

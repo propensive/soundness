@@ -19,7 +19,7 @@ package cataclysm
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
+import proscenium.*
 
 import scala.quoted.*
 

@@ -16,7 +16,7 @@
 
 package cataclysm
 
-import rudiments.*
+import proscenium.*
 
 import language.dynamics
 
