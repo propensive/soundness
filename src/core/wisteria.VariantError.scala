@@ -18,7 +18,6 @@ package wisteria
 
 import anticipation.*
 import fulminate.*
-import rudiments.*
 
 import scala.deriving.*
 import scala.compiletime.*

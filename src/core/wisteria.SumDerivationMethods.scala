@@ -19,6 +19,7 @@ package wisteria
 import anticipation.*
 import contingency.*
 import fulminate.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

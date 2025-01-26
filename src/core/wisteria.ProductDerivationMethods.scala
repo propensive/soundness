@@ -17,6 +17,7 @@
 package wisteria
 
 import anticipation.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 

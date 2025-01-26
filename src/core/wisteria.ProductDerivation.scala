@@ -16,8 +16,6 @@
 
 package wisteria
 
-import rudiments.*
-
 import scala.deriving.*
 import scala.compiletime.*
 
