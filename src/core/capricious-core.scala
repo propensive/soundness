@@ -18,7 +18,6 @@ package capricious
 
 import anticipation.*
 import hypotenuse.*
-import rudiments.*
 
 import scala.util as su
 

@@ -17,6 +17,7 @@
 package capricious
 
 import hypotenuse.*
+import proscenium.*
 import rudiments.*
 import wisteria.*
 
