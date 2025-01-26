@@ -37,7 +37,7 @@ object Cookie:
 
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
-  def apply[ValueType: {Encodable in Text, Decoder}](using DummyImplicit)
+  def apply[ValueType: {Encodable in Text, Decoder}](using erased Void)
      [DurationType: GenericDuration]
      (name:    Text,
       domain:   Optional[Hostname]     = Unset,
