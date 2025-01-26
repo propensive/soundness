@@ -523,12 +523,12 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       . assert(_ == t"HELLO")
 
-    // suite(t"Compile errors"):
-    //   test(t"Check that Text and String are incompatible"):
-    //     demilitarize:
-    //       val x: String = Text("text")
+    suite(t"Compile errors"):
+      test(t"Check that Text and String are incompatible"):
+        demilitarize:
+          val x: String = Text("text")
 
-    //   . assert(!_.isEmpty)
+      . assert(!_.isEmpty)
 
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):
