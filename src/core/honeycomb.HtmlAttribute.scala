@@ -21,7 +21,7 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

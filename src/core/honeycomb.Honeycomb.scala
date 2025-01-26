@@ -19,7 +19,7 @@ package honeycomb
 import anticipation.*
 import fulminate.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import vacuous.*
 
 import scala.quoted.*

@@ -17,7 +17,7 @@
 package honeycomb
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 

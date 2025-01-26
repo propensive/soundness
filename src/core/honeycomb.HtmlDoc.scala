@@ -19,7 +19,7 @@ package honeycomb
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import vacuous.*
 
