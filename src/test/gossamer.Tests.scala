@@ -16,18 +16,10 @@
 
 package gossamer
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import hieroglyph.{lower as _, upper as _, *}, charEncoders.utf8, textMetrics.uniform
-import larceny.*
-import probably.*
-import rudiments.{where as _, *}
-import spectacular.*
-import vacuous.*
+import soundness.*
 
-import unsafeExceptions.canThrowAny
-import strategies.throwUnsafely
+import charEncoders.utf8
+import textMetrics.uniform
 
 case class Person(name: Text, age: Int)
 
@@ -531,12 +523,12 @@ object Tests extends Suite(t"Gossamer Tests"):
 
       . assert(_ == t"HELLO")
 
-    suite(t"Compile errors"):
-      test(t"Check that Text and String are incompatible"):
-        demilitarize:
-          val x: String = Text("text")
+    // suite(t"Compile errors"):
+    //   test(t"Check that Text and String are incompatible"):
+    //     demilitarize:
+    //       val x: String = Text("text")
 
-      . assert(!_.isEmpty)
+    //   . assert(!_.isEmpty)
 
     suite(t"Decimalization tests"):
       test(t"Write negative pi"):

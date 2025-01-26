@@ -189,14 +189,14 @@ extension [TextType: Textual](text: TextType)
   def search(regex: Regex, overlap: Boolean = false): Stream[TextType] =
     regex.search(TextType.text(text), overlap = overlap).map(text.segment(_))
 
-  def extract[ValueType](start: Ordinal)(lambda: Matching ?=> TextType ~> ValueType)
+  def extract[ValueType](start: Ordinal)(lambda: Scanner ?=> TextType ~> ValueType)
   :     Stream[ValueType] =
 
     val input = TextType.text(text)
     if start.n0 < input.s.length then
-      val matching = Matching(start.n0)
-      lambda(using matching).lift(text) match
-        case Some(head) => head #:: extract(matching.nextStart.or(0).z)(lambda)
+      val scanner = Scanner(true, start.n0)
+      lambda(using scanner).lift(text) match
+        case Some(head) => head #:: extract(scanner.start.z)(lambda)
         case _          => Stream()
 
     else Stream()
