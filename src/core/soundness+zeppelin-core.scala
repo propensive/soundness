@@ -1,5 +1,5 @@
 /*
-    Zeppelin, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Zeppelin, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
