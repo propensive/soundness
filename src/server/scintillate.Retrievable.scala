@@ -18,6 +18,7 @@ package scintillate
 
 import anticipation.*
 import gesticulate.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*

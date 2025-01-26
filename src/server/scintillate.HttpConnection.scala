@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import nettlesome.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*

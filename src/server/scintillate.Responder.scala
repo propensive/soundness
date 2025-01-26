@@ -17,7 +17,7 @@
 package scintillate
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 trait Responder:
   def sendBody(status: Int, body: Stream[Bytes]): Unit

@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import digression.*
 import parasite.*
+import proscenium.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*

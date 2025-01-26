@@ -19,7 +19,6 @@ package scintillate
 import anticipation.*
 import contingency.*
 import gossamer.*
-import rudiments.*
 import telekinesis.*
 import vacuous.*
 
