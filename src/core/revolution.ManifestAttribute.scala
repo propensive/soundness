@@ -17,7 +17,7 @@
 package revolution
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 abstract class ManifestAttribute[KeyType <: Label: ValueOf]():
   val key: Text = valueOf[KeyType].tt

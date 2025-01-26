@@ -22,6 +22,7 @@ import java.util.jar as juj
 import anticipation.*
 import denominative.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import symbolism.*
 import turbulence.*

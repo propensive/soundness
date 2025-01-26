@@ -18,7 +18,6 @@ package revolution
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 
 object VersionNumber:
