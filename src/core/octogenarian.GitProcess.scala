@@ -16,7 +16,7 @@
 
 package octogenarian
 
-import rudiments.*
+import proscenium.*
 
 class GitProcess[+ResultType](val progress: Stream[Progress])(closure: => ResultType):
   lazy val result: ResultType/*^{closure*}*/ = closure

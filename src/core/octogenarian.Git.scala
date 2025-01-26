@@ -29,6 +29,7 @@ import kaleidoscope.*
 import nettlesome.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
