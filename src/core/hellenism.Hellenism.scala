@@ -18,7 +18,6 @@ package hellenism
 
 import scala.quoted.*
 
-import rudiments.*
 import vacuous.*
 
 object Hellenism extends Hellenism2:

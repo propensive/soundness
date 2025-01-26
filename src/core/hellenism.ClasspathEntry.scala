@@ -20,7 +20,6 @@ import java.net as jn
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 
 sealed trait ClasspathEntry

@@ -21,7 +21,6 @@ import java.net as jn
 
 import anticipation.*
 import contingency.*
-import rudiments.*
 import serpentine.*
 import vacuous.*
 
