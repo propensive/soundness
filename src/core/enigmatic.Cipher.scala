@@ -17,7 +17,7 @@
 package enigmatic
 
 import anticipation.*
-import rudiments.*
+import proscenium.*
 
 trait Cipher:
   type Size <: Nat
