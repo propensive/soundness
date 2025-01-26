@@ -20,7 +20,6 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 
 case class TextualTreeStyle[LineType: Textual]
    (space: Text, last: Text, branch: Text, extender: Text)

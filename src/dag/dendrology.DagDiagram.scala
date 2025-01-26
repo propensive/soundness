@@ -23,7 +23,6 @@ import scala.reflect.*
 import acyclicity.*
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 
 import DagTile.*

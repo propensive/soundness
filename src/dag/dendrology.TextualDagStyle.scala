@@ -20,7 +20,6 @@ import language.experimental.captureChecking
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 
 import DagTile.*
 

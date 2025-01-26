@@ -18,7 +18,5 @@ package dendrology
 
 import language.experimental.captureChecking
 
-import rudiments.*
-
 trait TreeStyle[LineType]:
   def serialize(tiles: List[TreeTile], node: LineType): LineType

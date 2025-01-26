@@ -18,9 +18,9 @@ package dendrology
 
 import language.experimental.captureChecking
 
-import rudiments.*
 import anticipation.*
 import gossamer.*
+import proscenium.*
 import spectacular.*
 
 import TreeTile.*
