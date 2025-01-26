@@ -280,3 +280,6 @@
 [submodule "yossarian"]
 	path = yossarian
 	url = https://github.com/propensive/yossarian
+[submodule "proscenium"]
+	path = proscenium
+	url = https://github.com/propensive/proscenium
