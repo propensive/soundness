@@ -16,6 +16,7 @@
 
 package polaris
 
+import proscenium.*
 import rudiments.*
 
 object Unpackable:
