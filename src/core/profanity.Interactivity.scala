@@ -16,7 +16,7 @@
 
 package profanity
 
-import rudiments.*
+import proscenium.*
 
 object Interactivity:
   def apply[EventType](stream: Stream[EventType]): Interactivity[EventType] = () => stream

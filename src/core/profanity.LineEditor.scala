@@ -21,6 +21,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.{where as _, *}
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*

@@ -20,7 +20,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import parasite.*
-import rudiments.*
+import proscenium.*
 import turbulence.*
 
 import language.experimental.captureChecking

@@ -20,6 +20,7 @@ import anticipation.*, durationApi.javaLong
 import contingency.*
 import gossamer.*
 import parasite.*
+import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

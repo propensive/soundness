@@ -20,7 +20,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.{where as _, *}
-import rudiments.*
 import vacuous.*
 
 case class SelectMenu[ItemType](options: List[ItemType], current: ItemType)

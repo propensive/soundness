@@ -18,7 +18,7 @@ package profanity
 
 import language.experimental.captureChecking
 
-import rudiments.*
+import proscenium.*
 
 trait Keyboard:
   type Keypress
