@@ -18,7 +18,7 @@ package xylophone
 
 import anticipation.*
 import contingency.*
-import rudiments.*
+import proscenium.*
 import spectacular.*
 import wisteria.*
 

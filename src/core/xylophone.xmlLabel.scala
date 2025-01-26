@@ -16,6 +16,6 @@
 
 package xylophone
 
-import rudiments.*
+import proscenium.*
 
 case class xmlLabel(name: String) extends StaticAnnotation

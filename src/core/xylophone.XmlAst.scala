@@ -18,7 +18,6 @@ package xylophone
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import spectacular.*
 
 object XmlAst:
