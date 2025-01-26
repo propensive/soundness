@@ -758,6 +758,10 @@ object prepositional extends SoundnessModule {
   object core extends SoundnessSubModule
 }
 
+object proscenium extends SoundnessModule {
+  object core extends SoundnessSubModule
+}
+
 object probably extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, chiaroscuro.core, ambience.core, turbulence.core, eucalyptus.core, coverage)
@@ -835,7 +839,8 @@ object rudiments extends SoundnessModule {
       anticipation.codec,
       fulminate.core,
       vacuous.core,
-      denominative.core
+      denominative.core,
+      proscenium.core
     )
   }
 
