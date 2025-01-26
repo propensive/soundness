@@ -17,6 +17,7 @@
 package feudalism
 
 import fulminate.*
+import proscenium.*
 import rudiments.*
 
 import language.experimental.captureChecking
