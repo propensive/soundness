@@ -24,6 +24,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import prepositional.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
