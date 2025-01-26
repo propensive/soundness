@@ -23,6 +23,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.skip
 import imperial.*
 import probably.*
+import proscenium.*
 import rudiments.*
 import serpentine.*
 import turbulence.*

@@ -18,7 +18,7 @@ package zeppelin
 
 import anticipation.*
 import prepositional.*
-import rudiments.*
+import proscenium.*
 import serpentine.*
 import turbulence.*
 
