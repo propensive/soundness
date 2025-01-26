@@ -353,7 +353,7 @@ extension (stream: Stream[Bytes])
           offset += count
           count
 
-def spool[ItemType](using DummyImplicit)[ResultType](lambda: Spool[ItemType] => ResultType)
+def spool[ItemType](using erased Void)[ResultType](lambda: Spool[ItemType] => ResultType)
 :     ResultType =
   val spool: Spool[ItemType] = Spool()
   try lambda(spool) finally spool.stop()
