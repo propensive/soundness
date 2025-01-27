@@ -55,7 +55,7 @@ trait SoundnessSubModule extends BaseScalaModule {
 
 trait ProbablyTestModule extends SoundnessSubModule {
   def finalMainClass = (millSourcePath / ".." / "..").last + ".Tests"
-  def moduleDeps = Seq(probably.cli)
+  def moduleDeps: Seq[ScalaModule] = Seq(probably.cli)
 
   def compile = Task {
     larceny.plugin.assembly()
@@ -63,7 +63,7 @@ trait ProbablyTestModule extends SoundnessSubModule {
   }
 
   def scalacOptions = settings.scalaOptions ++ Seq(
-    "-Xplugin", 
+    "-Xplugin",
     (larceny.plugin.assembly().path).toString()
   )
 }
@@ -140,7 +140,9 @@ object abacist extends SoundnessModule {
     def moduleDeps = Seq(quantitative.units)
   }
 
-  object test extends SoundnessSubModule
+  object test extends SoundnessSubModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object acyclicity extends SoundnessModule {
@@ -148,7 +150,9 @@ object acyclicity extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object adversaria extends SoundnessModule {
@@ -156,7 +160,9 @@ object adversaria extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object ambience extends SoundnessModule {
@@ -164,7 +170,9 @@ object ambience extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object anthology extends SoundnessModule {
@@ -179,6 +187,10 @@ object anthology extends SoundnessModule {
 
   object `java` extends SoundnessSubModule {
     def moduleDeps = Seq(galilei.core, ambience.core, core, anticipation.log)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, `scala`, `java`, core)
   }
 }
 
@@ -246,7 +258,9 @@ object aviation extends SoundnessModule {
     def moduleDeps = Seq(quantitative.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object baroque extends SoundnessModule {
@@ -254,7 +268,9 @@ object baroque extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, quantitative.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object burdock extends SoundnessModule {
@@ -273,7 +289,9 @@ object caesura extends SoundnessModule {
     def moduleDeps = Seq(turbulence.core, escritoire.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object camouflage extends SoundnessModule {
@@ -281,7 +299,9 @@ object camouflage extends SoundnessModule {
     def moduleDeps = Seq(parasite.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object capricious extends SoundnessModule {
@@ -289,7 +309,9 @@ object capricious extends SoundnessModule {
     def moduleDeps = Seq(wisteria.core, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object cardinality extends SoundnessModule {
@@ -297,7 +319,9 @@ object cardinality extends SoundnessModule {
     def moduleDeps = Seq(fulminate.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object cataclysm extends SoundnessModule {
@@ -305,7 +329,9 @@ object cataclysm extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object cellulose extends SoundnessModule {
@@ -313,7 +339,9 @@ object cellulose extends SoundnessModule {
     def moduleDeps = Seq(eucalyptus.core, chiaroscuro.core, kaleidoscope.core, polyvinyl.core, anticipation.transport)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object charisma extends SoundnessModule {
@@ -321,7 +349,9 @@ object charisma extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, hieroglyph.core, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object chiaroscuro extends SoundnessModule {
@@ -329,7 +359,9 @@ object chiaroscuro extends SoundnessModule {
     def moduleDeps = Seq(escapade.core, dendrology.tree, escritoire.core, dissonance.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object coaxial extends SoundnessModule {
@@ -337,7 +369,9 @@ object coaxial extends SoundnessModule {
     def moduleDeps = Seq(galilei.core, nettlesome.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object contextual extends SoundnessModule {
@@ -345,7 +379,9 @@ object contextual extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object contingency extends SoundnessModule {
@@ -353,7 +389,9 @@ object contingency extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object cosmopolite extends SoundnessModule {
@@ -361,7 +399,9 @@ object cosmopolite extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object dendrology extends SoundnessModule {
@@ -373,7 +413,9 @@ object dendrology extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, acyclicity.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, tree, dag)
+  }
 }
 
 object denominative extends SoundnessModule {
@@ -387,7 +429,9 @@ object digression extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core, contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object dissonance extends SoundnessModule {
@@ -395,7 +439,9 @@ object dissonance extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core, contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object diuretic extends SoundnessModule {
@@ -403,7 +449,9 @@ object diuretic extends SoundnessModule {
     def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object enigmatic extends SoundnessModule {
@@ -411,7 +459,9 @@ object enigmatic extends SoundnessModule {
     def moduleDeps = Seq(gastronomy.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object escapade extends SoundnessModule {
@@ -419,7 +469,9 @@ object escapade extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, turbulence.core, anticipation.url, iridescence.core, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object escritoire extends SoundnessModule {
@@ -427,7 +479,9 @@ object escritoire extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object ethereal extends SoundnessModule {
@@ -435,7 +489,9 @@ object ethereal extends SoundnessModule {
     def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object eucalyptus extends SoundnessModule {
@@ -448,6 +504,10 @@ object eucalyptus extends SoundnessModule {
 
   object ansi extends SoundnessSubModule {
     def moduleDeps = Seq(escapade.core, core, iridescence.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, ansi, core, syslog)
   }
 }
 
@@ -464,7 +524,9 @@ object exoskeleton extends SoundnessModule {
     def moduleDeps = Seq(core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, args, core, completions)
+  }
 }
 
 object feudalism extends SoundnessModule {
@@ -472,7 +534,9 @@ object feudalism extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object fulminate extends SoundnessModule {
@@ -489,7 +553,9 @@ object fulminate extends SoundnessModule {
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object galilei extends SoundnessModule {
@@ -497,7 +563,9 @@ object galilei extends SoundnessModule {
     def moduleDeps = Seq(serpentine.core, guillotine.core, nomenclature.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object gastronomy extends SoundnessModule {
@@ -505,7 +573,9 @@ object gastronomy extends SoundnessModule {
     def moduleDeps = Seq(monotonous.core, turbulence.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object geodesy extends SoundnessModule {
@@ -513,18 +583,19 @@ object geodesy extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object gesticulate extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core)
   }
-  object magic extends SoundnessSubModule {
-    def moduleDeps = Seq(core)
-  }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object gossamer extends SoundnessModule {
@@ -532,7 +603,9 @@ object gossamer extends SoundnessModule {
     def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object guillotine extends SoundnessModule {
@@ -540,7 +613,9 @@ object guillotine extends SoundnessModule {
     def moduleDeps = Seq(contextual.core, anticipation.log, contingency.core, turbulence.core, gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object hallucination extends SoundnessModule {
@@ -548,7 +623,9 @@ object hallucination extends SoundnessModule {
     def moduleDeps = Seq(escapade.core, gesticulate.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object harlequin extends SoundnessModule {
@@ -557,7 +634,9 @@ object harlequin extends SoundnessModule {
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object hellenism extends SoundnessModule {
@@ -565,7 +644,9 @@ object hellenism extends SoundnessModule {
     def moduleDeps = Seq(anticipation.url, ambience.core, galilei.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object honeycomb extends SoundnessModule {
@@ -573,7 +654,9 @@ object honeycomb extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, anticipation.html, anticipation.css, anticipation.path, anticipation.url, gesticulate.core, xylophone.core, serpentine.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object hieroglyph extends SoundnessModule {
@@ -581,7 +664,9 @@ object hieroglyph extends SoundnessModule {
     def moduleDeps = Seq(kaleidoscope.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object hyperbole extends SoundnessModule {
@@ -590,7 +675,9 @@ object hyperbole extends SoundnessModule {
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object hypotenuse extends SoundnessModule {
@@ -598,7 +685,9 @@ object hypotenuse extends SoundnessModule {
     def moduleDeps = Seq(cardinality.core, anticipation.opaque, contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object imperial extends SoundnessModule {
@@ -606,7 +695,9 @@ object imperial extends SoundnessModule {
     def moduleDeps = Seq(anticipation.path, digression.core, ambience.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object inimitable extends SoundnessModule {
@@ -614,7 +705,9 @@ object inimitable extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core, contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object iridescence extends SoundnessModule {
@@ -622,7 +715,9 @@ object iridescence extends SoundnessModule {
     def moduleDeps = Seq(contextual.core, anticipation.color, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object jacinta extends SoundnessModule {
@@ -630,7 +725,9 @@ object jacinta extends SoundnessModule {
     def moduleDeps = Seq(merino.core, gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object kaleidoscope extends SoundnessModule {
@@ -638,7 +735,9 @@ object kaleidoscope extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core, contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object larceny extends SoundnessModule {
@@ -657,7 +756,9 @@ object mercator extends SoundnessModule {
     def moduleDeps = Seq(fulminate.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object merino extends SoundnessModule {
@@ -665,7 +766,9 @@ object merino extends SoundnessModule {
     def moduleDeps = Seq(turbulence.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object metamorphose extends SoundnessModule {
@@ -673,7 +776,9 @@ object metamorphose extends SoundnessModule {
     def moduleDeps = Seq(contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object monotonous extends SoundnessModule {
@@ -681,7 +786,9 @@ object monotonous extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, hypotenuse.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object mosquito extends SoundnessModule {
@@ -689,7 +796,9 @@ object mosquito extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object nettlesome extends SoundnessModule {
@@ -700,7 +809,9 @@ object nettlesome extends SoundnessModule {
     def moduleDeps = Seq(escapade.core, serpentine.core, anticipation.html, core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, url)
+  }
 }
 
 object nomenclature extends SoundnessModule {
@@ -708,7 +819,9 @@ object nomenclature extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object octogenarian extends SoundnessModule {
@@ -716,7 +829,9 @@ object octogenarian extends SoundnessModule {
     def moduleDeps = Seq(guillotine.core, galilei.core, ambience.core, gastronomy.core, nettlesome.core, enigmatic.core, anticipation.url)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object panopticon extends SoundnessModule {
@@ -724,7 +839,9 @@ object panopticon extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object parasite extends SoundnessModule {
@@ -732,7 +849,9 @@ object parasite extends SoundnessModule {
     def moduleDeps = Seq(digression.core, anticipation.time, feudalism.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object phoenicia extends SoundnessModule {
@@ -740,7 +859,9 @@ object phoenicia extends SoundnessModule {
     def moduleDeps = Seq(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object plutocrat extends SoundnessModule {
@@ -748,7 +869,9 @@ object plutocrat extends SoundnessModule {
     def moduleDeps = Seq(anticipation.opaque, hypotenuse.core, gossamer.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object polaris extends SoundnessModule {
@@ -756,7 +879,9 @@ object polaris extends SoundnessModule {
     def moduleDeps = Seq(hypotenuse.core, wisteria.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object polyvinyl extends SoundnessModule {
@@ -764,7 +889,9 @@ object polyvinyl extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object prepositional extends SoundnessModule {
@@ -795,7 +922,9 @@ object profanity extends SoundnessModule {
     def moduleDeps = Seq(eucalyptus.core, diuretic.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object punctuation extends SoundnessModule {
@@ -817,7 +946,9 @@ object punctuation extends SoundnessModule {
     def moduleDeps = Seq(core, honeycomb.core, escapade.core, harlequin.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, html, ansi)
+  }
 }
 
 object quantitative extends SoundnessModule {
@@ -828,7 +959,9 @@ object quantitative extends SoundnessModule {
     def moduleDeps = Seq(core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, units)
+  }
 }
 
 object revolution extends SoundnessModule {
@@ -836,7 +969,9 @@ object revolution extends SoundnessModule {
     def moduleDeps = Seq(serpentine.core, turbulence.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object rudiments extends SoundnessModule {
@@ -857,7 +992,9 @@ object rudiments extends SoundnessModule {
     )
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object savagery extends SoundnessModule {
@@ -865,7 +1002,9 @@ object savagery extends SoundnessModule {
     def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object scintillate extends SoundnessModule {
@@ -878,7 +1017,9 @@ object scintillate extends SoundnessModule {
     def ivyDeps = Agg(ivy"jakarta.servlet:jakarta.servlet-api:6.0.0")
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, server, servlet)
+  }
 }
 
 object sedentary extends SoundnessModule {
@@ -886,7 +1027,9 @@ object sedentary extends SoundnessModule {
     def moduleDeps = Seq(probably.core, diuretic.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object serpentine extends SoundnessModule {
@@ -894,7 +1037,9 @@ object serpentine extends SoundnessModule {
     def moduleDeps = Seq(gossamer.core, nomenclature.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object spectacular extends SoundnessModule {
@@ -902,7 +1047,9 @@ object spectacular extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core, inimitable.core, contingency.core, wisteria.core, digression.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object superlunary extends SoundnessModule {
@@ -911,7 +1058,9 @@ object superlunary extends SoundnessModule {
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object surveillance extends SoundnessModule {
@@ -919,7 +1068,9 @@ object surveillance extends SoundnessModule {
     def moduleDeps = Seq(anticipation.path, eucalyptus.core, feudalism.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object symbolism extends SoundnessModule {
@@ -927,7 +1078,9 @@ object symbolism extends SoundnessModule {
     def moduleDeps = Seq(prepositional.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object tarantula extends SoundnessModule {
@@ -935,7 +1088,9 @@ object tarantula extends SoundnessModule {
     def moduleDeps = Seq(jacinta.core, telekinesis.core, guillotine.core, cataclysm.core, honeycomb.core, hallucination.core, diuretic.core, eucalyptus.core, gastronomy.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object telekinesis extends SoundnessModule {
@@ -943,7 +1098,11 @@ object telekinesis extends SoundnessModule {
     def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule { {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object turbulence extends SoundnessModule {
@@ -951,7 +1110,9 @@ object turbulence extends SoundnessModule {
     def moduleDeps = Seq(hieroglyph.core, parasite.core, capricious.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object typonym extends SoundnessModule {
@@ -959,7 +1120,9 @@ object typonym extends SoundnessModule {
     def moduleDeps = Seq()
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object ulysses extends SoundnessModule {
@@ -986,7 +1149,9 @@ object vicarious extends SoundnessModule {
     def moduleDeps = Seq(rudiments.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object wisteria extends SoundnessModule {
@@ -994,7 +1159,9 @@ object wisteria extends SoundnessModule {
     def moduleDeps = Seq(contingency.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object xylophone extends SoundnessModule {
@@ -1002,7 +1169,9 @@ object xylophone extends SoundnessModule {
     def moduleDeps = Seq(wisteria.core, gossamer.core, turbulence.core, anticipation.transport)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object yossarian extends SoundnessModule {
@@ -1010,7 +1179,9 @@ object yossarian extends SoundnessModule {
     def moduleDeps = Seq(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object zeppelin extends SoundnessModule {
@@ -1018,7 +1189,9 @@ object zeppelin extends SoundnessModule {
     def moduleDeps = Seq(galilei.core)
   }
 
-  object test extends ProbablyTestModule
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object entry extends BaseScalaModule {
