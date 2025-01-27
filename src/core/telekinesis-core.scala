@@ -18,21 +18,11 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
-import nettlesome.*
 
 import language.dynamics
 
 given Realm = realm"telekinesis"
 
-extension [UrlType: Fetchable](url: UrlType)(using Online)
-  def fetch(method: HttpMethod)(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
-    Http.fetch(UrlType.url(url), (), method, headers)
-
-  def fetch(headers: RequestHeader.Value*): HttpResponse logs HttpEvent =
-    Http.fetch(UrlType.url(url), (), Get, headers)
-
-  def submit[BodyType: Postable]
-     (method: (HttpMethod { val payload: true }) = Post, headers: RequestHeader.Value*)
-     (body: BodyType)
-  :     HttpResponse logs HttpEvent =
-    Http.fetch[BodyType](UrlType.url(url), body, method, headers)
+extension [UrlType: Fetchable](url: UrlType)
+  def fetch: Fetch = Fetch(UrlType.url(url))
+  def submit: Submit = Submit(UrlType.url(url))

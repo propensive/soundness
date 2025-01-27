@@ -46,7 +46,7 @@ object Postable extends FallbackPostable:
   given bytes: Postable[Bytes] = Postable(media"application/octet-stream", Stream(_))
 
   given byteStream: Postable[Stream[Bytes]] =
-  Postable(media"application/octet-stream", _.map(identity(_)))
+    Postable(media"application/octet-stream", _.map(identity(_)))
 
   given dataStream: [ResponseType: GenericHttpResponseStream] => Tactic[MediaTypeError]
   =>    Postable[ResponseType] =

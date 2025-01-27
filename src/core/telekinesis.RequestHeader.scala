@@ -23,6 +23,8 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
+case class HttpRequestHeader(key: Text, value: Text)
+
 trait RequestHeader[LabelType <: Label]():
   def header: Text
 

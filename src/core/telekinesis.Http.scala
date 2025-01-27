@@ -31,7 +31,7 @@ import language.dynamics
 
 object Http:
   def fetch[PostType: Postable]
-     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[RequestHeader.Value])
+     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[HttpRequestHeader])
      (using Online)
   :     HttpResponse logs HttpEvent =
 
@@ -48,8 +48,8 @@ object Http:
         connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
         headers.each:
-          case RequestHeader.Value(key, value) =>
-            connection.setRequestProperty(key.header.s, value.s)
+          case HttpRequestHeader(key, value) =>
+            connection.setRequestProperty(key.s, value.s)
 
         if method == Post || method == Put then
           connection.setDoOutput(true)
