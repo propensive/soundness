@@ -1098,9 +1098,7 @@ object telekinesis extends SoundnessModule {
     def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url)
   }
 
-  object test extends ProbablyTestModule { {
-    def moduleDeps = Seq(probably.cli, core)
-  }
+  object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
 }
