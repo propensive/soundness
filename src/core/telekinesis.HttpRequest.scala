@@ -38,7 +38,7 @@ object HttpRequest:
         case err: StreamError  => t"[-/-]"
 
     val headers: Text =
-      request.headers.map: header =>
+      request.textHeaders.map: header =>
         t"${header.key}: ${header.value}"
 
       . join(t"\n          ")
@@ -49,7 +49,8 @@ object HttpRequest:
     . join(t"\n          ")
 
     ListMap[Text, Text](
-      t"content"  -> safely(request.httpHeaders.contentType.prim.or(media"application/octet-stream").show).or(t"unrecognized"),
+      t"content"
+      -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show).or(t"?"),
       t"method"   -> request.method.show,
       t"query"    -> request.query.show,
       t"hostname" -> request.host.show,
@@ -60,12 +61,12 @@ object HttpRequest:
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
 case class HttpRequest
-   (method:  HttpMethod,
-    version: HttpVersion,
-    host:    Hostname,
-    target:  Text,
-    headers: List[HttpHeader],
-    body:    Stream[Bytes]):
+   (method:      Http.Method,
+    version:     HttpVersion,
+    host:        Hostname,
+    target:      Text,
+    textHeaders: List[HttpHeader],
+    body:        Stream[Bytes]):
 
   def serialize: Stream[Bytes] =
     import charEncoders.ascii
@@ -86,7 +87,7 @@ case class HttpRequest
         case Stream(data) => append(t"Content-Length: ${data.length}")
         case _              => append(t"Transfer-Encoding: chunked")
 
-      headers.map: parameter =>
+      textHeaders.map: parameter =>
         newline()
         append(parameter.key)
         append(t": ")
@@ -116,7 +117,7 @@ case class HttpRequest
       case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
 
     . to(Map) ++ method.match
-      case Post | Put =>
+      case Http.Post | Http.Put =>
         contentType.or(media"application/x-www-form-urlencoded").base.show match
           case t"multipart/form-data" =>
             mend:
@@ -141,26 +142,20 @@ case class HttpRequest
 
       case _ => Map()
 
-  object httpHeaders extends Dynamic:
+  object headers extends Dynamic:
     def selectDynamic(name: Label)
        (using capitate: name.type is Capitate, decoder: Decoder[capitate.Subject])
     :     List[capitate.Subject] =
       val name2 = name.tt.uncamel.kebab.lower
-      headers.filter(_.key.lower == name2).map(_.value.decode)
+      textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
   // lazy val length: Int raises StreamError =
   //   try throwErrors:
-  //     httpHeaders.contentLength.headOption.getOrElse:
+  //     header.contentLength.headOption.getOrElse:
   //       body.stream.map(_.length).sum
   //   catch case err: NumberError => abort(StreamError(0.b))
 
-  lazy val contentType: Optional[MediaType] = safely(httpHeaders.contentType.prim).or:
-    media"application/octet-stream"
+  lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
-  // lazy val cookies: Map[Text, Text] =
-  //   httpHeaders.cookie.map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>
-  //     cookie.cut(t"=", 2) match
-  //     case List(key, value) => List((key.urlDecode, value.urlDecode))
-  //     case _                => Nil
-
-  //   . to(Map)
+  lazy val textCookies: Map[Text, Text] =
+    safely(headers.cookie.bi.map(_.name -> _.value)).or(Nil).to(Map)

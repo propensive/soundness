@@ -17,8 +17,10 @@
 package telekinesis
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
+import kaleidoscope.*
 import monotonous.*
 import spectacular.*
 
@@ -36,6 +38,25 @@ object Auth:
     case ScramSha1(text)           => t"SCRAM-SHA-1 $text"
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
+
+  given decoder: Tactic[AuthError] => Decoder[Auth] = value =>
+    value match
+      case r"Bearer $token(.*)"        => Bearer(token)
+      case r"Digest $digest(.*)"       => Digest(digest)
+      case r"HOBA $value(.*)"          => Hoba(value)
+      case r"Mutual $value(.*)"        => Mutual(value)
+      case r"Negotiate $value(.*)"     => Negotiate(value)
+      case r"OAuth $value(.*)"         => OAuth(value)
+      case r"SCRAM-SHA-1 $value(.*)"   => ScramSha1(value)
+      case r"SCRAM-SHA-256 $value(.*)" => ScramSha256(value)
+      case r"vapid $value(.*)"         => Vapid(value)
+
+      case r"Basic $username(.*):$password(.*)" =>
+        safely(Basic(username.deserialize[Base64].utf8, password.deserialize[Base64].utf8)).lest:
+          AuthError(value)
+
+      case value =>
+        abort(AuthError(value))
 
   given ("authorization" is GenericHttpRequestParam[Auth]) = _.show
 

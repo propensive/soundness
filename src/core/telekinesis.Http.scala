@@ -17,6 +17,7 @@
 package telekinesis
 
 import anticipation.*
+import fulminate.*
 import gesticulate.*
 import gossamer.*
 import nettlesome.*
@@ -30,8 +31,47 @@ import java.io.*
 import language.dynamics
 
 object Http:
+  object Method:
+    given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
+      def name: Text = t"formmethod"
+      def serialize(method: Method): Text = method.show
+
+    given method: ("method" is GenericHtmlAttribute[Method]):
+      def name: Text = t"method"
+      def serialize(method: Method): Text = method.show
+
+    given communicable: Method is Communicable = method => Message(method.show.upper)
+
+    given Method is Showable =
+      case method    => method.toString.tt.upper
+
+    given Decoder[Method] = _.upper match
+      case t"HEAD"    => Http.Head
+      case t"POST"    => Http.Post
+      case t"PUT"     => Http.Put
+      case t"DELETE"  => Http.Delete
+      case t"CONNECT" => Http.Connect
+      case t"OPTIONS" => Http.Options
+      case t"TRACE"   => Http.Trace
+      case t"PATCH"   => Http.Patch
+      case t"GET"     => Http.Get
+      case _          => Http.Get
+
+  sealed trait Method(tracked val payload: Boolean):
+    def unapply(request: HttpRequest): Boolean = request.method == this
+
+  case object Get extends Method(false)
+  case object Head extends Method(false)
+  case object Post extends Method(true)
+  case object Put extends Method(true)
+  case object Delete extends Method(false)
+  case object Connect extends Method(false)
+  case object Options extends Method(false)
+  case object Trace extends Method(false)
+  case object Patch extends Method(false)
+
   def request[PostType: Postable]
-     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[HttpHeader])
+     (url: HttpUrl, content: PostType, method: Method, headers: Seq[HttpHeader])
      (using Online)
   :     HttpResponse logs HttpEvent =
 

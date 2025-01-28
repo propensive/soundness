@@ -29,10 +29,10 @@ import vacuous.*
 object Telekinesis:
   def expand
      (todo:   Seq[Expr[Any]],
-      method: Optional[Expr[HttpMethod]] = Unset,
+      method: Optional[Expr[Http.Method]] = Unset,
       done:   List[Expr[HttpHeader]]     = Nil)
      (using Quotes)
-  :     (Optional[Expr[HttpMethod]], Expr[Seq[HttpHeader]]) =
+  :     (Optional[Expr[Http.Method]], Expr[Seq[HttpHeader]]) =
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
@@ -51,11 +51,11 @@ object Telekinesis:
               expand(tail, method, header :: done)
 
     todo.absolve match
-      case '{ $method2: HttpMethod } +: tail =>
+      case '{ $method2: Http.Method } +: tail =>
         if method.present then halt(m"the request method can only be specified once")
         expand(tail, method2, done)
 
-      case '{ ("", $method2: HttpMethod) } +: tail =>
+      case '{ ("", $method2: Http.Method) } +: tail =>
         if method.present then halt(m"the request method can only be specified once")
         expand(tail, method2, done)
 
@@ -93,8 +93,8 @@ object Telekinesis:
         val (method0, headers) = expand(exprs)
 
         val method = method0 match
-          case Unset                    => '{Post}
-          case method: Expr[HttpMethod] => method
+          case Unset                    => '{Http.Post}
+          case method: Expr[Http.Method] => method
 
         '{  given Online = $online
             given Postable[PayloadType] = $postable
@@ -114,8 +114,8 @@ object Telekinesis:
         val (method0, headers) = expand(exprs)
 
         val method = method0 match
-          case Unset                    => '{Get}
-          case method: Expr[HttpMethod] => method
+          case Unset                    => '{Http.Get}
+          case method: Expr[Http.Method] => method
 
         '{  given Online = $online
             given HttpEvent is Loggable = $loggable

@@ -17,8 +17,11 @@
 package telekinesis
 
 import anticipation.*
+import denominative.*
 import hieroglyph.*
 import gesticulate.*
+import gossamer.*
+import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -28,7 +31,8 @@ object Capitate:
   given contentEncoding: [EncodingType <: Encoding]
   =>    ("contentEncoding" is Capitate of EncodingType) = _.name
 
-  given accept: ("accept" is Capitate of MediaType) = _.basic
+  given accept: ("accept" is Capitate of MediaType) = _.show
+  given accept2: ("accept" is Capitate of List[MediaType]) = _.map(_.show).join(t",")
 
   given authorization: ("authorization" is Capitate of Auth) = _.show
   given cacheControl: ("cacheControl" is Capitate of Text) = identity(_)
@@ -36,27 +40,31 @@ object Capitate:
   given contentMd5: ("contentMd5" is Capitate of Text) = identity(_)
   given contentType: ("contentType" is Capitate of MediaType) = _.basic
   given contentLength: ("contentLength" is Capitate of Memory) = _.long.toString.tt
+  given cookie: ("cookie" is Capitate of Cookie.Value) = _.show
   given date: ("date" is Capitate of Text) = identity(_)
   given expect: ("expect" is Capitate of Text) = identity(_)
   given forwarded: ("forwarded" is Capitate of Text) = identity(_)
   given from: ("from" is Capitate of Text) = identity(_)
-  given host: ("host" is Capitate of Text) = identity(_)
+  given host: ("host" is Capitate of Hostname) = _.show
   given http2Settings: ("http2Settings" is Capitate of Text) = identity(_)
   given ifMatch: ("ifMatch" is Capitate of Text) = identity(_)
   given ifModifiedSince: ("ifModifiedSince" is Capitate of Text) = identity(_)
-  given ifNoneMatch: ("ifNonMatch" is Capitate of Text) = identity(_)
+  given ifNoneMatch: ("ifNoneMatch" is Capitate of Text) = identity(_)
   given ifRange: ("ifRange" is Capitate of Text) = identity(_)
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Capitate of Text) = identity(_)
   given maxForwards: ("maxForwards" is Capitate of Int) = _.toString.tt
-  given origin: ("origin" is Capitate of Text) = identity(_)
+  given origin: [UrlType: GenericUrl] => ("origin" is Capitate of UrlType) = UrlType.text(_)
   given pragma: ("pragma" is Capitate of Text) = identity(_)
   given prefer: ("prefer" is Capitate of Text) = identity(_)
   given proxyAuthorization: ("proxyAuthorization" is Capitate of Text) = identity(_)
-  given range: ("range" is Capitate of Text) = identity(_)
+
+  given range: ("range" is Capitate of Interval) =
+    interval => t"bytes=${interval.start.n0}-${interval.end.n0}"
+
   given referer: ("referer" is Capitate of Text) = identity(_)
   given te: ("te" is Capitate of Text) = identity(_)
   given trailer: ("trailer" is Capitate of Text) = identity(_)
-  given transferEncoding: ("transferEncoding" is Capitate of Text) = identity(_)
+  given transferEncoding: ("transferEncoding" is Capitate of TransferEncoding) = _.encode
   given userAgent: ("userAgent" is Capitate of Text) = identity(_)
   given upgrade: ("upgrade" is Capitate of Text) = identity(_)
   given via: ("via" is Capitate of Text) = identity(_)
