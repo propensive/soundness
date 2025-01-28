@@ -30,6 +30,8 @@ import java.io.*
 
 import language.dynamics
 
+erased trait Http
+
 object Http:
   object Method:
     given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
