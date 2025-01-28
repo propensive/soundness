@@ -17,7 +17,6 @@
 package telekinesis
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
 import nettlesome.*
@@ -68,10 +67,11 @@ object Cookie:
     given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
       response.copy(headers = (t"set-cookie", cookie.show) :: response.headers)
 
-    given Tactic[CookieError] => Decoder[Cookie.Value] = value =>
-      value.cut(t"=", 2) match
-        case List(key, value) => Cookie.Value(key.urlDecode, value.urlDecode)
-        case _                => abort(CookieError(value))
+    given Decoder[List[Cookie.Value]] = value =>
+      value.cut(t"; ").flatMap:
+        _.cut(t"=", 2) match
+          case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
+          case _                => Nil
 
 
   case class Value

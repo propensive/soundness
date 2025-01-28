@@ -158,4 +158,6 @@ case class HttpRequest
   lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
   lazy val textCookies: Map[Text, Text] =
-    safely(headers.cookie.bi.map(_.name -> _.value)).or(Nil).to(Map)
+    headers.cookie.flatMap: cookie =>
+      cookie.bi.map(_.name -> _.value)
+    . to(Map)

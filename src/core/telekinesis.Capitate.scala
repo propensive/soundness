@@ -40,7 +40,7 @@ object Capitate:
   given contentMd5: ("contentMd5" is Capitate of Text) = identity(_)
   given contentType: ("contentType" is Capitate of MediaType) = _.basic
   given contentLength: ("contentLength" is Capitate of Memory) = _.long.toString.tt
-  given cookie: ("cookie" is Capitate of Cookie.Value) = _.show
+  given cookie: ("cookie" is Capitate of List[Cookie.Value]) = _.map(_.show).join(t"; ")
   given date: ("date" is Capitate of Text) = identity(_)
   given expect: ("expect" is Capitate of Text) = identity(_)
   given forwarded: ("forwarded" is Capitate of Text) = identity(_)
