@@ -35,7 +35,7 @@ object Decoder:
   given fqcn: Tactic[FqcnError] => Decoder[Fqcn] = Fqcn(_)
   given uuid: Tactic[UuidError] => Decoder[Uuid] = Uuid.parse(_)
 
-  given byte: Decoder[Byte] raises NumberError = text =>
+  given byte: Tactic[NumberError] => Decoder[Byte] = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Byte), 0)
 
