@@ -38,8 +38,8 @@ object Quantitative extends Quantitative2:
     def underlying: Double = quantity
 
     inline def value: Double = compiletime.summonFrom:
-      case unitsOffset: UnitsOffset[UnitsType] => quantity - unitsOffset.value()
-      case _                                   => quantity
+      case unitsOffset: UnitsOffset[UnitsType] => (quantity - unitsOffset.value()): Double
+      case _                                   => quantity: Double
 
   object MetricUnit:
     erased given underlying: [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] =
