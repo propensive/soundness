@@ -35,7 +35,7 @@ def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.text
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
    (using connection: HttpConnection)
 :     HttpResponse raises AuthError =
-  connection.request.headers.authorization match
+  connection.headers.authorization match
     case List(Auth.Basic(username, password)) =>
       if validate(username, password) then response
       else HttpResponse(1.1, HttpStatus.Forbidden, Nil, Stream())
@@ -47,10 +47,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
        (1.1, HttpStatus.Unauthorized, List(ResponseHeader.WwwAuthenticate.show -> auth), Stream())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
-
-inline def request: HttpRequest = scala.compiletime.summonFrom:
-   case request: HttpRequest       => request
-   case connection: HttpConnection => connection.request
+inline def request: HttpRequest = compiletime.summonInline[HttpRequest]
 
 given realm: Realm = realm"scintillate"
 

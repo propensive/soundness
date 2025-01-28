@@ -88,7 +88,14 @@ object HttpConnection:
       responseBody.flush()
       exchange.close()
 
-    HttpConnection(false, port, request, respond)
+    new HttpConnection(request, false, port, respond)
 
-case class HttpConnection
-   (secure: Boolean, port: Int, request: HttpRequest, respond: HttpResponse => Unit)
+class HttpConnection
+   (request: HttpRequest, val secure: Boolean, val port: Int, val respond: HttpResponse => Unit)
+extends HttpRequest
+   (request.method,
+    request.version,
+    request.host,
+    request.target,
+    request.textHeaders,
+    request.body)

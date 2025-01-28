@@ -75,7 +75,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
 
       out.close()
 
-    HttpConnection(false, request.getServerPort, httpRequest, respond)
+    new HttpConnection(httpRequest, false, request.getServerPort, respond)
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     unsafely:
