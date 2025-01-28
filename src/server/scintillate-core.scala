@@ -20,7 +20,6 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
-import monotonous.*, alphabets.base64.standard
 import nettlesome.*
 import parasite.*
 import prepositional.*
