@@ -44,9 +44,30 @@ object Tests extends Suite(t"Telekinesis tests"):
 
       . assert()
 
-      test(t"Fetch another URL"):
-        url"https://httpbin.org/post".submit(Post, enc"UTF-8", media"application/json")
+      test(t"Fetch another URL without header names"):
+        url"https://httpbin.org/post".submit(Post, enc"UTF-8", accept = media"application/json")
          (t"Hello world")
+
+        . tap: response =>
+          println(response)
+          unsafely:
+            println(response.as[Text])
+
+      . assert()
+
+      test(t"Fetch another URL with just a method"):
+        url"https://httpbin.org/put".submit(Put)
+         (t"Hello world")
+
+        . tap: response =>
+          println(response)
+          unsafely:
+            println(response.as[Text])
+
+      . assert()
+
+      test(t"Fetch another URL with defaults"):
+        url"https://httpbin.org/post".submit()(t"Hello world")
 
         . tap: response =>
           println(response)

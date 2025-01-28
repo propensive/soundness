@@ -39,7 +39,7 @@ object HttpRequest:
 
     val headers: Text =
       request.headers.map: header =>
-        t"${header.header}: ${header.value}"
+        t"${header.key}: ${header.value}"
 
       . join(t"\n          ")
 
@@ -49,7 +49,7 @@ object HttpRequest:
     . join(t"\n          ")
 
     ListMap[Text, Text](
-      t"content"  -> request.contentType.lay(t"application/octet-stream")(_.show),
+      t"content"  -> safely(request.httpHeaders.contentType.prim.or(media"application/octet-stream").show).or(t"unrecognized"),
       t"method"   -> request.method.show,
       t"query"    -> request.query.show,
       t"hostname" -> request.host.show,
@@ -64,7 +64,7 @@ case class HttpRequest
     version: HttpVersion,
     host:    Hostname,
     target:  Text,
-    headers: List[RequestHeader.Value],
+    headers: List[HttpHeader],
     body:    Stream[Bytes]):
 
   def serialize: Stream[Bytes] =
@@ -88,7 +88,7 @@ case class HttpRequest
 
       headers.map: parameter =>
         newline()
-        append(parameter.header.header)
+        append(parameter.key)
         append(t": ")
         append(parameter.value)
 
@@ -141,23 +141,26 @@ case class HttpRequest
 
       case _ => Map()
 
-  def header(header: RequestHeader[?]): List[RequestHeader.Value] =
-    headers.filter(_.header == header)
+  object httpHeaders extends Dynamic:
+    def selectDynamic(name: Label)
+       (using capitate: name.type is Capitate, decoder: Decoder[capitate.Subject])
+    :     List[capitate.Subject] =
+      val name2 = name.tt.uncamel.kebab.lower
+      headers.filter(_.key.lower == name2).map(_.value.decode)
 
-  lazy val length: Int raises StreamError =
-    try throwErrors:
-      header(RequestHeader.ContentLength).headOption.map(_.value.decode[Int]).getOrElse:
-        body.stream.map(_.length).sum
-    catch case err: NumberError => abort(StreamError(0.b))
+  // lazy val length: Int raises StreamError =
+  //   try throwErrors:
+  //     httpHeaders.contentLength.headOption.getOrElse:
+  //       body.stream.map(_.length).sum
+  //   catch case err: NumberError => abort(StreamError(0.b))
 
-  lazy val contentType: Optional[MediaType] =
-    headers.find(_.header == RequestHeader.ContentType).map(_.value).flatMap(MediaType.unapply(_))
-    . optional
+  lazy val contentType: Optional[MediaType] = safely(httpHeaders.contentType.prim).or:
+    media"application/octet-stream"
 
-  lazy val cookies: Map[Text, Text] =
-    header(RequestHeader.Cookie).map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>
-      cookie.cut(t"=", 2) match
-      case List(key, value) => List((key.urlDecode, value.urlDecode))
-      case _                => Nil
+  // lazy val cookies: Map[Text, Text] =
+  //   httpHeaders.cookie.map(_.value).flatMap(_.cut(t"; ")).flatMap: cookie =>
+  //     cookie.cut(t"=", 2) match
+  //     case List(key, value) => List((key.urlDecode, value.urlDecode))
+  //     case _                => Nil
 
-    . to(Map)
+  //   . to(Map)

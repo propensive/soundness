@@ -31,7 +31,7 @@ import language.dynamics
 
 object Http:
   def request[PostType: Postable]
-     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[HttpRequestHeader])
+     (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[HttpHeader])
      (using Online)
   :     HttpResponse logs HttpEvent =
 
@@ -43,12 +43,12 @@ object Http:
         connection.setRequestMethod(method.toString.show.upper.s)
 
         connection.setRequestProperty
-         (RequestHeader.ContentType.header.s, PostType.contentType.show.s)
+         (Capitate.contentType.key.s, PostType.contentType.show.s)
 
         connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
         headers.each:
-          case HttpRequestHeader(key, value) =>
+          case HttpHeader(key, value) =>
             connection.setRequestProperty(key.s, value.s)
 
         if method == Post || method == Put then

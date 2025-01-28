@@ -29,10 +29,10 @@ import vacuous.*
 object Telekinesis:
   def expand
      (todo:   Seq[Expr[Any]],
-      method: Optional[Expr[HttpMethod]]   = Unset,
-      done:   List[Expr[HttpRequestHeader]] = Nil)
+      method: Optional[Expr[HttpMethod]] = Unset,
+      done:   List[Expr[HttpHeader]]     = Nil)
      (using Quotes)
-  :     (Optional[Expr[HttpMethod]], Expr[Seq[HttpRequestHeader]]) =
+  :     (Optional[Expr[HttpMethod]], Expr[Seq[HttpHeader]]) =
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
@@ -46,7 +46,7 @@ object Telekinesis:
           TypeRepr.of[keyType].absolve match
             case ConstantType(StringConstant(key)) =>
               val header =
-                '{HttpRequestHeader(${Expr(key)}.tt.uncamel.snake, $capitate.encode($value))}
+                '{HttpHeader(${Expr(key)}.tt.uncamel.snake, $capitate.encode($value))}
 
               expand(tail, method, header :: done)
 
@@ -69,7 +69,7 @@ object Telekinesis:
           val typeName = TypeRepr.of[valueType].show
           halt(m"the header $name cannot take a value of type $typeName")
 
-        val header = '{HttpRequestHeader($key.tt.uncamel.snake, $capitate.encode($value))}
+        val header = '{HttpHeader($key.tt.uncamel.snake, $capitate.encode($value))}
         expand(tail, method, header :: done)
 
       case '{ $value: valueType } +: tail =>
