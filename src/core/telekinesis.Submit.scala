@@ -17,3 +17,8 @@ case class Submit(url: HttpUrl) extends Dynamic:
   :     HttpResponse =
 
     ${Telekinesis.submit[PayloadType]('this, 'headers, 'online, 'loggable, 'payload, 'postable)}
+
+  def apply[PayloadType: Postable](method: HttpMethod = Post)(payload: PayloadType)(using Online)
+  :     HttpResponse logs HttpEvent =
+
+    Http.request(url, payload, method, Nil)

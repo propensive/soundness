@@ -55,7 +55,10 @@ object Telekinesis:
           case Unset                    => '{Post}
           case method: Expr[HttpMethod] => method
 
-        '{Http.fetch($submit.url, $payload, $method, $headers)(using $postable, $online)(using $loggable)}
+        '{
+            Http.request($submit.url, $payload, $method, $headers)
+             (using $postable, $online)
+             (using $loggable)  }
 
   def fetch
      (fetch:    Expr[Fetch],
@@ -75,4 +78,4 @@ object Telekinesis:
 
         '{  given Online = $online
             given HttpEvent is Loggable = $loggable
-            Http.fetch($fetch.url, (), $method, $headers)  }
+            Http.request($fetch.url, (), $method, $headers)  }

@@ -30,7 +30,7 @@ import java.io.*
 import language.dynamics
 
 object Http:
-  def fetch[PostType: Postable]
+  def request[PostType: Postable]
      (url: HttpUrl, content: PostType, method: HttpMethod, headers: Seq[HttpRequestHeader])
      (using Online)
   :     HttpResponse logs HttpEvent =
