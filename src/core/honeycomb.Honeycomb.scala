@@ -28,9 +28,9 @@ object Honeycomb:
   given Realm = realm"honeycomb"
 
   def read[NameType <: Label: Type, ChildType <: Label: Type, ReturnType <: Label: Type]
-     (node:      Expr[Node[NameType]],
+     (node:       Expr[Node[NameType]],
       className:  Expr[String],
-      name:      Expr[NameType],
+      name:       Expr[NameType],
       attributes: Expr[Seq[(Label, Any)]])
      (using Quotes)
   :     Expr[StartTag[NameType, ReturnType]] =
@@ -39,7 +39,29 @@ object Honeycomb:
 
     def recur(exprs: Seq[Expr[(Label, Any)]])
     :     List[Expr[Optional[(String, Optional[Text])]]] =
+
       exprs match
+        case '{("", $value: valueType)} +: tail =>
+          val expr: Expr[HtmlAttribute[valueType]] =
+            Expr.summon[HtmlAttribute[valueType] onto NameType]
+            . orElse(Expr.summon[HtmlAttribute[valueType]])
+            . getOrElse:
+                val typeName = TypeRepr.of[valueType].show
+                halt(m"the attribute name cannot be uniquely determined from its type, $typeName")
+
+          val key: Text = expr.absolve match
+            case '{ type keyType <: Label
+                    $attribute: (HtmlAttribute[valueType] { type Self = keyType}) } =>
+              TypeRepr.of[keyType].absolve match
+                case ConstantType(StringConstant(key)) => key.tt
+
+
+          '{  $expr.convert($value) match
+                case HtmlAttribute.NotShown => Unset
+                case Unset                  => ($expr.rename.or(${Expr(key)}).s, Unset)
+                case attribute: Text        => ($expr.rename.or(${Expr(key)}).s, attribute)
+           } :: recur(tail)
+
         case '{type keyType <: Label; ($key: keyType, $value: valueType)} +: tail =>
           val attribute: String = key.value.get
 

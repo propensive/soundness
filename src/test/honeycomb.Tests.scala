@@ -21,6 +21,8 @@ import probably.*
 import rudiments.*
 import spectacular.*
 
+import html5.*
+
 object Tests extends Suite(t"Honeycomb Tests"):
   def run(): Unit =
     suite(t"Showing HTML"):

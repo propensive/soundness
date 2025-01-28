@@ -41,7 +41,7 @@ extends Node[NameType], Dynamic:
 
   type Content = ChildType
 
-  inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)
+  inline def applyDynamicNamed(method: String)(inline attributes: ("" | AttributeType, Any)*)
   :     StartTag[NameType, ChildType] =
 
     ${  Honeycomb.read[NameType, ChildType, ChildType]('this, 'method, 'labelString, 'attributes)  }
