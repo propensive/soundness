@@ -54,7 +54,7 @@ object Codl:
         line:     Int            = 0,
         col:      Int            = 0,
         children:  List[CodlNode] = Nil,
-        meta:     Optional[Meta] = Unset,
+        extra:     Optional[Extra] = Unset,
         schema:    CodlSchema     = CodlSchema.Free,
         params:    Int            = 0,
         multiline: Boolean        = false):
@@ -71,12 +71,12 @@ object Codl:
       def substitute(data: Data): Proto =
         copy(children = CodlNode(data) :: children, params = params + 1)
 
-      def setMeta(meta: Optional[Meta]): Proto = copy(meta = meta)
+      def setExtra(extra: Optional[Extra]): Proto = copy(extra = extra)
 
       def close: CodlNode =
-        key.lay(CodlNode(Unset, meta)):
+        key.lay(CodlNode(Unset, extra)):
           case key: Text =>
-            val meta2 = meta.let { m => m.copy(comments = m.comments.reverse) }
+            val extra2 = extra.let { m => m.copy(comments = m.comments.reverse) }
 
             val data = Data
                         (key,
@@ -84,7 +84,7 @@ object Codl:
                          Layout(params, multiline, col - margin),
                          schema)
 
-            val node = CodlNode(data, meta2)
+            val node = CodlNode(data, extra2)
 
             schema.requiredKeys.each: key =>
               if !node.data.let(_.has(key)).or(false) then raise:
@@ -136,7 +136,7 @@ object Codl:
 
             case _ =>
               go(focus = Proto
-                          (Unset, meta = focus.meta.or(if lines == 0 then Unset else Meta(lines))))
+                          (Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines))))
 
           case CodlToken.Indent =>
             if focus.key.absent then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))
@@ -155,10 +155,10 @@ object Codl:
 
               go(next #:: tail, focus = focus2, peers = rest, stack = stack2)
 
-          case CodlToken.Blank => focus.meta match
+          case CodlToken.Blank => focus.extra match
             case Unset            =>
               go(lines = lines + 1)
-            case Meta(l, _, _) =>
+            case Extra(l, _, _) =>
               val closed = focus.close
 
               go(focus = Proto(), peers = closed :: peers, lines = lines + 1)
@@ -167,8 +167,8 @@ object Codl:
             go(focus = focus.substitute(subs.head), subs = subs.tail)
 
           case CodlToken.Item(word, line, col, block) =>
-            val meta2: Optional[Meta] =
-              focus.meta.or(if lines == 0 then Unset else Meta(blank = lines))
+            val extra2: Optional[Extra] =
+              focus.extra.or(if lines == 0 then Unset else Extra(blank = lines))
 
             focus.key match
               case key: Text => focus.schema match
@@ -224,18 +224,18 @@ object Codl:
                 if fschema.unique && peers.exists(_.data.let(_.key) == word)
                 then raise(CodlError(line, col, word.length, DuplicateKey(word, word)))
 
-                go(focus = Proto(word, line, col, meta = meta2, schema = fschema,
+                go(focus = Proto(word, line, col, extra = extra2, schema = fschema,
                     multiline = block), lines = 0)
 
           case CodlToken.Comment(txt, line, col) => focus.key match
             case key: Text =>
-              go(focus = focus.setMeta(focus.meta.or(Meta()).copy(remark = txt, blank = lines)))
+              go(focus = focus.setExtra(focus.extra.or(Extra()).copy(remark = txt, blank = lines)))
 
             case _ =>
-              val meta = focus.meta.or(Meta())
+              val extra = focus.extra.or(Extra())
 
-              go(focus = Proto(line = line, col = col, meta = meta.copy(blank = lines, comments =
-                  txt :: meta.comments)))
+              go(focus = Proto(line = line, col = col, extra = extra.copy(blank = lines, comments =
+                  txt :: extra.comments)))
 
         case _ => stack match
           case Nil =>

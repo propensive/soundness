@@ -53,10 +53,10 @@ object CodlNode:
 
       Juxtaposition.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))
 
-case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) extends Dynamic:
+case class CodlNode(data: Optional[Data] = Unset, extra: Optional[Extra] = Unset) extends Dynamic:
   def key: Optional[Text] = data.let(_.key)
   def empty: Boolean = unsafely(data.absent || data.assume.children.isEmpty)
-  def blank: Boolean = data.absent && meta.absent
+  def blank: Boolean = data.absent && extra.absent
   def schema: Optional[CodlSchema] = data.let(_.schema)
   def layout: Optional[Layout] = data.let(_.layout)
   def id: Optional[Text] = data.let(_.id)
@@ -82,7 +82,7 @@ case class CodlNode(data: Optional[Data] = Unset, meta: Optional[Meta] = Unset) 
 
   def untyped: CodlNode =
     val data2 = data.let { data => Data(data.key, children = data.children.map(_.untyped)) }
-    CodlNode(data2, meta)
+    CodlNode(data2, extra)
 
   def uncommented: CodlNode =
     val data2 = data.let: data =>

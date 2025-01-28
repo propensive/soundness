@@ -83,7 +83,7 @@ extends Indexed:
 
     def cmp(x: CodlNode, y: CodlNode): Boolean =
       if x.uniqueId.absent || y.uniqueId.absent then
-        if x.data.absent || y.data.absent then x.meta == y.meta
+        if x.data.absent || y.data.absent then x.extra == y.extra
         else x.data == y.data
       else x.id == y.id
 

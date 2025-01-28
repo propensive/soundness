@@ -19,4 +19,4 @@ package cellulose
 import anticipation.*
 import vacuous.*
 
-case class Meta(blank: Int = 0, comments: List[Text] = Nil, remark: Optional[Text] = Unset)
+case class Extra(blank: Int = 0, comments: List[Text] = Nil, remark: Optional[Text] = Unset)

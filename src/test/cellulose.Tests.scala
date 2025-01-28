@@ -544,24 +544,24 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Data with remark"):
         read(t"root # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, Nil, t"remark"))))
 
       test(t"Data after comment"):
         read(t"# comment\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, List(t" comment"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment"), Unset))))
 
       test(t"Data after two comments"):
         read(t"# comment 1\n# comment 2\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Meta(0, List(t" comment 1", t" comment 2"), Unset))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root"), Extra(0, List(t" comment 1", t" comment 2"), Unset))))
 
       test(t"Comment on child"):
         read(t"root\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(0, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(0, List(t" comment"),
           Unset)))))))
 
       test(t"Comment and blank line on child"):
         read(t"root\n\n  # comment\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(1, List(t" comment"),
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, List(t" comment"),
           Unset)))))))
 
       test(t"Data with multiple parameters"):
@@ -570,30 +570,30 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Blank line before child"):
         read(t"root\n\n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(1, Nil)))))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(1, Nil)))))))
 
       test(t"Two blank lines before child"):
         read(t"root\n\n \n  child").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child", IArray()), Meta(2, Nil, Unset)))))))
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child", IArray()), Extra(2, Nil, Unset)))))))
 
       test(t"Data with multiple parameters, remark and comment"):
         read(t"# comment\nroot param1 param2 # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Meta(0,
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark"))))
 
       test(t"Data with multiple parameters, remark, comment and peer"):
         read(t"# comment\nroot param1 param2 # remark\npeer").untyped
-      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Meta(0,
+      .assert(_ == CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(t"param1")(), CodlNode(t"param2")())), Extra(0,
           List(t" comment"), t"remark")), CodlNode(t"peer")()))
 
       test(t"Comment on blank node"):
         read(t"# comment\n\nroot").untyped
-      .assert(_ == CodlDoc(CodlNode(Unset, Meta(0, List(t" comment"), Unset)), CodlNode(Data(t"root"), Meta(1,
+      .assert(_ == CodlDoc(CodlNode(Unset, Extra(0, List(t" comment"), Unset)), CodlNode(Data(t"root"), Extra(1,
           Nil, Unset))))
 
       test(t"Remark after blank line"):
         read(t"root\n\npeer # remark").untyped
-      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Data(t"peer"), Meta(0, Nil, t"remark"))))
+      .assert(_ == CodlDoc(CodlNode(t"root")(), CodlNode(Data(t"peer"), Extra(0, Nil, t"remark"))))
 
       test(t"Long item"):
         read(t"root\n    one two\n").wiped
@@ -986,23 +986,23 @@ object Tests extends Suite(t"CoDL tests"):
       .assert(_ == t"root child\n    Hello\n    World\n")
 
       test(t"Serialize a node and a child with comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" comment"))))))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" comment"))))))).write
       .assert(_ == t"root\n  # comment\n  child\n")
 
       test(t"Serialize a node and a child with multiline comment"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(comments = List(t" line 1", t" line 2"))))))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n  # line 1\n  # line 2\n  child\n")
 
       test(t"Serialize a node and a child with multiline comment and blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2, comments = List(t" line 1", t" line 2"))))))).write
       .assert(_ == t"root\n\n\n  # line 1\n  # line 2\n  child\n")
 
       test(t"Serialize a node and a child with blank lines"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(blank = 2)))))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(blank = 2)))))).write
       .assert(_ == t"root\n\n\n  child\n")
 
       test(t"Serialize a node and a child with a remark"):
-        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Meta(remark = t"some remark")))))).write
+        CodlDoc(CodlNode(Data(t"root", IArray(CodlNode(Data(t"child"), Extra(remark = t"some remark")))))).write
       .assert(_ == t"root\n  child # some remark\n")
 
     suite(t"Double-spacing tests"):
@@ -1142,10 +1142,10 @@ object Tests extends Suite(t"CoDL tests"):
         print(User(12, t"user@example.com", List(Privilege(t"read", true), Privilege(t"write", false))))
       .assert(_ == t"")
 
-    suite(t"Meta tests"):
+    suite(t"Extra tests"):
       test(t"Tabs are recorded"):
-        read(t"# some comment\nroot   param1    param2\n  child1 param3")().meta
-      .assert(_ == Meta())
+        read(t"# some comment\nroot   param1    param2\n  child1 param3")().extra
+      .assert(_ == Extra())
 
     // // suite(t"Record tests"):
 
