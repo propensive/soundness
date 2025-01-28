@@ -43,22 +43,20 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
 
-    val headers: List[RequestHeader.Value] =
+    val headers: List[HttpHeader] =
       request.getHeaderNames.nn.asScala.to(List).map: key =>
         key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
 
       . flatMap:
-          case (RequestHeader(header), values) => values.map(header(_))
-
-      . to(List)
+          case (key, values) => values.map(HttpHeader(key, _))
 
     val httpRequest = HttpRequest
-     (method  = request.getMethod.nn.show.decode[HttpMethod],
-      version = HttpVersion.parse(request.getProtocol.nn.tt),
-      host    = unsafely(Hostname.parse(request.getServerName.nn.tt)),
-      target  = target,
-      body    = streamBody(request),
-      headers = headers)
+     (method      = request.getMethod.nn.show.decode[Http.Method],
+      version     = HttpVersion.parse(request.getProtocol.nn.tt),
+      host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
+      target      = target,
+      body        = streamBody(request),
+      textHeaders = headers)
 
     def respond(response: HttpResponse): Unit =
       servletResponse.setStatus(response.status.code)

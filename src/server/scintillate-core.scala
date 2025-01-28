@@ -31,22 +31,15 @@ import spectacular.*
 import telekinesis.*
 import vacuous.*
 
-def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.cookies.at(key)
-
-def header(using request: HttpRequest)(header: RequestHeader[?]): Optional[List[Text]] =
-  request.header(header).map(_.value)
+def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.textCookies.at(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
    (using connection: HttpConnection)
-:     HttpResponse =
-  connection.request.header(RequestHeader.Authorization).map(_.value) match
-    case List(s"Basic $credentials") =>
-      safely(credentials.tt.deserialize[Base64].utf8.cut(t":").to(List)) match
-        case List(username: Text, password: Text) if validate(username, password) =>
-          response
-
-        case _ =>
-          HttpResponse(1.1, HttpStatus.Forbidden, Nil, Stream())
+:     HttpResponse raises AuthError =
+  connection.request.headers.authorization match
+    case List(Auth.Basic(username, password)) =>
+      if validate(username, password) then response
+      else HttpResponse(1.1, HttpStatus.Forbidden, Nil, Stream())
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""

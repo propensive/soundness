@@ -35,8 +35,7 @@ object Acceptable:
       case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
 
     . within:
-        given HttpRequest = request
-        val contentType = header(RequestHeader.ContentType).let(_.prim).let(Media.parse(_)).or:
+        val contentType = request.headers.contentType.prim.or:
           abort(MultipartError(MultipartError.Reason.MediaType))
 
         if contentType.base == media"multipart/form-data" then

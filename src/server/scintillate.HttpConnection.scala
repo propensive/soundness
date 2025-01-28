@@ -33,13 +33,13 @@ object HttpConnection:
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
-    val method = exchange.getRequestMethod.nn.show.decode[HttpMethod]
+    val method = exchange.getRequestMethod.nn.show.decode[Http.Method]
 
-    val headers: List[RequestHeader.Value] =
+    val headers: List[HttpHeader] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
         pair.absolve match
-          case (RequestHeader(header), values) => values.map: value =>
-            header(value.tt)
+          case (key, values) => values.map: value =>
+            HttpHeader(key, value.tt)
 
       . to(List)
 
@@ -59,12 +59,12 @@ object HttpConnection:
 
     val request =
       HttpRequest
-       (method  = method,
-        version = version,
-        host    = host,
-        target  = target,
-        body    = stream(),
-        headers = headers)
+       (method      = method,
+        version     = version,
+        host        = host,
+        target      = target,
+        body        = stream(),
+        textHeaders = headers)
 
     Log.fine(HttpServerEvent.Received(request))
 
