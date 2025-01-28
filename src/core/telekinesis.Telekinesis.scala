@@ -27,18 +27,40 @@ import proscenium.*
 import vacuous.*
 
 object Telekinesis:
-
   def expand
-     (todo:   Seq[Expr[(Label, Any)]],
+     (todo:   Seq[Expr[Any]],
       method: Optional[Expr[HttpMethod]]   = Unset,
       done:   List[Expr[HttpRequestHeader]] = Nil)
      (using Quotes)
   :     (Optional[Expr[HttpMethod]], Expr[Seq[HttpRequestHeader]]) =
     import quotes.reflect.*
 
-    todo match
-      case '{ ("", $method: HttpMethod) } +: tail =>
-        expand(tail, method, done)
+    def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
+      Expr.summon[Capitate of ValueType].getOrElse:
+        val typeName = TypeRepr.of[ValueType].show
+        halt(m"the type $typeName does not uniquely identify a particular HTTP header")
+
+      . absolve
+      . match
+        case '{ type keyType <: Label; $capitate: (Capitate { type Self = keyType }) } =>
+          TypeRepr.of[keyType].absolve match
+            case ConstantType(StringConstant(key)) =>
+              val header =
+                '{HttpRequestHeader(${Expr(key)}.tt.uncamel.snake, $capitate.encode($value))}
+
+              expand(tail, method, header :: done)
+
+    todo.absolve match
+      case '{ $method2: HttpMethod } +: tail =>
+        if method.present then halt(m"the request method can only be specified once")
+        expand(tail, method2, done)
+
+      case '{ ("", $method2: HttpMethod) } +: tail =>
+        if method.present then halt(m"the request method can only be specified once")
+        expand(tail, method2, done)
+
+      case '{ ("", $value: valueType) } +: tail =>
+        unnamed[valueType](value, tail)
 
       case '{ type keyType <: Label; ($key: keyType, $value: valueType) } +: tail =>
         val name: Text = key.value.get.tt.uncamel.map(_.capitalize).kebab
@@ -50,12 +72,15 @@ object Telekinesis:
         val header = '{HttpRequestHeader($key.tt.uncamel.snake, $capitate.encode($value))}
         expand(tail, method, header :: done)
 
-      case _ =>
+      case '{ $value: valueType } +: tail =>
+        unnamed[valueType](value, tail)
+
+      case Seq() =>
         (method, Expr.ofList(done.reverse))
 
   def submit[PayloadType: Type]
      (submit:   Expr[Submit],
-      headers:  Expr[Seq[(Label, Any)]],
+      headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       payload:  Expr[PayloadType],
@@ -71,14 +96,14 @@ object Telekinesis:
           case Unset                    => '{Post}
           case method: Expr[HttpMethod] => method
 
-        '{
-            Http.request($submit.url, $payload, $method, $headers)
-             (using $postable, $online)
-             (using $loggable)  }
+        '{  given Online = $online
+            given Postable[PayloadType] = $postable
+            given HttpEvent is Loggable = $loggable
+            Http.request($submit.url, $payload, $method, $headers)  }
 
   def fetch
      (fetch:    Expr[Fetch],
-      headers:  Expr[Seq[(Label, Any)]],
+      headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable])
      (using Quotes)

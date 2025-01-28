@@ -31,5 +31,8 @@ case class Fetch(url: HttpUrl) extends Dynamic:
 
     ${Telekinesis.fetch('this, 'headers, 'online, 'loggable)}
 
-  def apply[PayloadType](method: HttpMethod = Get)(using Online): HttpResponse logs HttpEvent =
-    Http.request(url, (), method, Nil)
+  inline def applyDynamic[PayloadType](id: "apply")(inline headers: Any*)
+     (using online: Online, loggable: HttpEvent is Loggable)
+  :     HttpResponse =
+
+    ${Telekinesis.fetch('this, 'headers, 'online, 'loggable)}

@@ -31,11 +31,21 @@ object Tests extends Suite(t"Telekinesis tests"):
       import internetAccess.enabled
 
       test(t"Fetch a URL"):
-        summon[Fetchable[HttpUrl]]
         url"https://httpbin.org/post".submit
          (Post,
           contentEncoding = enc"UTF-8",
           accept          = media"application/json")
+         (t"Hello world")
+
+        . tap: response =>
+          println(response)
+          unsafely:
+            println(response.as[Text])
+
+      . assert()
+
+      test(t"Fetch another URL"):
+        url"https://httpbin.org/post".submit(Post, enc"UTF-8", media"application/json")
          (t"Hello world")
 
         . tap: response =>
