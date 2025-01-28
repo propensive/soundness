@@ -36,7 +36,7 @@ object Telekinesis:
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
-      Expr.summon[Capitate of ValueType].getOrElse:
+      Expr.summon[Capitate of ? >: ValueType].getOrElse:
         val typeName = TypeRepr.of[ValueType].show
         halt(m"the type $typeName does not uniquely identify a particular HTTP header")
 
