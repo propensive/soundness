@@ -551,7 +551,8 @@ object fulminate extends SoundnessModule {
       symbolism.core,
       anticipation.print,
       anticipation.http,
-      anticipation.log
+      anticipation.log,
+      proscenium.core
     )
 
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
