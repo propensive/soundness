@@ -215,12 +215,38 @@ object StackTrace:
 
     StackTrace(component, className, message, frames, cause.map(_.nn).map(StackTrace(_)).optional)
 
+  given StackTrace is Communicable = stack =>
+    val methodWidth = stack.frames.map(_.method.method.s.length).maxOption.getOrElse(0)
+    val classWidth = stack.frames.map(_.method.className.s.length).maxOption.getOrElse(0)
+    val fileWidth = stack.frames.map(_.file.s.length).maxOption.getOrElse(0)
+
+    val fullClass = s"${stack.component}.${stack.className}".tt
+    val init = s"$fullClass: ${stack.message}".tt
+
+    val root = stack.frames.foldLeft(init):
+      case (msg, frame) =>
+        val obj = frame.method.className.s.endsWith("#")
+        val drop = if obj then 1 else 0
+        val file = (" "*(fileWidth - frame.file.s.length))+frame.file
+        val dot = if obj then ".".tt else "#".tt
+        val className = frame.method.className.s.dropRight(drop)
+        val classPad = (" "*(classWidth - className.length)).tt
+        val method = frame.method.method
+        val methodPad = (" "*(methodWidth - method.s.length)).tt
+        val line = frame.line.let(_.toString.tt).or("?".tt)
+
+        s"$msg\n\n  at $classPad$className$dot$method$methodPad $file:$line".tt
+
+    Message:
+      stack.cause.lay(root): cause =>
+        s"$root\ncaused by:\n\n$cause".tt
+
 case class StackTrace
    (component: Text,
     className: Text,
     message:   Message,
     frames:    List[StackTrace.Frame],
-    cause:    Optional[StackTrace]):
+    cause:     Optional[StackTrace]):
 
   def crop(cutClassName: Text, cutMethod: Text): StackTrace =
     val frames2 = frames.takeWhile: f =>
