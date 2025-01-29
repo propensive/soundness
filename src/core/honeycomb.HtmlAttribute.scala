@@ -20,6 +20,7 @@ import anticipation.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
+import kaleidoscope.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
@@ -162,7 +163,7 @@ object HtmlAttribute:
   given novalidate: ("novalidate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given open: ("open" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given optimum: ("optimum" is HtmlAttribute[Double]) = _.toString.show
-  given pattern: ("pattern" is HtmlAttribute[Text]) = identity(_) // Provide with Kaleidoscope
+  given pattern: ("pattern" is HtmlAttribute[Regex]) = _.pattern
   given placeholder: ("placeholder" is HtmlAttribute[Text]) = identity(_)
   given playsinline: ("playsinline" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given poster: ("poster" is HtmlAttribute[Text]) = identity(_)
