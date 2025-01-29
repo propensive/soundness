@@ -11,7 +11,7 @@ import errorDiagnostics.stackTraces
 import executives.completions
 import homeDirectories.default
 import logging.silent
-import orphanDisposal.cancel
+import asyncTermination.cancel
 import parameterInterpretation.posix
 import pathNavigation.posix
 import printableTypes.message
@@ -25,12 +25,12 @@ import workingDirectories.daemonClient
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
-given (using Online) => StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.resolve.text)
+given Online => StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.resolve.text)
 given Decimalizer = Decimalizer(significantFigures = 2)
 val timezone = tz"Europe/London"
 type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
 
-given (using Tactic[JsonParseError], Tactic[JsonError]) => Route is Decodable in Json =
+given (Tactic[JsonParseError], Tactic[JsonError]) => Route is Decodable in Json =
   summon[Text is Decodable in Json].map: points =>
     Route:
       Json.parse(points).as[List[List[Double]]].filter(_.length == 2).map: point =>
@@ -50,7 +50,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
 
     . within:
         import dynamicJsonAccess.enabled
-        val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".get())
+        val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".fetc h())
 
         json.children.as[List[Json]]
         . filter(_.modes(0).as[Text] == t"tube")
@@ -114,14 +114,14 @@ object Data:
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
     tend:
-      case HttpError(url, _, status) => InitError(m"There was an HTTP $status error accessing $url")
-      case _: ZipError               => InitError(m"There was a problem with the ZIP file")
-      case error: NameError          => InitError(error.message)
-      case _: DsvError               => InitError(m"The CSV file was not in the right format")
-      case error: ConcurrencyError   => InitError(error.message)
-      case PathError(_, _)           => InitError(m"The XDG cache home is not a valid path")
-      case error: IoError            => InitError(error.message)
-      case _: StreamError            => InitError(m"An error occurred when reading the cache file from disk")
+      case HttpError(url, status) => InitError(m"There was an HTTP $status error accessing $url")
+      case _: ZipError            => InitError(m"There was a problem with the ZIP file")
+      case error: NameError       => InitError(error.message)
+      case _: DsvError            => InitError(m"The CSV file was not in the right format")
+      case error: AsyncError      => InitError(error.message)
+      case PathError(_, _)        => InitError(m"The XDG cache home is not a valid path")
+      case error: IoError         => InitError(error.message)
+      case _: StreamError         => InitError(m"An error occurred when reading the cache file from disk")
 
     . within:
         cache.establish:
@@ -133,7 +133,7 @@ object Data:
           val file: Path on Posix = Xdg.cacheHome[Path on Posix] / n"tube.csv"
 
           val csv = if file.exists() then file.open(_.stream[Bytes].strict) else
-            ZipStream(sourceUrl.get()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
+            ZipStream(sourceUrl.fetch()).extract(_ / n"Stations.csv").stream[Bytes].tap: stream =>
               import filesystemOptions.writeAccess.enabled
               file.open(stream.writeTo(_))
 
@@ -141,17 +141,17 @@ object Data:
 
   def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan raises UserError =
     val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?mode=tube,elizabeth-line,dlr,overground&time=$time"
-    given Optional[JsonPath] is Communicable = _.lay(t"<unknown>")(_.show).communicate
+    given Optional[JsonPointer] is Communicable = _.lay(t"<unknown>")(_.show).communicate
 
-    track[JsonPath](UserError()):
-      case HttpError(url, _, status)       => accrual + m"Attempt to access $url returned $status."
+    track[JsonPointer](UserError()):
+      case HttpError(url, status)          => accrual + m"Attempt to access $url returned $status."
       case JsonParseError(line, _, reason) => accrual + m"Could not parse JSON response: $reason at line $line"
       case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
       case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
       case error: TimestampError           => accrual + m"${error.message} at $focus from $sourceUrl"
 
     . within:
-        Json.parse(sourceUrl.get(RequestHeader.Accept(media"application/json"))).as[Plan]
+        Json.parse(sourceUrl.fetch(accept = media"application/json")).as[Plan]
 
 object Output:
   val tl = u"box drawings light arc down and right"
