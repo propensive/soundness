@@ -85,7 +85,7 @@ object Http:
         connection.setRequestMethod(method.toString.show.upper.s)
 
         connection.setRequestProperty
-         (Capitate.contentType.key.s, PostType.contentType.show.s)
+         (Capitate.contentType.key.uncamel.kebab.s, PostType.contentType.show.s)
 
         connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 

@@ -18,6 +18,7 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
+import gossamer.*
 import nettlesome.*
 
 enum HttpEvent:
@@ -29,4 +30,6 @@ object HttpEvent:
   given HttpEvent is Communicable =
     case Response(status)           => m"Received response with status $status"
     case Request(preview)           => m"Request [$preview]"
-    case Send(method, url, headers) => m"Send $method request to $url"
+    case Send(method, url, headers) =>
+      val headers2 = headers.map { case HttpHeader(key, value) => t"$key: $value" }.join(t"; ")
+      m"Send $method request to $url with headers $headers2"
