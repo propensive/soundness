@@ -105,8 +105,13 @@ object Unicode:
           map
 
     val in: ji.InputStream =
-      Option(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).map(_.nn).getOrElse:
-        panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
+      Optional(getClass.getResourceAsStream("/hieroglyph/EastAsianWidth.txt")).or:
+        safely:
+          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/EastAsianWidth.txt")
+          uri.toURL().nn.openStream().nn: ji.InputStream
+
+        . or:
+            panic(m"could not find hieroglyph/EastAsianWidth.txt on the classpath")
 
     val stream = scala.io.Source.fromInputStream(in).getLines.map(Text(_)).to(Stream)
 
