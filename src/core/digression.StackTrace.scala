@@ -227,15 +227,15 @@ object StackTrace:
       case (msg, frame) =>
         val obj = frame.method.className.s.endsWith("#")
         val drop = if obj then 1 else 0
-        val file = (" "*(fileWidth - frame.file.s.length))+frame.file
+        val file = ("\u00a0"*(fileWidth - frame.file.s.length))+frame.file
         val dot = if obj then ".".tt else "#".tt
         val className = frame.method.className.s.dropRight(drop)
-        val classPad = (" "*(classWidth - className.length)).tt
+        val classPad = ("\u00a0"*(classWidth - className.length)).tt
         val method = frame.method.method
-        val methodPad = (" "*(methodWidth - method.s.length)).tt
+        val methodPad = ("\u00a0"*(methodWidth - method.s.length)).tt
         val line = frame.line.let(_.toString.tt).or("?".tt)
 
-        s"$msg\n\n  at $classPad$className$dot$method$methodPad $file:$line".tt
+        s"$msg\n\n\u00a0\u00a0at\u00a0$classPad$className$dot$method$methodPad\u00a0$file:$line".tt
 
     Message:
       stack.cause.lay(root): cause =>
