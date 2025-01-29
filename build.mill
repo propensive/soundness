@@ -133,6 +133,22 @@ object soundness extends ScalaModule {
   }
 }
 
+// ------------------------ SAMPLES ------------------------
+
+object sample extends ScalaModule {
+  def scalaVersion = settings.scalaVersion
+  def moduleDeps = Seq(soundness.all)
+
+  object tube extends ScalaModule {
+    def scalaVersion = settings.scalaVersion
+    def scalacOptions = settings.scalaOptions
+    def moduleDeps = Seq(soundness.all)
+    def sources = Task.Sources {
+      Seq(PathRef(millSourcePath / "src" / "core"))
+    }
+  }
+}
+
 // ------------------------ MODULES ------------------------
 
 object abacist extends SoundnessModule {
