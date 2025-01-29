@@ -18,6 +18,8 @@ package fulminate
 
 import language.experimental.captureChecking
 
+import scala.quoted.*
+
 import anticipation.*
 
 object Communicable:
@@ -27,6 +29,11 @@ object Communicable:
   given Int is Communicable = int => Message(int.toString.tt)
   given Long is Communicable = long => Message(long.toString.tt)
   given Message is Communicable = identity(_)
+
+  given [TypeType] => Quotes => Type[TypeType] is Communicable = tpe => Message(tpe.toString.tt)
+  given (quotes: Quotes) => quotes.reflect.TypeRepr is Communicable = tpe => Message(tpe.show)
+  given (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
+  given [ExprType] => Quotes => Expr[ExprType] is Communicable = tpe => Message(tpe.show)
 
   given listMessage: List[Message] is Communicable =
     messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)

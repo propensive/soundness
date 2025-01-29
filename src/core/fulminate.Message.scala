@@ -19,6 +19,7 @@ package fulminate
 import scala.compiletime.*
 
 import anticipation.*
+import proscenium.*
 
 import scala.annotation.targetName
 
@@ -30,11 +31,11 @@ object Message:
   transparent inline def make[TupleType <: Tuple](inline subs: TupleType, done: List[Message])
   :     List[Message] =
     inline erasedValue[TupleType] match
-      case _: (messageType *: tailType) => subs.runtimeChecked match
+      case _: (messageType *: tailType) => subs.absolve match
         case message *: tail =>
           val message2 = message.asInstanceOf[messageType]
-          val show = summonInline[Communicable { type Self >: messageType }]
-          make[tailType](tail.asInstanceOf[tailType], show.message(message2) :: done)
+          val communicable = summonInline[(? >: messageType) is Communicable]
+          make[tailType](tail.asInstanceOf[tailType], communicable.message(message2) :: done)
 
       case _ =>
         done.reverse
