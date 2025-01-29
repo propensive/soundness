@@ -183,7 +183,7 @@ trait Quantitative2:
                 . getOrElse("the same quantity")
 
               halt:
-                m"""the operands both represent ${dimensionName}, but there is no principal unit
+                m"""the operands both represent $dimensionName, but there is no principal unit
                       specified for this dimension"""
 
             case Some('{$expr: principalUnit}) => Type.of[principalUnit].absolve match
@@ -194,7 +194,7 @@ trait Quantitative2:
                       case typeRef@TypeRef(_, _) => UnitRef(typeRef.asType, typeRef.show)
 
                   case other =>
-                    halt(m"principal units had an unexpected type: ${other.show}")
+                    halt(m"principal units had an unexpected type: $other")
 
 
     override def equals(that: Any): Boolean = that.asMatchable match
