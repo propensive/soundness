@@ -50,7 +50,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name.te
 
     . within:
         import dynamicJsonAccess.enabled
-        val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".fetc h())
+        val json = Json.parse(url"https://api.tfl.gov.uk/StopPoint/$name".fetch())
 
         json.children.as[List[Json]]
         . filter(_.modes(0).as[Text] == t"tube")
@@ -114,14 +114,14 @@ object Data:
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
     tend:
-      case HttpError(url, status) => InitError(m"There was an HTTP $status error accessing $url")
-      case _: ZipError            => InitError(m"There was a problem with the ZIP file")
-      case error: NameError       => InitError(error.message)
-      case _: DsvError            => InitError(m"The CSV file was not in the right format")
-      case error: AsyncError      => InitError(error.message)
-      case PathError(_, _)        => InitError(m"The XDG cache home is not a valid path")
-      case error: IoError         => InitError(error.message)
-      case _: StreamError         => InitError(m"An error occurred when reading the cache file from disk")
+      case HttpError(status, _) => InitError(m"There was an HTTP $status error accessing $sourceUrl")
+      case _: ZipError          => InitError(m"There was a problem with the ZIP file")
+      case error: NameError     => InitError(error.message)
+      case _: DsvError          => InitError(m"The CSV file was not in the right format")
+      case error: AsyncError    => InitError(error.message)
+      case PathError(_, _)      => InitError(m"The XDG cache home is not a valid path")
+      case error: IoError       => InitError(error.message)
+      case _: StreamError       => InitError(m"An error occurred when reading the cache file from disk")
 
     . within:
         cache.establish:
@@ -144,7 +144,7 @@ object Data:
     given Optional[JsonPointer] is Communicable = _.lay(t"<unknown>")(_.show).communicate
 
     track[JsonPointer](UserError()):
-      case HttpError(url, status)          => accrual + m"Attempt to access $url returned $status."
+      case HttpError(status, _)            => accrual + m"Attempt to access $sourceUrl returned $status."
       case JsonParseError(line, _, reason) => accrual + m"Could not parse JSON response: $reason at line $line"
       case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
       case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
@@ -215,7 +215,8 @@ object Output:
 
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
-      val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
+      val distance: Quantity[Metres[1]] = journey.legs.map(_.path.lineString.length).sum
+      val miles = distance.in[Miles]
       import quantitative./
       val speed = (distance/journey.duration.quantity).in[Miles].in[Hours]
       Out.println(e"\n${journey.duration}, $distance; average speed: $speed")
