@@ -11,6 +11,7 @@ import errorDiagnostics.stackTraces
 import executives.completions
 import homeDirectories.default
 import logging.silent
+
 import asyncTermination.cancel
 import parameterInterpretation.posix
 import pathNavigation.posix
@@ -215,8 +216,7 @@ object Output:
 
       Out.println(e"\n${indent(last, 9)}${destinationTitle.center(40)}\n")
 
-      val distance: Quantity[Metres[1]] = journey.legs.map(_.path.lineString.length).sum
-      val miles = distance.in[Miles]
+      val distance = journey.legs.map(_.path.lineString.length).sum.in[Miles]
       import quantitative./
       val speed = (distance/journey.duration.quantity).in[Miles].in[Hours]
       Out.println(e"\n${journey.duration}, $distance; average speed: $speed")
