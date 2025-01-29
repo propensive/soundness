@@ -123,7 +123,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-        telekinesis.core, plutocrat.core)
+        telekinesis.core, plutocrat.core, eucalyptus.gcp)
     def scalaVersion = settings.scalaVersion
   }
 
@@ -500,6 +500,10 @@ object eucalyptus extends SoundnessModule {
   }
   object syslog extends SoundnessSubModule {
     def moduleDeps = Seq(guillotine.core, core)
+  }
+
+  object gcp extends SoundnessSubModule {
+    def moduleDeps = Seq(jacinta.core, core)
   }
 
   object ansi extends SoundnessSubModule {
