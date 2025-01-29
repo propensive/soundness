@@ -17,6 +17,7 @@
 package hieroglyph
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import kaleidoscope.*
 import proscenium.*
@@ -57,8 +58,12 @@ object Unicode:
 
   lazy val unicodeData: Map[Text, Char | Text] =
     val in: ji.InputStream =
-      Option(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).map(_.nn).getOrElse:
-        panic(m"could not find hieroglyph/UnicodeData.txt on the classpath")
+      Optional(getClass.getResourceAsStream("/hieroglyph/UnicodeData.txt")).or:
+        safely:
+          val uri = new java.net.URI("https://www.unicode.org/Public/UNIDATA/UnicodeData.txt")
+          uri.toURL().nn.openStream().nn: ji.InputStream
+
+      . or(panic(m"could not find hieroglyph/UnicodeData.txt on the classpath"))
 
     scala.io.Source.fromInputStream(in).getLines.map(_.split(";").nn.to(List)).flatMap:
       case hex :: name :: _ if !name.nn.startsWith("<") =>
