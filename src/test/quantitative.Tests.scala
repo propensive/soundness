@@ -20,10 +20,10 @@ import gossamer.{t, Decimalizer}
 import hypotenuse.*
 import larceny.*
 import probably.*
-import rudiments.*
 import spectacular.*
 
 import language.strictEquality
+import language.experimental.into
 
 given decimalizer: Decimalizer = Decimalizer(3)
 
@@ -50,24 +50,24 @@ object Tests extends Suite(t"Quantitative Tests"):
       test(t"Cannot add quantities of different units"):
         demilitarize:
           Metre + 2*Second
-        .map(_.id)
-      .assert(_.contains(CompileErrorId.NoExplanation))
+      .assert(_.nonEmpty)
 
       test(t"Cannot subtract quantities of different units"):
         demilitarize:
           Metre - 2*Second
-        .map(_.id)
-      .assert(_.contains(CompileErrorId.NoExplanation))
+        .map(_.message)
+      .assert(_.contains(t"quantitative: the left operand represents length, but the right operand represents time; these are incompatible physical quantities"))
 
       test(t"Add two different units"):
         demilitarize:
           Second*2 + Metre*3
-        .map(_.id)
-      .assert(_.contains(CompileErrorId.NoExplanation))
+        .map(_.message)
+      .assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents length; these are incompatible physical quantities"))
 
       test(t"Units cancel out"):
         demilitarize:
           (20*Metre*Second)/(Metre*Second): Double
+        .map(_.message)
       .assert(_.isEmpty)
 
       test(t"Principal units are preferred"):
@@ -76,6 +76,13 @@ object Tests extends Suite(t"Quantitative Tests"):
           val y = 3*Foot
           val z: Quantity[Metres[2]] = x*y
       .assert(_.isEmpty)
+
+      test(t"Non-principal units are not preferred"):
+        demilitarize:
+          val x = 2*Metre
+          val y = 3*Foot
+          val z: Quantity[Feet[2]] = x*y
+      .assert(_.nonEmpty)
 
       test(t"Units of different dimension cannot be added"):
         demilitarize:
@@ -177,7 +184,7 @@ object Tests extends Suite(t"Quantitative Tests"):
 
       test(t"Convert m² to ft²"):
         (Metre*Metre).in[Feet]
-      .assert(_ == 10.763910416709722*Foot*Foot)
+      .assert(_ == 10.76391041670972*Foot*Foot)
 
       test(t"Conversion to seconds does nothing"):
         (3.0*Metre).in[Seconds]
