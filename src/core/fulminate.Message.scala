@@ -76,14 +76,15 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
   def unwrap(string: String): Text =
     val buf: StringBuilder = StringBuilder()
 
-    def recur(lines: List[String], break: Boolean): Text = lines match
+    def recur(lines: List[String]): Text = lines match
       case Nil =>
         buf.toString.nn.tt
 
       case line :: tail =>
-        if line.forall(_.isWhitespace) then recur(tail, true) else
-          buf.append(if !break then (if buf.isEmpty then "" else " ") else "\n")
-          buf.append(line.nn.replaceAll("\\s+", " "))
-          recur(tail, false)
+        if line.forall(_.isWhitespace) then buf.append("\n") else
+          if !buf.isEmpty then buf.append(" ")
+          buf.append(line.nn.trim.nn.replaceAll("\\s+", " "))
 
-    recur(string.split("\n").nn.map(_.nn).to(List), false)
+        recur(tail)
+
+    recur(string.split("\n").nn.map(_.nn).to(List))
