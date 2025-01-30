@@ -24,7 +24,7 @@ import rudiments.*
 import vacuous.*
 
 object Diff:
-  def parse(lines: Stream[Text])(using Tactic[DiffError]): Diff[Text] =
+  def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
     def recur
        (todo: Stream[Text], line: Int, edits: List[Edit[Text]], pos: Int, rpos: Int, target: Int)
     :     Diff[Text] =

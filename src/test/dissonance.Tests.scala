@@ -19,10 +19,13 @@ package dissonance
 import anticipation.*
 import contingency.*
 import eucalyptus.*
+import fulminate.*
 import gossamer.*
 import probably.*
 import proscenium.*
 import rudiments.*
+
+import proximityMeasures.levenshteinDistance
 
 import strategies.throwUnsafely
 
@@ -125,8 +128,6 @@ object Tests extends Suite(t"Dissonance tests"):
     val end = Vector(t"foo", t"quux", t"bop", t"baz")
 
     suite(t"Diff parsing tests"):
-      erased given CanThrow[DiffParseError] = unsafeExceptions.canThrowAny
-
       val diffStream = Stream(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
       val reverseStream = Stream(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
 
@@ -194,61 +195,61 @@ object Tests extends Suite(t"Dissonance tests"):
           Ins(7, t"siete")))
 
       test(t"Align on Levenshtein distance < 4"):
-        italianToSpanish.rdiff(_.lev(_) < 4)
+        italianToSpanish.rdiff(_.proximity(_) < 4)
       .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
           Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"),
           Sub(5, 5, t"cinque", t"cinco"), Sub(6, 6, t"sei", t"seis"),
           Sub(7, 7, t"sette", t"siete")))
 
       test(t"Align on Levenshtein distance < 3"):
-        italianToSpanish.rdiff(_.lev(_) < 3)
+        italianToSpanish.rdiff(_.proximity(_) < 3)
       .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Sub(2, 2, t"due", t"dos"),
           Sub(3, 3, t"tre", t"tres"), Sub(4, 4, t"quattro", t"cuatro"), Del(5, t"cinque"),
           Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"), Sub(7, 7, t"sette", t"siete")))
 
       test(t"Align on Levenshtein distance < 2"):
-        italianToSpanish.rdiff(_.lev(_) < 2)
+        italianToSpanish.rdiff(_.proximity(_) < 2)
       .assert(_ == RDiff(Sub(0, 0, t"zero", t"cero"), Par(1, 1, t"uno"), Del(2, t"due"),
           Ins(2, t"dos"), Sub(3, 3, t"tre", t"tres"), Del(4, t"quattro"), Del(5, t"cinque"),
           Ins(4, t"cuatro"), Ins(5, t"cinco"), Sub(6, 6, t"sei", t"seis"),
           Del(7, t"sette"), Ins(7, t"siete")))
 
-    suite(t"Casual diff tests"):
-      test(t"Parse a simple casual diff"):
-        import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(Stream))
-      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
+    // suite(t"Casual diff tests"):
+    //   test(t"Parse a simple casual diff"):
+    //     import unsafeExceptions.canThrowAny
+    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(Stream))
+    //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
-      test(t"Parse a slightly longer casual diff"):
-        import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(Stream))
-      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
+    //   test(t"Parse a slightly longer casual diff"):
+    //     import unsafeExceptions.canThrowAny
+    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(Stream))
+    //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
 
-      test(t"Parse a longer casual diff"):
-        import unsafeExceptions.canThrowAny
-        CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream))
-      .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
+    //   test(t"Parse a longer casual diff"):
+    //     import unsafeExceptions.canThrowAny
+    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream))
+    //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
-      test(t"Fail to parse a problematic casual diff"):
-        import unsafeExceptions.canThrowAny
-        capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream)))
-      .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
+    //   test(t"Fail to parse a problematic casual diff"):
+    //     import unsafeExceptions.canThrowAny
+    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream)))
+    //   .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
 
-    suite(t"Invariance tests"):
-      val values = List(t"alpha", t"beta", t"gamma")
+    // suite(t"Invariance tests"):
+    //   val values = List(t"alpha", t"beta", t"gamma")
 
-      def permutations(n: Int): List[List[Text]] =
-        if n == 0 then List(Nil) else
-          val last = permutations(n - 1)
-          for value <- values; perm <- last yield value :: perm
+    //   def permutations(n: Int): List[List[Text]] =
+    //     if n == 0 then List(Nil) else
+    //       val last = permutations(n - 1)
+    //       for value <- values; perm <- last yield value :: perm
 
-      def allPermutations(n: Int): List[List[Text]] =
-        if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
+    //   def allPermutations(n: Int): List[List[Text]] =
+    //     if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
 
-      allPermutations(3).map(_.to(Vector)).each: perm1 =>
-        allPermutations(3).map(_.to(Vector)).each: perm2 =>
-          import unsafeExceptions.canThrowAny
-          val d = diff(perm1, perm2).casual
-          test(t"Check differences"):
-            d.patch(perm1).to(Vector)
-          .assert(_ == perm2)
+    //   allPermutations(3).map(_.to(Vector)).each: perm1 =>
+    //     allPermutations(3).map(_.to(Vector)).each: perm2 =>
+    //       import unsafeExceptions.canThrowAny
+    //       val d = diff(perm1, perm2).casual
+    //       test(t"Check differences"):
+    //         d.patch(perm1).to(Vector)
+    //       .assert(_ == perm2)

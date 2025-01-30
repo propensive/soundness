@@ -65,7 +65,7 @@ def diff[ElemType]
   trace(0, 0, Nil, Nil)
 
 extension (diff: Diff[Text])
-  def text: Stream[Text] = diff.chunks.flatMap:
+  def serialize: Stream[Text] = diff.chunks.flatMap:
     case Chunk(left, right, dels, inss) =>
       def range(start: Int, end: Int): Text = s"$start${if start == end then "" else s",$end"}".tt
 
