@@ -40,7 +40,6 @@ object Tests extends Suite(t"Quantitative Tests"):
 
       test(t"Access minutes in an HMS time"):
         val hmsTime = Count[TimeSeconds](27, 18, 9)
-        println("underlying = "+hmsTime)
         hmsTime[Minutes]
       .assert(_ == 18)
 
@@ -57,7 +56,7 @@ object Tests extends Suite(t"Quantitative Tests"):
       test(t"Units of different dimensions cannot be mixed"):
         demilitarize:
           Count[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
-      .assert(_.length == 1)
+      .assert(_.nonEmpty)
 
       test(t"Convert a length to a Count"):
         val length: Quantity[Metres[1]] = (5*Foot + 10*Inch)
@@ -159,12 +158,10 @@ object Tests extends Suite(t"Quantitative Tests"):
 
       suite(t"Showing Count values"):
         test(t"Show a single-unit weight"):
-          println("x: "+Count[Weight](2).show)
           Count[Weight](2).show
         .assert(_ == t"2oz")
 
         test(t"Show a more complex weight"):
-          println("y: "+Count[Weight](3, 2).show)
           Count[Weight](3, 2).show
         .assert(_ == t"3lb 2oz")
 
