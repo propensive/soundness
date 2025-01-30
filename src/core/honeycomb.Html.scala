@@ -34,7 +34,8 @@ object Html extends Node["html"]:
 
   private[honeycomb] val unclosedElements: Set[Text] =
     Set
-     (t"br", t"hr", t"iframe", t"img", t"input", t"link", t"meta", t"option", t"param", t"template")
+     (t"area", t"base", t"br", t"col", t"embed", t"hr", t"img", t"input", t"link", t"meta",
+      t"param", t"source", t"track", t"wbr")
 
   private[honeycomb] val verbatimElements: Set[Text] = Set(t"pre", t"script", t"textarea")
 
