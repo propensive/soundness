@@ -156,7 +156,7 @@ object abacist extends SoundnessModule {
     def moduleDeps = Seq(quantitative.units)
   }
 
-  object test extends SoundnessSubModule {
+  object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
 }
