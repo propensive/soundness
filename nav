@@ -1,0 +1,47 @@
+#!/bin/bash
+
+exec 2>/dev/null
+declare -i n
+param="$1"
+commits=()
+IFS=$'\n'
+
+echo -e "\033[?25l"
+
+while read -r line
+do commits+=($line)
+done < <(git log --reverse --oneline main)
+
+n=${param:-0}
+
+while true; do
+    current=$(echo "${commits[$n]}" | cut -d' ' -f1)
+    echo "Checking out ${commits[$n]}..."
+    git checkout "$current"
+    echo -e "\033[2J"
+    prev2=$((n-2))
+    prev1=$((n-1))
+    next1=$((n+1))
+    next2=$((n+2))
+    if [ "$prev2" -ge 0 ]; then echo "$prev2     ${commits[$prev2]}"; fi
+    if [ "$prev2" -ge 0 ]; then echo "$prev1     ${commits[$prev1]}"; fi
+    echo -e "╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌"
+    git diff --ignore-blank-lines -U0 --color 'HEAD^' | tail -n +5
+    echo -e "\033[43;1m\033[30m $n >> ${commits[$n]}\033[0K \033[0m"
+    git diff --ignore-blank-lines -U0 --color HEAD "${commits[$next1]:0:7}" | tail -n +5
+    echo -e "╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌"
+    echo "$next1     ${commits[$next1]}"
+    echo -n -e "$next2     ${commits[$next2]}\033[0m"
+    read -rsn1 key
+    if [[ $key == $'\e' ]]; then
+        read -rsn2 key
+        case "$key" in
+            '[D')
+              let n=n-1
+              ;;
+            '[C')
+              let n=n+1
+              ;;
+        esac
+    fi
+done
