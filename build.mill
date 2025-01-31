@@ -93,7 +93,7 @@ object soundness extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends BaseScalaModule {
+  object base extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
         contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
         fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
@@ -111,7 +111,7 @@ object soundness extends ScalaModule {
     def scalaVersion = settings.scalaVersion
   }
 
-  object data extends BaseScalaModule {
+  object data extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
@@ -119,26 +119,26 @@ object soundness extends ScalaModule {
     def scalaVersion = settings.scalaVersion
   }
 
-  object sci extends BaseScalaModule {
+  object sci extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
         charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
         quantitative.core)
     def scalaVersion = settings.scalaVersion
   }
 
-  object test extends BaseScalaModule {
+  object test extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, /*tarantula.core,
         superlunary.core,*/ yossarian.core, probably.core)
     def scalaVersion = settings.scalaVersion
   }
 
-  object tool extends BaseScalaModule {
+  object tool extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
         octogenarian.core, revolution.core, umbrageous.plugin)
     def scalaVersion = settings.scalaVersion
   }
 
-  object web extends BaseScalaModule {
+  object web extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
@@ -146,7 +146,7 @@ object soundness extends ScalaModule {
     def scalaVersion = settings.scalaVersion
   }
 
-  object all extends BaseScalaModule {
+  object all extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
     def scalaVersion = settings.scalaVersion
   }
