@@ -39,7 +39,12 @@ trait BaseScalaModule extends ScalaModule {
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
   def consoleScalacOptions = scalacOptions()
-  def publishVersion = T("0.27.0")
+
+  def publishVersion = T {
+    val lastTagged = os.proc("git", "rev-list", "--tags", "--max-count", "1").call().out.text().trim
+    os.proc("git", "describe", "--tags", lastTagged).call().out.text().trim
+  }
+
   def artifactSuffix = T("")
   def pomSettings = T(PomSettings(
     description = "soundness-all",
