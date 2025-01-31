@@ -18,10 +18,10 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait GenericDuration:
-  type Self
-  def milliseconds(duration: Self): Long
-  def nanoseconds(duration: Self): Long = milliseconds(duration)*1_000_000L
+import prepositional.*
 
-object GenericDuration:
-  given Long is GenericDuration = identity(_)
+object Instants:
+  given generalizable: Long is Generalizable across Instants into Long = identity(_)
+  given specializable: Long is Specializable across Instants from Long = identity(_)
+
+erased trait Instants
