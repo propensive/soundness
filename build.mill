@@ -37,6 +37,7 @@ object settings {
 trait BaseScalaModule extends ScalaModule {
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
+  def consoleScalacOptions = scalacOptions()
 }
 
 trait SoundnessModule extends Module {
@@ -211,6 +212,10 @@ object anthology extends SoundnessModule {
 }
 
 object anticipation extends SoundnessModule {
+  object general extends SoundnessSubModule {
+    def moduleDeps = Seq(prepositional.core)
+  }
+
   object text extends SoundnessSubModule {
     def moduleDeps = Seq(symbolism.core)
   }
@@ -264,7 +269,9 @@ object anticipation extends SoundnessModule {
     def moduleDeps = Seq(anticipation.text)
   }
 
-  object time extends SoundnessSubModule
+  object time extends SoundnessSubModule {
+    def moduleDeps = Seq(anticipation.general)
+  }
 
   object test extends ProbablyTestModule
 }
