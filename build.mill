@@ -221,38 +221,31 @@ object anticipation extends SoundnessModule {
   }
 
   object opaque extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object css extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object url extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, general)
   }
 
   object html extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object print extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object http extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object codec extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object transport extends SoundnessSubModule
@@ -260,17 +253,15 @@ object anticipation extends SoundnessModule {
   object color extends SoundnessSubModule
 
   object log extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object path extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object time extends SoundnessSubModule {
-    def moduleDeps = Seq(anticipation.general)
+    def moduleDeps = Seq(general)
   }
 
   object test extends ProbablyTestModule
