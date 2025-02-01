@@ -102,8 +102,10 @@ extension [ElementType](stream: Stream[ElementType])
 
     def recur(stream: Stream[ElementType], last: Long): Stream[ElementType] =
       stream.flow(Stream()):
-        val duration2 = SpecificDuration(duration.milliseconds - (System.currentTimeMillis - last))
-        if duration2.milliseconds > 0 then snooze(duration2)
+        val duration2 =
+          SpecificDuration(DurationType.milliseconds(duration) - (System.currentTimeMillis - last))
+
+        if DurationType.milliseconds(duration2) > 0 then snooze(duration2)
         stream
 
     async(recur(stream, System.currentTimeMillis)).await()
@@ -216,7 +218,7 @@ extension (obj: Stream.type)
 
     def recur(iteration: Int): Stream[Unit] =
       try
-        snooze(startTime + duration.milliseconds*iteration)
+        snooze(startTime + DurationType.milliseconds(duration)*iteration)
         () #:: pulsar(duration)
       catch case err: AsyncError => Stream()
 
