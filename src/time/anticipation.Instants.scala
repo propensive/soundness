@@ -18,9 +18,10 @@ package anticipation
 
 import language.experimental.captureChecking
 
-extension [InstantType: GenericInstant](instant: InstantType)
-  def millisecondsSinceEpoch: Long = InstantType.millisecondsSinceEpoch(instant)
+import prepositional.*
 
-extension [DurationType: GenericDuration](duration: DurationType)
-  def milliseconds: Long = DurationType.milliseconds(duration)
-  def nanoseconds: Long = DurationType.nanoseconds(duration)
+object Instants:
+  given generalizable: Long is Generalizable across Instants into Long = identity(_)
+  given specializable: Long is Specializable across Instants from Long = identity(_)
+
+erased trait Instants

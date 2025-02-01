@@ -18,12 +18,15 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait SpecificInstant:
-  type Self
-  def instant(millisecondsSinceEpoch: Long): Self
+import prepositional.*
 
-object SpecificInstant:
-  def apply[InstantType: SpecificInstant](millisecondsSinceEpoch: Long): InstantType =
-    InstantType.instant(millisecondsSinceEpoch)
+object Durations:
+  inline def ms(long: Long): Double = long.toDouble*1_000_000
+  inline def ms(double: Double): Long = (double/1_000_000).toLong
+  inline def ns(long: Long): Double = long.toDouble
+  inline def ns(double: Double): Long = double.toLong
 
-  given Long is SpecificInstant = identity(_)
+  given generalizable: Long is Generalizable across Durations into Double = _.toDouble
+  given specializable: Long is Specializable across Durations from Double = _.toLong
+
+erased trait Durations
