@@ -17,12 +17,17 @@
 package anticipation
 
 import aviation.*
+import prepositional.*
 
 package instantApi:
-  given aviationInstant: Timing.Instant is GenericInstant & SpecificInstant =
-    new GenericInstant with SpecificInstant:
+  given aviationInstant: Timing.Instant is (Generalizable & Specializable) across Instants into
+                          Long from Long =
+    new Generalizable with Specializable:
       type Self = Timing.Instant
-      export Timing.Instant.generic.{instant, millisecondsSinceEpoch}
+      type Source = Long
+      type Result = Long
+      type Domain = Instants
+      export Timing.Instant.generic.{generalization, specialization}
 
 package durationApi:
   given aviationDuration: Timing.Duration is GenericDuration & SpecificDuration =

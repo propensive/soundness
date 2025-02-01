@@ -33,21 +33,33 @@ object Timing:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = ###
-    given generic: Timing.TaiInstant is GenericInstant:
-      def instant(millisecondsSinceEpoch: Long): Timing.TaiInstant = millisecondsSinceEpoch
-      def millisecondsSinceEpoch(instant: Timing.TaiInstant): Long = instant
+    given generic: Timing.TaiInstant is (Generalizable & Specializable) across Instants into
+                    Long from Long =
+      new Generalizable with Specializable:
+        type Self = Timing.TaiInstant
+        type Source = Long
+        type Result = Long
+        type Domain = Instants
+        def specialization(long: Long): Timing.TaiInstant = long
+        def generalization(instant: Timing.TaiInstant): Long = instant
 
 
   object Instant:
-    def apply[InstantType: GenericInstant](instant: InstantType): Instant =
-      of(instant.millisecondsSinceEpoch)
+    def apply[InstantType: Generalizable across Instants into Long](instant: InstantType): Instant =
+      of(instant.generalize)
 
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
 
-    given generic: Timing.Instant is GenericInstant:
-      def instant(millisecondsSinceEpoch: Long): Timing.Instant = millisecondsSinceEpoch
-      def millisecondsSinceEpoch(instant: Timing.Instant): Long = instant
+    given generic: Timing.Instant is (Generalizable & Specializable) across Instants into Long from
+                    Long =
+      new Generalizable with Specializable:
+        type Self = Timing.Instant
+        type Result = Long
+        type Source = Long
+        type Domain = Instants
+        def specialization(long: Long): Timing.Instant = long
+        def generalization(instant: Timing.Instant): Long = instant
 
     inline given orderable: Instant is Orderable:
       inline def compare

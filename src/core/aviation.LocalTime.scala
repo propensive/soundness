@@ -17,12 +17,13 @@
 package aviation
 
 import anticipation.*
+import prepositional.*
 
 import java.time as jt
 
 object LocalTime:
-  given generic: RomanCalendar => LocalTime is GenericInstant =
-    _.instant.millisecondsSinceEpoch
+  given generic: RomanCalendar => LocalTime is Generalizable across Instants into Long =
+    _.instant.generalize
 
 case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
