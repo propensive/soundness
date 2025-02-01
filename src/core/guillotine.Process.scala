@@ -75,7 +75,7 @@ class Process[+ExecType <: Label, ResultType](process: java.lang.Process) extend
 
   def osProcess(using Tactic[PidError]) = OsProcess(pid)
 
-  def startTime[InstantType: SpecificInstant]: Optional[InstantType] =
+  def startTime[InstantType: Specializable across Instants from Long]: Optional[InstantType] =
     try
       import strategies.throwUnsafely
       osProcess.startTime[InstantType]

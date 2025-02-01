@@ -17,6 +17,7 @@
 package guillotine
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -26,5 +27,5 @@ trait ProcessRef:
   def abort(): Unit logs ExecEvent
   def alive: Boolean
   def attend(): Unit
-  def startTime[InstantType: SpecificInstant]: Optional[InstantType]
+  def startTime[InstantType: Specializable across Instants from Long]: Optional[InstantType]
   def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType]
