@@ -126,7 +126,10 @@ object HtmlAttribute:
   given hidden: ("hidden" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
-  given href2: [UrlType: GenericUrl] => ("href" is HtmlAttribute[UrlType]) = UrlType.text(_)
+
+  given href2: [UrlType: Generalizable across Urls into Text]
+  =>    ("href" is HtmlAttribute[UrlType]) =
+    _.generalize
 
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
