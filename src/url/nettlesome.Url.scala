@@ -71,7 +71,7 @@ object Url:
     def elementText(element: Name[HttpUrl]): Text = element.text
     def caseSensitivity: Case = Case.Sensitive
 
-  given HttpUrl is GenericUrl = _.show
+  given HttpUrl is Generalizable across Urls into Text = _.show
   given (Tactic[UrlError], Tactic[HostnameError]) => HttpUrl is SpecificUrl = Url.parse(_)
 
   given showable: [SchemeType <: Label] => Url[SchemeType] is Showable = url =>
