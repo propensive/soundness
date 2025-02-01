@@ -22,7 +22,11 @@ import java.net as jn
 
 import language.experimental.captureChecking
 
-object JavaNetUrl extends GenericUrl, SpecificUrl:
+object JavaNetUrl extends Generalizable, Specializable:
   type Self = jn.URL
-  def text(value: jn.URL): Text = value.toString.tt
-  def url(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
+  type Result = Text
+  type Source = Text
+  type Domain = Urls
+
+  def generalization(value: jn.URL): Text = value.toString.tt
+  def specialization(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn
