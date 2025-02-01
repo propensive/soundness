@@ -23,7 +23,7 @@ import vacuous.*
 
 object Cache:
   def apply[DurationType: GenericDuration, ValueType](duration: DurationType): Cache[ValueType] =
-    new Cache[ValueType](duration.milliseconds)
+    new Cache[ValueType](DurationType.milliseconds(duration))
 
   def apply[ValueType](): Cache[ValueType] = new Cache(Unset)
 
