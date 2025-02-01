@@ -99,7 +99,7 @@ final case class Promise[ValueType]():
 
   def await[DurationType: GenericDuration](duration: DurationType)
   :     ValueType raises AsyncError =
-    val deadline = System.nanoTime() + duration.milliseconds*1000000L
+    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): ValueType =
@@ -113,7 +113,7 @@ final case class Promise[ValueType]():
     recur()
 
   def attend[DurationType: GenericDuration](duration: DurationType): Unit =
-    val deadline = System.nanoTime() + duration.milliseconds*1000000L
+    val deadline = System.nanoTime() + DurationType.milliseconds(duration)*1000000L
 
     @tailrec
     def recur(): Unit =

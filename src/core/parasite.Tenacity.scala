@@ -33,8 +33,9 @@ object Tenacity:
   def exponential[DurationType: GenericDuration](initial: DurationType, base: Double): Tenacity =
     new:
       def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-        if attempt == Prim then 0L else (initial.milliseconds*math.pow(base, attempt.n1)).toLong
+        if attempt == Prim then 0L
+        else (DurationType.milliseconds(initial)*math.pow(base, attempt.n1)).toLong
 
   def fixed[DurationType: GenericDuration](duration: DurationType): Tenacity = new:
     def delay(attempt: Ordinal): Optional[Long] raises RetryError =
-      if attempt == Prim then 0L else duration.milliseconds
+      if attempt == Prim then 0L else DurationType.milliseconds(duration)

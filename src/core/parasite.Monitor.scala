@@ -50,7 +50,7 @@ sealed trait Monitor:
   def supervisor: Supervisor
 
   def snooze[DurationType: GenericDuration](duration: DurationType): Unit =
-    jucl.LockSupport.parkNanos(duration.nanoseconds)
+    jucl.LockSupport.parkNanos(DurationType.nanoseconds(duration))
 
   def handle(throwable: Throwable): Transgression
   def intercept(handler: Throwable ~> Transgression): Monitor

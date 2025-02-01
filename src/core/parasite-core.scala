@@ -25,6 +25,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import digression.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import fulminate.*
@@ -80,14 +81,17 @@ def snooze[DurationType: GenericDuration](duration: DurationType)(using Monitor)
   monitor.snooze(duration)
 
 def delay[DurationType: GenericDuration](duration: DurationType)(using Monitor): Unit =
-  hibernate(System.currentTimeMillis + duration.milliseconds)
+  hibernate(System.currentTimeMillis + DurationType.milliseconds(duration))
 
-def sleep[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
-  monitor.snooze(instant.millisecondsSinceEpoch - System.currentTimeMillis)
+def sleep[InstantType: Generalizable across Instants into Long](instant: InstantType)(using Monitor)
+:     Unit =
+  monitor.snooze(instant.generalize - System.currentTimeMillis)
 
-def hibernate[InstantType: GenericInstant](instant: InstantType)(using Monitor): Unit =
-  while instant.millisecondsSinceEpoch > System.currentTimeMillis
-  do sleep(instant.millisecondsSinceEpoch)
+def hibernate[InstantType: Generalizable across Instants into Long](instant: InstantType)
+   (using Monitor)
+:     Unit =
+  while instant.generalize > System.currentTimeMillis
+  do sleep(instant.generalize)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
   def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises AsyncError =
