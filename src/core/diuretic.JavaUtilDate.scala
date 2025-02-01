@@ -22,7 +22,10 @@ import java.util as ju
 
 import language.experimental.captureChecking
 
-object JavaUtilDate extends GenericInstant, SpecificInstant:
+object JavaUtilDate extends Generalizable, Specializable:
   type Self = ju.Date
-  def instant(long: Long): ju.Date = ju.Date(long)
-  def millisecondsSinceEpoch(value: ju.Date): Long = value.getTime
+  type Source = Long
+  type Result = Long
+  type Domain = Instants
+  def specialization(long: Long): ju.Date = ju.Date(long)
+  def generalization(value: ju.Date): Long = value.getTime

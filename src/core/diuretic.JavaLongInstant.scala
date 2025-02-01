@@ -20,8 +20,11 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-object JavaLongInstant extends GenericInstant, SpecificInstant:
+object JavaLongInstant extends Generalizable, Specializable:
   type Self = Long
+  type Result = Long
+  type Source = Long
+  type Domain = Instants
 
-  def millisecondsSinceEpoch(long: Long): Long = long
-  def instant(value: Long): Long = value
+  def specialization(long: Long): Long = long
+  def generalization(long: Long): Long = long

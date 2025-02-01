@@ -22,8 +22,11 @@ import java.time as jt
 
 import language.experimental.captureChecking
 
-object JavaTimeInstant extends GenericInstant, SpecificInstant:
+object JavaTimeInstant extends Generalizable, Specializable:
   type Self = jt.Instant
+  type Source = Long
+  type Result = Long
+  type Domain = Instants
 
-  def millisecondsSinceEpoch(value: jt.Instant): Long = value.toEpochMilli
-  def instant(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
+  def generalization(value: jt.Instant): Long = value.toEpochMilli
+  def specialization(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
