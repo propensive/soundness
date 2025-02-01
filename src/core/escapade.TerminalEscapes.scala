@@ -19,6 +19,7 @@ package escapade
 import anticipation.*
 import gossamer.*
 import iridescence.*
+import prepositional.*
 import spectacular.*
 
 import language.experimental.captureChecking
@@ -78,8 +79,8 @@ object escapes:
 
   def title(name: Text) = Escape(t"]0;$name\e\\")
 
-  def link[UrlType: GenericUrl](url: UrlType, text: Text): Text =
-    t"\e]8;;${UrlType.text(url)}\e\\$text\e]8;;\e\\"
+  def link[UrlType: Generalizable across Urls into Text](url: UrlType, text: Text): Text =
+    t"\e]8;;${url.generalize}\e\\$text\e]8;;\e\\"
 
 trait TerminalEscapes:
   def bold(state: Boolean): Text
