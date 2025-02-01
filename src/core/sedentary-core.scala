@@ -27,7 +27,7 @@ extension [TestType](test: Test[TestType])
      (confidence: Optional[Benchmark.Percentiles] = Unset,
       iterations: Optional[Int]                   = Unset,
       duration:   Optional[DurationType]          = Unset,
-      warmup:    Optional[DurationType]          = Unset,
+      warmup:     Optional[DurationType]          = Unset,
       baseline:   Optional[Baseline]              = Unset)
      (using runner:        Runner[ReportType],
             inc:           Inclusion[ReportType, Benchmark],
@@ -36,7 +36,10 @@ extension [TestType](test: Test[TestType])
   :     Unit =
 
     val action = test.action
-    var end = System.currentTimeMillis + warmup.or(SpecificDuration(10000L)).milliseconds
+
+    var end =
+      System.currentTimeMillis + genericDuration.milliseconds(warmup.or(SpecificDuration(10000L)))
+
     val times: scm.ArrayBuffer[Long] = scm.ArrayBuffer()
     times.sizeHint(4096)
     val ctx = new Harness()
@@ -49,7 +52,9 @@ extension [TestType](test: Test[TestType])
 
     times.clear()
 
-    end = System.currentTimeMillis + duration.or(SpecificDuration(10000L)).milliseconds
+    end =
+      System.currentTimeMillis
+      + genericDuration.milliseconds(duration.or(SpecificDuration(10000L)))
 
     while System.currentTimeMillis < end do
       val t0 = System.nanoTime
