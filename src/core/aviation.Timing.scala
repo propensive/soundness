@@ -33,9 +33,9 @@ object Timing:
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = ###
-    given generic: Timing.TaiInstant is (Generalizable & Specializable) across Instants into
+    given generic: Timing.TaiInstant is (Abstractable & Concretizable) across Instants into
                     Long from Long =
-      new Generalizable with Specializable:
+      new Abstractable with Concretizable:
         type Self = Timing.TaiInstant
         type Source = Long
         type Result = Long
@@ -45,15 +45,15 @@ object Timing:
 
 
   object Instant:
-    def apply[InstantType: Generalizable across Instants into Long](instant: InstantType): Instant =
-      of(instant.generalize)
+    def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
+      of(instant.abstraction)
 
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
 
-    given generic: Timing.Instant is (Generalizable & Specializable) across Instants into Long from
+    given generic: Timing.Instant is (Abstractable & Concretizable) across Instants into Long from
                     Long =
-      new Generalizable with Specializable:
+      new Abstractable with Concretizable:
         type Self = Timing.Instant
         type Result = Long
         type Source = Long

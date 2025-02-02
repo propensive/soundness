@@ -22,8 +22,8 @@ import prepositional.*
 import java.time as jt
 
 object LocalTime:
-  given generic: RomanCalendar => LocalTime is Generalizable across Instants into Long =
-    _.instant.generalize
+  given generic: RomanCalendar => LocalTime is Abstractable across Instants into Long =
+    _.instant.abstraction
 
 case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
