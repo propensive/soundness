@@ -73,7 +73,7 @@ for paths (which may not relate to a file or directory) and files/directories.
 
 ## Status
 
-Diuretic is classified as __embryotic__. For reference, Soundness projects are
+Diuretic is classified as __embryonic__. For reference, Soundness projects are
 categorized into one of the following five stability levels:
 
 - _embryonic_: for experimental or demonstrative purposes only, without any guarantees of longevity
