@@ -21,9 +21,10 @@ import anticipation.*
 import contingency.*
 import hellenism.*
 import parasite.*
+import prepositional.*
 
 trait Compiler:
-  def apply(classpath: LocalClasspath)[PathType: GenericPath]
+  def apply(classpath: LocalClasspath)[PathType: Abstractable across Paths into Text]
      (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor)
   :     CompileProcess logs CompileEvent raises CompilerError

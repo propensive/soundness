@@ -23,6 +23,7 @@ import digression.*
 import gossamer.*
 import hellenism.*
 import parasite.*
+import prepositional.*
 import rudiments.*
 
 import dotty.tools.dotc as dtd
@@ -46,7 +47,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
 
   def commandLineArguments: List[Text] = options.flatMap(_.flags)
 
-  def apply(classpath: LocalClasspath)[PathType: GenericPath]
+  def apply(classpath: LocalClasspath)[PathType: Abstractable across Paths into Text]
      (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
   :     CompileProcess logs CompileEvent raises CompilerError =
@@ -81,7 +82,7 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
         //val pluginParams = plugins
         //val jsParams =
         val args: List[Text] =
-          List(t"-d", out.pathText, t"-classpath", classpath())
+          List(t"-d", out.generic, t"-classpath", classpath())
           ::: commandLineArguments
           ::: List(t"")
 
