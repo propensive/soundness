@@ -17,9 +17,11 @@
 package coaxial
 
 import anticipation.*
+import prepositional.*
 
 object DomainSocket:
-  def apply[PathType: GenericPath](path: PathType): DomainSocket = DomainSocket(path.pathText)
+  def apply[PathType: Abstractable across Paths into Text](path: PathType): DomainSocket =
+    DomainSocket(path.generic)
 
 case class DomainSocket(private[coaxial] val address: Text):
-  def path[PathType: SpecificPath] = SpecificPath(address)
+  def path[PathType: Concretizable across Paths from Text] = PathType(address)
