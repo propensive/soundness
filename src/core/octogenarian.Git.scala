@@ -58,7 +58,7 @@ object Git:
     . deduplicate
 
   def init
-     [PathType: GenericPath]
+     [PathType: Abstractable across Paths into Text]
      (targetPath: PathType, bare: Boolean = false)
      (using WorkingDirectory, Tactic[GitError], Decoder[Path on Posix], Tactic[ExecError])
      (using command: GitCommand)
@@ -66,7 +66,7 @@ object Git:
     try
       throwErrors[PathError | IoError]:
         val bareOpt = if bare then sh"--bare" else sh""
-        val target: Path on Posix = targetPath.pathText.decode[Path on Posix]
+        val target: Path on Posix = targetPath.generic.decode[Path on Posix]
         sh"$command init $bareOpt $target".exec[Exit]()
 
         if bare then GitRepo(target, Unset) else GitRepo((target / n".git"), target)
@@ -75,7 +75,7 @@ object Git:
       case error: PathError => abort(GitError(InvalidRepoPath))
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
-  inline def cloneCommit[SourceType <: Matchable, PathType: GenericPath]
+  inline def cloneCommit[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
      (source: SourceType, targetPath: PathType, commit: CommitHash)
      (using Internet,
             Decoder[Path on Posix],
@@ -88,16 +88,16 @@ object Git:
     val sourceText = inline source match
       case source: SshUrl => source.text
       case other          => summonFrom:
-        case given (SourceType is Abstractable across Urls into Text) => source.abstraction
-        case given (SourceType is GenericPath)                        => source.pathText
+        case given (SourceType is Abstractable across Urls into Text)  => source.generic
+        case given (SourceType is Abstractable across Paths into Text) => source.generic
 
     uncheckedCloneCommit(sourceText, targetPath, commit)
 
-  inline def clone[SourceType <: Matchable, PathType: GenericPath]
-     (source:    SourceType,
+  inline def clone[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
+     (source:     SourceType,
       targetPath: PathType,
-      bare:      Boolean          = false,
-      branch:    Optional[Branch] = Unset,
+      bare:       Boolean          = false,
+      branch:     Optional[Branch] = Unset,
       recursive:  Boolean          = false)
      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
      (using gitError: Tactic[GitError])
@@ -106,12 +106,12 @@ object Git:
     val sourceText = inline source match
       case source: SshUrl => source.text
       case other          => summonFrom:
-        case given (SourceType is Abstractable across Urls into Text) => source.abstraction
-        case given (SourceType is GenericPath)                        => source.pathText
+        case given (SourceType is Abstractable across Urls into Text)  => source.generic
+        case given (SourceType is Abstractable across Paths into Text) => source.generic
 
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
-  private def uncheckedCloneCommit[PathType: GenericPath]
+  private def uncheckedCloneCommit[PathType: Abstractable across Paths into Text]
      (source: Text, targetPath: PathType, commit: CommitHash)
      (using Internet, Decoder[Path on Posix], GitCommand)
      (using gitError:      Tactic[GitError],
@@ -127,18 +127,18 @@ object Git:
       gitRepo.checkout(commit)
       gitRepo
 
-  private def uncheckedClone[PathType: GenericPath]
-     (source:    Text,
+  private def uncheckedClone[PathType: Abstractable across Paths into Text]
+     (source:     Text,
       targetPath: PathType,
-      bare:      Boolean          = false,
-      branch:    Optional[Branch] = Unset,
+      bare:       Boolean          = false,
+      branch:     Optional[Branch] = Unset,
       recursive:  Boolean          = false)
      (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
      (using gitError: Tactic[GitError])
   :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
     val target: Path on Posix =
-      try targetPath.pathText.decode[Path on Posix]
+      try targetPath.generic.decode[Path on Posix]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
     val bareOption = if bare then sh"--bare" else sh""

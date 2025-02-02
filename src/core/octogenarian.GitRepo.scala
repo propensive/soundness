@@ -41,11 +41,11 @@ import pathNavigation.posix
 import GitError.Reason.*
 
 object GitRepo:
-  def apply[PathType: GenericPath](path: PathType)
+  def apply[PathType: Abstractable across Paths into Text](path: PathType)
      (using gitError: Tactic[GitError], io: Tactic[IoError])
   :     GitRepo raises PathError raises NameError =
 
-    unsafely(path.pathText.decode[Path on Posix]).pipe: path =>
+    unsafely(path.generic.decode[Path on Posix]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
       if (path / n".git").exists() then GitRepo((path / n".git"), path)
@@ -143,13 +143,13 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case Exit.Ok => ()
       case failure       => abort(GitError(BranchFailed))
 
-  def add[PathType: GenericPath](path: PathType)
+  def add[PathType: Abstractable across Paths into Text](path: PathType)
      (using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError])
   :     Unit logs GitEvent raises PathError raises NameError =
 
     val relativePath: Relative =
       workTree.let: workTree =>
-        safely(path.pathText.decode[Path on Posix].relativeTo(workTree)).or:
+        safely(path.generic.decode[Path on Posix].relativeTo(workTree)).or:
           abort(GitError(AddFailed))
 
       . or(abort(GitError(NoWorkTree)))
