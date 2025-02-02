@@ -127,9 +127,9 @@ object HtmlAttribute:
   given high: ("high" is HtmlAttribute[Double]) = _.toString.show
   given href: ("href" is HtmlAttribute[Text]) = identity(_)
 
-  given href2: [UrlType: Generalizable across Urls into Text]
+  given href2: [UrlType: Abstractable across Urls into Text]
   =>    ("href" is HtmlAttribute[UrlType]) =
-    _.generalize
+    _.abstraction
 
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
