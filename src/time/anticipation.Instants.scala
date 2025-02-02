@@ -21,7 +21,7 @@ import language.experimental.captureChecking
 import prepositional.*
 
 object Instants:
-  given generalizable: Long is Generalizable across Instants into Long = identity(_)
-  given specializable: Long is Specializable across Instants from Long = identity(_)
+  given Abstractable: Long is Abstractable across Instants into Long = identity(_)
+  given specializable: Long is Concretizable across Instants from Long = identity(_)
 
 erased trait Instants
