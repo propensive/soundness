@@ -20,6 +20,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import vacuous.*
 
@@ -44,8 +45,8 @@ case class BaseLayout(private val part: Optional[Text], readOnly: Boolean = fals
 
   given BaseLayout.Dir = BaseLayout.Dir(baseDir.home, part.let(_ :: baseDir.path).or(baseDir.path))
 
-  def apply[PathType: SpecificPath]()(using SystemProperties, Environment)
+  def apply[PathType: Concretizable across Paths from Text]()(using SystemProperties, Environment)
   :     PathType raises SystemPropertyError raises EnvironmentError =
 
     val path: Text = absolutePath
-    SpecificPath(path)
+    PathType(path)

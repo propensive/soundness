@@ -20,14 +20,16 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: SpecificPath]()(using SystemProperties, Environment)
+  override def apply[PathType: Concretizable across Paths from Text]()
+     (using SystemProperties, Environment)
   :     PathType raises SystemPropertyError raises EnvironmentError =
 
-    SpecificPath(t"/")
+    PathType(t"/")
 
   object Boot extends BaseLayout(t"boot", readOnly = true)
   object Efi extends BaseLayout(t"efi", readOnly = true)
