@@ -308,15 +308,15 @@ extension (bs: Long)
 extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
-def workingDirectory[PathType]
-   (using directory: WorkingDirectory, specific: PathType is SpecificPath)
-:       PathType =
+def workingDirectory[PathType: Concretizable across Paths from Text]
+   (using directory: WorkingDirectory)
+:     PathType =
 
   directory.path[PathType]
 
-def homeDirectory[PathType]
-   (using directory: HomeDirectory, specific: PathType is SpecificPath)
-:       PathType =
+def homeDirectory[PathType: Concretizable across Paths from Text]
+   (using directory: HomeDirectory)
+:     PathType =
 
   directory.path[PathType]
 

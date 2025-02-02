@@ -19,10 +19,13 @@ package rudiments
 import language.experimental.captureChecking
 
 import anticipation.*
+import prepositional.*
 
 object HomeDirectory:
   given default(using Quickstart): HomeDirectory = () => System.getProperty("user.home").nn.tt
 
 trait HomeDirectory:
   def directory(): Text
-  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
+
+  def path[PathType: Concretizable across Paths from Text]: PathType =
+    PathType(directory())

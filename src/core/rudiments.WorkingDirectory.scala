@@ -19,12 +19,17 @@ package rudiments
 import language.experimental.captureChecking
 
 import anticipation.*
+import prepositional.*
 
 object WorkingDirectory:
   given default(using Quickstart): WorkingDirectory = workingDirectories.default
 
-  def apply[PathType: GenericPath](path: PathType): WorkingDirectory = () => path.pathText
+  def apply[PathType: Abstractable across Paths into Text](path: PathType)
+  :     WorkingDirectory =
+    () => path.generic
 
 trait WorkingDirectory:
   def directory(): Text
-  def path[PathType: SpecificPath]: PathType = SpecificPath(directory())
+
+  def path[PathType: Concretizable across Paths from Text]: PathType =
+    PathType(directory())
