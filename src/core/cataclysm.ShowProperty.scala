@@ -18,6 +18,7 @@ package cataclysm
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 
@@ -61,8 +62,8 @@ object ShowProperty:
 
   //given ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  given [PathType: GenericPath]: ShowProperty[PathType] =
-    path => t"url('${path.pathText}')"
+  given [PathType: Abstractable across Paths into Text] => ShowProperty[PathType] =
+    path => t"url('${path.generic}')"
 
   given ShowProperty[Text] = identity(_)
   given ShowProperty[Int] = _.show

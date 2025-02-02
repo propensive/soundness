@@ -17,6 +17,7 @@
 package cataclysm
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
 
 erased trait PropertyDef[-PropertyType]:
@@ -49,7 +50,8 @@ object PropertyDef:
   erased given backgroundImage: ("backgroundImage" is PropertyDef[Text]) = ###
   //given backgroundImage2: ("backgroundImage" is PropertyDef[Relative]) = ###
 
-  erased given backgroundImage3: [PathType] => (erased PathType is GenericPath)
+  erased given backgroundImage3: [PathType]
+  =>     (erased PathType is Abstractable across Paths into Text)
   =>    ("backgroundImage" is PropertyDef[PathType]) = ###
 
   //erased given backgroundImage4: ("backgroundImage" is PropertyDef[SimplePath]) = ###
