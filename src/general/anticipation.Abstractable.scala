@@ -5,4 +5,4 @@ trait Abstractable:
   type Result
   type Domain
   def generalization(value: Self): Result
-  extension (value: Self) def abstraction: Result = generalization(value)
+  extension (value: Self) def generic: Result = generalization(value)
