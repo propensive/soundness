@@ -22,6 +22,7 @@ import language.dynamics
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -33,64 +34,84 @@ trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   def read(value: Text): VariableType
 
 object EnvironmentVariable extends EnvironmentVariable2:
-  given path: [PathType: SpecificPath] => (systemProperties: SystemProperties)
+  given path: [PathType: Concretizable across Paths from Text]
+  =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["path", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgDataDirs: [PathType: SpecificPath] => (systemProperties: SystemProperties)
+  given xdgDataDirs: [PathType: Concretizable across Paths from Text]
+  =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["xdgDataDirs", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgConfigDirs: [PathType: SpecificPath] => (systemProperties: SystemProperties)
+  given xdgConfigDirs: [PathType: Concretizable across Paths from Text]
+  =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["xdgConfigDirs", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgDataHome: [PathType: SpecificPath as specific]
+  given xdgDataHome: [PathType: Concretizable across Paths from Text]
   =>    EnvironmentVariable["xdgDataHome", PathType] =
 
-    SpecificPath(_)
+    PathType(_)
 
-  given xdgConfigHome: [PathType: SpecificPath as specific]
+  given xdgConfigHome: [PathType: Concretizable across Paths from Text]
   =>    EnvironmentVariable["xdgConfigHome", PathType] =
-    SpecificPath(_)
+    PathType(_)
 
-  given xdgStateHome: [PathType: SpecificPath] => (EnvironmentVariable["xdgStateHome", PathType]) =
-    SpecificPath(_)
+  given xdgStateHome: [PathType: Concretizable across Paths from Text]
+  =>    (EnvironmentVariable["xdgStateHome", PathType]) =
+    PathType(_)
 
-  given xdgCacheHome: [PathType: SpecificPath as specific]
+  given xdgCacheHome: [PathType: Concretizable across Paths from Text]
   =>    EnvironmentVariable["xdgCacheHome", PathType] =
 
-    SpecificPath(_)
+    PathType(_)
 
-  given xdgRuntimeDir: [PathType: SpecificPath] => EnvironmentVariable["xdgRuntimeDir", PathType] =
-    SpecificPath(_)
+  given xdgRuntimeDir: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["xdgRuntimeDir", PathType] =
+    PathType(_)
 
-  given home: [PathType: SpecificPath] => EnvironmentVariable["home", PathType] = SpecificPath(_)
-  given mail: [PathType: SpecificPath] => EnvironmentVariable["mail", PathType] = SpecificPath(_)
-  given shell: [PathType: SpecificPath] => EnvironmentVariable["shell", PathType] = SpecificPath(_)
+  given home: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["home", PathType] =
+    PathType(_)
 
-  given oldpwd: [PathType: SpecificPath] => EnvironmentVariable["oldpwd", PathType] =
-    SpecificPath(_)
+  given mail: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["mail", PathType] =
+    PathType(_)
 
-  given windowid: [PathType: SpecificPath] => EnvironmentVariable["windowid", PathType] =
-    SpecificPath(_)
+  given shell: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["shell", PathType] =
+    PathType(_)
 
-  given editor: [PathType: SpecificPath] => EnvironmentVariable["editor", PathType] =
-    SpecificPath(_)
+  given oldpwd: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["oldpwd", PathType] =
+    PathType(_)
 
-  given pager: [PathType: SpecificPath] => EnvironmentVariable["pager", PathType] = SpecificPath(_)
+  given windowid: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["windowid", PathType] =
+    PathType(_)
+
+  given editor: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["editor", PathType] =
+    PathType(_)
+
+  given pager: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["pager", PathType] =
+    PathType(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
-  given sshAuthSock[PathType: SpecificPath]: EnvironmentVariable["sshAuthSock", PathType] =
-    SpecificPath(_)
+  given sshAuthSock: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["sshAuthSock", PathType] =
+    PathType(_)
 
-  given manpager[PathType: SpecificPath]: EnvironmentVariable["manpager", PathType] =
-    SpecificPath(_)
+  given manpager: [PathType: Concretizable across Paths from Text]
+  =>    EnvironmentVariable["manpager", PathType] =
+    PathType(_)
 
   given columns: Decoder[Int] => EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)

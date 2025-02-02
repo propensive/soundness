@@ -21,37 +21,38 @@ import language.experimental.pureFunctions
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
 
 object Xdg:
-  def dataHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+  def dataHome[PathType: Concretizable across Paths from Text](using environment: Environment, home: HomeDirectory)
   :     PathType =
-    safely(Environment.xdgDataHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/share"))
+    safely(Environment.xdgDataHome[PathType]).or(PathType(t"${home.directory()}/.local/share"))
 
-  def configHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+  def configHome[PathType: Concretizable across Paths from Text](using environment: Environment, home: HomeDirectory)
   :     PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.config"))
+    safely(Environment.xdgConfigHome[PathType]).or(PathType(t"${home.directory()}/.config"))
 
-  def cacheHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
-  :     PathType =
-
-    safely(Environment.xdgCacheHome[PathType]).or(SpecificPath(t"${home.directory()}/.cache"))
-
-  def stateHome[PathType: SpecificPath](using environment: Environment, home: HomeDirectory)
+  def cacheHome[PathType: Concretizable across Paths from Text](using environment: Environment, home: HomeDirectory)
   :     PathType =
 
-    safely(Environment.xdgStateHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/state"))
+    safely(Environment.xdgCacheHome[PathType]).or(PathType(t"${home.directory()}/.cache"))
 
-  def runtimeDir[PathType: SpecificPath](using environment: Environment): Optional[PathType] =
+  def stateHome[PathType: Concretizable across Paths from Text](using environment: Environment, home: HomeDirectory)
+  :     PathType =
+
+    safely(Environment.xdgStateHome[PathType]).or(PathType(t"${home.directory()}/.local/state"))
+
+  def runtimeDir[PathType: Concretizable across Paths from Text](using environment: Environment): Optional[PathType] =
     safely(Environment.xdgRuntimeDir[PathType])
 
-  def bin[PathType: SpecificPath](using environment: Environment, home: HomeDirectory): PathType =
-    safely(Environment.xdgConfigHome[PathType]).or(SpecificPath(t"${home.directory()}/.local/bin"))
+  def bin[PathType: Concretizable across Paths from Text](using environment: Environment, home: HomeDirectory): PathType =
+    safely(Environment.xdgConfigHome[PathType]).or(PathType(t"${home.directory()}/.local/bin"))
 
-  def dataDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =
+  def dataDirs[PathType: Concretizable across Paths from Text](using Environment, SystemProperties): List[PathType] =
     safely(Environment.xdgDataDirs[List[PathType]]).or:
-      List(t"/usr/local/share", t"/usr/share").map(SpecificPath(_))
+      List(t"/usr/local/share", t"/usr/share").map(PathType(_))
 
-  def configDirs[PathType: SpecificPath](using Environment, SystemProperties): List[PathType] =
-    safely(Environment.xdgConfigDirs[List[PathType]]).or(List(t"/etc/xdg").map(SpecificPath(_)))
+  def configDirs[PathType: Concretizable across Paths from Text](using Environment, SystemProperties): List[PathType] =
+    safely(Environment.xdgConfigDirs[List[PathType]]).or(List(t"/etc/xdg").map(PathType(_)))

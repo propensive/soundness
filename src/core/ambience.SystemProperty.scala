@@ -24,6 +24,7 @@ import scala.compiletime.ops.string.*
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
@@ -36,36 +37,44 @@ object SystemProperty:
   =>    SystemProperty[UnknownType, Text] =
     identity(_)
 
-  given javaHome[PathType: SpecificPath]: SystemProperty["java.home", PathType] = SpecificPath(_)
+  given javaHome: [PathType: Concretizable across Paths from Text]
+  =>    SystemProperty["java.home", PathType] =
+    PathType(_)
 
-  given javaLibraryPath[PathType: SpecificPath]
+  given javaLibraryPath[PathType: Concretizable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.library.path", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given javaClassPath[PathType: SpecificPath]
+  given javaClassPath[PathType: Concretizable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.class.path", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
 
-  given javaExtDirs[PathType: SpecificPath]
+  given javaExtDirs[PathType: Concretizable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.ext.dirs", List[PathType]] =
 
-    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(SpecificPath(_))
+    _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
   given fileSeparator: SystemProperty["file.separator", Char] = _.decode[Char]
   given pathSeparator: SystemProperty["path.separator", Char] = _.decode[Char]
   given lineSeparator: SystemProperty["line.separator", Text] = identity(_)
 
   given userName: SystemProperty["user.name", Text] = identity(_)
-  given userHome[PathType: SpecificPath]: SystemProperty["user.home", PathType] = SpecificPath(_)
-  given userDir[PathType: SpecificPath]: SystemProperty["user.dir", PathType] = SpecificPath(_)
+
+  given userHome: [PathType: Concretizable across Paths from Text]
+  =>    SystemProperty["user.home", PathType] =
+    PathType(_)
+
+  given userDir: [PathType: Concretizable across Paths from Text]
+  =>    SystemProperty["user.dir", PathType] =
+    PathType(_)
 
   given osName: SystemProperty["os.name", Text] = identity(_)
   given osVersion: SystemProperty["os.version", Text] = identity(_)
