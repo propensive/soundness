@@ -257,7 +257,7 @@ object anticipation extends SoundnessModule {
   }
 
   object path extends SoundnessSubModule {
-    def moduleDeps = Seq(text)
+    def moduleDeps = Seq(text, general)
   }
 
   object time extends SoundnessSubModule {
