@@ -20,7 +20,7 @@ import anticipation.*
 
 import language.experimental.captureChecking
 
-object JavaLongInstant extends Generalizable, Specializable:
+object JavaLongInstant extends Abstractable, Concretizable:
   type Self = Long
   type Result = Long
   type Source = Long

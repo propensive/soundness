@@ -22,7 +22,7 @@ import java.net as jn
 
 import language.experimental.captureChecking
 
-object JavaNetUrl extends Generalizable, Specializable:
+object JavaNetUrl extends Abstractable, Concretizable:
   type Self = jn.URL
   type Result = Text
   type Source = Text

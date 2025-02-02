@@ -22,7 +22,7 @@ import java.time as jt
 
 import language.experimental.captureChecking
 
-object JavaTimeInstant extends Generalizable, Specializable:
+object JavaTimeInstant extends Abstractable, Concretizable:
   type Self = jt.Instant
   type Source = Long
   type Result = Long

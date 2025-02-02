@@ -22,7 +22,7 @@ import java.util as ju
 
 import language.experimental.captureChecking
 
-object JavaUtilDate extends Generalizable, Specializable:
+object JavaUtilDate extends Abstractable, Concretizable:
   type Self = ju.Date
   type Source = Long
   type Result = Long
