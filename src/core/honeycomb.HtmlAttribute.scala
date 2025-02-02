@@ -129,7 +129,7 @@ object HtmlAttribute:
 
   given href2: [UrlType: Abstractable across Urls into Text]
   =>    ("href" is HtmlAttribute[UrlType]) =
-    _.abstraction
+    _.generic
 
   // Needs to be provided by Cosmopolite
   given hreflang: ("hreflang" is HtmlAttribute[Text]) = identity(_)
@@ -189,7 +189,11 @@ object HtmlAttribute:
   given span: ("span" is HtmlAttribute[Int]) = _.show
   given spellcheck: ("spellcheck" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given src: ("src" is HtmlAttribute[Text]) = identity(_)
-  given src2: [PathType: GenericPath] => ("src" is HtmlAttribute[PathType]) = _.pathText
+
+  given src2: [PathType: Abstractable across Paths into Text]
+  =>    ("src" is HtmlAttribute[PathType]) =
+    _.generic
+
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show
   given srclang: ("srclang" is HtmlAttribute[Text]) = identity(_)
 
