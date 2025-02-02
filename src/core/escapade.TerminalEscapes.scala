@@ -79,8 +79,8 @@ object escapes:
 
   def title(name: Text) = Escape(t"]0;$name\e\\")
 
-  def link[UrlType: Generalizable across Urls into Text](url: UrlType, text: Text): Text =
-    t"\e]8;;${url.generalize}\e\\$text\e]8;;\e\\"
+  def link[UrlType: Abstractable across Urls into Text](url: UrlType, text: Text): Text =
+    t"\e]8;;${url.abstraction}\e\\$text\e]8;;\e\\"
 
 trait TerminalEscapes:
   def bold(state: Boolean): Text
