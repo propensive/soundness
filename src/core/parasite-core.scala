@@ -85,13 +85,13 @@ def delay[DurationType: GenericDuration](duration: DurationType)(using Monitor):
 
 def sleep[InstantType: Abstractable across Instants into Long](instant: InstantType)(using Monitor)
 :     Unit =
-  monitor.snooze(instant.abstraction - System.currentTimeMillis)
+  monitor.snooze(instant.generic - System.currentTimeMillis)
 
 def hibernate[InstantType: Abstractable across Instants into Long](instant: InstantType)
    (using Monitor)
 :     Unit =
-  while instant.abstraction > System.currentTimeMillis
-  do sleep(instant.abstraction)
+  while instant.generic > System.currentTimeMillis
+  do sleep(instant.generic)
 
 extension [ResultType](tasks: Seq[Task[ResultType]])
   def sequence(using Monitor, Codicil): Task[Seq[ResultType]] raises AsyncError =
