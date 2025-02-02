@@ -22,15 +22,11 @@ import java.io as ji
 
 import language.experimental.captureChecking
 
-object JavaIoFile
-extends SpecificFile, SpecificDirectory, SpecificPath, GenericPath, GenericDirectory, GenericFile:
-
+object JavaIoFile extends Abstractable, Concretizable:
   type Self = ji.File
+  type Domain = Paths
+  type Source = Text
+  type Result = Text
 
-  def path(path: Text): ji.File = ji.File(path.s).nn
-  def file(file: Text): ji.File = path(file)
-  def directory(directory: Text): ji.File = path(directory)
-
-  def pathText(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
-  def fileText(value: ji.File): Text = pathText(value)
-  def directoryText(value: ji.File): Text = pathText(value)
+  def apply(path: Text): ji.File = ji.File(path.s).nn
+  def generalization(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt

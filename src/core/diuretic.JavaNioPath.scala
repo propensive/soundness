@@ -22,15 +22,11 @@ import java.nio.file as jnf
 
 import language.experimental.captureChecking
 
-object JavaNioPath
-extends SpecificFile, SpecificDirectory, SpecificPath, GenericPath, GenericDirectory, GenericFile:
-
+object JavaNioPath extends Concretizable, Abstractable:
   type Self = jnf.Path
+  type Domain = Paths
+  type Source = Text
+  type Result = Text
 
-  def path(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
-  def file(file: Text): jnf.Path = path(file)
-  def directory(directory: Text): jnf.Path = path(directory)
-
-  def pathText(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt
-  def fileText(value: jnf.Path): Text = pathText(value)
-  def directoryText(value: jnf.Path): Text = pathText(value)
+  def apply(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
+  def generalization(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt

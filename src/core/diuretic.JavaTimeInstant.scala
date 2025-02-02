@@ -29,4 +29,4 @@ object JavaTimeInstant extends Abstractable, Concretizable:
   type Domain = Instants
 
   def generalization(value: jt.Instant): Long = value.toEpochMilli
-  def specialization(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
+  def apply(long: Long): jt.Instant = jt.Instant.ofEpochMilli(long).nn
