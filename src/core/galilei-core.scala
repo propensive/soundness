@@ -221,12 +221,12 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
     import filesystemOptions.createNonexistentParents.enabled
     symlinkTo(unsafely(destination.child(path.textDescent.head)))
 
-  def modified[InstantType: Specializable across Instants from Long](): InstantType =
-    jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli.specialize
+  def modified[InstantType: Concretizable across Instants from Long](): InstantType =
+    jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli.concretize
 
-  def accessed[InstantType: Specializable across Instants from Long](): InstantType =
+  def accessed[InstantType: Concretizable across Instants from Long](): InstantType =
     val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-    attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli.specialize
+    attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli.concretize
 
   def readable: FilesystemAttribute.Readable[PlatformType] = FilesystemAttribute.Readable(path)
   def writable: FilesystemAttribute.Writable[PlatformType] = FilesystemAttribute.Writable(path)
@@ -241,10 +241,10 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def make[EntryType: Makable on PlatformType](): EntryType.Result = EntryType.make(path)
 
 extension [PlatformType <: Windows](path: Path on PlatformType)
-  def created[InstantType: Specializable across Instants from Long](): InstantType raises IoError =
+  def created[InstantType: Concretizable across Instants from Long](): InstantType raises IoError =
     path.protect(Operation.Metadata):
       val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-      attributes.creationTime().nn.toInstant.nn.toEpochMilli.specialize
+      attributes.creationTime().nn.toInstant.nn.toEpochMilli.concretize
 
 extension [PlatformType <: Posix](path: Path on PlatformType)
   def executable: FilesystemAttribute.Executable[PlatformType] =
