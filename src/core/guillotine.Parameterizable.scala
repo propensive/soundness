@@ -29,7 +29,8 @@ object Parameterizable:
     type Self = ValueType
     def show(value: ValueType): Text = value.encode
 
-  given [PathType: GenericPath] => PathType is Parameterizable = _.pathText
+  given [PathType: Abstractable across Paths into Text] => PathType is Parameterizable =
+    _.generic
 
 trait Parameterizable:
   type Self

@@ -25,6 +25,7 @@ import scala.jdk.StreamConverters.StreamHasToScala
 import anticipation.*
 import contingency.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -54,8 +55,8 @@ object Computable:
 
   given Unit is Computable = exitStatus.map(_ => ())
 
-  given [PathType: SpecificPath] => PathType is Computable =
-    proc => SpecificPath(text.compute(proc))
+  given [PathType: Concretizable across Paths from Text] => PathType is Computable =
+    path => PathType(text.compute(path))
 
 trait Computable:
   type Self

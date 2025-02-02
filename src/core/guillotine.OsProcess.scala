@@ -52,7 +52,7 @@ class OsProcess private (java: ProcessHandle) extends ProcessRef:
 
   def startTime[InstantType: Concretizable across Instants from Long]: Optional[InstantType] =
     val instant = java.info.nn.startInstant.nn
-    if instant.isPresent then instant.get.nn.toEpochMilli.concretize else Unset
+    if instant.isPresent then InstantType(instant.get.nn.toEpochMilli) else Unset
 
   def cpuUsage[DurationType: SpecificDuration]: Optional[DurationType] =
     val duration = java.info.nn.totalCpuDuration.nn
