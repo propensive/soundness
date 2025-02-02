@@ -35,11 +35,15 @@ object Path:
     Path.parse(_)
 
   given showable: [PlatformType] => (Path on PlatformType) is Showable = _.text
-  given generic: [PlatformType] => (Path on PlatformType) is GenericPath = _.text
+
+  given generic: [PlatformType] => (Path on PlatformType) is Abstractable across Paths into Text =
+    _.text
+
   given nominable: [PlatformType] => (Path on PlatformType) is Nominable = path =>
     path.textDescent.prim.or(path.textRoot)
 
-  given specific: [PlatformType: {Navigable, Radical}] => Path on PlatformType is SpecificPath =
+  given specific: [PlatformType: {Navigable, Radical}]
+  =>    Path on PlatformType is Concretizable across Paths from Text =
     _.decode[Path on PlatformType]
 
   given communicable: Path is Communicable = path =>

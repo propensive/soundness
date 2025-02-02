@@ -21,8 +21,12 @@ import serpentine.*
 
 package filesystemApi:
   given serpentinePath: [PlatformType: {Navigable, Radical}]
-  =>    (Path on PlatformType) is GenericPath & SpecificPath =
-    new GenericPath with SpecificPath:
+  =>    (Path on PlatformType) is (Abstractable & Concretizable) across Paths from Text into Text =
+    new Abstractable with Concretizable:
       type Self = Path on PlatformType
-      def pathText(path: Path on PlatformType): Text = path.text
-      def path(text: Text): Path on PlatformType = Path.parse[PlatformType](text)
+      type Domain = Paths
+      type Source = Text
+      type Result = Text
+
+      def generalization(path: Path on PlatformType): Text = path.text
+      def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)
