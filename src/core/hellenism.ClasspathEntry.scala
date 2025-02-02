@@ -20,19 +20,21 @@ import java.net as jn
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import vacuous.*
 
 sealed trait ClasspathEntry
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
-    def apply[DirectoryType: SpecificDirectory](): DirectoryType = SpecificDirectory(path)
+    def apply[DirectoryType: Concretizable across Paths from Text](): DirectoryType =
+      DirectoryType(path)
 
   case class Jar(path: Text) extends ClasspathEntry:
-    def apply[FileType: SpecificFile](): FileType = SpecificFile(path)
+    def apply[FileType: Concretizable across Paths from Text](): FileType = FileType(path)
 
   case class Url(url: Text) extends ClasspathEntry:
-    def apply[UrlType: SpecificUrl](): UrlType = SpecificUrl(url)
+    def apply[UrlType: Concretizable across Urls from Text](): UrlType = UrlType(url)
 
   case object JavaRuntime extends ClasspathEntry
 
