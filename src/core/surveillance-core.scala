@@ -19,15 +19,16 @@ package surveillance
 import anticipation.*
 import contingency.*
 import fulminate.*
+import prepositional.*
 import rudiments.*
 
-extension [PathType: GenericPath](path: PathType)
+extension [PathType: Abstractable across Paths into Text](path: PathType)
   def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
     val watchSet = Watch(List(path))
     lambda(watchSet).also:
       watchSet.unregister()
 
-extension [PathType: GenericPath](paths: Iterable[PathType])
+extension [PathType: Abstractable across Paths into Text](paths: Iterable[PathType])
   def watch[ResultType](lambda: Watch => ResultType): ResultType raises WatchError =
     val watchSet = Watch(paths)
 

@@ -24,6 +24,7 @@ import anticipation.*
 import contingency.*
 import feudalism.*
 import parasite.*, threadModels.platform
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -60,10 +61,10 @@ object Watch:
 
         key.reset()
 
-  def apply[PathType: GenericPath](paths: Iterable[PathType]): Watch =
+  def apply[PathType: Abstractable across Paths into Text](paths: Iterable[PathType]): Watch =
     Watch.register:
       val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
-        paths.map(_.fullPath.s).map(jnf.Paths.get(_).nn).map: javaPath =>
+        paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
           if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
           else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
 

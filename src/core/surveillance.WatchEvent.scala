@@ -20,6 +20,7 @@ import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import spectacular.*
 
 enum WatchEvent:
@@ -30,11 +31,11 @@ enum WatchEvent:
 
   def dir: Text
 
-  def path[DirectoryType: SpecificPath]: DirectoryType = unsafely:
+  def path[DirectoryType: Concretizable across Paths from Text]: DirectoryType = unsafely:
     val relPath = this match
       case NewFile(_, file)      => file
       case NewDirectory(_, path) => path
       case Modify(_, file)       => file
       case Delete(_, path)       => path
 
-      SpecificPath(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
+      DirectoryType(jnf.Paths.get(dir.s, relPath.show.s).nn.normalize.nn.toString.show)
