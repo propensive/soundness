@@ -54,7 +54,7 @@ object Capitate:
   given ifUnmodifiedSince: ("ifUnmodifiedSince" is Capitate of Text) = identity(_)
   given maxForwards: ("maxForwards" is Capitate of Int) = _.toString.tt
   given origin: [UrlType: Abstractable across Urls into Text]
-  =>    ("origin" is Capitate of UrlType) = _.abstraction
+  =>    ("origin" is Capitate of UrlType) = _.generic
   given pragma: ("pragma" is Capitate of Text) = identity(_)
   given prefer: ("prefer" is Capitate of Text) = identity(_)
   given proxyAuthorization: ("proxyAuthorization" is Capitate of Text) = identity(_)
