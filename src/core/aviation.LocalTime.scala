@@ -23,7 +23,7 @@ import java.time as jt
 
 object LocalTime:
   given generic: RomanCalendar => LocalTime is Abstractable across Instants into Long =
-    _.instant.abstraction
+    _.instant.generic
 
 case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =

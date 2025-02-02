@@ -27,7 +27,7 @@ package instantApi:
       type Source = Long
       type Result = Long
       type Domain = Instants
-      export Timing.Instant.generic.{generalization, specialization}
+      export Timing.Instant.generic.{generalization, apply}
 
 package durationApi:
   given aviationDuration: Timing.Duration is GenericDuration & SpecificDuration =

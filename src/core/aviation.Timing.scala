@@ -40,13 +40,13 @@ object Timing:
         type Source = Long
         type Result = Long
         type Domain = Instants
-        def specialization(long: Long): Timing.TaiInstant = long
+        def apply(long: Long): Timing.TaiInstant = long
         def generalization(instant: Timing.TaiInstant): Long = instant
 
 
   object Instant:
     def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
-      of(instant.abstraction)
+      of(instant.generic)
 
     erased given underlying: Underlying[Instant, Long] = ###
     def of(millis: Long): Instant = millis
@@ -58,7 +58,7 @@ object Timing:
         type Result = Long
         type Source = Long
         type Domain = Instants
-        def specialization(long: Long): Timing.Instant = long
+        def apply(long: Long): Timing.Instant = long
         def generalization(instant: Timing.Instant): Long = instant
 
     inline given orderable: Instant is Orderable:
