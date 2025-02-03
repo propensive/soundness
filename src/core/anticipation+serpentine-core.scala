@@ -28,5 +28,5 @@ package filesystemApi:
       type Source = Text
       type Result = Text
 
-      def generalization(path: Path on PlatformType): Text = path.text
+      def genericize(path: Path on PlatformType): Text = path.text
       def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)
