@@ -18,6 +18,7 @@ package telekinesis
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
@@ -27,9 +28,9 @@ object Receivable:
   given bytes: Bytes is Receivable = (status, body) => body.read[Bytes]
   given byteStream: Stream[Bytes] is Receivable = (status, body) => body
 
-  given genericHttpReader: [ContentType: GenericHttpReader as readable]
+  given concretizable: [ContentType: Concretizable across HttpRequests from Text]
   =>    ContentType is Receivable =
-    (status, body) => readable.read(body.read[Bytes].utf8)
+    (status, body) => ContentType(body.read[Bytes].utf8)
 
   given httpStatus: HttpStatus is Receivable:
     def read(status: HttpStatus, body: Stream[Bytes]) = status
