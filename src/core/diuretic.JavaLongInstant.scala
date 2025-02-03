@@ -27,4 +27,4 @@ object JavaLongInstant extends Abstractable, Concretizable:
   type Domain = Instants
 
   def apply(long: Long): Long = long
-  def generalization(long: Long): Long = long
+  def genericize(long: Long): Long = long

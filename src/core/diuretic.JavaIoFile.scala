@@ -29,4 +29,4 @@ object JavaIoFile extends Abstractable, Concretizable:
   type Result = Text
 
   def apply(path: Text): ji.File = ji.File(path.s).nn
-  def generalization(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
+  def genericize(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt

@@ -28,5 +28,5 @@ object JavaNetUrl extends Abstractable, Concretizable:
   type Source = Text
   type Domain = Urls
 
-  def generalization(value: jn.URL): Text = value.toString.tt
+  def genericize(value: jn.URL): Text = value.toString.tt
   def apply(text: Text): jn.URL = jn.URI(text.s).nn.toURL().nn

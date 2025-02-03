@@ -29,4 +29,4 @@ object JavaNioPath extends Concretizable, Abstractable:
   type Result = Text
 
   def apply(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
-  def generalization(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt
+  def genericize(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt

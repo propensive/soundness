@@ -29,4 +29,4 @@ object JavaUtilDate extends Abstractable, Concretizable:
   type Domain = Instants
 
   def apply(long: Long): ju.Date = ju.Date(long)
-  def generalization(value: ju.Date): Long = value.getTime
+  def genericize(value: ju.Date): Long = value.getTime
