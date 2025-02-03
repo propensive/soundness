@@ -41,7 +41,7 @@ object Timing:
         type Result = Long
         type Domain = Instants
         def apply(long: Long): Timing.TaiInstant = long
-        def generalization(instant: Timing.TaiInstant): Long = instant
+        def genericize(instant: Timing.TaiInstant): Long = instant
 
 
   object Instant:
@@ -59,7 +59,7 @@ object Timing:
         type Source = Long
         type Domain = Instants
         def apply(long: Long): Timing.Instant = long
-        def generalization(instant: Timing.Instant): Long = instant
+        def genericize(instant: Timing.Instant): Long = instant
 
     inline given orderable: Instant is Orderable:
       inline def compare
