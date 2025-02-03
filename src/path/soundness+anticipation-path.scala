@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.{Paths, GenericWatchService}
+export anticipation.Paths
