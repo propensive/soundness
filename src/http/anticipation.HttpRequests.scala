@@ -18,6 +18,6 @@ package anticipation
 
 import language.experimental.captureChecking
 
-trait GenericHttpReader:
-  type Self
-  def read(value: Text): Self
+object HttpRequests
+
+erased trait HttpRequests
