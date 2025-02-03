@@ -22,7 +22,7 @@ for a definition such as this.
 
 ### Primitive `String` Extractors
 
-Extractors for all the primitive types are provided for matching on `String`s. These are defines as extensions
+Extractors for all the primitive types are provided for matching on `String`s. These are defined as extensions
 to the (virtual) companion objects of the primitive types, so they have the same names as the types they
 extract.
 
