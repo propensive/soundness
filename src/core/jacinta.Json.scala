@@ -219,7 +219,7 @@ object Json extends Json2, Dynamic:
   given Tactic[JsonParseError] => Decoder[Json] =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
-  given Tactic[JsonParseError] => ((Json is GenericHttpReader)) =
+  given Tactic[JsonParseError] => Json is Concretizable across HttpRequests from Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
