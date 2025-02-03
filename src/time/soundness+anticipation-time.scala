@@ -16,5 +16,4 @@
 
 package soundness
 
-export anticipation .
-  { Instants, Durations }
+export anticipation.{Instants, Durations}

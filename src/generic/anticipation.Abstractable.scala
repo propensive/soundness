@@ -20,5 +20,5 @@ trait Abstractable:
   type Self
   type Result
   type Domain
-  def generalization(value: Self): Result
-  extension (value: Self) def generic: Result = generalization(value)
+  def genericize(value: Self): Result
+  extension (value: Self) def generic: Result = genericize(value)

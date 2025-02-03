@@ -16,4 +16,4 @@
 
 package soundness
 
-export anticipation.SpecificUrl
+export anticipation.Urls
