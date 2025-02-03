@@ -212,7 +212,7 @@ object anthology extends SoundnessModule {
 }
 
 object anticipation extends SoundnessModule {
-  object general extends SoundnessSubModule {
+  object generic extends SoundnessSubModule {
     def moduleDeps = Seq(prepositional.core)
   }
 
@@ -225,15 +225,15 @@ object anticipation extends SoundnessModule {
   }
 
   object css extends SoundnessSubModule {
-    def moduleDeps = Seq(text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object url extends SoundnessSubModule {
-    def moduleDeps = Seq(text, general)
+    def moduleDeps = Seq(text, generic)
   }
 
   object html extends SoundnessSubModule {
-    def moduleDeps = Seq(text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object print extends SoundnessSubModule {
@@ -241,7 +241,7 @@ object anticipation extends SoundnessModule {
   }
 
   object http extends SoundnessSubModule {
-    def moduleDeps = Seq(text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object codec extends SoundnessSubModule {
@@ -257,11 +257,11 @@ object anticipation extends SoundnessModule {
   }
 
   object path extends SoundnessSubModule {
-    def moduleDeps = Seq(text, general)
+    def moduleDeps = Seq(text, generic)
   }
 
   object time extends SoundnessSubModule {
-    def moduleDeps = Seq(general)
+    def moduleDeps = Seq(generic)
   }
 
   object test extends ProbablyTestModule
