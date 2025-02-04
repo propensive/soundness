@@ -22,7 +22,7 @@ import anticipation.*
 import prepositional.*
 
 object HomeDirectory:
-  given default(using Quickstart): HomeDirectory = () => System.getProperty("user.home").nn.tt
+  given default: Quickstart => HomeDirectory = () => System.getProperty("user.home").nn.tt
 
 trait HomeDirectory:
   def directory(): Text
