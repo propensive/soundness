@@ -24,4 +24,4 @@ object DomainSocket:
     DomainSocket(path.generic)
 
 case class DomainSocket(private[coaxial] val address: Text):
-  def path[PathType: Concretizable across Paths from Text] = PathType(address)
+  def path[PathType: Instantiable across Paths from Text] = PathType(address)
