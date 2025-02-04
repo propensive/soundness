@@ -27,6 +27,6 @@ object Durations:
   inline def ns(double: Double): Long = double.toLong
 
   given abstractable: Long is Abstractable across Durations into Double = _.toDouble
-  given specializable: Long is Concretizable across Durations from Double = _.toLong
+  given instantiable: Long is Instantiable across Durations from Double = _.toLong
 
 erased trait Durations

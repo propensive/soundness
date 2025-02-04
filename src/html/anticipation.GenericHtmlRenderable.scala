@@ -17,4 +17,4 @@
 package anticipation
 
 trait GenericHtmlRenderable[ValueType]:
-  def html(value: ValueType): List[GenericHtml]
+  def html(value: ValueType): List[Sgml]

@@ -16,7 +16,7 @@
 
 package anticipation
 
-trait Concretizable:
+trait Instantiable:
   type Self
   type Source
   type Domain

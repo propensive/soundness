@@ -16,9 +16,8 @@
 
 package anticipation
 
-import language.experimental.captureChecking
-
-trait GenericHttpResponseStream:
-  type Self
-  def mediaType: Text
-  def content(value: Self): LazyList[IArray[Byte]]
+enum Sgml:
+  case Textual(text: Text)
+  case Element(name: Text, attributes: Map[Text, Text], children: List[Sgml])
+  case Comment(text: Text)
+  case ProcessingInstruction(target: Text, data: Text)
