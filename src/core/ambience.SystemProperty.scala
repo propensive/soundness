@@ -37,17 +37,17 @@ object SystemProperty:
   =>    SystemProperty[UnknownType, Text] =
     identity(_)
 
-  given javaHome: [PathType: Concretizable across Paths from Text]
+  given javaHome: [PathType: Instantiable across Paths from Text]
   =>    SystemProperty["java.home", PathType] =
     PathType(_)
 
-  given javaLibraryPath[PathType: Concretizable across Paths from Text]
+  given javaLibraryPath[PathType: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.library.path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given javaClassPath[PathType: Concretizable across Paths from Text]
+  given javaClassPath[PathType: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.class.path", List[PathType]] =
 
@@ -56,7 +56,7 @@ object SystemProperty:
   given javaVersion: SystemProperty["java.version", Text] = identity(_)
   given javaRuntimeVersion: SystemProperty["java.runtime.version", Text] = identity(_)
 
-  given javaExtDirs[PathType: Concretizable across Paths from Text]
+  given javaExtDirs[PathType: Instantiable across Paths from Text]
      (using systemProperties: SystemProperties, systemProperty: Tactic[SystemPropertyError])
   :     SystemProperty["java.ext.dirs", List[PathType]] =
 
@@ -68,11 +68,11 @@ object SystemProperty:
 
   given userName: SystemProperty["user.name", Text] = identity(_)
 
-  given userHome: [PathType: Concretizable across Paths from Text]
+  given userHome: [PathType: Instantiable across Paths from Text]
   =>    SystemProperty["user.home", PathType] =
     PathType(_)
 
-  given userDir: [PathType: Concretizable across Paths from Text]
+  given userDir: [PathType: Instantiable across Paths from Text]
   =>    SystemProperty["user.dir", PathType] =
     PathType(_)
 

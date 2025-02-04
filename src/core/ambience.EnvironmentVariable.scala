@@ -34,82 +34,82 @@ trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
   def read(value: Text): VariableType
 
 object EnvironmentVariable extends EnvironmentVariable2:
-  given path: [PathType: Concretizable across Paths from Text]
+  given path: [PathType: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["path", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgDataDirs: [PathType: Concretizable across Paths from Text]
+  given xdgDataDirs: [PathType: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["xdgDataDirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgConfigDirs: [PathType: Concretizable across Paths from Text]
+  given xdgConfigDirs: [PathType: Instantiable across Paths from Text]
   =>   (systemProperties: SystemProperties)
   =>    EnvironmentVariable["xdgConfigDirs", List[PathType]] =
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given xdgDataHome: [PathType: Concretizable across Paths from Text]
+  given xdgDataHome: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["xdgDataHome", PathType] =
 
     PathType(_)
 
-  given xdgConfigHome: [PathType: Concretizable across Paths from Text]
+  given xdgConfigHome: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["xdgConfigHome", PathType] =
     PathType(_)
 
-  given xdgStateHome: [PathType: Concretizable across Paths from Text]
+  given xdgStateHome: [PathType: Instantiable across Paths from Text]
   =>    (EnvironmentVariable["xdgStateHome", PathType]) =
     PathType(_)
 
-  given xdgCacheHome: [PathType: Concretizable across Paths from Text]
+  given xdgCacheHome: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["xdgCacheHome", PathType] =
 
     PathType(_)
 
-  given xdgRuntimeDir: [PathType: Concretizable across Paths from Text]
+  given xdgRuntimeDir: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["xdgRuntimeDir", PathType] =
     PathType(_)
 
-  given home: [PathType: Concretizable across Paths from Text]
+  given home: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["home", PathType] =
     PathType(_)
 
-  given mail: [PathType: Concretizable across Paths from Text]
+  given mail: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["mail", PathType] =
     PathType(_)
 
-  given shell: [PathType: Concretizable across Paths from Text]
+  given shell: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["shell", PathType] =
     PathType(_)
 
-  given oldpwd: [PathType: Concretizable across Paths from Text]
+  given oldpwd: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["oldpwd", PathType] =
     PathType(_)
 
-  given windowid: [PathType: Concretizable across Paths from Text]
+  given windowid: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["windowid", PathType] =
     PathType(_)
 
-  given editor: [PathType: Concretizable across Paths from Text]
+  given editor: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["editor", PathType] =
     PathType(_)
 
-  given pager: [PathType: Concretizable across Paths from Text]
+  given pager: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["pager", PathType] =
     PathType(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
     text => Pid(text.decode[Int])
 
-  given sshAuthSock: [PathType: Concretizable across Paths from Text]
+  given sshAuthSock: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["sshAuthSock", PathType] =
     PathType(_)
 
-  given manpager: [PathType: Concretizable across Paths from Text]
+  given manpager: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["manpager", PathType] =
     PathType(_)
 
