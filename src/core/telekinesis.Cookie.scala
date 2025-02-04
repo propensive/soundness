@@ -32,9 +32,6 @@ import scala.compiletime.*
 import java.text as jt
 
 object Cookie:
-  given setCookie: ("set-cookie" is GenericHttpRequestParam[Cookie.Value]) = _.show
-  given cookie: ("cookie" is GenericHttpRequestParam[Cookie.Value]) = _.show
-
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here

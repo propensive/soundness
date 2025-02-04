@@ -58,8 +58,6 @@ object Auth:
       case value =>
         abort(AuthError(value))
 
-  given ("authorization" is GenericHttpRequestParam[Auth]) = _.show
-
 enum Auth:
   case Basic(username: Text, password: Text)
   case Bearer(token: Text)
