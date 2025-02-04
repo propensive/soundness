@@ -25,7 +25,7 @@ import rudiments.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[PathType: Concretizable across Paths from Text]()
+  override def apply[PathType: Instantiable across Paths from Text]()
      (using SystemProperties, Environment)
   :     PathType raises SystemPropertyError raises EnvironmentError =
 
