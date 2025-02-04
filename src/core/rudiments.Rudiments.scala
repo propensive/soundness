@@ -48,7 +48,6 @@ object Rudiments:
 
   object Memory:
     def apply(long: Long): Memory = long
-    given ("content-length" is GenericHttpRequestParam[Memory]) = _.long.toString.tt
     given ordering: Ordering[Memory] = Ordering.Long.on(_.long)
 
     given communicable: [MemoryType <: Memory] => MemoryType is Communicable =
