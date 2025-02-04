@@ -264,7 +264,7 @@ object anticipation extends SoundnessModule {
   }
 
   object http extends SoundnessSubModule {
-    def moduleDeps = Seq(text, generic)
+    def moduleDeps = Seq(text, codec, generic)
   }
 
   object codec extends SoundnessSubModule {
