@@ -74,7 +74,7 @@ object Url:
   given HttpUrl is Abstractable across Urls into Text = _.show
 
   given (Tactic[UrlError], Tactic[HostnameError])
-  =>    HttpUrl is Concretizable across Urls from Text =
+  =>    HttpUrl is Instantiable across Urls from Text =
     Url.parse(_)
 
   given showable: [SchemeType <: Label] => Url[SchemeType] is Showable = url =>
