@@ -82,8 +82,6 @@ object Url:
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
-  given [SchemeType <: Label] => ("location" is GenericHttpRequestParam[Url[SchemeType]]) = _.show
-
   given [SchemeType <: Label] => (Tactic[UrlError], Tactic[HostnameError])
   =>    Decoder[Url[SchemeType]] =
     parse(_)
