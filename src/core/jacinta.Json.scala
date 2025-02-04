@@ -212,14 +212,19 @@ object Json extends Json2, Dynamic:
     try json.root.show catch case err: JsonError => t"<${err.reason.show}>"
 
   given (encoder: CharEncoder, printer: JsonPrinter)
-  =>    Json is GenericHttpResponseStream = new:
-    def mediaType: Text = t"application/json; charset=${encoder.encoding.name}"
-    def content(json: Json): Stream[Bytes] = Stream(json.show.bytes)
+  =>    Json is Abstractable across HttpStreams into HttpStreams.Content =
+    new Abstractable:
+      type Self = Json
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(json: Json): HttpStreams.Content =
+        (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
 
   given Tactic[JsonParseError] => Decoder[Json] =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
-  given Tactic[JsonParseError] => Json is Concretizable across HttpRequests from Text =
+  given Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
