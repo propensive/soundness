@@ -19,14 +19,22 @@ package cataclysm
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import proscenium.*
 
 import language.dynamics
 
 object CssStylesheet:
-  given (charEncoder: CharEncoder) => CssStylesheet is GenericHttpResponseStream:
-    def mediaType: Text = t"text/css; charset=${charEncoder.encoding.name}"
-    def content(stylesheet: CssStylesheet): Stream[IArray[Byte]] = Stream(stylesheet.text.bytes)
+  given (charEncoder: CharEncoder)
+  =>    CssStylesheet is Abstractable across HttpStreams into HttpStreams.Content =
+    new Abstractable:
+      type Self = CssStylesheet
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
+        (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.bytes))
+
 
   trait Item:
     def text: Text
