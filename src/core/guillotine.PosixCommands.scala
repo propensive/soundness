@@ -120,7 +120,7 @@ trait PosixCommands:
   erased given waitCommand: ("wait" is Intelligible into Text) = ###
   erased given wc: ("wc" is Intelligible into Text) = ###
 
-  erased given which: [PathType] => (erased PathType is Concretizable across Paths from Text)
+  erased given which: [PathType] => (erased PathType is Instantiable across Paths from Text)
   =>    ("which" is Intelligible into PathType) = ###
 
   erased given who: ("who" is Intelligible into Text) = ###

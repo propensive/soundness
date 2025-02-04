@@ -55,7 +55,7 @@ object Computable:
 
   given Unit is Computable = exitStatus.map(_ => ())
 
-  given [PathType: Concretizable across Paths from Text] => PathType is Computable =
+  given [PathType: Instantiable across Paths from Text] => PathType is Computable =
     path => PathType(text.compute(path))
 
 trait Computable:
