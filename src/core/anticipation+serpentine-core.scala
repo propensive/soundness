@@ -21,8 +21,8 @@ import serpentine.*
 
 package filesystemApi:
   given serpentinePath: [PlatformType: {Navigable, Radical}]
-  =>    (Path on PlatformType) is (Abstractable & Concretizable) across Paths from Text into Text =
-    new Abstractable with Concretizable:
+  =>    (Path on PlatformType) is (Abstractable & Instantiable) across Paths from Text into Text =
+    new Abstractable with Instantiable:
       type Self = Path on PlatformType
       type Domain = Paths
       type Source = Text

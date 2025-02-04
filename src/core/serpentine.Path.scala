@@ -43,7 +43,7 @@ object Path:
     path.textDescent.prim.or(path.textRoot)
 
   given specific: [PlatformType: {Navigable, Radical}]
-  =>    Path on PlatformType is Concretizable across Paths from Text =
+  =>    Path on PlatformType is Instantiable across Paths from Text =
     _.decode[Path on PlatformType]
 
   given communicable: Path is Communicable = path =>
