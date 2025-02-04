@@ -27,5 +27,5 @@ object HomeDirectory:
 trait HomeDirectory:
   def directory(): Text
 
-  def path[PathType: Concretizable across Paths from Text]: PathType =
+  def path[PathType: Instantiable across Paths from Text]: PathType =
     PathType(directory())

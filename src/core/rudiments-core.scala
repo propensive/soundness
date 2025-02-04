@@ -308,13 +308,13 @@ extension (bs: Long)
 extension (bytes: Bytes)
   def memory: Memory = Memory(bytes.size)
 
-def workingDirectory[PathType: Concretizable across Paths from Text]
+def workingDirectory[PathType: Instantiable across Paths from Text]
    (using directory: WorkingDirectory)
 :     PathType =
 
   directory.path[PathType]
 
-def homeDirectory[PathType: Concretizable across Paths from Text]
+def homeDirectory[PathType: Instantiable across Paths from Text]
    (using directory: HomeDirectory)
 :     PathType =
 
