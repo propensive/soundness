@@ -20,9 +20,9 @@ import aviation.*
 import prepositional.*
 
 package instantApi:
-  given aviationInstant: Timing.Instant is (Abstractable & Concretizable) across Instants into
+  given aviationInstant: Timing.Instant is (Abstractable & Instantiable) across Instants into
                           Long from Long =
-    new Abstractable with Concretizable:
+    new Abstractable with Instantiable:
       type Self = Timing.Instant
       type Source = Long
       type Result = Long
