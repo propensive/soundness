@@ -31,7 +31,7 @@ enum WatchEvent:
 
   def dir: Text
 
-  def path[DirectoryType: Concretizable across Paths from Text]: DirectoryType = unsafely:
+  def path[DirectoryType: Instantiable across Paths from Text]: DirectoryType = unsafely:
     val relPath = this match
       case NewFile(_, file)      => file
       case NewDirectory(_, path) => path
