@@ -22,7 +22,7 @@ import java.io as ji
 
 import language.experimental.captureChecking
 
-object JavaIoFile extends Abstractable, Concretizable:
+object JavaIoFile extends Abstractable, Instantiable:
   type Self = ji.File
   type Domain = Paths
   type Source = Text

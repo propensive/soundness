@@ -22,7 +22,7 @@ import java.nio.file as jnf
 
 import language.experimental.captureChecking
 
-object JavaNioPath extends Concretizable, Abstractable:
+object JavaNioPath extends Instantiable, Abstractable:
   type Self = jnf.Path
   type Domain = Paths
   type Source = Text
