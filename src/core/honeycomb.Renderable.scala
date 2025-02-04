@@ -25,15 +25,14 @@ object Renderable:
 
     def html(value: ValueType): List[Html[?]] = ValueType.html(value).map(convert)
 
-    private def convert(html: GenericHtml): Html[?] = html match
-      case GenericHtml.Textual(text) =>
-        text
+    private def convert(html: Sgml): Html[?] = html match
+      case Sgml.Textual(text)               => text
+      case Sgml.Comment(_)                  => "".tt
+      case Sgml.ProcessingInstruction(_, _) => "".tt
 
-      case GenericHtml.Node(label, attributes, children) =>
-        val attributes2 = attributes.map(_.s -> _).to(Map)
-        val children2 = children.map(convert(_))
+      case Sgml.Element(label, attributes, children) =>
+        Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
-        Node(label, attributes2, children2)
 
 trait Renderable:
   type Self
