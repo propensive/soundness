@@ -27,14 +27,14 @@ sealed trait ClasspathEntry
 
 object ClasspathEntry:
   case class Directory(path: Text) extends ClasspathEntry:
-    def apply[DirectoryType: Concretizable across Paths from Text](): DirectoryType =
+    def apply[DirectoryType: Instantiable across Paths from Text](): DirectoryType =
       DirectoryType(path)
 
   case class Jar(path: Text) extends ClasspathEntry:
-    def apply[FileType: Concretizable across Paths from Text](): FileType = FileType(path)
+    def apply[FileType: Instantiable across Paths from Text](): FileType = FileType(path)
 
   case class Url(url: Text) extends ClasspathEntry:
-    def apply[UrlType: Concretizable across Urls from Text](): UrlType = UrlType(url)
+    def apply[UrlType: Instantiable across Urls from Text](): UrlType = UrlType(url)
 
   case object JavaRuntime extends ClasspathEntry
 
