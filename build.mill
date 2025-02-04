@@ -235,43 +235,40 @@ object anthology extends SoundnessModule {
 }
 
 object anticipation extends SoundnessModule {
+  object generic extends SoundnessSubModule {
+    def moduleDeps = Seq(prepositional.core)
+  }
+
   object text extends SoundnessSubModule {
     def moduleDeps = Seq(symbolism.core)
   }
 
   object opaque extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object css extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object url extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object html extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, generic)
   }
 
   object print extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object http extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, codec, generic)
   }
 
   object codec extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object transport extends SoundnessSubModule
@@ -279,16 +276,16 @@ object anticipation extends SoundnessModule {
   object color extends SoundnessSubModule
 
   object log extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text)
   }
 
   object path extends SoundnessSubModule {
-
-    def moduleDeps = Seq(anticipation.text)
+    def moduleDeps = Seq(text, generic)
   }
 
-  object time extends SoundnessSubModule
+  object time extends SoundnessSubModule {
+    def moduleDeps = Seq(generic)
+  }
 
   object test extends ProbablyTestModule
 }
