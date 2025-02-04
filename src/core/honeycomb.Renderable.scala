@@ -17,22 +17,23 @@
 package honeycomb
 
 import anticipation.*
+import prepositional.*
 
 object Renderable:
-  given [ValueType: GenericHtmlRenderable] => ValueType is Renderable = new Renderable:
-    type Self = ValueType
-    type Result = Html[?]
+  given [ValueType: Abstractable across HtmlContent into List[Sgml]] => ValueType is Renderable =
+    new Renderable:
+      type Self = ValueType
+      type Result = Html[?]
 
-    def html(value: ValueType): List[Html[?]] = ValueType.html(value).map(convert)
+      def html(value: ValueType): List[Html[?]] = value.generic.map(convert)
 
-    private def convert(html: Sgml): Html[?] = html match
-      case Sgml.Textual(text)               => text
-      case Sgml.Comment(_)                  => "".tt
-      case Sgml.ProcessingInstruction(_, _) => "".tt
+      private def convert(html: Sgml): Html[?] = html match
+        case Sgml.Textual(text)               => text
+        case Sgml.Comment(_)                  => "".tt
+        case Sgml.ProcessingInstruction(_, _) => "".tt
 
-      case Sgml.Element(label, attributes, children) =>
-        Node(label, attributes.map(_.s -> _), children.map(convert(_)))
-
+        case Sgml.Element(label, attributes, children) =>
+          Node(label, attributes.map(_.s -> _), children.map(convert(_)))
 
 trait Renderable:
   type Self

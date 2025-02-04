@@ -41,7 +41,6 @@ object HtmlAttribute:
     def convert(value: ValueType): Optional[Text] = LabelType.serialize(value).show
     override def rename: Optional[Text] = LabelType.name.show
 
-  //given any: [LabelType <: Label] => LabelType is HtmlAttribute[Text] = identity(_)
   given accept: ("accept" is HtmlAttribute[List[Text]]) = _.join(t",")
 
   given acceptCharset: ("acceptCharset" is HtmlAttribute[Encoding]):
