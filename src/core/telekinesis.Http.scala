@@ -85,7 +85,7 @@ object Http:
         connection.setRequestMethod(method.toString.show.upper.s)
 
         connection.setRequestProperty
-         (Capitate.contentType.key.uncamel.kebab.s, PostType.contentType.show.s)
+         (Capitate.contentType.key.uncamel.kebab.s, PostType.mediaType(content).show.s)
 
         connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
 
@@ -97,7 +97,7 @@ object Http:
           connection.setDoOutput(true)
           connection.connect()
           val out = connection.getOutputStream().nn
-          PostType.content(content).map(_.to(Array)).each(out.write(_))
+          PostType.stream(content).map(_.to(Array)).each(out.write(_))
           out.close()
 
         val buf = new Array[Byte](65536)

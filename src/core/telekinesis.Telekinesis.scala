@@ -84,7 +84,7 @@ object Telekinesis:
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       payload:  Expr[PayloadType],
-      postable: Expr[Postable[PayloadType]])
+      postable: Expr[PayloadType is Postable])
      (using Quotes)
   :     Expr[HttpResponse] =
 
@@ -97,7 +97,7 @@ object Telekinesis:
           case method: Expr[Http.Method] => method
 
         '{  given Online = $online
-            given Postable[PayloadType] = $postable
+            given PayloadType is Postable = $postable
             given HttpEvent is Loggable = $loggable
             Http.request($submit.url, $payload, $method, $headers)  }
 

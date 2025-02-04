@@ -25,9 +25,10 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[ResponseType](mediaType: MediaType)(lambda: ResponseType => Stream[Bytes])
+  def apply[ResponseType](mediaType: ResponseType => MediaType)
+     (lambda: ResponseType => Stream[Bytes])
   :     ResponseType is Servable = response =>
-    val headers = List(ResponseHeader.ContentType.header -> mediaType.show)
+    val headers = List(ResponseHeader.ContentType.header -> mediaType(response).show)
     HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
 
   given content: Content is Servable:
@@ -36,11 +37,12 @@ object Servable:
 
       HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
 
-  given bytes: [ResponseType: GenericHttpResponseStream] => ResponseType is Servable =
-    Servable(unsafely(Media.parse(ResponseType.mediaType))): value =>
-      ResponseType.content(value)
+  given bytes: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
+  =>    ResponseType is Servable =
+    Servable[ResponseType](value => unsafely(Media.parse(ResponseType.generic(value)(0)))): value =>
+      ResponseType.generic(value)(1)
 
-  given data: Bytes is Servable = Servable(media"application/octet-stream")(Stream(_))
+  given data: Bytes is Servable = Servable[Bytes](_ => media"application/octet-stream")(Stream(_))
 
   inline given media: [ValueType: Media] => ValueType is Servable =
     scala.compiletime.summonFrom:

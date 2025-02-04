@@ -29,14 +29,14 @@ case class Submit(url: HttpUrl) extends Dynamic:
      (id: "apply")
      (inline headers: (Label, Any)*)
      (payload: PayloadType)
-     (using online: Online, loggable: HttpEvent is Loggable, postable: Postable[PayloadType])
+     (using online: Online, loggable: HttpEvent is Loggable, postable: PayloadType is Postable)
   :     HttpResponse =
 
     ${Telekinesis.submit[PayloadType]('this, 'headers, 'online, 'loggable, 'payload, 'postable)}
 
-  inline def applyDynamic[PayloadType: Postable](id: "apply")(inline headers: Any*)
+  inline def applyDynamic[PayloadType: Postable as postable](id: "apply")(inline headers: Any*)
      (payload: PayloadType)
-     (using online: Online, loggable: HttpEvent is Loggable, postable: Postable[PayloadType])
+     (using online: Online, loggable: HttpEvent is Loggable)
   :     HttpResponse =
 
     ${Telekinesis.submit[PayloadType]('this, 'headers, 'online, 'loggable, 'payload, 'postable)}

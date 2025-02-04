@@ -23,6 +23,7 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import monotonous.*, alphabets.base256.alphanumericOrBraille
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -31,31 +32,46 @@ import vacuous.*
 import language.dynamics
 
 trait FallbackPostable:
-  given [QueryType](using serializer: QueryEncoder[QueryType]): Postable[QueryType] =
+  given [QueryType] => (serializer: QueryEncoder[QueryType]) => QueryType is Postable =
     Postable(media"application/x-www-form-urlencoded", value =>
         Stream(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
 
 object Postable extends FallbackPostable:
-  given text(using encoder: CharEncoder): Postable[Text] =
+  def apply[ResponseType](mediaType0: MediaType, stream0: ResponseType => Stream[Bytes])
+  :     ResponseType is Postable =
+    new Postable:
+      type Self = ResponseType
+      def mediaType(response: ResponseType): MediaType = mediaType0
+      def stream(response: ResponseType): Stream[Bytes] = stream0(response)
+
+  given text: (encoder: CharEncoder) => Text is Postable =
     Postable(media"text/plain", value => Stream(IArray.from(value.bytes)))
 
-  given textStream(using encoder: CharEncoder): Postable[Stream[Text]] =
+  given textStream: (encoder: CharEncoder) => Stream[Text] is Postable =
     Postable(media"application/octet-stream", _.map(_.bytes))
 
-  given unit: Postable[Unit] = Postable(media"text/plain", unit => Stream())
-  given bytes: Postable[Bytes] = Postable(media"application/octet-stream", Stream(_))
+  given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
+  given bytes: Bytes is Postable = Postable(media"application/octet-stream", Stream(_))
 
-  given byteStream: Postable[Stream[Bytes]] =
-    Postable(media"application/octet-stream", _.map(identity(_)))
+  given byteStream: Stream[Bytes] is Postable =
+    Postable(media"application/octet-stream", identity(_))
 
-  given dataStream: [ResponseType: GenericHttpResponseStream] => Tactic[MediaTypeError]
-  =>    Postable[ResponseType] =
+  given dataStream: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
+  =>    Tactic[MediaTypeError]
+  =>    ResponseType is Postable =
 
-    // FIXME: Check if mapping `identity` is necessary
-    Postable(Media.parse(ResponseType.mediaType.show), ResponseType.content(_).map(identity))
+    new Postable:
+      type Self = ResponseType
 
-class Postable[PostType](val contentType: MediaType, val content: PostType => Stream[Bytes]):
-  def preview(value: PostType): Text = content(value).prim.lay(t""): bytes =>
+      def mediaType(content: ResponseType): MediaType = content.generic(0).decode[MediaType]
+      def stream(content: ResponseType): Stream[Bytes] = content.generic(1)
+
+trait Postable:
+  type Self
+  def mediaType(content: Self): MediaType
+  def stream(content: Self): Stream[Bytes]
+
+  def preview(value: Self): Text = stream(value).prim.lay(t""): bytes =>
     val sample = bytes.take(1024)
     val string: Text = sample.serialize[Base256]
     if bytes.length > 128 then t"$string..." else string

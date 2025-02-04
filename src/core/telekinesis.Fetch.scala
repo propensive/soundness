@@ -26,7 +26,7 @@ case class Fetch(url: HttpUrl) extends Dynamic:
   inline def applyDynamicNamed
      (id: "apply")
      (inline headers: (Label, Any)*)
-     (using online: Online, loggable: HttpEvent is Loggable, postable: Postable[Unit])
+     (using online: Online, loggable: HttpEvent is Loggable, postable: Unit is Postable)
   :     HttpResponse =
 
     ${Telekinesis.fetch('this, 'headers, 'online, 'loggable)}
