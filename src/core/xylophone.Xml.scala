@@ -20,6 +20,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -41,10 +42,16 @@ object Xml:
   given Xml is Showable = xml =>
     safely(xmlPrinters.compact.print(XmlDoc(XmlAst.Root(Xml.normalize(xml)*)))).or(t"undefined")
 
-  given (enc: Encoding, printer: XmlPrinter[Text]) => Xml is GenericHttpResponseStream:
-    def mediaType: Text = t"application/xml; charset=${enc.name}"
-    def content(xml: Xml): Stream[IArray[Byte]] =
-      Stream(summon[XmlPrinter[Text]].print(xml).bytes(using charEncoders.utf8))
+  given (encoding: Encoding { type CanEncode = true }, printer: XmlPrinter[Text])
+  =>    Xml is Abstractable across HttpStreams into HttpStreams.Content =
+    new Abstractable:
+      type Self = Xml
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(xml: Xml): HttpStreams.Content =
+        (t"application/xml; charset=${encoding.name}",
+         Stream(printer.print(xml).bytes(using encoding.encoder)))
 
   def print(xml: Xml)(using XmlPrinter[Text]): Text = summon[XmlPrinter[Text]].print(xml)
 
