@@ -32,9 +32,15 @@ abstract class ImageCodec[ImageFormatType <: ImageFormat](name: Text):
   protected lazy val reader: ji.ImageReader = ji.ImageIO.getImageReaders(name.s).nn.next().nn
   protected lazy val writer: ji.ImageWriter = ji.ImageIO.getImageWriter(reader).nn
 
-  given response: (Image in ImageFormatType) is GenericHttpResponseStream:
-    def mediaType = mediaType.show
-    def content(image: Image in ImageFormatType): Stream[Bytes] = image.serialize(using codec)
+  given response
+  :     (Image in ImageFormatType) is Abstractable across HttpStreams into HttpStreams.Content =
+    new Abstractable:
+      type Self = Image in ImageFormatType
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(image: Image in ImageFormatType): HttpStreams.Content =
+        (mediaType.show, image.serialize(using codec))
 
   def read[InputType: Readable by Bytes](inputType: InputType): Image in ImageFormatType =
     reader.synchronized:
