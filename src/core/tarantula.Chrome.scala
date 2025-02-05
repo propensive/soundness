@@ -16,30 +16,15 @@
 
 package tarantula
 
-import anticipation.*, durationApi.javaLong
-import cataclysm.*
+import anticipation.*
 import contingency.*
-import eucalyptus.*
-import fulminate.*
-import gastronomy.*
-import gesticulate.*
 import gossamer.*
 import guillotine.*
-import hallucination.*
-import hieroglyph.*, charEncoders.utf8
-import honeycomb.*
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
-import monotonous.*
-import nettlesome.*
 import parasite.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
-import turbulence.*
 
 import strategies.throwUnsafely
-
-import unsafeExceptions.canThrowAny
 
 object Chrome extends Browser(t"chrome"):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =

@@ -16,22 +16,15 @@
 
 package tarantula
 
-import anticipation.*, durationApi.javaLong
-import cataclysm.*
+import anticipation.*
 import contingency.*
-import eucalyptus.*
-import fulminate.*
-import gastronomy.*
 import gesticulate.*
 import gossamer.*
-import guillotine.*
 import hallucination.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
-import honeycomb.*
 import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
 import monotonous.*, alphabets.base64.standard
 import nettlesome.*
-import parasite.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -40,8 +33,6 @@ import telekinesis.*
 import turbulence.*
 
 import strategies.throwUnsafely
-
-import unsafeExceptions.canThrowAny
 
 case class WebDriver(server: Browser#Server):
   private transparent inline def wd: this.type = this

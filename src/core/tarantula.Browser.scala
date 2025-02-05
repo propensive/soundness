@@ -16,31 +16,12 @@
 
 package tarantula
 
-import anticipation.*, durationApi.javaLong
-import cataclysm.*
-import contingency.*
-import eucalyptus.*
-import fulminate.*
-import gastronomy.*
-import gesticulate.*
-import gossamer.*
+import anticipation.*
 import guillotine.*
-import hallucination.*
-import hieroglyph.*, charEncoders.utf8
-import honeycomb.*
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
-import monotonous.*
-import nettlesome.*
 import parasite.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
-import turbulence.*
-
-import strategies.throwUnsafely
-
-import unsafeExceptions.canThrowAny
 
 trait Browser(name: Text):
   transparent inline def browser = this

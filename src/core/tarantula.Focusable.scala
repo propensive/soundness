@@ -16,30 +16,11 @@
 
 package tarantula
 
-import anticipation.*, durationApi.javaLong
+import anticipation.*
 import cataclysm.*
-import contingency.*
-import eucalyptus.*
-import fulminate.*
-import gastronomy.*
-import gesticulate.*
 import gossamer.*
-import guillotine.*
-import hallucination.*
-import hieroglyph.*, charEncoders.utf8
 import honeycomb.*
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
-import monotonous.*
-import nettlesome.*
-import parasite.*
-import rudiments.*
 import spectacular.*
-import telekinesis.*
-import turbulence.*
-
-import strategies.throwUnsafely
-
-import unsafeExceptions.canThrowAny
 
 trait Focusable:
   type Self

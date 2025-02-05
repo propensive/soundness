@@ -16,30 +16,8 @@
 
 package tarantula
 
-import anticipation.*, durationApi.javaLong
-import cataclysm.*
-import contingency.*
-import eucalyptus.*
+import anticipation.*
 import fulminate.*
-import gastronomy.*
-import gesticulate.*
-import gossamer.*
-import guillotine.*
-import hallucination.*
-import hieroglyph.*, charEncoders.utf8
-import honeycomb.*
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
-import monotonous.*
-import nettlesome.*
-import parasite.*
-import rudiments.*
-import spectacular.*
-import telekinesis.*
-import turbulence.*
-
-import strategies.throwUnsafely
-
-import unsafeExceptions.canThrowAny
 
 case class WebDriverError(error: Text, wdMsg: Text, browserStacktrace: List[Text])
    (using Diagnostics)
