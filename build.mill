@@ -6,7 +6,7 @@ import publish._
 import os.Path
 
 object settings {
-  val scalaVersion = "3.6.0"
+  val scalaVersion = "3.6.4-RC1"
   //val scalaVersion = "3.7.0-RC1-bin-20250121-3f2365d-NIGHTLY"
   val scalaOptions = Seq(
     "-experimental",
@@ -1100,8 +1100,17 @@ object superlunary extends SoundnessModule {
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}")
   }
 
-  object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+  object jvm extends SoundnessSubModule {
+    def moduleDeps = Seq(core, eucalyptus.core)
+    def ivyDeps = Agg(
+      ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      ivy"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+  }
+
+  object test extends SoundnessSubModule {
+    def moduleDeps = Seq(probably.cli, jvm)
+    override def finalMainClass: Target[String] = "superlunary.run"
   }
 }
 
