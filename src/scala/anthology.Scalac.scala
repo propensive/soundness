@@ -40,7 +40,7 @@ import language.adhocExtensions
 object Scalac:
   type All = 3.0 | 3.1 | 3.2 | 3.3 | 3.4 | 3.5 | 3.6
   private var Scala3: dtd.Compiler = new dtd.Compiler()
-  def refresh(): Unit = Scala3 = new dtd.Compiler()
+  def refresh(): Unit = synchronized { Scala3 = new dtd.Compiler() }
   def compiler(): dtd.Compiler = Scala3
 
 case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionType]]):
