@@ -1,5 +1,5 @@
 /*
-    Mercator, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Mercator, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,15 +16,11 @@
 
 package mercator
 
-object Functor:
-  inline given general: [FunctorType[_]] => Functor[FunctorType] = ${Mercator.functor[FunctorType]}
-
-trait Functor[FunctorType[_]]:
-  def point[ValueType](value: ValueType): FunctorType[ValueType]
-
-  extension [ValueType](value: FunctorType[ValueType])
-    def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] =
+trait Cofunctor[CofunctorType[-_]]:
+  extension [ValueType](value: CofunctorType[ValueType])
+    def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2] =
       apply(value)(lambda)
 
-  def apply[ValueType, ValueType2](value: FunctorType[ValueType])(lambda: ValueType => ValueType2)
-  :     FunctorType[ValueType2]
+  def apply[ValueType, ValueType2]
+     (value: CofunctorType[ValueType])(lambda: ValueType2 => ValueType)
+  :       CofunctorType[ValueType2]

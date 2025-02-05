@@ -20,6 +20,11 @@ object Monad:
   inline given [MonadType[_]]: Monad[MonadType] = ${Mercator.monad[MonadType]}
 
 trait Monad[MonadType[_]] extends Functor[MonadType]:
-  def flatMap[ValueType, ValueType2](value: MonadType[ValueType])
+  def bind[ValueType, ValueType2](value: MonadType[ValueType])
      (lambda: ValueType => MonadType[ValueType2])
   :     MonadType[ValueType2]
+
+  extension [ValueType](value: MonadType[ValueType])
+    def flatMap[ValueType2](lambda: ValueType => MonadType[ValueType2])
+    :     MonadType[ValueType2] =
+      bind(value)(lambda)

@@ -24,29 +24,29 @@ import scala.util.{Try, Success}
 
 object Tests extends Suite(t"Mercator tests"):
   def run(): Unit =
-    test(t"Point for Option"):
-      val point = summon[Point[Option]]
+    test(t"Identity for Option"):
+      val point = summon[Identity[Option]]
       point.point(1)
     .assert(_ == Some(1))
 
-    test(t"Point for List"):
-      summon[Point[List]].point(1)
+    test(t"Identity for List"):
+      summon[Identity[List]].point(1)
     .assert(_ == List(1))
 
-    test(t"Point for Set"):
-      summon[Point[Set]].point(1)
+    test(t"Identity for Set"):
+      summon[Identity[Set]].point(1)
     .assert(_ == Set(1))
 
-    test(t"Point for Vector"):
-      summon[Point[Vector]].point(1)
+    test(t"Identity for Vector"):
+      summon[Identity[Vector]].point(1)
     .assert(_ == Vector(1))
 
-    test(t"Point for Try"):
-      summon[Point[scala.util.Try]].point(1)
+    test(t"Identity for Try"):
+      summon[Identity[scala.util.Try]].point(1)
     .assert(_ == scala.util.Success(1))
 
-    test(t"Point for Either"):
-      summon[Point[[T] =>> Either[Any, T]]].point(1)
+    test(t"Identity for Either"):
+      summon[Identity[[T] =>> Either[Any, T]]].point(1)
     .assert(_ == Right(1))
 
     test(t"Functor for Option"):
@@ -121,8 +121,8 @@ object Tests extends Suite(t"Mercator tests"):
     //   monad.flatMap(Right(1)) { v => Right(v + 1) }
     // .assert(_ == Right(2))
 
-    test(t"Point for Ordering does not exist"):
+    test(t"Identity for Ordering does not exist"):
       demilitarize:
-        summon[Point[Ordering]].point(1)
+        summon[Identity[Ordering]].point(1)
       .map(_.message)
     .assert(_ == List("mercator: the companion object Ordering has no candidate apply methods"))
