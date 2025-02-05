@@ -16,6 +16,7 @@
 
 package superlunary
 
+import ambience.*, systemProperties.virtualMachine
 import anthology.*
 import anticipation.*
 import contingency.*
@@ -32,18 +33,14 @@ case class Example(name: Text, count: Long)
 
 @main
 def run(): Unit =
-  given Tactic[JsonAccessError] = strategies.throwUnsafely
-  given Tactic[ScalacError] = strategies.throwUnsafely
+  given Tactic[JsonError] = strategies.throwUnsafely
+  given Tactic[CompilerError] = strategies.throwUnsafely
 
   def offset(input: Long): Text = remote.dispatch:
-    '{
-      t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"
-    }
+    '{ t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}" }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{
-      Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)
-    }
+    '{ Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9) }
 
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))

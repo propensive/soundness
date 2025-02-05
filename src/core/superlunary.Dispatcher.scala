@@ -16,25 +16,23 @@
 
 package superlunary
 
+import ambience.*
 import anthology.*
 import anticipation.*
 import contingency.*
 import digression.*
-import fulminate.*
 import galilei.*
 import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
+import nomenclature.*
 import prepositional.*
-import rudiments.*
-import serpentine.*, pathNavigation.linux
+import proscenium.*
+import serpentine.*
 import spectacular.*
-import vacuous.*
 
-import scala.compiletime.*
 import scala.quoted.*
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Dispatcher:
   private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
@@ -47,9 +45,9 @@ trait Dispatcher:
   inline def dispatch[OutputType: Decodable in Json]
      (body: References ?=> Quotes ?=> Expr[OutputType])
      [ScalacVersionType <: Scalac.All]
-     (using codepoint: Codepoint, classloader: Classloader)
+     (using codepoint: Codepoint, classloader: Classloader, properties: SystemProperties)
   :     Result[OutputType] raises CompilerError =
-
+   try
     import strategies.throwUnsafely
     val uuid = Uuid()
 
@@ -70,8 +68,9 @@ trait Dispatcher:
             }
           }
         Dispatcher.cache(codepoint)
+
       else
-        val out: Path = % / p"home" / p"propensive" / p"tmp" / p"staging" / Name(uuid.show)
+        val out: Path on Linux = t"/tmp".decode[Path on Linux] / Name(uuid.show)
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
@@ -82,7 +81,7 @@ trait Dispatcher:
             ${
               references.setRef('array)
               body(using references)
-            }.json.encode
+            }.json.encode(using Json.encodable)
           }
 
           '{ text => $fromList(text.decode[Json].as[List[Json]]) }
@@ -90,12 +89,21 @@ trait Dispatcher:
         Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
         (out, fn)
 
-    val classpath = classloaders.threadContext.classpath.absolve match
+    val classpath = classloaders.threadContext.classpath match
       case classpath: LocalClasspath =>
         LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
+
+      case _ =>
+        val systemClasspath = Properties.java.`class`.path()
+        LocalClasspath:
+          ClasspathEntry.Directory(out.encode) :: systemClasspath.decode[LocalClasspath].entries
 
     invoke[OutputType]
      (Dispatch
        (out,
         classpath, () => fn(references()).decode[Json].as[OutputType],
         (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
+   catch case throwable: Throwable =>
+     println("Failed, somehow")
+     println(throwable)
+     ???

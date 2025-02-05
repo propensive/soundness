@@ -16,24 +16,10 @@
 
 package superlunary
 
-import anthology.*
-import anticipation.*
 import contingency.*
-import digression.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import inimitable.*
 import jacinta.*
-import rudiments.*
-import serpentine.*, pathNavigation.linux
-import spectacular.*
-import vacuous.*
 
-import scala.compiletime.*
 import scala.quoted.*
-import scala.reflect.Selectable.reflectiveSelectable
 
 extension [ValueType](value: ValueType)(using Quotes)
   inline def put(using references: References): Expr[ValueType] =

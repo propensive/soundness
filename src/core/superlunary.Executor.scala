@@ -16,26 +16,9 @@
 
 package superlunary
 
-import anthology.*
-import anticipation.*
-import contingency.*
-import digression.*
-import fulminate.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import inimitable.*
-import jacinta.*
-import rudiments.*
-import serpentine.*, pathNavigation.linux
-import spectacular.*
-import vacuous.*
-
-import scala.compiletime.*
-import scala.quoted.*
 import scala.reflect.Selectable.reflectiveSelectable
 
-object DispatchRunner:
+object Executor:
   def run(input: String): String =
     val cls = Class.forName("Generated$Code$From$Quoted").nn
     val instance = cls.getDeclaredConstructor().nn.newInstance().nn

@@ -27,7 +27,7 @@ import rudiments.*
 object remote extends Dispatcher:
   type Result[OutputType] = OutputType
 
-  val scalac: Scalac[3.4] = Scalac[3.4](List())
+  val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): OutputType =
     import workingDirectories.virtualMachine

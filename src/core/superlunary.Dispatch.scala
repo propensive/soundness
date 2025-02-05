@@ -16,29 +16,15 @@
 
 package superlunary
 
-import anthology.*
 import anticipation.*
-import contingency.*
-import digression.*
-import fulminate.*
-import galilei.*
 import gossamer.*
 import hellenism.*
-import inimitable.*
-import jacinta.*
-import rudiments.*
-import serpentine.*, pathNavigation.linux
-import spectacular.*
-import vacuous.*
-
-import scala.compiletime.*
-import scala.quoted.*
-import scala.reflect.Selectable.reflectiveSelectable
+import serpentine.*
 
 case class Dispatch[OutputType]
-   (path:     Path,
+   (path:      Path,
     classpath: LocalClasspath,
-    local:    () => OutputType,
+    local:     () => OutputType,
     remote:    (Text => Text) => OutputType):
 
-  def mainClass: Text = t"superlunary.DispatchRunner"
+  def mainClass: Text = t"superlunary.Executor"

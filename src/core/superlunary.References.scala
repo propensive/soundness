@@ -16,25 +16,16 @@
 
 package superlunary
 
-import anthology.*
 import anticipation.*
-import contingency.*
-import digression.*
 import fulminate.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import inimitable.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
-import serpentine.*, pathNavigation.linux
 import spectacular.*
 import vacuous.*
 
 import scala.compiletime.*
 import scala.quoted.*
-import scala.reflect.Selectable.reflectiveSelectable
 
 class References():
   private var ref: Optional[Expr[List[Json]]] = Unset
@@ -47,4 +38,4 @@ class References():
   def allocate[ValueType](value: => ValueType)(using ValueType is Encodable in Json): Int =
     allocations.length.also { allocations ::= value.json }
 
-  def apply(): Text = allocations.reverse.json.encode
+  def apply(): Text = allocations.reverse.json.encode(using Json.encodable)
