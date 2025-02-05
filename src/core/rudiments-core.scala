@@ -98,17 +98,6 @@ inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[B
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
-extension [FunctorType[+_], ValueType](value: FunctorType[ValueType])
-   (using functor: Functor[FunctorType])
-
-  def map[ValueType2](lambda: ValueType => ValueType2): FunctorType[ValueType2] =
-    functor.map(value, lambda)
-
-extension [CofunctorType[-_], ValueType](value: CofunctorType[ValueType])
-          (using cofunctor: Cofunctor[CofunctorType])
-  def contramap[ValueType2](lambda: ValueType2 => ValueType): CofunctorType[ValueType2] =
-    cofunctor.contramap(value, lambda)
-
 extension (value: Any)
   def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
     irrefutable.unapply(value)

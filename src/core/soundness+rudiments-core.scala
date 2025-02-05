@@ -21,7 +21,7 @@ export rudiments
     interleave, each, all, sumBy, bi, tri, indexBy, longestTrain, mutable, immutable, snapshot,
     place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as,
-    Irrefutable, Extractable, As, ###, map, contramap, Functor, Cofunctor,
+    Irrefutable, Extractable, As, ###,
     Exit, Pid, Quickstart, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
