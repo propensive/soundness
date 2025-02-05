@@ -32,6 +32,7 @@ import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
 import monotonous.*
 import nettlesome.*
 import parasite.*
+import proscenium.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
@@ -45,14 +46,14 @@ trait Browser(name: Text):
   transparent inline def browser = this
 
   case class Server(port: Int, value: Process[Label, Text]):
-    def stop(): Unit logs Text = browser.stop(this)
+    def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
 
-  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs Text
-  def stop(server: Server): Unit logs Text
+  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent
+  def stop(server: Server): Unit logs HttpEvent logs ExecEvent
 
   def session[ResultType](port: Int = 4444)(block: (session: WebDriver#Session) ?=> ResultType)
      (using WorkingDirectory, Monitor)
-  :     ResultType logs Text =
+  :     ResultType logs HttpEvent logs ExecEvent =
 
     val server = launch(port)
     try block(using WebDriver(server).startSession()) finally server.stop()

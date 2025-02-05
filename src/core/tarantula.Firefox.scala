@@ -42,9 +42,9 @@ import strategies.throwUnsafely
 import unsafeExceptions.canThrowAny
 
 object Firefox extends Browser(t"firefox"):
-  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs Text =
+  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =
     val server: Process["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)
 
-  def stop(server: Server): Unit logs Text = server.value.abort()
+  def stop(server: Server): Unit logs HttpEvent logs ExecEvent = server.value.abort()
