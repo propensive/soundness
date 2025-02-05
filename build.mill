@@ -132,8 +132,8 @@ object soundness extends ScalaModule {
   }
 
   object test extends BaseScalaModule with PublishModule {
-    def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, /*tarantula.core,
-        superlunary.core,*/ yossarian.core, probably.core)
+    def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, /*tarantula.core,*/
+        superlunary.core, yossarian.core, probably.core)
     def scalaVersion = settings.scalaVersion
   }
 
