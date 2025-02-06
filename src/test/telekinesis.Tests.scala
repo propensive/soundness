@@ -32,7 +32,7 @@ object Tests extends Suite(t"Telekinesis tests"):
 
       test(t"Fetch a URL"):
         url"https://httpbin.org/post".submit
-         (Post,
+         (Http.Post,
           contentEncoding = enc"UTF-8",
           accept          = media"application/json")
          (t"Hello world")
@@ -45,7 +45,7 @@ object Tests extends Suite(t"Telekinesis tests"):
       . assert()
 
       test(t"Fetch another URL without header names"):
-        url"https://httpbin.org/post".submit(Post, enc"UTF-8", accept = media"application/json")
+        url"https://httpbin.org/post".submit(Http.Post, enc"UTF-8", accept = media"application/json")
          (t"Hello world")
 
         . tap: response =>
@@ -56,7 +56,7 @@ object Tests extends Suite(t"Telekinesis tests"):
       . assert()
 
       test(t"Fetch another URL with just a method"):
-        url"https://httpbin.org/put".submit(Put)
+        url"https://httpbin.org/put".submit(Http.Put)
          (t"Hello world")
 
         . tap: response =>

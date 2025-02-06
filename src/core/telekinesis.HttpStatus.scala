@@ -19,6 +19,7 @@ package telekinesis
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -30,67 +31,67 @@ object HttpStatus:
 
   given HttpStatus is Communicable = status => m"${status.code} (${status.description})"
 
+  enum Category:
+    case Informational, Successful, Redirection, ClientError, ServerError
+
 enum HttpStatus(val code: Int, val description: Text):
-  case Continue extends HttpStatus(100, t"Continue"), FailureCase
-  case SwitchingProtocols extends HttpStatus(101, t"Switching Protocols"), FailureCase
-  case EarlyHints extends HttpStatus(103, t"Early Hints"), FailureCase
-  case Ok extends HttpStatus(200, t"OK")
-  case Created extends HttpStatus(201, t"Created")
-  case Accepted extends HttpStatus(202, t"Accepted")
-  case NonAuthoritativeInformation extends HttpStatus(203, t"Non-Authoritative Information")
-  case NoContent extends HttpStatus(204, t"No Content")
-  case ResetContent extends HttpStatus(205, t"Reset Content")
-  case PartialContent extends HttpStatus(206, t"Partial Content")
-  case MultipleChoices extends HttpStatus(300, t"Multiple Choices")
-  case MovedPermanently extends HttpStatus(301, t"Moved Permanently"), FailureCase
-  case Found extends HttpStatus(302, t"Found"), FailureCase
-  case SeeOther extends HttpStatus(303, t"See Other"), FailureCase
-  case NotModified extends HttpStatus(304, t"Not Modified"), FailureCase
-  case TemporaryRedirect extends HttpStatus(307, t"Temporary Redirect"), FailureCase
-  case PermanentRedirect extends HttpStatus(308, t"Permanent Redirect"), FailureCase
-  case BadRequest extends HttpStatus(400, t"Bad Request"), FailureCase
-  case Unauthorized extends HttpStatus(401, t"Unauthorized"), FailureCase
-  case PaymentRequired extends HttpStatus(402, t"Payment Required"), FailureCase
-  case Forbidden extends HttpStatus(403, t"Forbidden"), FailureCase
-  case NotFound extends HttpStatus(404, t"Not Found"), FailureCase
-  case MethodNotAllowed extends HttpStatus(405, t"Method Not Allowed"), FailureCase
-  case NotAcceptable extends HttpStatus(406, t"Not Acceptable"), FailureCase
+  case Continue                      extends HttpStatus(100, t"Continue")
+  case SwitchingProtocols            extends HttpStatus(101, t"Switching Protocols")
+  case EarlyHints                    extends HttpStatus(103, t"Early Hints")
+  case Ok                            extends HttpStatus(200, t"OK")
+  case Created                       extends HttpStatus(201, t"Created")
+  case Accepted                      extends HttpStatus(202, t"Accepted")
+  case NonAuthoritativeInformation   extends HttpStatus(203, t"Non-Authoritative Information")
+  case NoContent                     extends HttpStatus(204, t"No Content")
+  case ResetContent                  extends HttpStatus(205, t"Reset Content")
+  case PartialContent                extends HttpStatus(206, t"Partial Content")
+  case MultipleChoices               extends HttpStatus(300, t"Multiple Choices")
+  case MovedPermanently              extends HttpStatus(301, t"Moved Permanently")
+  case Found                         extends HttpStatus(302, t"Found")
+  case SeeOther                      extends HttpStatus(303, t"See Other")
+  case NotModified                   extends HttpStatus(304, t"Not Modified")
+  case TemporaryRedirect             extends HttpStatus(307, t"Temporary Redirect")
+  case PermanentRedirect             extends HttpStatus(308, t"Permanent Redirect")
+  case BadRequest                    extends HttpStatus(400, t"Bad Request")
+  case Unauthorized                  extends HttpStatus(401, t"Unauthorized")
+  case PaymentRequired               extends HttpStatus(402, t"Payment Required")
+  case Forbidden                     extends HttpStatus(403, t"Forbidden")
+  case NotFound                      extends HttpStatus(404, t"Not Found")
+  case MethodNotAllowed              extends HttpStatus(405, t"Method Not Allowed")
+  case NotAcceptable                 extends HttpStatus(406, t"Not Acceptable")
+  case ProxyAuthenticationRequired   extends HttpStatus(407, t"Proxy Authentication Required")
+  case RequestTimeout                extends HttpStatus(408, t"Request Timeout")
+  case Conflict                      extends HttpStatus(409, t"Conflict")
+  case Gone                          extends HttpStatus(410, t"Gone")
+  case LengthRequired                extends HttpStatus(411, t"Length Required")
+  case PreconditionFailed            extends HttpStatus(412, t"Precondition Failed")
+  case PayloadTooLarge               extends HttpStatus(413, t"Payload Too Large")
+  case UriTooLong                    extends HttpStatus(414, t"URI Too Long")
+  case UnsupportedMediaType          extends HttpStatus(415, t"Unsupported Media Type")
+  case RangeNotSatisfiable           extends HttpStatus(416, t"Range Not Satisfiable")
+  case ExpectationFailed             extends HttpStatus(417, t"Expectation Failed")
+  case UnprocessableEntity           extends HttpStatus(422, t"Unprocessable Entity")
+  case TooEarly                      extends HttpStatus(425, t"Too Early")
+  case UpgradeRequired               extends HttpStatus(426, t"Upgrade Required")
+  case PreconditionRequired          extends HttpStatus(428, t"Precondition Required")
+  case TooManyRequests               extends HttpStatus(429, t"Too Many Requests")
+  case RequestHeaderFieldsTooLarge   extends HttpStatus(431, t"Request Header Fields Too Large")
+  case UnavailableForLegalReasons    extends HttpStatus(451, t"Unavailable For Legal Reasons")
+  case InternalServerError           extends HttpStatus(500, t"Internal Server Error")
+  case NotImplemented                extends HttpStatus(501, t"Not Implemented")
+  case BadGateway                    extends HttpStatus(502, t"Bad Gateway")
+  case ServiceUnavailable            extends HttpStatus(503, t"Service Unavailable")
+  case GatewayTimeout                extends HttpStatus(504, t"Gateway Timeout")
+  case HttpVersionNotSupported       extends HttpStatus(505, t"HTTP Version Not Supported")
+  case VariantAlsoNegotiates         extends HttpStatus(506, t"Variant Also Negotiates")
+  case InsufficientStorage           extends HttpStatus(507, t"Insufficient Storage")
+  case LoopDetected                  extends HttpStatus(508, t"Loop Detected")
+  case NotExtended                   extends HttpStatus(510, t"Not Extended")
+  case NetworkAuthenticationRequired extends HttpStatus(511, t"Network Authentication Required")
 
-  case ProxyAuthenticationRequired
-  extends HttpStatus(407, t"Proxy Authentication Required"), FailureCase
-
-  case RequestTimeout extends HttpStatus(408, t"Request Timeout"), FailureCase
-  case Conflict extends HttpStatus(409, t"Conflict"), FailureCase
-  case Gone extends HttpStatus(410, t"Gone"), FailureCase
-  case LengthRequired extends HttpStatus(411, t"Length Required"), FailureCase
-  case PreconditionFailed extends HttpStatus(412, t"Precondition Failed"), FailureCase
-  case PayloadTooLarge extends HttpStatus(413, t"Payload Too Large"), FailureCase
-  case UriTooLong extends HttpStatus(414, t"URI Too Long"), FailureCase
-  case UnsupportedMediaType extends HttpStatus(415, t"Unsupported Media Type"), FailureCase
-  case RangeNotSatisfiable extends HttpStatus(416, t"Range Not Satisfiable"), FailureCase
-  case ExpectationFailed extends HttpStatus(417, t"Expectation Failed"), FailureCase
-  case UnprocessableEntity extends HttpStatus(422, t"Unprocessable Entity"), FailureCase
-  case TooEarly extends HttpStatus(425, t"Too Early"), FailureCase
-  case UpgradeRequired extends HttpStatus(426, t"Upgrade Required"), FailureCase
-  case PreconditionRequired extends HttpStatus(428, t"Precondition Required"), FailureCase
-  case TooManyRequests extends HttpStatus(429, t"Too Many Requests"), FailureCase
-
-  case RequestHeaderFieldsTooLarge
-  extends HttpStatus(431, t"Request Header Fields Too Large"), FailureCase
-
-  case UnavailableForLegalReasons
-  extends HttpStatus(451, t"Unavailable For Legal Reasons"), FailureCase
-
-  case InternalServerError extends HttpStatus(500, t"Internal Server Error"), FailureCase
-  case NotImplemented extends HttpStatus(501, t"Not Implemented"), FailureCase
-  case BadGateway extends HttpStatus(502, t"Bad Gateway"), FailureCase
-  case ServiceUnavailable extends HttpStatus(503, t"Service Unavailable"), FailureCase
-  case GatewayTimeout extends HttpStatus(504, t"Gateway Timeout"), FailureCase
-  case HttpVersionNotSupported extends HttpStatus(505, t"HTTP Version Not Supported"), FailureCase
-  case VariantAlsoNegotiates extends HttpStatus(506, t"Variant Also Negotiates"), FailureCase
-  case InsufficientStorage extends HttpStatus(507, t"Insufficient Storage"), FailureCase
-  case LoopDetected extends HttpStatus(508, t"Loop Detected"), FailureCase
-  case NotExtended extends HttpStatus(510, t"Not Extended"), FailureCase
-
-  case NetworkAuthenticationRequired
-  extends HttpStatus(511, t"Network Authentication Required"), FailureCase
+  def category: HttpStatus.Category = (code/100).absolve match
+    case 1 => HttpStatus.Category.Informational
+    case 2 => HttpStatus.Category.Successful
+    case 3 => HttpStatus.Category.Redirection
+    case 4 => HttpStatus.Category.ClientError
+    case 5 => HttpStatus.Category.ServerError

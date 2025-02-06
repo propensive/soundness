@@ -26,12 +26,11 @@ import vacuous.*
 
 object HttpResponse:
   given readable: Tactic[HttpError] => HttpResponse is Readable by Bytes = response =>
-    val body = response.status match
-      case status: (HttpStatus & FailureCase) =>
-        raise(HttpError(status, response.headers), response.body)
+    val body = response.status.category match
+      case HttpStatus.Category.Successful => response.body
 
-      case status =>
-        response.body
+      case _ =>
+        raise(HttpError(response.status, response.headers), response.body)
 
     body.stream
 
@@ -50,9 +49,9 @@ case class HttpResponse
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
 
-  def as[BodyType: Receivable as receivable]: BodyType raises HttpError = status.absolve match
-    case status: FailureCase => abort(HttpError(status, headers: List[(Text, Text)]))
-    case status              => receivable.read(status, body)
+  def as[BodyType: Receivable as receivable]: BodyType raises HttpError = status.category match
+    case HttpStatus.Category.Successful => receivable.read(status, body)
+    case _                              => abort(HttpError(status, headers: List[(Text, Text)]))
 
   @targetName("add")
   infix def + [ValueType: Encodable in ResponseHeader.Value](value: ValueType): HttpResponse =
