@@ -24,6 +24,10 @@ import gossamer.*
 import proscenium.*
 import symbolism.*
 
+extension [UnitsType <: Measure](quantity: Quantity[UnitsType])
+  transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
+    ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
+
 extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
   @targetName("plus")
   transparent inline infix def + [UnitsType2 <: Measure](quantity2: Quantity[UnitsType2]): Any =
@@ -34,9 +38,6 @@ extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
     ${Quantitative.add[UnitsType, UnitsType2]('quantity, 'quantity2, '{true})}
 
   transparent inline def invert: Any = Quantity[Measure](1.0)/quantity
-
-  transparent inline def in[UnitsType2[power <: Nat] <: Units[power, ?]]: Any =
-    ${Quantitative.norm[UnitsType, UnitsType2]('quantity)}
 
   @targetName("times2")
   transparent inline infix def * [UnitsType2 <: Measure](inline quantity2: Quantity[UnitsType2])
