@@ -18,7 +18,6 @@ package punctuation
 
 import escapade.*
 import proscenium.*
-import rudiments.*
 
 extension (value: Markdown[Markdown.Ast.Node])
   def render(width: Int): Teletype = TextConverter().convert(value.nodes, 0).serialize(width)

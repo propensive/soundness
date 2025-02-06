@@ -21,7 +21,6 @@ import escapade.*, escapes.*
 import fulminate.*
 import gossamer.*
 import proscenium.*
-import rudiments.*
 import vacuous.*
 
 import errorDiagnostics.stackTraces
