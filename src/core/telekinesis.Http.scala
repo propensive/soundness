@@ -17,6 +17,7 @@
 package telekinesis
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*
@@ -24,15 +25,21 @@ import nettlesome.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
+import vacuous.*
 
 import java.net.*
-import java.io.*
+import java.net.http as jnh
+import java.io as ji
 
 import language.dynamics
 
 erased trait Http
 
 object Http:
+
+  private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
+
   object Method:
     given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
       def name: Text = t"formmethod"
@@ -75,48 +82,43 @@ object Http:
   def request[PostType: Postable]
      (url: HttpUrl, content: PostType, method: Method, headers: Seq[HttpHeader])
      (using Online)
-  :     HttpResponse logs HttpEvent =
+  :     HttpResponse raises TcpError logs HttpEvent =
 
     Log.info(HttpEvent.Send(method, url, headers))
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
-    URI(url.show.s).toURL.nn.openConnection.nn.absolve match
-      case connection: HttpURLConnection =>
-        connection.setRequestMethod(method.toString.show.upper.s)
+    val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(URI(url.show.s)).nn
 
-        connection.setRequestProperty
-         (Capitate.contentType.key.uncamel.kebab.s, PostType.mediaType(content).show.s)
+    val body = PostType.stream(content) match
+      case Stream()      => jnh.HttpRequest.BodyPublishers.noBody.nn
+      case Stream(bytes) => jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
 
-        connection.setRequestProperty("User-Agent", "Telekinesis/1.0.0")
+      case stream =>
+        jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
 
-        headers.each:
-          case HttpHeader(key, value) =>
-            connection.setRequestProperty(key.s, value.s)
+    method match
+      case Http.Delete  => request.DELETE().nn
+      case Http.Get     => request.GET().nn
+      case Http.Post    => request.POST(body).nn
+      case Http.Put     => request.PUT(body).nn
+      case Http.Connect => request.method("CONNECT", body).nn
+      case Http.Head    => request.method("HEAD", body).nn
+      case Http.Options => request.method("OPTIONS", body).nn
+      case Http.Patch   => request.method("PATCH", body).nn
+      case Http.Trace   => request.method("TRACE", body).nn
 
-        if method == Post || method == Put then
-          connection.setDoOutput(true)
-          connection.connect()
-          val out = connection.getOutputStream().nn
-          PostType.stream(content).map(_.to(Array)).each(out.write(_))
-          out.close()
+    request.header(Capitate.contentType.key.uncamel.kebab.s, PostType.mediaType(content).show.s)
+    request.header("User-Agent", "Telekinesis/1.0.0")
 
-        val buf = new Array[Byte](65536)
+    headers.each:
+      case HttpHeader(key, value) => request.header(key.s, value.s)
 
-        def read(in: InputStream): Stream[Bytes] =
-          val len = in.read(buf, 0, buf.length)
+    val response: jnh.HttpResponse[ji.InputStream] =
+      try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn
+      catch case error: ji.IOException => abort(TcpError())
 
-          if len < 0 then Stream() else IArray(buf.slice(0, len)*) #:: read(in)
+    val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse(abort(TcpError()))
+    val headers2: List[(Text, Text)] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+      (key, values) => values.asScala.map(key.tt -> _.tt)
 
-        def body: Stream[Bytes] =
-          try read(connection.getInputStream.nn) catch case _: Exception =>
-            try read(connection.getErrorStream.nn) catch case _: Exception => Stream()
-
-        val HttpStatus(status) = connection.getResponseCode: @unchecked
-        Log.fine(HttpEvent.Response(status))
-
-        val responseHeaders: List[(Text, Text)] =
-          connection.getHeaderFields.nn.asScala.to(List).flatMap:
-            case (key: String, values) => values.asScala.to(List).map(key.nn.tt -> _.tt)
-            case _                     => Nil
-
-        HttpResponse(1.1, status, responseHeaders, body)
+    HttpResponse(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))

@@ -19,6 +19,7 @@ package telekinesis
 import scala.quoted.*
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import gossamer.*
 import nettlesome.*
@@ -84,7 +85,8 @@ object Telekinesis:
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       payload:  Expr[PayloadType],
-      postable: Expr[PayloadType is Postable])
+      postable: Expr[PayloadType is Postable],
+      tactic:   Expr[Tactic[TcpError]])
      (using Quotes)
   :     Expr[HttpResponse] =
 
@@ -99,13 +101,15 @@ object Telekinesis:
         '{  given Online = $online
             given PayloadType is Postable = $postable
             given HttpEvent is Loggable = $loggable
+            given Tactic[TcpError] = $tactic
             Http.request($submit.url, $payload, $method, $headers)  }
 
   def fetch
      (fetch:    Expr[Fetch],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
-      loggable: Expr[HttpEvent is Loggable])
+      loggable: Expr[HttpEvent is Loggable],
+      tactic:   Expr[Tactic[TcpError]])
      (using Quotes)
   :     Expr[HttpResponse] =
 
@@ -119,4 +123,5 @@ object Telekinesis:
 
         '{  given Online = $online
             given HttpEvent is Loggable = $loggable
+            given Tactic[TcpError] = $tactic
             Http.request($fetch.url, (), $method, $headers)  }

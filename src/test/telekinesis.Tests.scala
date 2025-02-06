@@ -20,6 +20,7 @@ import soundness.*
 
 import errorDiagnostics.stackTraces
 import logging.silent
+import strategies.throwUnsafely
 
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
@@ -40,7 +41,7 @@ object Tests extends Suite(t"Telekinesis tests"):
         . tap: response =>
           println(response)
           unsafely:
-            println(response.as[Text])
+            println(response.receive[Text])
 
       . assert()
 
@@ -51,7 +52,7 @@ object Tests extends Suite(t"Telekinesis tests"):
         . tap: response =>
           println(response)
           unsafely:
-            println(response.as[Text])
+            println(response.receive[Text])
 
       . assert()
 
@@ -62,7 +63,7 @@ object Tests extends Suite(t"Telekinesis tests"):
         . tap: response =>
           println(response)
           unsafely:
-            println(response.as[Text])
+            println(response.receive[Text])
 
       . assert()
 
@@ -72,6 +73,6 @@ object Tests extends Suite(t"Telekinesis tests"):
         . tap: response =>
           println(response)
           unsafely:
-            println(response.as[Text])
+            println(response.receive[Text])
 
       . assert()
