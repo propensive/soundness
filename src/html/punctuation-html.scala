@@ -17,6 +17,7 @@
 package punctuation
 
 import honeycomb.*
+import proscenium.*
 import rudiments.*
 
 extension (value: Markdown[Markdown.Ast.Node])(using conv: HtmlConverter)

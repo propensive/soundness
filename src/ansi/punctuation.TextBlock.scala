@@ -20,6 +20,7 @@ import denominative.*
 import escapade.*, escapes.*
 import fulminate.*
 import gossamer.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
