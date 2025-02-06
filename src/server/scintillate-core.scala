@@ -44,7 +44,10 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
 
       HttpResponse
-       (1.1, HttpStatus.Unauthorized, List(ResponseHeader.WwwAuthenticate.show -> auth), Stream())
+       (1.1,
+        HttpStatus.Unauthorized,
+        List(HttpHeader(ResponseHeader.WwwAuthenticate.show, auth)),
+        Stream())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
 inline def request: HttpRequest = compiletime.summonInline[HttpRequest]

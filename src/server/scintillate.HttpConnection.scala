@@ -72,8 +72,9 @@ object HttpConnection:
       exchange.getLocalAddress.nn.getPort
 
     def respond(response: HttpResponse): Unit =
-      response.headers.each: (key, value) =>
-        exchange.getResponseHeaders.nn.add(key.s, value.s)
+      response.textHeaders.each:
+        case HttpHeader(key, value) =>
+          exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = response.body match
         case Stream()     => -1
