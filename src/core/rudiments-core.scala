@@ -309,14 +309,20 @@ def homeDirectory[PathType: Instantiable across Paths from Text]
 
   directory.path[PathType]
 
+def temporaryDirectory[PathType: Instantiable across Paths from Text]
+   (using directory: TemporaryDirectory)
+:     PathType =
+
+  directory.path[PathType]
+
 package workingDirectories:
   given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
-  //given none(using Tactic[WorkingDirectoryError]): WorkingDirectory =
-  //  () => abort(WorkingDirectoryError())
 
 package homeDirectories:
   given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
-  //given none(using Tactic[HomeDirectoryError]): HomeDirectory = () => abort(HomeDirectoryError())
+
+package temporaryDirectories:
+  given default: TemporaryDirectory = () => System.getProperty("java.io.tmpdir").nn.tt
 
 package quickstart:
   erased given defaults: Quickstart = ###
