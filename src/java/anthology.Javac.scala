@@ -43,7 +43,7 @@ case class Javac(options: List[JavacOption]):
      (jn.URI.create(t"string:///$name".s), jt.JavaFileObject.Kind.SOURCE):
     override def getCharContent(ignoreEncodingErrors: Boolean): CharSequence = code.s
 
-  def apply(classpath: LocalClasspath)[PathType: GenericPath]
+  def apply(classpath: LocalClasspath)[PathType: Abstractable across Paths into Text]
      (sources: Map[Text, Text], out: PathType)
      (using SystemProperties, Monitor, Codicil)
   :     CompileProcess logs CompileEvent raises CompilerError =
