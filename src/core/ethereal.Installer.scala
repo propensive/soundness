@@ -90,7 +90,7 @@ object Installer:
      (using service: DaemonService[?], environment: Environment, home: HomeDirectory)
      (using Effectful, Diagnostics)
   :     Result logs DaemonLogEvent raises InstallError =
-    import workingDirectories.default
+    import workingDirectories.systemProperty
     import systemProperties.virtualMachine
 
     tend:

@@ -37,7 +37,7 @@ import parasite.*
 import prepositional.*
 import profanity.*
 import proscenium.*
-import rudiments.*, homeDirectories.default
+import rudiments.*, homeDirectories.systemProperty
 import serpentine.*
 import spectacular.*
 import surveillance.*
@@ -79,7 +79,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
   import environments.virtualMachine
   import strategies.throwUnsafely
-  import workingDirectories.default
+  import workingDirectories.systemProperty
   import stdioSources.virtualMachine.ansi
 
   val name: Text =
@@ -235,7 +235,7 @@ def cli[BusType <: Matchable](using executive: Executive)
             def ansi: Boolean = true
 
             lazy val color: ColorDepth =
-              import workingDirectories.default
+              import workingDirectories.systemProperty
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
               else ColorDepth
                     (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
