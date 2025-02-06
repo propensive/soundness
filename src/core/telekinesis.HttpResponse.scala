@@ -44,14 +44,14 @@ object HttpResponse:
     response.copy(headers = headers2 ++ response.headers)
 
 case class HttpResponse
-   (version: HttpVersion, status:  HttpStatus, headers: List[(Text, Text)], body: Stream[Bytes]):
+   (version: HttpVersion, status: HttpStatus, headers: List[(Text, Text)], body: Stream[Bytes]):
+
+  def successBody: Optional[Stream[Bytes]] = body.provided(status == HttpStatus.Category.Successful)
 
   lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
 
-  def receive[BodyType: Receivable as receivable]: BodyType raises HttpError = status.category match
-    case HttpStatus.Category.Successful => receivable.read(this)
-    case _                              => abort(HttpError(status, headers: List[(Text, Text)]))
+  def receive[BodyType: Receivable as receivable]: BodyType = receivable.read(this)
 
   @targetName("add")
   infix def + [ValueType: Encodable in ResponseHeader.Value](value: ValueType): HttpResponse =

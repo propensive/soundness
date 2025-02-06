@@ -17,23 +17,29 @@
 package telekinesis
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import turbulence.*
+import vacuous.*
 
 object Receivable:
   given text: Text is Receivable = _.body.read[Bytes].utf8
   given bytes: Bytes is Receivable = _.body.read[Bytes]
   given byteStream: Stream[Bytes] is Receivable = _.body
 
-  given readable: [StreamType: Aggregable by Bytes] => StreamType is Receivable =
-    response => StreamType.aggregate(response.body)
+  given readable: [StreamType: Aggregable by Bytes] => Tactic[HttpError]
+  =>    StreamType is Receivable =
+    response =>
+      response.successBody.let(StreamType.aggregate(_)).lest:
+        HttpError(response.status, response.headers)
 
-  given instantiable: [ContentType: Instantiable across HttpRequests from Text]
-  =>    ContentType is Receivable =
-    response => ContentType(response.body.read[Bytes].utf8)
+  given instantiable: [ContentType: Instantiable across HttpRequests from Text] => Tactic[HttpError]
+  =>    ContentType is Receivable = response =>
+    response.successBody.let(_.read[Bytes].utf8).let(ContentType(_)).lest:
+      HttpError(response.status, response.headers)
 
   given httpStatus: HttpStatus is Receivable = _.status
 
