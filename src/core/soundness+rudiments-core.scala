@@ -32,10 +32,10 @@ package quickstart:
   export rudiments.quickstart.defaults as defaults
 
 package workingDirectories:
-  export rudiments.workingDirectories.default as default
+  export rudiments.workingDirectories.systemProperty
 
 package homeDirectories:
-  export rudiments.homeDirectories.default as default
+  export rudiments.homeDirectories.systemProperty
 
 package temporaryDirectories:
-  export rudiments.temporaryDirectories.default as default
+  export rudiments.temporaryDirectories.systemProperty

@@ -27,6 +27,7 @@ import scala.deriving.*
 
 import anticipation.*
 import denominative.*
+import fulminate.*
 import prepositional.*
 import proscenium.*
 import vacuous.*
@@ -316,13 +317,19 @@ def temporaryDirectory[PathType: Instantiable across Paths from Text]
   directory.path[PathType]
 
 package workingDirectories:
-  given default: WorkingDirectory = () => System.getProperty("user.dir").nn.tt
+  given systemProperty: WorkingDirectory = () =>
+    Optional(System.getProperty("user.dir")).let(_.tt).or:
+      panic(m"the `user.dir` system property is not set")
 
 package homeDirectories:
-  given default: HomeDirectory = () => System.getProperty("user.home").nn.tt
+  given systemProperty: HomeDirectory = () =>
+    Optional(System.getProperty("user.home")).let(_.tt).or:
+      panic(m"the `user.home` system property is not set")
 
 package temporaryDirectories:
-  given default: TemporaryDirectory = () => System.getProperty("java.io.tmpdir").nn.tt
+  given systemProperty: TemporaryDirectory = () =>
+    Optional(System.getProperty("java.io.tmpdir")).let(_.tt).or:
+      panic(m"the `java.io.tmpdir` system property is not set")
 
 package quickstart:
   erased given defaults: Quickstart = ###
