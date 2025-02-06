@@ -50,7 +50,7 @@ case class HttpResponse
     case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
 
   def receive[BodyType: Receivable as receivable]: BodyType raises HttpError = status.category match
-    case HttpStatus.Category.Successful => receivable.read(status, body)
+    case HttpStatus.Category.Successful => receivable.read(this)
     case _                              => abort(HttpError(status, headers: List[(Text, Text)]))
 
   @targetName("add")

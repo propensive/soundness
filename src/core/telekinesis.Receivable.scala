@@ -24,20 +24,19 @@ import rudiments.*
 import turbulence.*
 
 object Receivable:
-  given text: Text is Receivable = (status, body) => body.read[Bytes].utf8
-  given bytes: Bytes is Receivable = (status, body) => body.read[Bytes]
-  given byteStream: Stream[Bytes] is Receivable = (status, body) => body
+  given text: Text is Receivable = _.body.read[Bytes].utf8
+  given bytes: Bytes is Receivable = _.body.read[Bytes]
+  given byteStream: Stream[Bytes] is Receivable = _.body
 
   given readable: [StreamType: Aggregable by Bytes] => StreamType is Receivable =
-    (status, body) => StreamType.aggregate(body.stream[Bytes])
+    response => StreamType.aggregate(response.body)
 
   given instantiable: [ContentType: Instantiable across HttpRequests from Text]
   =>    ContentType is Receivable =
-    (status, body) => ContentType(body.read[Bytes].utf8)
+    response => ContentType(response.body.read[Bytes].utf8)
 
-  given httpStatus: HttpStatus is Receivable:
-    def read(status: HttpStatus, body: Stream[Bytes]) = status
+  given httpStatus: HttpStatus is Receivable = _.status
 
 trait Receivable:
   type Self
-  def read(status: HttpStatus, body: Stream[Bytes]): Self
+  def read(response: HttpResponse): Self
