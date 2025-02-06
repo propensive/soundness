@@ -28,6 +28,9 @@ object Receivable:
   given bytes: Bytes is Receivable = (status, body) => body.read[Bytes]
   given byteStream: Stream[Bytes] is Receivable = (status, body) => body
 
+  given readable: [StreamType: Aggregable by Bytes] => StreamType is Receivable =
+    (status, body) => StreamType.aggregate(body.stream[Bytes])
+
   given instantiable: [ContentType: Instantiable across HttpRequests from Text]
   =>    ContentType is Receivable =
     (status, body) => ContentType(body.read[Bytes].utf8)
