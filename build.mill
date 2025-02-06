@@ -112,7 +112,8 @@ object soundness extends ScalaModule {
   object cli extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
         escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
-        guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core)
+        guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
+        punctuation.ansi)
     def scalaVersion = settings.scalaVersion
   }
 
@@ -133,13 +134,13 @@ object soundness extends ScalaModule {
 
   object test extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
-        superlunary.core, yossarian.core, probably.core)
+        superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm)
     def scalaVersion = settings.scalaVersion
   }
 
   object tool extends BaseScalaModule with PublishModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
-        octogenarian.core, revolution.core, umbrageous.plugin)
+        octogenarian.core, revolution.core, umbrageous.plugin, anthology.java)
     def scalaVersion = settings.scalaVersion
   }
 
@@ -147,7 +148,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-        telekinesis.core, plutocrat.core, eucalyptus.gcp)
+        telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html)
     def scalaVersion = settings.scalaVersion
   }
 
