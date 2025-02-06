@@ -23,6 +23,7 @@ import digression.*
 import gossamer.*
 import hellenism.*
 import parasite.*
+import prepositional.*
 import vacuous.*
 
 import scala.jdk.CollectionConverters.*
@@ -72,7 +73,7 @@ case class Javac(options: List[JavacOption]):
           Notice
            (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
 
-    val options = List(t"-classpath", classpath(), t"-d", out.pathText)
+    val options = List(t"-classpath", classpath(), t"-d", out.generic)
     val javaSources = sources.map(JavaSource(_, _)).asJava
     Log.info(CompileEvent.Running(List(t"javac", options.join(t" "))))
 
