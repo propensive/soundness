@@ -227,10 +227,6 @@ object Json extends Json2, Dynamic:
   given Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
-  given aggregable: [SourceType: Readable by Bytes] => Tactic[JsonParseError]
-  =>    Json is Aggregable by Bytes =
-    Json.parse(_)
-
   def applyDynamicNamed(methodName: "of")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))
     val values: IArray[JsonAst] = IArray.from(elements.map(_(1).root))
