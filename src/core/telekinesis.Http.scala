@@ -118,7 +118,7 @@ object Http:
       catch case error: ji.IOException => abort(TcpError())
 
     val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse(abort(TcpError()))
-    val headers2: List[(Text, Text)] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-      (key, values) => values.asScala.map(key.tt -> _.tt)
+    val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+      (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
 
     HttpResponse(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))

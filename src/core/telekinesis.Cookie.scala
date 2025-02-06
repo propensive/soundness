@@ -63,7 +63,7 @@ object Cookie:
       ResponseHeader.SetCookie(cookie.show)
 
     given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
-      response.copy(headers = (t"set-cookie", cookie.show) :: response.headers)
+      response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
 
     given Decoder[List[Cookie.Value]] = value =>
       value.cut(t"; ").flatMap:

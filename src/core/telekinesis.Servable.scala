@@ -28,12 +28,12 @@ object Servable:
   def apply[ResponseType](mediaType: ResponseType => MediaType)
      (lambda: ResponseType => Stream[Bytes])
   :     ResponseType is Servable = response =>
-    val headers = List(ResponseHeader.ContentType.header -> mediaType(response).show)
+    val headers = List(HttpHeader(ResponseHeader.ContentType.header, mediaType(response).show))
     HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
 
   given content: Content is Servable:
     def serve(content: Content): HttpResponse =
-      val headers = List(ResponseHeader.ContentType.header -> content.media.show)
+      val headers = List(HttpHeader(ResponseHeader.ContentType.header, content.media.show))
 
       HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
 
@@ -47,10 +47,14 @@ object Servable:
   inline given media: [ValueType: Media] => ValueType is Servable =
     scala.compiletime.summonFrom:
       case encodable: (ValueType is Encodable in Bytes) => value =>
-        val headers = List(ResponseHeader.ContentType.header -> ValueType.mediaType(value).show)
+        val headers =
+          List(HttpHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
+
         HttpResponse(1.1, HttpStatus.Ok, headers, Stream(encodable.encode(value)))
       case given (ValueType is Readable by Bytes)       => value =>
-        val headers = List(ResponseHeader.ContentType.header -> ValueType.mediaType(value).show)
+        val headers =
+          List(HttpHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
+
         HttpResponse(1.1, HttpStatus.Ok, headers, value.stream[Bytes])
 
 trait Servable:

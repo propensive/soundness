@@ -16,11 +16,14 @@
 
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 
@@ -30,36 +33,31 @@ object HttpResponse:
       case HttpStatus.Category.Successful => response.body
 
       case _ =>
-        raise(HttpError(response.status, response.headers), response.body)
+        raise(HttpError(response.status, response.textHeaders), response.body)
 
     body.stream
 
-  def apply[ServableType: Servable](servable: ServableType, headers: ResponseHeader.Value*)
+  def apply[ServableType: Servable](servable: ServableType, headers: HttpHeader*)
   :     HttpResponse =
 
-    val headers2: List[(Text, Text)] = headers.to(List).map: header =>
-      header.header.header -> header.value
-
     val response = ServableType.serve(servable)
-    response.copy(headers = headers2 ++ response.headers)
+    response.copy(textHeaders = headers.to(List) ++ response.textHeaders)
 
 case class HttpResponse
-   (version: HttpVersion, status: HttpStatus, headers: List[(Text, Text)], body: Stream[Bytes]):
+   (version: HttpVersion, status: HttpStatus, textHeaders: List[HttpHeader], body: Stream[Bytes]):
 
   def successBody: Optional[Stream[Bytes]] = body.provided(status == HttpStatus.Category.Successful)
 
-  lazy val headersMap: Map[ResponseHeader[?], List[Text]] = headers.foldLeft(Map()):
-    case (acc, (ResponseHeader(key), value)) => acc.updated(key, value :: acc.getOrElse(key, Nil))
-
   def receive[BodyType: Receivable as receivable]: BodyType = receivable.read(this)
 
+  object headers extends Dynamic:
+    def selectDynamic(name: Label)
+       (using capitate: name.type is Capitate, decoder: Decoder[capitate.Subject])
+    :     List[capitate.Subject] =
+      val name2 = name.tt.uncamel.kebab.lower
+      textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+
   @targetName("add")
-  infix def + [ValueType: Encodable in ResponseHeader.Value](value: ValueType): HttpResponse =
-    val header = ValueType.encode(value)
-    copy(headers = (header.header.header, header.value) :: headers)
-
-  def apply[ValueType](header: ResponseHeader[ValueType])
-     (using decoder: HttpHeaderDecoder[ValueType])
-  :     List[ValueType] =
-
-    headersMap.at(header).or(Nil).map(decoder.decode(_))
+  infix def + [ValueType: Encodable in HttpHeader](value: ValueType): HttpResponse =
+    val header: HttpHeader = ValueType.encode(value)
+    copy(textHeaders = header :: textHeaders)

@@ -34,12 +34,12 @@ object Receivable:
   =>    StreamType is Receivable =
     response =>
       response.successBody.let(StreamType.aggregate(_)).lest:
-        HttpError(response.status, response.headers)
+        HttpError(response.status, response.textHeaders)
 
   given instantiable: [ContentType: Instantiable across HttpRequests from Text] => Tactic[HttpError]
   =>    ContentType is Receivable = response =>
     response.successBody.let(_.read[Bytes].utf8).let(ContentType(_)).lest:
-      HttpError(response.status, response.headers)
+      HttpError(response.status, response.textHeaders)
 
   given httpStatus: HttpStatus is Receivable = _.status
 
