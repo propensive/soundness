@@ -56,7 +56,7 @@ case class WebDriver(server: Browser#Server):
         val url: HttpUrl =
           url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
 
-        url.fetch(contentType = media"application/json").as[Json]
+        url.fetch(contentType = media"application/json").receive[Json]
 
       private def post(address: Text, content: Json): Json logs HttpEvent = safe:
         given Online = Online
@@ -96,7 +96,7 @@ case class WebDriver(server: Browser#Server):
 
       url"http://localhost:${server.port}/session/$sessionId/$address"
       . fetch(contentType = media"application/json")
-      . as[Json]
+      . receive[Json]
 
     private def post(address: Text, content: Json): Json logs HttpEvent = safe:
       given Online = Online
