@@ -25,6 +25,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContext
 import inimitable.*
 import jacinta.*
+import rudiments.*, temporaryDirectories.default
 import spectacular.*
 
 import scala.quoted.*

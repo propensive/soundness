@@ -22,13 +22,13 @@ import anticipation.*
 import contingency.*
 import digression.*
 import galilei.*
-import gossamer.*
 import hellenism.*
 import inimitable.*
 import jacinta.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import serpentine.*
 import spectacular.*
 
@@ -45,7 +45,10 @@ trait Dispatcher:
   inline def dispatch[OutputType: Decodable in Json]
      (body: References ?=> Quotes ?=> Expr[OutputType])
      [ScalacVersionType <: Scalac.All]
-     (using codepoint: Codepoint, classloader: Classloader, properties: SystemProperties)
+     (using codepoint:   Codepoint,
+            classloader: Classloader,
+            properties:  SystemProperties,
+            directory:   TemporaryDirectory)
   :     Result[OutputType] raises CompilerError =
    try
     import strategies.throwUnsafely
@@ -70,7 +73,7 @@ trait Dispatcher:
         Dispatcher.cache(codepoint)
 
       else
-        val out: Path on Linux = t"/tmp".decode[Path on Linux] / Name(uuid.show)
+        val out: Path on Linux = temporaryDirectory[Path on Linux] / Name(uuid.show)
         val settings: staging.Compiler.Settings =
           staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
