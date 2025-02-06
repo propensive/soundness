@@ -20,6 +20,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import honeycomb.*, html5.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
