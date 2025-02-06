@@ -18,7 +18,6 @@ package gossamer
 
 import soundness.*
 
-import charEncoders.utf8
 import textMetrics.uniform
 
 case class Person(name: Text, age: Int)
