@@ -27,7 +27,7 @@ object Tests extends Suite(t"Plutocrat tests"):
     suite(t"Money tests"):
       test(t"Show a local monetary value"):
         import currencyStyles.local
-        val amount = Eur(3.01)
+        val amount: Money[Eur] = Eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received €3.01")
@@ -102,7 +102,7 @@ object Tests extends Suite(t"Plutocrat tests"):
 
       . assert(_ == Price(Gbp(2.94), Gbp(0.59)))
 
-      /*test(t"Prices in different currencies cannot be combined"):
-        demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2)).map(_.id)
+      test(t"Prices in different currencies cannot be combined"):
+        demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2)).map(_.message)
 
-      . assert(_ == List(CompileErrorId.TypeMismatch))*/
+      . assert(_ == List(t"Found:    plutocrat.Price[plutocrat.currencies.Gbp.type]\nRequired: plutocrat.Price[plutocrat.currencies.Eur.type]"))

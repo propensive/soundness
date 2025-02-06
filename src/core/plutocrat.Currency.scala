@@ -19,7 +19,6 @@ package plutocrat
 import anticipation.*
 
 open case class Currency(isoCode: Text, symbol: Text, name: Text, modulus: Int):
-  this: Currency =>
   def apply(value: Double): Money[this.type] =
     val integral = value.toLong
     val tweak = (if integral < 0 then -0.5 else 0.5)/modulus

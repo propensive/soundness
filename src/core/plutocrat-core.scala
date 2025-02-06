@@ -23,21 +23,52 @@ package currencyStyles:
   given generic: CurrencyStyle = (currency, unit, subunit) => t"$unit.$subunit ${currency.isoCode}"
 
 package currencies:
+  type Eur = Eur.type
   object Eur extends Currency(t"EUR", t"€",    t"Euro",               100)
+
+  type Usd = Usd.type
   object Usd extends Currency(t"USD", t"$$",   t"US Dollar",          100)
+
+  type Jpy = Jpy.type
   object Jpy extends Currency(t"JPY", t"¥",    t"Japanese Yen",       100)
+
+  type Gbp = Gbp.type
   object Gbp extends Currency(t"GBP", t"£",    t"Pounds Sterling",    100)
+
+  type Cny = Cny.type
   object Cny extends Currency(t"CNY", t"¥",    t"Renminbi",           100)
+
+  type Aud = Aud.type
   object Aud extends Currency(t"AUD", t"A$$",  t"Australian Dollar",  100)
+
+  type Cad = Cad.type
   object Cad extends Currency(t"CAD", t"C$$",  t"Canadian Dollar",    100)
+
+  type Chf = Chf.type
   object Chf extends Currency(t"CHF", t"CHF",  t"Swiss Franc",        100)
+
+  type Hkd = Hkd.type
   object Hkd extends Currency(t"HKD", t"HK$$", t"Hong Kong Dollar",   100)
+
+  type Sgd = Sgd.type
   object Sgd extends Currency(t"SGD", t"S$$",  t"Singapore Dollar",   100)
+
+  type Sek = Sek.type
   object Sek extends Currency(t"SEK", t"kr",   t"Swedish Krona",      100)
+
+  type Krw = Krw.type
   object Krw extends Currency(t"KRW", t"₩",    t"South Korean Won",   100)
+
+  type Nok = Nok.type
   object Nok extends Currency(t"NOK", t"kr",   t"Norwegian Krone",    100)
+
+  type Nzd = Nzd.type
   object Nzd extends Currency(t"NZD", t"NZ$$", t"New Zealand Dollar", 100)
+
+  type Inr = Inr.type
   object Inr extends Currency(t"INR", t"₹",    t"Indian Rupee",       100)
+
+  type Mxn = Mxn.type
   object Mxn extends Currency(t"MXN", t"$$",   t"Mexican Peso",       100)
 
 export Plutocrat.Money
