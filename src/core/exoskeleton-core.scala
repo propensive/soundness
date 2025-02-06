@@ -81,7 +81,7 @@ package executives:
       CliInvocation
        (Cli.arguments(arguments),
         environments.virtualMachine,
-        workingDirectories.default,
+        workingDirectories.systemProperty,
         stdio,
         signals)
 
@@ -105,7 +105,7 @@ def application(using executive: Executive, interpreter: CliInterpreter)
     executive.invocation
      (arguments,
       environments.virtualMachine,
-      workingDirectories.default,
+      workingDirectories.systemProperty,
       stdioSources.virtualMachine.ansi,
       spool)
 

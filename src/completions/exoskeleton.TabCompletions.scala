@@ -25,7 +25,7 @@ import gossamer.{where as _, *}
 import guillotine.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*, homeDirectories.default
+import rudiments.*, homeDirectories.systemProperty
 import serpentine.*
 import spectacular.*
 import turbulence.*
