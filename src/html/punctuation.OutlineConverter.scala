@@ -21,7 +21,6 @@ import fulminate.*
 import gossamer.*
 import honeycomb.*, html5.*
 import proscenium.*
-import rudiments.*
 import vacuous.*
 
 object OutlineConverter extends HtmlConverter():
