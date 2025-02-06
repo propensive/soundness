@@ -49,13 +49,13 @@ extension [EndpointType](endpoint: EndpointType)
   def connect[StateType](initialState: StateType)[MessageType]
      (initialMessage: MessageType = Bytes())
      (handle: (state: StateType) ?=> MessageType => Control[StateType])
-     (using serviceable: Serviceable[EndpointType], receivable: Receivable[MessageType])
+     (using serviceable: Serviceable[EndpointType], ingressive: Ingressive[MessageType])
   :     StateType =
 
     val connection = serviceable.connect(endpoint)
 
     def recur(input: Stream[Bytes], state: StateType): StateType = input.flow(state):
-      handle(using state)(receivable.deserialize(head)) match
+      handle(using state)(ingressive.deserialize(head)) match
         case Continue(state2) => recur(tail, state2.or(state))
         case Terminate        => state
 

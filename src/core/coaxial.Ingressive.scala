@@ -21,12 +21,12 @@ import gossamer.*
 import hieroglyph.*
 import spectacular.*
 
-trait Receivable[+MessageType]:
+trait Ingressive[+MessageType]:
   def deserialize(message: Bytes): MessageType
 
-object Receivable:
-  given bytes: Receivable[Bytes] = identity(_)
-  given text: CharDecoder => Receivable[Text] = _.text
+object Ingressive:
+  given bytes: Ingressive[Bytes] = identity(_)
+  given text: CharDecoder => Ingressive[Text] = _.text
 
-  given decoder: [MessageType: Decoder] => CharDecoder => Receivable[MessageType] =
+  given decoder: [MessageType: Decoder] => CharDecoder => Ingressive[MessageType] =
     _.text.decode[MessageType]
