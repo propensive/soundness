@@ -115,6 +115,7 @@ object Data:
 
     tend:
       case HttpError(status, _) => InitError(m"There was an HTTP $status error accessing $sourceUrl")
+      case TcpError(_)          => InitError(m"Couldn't establish a connection to the HTTP server")
       case _: ZipError          => InitError(m"There was a problem with the ZIP file")
       case error: NameError     => InitError(error.message)
       case _: DsvError          => InitError(m"The CSV file was not in the right format")
@@ -145,6 +146,7 @@ object Data:
 
     track[JsonPointer](UserError()):
       case HttpError(status, _)            => accrual + m"Attempt to access $sourceUrl returned $status."
+      case TcpError(_)                     => accrual + m"Couldn't establish a connection to the HTTP server"
       case JsonParseError(line, _, reason) => accrual + m"Could not parse JSON response: $reason at line $line"
       case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
       case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
