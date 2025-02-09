@@ -24,5 +24,5 @@ import language.dynamics
 given Realm = realm"telekinesis"
 
 extension [UrlType: Fetchable](url: UrlType)
-  def fetch: Fetch = Fetch(UrlType.url(url))
-  def submit: Submit = Submit(UrlType.url(url))
+  def fetch: Fetch[UrlType.Target] = Fetch(UrlType.url(url), UrlType.target(url))
+  def submit: Submit[UrlType.Target] = Submit(UrlType.url(url), UrlType.target(url))

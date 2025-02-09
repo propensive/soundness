@@ -19,24 +19,24 @@ package telekinesis
 import language.dynamics
 
 import anticipation.*
-import contingency.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 
-case class Fetch(url: HttpUrl) extends Dynamic:
+case class Fetch[TargetType](url: HttpUrl, target: TargetType) extends Dynamic:
   inline def applyDynamicNamed
      (id: "apply")
      (inline headers: (Label, Any)*)
-     (using online: Online,
+     (using online:   Online,
             loggable: HttpEvent is Loggable,
             postable: Unit is Postable,
-            tactic: Tactic[TcpError])
+            client:   HttpClient onto TargetType)
   :     HttpResponse =
 
-    ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'tactic)}
+    ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
   inline def applyDynamic[PayloadType](id: "apply")(inline headers: Any*)
-     (using online: Online, loggable: HttpEvent is Loggable, tactic: Tactic[TcpError])
+     (using online: Online, loggable: HttpEvent is Loggable, client: HttpClient onto TargetType)
   :     HttpResponse =
 
-    ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'tactic)}
+    ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

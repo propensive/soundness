@@ -19,12 +19,12 @@ package telekinesis
 import scala.quoted.*
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
 import nettlesome.*
 import prepositional.*
 import proscenium.*
+import spectacular.*
 import vacuous.*
 
 object Telekinesis:
@@ -79,14 +79,14 @@ object Telekinesis:
       case Seq() =>
         (method, Expr.ofList(done.reverse))
 
-  def submit[PayloadType: Type]
-     (submit:   Expr[Submit],
+  def submit[TargetType: Type, PayloadType: Type]
+     (submit:   Expr[Submit[TargetType]],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       payload:  Expr[PayloadType],
       postable: Expr[PayloadType is Postable],
-      tactic:   Expr[Tactic[TcpError]])
+      client:   Expr[HttpClient onto TargetType])
      (using Quotes)
   :     Expr[HttpResponse] =
 
@@ -101,15 +101,22 @@ object Telekinesis:
         '{  given Online = $online
             given PayloadType is Postable = $postable
             given HttpEvent is Loggable = $loggable
-            given Tactic[TcpError] = $tactic
-            Http.request($submit.url, $payload, $method, $headers)  }
+            val host = $submit.url.host.or(panic(m"the HTTP URL had no authority section"))
+            val body = $postable.stream($payload)
+            val path = $submit.url.pathText
+            val contentType = HttpHeader("content-type".tt, $postable.mediaType($payload).show)
 
-  def fetch
-     (fetch:    Expr[Fetch],
+            val request =
+              HttpRequest($method, 1.1, host, path, contentType :: $headers.to(List), body)
+
+            $client.request(request, $submit.target)  }
+
+  def fetch[TargetType: Type]
+     (fetch:    Expr[Fetch[TargetType]],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
-      tactic:   Expr[Tactic[TcpError]])
+      client:   Expr[HttpClient onto TargetType])
      (using Quotes)
   :     Expr[HttpResponse] =
 
@@ -123,5 +130,9 @@ object Telekinesis:
 
         '{  given Online = $online
             given HttpEvent is Loggable = $loggable
-            given Tactic[TcpError] = $tactic
-            Http.request($fetch.url, (), $method, $headers)  }
+
+            val host = $fetch.url.host.or(panic(m"the HTTP URL had no authority section"))
+            val path = $fetch.url.pathText
+            val request = HttpRequest($method, 1.1, host, path, $headers.to(List), Stream())
+
+            $client.request(request, $fetch.target)  }

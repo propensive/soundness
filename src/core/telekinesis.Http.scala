@@ -19,9 +19,9 @@ package telekinesis
 import anticipation.*
 import contingency.*
 import fulminate.*
-import gesticulate.*
 import gossamer.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -38,8 +38,6 @@ import language.dynamics
 erased trait Http
 
 object Http:
-
-  private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
 
   object Method:
     given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
@@ -80,61 +78,77 @@ object Http:
   case object Trace extends Method(false)
   case object Patch extends Method(false)
 
-  def request[PostType: Postable]
-     (url: HttpUrl, content: PostType, method: Method, headers: Seq[HttpHeader])
-     (using Online)
-  :     HttpResponse raises TcpError logs HttpEvent =
+trait HttpClient:
+  type Target
+  def request(request: HttpRequest, target: Target): HttpResponse logs HttpEvent
 
-    Log.info(HttpEvent.Send(method, url, headers))
-    Log.fine(HttpEvent.Request(PostType.preview(content)))
+object HttpClient:
 
-    val request: jnh.HttpRequest.Builder =
-      jnh.HttpRequest.newBuilder().nn.uri(jn.URI(url.show.s)).nn
+  private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
 
-    val body = PostType.stream(content) match
-      case Stream()      => jnh.HttpRequest.BodyPublishers.noBody.nn
-      case Stream(bytes) => jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
+  given Tactic[TcpError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
+    type Target = Origin["http" | "https"]
 
-      case stream =>
-        jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
+    def request(httpRequest: HttpRequest, origin: Origin["http" | "https"])
+    :     HttpResponse logs HttpEvent =
 
-    method match
-      case Http.Delete  => request.DELETE().nn
-      case Http.Get     => request.GET().nn
-      case Http.Post    => request.POST(body).nn
-      case Http.Put     => request.PUT(body).nn
-      case Http.Connect => request.method("CONNECT", body).nn
-      case Http.Head    => request.method("HEAD", body).nn
-      case Http.Options => request.method("OPTIONS", body).nn
-      case Http.Patch   => request.method("PATCH", body).nn
-      case Http.Trace   => request.method("TRACE", body).nn
+      val url = httpRequest.on(origin)
 
-    request.header(Capitate.contentType.key.uncamel.kebab.s, PostType.mediaType(content).show.s)
-    request.header("User-Agent", "Telekinesis/1.0.0")
+      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
+      //Log.fine(HttpEvent.Request(PostType.preview(httpRequest.body)))
 
-    headers.each:
-      case HttpHeader(key, value) => request.header(key.s, value.s)
+      val request: jnh.HttpRequest.Builder =
+        jnh.HttpRequest.newBuilder().nn.uri(jn.URI(url.show.s)).nn
 
-    val response: jnh.HttpResponse[ji.InputStream] =
-      import TcpError.Reason.*, Ssl.Reason.*
-      try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
-        case error: jns.SSLHandshakeException       => abort(TcpError(Ssl(Handshake)))
-        case error: jns.SSLProtocolException        => abort(TcpError(Ssl(Protocol)))
-        case error: jns.SSLPeerUnverifiedException  => abort(TcpError(Ssl(Peer)))
-        case error: jns.SSLKeyException             => abort(TcpError(Ssl(Key)))
-        case error: jn.UnknownHostException         => abort(TcpError(Dns))
-        case error: jnh.HttpConnectTimeoutException => abort(TcpError(Timeout))
-        case error: jn.ConnectException             => error.getMessage() match
-          case "Connection refused"                    => abort(TcpError(Refused))
-          case "Connection timed out"                  => abort(TcpError(Timeout))
-          case "HTTP connect timed out"                => abort(TcpError(Timeout))
-          case error                                   => abort(TcpError(Unknown))
-        case error: ji.IOException                  => abort(TcpError(Unknown))
+      val body = httpRequest.body match
+        case Stream()      =>
+          jnh.HttpRequest.BodyPublishers.noBody.nn
 
-    val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse:
-      abort(TcpError(TcpError.Reason.Unknown))
+        case Stream(bytes) =>
+          jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
 
-    val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-      (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
+        case stream =>
+          jnh.HttpRequest.BodyPublishers.ofInputStream { () => stream.inputStream }
 
-    HttpResponse(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))
+      httpRequest.method match
+        case Http.Delete  => request.DELETE().nn
+        case Http.Get     => request.GET().nn
+        case Http.Post    => request.POST(body).nn
+        case Http.Put     => request.PUT(body).nn
+        case Http.Connect => request.method("CONNECT", body).nn
+        case Http.Head    => request.method("HEAD", body).nn
+        case Http.Options => request.method("OPTIONS", body).nn
+        case Http.Patch   => request.method("PATCH", body).nn
+        case Http.Trace   => request.method("TRACE", body).nn
+
+      request.header("User-Agent", "Telekinesis/1.0.0")
+
+      httpRequest.textHeaders.each:
+        case HttpHeader(key, value) => request.header(key.s, value.s)
+
+      val response: jnh.HttpResponse[ji.InputStream] =
+        import TcpError.Reason.*, Ssl.Reason.*
+
+        val client = HttpClient.client
+
+        try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
+          case error: jns.SSLHandshakeException       => abort(TcpError(Ssl(Handshake)))
+          case error: jns.SSLProtocolException        => abort(TcpError(Ssl(Protocol)))
+          case error: jns.SSLPeerUnverifiedException  => abort(TcpError(Ssl(Peer)))
+          case error: jns.SSLKeyException             => abort(TcpError(Ssl(Key)))
+          case error: jn.UnknownHostException         => abort(TcpError(Dns))
+          case error: jnh.HttpConnectTimeoutException => abort(TcpError(Timeout))
+          case error: jn.ConnectException             => error.getMessage() match
+            case "Connection refused"                    => abort(TcpError(Refused))
+            case "Connection timed out"                  => abort(TcpError(Timeout))
+            case "HTTP connect timed out"                => abort(TcpError(Timeout))
+            case error                                   => abort(TcpError(Unknown))
+          case error: ji.IOException                  => abort(TcpError(Unknown))
+
+      val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse:
+        abort(TcpError(TcpError.Reason.Unknown))
+
+      val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+        (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
+
+      HttpResponse(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))

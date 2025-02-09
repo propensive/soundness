@@ -17,9 +17,15 @@
 package telekinesis
 
 import nettlesome.*
+import prepositional.*
 
 object Fetchable:
-  given httpUrl: Fetchable[HttpUrl] = identity(_)
+  given httpUrl: Fetchable[HttpUrl] onto Origin["http" | "https"]:
+    type Target = Origin["http" | "https"]
+    def target(httpUrl: HttpUrl): Origin["http" | "https"] = httpUrl.origin
+    def url(httpUrl: HttpUrl): HttpUrl = httpUrl
 
 trait Fetchable[-UrlType]:
+  type Target
+  def target(value: UrlType): Target
   def url(value: UrlType): HttpUrl

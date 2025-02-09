@@ -68,6 +68,9 @@ case class HttpRequest
     textHeaders: List[HttpHeader],
     body:        Stream[Bytes]):
 
+  def on[SchemeType <: "http" | "https"](origin: Origin[SchemeType]): HttpUrl =
+    Url[SchemeType](origin, target)
+
   def serialize: Stream[Bytes] =
     import charEncoders.ascii
     val text: Text = Text.construct:
@@ -148,12 +151,6 @@ case class HttpRequest
     :     List[capitate.Subject] =
       val name2 = name.tt.uncamel.kebab.lower
       textHeaders.filter(_.key.lower == name2).map(_.value.decode)
-
-  // lazy val length: Int raises StreamError =
-  //   try throwErrors:
-  //     header.contentLength.headOption.getOrElse:
-  //       body.stream.map(_.length).sum
-  //   catch case err: NumberError => abort(StreamError(0.b))
 
   lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 

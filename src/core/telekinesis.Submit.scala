@@ -21,11 +21,11 @@ import language.dynamics
 import scala.quoted.*
 
 import anticipation.*
-import contingency.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 
-case class Submit(url: HttpUrl) extends Dynamic:
+case class Submit[TargetType](url: HttpUrl, target: TargetType) extends Dynamic:
   inline def applyDynamicNamed[PayloadType]
      (id: "apply")
      (inline headers: (Label, Any)*)
@@ -33,18 +33,20 @@ case class Submit(url: HttpUrl) extends Dynamic:
      (using online:   Online,
             loggable: HttpEvent is Loggable,
             postable: PayloadType is Postable,
-            tactic:   Tactic[TcpError])
+            client:   HttpClient onto TargetType)
   :     HttpResponse =
 
     ${
-        Telekinesis.submit[PayloadType]
-         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'tactic)  }
+        Telekinesis.submit[TargetType, PayloadType]
+         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
 
   inline def applyDynamic[PayloadType: Postable as postable](id: "apply")(inline headers: Any*)
      (payload: PayloadType)
-     (using online: Online, loggable: HttpEvent is Loggable, tactic: Tactic[TcpError])
+     (using online:   Online,
+            loggable: HttpEvent is Loggable,
+            client:   HttpClient onto TargetType)
   :     HttpResponse =
 
     ${
-        Telekinesis.submit[PayloadType]
-         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'tactic)  }
+        Telekinesis.submit[TargetType, PayloadType]
+         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
