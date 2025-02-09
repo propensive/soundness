@@ -28,9 +28,10 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-import java.net.*
+import java.net as jn
 import java.net.http as jnh
 import java.io as ji
+import javax.net.ssl as jns
 
 import language.dynamics
 
@@ -87,7 +88,8 @@ object Http:
     Log.info(HttpEvent.Send(method, url, headers))
     Log.fine(HttpEvent.Request(PostType.preview(content)))
 
-    val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(URI(url.show.s)).nn
+    val request: jnh.HttpRequest.Builder =
+      jnh.HttpRequest.newBuilder().nn.uri(jn.URI(url.show.s)).nn
 
     val body = PostType.stream(content) match
       case Stream()      => jnh.HttpRequest.BodyPublishers.noBody.nn
@@ -114,10 +116,24 @@ object Http:
       case HttpHeader(key, value) => request.header(key.s, value.s)
 
     val response: jnh.HttpResponse[ji.InputStream] =
-      try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn
-      catch case error: ji.IOException => abort(TcpError())
+      import TcpError.Reason.*, Ssl.Reason.*
+      try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
+        case error: jns.SSLHandshakeException       => abort(TcpError(Ssl(Handshake)))
+        case error: jns.SSLProtocolException        => abort(TcpError(Ssl(Protocol)))
+        case error: jns.SSLPeerUnverifiedException  => abort(TcpError(Ssl(Peer)))
+        case error: jns.SSLKeyException             => abort(TcpError(Ssl(Key)))
+        case error: jn.UnknownHostException         => abort(TcpError(Dns))
+        case error: jnh.HttpConnectTimeoutException => abort(TcpError(Timeout))
+        case error: jn.ConnectException             => error.getMessage() match
+          case "Connection refused"                    => abort(TcpError(Refused))
+          case "Connection timed out"                  => abort(TcpError(Timeout))
+          case "HTTP connect timed out"                => abort(TcpError(Timeout))
+          case _                                       => abort(TcpError(Unknown))
+        case error: ji.IOException                  => abort(TcpError(Unknown))
 
-    val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse(abort(TcpError()))
+    val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse:
+      abort(TcpError(TcpError.Reason.Unknown))
+
     val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
       (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
 

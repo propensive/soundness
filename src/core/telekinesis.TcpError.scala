@@ -18,5 +18,34 @@ package telekinesis
 
 import fulminate.*
 
-case class TcpError()(using Diagnostics)
-extends Error(m"there was a TCP connection error")
+object TcpError:
+  enum Reason:
+    case Dns
+    case Refused
+    case Ssl(reason: Ssl.Reason)
+    case Timeout
+    case Unknown
+
+  object Reason:
+    object Ssl:
+      enum Reason:
+        case Handshake, Key, Peer, Protocol
+
+      object Reason:
+        given Reason is Communicable =
+          case Handshake => m"""the local and remote peer could not negotiate the desired level of
+                                security"""
+          case Key       => m"the SSL key was bad"
+          case Peer      => m"the remote peer's identity could not be verified"
+          case Protocol  => m"""the local or remote implementation of the SSL protocol did not
+                                behave as expected"""
+
+    given Reason is Communicable =
+      case Dns         => m"the server address could not be resolved by DNS"
+      case Refused     => m"the connection was refused"
+      case Ssl(reason) => m"the SSL/TLS layer could not be established because $reason"
+      case Timeout     => m"the server did not respond within the time limit"
+      case Unknown     => m"an unrecognized error occurred"
+
+case class TcpError(reason: TcpError.Reason)(using Diagnostics)
+extends Error(m"the TCP connection failed because $reason")
