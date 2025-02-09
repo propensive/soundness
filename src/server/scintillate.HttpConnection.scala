@@ -92,7 +92,7 @@ object HttpConnection:
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (request: HttpRequest, val secure: Boolean, val port: Int, val respond: HttpResponse => Unit)
+   (request: HttpRequest, val tls: Boolean, val port: Int, val respond: HttpResponse => Unit)
 extends HttpRequest
    (request.method,
     request.version,

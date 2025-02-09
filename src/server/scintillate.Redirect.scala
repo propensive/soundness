@@ -17,13 +17,14 @@
 package scintillate
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
-import spectacular.*
 import telekinesis.*
 
 object Redirect:
-  def apply[LinkType: Fetchable](location: LinkType, permanent: Boolean): Redirect =
-    new Redirect(LinkType.url(location).show, permanent)
+  def apply[LinkType: Abstractable across Urls into Text](location: LinkType, permanent: Boolean)
+  :     Redirect =
+    new Redirect(location.generic, permanent)
 
   given redirect: Redirect is Servable = redirect =>
     val headers = List(HttpHeader(ResponseHeader.Location.header, redirect.location))

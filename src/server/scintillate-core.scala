@@ -65,5 +65,5 @@ extension (request: HttpRequest)
 
   def path(using connection: HttpConnection)
   :     HttpUrl raises PathError raises UrlError raises HostnameError =
-    val scheme = if connection.secure then t"https" else t"http"
+    val scheme = if connection.tls then t"https" else t"http"
     Url.parse(t"$scheme://${request.host}${request.pathText}")
