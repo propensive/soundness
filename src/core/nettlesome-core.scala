@@ -16,6 +16,7 @@
 
 package nettlesome
 
+import anticipation.*
 import contingency.*
 import prepositional.*
 
@@ -46,6 +47,8 @@ def internet[ResultType](online: Boolean)(block: Internet ?=> ResultType): Resul
   block(using Internet(online))
 
 def online(using internet: Internet): Boolean = internet.online
+
+val Localhost: Hostname = Hostname(DnsLabel("localhost".tt))
 
 package internetAccess:
   given enabled: Online = Online()
