@@ -19,4 +19,4 @@ package coaxial
 import anticipation.*
 import nettlesome.*
 
-case class UdpPacket(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)
+case class Packet(data: Bytes, sender: Ipv4 | Ipv6, port: UdpPort)

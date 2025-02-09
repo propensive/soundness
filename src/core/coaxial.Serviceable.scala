@@ -32,7 +32,7 @@ import java.nio.file as jnf
 import Control.*
 
 object Serviceable:
-  given domainSocket(using Tactic[StreamError]): Serviceable[DomainSocket] with
+  given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
     type Output = Bytes
     case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
 
@@ -47,32 +47,35 @@ object Serviceable:
 
       Connection(channel, in, out)
 
-    def transmit(connection: Connection, input: Bytes): Unit =
-      connection.out.write(input.mutable(using Unsafe))
-      connection.out.flush()
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        connection.out.write(bytes.mutable(using Unsafe))
+        connection.out.flush()
 
     def receive(connection: Connection): Stream[Bytes] =
       connection.in.stream[Bytes]
 
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpEndpoint(using Online, Tactic[StreamError]): Serviceable[Endpoint[TcpPort]] with
+  given tcpEndpoint: (Online, Tactic[StreamError]) => Endpoint[TcpPort] is Serviceable:
     type Output = Bytes
     type Connection = jn.Socket
 
     def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
       jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
 
-    def transmit(socket: jn.Socket, input: Bytes): Unit =
+    def transmit(socket: jn.Socket, input: Stream[Bytes]): Unit =
       val out = socket.getOutputStream.nn
-      out.write(input.mutable(using Unsafe))
-      out.flush()
+
+      input.each: bytes =>
+        out.write(bytes.mutable(using Unsafe))
+        out.flush()
 
     def close(socket: jn.Socket): Unit = socket.close()
 
     def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
-  given tcpPort(using Tactic[StreamError]): Serviceable[TcpPort] with
+  given tcpPort: Tactic[StreamError] => TcpPort is Serviceable:
     type Output = Bytes
     type Connection = jn.Socket
 
@@ -80,11 +83,13 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): Stream[Bytes] = socket.getInputStream.nn.stream[Bytes]
 
-    def transmit(socket: jn.Socket, input: Bytes): Unit =
+    def transmit(socket: jn.Socket, input: Stream[Bytes]): Unit =
       val out = socket.getOutputStream.nn
-      out.write(input.mutable(using Unsafe))
-      out.flush()
 
-trait Serviceable[EndpointType] extends Addressable[EndpointType]:
+      input.each: bytes =>
+        out.write(bytes.mutable(using Unsafe))
+        out.flush()
+
+trait Serviceable extends Addressable:
   def receive(connection: Connection): Stream[Bytes]
   def close(connection: Connection): Unit

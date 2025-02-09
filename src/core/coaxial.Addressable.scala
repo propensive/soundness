@@ -18,6 +18,7 @@ package coaxial
 
 import anticipation.*
 import nettlesome.*
+import proscenium.*
 import rudiments.*
 import vacuous.*
 
@@ -26,36 +27,40 @@ import java.net as jn
 import Control.*
 
 object Addressable:
-  given udpEndpoint: Addressable[Endpoint[UdpPort]] with
+  given udpEndpoint: Endpoint[UdpPort] is Addressable:
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
     def connect(endpoint: Endpoint[UdpPort]): Connection =
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
       Connection(address, endpoint.port.number, jn.DatagramSocket())
 
-    def transmit(connection: Connection, input: Bytes): Unit =
-      val packet = jn.DatagramPacket(input.mutable(using Unsafe), input.length, connection.address,
-          connection.port)
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet =
+          jn.DatagramPacket
+           (bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port)
 
-      connection.socket.send(packet)
+        connection.socket.send(packet)
 
-  given udpPort: Addressable[UdpPort] with
+  given udpPort: UdpPort is Addressable:
     case class Connection(port: Int, socket: jn.DatagramSocket)
 
     def connect(port: UdpPort): Connection =
       Connection(port.number, jn.DatagramSocket())
 
-    def transmit(connection: Connection, input: Bytes): Unit =
-      val packet = jn.DatagramPacket
-                    (input.mutable(using Unsafe),
-                     input.length,
-                     jn.InetAddress.getLocalHost.nn,
-                     connection.port)
+    def transmit(connection: Connection, input: Stream[Bytes]): Unit =
+      input.each: bytes =>
+        val packet = jn.DatagramPacket
+                      (bytes.mutable(using Unsafe),
+                       input.length,
+                       jn.InetAddress.getLocalHost.nn,
+                       connection.port)
 
-      connection.socket.send(packet)
+        connection.socket.send(packet)
 
-trait Addressable[EndpointType]:
+trait Addressable:
+  type Self
   type Connection
 
-  def connect(endpoint: EndpointType): Connection
-  def transmit(connection: Connection, input: Bytes): Unit
+  def connect(endpoint: Self): Connection
+  def transmit(connection: Connection, input: Stream[Bytes]): Unit

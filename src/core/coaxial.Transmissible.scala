@@ -20,13 +20,19 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import proscenium.*
 import spectacular.*
 
-trait Transmissible[-MessageType]:
-  def serialize(message: MessageType): Bytes
+trait Transmissible:
+  type Self
+  def serialize(message: Self): Stream[Bytes]
 
 object Transmissible:
-  given bytes: Transmissible[Bytes] = identity(_)
-  given text(using CharEncoder): Transmissible[Text] = _.bytes
-  given encoder: [MessageType: Encodable in Text] => CharEncoder => Transmissible[MessageType] =
-    _.encode.bytes
+  given bytes: [BytesType <: Bytes] => BytesType is Transmissible = Stream(_)
+  given stream: [StreamType <: Stream[Bytes]] => StreamType is Transmissible = identity(_)
+
+  given text: [TextType <: Text] => CharEncoder => TextType is Transmissible =
+    text => Stream(text.bytes)
+
+  given encoder: [MessageType: Encodable in Text] => CharEncoder => MessageType is Transmissible =
+    value => Stream(value.encode.bytes)

@@ -25,3 +25,4 @@ object DomainSocket:
 
 case class DomainSocket(private[coaxial] val address: Text):
   def path[PathType: Instantiable across Paths from Text] = PathType(address)
+  def at(path: Text): DomainSocketEndpoint = DomainSocketEndpoint(this, path)

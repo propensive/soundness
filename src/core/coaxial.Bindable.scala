@@ -32,19 +32,20 @@ import java.nio.channels as jnc
 
 import Control.*
 
-trait Bindable[SocketType]:
+trait Bindable:
+  type Self
   type Binding
   type Input
   type Output
 
-  def bind(socket: SocketType): Binding
+  def bind(socket: Self): Binding
   def connect(binding: Binding): Input
   def transmit(binding: Binding, input: Input, output: Output): Unit
   def close(connection: Input): Unit
   def stop(binding: Binding): Unit
 
 object Bindable:
-  given domainSocket(using Tactic[StreamError]): Bindable[DomainSocket] with
+  given domainSocket: Tactic[StreamError] => DomainSocket is Bindable:
     type Binding = jnc.ServerSocketChannel
     type Output = Bytes
     type Input = Connection
@@ -73,7 +74,7 @@ object Bindable:
       connection.in.close()
       connection.out.close()
 
-  given tcpPort(using Tactic[StreamError]): Bindable[TcpPort] with
+  given tcpPort: Tactic[StreamError] => TcpPort is Bindable:
     type Binding = jn.ServerSocket
     type Output = Bytes
     type Input = jn.Socket
@@ -89,14 +90,14 @@ object Bindable:
     def close(socket: jn.Socket): Unit = socket.close()
     def stop(socket: jn.ServerSocket): Unit = socket.close()
 
-  given udpPort: Bindable[UdpPort] with
+  given udpPort: UdpPort is Bindable:
     type Binding = jn.DatagramSocket
     type Output = UdpResponse
-    type Input = UdpPacket
+    type Input = Packet
 
     def bind(port: UdpPort): Binding = jn.DatagramSocket(port.number)
 
-    def connect(binding: Binding): UdpPacket =
+    def connect(binding: Binding): Packet =
       val array = new Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
       val socket = binding.receive(packet)
@@ -114,10 +115,10 @@ object Bindable:
            (Long(bytes.take(8).immutable(using Unsafe)),
             Long(bytes.drop(8).immutable(using Unsafe)))
 
-      UdpPacket
+      Packet
        (array.take(packet.getLength).immutable(using Unsafe), ip, UdpPort.unsafe(address.getPort))
 
-    def transmit(socket: jn.DatagramSocket, input: UdpPacket, response: UdpResponse): Unit =
+    def transmit(socket: jn.DatagramSocket, input: Packet, response: UdpResponse): Unit =
       response match
         case UdpResponse.Ignore => ()
 
@@ -143,4 +144,4 @@ object Bindable:
           socket.send(packet)
 
     def stop(binding: Binding): Unit = binding.close()
-    def close(input: UdpPacket): Unit = ()
+    def close(input: Packet): Unit = ()

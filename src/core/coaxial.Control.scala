@@ -37,15 +37,15 @@ object Control:
 
 
   object Conclude:
-    def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
-       (using transmissible: Transmissible[MessageType])
+    def apply[MessageType: Transmissible, StateType]
+       (message: MessageType, state: Optional[StateType] = Unset)
     :     Conclude[StateType] =
 
-      Conclude(transmissible.serialize(message), state)
+      Conclude(MessageType.serialize(message), state)
 
   object Reply:
-    def apply[MessageType, StateType](message: MessageType, state: Optional[StateType] = Unset)
-       (using transmissible: Transmissible[MessageType])
+    def apply[MessageType: Transmissible, StateType]
+       (message: MessageType, state: Optional[StateType] = Unset)
     :     Reply[StateType] =
 
-      Reply(transmissible.serialize(message), state)
+      Reply(MessageType.serialize(message), state)
