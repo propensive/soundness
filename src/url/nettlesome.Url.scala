@@ -34,15 +34,19 @@ import spectacular.*
 import vacuous.*
 
 case class Url[+SchemeType <: Label]
-   (scheme:    Scheme[SchemeType],
-    authority: Optional[Authority],
+   (origin:    Origin[SchemeType],
     pathText:  Text,
-    query:    Optional[Text]      = Unset,
+    query:     Optional[Text]      = Unset,
     fragment:  Optional[Text]      = Unset)
-extends Root(t"${scheme.name}://${authority.lay(t"")(_.show)}$pathText", t"/", Case.Sensitive):
+extends Root
+         (t"${origin.scheme.name}://${origin.authority.lay(t"")(_.show)}$pathText", t"/",
+          Case.Sensitive):
   type Platform = HttpUrl
 
+  def scheme: Scheme[SchemeType] = origin.scheme
+  def authority: Optional[Authority] = origin.authority
   def requestTarget: Text = pathText+query.lay(t"")(t"?"+_)
+  def host: Optional[Hostname] = authority.let(_.host)
 
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
@@ -151,26 +155,28 @@ object Url:
             safely(value.where(_ == '#', qmark + 1)).asMatchable match
               case Zerary(hash) =>
                 Url
-                 (scheme,
-                  auth,
+                 (Origin(scheme, auth),
                   value.segment(pathStart ~ qmark.previous),
                   value.segment((qmark + 1) ~ hash.previous),
                   value.after(hash))
 
               case _ =>
                 Url
-                 (scheme,
-                  auth,
+                 (Origin(scheme, auth),
                   value.segment(pathStart ~ qmark.previous),
                   value.after(qmark),
                   Unset)
 
           case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
             case Zerary(hash) =>
-              Url(scheme, auth, value.segment(pathStart ~ hash.previous), Unset, value.after(hash))
+              Url
+               (Origin(scheme, auth),
+                value.segment(pathStart ~ hash.previous),
+                Unset,
+                value.after(hash))
 
             case _ =>
-              Url(scheme, auth, value.from(pathStart), Unset, Unset)
+              Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
 
       case _ =>
         abort(UrlError(value, Ult.of(value), Colon))
