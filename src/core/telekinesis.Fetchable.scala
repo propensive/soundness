@@ -16,16 +16,37 @@
 
 package telekinesis
 
+import anticipation.*
+import coaxial.*
+import fulminate.*
 import nettlesome.*
 import prepositional.*
+import vacuous.*
 
 object Fetchable:
-  given httpUrl: Fetchable[HttpUrl] onto Origin["http" | "https"]:
-    type Target = Origin["http" | "https"]
-    def target(httpUrl: HttpUrl): Origin["http" | "https"] = httpUrl.origin
-    def url(httpUrl: HttpUrl): HttpUrl = httpUrl
+  given httpUrl: [UrlType <: HttpUrl] => UrlType is Fetchable onto Origin["http" | "https"] =
+    new Fetchable:
+      type Self = UrlType
+      type Target = Origin["http" | "https"]
 
-trait Fetchable[-UrlType]:
+      def target(httpUrl: UrlType): Origin["http" | "https"] = httpUrl.origin
+      def text(httpUrl: UrlType): Text = httpUrl.pathText
+
+      def hostname(httpUrl: UrlType): Hostname = httpUrl.host.or:
+        panic(m"The HTTP URL does not have a hostname")
+
+  given unixSocket: DomainSocketEndpoint is Fetchable onto DomainSocket =
+    new Fetchable:
+      type Self = DomainSocketEndpoint
+      type Target = DomainSocket
+
+      def target(endpoint: DomainSocketEndpoint): DomainSocket = endpoint.socket
+      def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
+      def hostname(endpoint: DomainSocketEndpoint): Hostname = Localhost
+
+trait Fetchable:
+  type Self
   type Target
-  def target(value: UrlType): Target
-  def url(value: UrlType): HttpUrl
+  def target(value: Self): Target
+  def text(value: Self): Text
+  def hostname(value: Self): Hostname

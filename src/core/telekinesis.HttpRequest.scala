@@ -17,6 +17,7 @@
 package telekinesis
 
 import anticipation.*
+import coaxial.*
 import contingency.*
 import fulminate.*
 import gesticulate.*
@@ -60,6 +61,37 @@ object HttpRequest:
       t"params"   -> params
     ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
+  given HttpRequest is Transmissible = request =>
+    import charEncoders.ascii
+
+    val text: Text = Text.construct:
+      def newline(): Unit = append(t"\r\n")
+      append(request.method.show)
+      append(t" ")
+      append(request.target)
+      append(t" ")
+      append(HttpVersion.showable.text(request.version))
+      newline()
+      append(t"Host: ")
+      append(request.host.show)
+      newline()
+
+      request.body match
+        case Stream()     => append(t"Content-Length: 0")
+        case Stream(data) => append(t"Content-Length: ${data.length}")
+        case _            => append(t"Transfer-Encoding: chunked")
+
+      request.textHeaders.map: parameter =>
+        newline()
+        append(parameter.key)
+        append(t": ")
+        append(parameter.value)
+
+      newline()
+      newline()
+
+    text.bytes #:: request.body
+
 case class HttpRequest
    (method:      Http.Method,
     version:     HttpVersion,
@@ -71,36 +103,6 @@ case class HttpRequest
   def on[SchemeType <: "http" | "https"](origin: Origin[SchemeType]): HttpUrl =
     Url[SchemeType](origin, target)
 
-  def serialize: Stream[Bytes] =
-    import charEncoders.ascii
-    val text: Text = Text.construct:
-      def newline(): Unit = append(t"\r\n")
-      append(method.show)
-      append(t" ")
-      append(target)
-      append(t" ")
-      append(HttpVersion.showable.text(version))
-      newline()
-      append(t"Host: ")
-      append(host.show)
-      newline()
-
-      body match
-        case Stream()     => append(t"Content-Length: 0")
-        case Stream(data) => append(t"Content-Length: ${data.length}")
-        case _              => append(t"Transfer-Encoding: chunked")
-
-      textHeaders.map: parameter =>
-        newline()
-        append(parameter.key)
-        append(t": ")
-        append(parameter.value)
-
-      newline()
-      newline()
-
-    text.bytes #:: body
-
   lazy val query: Text = target.s.indexOf('?') match
     case -1    => t""
     case index => target.skip(index + 1)
@@ -111,9 +113,11 @@ case class HttpRequest
 
   lazy val queryParams: Map[Text, List[Text]] =
     val items = query.nn.show.cut(t"&")
+
     items.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-      val kv: List[Text] = elem.cut(t"=", 2)
-      map.updated(kv(0), safely(kv(1)).or(t"") :: map.getOrElse(kv(0), Nil))
+      elem.cut(t"=", 2) match
+        case List(key, value) => map.updated(key, safely(value).or(t"") :: map.getOrElse(key, Nil))
+        case _                => map
 
   lazy val params: Map[Text, Text] =
     queryParams.map:

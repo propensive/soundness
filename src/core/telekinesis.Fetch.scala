@@ -23,7 +23,7 @@ import nettlesome.*
 import prepositional.*
 import proscenium.*
 
-case class Fetch[TargetType](url: HttpUrl, target: TargetType) extends Dynamic:
+case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostname) extends Dynamic:
   inline def applyDynamicNamed
      (id: "apply")
      (inline headers: (Label, Any)*)

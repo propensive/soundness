@@ -17,6 +17,7 @@
 package telekinesis
 
 import anticipation.*
+import coaxial.*
 import contingency.*
 import nettlesome.*
 import prepositional.*
@@ -38,8 +39,15 @@ trait HttpClient:
   def request(request: HttpRequest, target: Target): HttpResponse logs HttpEvent
 
 object HttpClient:
-
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
+
+  given Tactic[StreamError] => HttpClient onto DomainSocketEndpoint = new HttpClient:
+    type Target = DomainSocketEndpoint
+
+    def request(request: HttpRequest, endpoint: DomainSocketEndpoint)
+    :     HttpResponse logs HttpEvent =
+
+      HttpResponse(1.1, HttpStatus.Ok, Nil, endpoint.socket.request(request))
 
   given Tactic[TcpError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
     type Target = Origin["http" | "https"]

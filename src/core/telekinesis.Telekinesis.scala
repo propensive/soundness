@@ -101,9 +101,9 @@ object Telekinesis:
         '{  given Online = $online
             given PayloadType is Postable = $postable
             given HttpEvent is Loggable = $loggable
-            val host = $submit.url.host.or(panic(m"the HTTP URL had no authority section"))
+            val host: Hostname = $submit.host
             val body = $postable.stream($payload)
-            val path = $submit.url.pathText
+            val path = $submit.originForm
             val contentType = HttpHeader("content-type".tt, $postable.mediaType($payload).show)
 
             val request =
@@ -131,8 +131,7 @@ object Telekinesis:
         '{  given Online = $online
             given HttpEvent is Loggable = $loggable
 
-            val host = $fetch.url.host.or(panic(m"the HTTP URL had no authority section"))
-            val path = $fetch.url.pathText
-            val request = HttpRequest($method, 1.1, host, path, $headers.to(List), Stream())
+            val path = $fetch.originForm
+            val request = HttpRequest($method, 1.1, $fetch.host, path, $headers.to(List), Stream())
 
             $client.request(request, $fetch.target)  }

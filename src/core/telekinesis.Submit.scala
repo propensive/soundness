@@ -25,7 +25,7 @@ import nettlesome.*
 import prepositional.*
 import proscenium.*
 
-case class Submit[TargetType](url: HttpUrl, target: TargetType) extends Dynamic:
+case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostname) extends Dynamic:
   inline def applyDynamicNamed[PayloadType]
      (id: "apply")
      (inline headers: (Label, Any)*)
