@@ -16,8 +16,9 @@
 
 package exoskeleton
 
+import anticipation.*
+import prepositional.*
 import proscenium.*
-import spectacular.*
 import vacuous.*
 
 import language.experimental.pureFunctions
@@ -27,7 +28,7 @@ object FlagInterpreter:
     override def operand: Boolean = false
     def interpret(arguments: List[Argument]): Unit = ()
 
-  given decoder: [OperandType: Decoder] => FlagInterpreter[OperandType] = arguments =>
+  given decoder: [OperandType: Decodable in Text] => FlagInterpreter[OperandType] = arguments =>
     arguments.take(1).absolve match
       case List(value) => value().decode[OperandType]
 

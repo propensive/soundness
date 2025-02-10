@@ -20,12 +20,11 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import spectacular.*
 
 import language.experimental.captureChecking
 
 object Shell:
-  given decoder: Decoder[Shell] = text => valueOf(text.lower.capitalize.s)
+  given decoder: Shell is Decodable in Text = text => valueOf(text.lower.capitalize.s)
   given encodable: Shell is Encodable in Text = _.toString.tt.lower
   given communicable: Shell is Communicable = shell => Message(shell.toString.tt.lower)
 
