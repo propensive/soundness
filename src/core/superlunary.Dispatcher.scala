@@ -65,11 +65,9 @@ trait Dispatcher:
 
         staging.withQuotes:
           '{ (array: List[Json]) =>
-            ${
-              references.setRef('array)
-              body(using references)
-            }
-          }
+               ${  references.setRef('array)
+                   body(using references)  } }
+
         Dispatcher.cache(codepoint)
 
       else
@@ -81,10 +79,11 @@ trait Dispatcher:
 
         val fn: Text => Text = staging.run:
           val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
+            import Json.jsonEncodableInText
             ${
               references.setRef('array)
               body(using references)
-            }.json.encode(using Json.encodable)
+            }.json.encode
           }
 
           '{ text => $fromList(text.decode[Json].as[List[Json]]) }

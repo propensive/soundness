@@ -38,10 +38,11 @@ def run(): Unit =
   given Tactic[CompilerError] = strategies.throwUnsafely
 
   def offset(input: Long): Text = remote.dispatch:
-    '{ t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}" }
+    '{  t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"  }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{ Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9) }
+    '{  import Decoder.long
+        Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)  }
 
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))

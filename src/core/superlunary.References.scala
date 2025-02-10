@@ -21,7 +21,6 @@ import fulminate.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 
 import scala.compiletime.*
@@ -38,4 +37,6 @@ class References():
   def allocate[ValueType](value: => ValueType)(using ValueType is Encodable in Json): Int =
     allocations.length.also { allocations ::= value.json }
 
-  def apply(): Text = allocations.reverse.json.encode(using Json.encodable)
+  def apply(): Text =
+    import Json.jsonEncodableInText
+    allocations.reverse.json.encode
