@@ -45,17 +45,17 @@ trait Json2:
       type Self = Optional[ValueType]
       type Format = Json
 
-      def encode(value: Optional[ValueType]): Json =
+      def encoded(value: Optional[ValueType]): Json =
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
 
   given optional: [ValueType: Decodable in Json] => Tactic[JsonError]
   =>    Optional[ValueType] is Decodable in Json = json =>
-    if json.root.isAbsent then Unset else ValueType.decode(json)
+    if json.root.isAbsent then Unset else ValueType.decoded(json)
 
   given memory: Tactic[JsonError] => Memory is Decodable in Json = json => json.root.long.b
 
   inline given decodable: [ValueType] => ValueType is Decodable in Json = summonFrom:
-    case given Decoder[ValueType] =>
+    case given (ValueType is Decodable in Text) =>
       summonInline[Tactic[JsonError]].give(_.root.string.decode[ValueType])
 
     case given Reflection[ValueType] =>
@@ -78,8 +78,8 @@ trait Json2:
               context =>
                 focus(prior.or(JsonPointer()) / label):
                   if !values.contains(label.s)
-                  then default().or(context.decode(new Json(JsonAst(Unset))))
-                  else context.decode(new Json(values(label.s)))
+                  then default().or(context.decoded(new Json(JsonAst(Unset))))
+                  else context.decoded(new Json(values(label.s)))
 
     inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Json =
       json =>
@@ -94,7 +94,7 @@ trait Json2:
 
               case index =>
                 delegate(values(1)(index).string): [VariantType <: DerivationType] =>
-                  context => context.decode(json)
+                  context => context.decoded(json)
 
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
@@ -154,7 +154,7 @@ object Json extends Json2, Dynamic:
   given option: [ValueType: Decodable in Json] => Tactic[JsonError]
   =>    Option[ValueType] is Decodable in Json =
 
-    json => if json.root.isAbsent then None else Some(ValueType.decode(json))
+    json => if json.root.isAbsent then None else Some(ValueType.decoded(json))
 
   given optionEncodable: [ValueType: Encodable in Json as encodable]
   =>    Option[ValueType] is Encodable in Json =
@@ -162,14 +162,14 @@ object Json extends Json2, Dynamic:
       type Self = Option[ValueType]
       type Format = Json
 
-      def encode(value: Option[ValueType]): Json = value match
+      def encoded(value: Option[ValueType]): Json = value match
         case None        => Json.ast(JsonAst(Unset))
         case Some(value) => encodable.encode(value)
 
   given integralEncodable: [IntegralType: Integral] => IntegralType is Encodable in Json =
     integral => Json.ast(JsonAst(IntegralType.toLong(integral)))
 
-  given textEncodable: Text is Encodable in Json = text => Json.ast(JsonAst(text.s))
+  given textEncodableInJson: Text is Encodable in Json = text => Json.ast(JsonAst(text.s))
   given stringEncodable: String is Encodable in Json = string => Json.ast(JsonAst(string))
   given doubleEncodable: Double is Encodable in Json = double => Json.ast(JsonAst(double))
   given intEncodable: Int is Encodable in Json = int => Json.ast(JsonAst(int.toLong))
@@ -190,7 +190,7 @@ object Json extends Json2, Dynamic:
       val builder = factory.newBuilder
       value.root.array.each: json =>
         focus(prior.or(JsonPointer()) / ordinal)
-         (builder += ElementType.decode(Json.ast(json)))
+         (builder += ElementType.decoded(Json.ast(json)))
 
       builder.result()
 
@@ -202,9 +202,9 @@ object Json extends Json2, Dynamic:
 
       keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
         focus(prior.or(JsonPointer()) / keys(index).tt):
-          acc.updated(keys(index).tt, ElementType.decode(Json.ast(values(index))))
+          acc.updated(keys(index).tt, ElementType.decoded(Json.ast(values(index))))
 
-  given encodable: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
+  given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
   inline def parse[SourceType](value: SourceType): Json raises JsonParseError =
     summonFrom:
@@ -225,7 +225,7 @@ object Json extends Json2, Dynamic:
       def genericize(json: Json): HttpStreams.Content =
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.bytes))
 
-  given Tactic[JsonParseError] => Decoder[Json] =
+  given Tactic[JsonParseError] => Json is Decodable in Text =
     text => Json.parse(Stream(text.bytes(using charEncoders.utf8)))
 
   given Tactic[JsonParseError] => Json is Instantiable across HttpRequests from Text =
@@ -335,4 +335,4 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       false
 
   def as[ValueType: Decodable in Json]: ValueType raises JsonError tracks JsonPointer =
-    ValueType.decode(this)
+    ValueType.decoded(this)
