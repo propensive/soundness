@@ -17,8 +17,9 @@ object Nomenclature:
     given [PlatformType] => Name[PlatformType] is Encodable in Text = _.text
 
     inline given [PlatformType] => (PlatformType is Nominative, Tactic[NameError])
-    =>    Decoder[Name[PlatformType]] =
-      val decoder: Decoder[Name[PlatformType]] = apply[PlatformType](_)
+    =>    Name[PlatformType] is Decodable in Text =
+
+      val decoder: Name[PlatformType] is Decodable in Text = apply[PlatformType](_)
 
       decoder
 
