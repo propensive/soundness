@@ -34,7 +34,7 @@ object Aggregable:
     recur(ji.ByteArrayOutputStream(), source)
 
   given bytesText: (decoder: CharDecoder) => Text is Aggregable by Bytes =
-    bytesBytes.map(decoder.decode)
+    bytesBytes.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = source =>
     val buffer = new StringBuffer()

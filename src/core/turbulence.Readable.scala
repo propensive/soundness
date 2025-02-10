@@ -34,12 +34,13 @@ object Readable:
 
   given encodingAdapter: [SourceType: Readable by Text] => (encoder: CharEncoder)
   =>    SourceType is Readable by Bytes =
-    source => encoder.encode(SourceType.stream(source))
+
+    source => encoder.encoded(SourceType.stream(source))
 
   given decodingAdapter: [SourceType: Readable by Bytes] => (decoder: CharDecoder)
   =>    SourceType is Readable by Text =
 
-    source => decoder.decode(SourceType.stream(source))
+    source => decoder.decoded(SourceType.stream(source))
 
   given stream: [ElementType] => Stream[ElementType] is Readable by ElementType = identity(_)
 

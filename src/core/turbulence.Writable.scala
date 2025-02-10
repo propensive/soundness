@@ -49,11 +49,11 @@ object Writable:
 
   given decodingAdapter: [TargetType: Writable by Text] => (decoder: CharDecoder)
   =>    TargetType is Writable by Bytes =
-    (target, stream) => TargetType.write(target, decoder.decode(stream))
+    (target, stream) => TargetType.write(target, decoder.decoded(stream))
 
   given encodingAdapter: [TargetType: Writable by Bytes] => (encoder: CharEncoder)
   =>    TargetType is Writable by Text =
-    (target, stream) => TargetType.write(target, encoder.encode(stream))
+    (target, stream) => TargetType.write(target, encoder.encoded(stream))
 
   given channel: Tactic[StreamError]
   =>    jn.channels.WritableByteChannel is Writable by Bytes = (channel, stream) =>
