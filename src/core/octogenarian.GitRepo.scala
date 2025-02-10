@@ -164,7 +164,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def mv(): Unit = ()
 
   object config:
-    def get[ValueType: Decoder](variable: Text)
+    def get[ValueType: Decodable in Text](variable: Text)
        (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
     :     ValueType logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]

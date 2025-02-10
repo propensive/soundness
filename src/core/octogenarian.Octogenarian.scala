@@ -55,13 +55,13 @@ object Octogenarian:
   object Tag:
     def unsafe(text: Text): Tag = text
     def apply(text: Text)(using Tactic[GitRefError]): Tag = Refspec.parse(text)
-    given decoder(using Tactic[GitRefError]): Decoder[Tag] = apply(_)
+    given decoder: Tactic[GitRefError] => Tag is Decodable in Text = apply(_)
     given Tag is Showable = identity(_)
 
   object Branch:
     def unsafe(text: Text): Branch = text
     def apply(text: Text)(using Tactic[GitRefError]): Branch = Refspec.parse(text)
-    given decoder(using Tactic[GitRefError]): Decoder[Branch] = apply(_)
+    given decoder: Tactic[GitRefError] => Branch is Decodable in Text = apply(_)
     given Branch is Showable = identity(_)
 
   object CommitHash:
@@ -71,5 +71,5 @@ object Octogenarian:
 
     def unsafe(text: Text): CommitHash = text
 
-    given decoder(using Tactic[GitRefError]): Decoder[CommitHash] = apply(_)
+    given decoder: Tactic[GitRefError] => CommitHash is Decodable in Text = apply(_)
     given CommitHash is Showable = identity(_)

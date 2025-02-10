@@ -32,7 +32,6 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
 
@@ -60,7 +59,10 @@ object Git:
   def init
      [PathType: Abstractable across Paths into Text]
      (targetPath: PathType, bare: Boolean = false)
-     (using WorkingDirectory, Tactic[GitError], Decoder[Path on Posix], Tactic[ExecError])
+     (using WorkingDirectory,
+            Tactic[GitError],
+            (Path on Posix) is Decodable in Text,
+            Tactic[ExecError])
      (using command: GitCommand)
   :     GitRepo logs GitEvent raises NameError =
     try
@@ -78,7 +80,7 @@ object Git:
   inline def cloneCommit[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
      (source: SourceType, targetPath: PathType, commit: CommitHash)
      (using Internet,
-            Decoder[Path on Posix],
+            (Path on Posix) is Decodable in Text,
             GitCommand,
             Tactic[GitError],
             Tactic[ExecError],
@@ -99,7 +101,11 @@ object Git:
       bare:       Boolean          = false,
       branch:     Optional[Branch] = Unset,
       recursive:  Boolean          = false)
-     (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
+     (using Internet,
+            WorkingDirectory,
+            (Path on Posix) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand)
      (using gitError: Tactic[GitError])
   :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
@@ -113,9 +119,9 @@ object Git:
 
   private def uncheckedCloneCommit[PathType: Abstractable across Paths into Text]
      (source: Text, targetPath: PathType, commit: CommitHash)
-     (using Internet, Decoder[Path on Posix], GitCommand)
-     (using gitError:      Tactic[GitError],
-            exec:          Tactic[ExecError],
+     (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
+     (using gitError:         Tactic[GitError],
+            exec:             Tactic[ExecError],
             workingDirectory: WorkingDirectory)
   :     GitProcess[GitRepo] logs GitEvent raises NameError =
 
@@ -133,7 +139,11 @@ object Git:
       bare:       Boolean          = false,
       branch:     Optional[Branch] = Unset,
       recursive:  Boolean          = false)
-     (using Internet, WorkingDirectory, Decoder[Path on Posix], Tactic[ExecError], GitCommand)
+     (using Internet,
+            WorkingDirectory,
+            (Path on Posix) is Decodable in Text,
+            Tactic[ExecError],
+            GitCommand)
      (using gitError: Tactic[GitError])
   :     GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
 
