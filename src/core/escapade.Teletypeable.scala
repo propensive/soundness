@@ -21,14 +21,12 @@ import digression.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 
 object Teletypeable:
   given Teletype is Teletypeable = identity(_)
   given Text is Teletypeable = text => Teletype(text)
-  given Pid is Teletypeable = pid => e"${pid.value.show}"
 
   given [ValueType: {Showable as showable, Colorable as colorable}] => ValueType is Teletypeable =
     value => e"${value.color}(${value.show})"
