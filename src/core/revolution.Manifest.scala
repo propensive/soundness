@@ -57,7 +57,7 @@ case class Manifest(entries: Map[Text, Text]):
   def apply[KeyType <: Label: DecodableManifest](attribute: ManifestAttribute[KeyType])
   :     Optional[KeyType.Subject] =
 
-    if entries.contains(attribute.key) then KeyType.decode(entries(attribute.key)) else Unset
+    if entries.contains(attribute.key) then KeyType.decoded(entries(attribute.key)) else Unset
 
   def serialize: Bytes =
     val manifest = juj.Manifest()

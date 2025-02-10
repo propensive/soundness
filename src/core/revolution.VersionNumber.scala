@@ -18,10 +18,10 @@ package revolution
 
 import anticipation.*
 import gossamer.*
-import spectacular.*
+import prepositional.*
 
 object VersionNumber:
-  def apply(value: Text)(using Decoder[Int]): VersionNumber =
+  def apply(value: Text)(using Int is Decodable in Text): VersionNumber =
     VersionNumber(value.cut(t".").to(List).map(_.decode[Int])*)
 
 case class VersionNumber(digits: Int*):

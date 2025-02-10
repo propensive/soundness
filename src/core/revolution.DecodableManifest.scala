@@ -29,4 +29,4 @@ object DecodableManifest:
 trait DecodableManifest:
   type Self <: Label
   type Subject
-  def decode(text: Text): Subject
+  def decoded(text: Text): Subject

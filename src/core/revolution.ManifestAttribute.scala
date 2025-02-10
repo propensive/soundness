@@ -23,7 +23,7 @@ abstract class ManifestAttribute[KeyType <: Label: ValueOf]():
   val key: Text = valueOf[KeyType].tt
 
   def parse(value: Text)(using decoder: KeyType is DecodableManifest): decoder.Subject =
-    decoder.decode(value)
+    decoder.decoded(value)
 
   def apply(using encoder: KeyType is EncodableManifest)(value: encoder.Subject): ManifestEntry =
     ManifestEntry(valueOf[KeyType].tt, encoder.encode(value))
