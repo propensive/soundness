@@ -1,0 +1,18 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/contingency
+
+target wisteria/core
+
+project wisteria
+  module core
+    compiler  scala
+    sources   src/core
+    include   contingency/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   wisteria/core
+    main      wisteria.main
