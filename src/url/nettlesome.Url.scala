@@ -87,7 +87,8 @@ object Url:
     t"${url.scheme}:$auth${url.pathText}$rest"
 
   given [SchemeType <: Label] => (Tactic[UrlError], Tactic[HostnameError])
-  =>    Decoder[Url[SchemeType]] =
+  =>    Url[SchemeType] is Decodable in Text =
+
     parse(_)
 
   given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show

@@ -56,7 +56,7 @@ object Nettlesome:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
-      given decoder: Tactic[IpAddressError] => Decoder[Ipv4] = parse(_)
+      given decoder: Tactic[IpAddressError] => Ipv4 is Decodable in Text = parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -74,7 +74,7 @@ object Nettlesome:
               IpAddressError(Ipv4ByteNotNumeric(text))
 
           . within:
-              bytes.map(Decoder.int.decode(_)).pipe: bytes =>
+              bytes.map(_.decode[Int]).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
                   then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
@@ -88,7 +88,7 @@ object Nettlesome:
       erased given underlying: Underlying[MacAddress, Long] = ###
       given MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
-      given decoder: Tactic[MacAddressError] => Decoder[MacAddress] = parse(_)
+      given decoder: Tactic[MacAddressError] => MacAddress is Decodable in Text = parse(_)
 
       def apply(value: Long): MacAddress = value
 
@@ -127,8 +127,10 @@ object Nettlesome:
       given showable: TcpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: TcpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
-      given decoder: (Tactic[NumberError], Tactic[PortError]) => Decoder[TcpPort] =
-        text => apply(Decoder.int.decode(text))
+      given decoder: (Tactic[NumberError], Tactic[PortError]) => TcpPort is Decodable in Text =
+        text =>
+          import Decoder.int
+          apply(text.decode[Int])
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
@@ -140,8 +142,8 @@ object Nettlesome:
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: UdpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
-      given decoder: (Tactic[NumberError], Tactic[PortError]) => Decoder[UdpPort] =
-        text => apply(Decoder.int.decode(text))
+      given decoder: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
+        text => apply(Decoder.int.decoded(text))
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
@@ -183,13 +185,17 @@ object Nettlesome:
   case class Ipv6(highBits: Long, lowBits: Long)
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
-    val portNumber: Int = haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
+    val portNumber: Int =
+      import Decoder.int
+      haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
     else halt(m"the TCP port number ${portNumber} is not in the range 1-65535")
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
-    val portNumber: Int = haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
+    val portNumber: Int =
+      import Decoder.int
+      haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}
     else halt(m"the UDP port number ${portNumber} is not in the range 1-65535")
