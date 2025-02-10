@@ -45,6 +45,8 @@ class Conduit(input: Stream[Bytes]):
   def block: Bytes = current
   def datum: Byte = current(index.n0)
 
+  def remainder: Stream[Bytes] = stream
+
   def next(): Boolean = step() match
     case Conduit.State.Clutch => cue() yet next()
     case state                => state != Conduit.State.Clutch

@@ -22,4 +22,4 @@ import fulminate.*
 import rudiments.*
 
 case class StreamError(total: Memory)(using Diagnostics)
-extends Error(m"the stream was cut prematurely after $total bytes")
+extends Error(m"the stream was cut prematurely after $total")
