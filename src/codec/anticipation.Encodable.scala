@@ -34,7 +34,6 @@ trait Encodable:
   type Self
   type Format
   def encode(value: Self): Format
-  def omit(value: Self): Boolean = false
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Format =
     new Encodable:
@@ -42,4 +41,3 @@ trait Encodable:
       type Format = encodable.Format
 
       def encode(value: Self): Format = encodable.encode(lambda(value))
-      override def omit(value: Self): Boolean = encodable.omit(lambda(value))
