@@ -283,3 +283,9 @@
 [submodule "proscenium"]
 	path = proscenium
 	url = https://github.com/propensive/proscenium
+[submodule "embarcadero"]
+	path = embarcadero
+	url = git@github.com:/propensive/embarcadero
+[submodule "bitumen"]
+	path = bitumen
+	url = git@github.com:/propensive/bitumen
