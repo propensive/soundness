@@ -16,10 +16,11 @@
 
 package caesura
 
+import anticipation.*
 import contingency.*
 import denominative.*
+import prepositional.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 import wisteria.*
 
@@ -30,7 +31,7 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
   extends DsvDecodable:
     type Self = DerivationType
     override def width: Int = count
-    def decode(row: Row): DerivationType = lambda(row)
+    def decoded(row: Row): DerivationType = lambda(row)
 
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is DsvDecodable =
     val sum = contexts { [FieldType] => context => context.width }.sum
@@ -44,11 +45,12 @@ object DsvDecodable extends ProductDerivable[DsvDecodable]:
           val row2 = Row(row.data.drop(index))
           count += context.width
           focus(CellRef(rowNumber, label)):
-            typeclass.decode(row2))
+            typeclass.decoded(row2))
 
-  given decoder: [ValueType: Decoder] => ValueType is DsvDecodable = _.data.head.decode[ValueType]
+  given decoder: [ValueType: Decodable in Text] => ValueType is DsvDecodable =
+    value => ValueType.decoded(value.data.head)
 
 trait DsvDecodable:
   type Self
-  def decode(elems: Row): Self
+  def decoded(elems: Row): Self
   def width: Int = 1

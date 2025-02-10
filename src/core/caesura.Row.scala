@@ -19,6 +19,7 @@ package caesura
 import anticipation.*
 import denominative.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -28,18 +29,19 @@ import scala.compiletime.*
 import language.dynamics
 
 case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[CellType: DsvDecodable]: CellType = CellType.decode(this)
+  def as[CellType: DsvDecodable]: CellType = CellType.decoded(this)
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
     IArray.tabulate(columns.size)(columns(_))
 
-  def selectDynamic[ValueType: Decoder](field: String)(using DynamicDsvEnabler, DsvRedesignation)
+  def selectDynamic[ValueType: Decodable in Text](field: String)
+     (using DynamicDsvEnabler, DsvRedesignation)
   :     Optional[ValueType] =
     apply(summon[DsvRedesignation].transform(field.tt))
 
-  def apply[ValueType: Decoder](field: Text): Optional[ValueType] =
-    columns.let(_.at(field)).let { index => data.at(index.z) }.let(ValueType.decode(_))
+  def apply[ValueType: Decodable in Text](field: Text): Optional[ValueType] =
+    columns.let(_.at(field)).let { index => data.at(index.z) }.let(ValueType.decoded(_))
 
   override def hashCode: Int = data.indices.foldLeft(0): (aggregate, index) =>
     aggregate*31 + data(index).hashCode
