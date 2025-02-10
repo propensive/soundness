@@ -35,7 +35,7 @@ object Cookie:
   val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
 
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
-  def apply[ValueType: {Encodable in Text, Decoder}](using DummyImplicit)
+  def apply[ValueType: {Encodable in Text, Decodable in Text}](using DummyImplicit)
      [DurationType: GenericDuration]
      (name:    Text,
       domain:   Optional[Hostname]     = Unset,
@@ -65,7 +65,7 @@ object Cookie:
     given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
       response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
 
-    given Decoder[List[Cookie.Value]] = value =>
+    given List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:
         _.cut(t"=", 2) match
           case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
@@ -81,7 +81,7 @@ object Cookie:
       secure:   Boolean        = false,
       httpOnly: Boolean        = false)
 
-case class Cookie[ValueType: {Encodable in Text, Decoder}]
+case class Cookie[ValueType: {Encodable in Text, Decodable in Text}]
    (name:     Text,
     domain:   Optional[Hostname],
     expiry:   Optional[Long],

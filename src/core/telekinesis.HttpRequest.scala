@@ -24,6 +24,7 @@ import gesticulate.*
 import gossamer.*
 import hieroglyph.*
 import nettlesome.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -151,7 +152,7 @@ case class HttpRequest
 
   object headers extends Dynamic:
     def selectDynamic(name: Label)
-       (using capitate: name.type is Capitate, decoder: Decoder[capitate.Subject])
+       (using capitate: name.type is Capitate, decoder: capitate.Subject is Decodable in Text)
     :     List[capitate.Subject] =
       val name2 = name.tt.uncamel.kebab.lower
       textHeaders.filter(_.key.lower == name2).map(_.value.decode)

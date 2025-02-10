@@ -22,6 +22,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import kaleidoscope.*
 import monotonous.*
+import prepositional.*
 import spectacular.*
 
 object Auth:
@@ -39,7 +40,7 @@ object Auth:
     case ScramSha256(text)         => t"SCRAM-SHA-256 $text"
     case Vapid(text)               => t"vapid $text"
 
-  given decoder: Tactic[AuthError] => Decoder[Auth] = value =>
+  given decoder: Tactic[AuthError] => Auth is Decodable in Text = value =>
     value match
       case r"Bearer $token(.*)"        => Bearer(token)
       case r"Digest $digest(.*)"       => Digest(digest)

@@ -19,6 +19,7 @@ package telekinesis
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 
@@ -42,7 +43,7 @@ object Http:
     given Method is Showable =
       case method    => method.toString.tt.upper
 
-    given Decoder[Method] = _.upper match
+    given Method is Decodable in Text = _.upper match
       case t"HEAD"    => Http.Head
       case t"POST"    => Http.Post
       case t"PUT"     => Http.Put

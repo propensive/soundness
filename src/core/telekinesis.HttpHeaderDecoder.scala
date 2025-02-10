@@ -25,7 +25,9 @@ object HttpHeaderDecoder:
   given text: HttpHeaderDecoder[Text] = identity(_)
 
   given memory: Tactic[NumberError] => HttpHeaderDecoder[Memory] =
-    value => Memory(value.decode[Int])
+    value =>
+      import Decoder.int
+      Memory(value.decode[Int])
 
 trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType
