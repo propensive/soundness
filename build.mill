@@ -208,7 +208,7 @@ object adversaria extends SoundnessModule {
 
 object ambience extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core)
+    def moduleDeps = Seq(guillotine.core)
   }
 
   object test extends ProbablyTestModule {
