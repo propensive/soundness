@@ -1,0 +1,19 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target contingency/core
+
+repo propensive/probably
+repo propensive/larceny
+
+project contingency
+  module core
+    compiler  scala
+    include   rudiments/core
+    sources   src/core
+    main      contingency.run
+
+  module test
+    compiler  scala
+    include   contingency/core probably/cli larceny/plugin
+    sources   src/test
+    main      contingency.Tests
