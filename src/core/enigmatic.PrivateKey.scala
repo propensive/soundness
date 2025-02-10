@@ -39,7 +39,7 @@ open case class PrivateKey[CipherType <: Cipher](private[enigmatic] val privateB
   def decrypt[ValueType: Decodable in Bytes](bytes: Bytes)(using cipher: CipherType & Encryption)
   :     ValueType raises CryptoError =
 
-    ValueType.decode(cipher.decrypt(bytes, privateBytes))
+    ValueType.decoded(cipher.decrypt(bytes, privateBytes))
 
   def sign[ValueType: Encodable in Bytes](value: ValueType)(using cipher: CipherType & Signing)
   :     Signature[CipherType] =
