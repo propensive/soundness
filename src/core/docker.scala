@@ -25,6 +25,8 @@ import gossamer.*
 import jacinta.*
 import nettlesome.*
 import nomenclature.*
+import prepositional.*
+import rudiments.*
 import serpentine.*
 import spectacular.*
 import telekinesis.*
@@ -36,7 +38,7 @@ import logging.silent
 
 case class ContainerImage(id: Text)
 
-case class Container(id: Text)
+case class Container(id: Text, created: Long, virtualSize: Memory)
 
 case class DockerEngine(port: Int)
 
@@ -44,7 +46,10 @@ case class DockerEngine(port: Int)
 def run(): Unit =
   import internetAccess.enabled
   import strategies.throwUnsafely
-  val response = unsafely(DomainSocket(% / n"var" / n"run" / n"docker.sock")).at(t"/images/json").fetch()
+
+  val response =
+    unsafely(DomainSocket(% / n"var" / n"run" / n"docker.sock")).at(t"/images/json").fetch()
+
   import hieroglyph.*, charEncoders.utf8
-  println(response)
-  println(response.receive[Json].show)
+
+  println(response.receive[Json].as[List[Container]])
