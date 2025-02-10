@@ -22,7 +22,6 @@ import compiletime.summonFrom
 
 import anticipation.*
 import prepositional.*
-import spectacular.*
 
 object Parameterizable:
   given [ValueType: Encodable in Text] => ValueType is Parameterizable:

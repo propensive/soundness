@@ -1,5 +1,5 @@
 /*
-    Guillotine, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Rudiments, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -16,8 +16,20 @@
 
 package guillotine
 
-import anticipation.*
-import fulminate.*
+import language.experimental.captureChecking
 
-case class PidError(pid: Pid)(using Diagnostics)
-extends Error(m"the process with PID ${pid.value} is not running")
+import anticipation.*
+import contingency.*
+import fulminate.*
+import prepositional.*
+import spectacular.*
+
+object Pid:
+  given Pid is Communicable = pid => Message(pid.toString.tt)
+  given Pid is Encodable in Text = _.toString.tt
+
+  given Tactic[NumberError] => Pid is Decodable in Text = text =>
+    try Pid(text.s.toLong) catch case error: Exception => abort(NumberError(text, Int))
+
+case class Pid(value: Long):
+  override def toString(): String = "\u21af"+value
