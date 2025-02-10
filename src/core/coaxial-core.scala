@@ -51,7 +51,7 @@ extension [EndpointType: Serviceable as serviceable](endpoint: EndpointType)
     val connection = serviceable.connect(endpoint)
 
     serviceable.transmit(connection, MessageType.serialize(input))
-    serviceable.receive(connection)//.tap(serviceable.close(connection))
+    serviceable.receive(connection)
 
   def exchange[StateType](initialState: StateType)[MessageType: Ingressive]
      (initialMessage: MessageType = Bytes())

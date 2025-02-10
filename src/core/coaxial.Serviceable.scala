@@ -26,6 +26,7 @@ import vacuous.*
 
 import java.io as ji
 import java.net as jn
+import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
@@ -34,26 +35,38 @@ import Control.*
 object Serviceable:
   given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
     type Output = Bytes
-    case class Connection(channel: jnc.SocketChannel, in: ji.InputStream, out: ji.OutputStream)
+    case class Connection(channel: jnc.SocketChannel)
 
     def connect(domainSocket: DomainSocket): Connection =
       val path = jnf.Path.of(domainSocket.address.s)
       val address = jn.UnixDomainSocketAddress.of(path)
-      val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
-      channel.connect(address)
-      channel.finishConnect()
-      val out = jnc.Channels.newOutputStream(channel).nn
-      val in = jnc.Channels.newInputStream(channel).nn
+      val channel = jnc.SocketChannel.open(address).nn
+      channel.configureBlocking(false)
 
-      Connection(channel, in, out)
+      Connection(channel)
 
     def transmit(connection: Connection, input: Stream[Bytes]): Unit =
       input.each: bytes =>
-        connection.out.write(bytes.mutable(using Unsafe))
-        connection.out.flush()
+        connection.channel.write(ByteBuffer.wrap(bytes.mutable(using Unsafe)))
+
+      connection.channel.shutdownOutput()
 
     def receive(connection: Connection): Stream[Bytes] =
-      connection.in.stream[Bytes]
+      val buffer = ByteBuffer.allocate(512).nn
+
+      def recur(): Stream[Bytes] =
+        connection.channel.read(buffer) match
+          case -1 =>
+            connection.channel.shutdownInput()
+            Stream()
+          case n  =>
+            buffer.flip()
+            val array = new Array[Byte](buffer.remaining)
+            buffer.get(array)
+            buffer.clear()
+            array.immutable(using Unsafe) #:: recur()
+
+      recur()
 
     def close(connection: Connection): Unit = connection.channel.close()
 
