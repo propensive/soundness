@@ -190,9 +190,10 @@ class Report(using Environment):
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
-    given TextMetrics with
+    given TextMetrics:
       private val eastAsian = textMetrics.eastAsianScripts
       def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
+
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
         case _                => char.metrics
@@ -221,7 +222,8 @@ class Report(using Environment):
           if s.count < 2 then e"" else s.maxTime
       )
 
-    val columns: Int = safely(Environment.columns).or(120)
+    import Decoder.int
+    val columns: Int = safely(Environment.columns.decode[Int]).or(120)
 
     val summaryLines = lines.summaries
 
