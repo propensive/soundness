@@ -25,7 +25,7 @@ class CodlFieldReader[ValueType](lambda: Text => ValueType)
 extends CodlDecoder[ValueType]:
   val schema: CodlSchema = Field(Arity.One)
 
-  def decode(nodes: List[Indexed]): ValueType raises CodlReadError =
+  def decoded(nodes: List[Indexed]): ValueType raises CodlReadError =
     nodes.prim.lest(CodlReadError()).children match
       case IArray(CodlNode(Data(value, _, _, _), _)) => lambda(value)
       case _                                         => abort(CodlReadError())

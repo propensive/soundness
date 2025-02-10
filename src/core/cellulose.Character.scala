@@ -34,21 +34,25 @@ object Character:
   def apply(int: Int, line: Int, col: Int): Character =
     int.toLong | ((line.toLong&0xffffff) << 48) | ((col.toLong&0xffffff) << 24)
 
-  given Character is Encodable in Text = new Encodable:
+  given encodable: Character is Encodable in Text = new Encodable:
     type Self = Character
     type Format = Text
-    def encode(char: Character): Text =
+
+    def encoded(char: Character): Text =
       if char == End then t"[END]" else t"[${char.char}:${char.line}:${char.column}]"
 
-  given Decoder[Character] with
-    def decode(text: Text): Character = text match
+  given decodable: Character is Decodable in Text = new Decodable:
+    type Self = Character
+    type Format = Text
+
+    def decoded(text: Text): Character = text match
       case r"\[$char(.):${As[Int](l)}([0-9]+):${As[Int](c)}([0-9]+)\]" =>
         Character(char.at(Prim).vouch.toInt, l, c)
 
       case _ =>
         End
 
-  given Typeable[Character] with
+  given Typeable[Character]:
     def unapply(value: Any): Option[value.type & Character] = value.matchable(using Unsafe) match
       case char: Char => Some(value.asInstanceOf[value.type & Character])
       case _          => None

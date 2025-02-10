@@ -107,7 +107,7 @@ extends Indexed:
 
     copy(children = recur(children, input.children))
 
-  def as[ValueType: CodlDecoder]: ValueType raises CodlReadError = ValueType.decode(List(this))
+  def as[ValueType: CodlDecoder]: ValueType raises CodlReadError = ValueType.decoded(List(this))
   def uncommented: CodlDoc = CodlDoc(children.map(_.uncommented), schema, margin, body)
   def untyped: CodlDoc = CodlDoc(children.map(_.untyped), CodlSchema.Free, margin, body)
   def wiped = uncommented.untyped

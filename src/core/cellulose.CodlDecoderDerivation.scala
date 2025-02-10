@@ -43,6 +43,6 @@ object CodlDecoderDerivation extends ProductDerivation[CodlDecoder]:
             case relabelling: CodlRelabelling[DerivationType] => relabelling(label).or(label)
             case _                                            => label
 
-          context.decode(values.prim.lest(CodlReadError(label2)).get(label2))
+          context.decoded(values.prim.lest(CodlReadError(label2)).get(label2))
 
     CodlDecoder[DerivationType](schema, decode)
