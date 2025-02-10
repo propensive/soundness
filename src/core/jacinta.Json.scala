@@ -21,6 +21,7 @@ import language.experimental.pureFunctions
 
 import scala.collection.Factory
 import scala.compiletime.*
+import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
@@ -43,8 +44,6 @@ trait Json2:
     new Encodable:
       type Self = Optional[ValueType]
       type Format = Json
-
-      override def omit(value: Optional[ValueType]): Boolean = value.absent
 
       def encode(value: Optional[ValueType]): Json =
         value.let(encodable.encode(_)).or(Json.ast(JsonAst(Unset)))
@@ -100,17 +99,22 @@ trait Json2:
   object EncodableDerivation extends Derivable[Encodable in Json]:
     inline def join[DerivationType <: Product: ProductReflection]
     :     DerivationType is Encodable in Json =
+
       value =>
         summonInline[Foci[JsonPointer]].give:
-          val labels = fields(value): [FieldType] =>
-            field => if context.omit(field) then "" else label.s
+          val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
+          val values: scm.ArrayBuffer[JsonAst] = scm.ArrayBuffer()
 
-          val values = fields(value): [FieldType] =>
-            field =>
-              focus(prior.or(JsonPointer()) / label):
-                if context.omit(field) then null else context.encode(field).root
+          fields(value): [FieldType] =>
+            field => focus(prior.or(JsonPointer()) / label):
+              context.encode(field).root.tap: encoded =>
+                if !encoded.isAbsent then
+                  labels += label.s
+                  values += encoded
 
-          Json.ast(JsonAst((labels.filter(_ != ""), values.filter(_ != null))))
+          Json.ast
+           (JsonAst
+             ((labels.toArray.immutable(using Unsafe), values.toArray.immutable(using Unsafe))))
 
     inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Json = value =>
       variant(value): [VariantType <: DerivationType] =>
@@ -157,8 +161,6 @@ object Json extends Json2, Dynamic:
     new Encodable:
       type Self = Option[ValueType]
       type Format = Json
-
-      override def omit(value: Option[ValueType]): Boolean = value.isEmpty
 
       def encode(value: Option[ValueType]): Json = value match
         case None        => Json.ast(JsonAst(Unset))
