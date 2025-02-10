@@ -1,0 +1,20 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target inimitable/core
+
+repo propensive/probably
+repo propensive/larceny
+
+project inimitable
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core contingency/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   inimitable/core probably/cli larceny/plugin
+    main      inimitable.Tests
+    coverage  inimitable/core
+
