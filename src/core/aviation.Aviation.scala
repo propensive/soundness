@@ -72,7 +72,7 @@ object Aviation:
       given RomanCalendar = calendars.gregorian
       t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
 
-    given decoder: Tactic[DateError] => Decoder[Date] = parse(_)
+    given decoder: Tactic[DateError] => Date is Decodable in Text = parse(_)
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
       import hieroglyph.textMetrics.uniform
