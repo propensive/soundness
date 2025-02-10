@@ -1,0 +1,311 @@
+#!/usr/bin/env bash
+
+declare javaCmd portFile pidFile ttystate script tmpPipe dataHomeDir data stderr javaBundle pendingUpdate
+declare -i doDownload minimumJava preferredJava pid port version buildId stdoutPid stderrPid continue pipePid argCount launchPid payloadSize jarSize
+declare -a args signals sttyOptions
+
+# The TTY settings to use for terminal input
+sttyOptions=(intr undef -echo icanon raw opost)
+
+# The set of signals which should be captured and forwarded to the JVM process
+signals=(INT WINCH TERM)
+
+name="$(basename "$0")"
+baseDir="${XDG_RUNTIME_DIR:-$HOME/.local/state}/$name"
+dataHomeDir="${XDG_DATA_HOME:-$HOME/.local/share}"
+portFile="$baseDir/port"
+pidFile="$baseDir/pid"
+failFile="$baseDir/fail"
+invocation="$0"
+script="$(realpath "$invocation")"
+doDownload=0
+minimumJava=21
+preferredJava=21
+javaHome="$dataHomeDir/java"
+javaBundle="jre"
+javaDefault="${javaHome}/${preferredJava}-${javaBundle}"
+continue=1
+pendingUpdate="${dataHomeDir}/${name}/.pending"
+
+[[ "$1" = "--download" ]] && doDownload=1 && shift
+pid=$$
+args=("$@")
+argCount=$#
+payloadSize=0
+jarSize=0
+
+backout() {
+  if [ -f "$failFile" ]
+  then
+    [ -t 0 ] && stty "$ttystate"
+    printf "\nThe %s daemon process failed to start.\n" "$name" >&2
+    printf "Remove the file %s before trying again.\n" "$failFile" >&2
+    exit 1
+  fi
+}
+
+abort() {
+  touch "$failFile"
+}
+
+checkUpdates() {
+  if [ -s "${pendingUpdate}" ]
+  then
+    chmod +x "${pendingUpdate}"
+    mv "${invocation}" "${dataHomeDir}/${name}.old"
+    mv "${pendingUpdate}" "${invocation}"
+    exec "${invocation}" "${args[@]}"
+  fi
+}
+
+operatingSystem() {
+  case "$(uname -s)" in
+    Linux|GNU*)       printf "linux"        ;;
+    Win*|Cygwin|Msys) printf "windows"      ;;
+    Mac*|Darwin*)     printf "mac"          ;;
+    SunOS)            printf "solaris"      ;;
+
+    *) printf "Did not recognized the operating system '%s'." "$(uname -s)" && exit 1 ;;
+  esac
+}
+
+arch() {
+  case "$(uname -m)" in
+    x86_64|amd64|i686-64)                   printf "x64"     ;;
+    x86|i686|i386|i86pc)                    printf "x86"     ;;
+    aarch64_be|aarch64|armv8b|armv8l|arm64) printf "aarch64" ;;
+
+    *) printf "Did not recognized the processor architecture '%s'." "$(uname -m)" && exit 1 ;;
+  esac
+}
+
+adoptiumUrl() {
+  local baseUrl access force
+  baseUrl="https://api.adoptium.net"
+  access="ga"
+  os="$(operatingSystem)"
+  arch="$(arch)"
+  printf "%s/v3/binary/latest/%s/%s/%s/%s/%s/hotspot/normal/eclipse" "$baseUrl" "$preferredJava" "$access" "$os" "$arch" "$javaBundle"
+}
+
+download() {
+  local tmpDir
+  mkdir -p "$dataHomeDir/tmp"
+  tmpDir="$(mktemp -d "$dataHomeDir/tmp/XXXXXX")"
+  url="$(adoptiumUrl)"
+
+  if command -v curl > /dev/null 2>&1
+  then
+    printf "Downloading Java %s from %s\n" "$preferredJava" "$url"
+    curl -sL "$url" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed.\n" && exit 1)
+    printf "Download complete\n"
+  elif command -v wget > /dev/null 2>&1
+  then
+    printf "Downloading Java %s from %s\n" "$preferredJava" "$url"
+    wget -q -O - "${LINK}" | tar xz -C "$tmpDir" 2> /dev/null || (printf "The download failed." && exit 1)
+    printf "Download complete\n"
+  else
+    rmdir "$tmpDir" > /dev/null 2>&1
+    printf "Could not download the file because neither \e[1mcurl\e[0m nor \e[1mwget\e[0m was on the path."
+  fi
+
+  dir="$(dirname "$(find "${tmpDir}" -name release | head -n1)")"
+  fullVersion="$(source "${dir}/release" ; printf "%s" "${JAVA_VERSION}")"
+  targetDir="${javaHome}/${fullVersion}-${javaBundle}"
+  rm -rf "${targetDir}"
+  mkdir -p "${javaHome}"
+  mv "${dir}" "${targetDir}"
+  rm -rf "${tmpDir}"
+  (cd "${javaHome}" && ln -s "${fullVersion}-${javaBundle}" "${preferredJava}-${javaBundle}")
+  javaCmd="${targetDir}/bin/java"
+}
+
+checkJavaVersion() {
+  local -i version
+  local javaExec
+  javaExec="$1"
+  version=$("$javaExec" -version 2>&1 | grep version | cut -d'"' -f2 | cut -d. -f1)
+  [[ $version -ge $minimumJava ]]
+}
+
+findJava() {
+  if checkJavaVersion "$(command -v java)"
+  then javaCmd="$(command -v java)" && return
+  elif [ -x "${javaDefault}/bin/java" ]
+  then javaCmd="${javaDefault}/bin/java" && return
+  fi
+
+  if update-alternatives --list java > /dev/null 2>&1
+  then
+    for candidate in $(update-alternatives --list java 2> /dev/null)
+    do checkJavaVersion "$candidate" && javaCmd="$candidate" && return
+    done
+  fi
+
+  for candidate in $(/usr/libexec/java_home "-v${minimumJava}" 2> /dev/null)
+  do checkJavaVersion "$candidate/bin/java" && javaCmd="$candidate/bin/java" && return
+  done
+
+  [[ $payloadSize > 0 ]] && extract && javaCmd="$javaHome/bin/java" && return
+  [[ $doDownload = 1 ]] && download && return
+
+  printf "\nJava $minimumJava or later is required, but no suitable version of Java was found.\n" >&2
+  printf "You can install \e[1mjava\e[0m with one of the following commands:\n\n" >&2
+  command -v pacman > /dev/null && printf "  > \e[1mpacman -S jre-openjdk\e[0m\n" >&2
+  command -v emerge > /dev/null && printf "  > \e[1memerge dev-java/openjdk-${minimumJava}\e[0m\n" >&2
+  command -v yum > /dev/null    && printf "  > \e[1myum install java-${minimumJava}-openjdk\e[0m\n" >&2
+  command -v dnf > /dev/null    && printf "  > \e[1mdnf install java-${minimumJava}-openjdk\e[0m\n" >&2
+  command -v apt > /dev/null    && printf "  > \e[1mapt update && apt install openjdk-${minimumJava}-jre\e[0m\n" >&2
+  command -v zypper > /dev/null && printf "  > \e[1mzypper install openjdk-${minimumJava}-headless\e[0m\n" >&2
+  command -v brew > /dev/null   && printf "  > \e[1mbrew update && brew install java\e[0m\n" >&2
+  printf "  > \e[1m$invocation --download\e[0m\n\n" >&2
+
+  exit 1
+}
+
+launch() {
+  checkUpdates
+  findJava
+  startTime="$(date +%s%3N)"
+  echo "$pid" > "$pidFile"
+  [ -x "$javaCmd" ] || extract
+  (nohup "$javaCmd" -Dethereal.startTime="$startTime" -Dethereal.name="$name" -Dethereal.script="$script" -Dethereal.payloadSize=$payloadSize -Dethereal.jarSize=$jarSize -Dethereal.command="$(command -v "$name")" -Dethereal.fpath="$(zsh -c 'printf "%s\n" $fpath' 2> /dev/null || echo '')" -jar "$script" > /dev/null 2> >(logger -t "$name") || abort) &
+  launchPid=$!
+
+  while [[ ! -s "$portFile" ]] && [[ ! -f "$failFile" ]]
+  do sleep 0.05
+  done
+
+  backout
+  setup
+}
+
+setup() {
+  data="$(<"$portFile")"
+  port=${data%% *}
+  data2="${data#* }"
+  stderr=${data2#* }
+  version=${data2% *}
+  buildId=%%BUILD_ID%%
+}
+
+handle() {
+  # shellcheck disable=SC2317
+  case "$1" in
+    TERM) continue=0 ;;
+  esac
+  # shellcheck disable=SC2317
+  printf "s\n%s\n%s\n" "$pid" "$1" >"/dev/tcp/localhost/$port" || exit 1
+}
+
+extract() {
+  local -i offset fileSize
+  local dir
+  mkdir -p "$dataHomeDir/java"
+  fileSize=$(wc -c "$script" | cut -d' ' -f1)
+  offset=$((fileSize - jarSize - payloadSize + 1))
+  tail -c +"$offset" "$script" | tar xz -C "$dataHomeDir/java" 2> /dev/null
+  dir="$(tail -c +"$offset" "$script" | tar tzf - 2> /dev/null | head -n1)"
+  mv "$dataHomeDir/java/$dir" "$javaHome"
+}
+
+terminate() {
+  exec 2> /dev/null 6<> /dev/tcp/localhost/$port || exit 2
+  printf "x\n%s\n" "$pid" >&6
+  exit "$(cat <&6 2> /dev/null || echo '1')"
+}
+
+await() {
+  local path
+  local -i limit count
+  path="$1"
+  limit=$2
+  count=0
+
+  while ! [ -s "$path" ] && [ $count -lt $limit ]
+  do
+    count+=1
+    sleep 0.1
+  done
+
+  [ -s "$path" ]
+}
+
+active() {
+  local path
+  local -i pid
+  path="$1"
+  [ -s "$pidFile" ] && kill -0 $(<"$pidFile") 2> /dev/null
+}
+
+checkState() {
+  # Check the consistency of the PID file and Port file
+  if active "$pidFile"
+  then # Process is active
+    if [ -s "$portFile" ]
+    then
+      setup
+      if [ $version -ne $buildId ]
+      then
+        rm -f "$pidFile" "$portFile"
+        sleep 0.1
+      fi
+    else # might be starting up
+      if ! await "$portFile" 40
+      then abort
+      fi
+    fi
+  else rm -f "$pidFile" "$portFile"
+  fi
+}
+
+[ -t 0 ] && ttystate="$(stty -g)"
+mkdir -p "$baseDir"
+backout
+checkState
+
+[ -s "$pidFile" ] || launch
+backout
+
+tmpPipe="$(mktemp -u)"
+mkfifo -m 600 "$tmpPipe" && exec 2> /dev/null 3<> "$tmpPipe" && rm "$tmpPipe" || exit 2
+[ -t 0 ] && stty "${sttyOptions[@]}" > /dev/null 2>&1
+exec 2> /dev/null 7<> /dev/tcp/localhost/$port || exit 2
+[ -t 0 ] && printf "i\nt\n" >&7 || printf "i\np\n" >&7
+printf "%s\n%s\n" "$pid" "$script" >&7
+pwd >&7
+printf "%s\n" "$argCount" >&7
+printf '%s\0' "${args[@]}" >&7
+printf "\n##\n" >&7
+env -0 >&7
+printf "\n##\n" >&7
+cat >&7 <&0 2> /dev/null &
+stdoutPid=$!
+cat <&7 2> /dev/null &
+pipePid=$!
+
+if [ "$stderr" = "1" ]
+then
+  exec 2> /dev/null 5<> /dev/tcp/localhost/$port || exit 2
+  printf "e\n%s\n" "$pid" >&5
+  cat >&2 <&5 &
+  stderrPid=$!
+fi
+
+# shellcheck disable=SC2064
+for signal in "${signals[@]}"
+do trap "handle $signal" "$signal"
+done
+
+while [ $continue = 1 ]
+do
+  wait $pipePid
+  kill -0 $pipePid 2> /dev/null || continue=0
+done
+
+[ -t 0 ] && stty "$ttystate"
+kill $launchPid 2> /dev/null
+kill $stdoutPid 2> /dev/null
+kill $stderrPid 2> /dev/null
+terminate
+exit 1
