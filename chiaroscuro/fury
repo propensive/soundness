@@ -1,0 +1,26 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/dissonance
+repo propensive/wisteria
+repo propensive/dendrology
+repo propensive/escritoire
+repo propensive/escapade
+repo propensive/iridescence
+
+target chiaroscuro/test
+
+project chiaroscuro
+  module core
+    compiler  scala
+    sources   src/core
+    include   escapade/core
+    include   dendrology/tree
+    include   escritoire/core
+    include   dissonance/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   chiaroscuro/core probably/cli
+    main      chiaroscuro.Tests
