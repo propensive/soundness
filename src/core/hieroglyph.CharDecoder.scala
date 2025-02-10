@@ -41,14 +41,14 @@ extends Decodable:
   type Self = Text
   type Format = Bytes
 
-  def decode(bytes: Bytes, omit: Boolean): Text =
+  def decoded(bytes: Bytes, omit: Boolean): Text =
     val buf: StringBuilder = StringBuilder()
-    decode(Stream(bytes)).each { text => buf.append(text.s) }
+    decoded(Stream(bytes)).each { text => buf.append(text.s) }
     buf.toString.tt
 
-  def decode(bytes: Bytes): Text = decode(bytes, false)
+  def decoded(bytes: Bytes): Text = decoded(bytes, false)
 
-  def decode(stream: Stream[Bytes]): Stream[Text] =
+  def decoded(stream: Stream[Bytes]): Stream[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
