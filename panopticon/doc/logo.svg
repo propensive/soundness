@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.2102413"
+     inkscape:cx="247.33485"
+     inkscape:cy="114.15454"
+     inkscape:window-width="2248"
+     inkscape:window-height="1488"
+     inkscape:window-x="0"
+     inkscape:window-y="1510"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid686"
+       dotted="true"
+       originx="-40"
+       originy="-70" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1160">
+      <stop
+         style="stop-color:#053900;stop-opacity:1;"
+         offset="0"
+         id="stop1156" />
+      <stop
+         style="stop-color:#003570;stop-opacity:1;"
+         offset="1"
+         id="stop1158" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1160"
+       id="linearGradient1162"
+       x1="55"
+       y1="173"
+       x2="144"
+       y2="93"
+       gradientUnits="userSpaceOnUse" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath1316">
+      <circle
+         style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+         id="circle1318"
+         cx="100"
+         cy="130"
+         r="50" />
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-40,-70)">
+    <g
+       id="g1291"
+       clip-path="url(#clipPath1316)"
+       transform="matrix(1.2,0,0,1.2,-20,-26)">
+      <circle
+         style="opacity:1;fill:url(#linearGradient1162);fill-opacity:1;stroke-width:0.1;stop-color:#000000"
+         id="path790"
+         cx="100"
+         cy="130"
+         r="50" />
+      <path
+         style="mix-blend-mode:screen;fill:#fffd11;fill-opacity:0.466747;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 93.649999,74.708331 c -20,29.999999 -20,69.999999 0,99.999999 19.999991,-30 19.999991,-70 0,-99.999997"
+         id="path846-3"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="opacity:0.226891;mix-blend-mode:screen;fill:#bcffc9;fill-opacity:0.367312;stroke:none;stroke-width:0.460123px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 100,64.46026 c -46.144359,39.32385 -46.144359,91.75564 0,131.07948 46.14436,-39.32384 46.14436,-91.75563 0,-131.079477"
+         id="path846-7"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="mix-blend-mode:screen;fill:#57ff77;fill-opacity:0.635206;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="M 100,79.999998 C 80,110 80,150 100,180 c 20,-30 20,-70 0,-100"
+         id="path846"
+         sodipodi:nodetypes="ccc" />
+      <path
+         style="mix-blend-mode:screen;fill:#0036c9;fill-opacity:0.367312;stroke:none;stroke-width:0.264583px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1"
+         d="m 104.23333,82.116666 c -19.999997,30.000014 -19.999997,70.000014 0,100.000014 20,-30 20,-70 0,-100.000012"
+         id="path846-3-6"
+         sodipodi:nodetypes="ccc" />
+    </g>
+  </g>
+</svg>
