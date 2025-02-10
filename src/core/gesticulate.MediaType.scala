@@ -51,7 +51,7 @@ object MediaType:
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
   given MediaType is Encodable in Text = _.show
-  given Tactic[MediaTypeError] => Decoder[MediaType] = Media.parse(_)
+  given Tactic[MediaTypeError] => MediaType is Decodable in Text = Media.parse(_)
 
   given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"formenctype"
