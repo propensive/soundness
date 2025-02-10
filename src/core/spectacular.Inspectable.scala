@@ -56,7 +56,7 @@ object Inspectable extends Inspectable2:
 
   given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
   given reflectEnum: reflect.Enum is Inspectable = _.toString.show
-  given pid: Pid is Inspectable = pid => s"[PID:${pid.value}]".tt
+  //given pid: Pid is Inspectable = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt

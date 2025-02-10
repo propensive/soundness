@@ -18,68 +18,61 @@ package spectacular
 
 import anticipation.*
 import contingency.*
-import denominative.*
-import digression.*
-import inimitable.*
-import rudiments.*
-import vacuous.*
-import wisteria.*
+import prepositional.*
 
 import language.experimental.pureFunctions
 
 object Decoder:
-  given int: (number: Tactic[NumberError]) => Decoder[Int] = text =>
+  given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Int), 0)
 
-  given fqcn: Tactic[FqcnError] => Decoder[Fqcn] = Fqcn(_)
-  given uuid: Tactic[UuidError] => Decoder[Uuid] = Uuid.parse(_)
+//   given fqcn: Tactic[FqcnError] => Decoder[Fqcn] = Fqcn(_)
+//   given uuid: Tactic[UuidError] => Decoder[Uuid] = Uuid.parse(_)
 
-  given byte: Tactic[NumberError] => Decoder[Byte] = text =>
-    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Byte), 0)
+//   given byte: Tactic[NumberError] => Decoder[Byte] = text =>
+//     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+//       raise(NumberError(text, Byte), 0)
 
-    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
-    else int.toByte
+//     if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
+//     else int.toByte
 
-  given short: Tactic[NumberError] => Decoder[Short] = text =>
-    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Short), 0)
+//   given short: Tactic[NumberError] => Decoder[Short] = text =>
+//     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+//       raise(NumberError(text, Short), 0)
 
-    if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
-    else int.toShort
+//     if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
+//     else int.toShort
 
-  given long: Tactic[NumberError] => Decoder[Long] = text =>
+  given long: Tactic[NumberError] => Long is Decodable in Text = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Long), 0L)
 
-  given double: Tactic[NumberError] => Decoder[Double] = text =>
+  given double: Tactic[NumberError] => Double is Decodable in Text = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       raise(NumberError(text, Double), 0.0)
 
-  given float: Tactic[NumberError] => Decoder[Float] = text =>
-    try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Float), 0.0F)
+//   given float: Tactic[NumberError] => Decoder[Float] = text =>
+//     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
+//       raise(NumberError(text, Float), 0.0F)
 
-  given char: Decoder[Char] = _.s(0)
-  given text: Decoder[Text] = identity(_)
-  given string: Decoder[String] = _.s
-  given pid: (number: Tactic[NumberError]) => Decoder[Pid] = long.map(Pid(_))
+  given char: Char is Decodable in Text = _.s(0)
+  //given pid: Tactic[NumberError] => Pid is Decodable in Text = int.map(Pid(_))
 
-  given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Tactic[VariantError]
-  =>    Decoder[EnumType] = value =>
-    EnumType.value(EnumType.decode(value)).or:
-      val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
-      raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch)
+//   given [EnumType <: reflect.Enum: {Enumerable, Identifiable}] => Tactic[VariantError]
+//   =>    Decoder[EnumType] = value =>
+//     EnumType.value(EnumType.decode(value)).or:
+//       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
+//       raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch)
 
-trait Decoder[ValueType] extends Extractable:
-  type Self = Text
-  type Result = ValueType
+// trait Decoder[ValueType] extends Extractable:
+//   type Self = Text
+//   type Result = ValueType
 
-  def extract(text: Text): Optional[ValueType] =
-    try decode(text) catch case error: Exception => Unset
+//   def extract(text: Text): Optional[ValueType] =
+//     try decode(text) catch case error: Exception => Unset
 
-  def decode(text: Text): ValueType
+//   def decode(text: Text): ValueType
 
-  def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] =
-    text => lambda(decode(text))
+//   def map[ValueType2](lambda: ValueType => ValueType2): Decoder[ValueType2] =
+//     text => lambda(decode(text))

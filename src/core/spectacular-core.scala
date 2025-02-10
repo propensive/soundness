@@ -25,12 +25,6 @@ extension [ValueType: Showable](value: ValueType)
 
 extension [ValueType: Inspectable](value: ValueType) def inspect: Text = ValueType.text(value)
 
-extension (text: Text)
-  def decode[ValueType: Decoder]: ValueType = ValueType.decode(text)
-
-extension [ValueType: Encodable](value: ValueType)
-  def encode: ValueType.Format = ValueType.encode(value)
-
 package booleanStyles:
   given yesNo: BooleanStyle = BooleanStyle("yes".tt, "no".tt)
   given onOff: BooleanStyle = BooleanStyle("on".tt, "off".tt)

@@ -16,8 +16,9 @@
 
 package soundness
 
-export spectacular.{BooleanStyle, Decoder, EnumCaseError, Inspectable, InspectableDerivation,
-    NumberError, Showable, TextConversion, show, inspect, decode, encode, Enumerable, Identifiable}
+export spectacular .
+  { BooleanStyle, EnumCaseError, Inspectable, InspectableDerivation, NumberError, Showable,
+    TextConversion, show, inspect, Enumerable, Identifiable }
 
 package booleanStyles:
   export spectacular.booleanStyles.{yesNo, onOff, trueFalse, oneZero}

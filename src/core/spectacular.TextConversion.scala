@@ -34,7 +34,7 @@ object TextConversion:
   given byte: Byte is Showable = byte => byte.toString.tt
   given message: Message is Showable = _.text
   given double: (decimalizer: DecimalConverter) => Double is Showable = decimalizer.decimalize(_)
-  given pid: Pid is Showable = pid => ("\u21af"+pid.value).tt
+  //given pid: Pid is Showable = pid => ("\u21af"+pid.value).tt
   given boolean: (booleanStyle: BooleanStyle) => Boolean is Showable = booleanStyle(_)
 
   given option: [ValueType: Showable] => Option[ValueType] is Showable =
