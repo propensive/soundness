@@ -31,7 +31,9 @@ import scala.compiletime.*
 object Path:
   given encodable: [PathType <: Path] => PathType is Encodable in Text = _.text
 
-  given decoder: [PlatformType: {Navigable, Radical}] => Decoder[Path on PlatformType] =
+  given decoder: [PlatformType: {Navigable, Radical}]
+  =>    (Path on PlatformType) is Decodable in Text =
+
     Path.parse(_)
 
   given showable: [PlatformType] => (Path on PlatformType) is Showable = _.text

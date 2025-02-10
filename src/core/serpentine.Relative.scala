@@ -41,7 +41,9 @@ object Relative:
   given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
     encodable.encode(_)
 
-  given decoder: [ElementType] => (Navigable by ElementType) => Decoder[Relative by ElementType] =
+  given decoder: [ElementType] => (Navigable by ElementType)
+  =>    (Relative by ElementType) is Decodable in Text =
+
     parse(_)
 
   def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
