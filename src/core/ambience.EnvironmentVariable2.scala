@@ -20,14 +20,14 @@ import language.experimental.captureChecking
 import language.dynamics
 
 import anticipation.*
+import prepositional.*
 import proscenium.*
-import spectacular.*
 
 trait EnvironmentVariable2:
   given generic[UnknownType <: Label]: EnvironmentVariable[UnknownType, Text] =
     identity(_)
 
-  given decoder[UnknownType <: Label, VariableType](using decoder: Decoder[VariableType])
+  given decoder[UnknownType <: Label, VariableType: Decodable in Text]
   :     EnvironmentVariable[UnknownType, VariableType] =
 
-    decoder.decode(_)
+    VariableType.decoded(_)

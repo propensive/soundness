@@ -22,9 +22,9 @@ import language.dynamics
 import anticipation.*
 import contingency.*
 import gossamer.*
+import guillotine.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -103,7 +103,9 @@ object EnvironmentVariable extends EnvironmentVariable2:
     PathType(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
-    text => Pid(text.decode[Int])
+    text =>
+      import Decoder.int
+      Pid(text.decode[Int])
 
   given sshAuthSock: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["sshAuthSock", PathType] =
@@ -113,7 +115,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
   =>    EnvironmentVariable["manpager", PathType] =
     PathType(_)
 
-  given columns: Decoder[Int] => EnvironmentVariable["columns", Int] = _.decode[Int]
+  given columns: (Int is Decodable in Text) => EnvironmentVariable["columns", Int] = _.decode[Int]
   given lang: EnvironmentVariable["lang", Text] = identity(_)
   given display: EnvironmentVariable["display", Text] = identity(_)
   given term: EnvironmentVariable["term", Text] = identity(_)

@@ -29,7 +29,7 @@ trait Environment:
   def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
-  given default(using Quickstart): Environment = environments.virtualMachine
+  given default: Quickstart => Environment = environments.virtualMachine
 
   def apply[VariableType](variable: Text)
      (using environment:     Environment,
@@ -41,8 +41,8 @@ object Environment extends Dynamic:
     . yet(reader.read("".tt))
 
   inline def selectDynamic[VariableType](key: String)
-     (using environment:     Environment,
-            reader:        EnvironmentVariable[key.type, VariableType],
+     (using environment:      Environment,
+            reader:           EnvironmentVariable[key.type, VariableType],
             environmentError: Tactic[EnvironmentError])
   :     VariableType =
 

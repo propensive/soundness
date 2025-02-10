@@ -62,8 +62,8 @@ object SystemProperty:
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given fileSeparator: SystemProperty["file.separator", Char] = _.decode[Char]
-  given pathSeparator: SystemProperty["path.separator", Char] = _.decode[Char]
+  given fileSeparator: SystemProperty["file.separator", Char] = Decoder.char.decoded(_)
+  given pathSeparator: SystemProperty["path.separator", Char] = Decoder.char.decoded(_)
   given lineSeparator: SystemProperty["line.separator", Text] = identity(_)
 
   given userName: SystemProperty["user.name", Text] = identity(_)
@@ -81,7 +81,7 @@ object SystemProperty:
   given osArch: SystemProperty["os.arch", Text] = identity(_)
 
   given decoder: [UnknownType <: String & Singleton, PropertyType]
-  =>   (decoder: Decoder[PropertyType])
+  =>   (decoder: PropertyType is Decodable in Text)
   =>    SystemProperty[UnknownType, PropertyType] =
 
-    decoder.decode(_)
+    decoder.decoded(_)
