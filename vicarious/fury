@@ -1,0 +1,17 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target vicarious/core
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/fulminate
+repo propensive/symbolism
+repo propensive/vacuous
+repo propensive/denominative
+
+project vicarious
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core
+
