@@ -53,6 +53,8 @@ trait Json2:
   =>    Optional[ValueType] is Decodable in Json = (json, omit) =>
     if omit then Unset else ValueType.decode(json, false)
 
+  given memory: Tactic[JsonError] => Memory is Decodable in Json = (json, omit) => json.root.long.b
+
   inline given decodable: [ValueType] => ValueType is Decodable in Json = summonFrom:
     case given Decoder[ValueType] =>
       summonInline[Tactic[JsonError]].give:
