@@ -82,7 +82,7 @@ also omit the override of `name` and just access the value as
 
 Note that `value.decodeAs[Int]`, which is provided by
 [Spectacular](https://github.com/propensive/spectacular/), and uses a
-`Decoder[Int]` instance may, given the definition of `Decoder[Int]`, fail with
+`Int is Decodable` instance may, given the definition of `Int is Decodable`, fail with
 a `NumberError` if the `CHILD_PID` variable contains a value which isn't an
 integer. The capability to raise this error will be aggregated into the
 `Environment.child` call, ensuring that it will be handled.
