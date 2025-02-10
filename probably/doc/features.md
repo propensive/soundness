@@ -1,0 +1,5 @@
+- no framework, reflection or control flow to understand
+- ScalaCheck-style property testing
+- tests may be run multiple times, with results aggregated
+- automatic derivation of arbitrary instances
+- functional API where it matters; impure calls where it's safe and practical
