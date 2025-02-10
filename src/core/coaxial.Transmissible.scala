@@ -21,7 +21,6 @@ import gossamer.*
 import hieroglyph.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 
 trait Transmissible:
   type Self

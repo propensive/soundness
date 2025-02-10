@@ -19,7 +19,7 @@ package coaxial
 import anticipation.*
 import gossamer.*
 import hieroglyph.*
-import spectacular.*
+import prepositional.*
 
 trait Ingressive:
   type Self
@@ -29,5 +29,5 @@ object Ingressive:
   given bytes: Bytes is Ingressive = identity(_)
   given text: CharDecoder => Text is Ingressive = _.text
 
-  given decoder: [MessageType: Decoder] => CharDecoder => MessageType is Ingressive =
+  given decoder: [MessageType: Decodable in Text] => CharDecoder => MessageType is Ingressive =
     _.text.decode[MessageType]
