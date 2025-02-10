@@ -1,0 +1,23 @@
+
+repo propensive/probably
+repo propensive/merino
+repo propensive/wisteria
+repo propensive/contextual
+
+target jacinta/test
+
+project jacinta
+  module core
+    sources  src/core
+    include  merino/core gossamer/core
+  
+  module test
+    sources   src/test
+    include   jacinta/core probably/cli
+    main      jacinta.Tests
+    #coverage  jacinta/core
+  
+  module bench
+    sources   src/bench
+    include   jacinta/core probably/cli probably/bench
+    main      jacinta.Bench

@@ -1,0 +1,3 @@
+- parse and serialize JSON
+- intuitive dynamic API for quick field access, without compromising typesafety
+- automatic conversion to and from product and sum types
