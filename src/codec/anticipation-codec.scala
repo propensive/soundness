@@ -29,6 +29,10 @@ object Bytes:
     lambda(array)
     array.asInstanceOf[IArray[Byte]]
 
+extension [FormatType](value: FormatType)
+  def decode[ResultType](using decodable: ResultType is Decodable in FormatType): ResultType =
+    decodable.decoded(value)
+
 extension [ValueType: Encodable in Bytes](value: ValueType)
   def bytestream: Bytes = ValueType.encode(value)
 

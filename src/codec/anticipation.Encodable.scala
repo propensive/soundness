@@ -33,11 +33,13 @@ trait Encodable:
   private inline def encodable: this.type = this
   type Self
   type Format
-  def encode(value: Self): Format
+  def encoded(value: Self): Format
+
+  extension (value: Self) def encode: Format = encoded(value)
 
   def contramap[SelfType2](lambda: SelfType2 => Self): SelfType2 is Encodable in Format =
     new Encodable:
       type Self = SelfType2
       type Format = encodable.Format
 
-      def encode(value: Self): Format = encodable.encode(lambda(value))
+      def encoded(value: Self): Format = encodable.encoded(lambda(value))
