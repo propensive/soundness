@@ -1,0 +1,7 @@
+- lightweight syntax for expressing shell commands, e.g. `sh"ls"`
+- typeclasses define how different types are substituted into commands
+- compile-time checking of command syntax, with correct handling of quotes and substitutions
+- typeclass-based execution strategies for commands
+- shell command results may be interpreted as `String`, `Int`, `Unit` or streamed as `LazyList`
+- processes may be started synchronously or asynchronously
+- commands may be piped to other commands with the `|` operator, or applied like functions
