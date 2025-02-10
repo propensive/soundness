@@ -25,14 +25,13 @@ import nomenclature.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 import symbolism.*
 
 object LocalClasspath:
 
   given SystemProperties => LocalClasspath is Encodable in Text = _()
 
-  given (SystemProperties, Tactic[SystemPropertyError]) => Decoder[LocalClasspath] =
+  given (SystemProperties, Tactic[SystemPropertyError]) => LocalClasspath is Decodable in Text =
     classpath =>
       val entries: List[ClasspathEntry.Directory | ClasspathEntry.Jar] =
         classpath.cut(Properties.path.separator()).map: path =>
