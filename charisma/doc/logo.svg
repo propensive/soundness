@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120mm"
+   height="120mm"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg5"
+   inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
+   sodipodi:docname="logo.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview7"
+     pagecolor="#ffffff"
+     bordercolor="#111111"
+     borderopacity="1"
+     inkscape:showpageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="1"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     showgrid="false"
+     inkscape:zoom="0.84096521"
+     inkscape:cx="208.09422"
+     inkscape:cy="-136.74763"
+     inkscape:window-width="2248"
+     inkscape:window-height="1488"
+     inkscape:window-x="0"
+     inkscape:window-y="20"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1">
+    <inkscape:grid
+       type="xygrid"
+       id="grid686"
+       dotted="true"
+       originx="-49.999993"
+       originy="-80" />
+  </sodipodi:namedview>
+  <defs
+     id="defs2">
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient2254">
+      <stop
+         style="stop-color:#ffe253;stop-opacity:0.30855173;"
+         offset="0"
+         id="stop2250" />
+      <stop
+         style="stop-color:#ffd71f;stop-opacity:0;"
+         offset="1"
+         id="stop2252" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       id="linearGradient1142">
+      <stop
+         style="stop-color:#2d1032;stop-opacity:1;"
+         offset="0"
+         id="stop1138" />
+      <stop
+         style="stop-color:#003a7f;stop-opacity:1;"
+         offset="1"
+         id="stop1140" />
+    </linearGradient>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient1142"
+       id="linearGradient1144"
+       x1="70"
+       y1="190"
+       x2="153.56662"
+       y2="90"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(4.741211e-6)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient2254"
+       id="linearGradient2256"
+       x1="74.999985"
+       y1="175"
+       x2="141.0714"
+       y2="55.852337"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,0.94385596)" />
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2384">
+      <g
+         id="g2388">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2386"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2390">
+      <g
+         id="g2394"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2392"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2396">
+      <g
+         id="g2400"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2398"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2402">
+      <g
+         id="g2406"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2404"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2408">
+      <g
+         id="g2412"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2410"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2414">
+      <g
+         id="g2418"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2416"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2420">
+      <g
+         id="g2424"
+         transform="scale(-1)">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2422"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath2426">
+      <g
+         id="g2430">
+        <circle
+           style="fill:none;fill-opacity:1;stroke:#000000;stroke-width:0.1;stroke-opacity:1;stop-color:#000000"
+           id="circle2428"
+           cx="109.99999"
+           cy="140"
+           r="60" />
+      </g>
+    </clipPath>
+  </defs>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1"
+     transform="translate(-49.999992,-80)">
+    <g
+       id="g2440">
+      <circle
+         style="fill:url(#linearGradient1144);fill-opacity:1;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path790"
+         cx="109.99999"
+         cy="140"
+         r="60"
+         clip-path="url(#clipPath2426)" />
+      <circle
+         style="opacity:0.794675;fill:#ffcc00;fill-opacity:0.834923;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1691"
+         cx="-74.999985"
+         cy="-175"
+         r="5"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2396)" />
+      <circle
+         style="opacity:0.343305;fill:#ffcc00;fill-opacity:0.834923;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1691-4"
+         cx="-79.233261"
+         cy="-175"
+         r="5"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2390)" />
+      <circle
+         style="opacity:0.514955;fill:url(#linearGradient2256);fill-opacity:1;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path2248"
+         cx="108.94167"
+         cy="65.941643"
+         r="114.23969"
+         clip-path="url(#clipPath2384)" />
+      <circle
+         style="opacity:0.794675;fill:#ff0080;fill-opacity:0.576543;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1615"
+         cx="-115.29166"
+         cy="-145.29167"
+         r="10"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2420)" />
+      <circle
+         style="opacity:0.794675;fill:#0088ff;fill-opacity:0.576543;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1615-9"
+         cx="-104.70833"
+         cy="-134.70833"
+         r="10"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2414)" />
+      <circle
+         style="opacity:0.224052;fill:#ff0080;fill-opacity:0.576543;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1615-3"
+         cx="-119.525"
+         cy="-145.29167"
+         r="10"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2408)" />
+      <circle
+         style="opacity:0.224052;fill:#0088ff;fill-opacity:0.576543;stroke:none;stroke-width:0.1;stop-color:#000000"
+         id="path1615-9-1"
+         cx="-108.94167"
+         cy="-134.70833"
+         r="10"
+         transform="scale(-1)"
+         clip-path="url(#clipPath2402)" />
+    </g>
+  </g>
+</svg>
