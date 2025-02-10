@@ -1,0 +1,18 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target cataclysm/test
+
+repo propensive/gossamer
+repo propensive/serpentine
+
+project cataclysm
+  module core
+    sources  src/core
+    include  gossamer/core anticipation/css anticipation/html serpentine/core anticipation/color hypotenuse/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli cataclysm/core
+    main      cataclysm.Tests
+
