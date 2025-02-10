@@ -18,8 +18,8 @@ package xylophone
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import proscenium.*
-import spectacular.*
 import wisteria.*
 
 trait XmlDecoder[ValueType]:
@@ -33,7 +33,7 @@ object XmlDecoder extends Derivation[XmlDecoder]:
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
     if elements.length == 0 then raise(XmlReadError(), "".tt) else elements.head
 
-  given [ValueType](using decoder: Decoder[ValueType]): XmlDecoder[ValueType] = value =>
+  given [ValueType: Decodable in Text]: XmlDecoder[ValueType] = value =>
     value.absolve match
       case XmlAst.Element(_, XmlAst.Textual(text) :: _, _, _) +: _ => text.decode[ValueType]
 
