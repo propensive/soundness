@@ -1,0 +1,18 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target polyvinyl/test
+
+repo propensive/probably
+
+project polyvinyl
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   polyvinyl/core probably/cli
+    main      polyvinyl.Tests

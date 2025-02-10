@@ -1,0 +1,29 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/contextual
+repo propensive/larceny
+repo propensive/spectacular
+repo propensive/kaleidoscope
+repo propensive/hypotenuse
+
+target gossamer/core
+
+project gossamer
+  module core
+    compiler  scala
+    sources   src/core
+    include   hieroglyph/core contextual/core spectacular/core kaleidoscope/core hypotenuse/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    #coverage  gossamer/core
+    include   probably/cli gossamer/core larceny/plugin
+    main      gossamer.Tests
+
+  module bench
+    compiler  scala
+    sources   src/bench
+    include   probably/cli gossamer/core larceny/plugin probably/bench
+    main      gossamer.Benchmarks

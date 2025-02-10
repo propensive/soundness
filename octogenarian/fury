@@ -1,0 +1,26 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target octogenarian/test
+
+repo propensive/probably
+repo propensive/nettlesome
+repo propensive/gastronomy
+repo propensive/larceny
+repo propensive/guillotine
+repo propensive/galilei
+repo propensive/ambience
+repo propensive/enigmatic
+
+project octogenarian
+  module core
+    compiler  scala
+    sources   src/core
+    include   guillotine/core rudiments/core galilei/core ambience/core gastronomy/core nettlesome/core anticipation/url enigmatic/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   octogenarian/core probably/cli larceny/plugin
+    main      octogenarian.Tests
+    # coverage  octogenarian/core
+

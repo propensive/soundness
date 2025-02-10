@@ -1,0 +1,18 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/rudiments
+
+target contextual/core
+
+project contextual
+  module core
+    compiler  scala
+    sources   src/core
+    include   rudiments/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli contextual/core
+    main      contextual.Tests

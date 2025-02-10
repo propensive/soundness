@@ -1,0 +1,20 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target fulminate/core
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/symbolism
+
+project fulminate
+  module core
+    compiler  scala
+    sources   src/core
+    include   anticipation/css anticipation/http symbolism/core anticipation/print anticipation/http anticipation/log
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   fulminate/core probably/cli larceny/plugin
+    main      fulminate.Tests
+    # coverage  fulminate/core

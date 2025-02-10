@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+:<< "##"
+    ┌─────────────────────────────────────────────────────────┐
+    │ Anticipation                                            │
+    │ ‾‾‾‾‾‾‾‾‾‾‾‾                                            │
+    │ This file contains a Fury build definition.             │
+    │ Fury can be downloaded from https://fury.build/         │
+    │ or your can just run this file on the command line.     │
+    └─────────────────────────────────────────────────────────┘
+
+ecosystem vent 5 https://github.com/propensive/vent 191d64e599f246813910978251e1d7f5cb52b95d
+
+project anticipation
+  name         Anticipation
+  website      https://github.com/propensive/anticipation
+  license      apache-2
+  description  Minimalistic typeclass interfaces foreseen for downstream needs
+
+  module text
+    compiler  scala
+    include   symbolism/core
+    sources   src/text
+
+  module css
+    compiler  scala
+    include   anticipation/text
+    sources   src/css
+
+  module url
+    compiler  scala
+    include   anticipation/text
+    sources   src/url
+
+  module html
+    compiler  scala
+    include   anticipation/text
+    sources   src/html
+
+  module http
+    compiler  scala
+    include   anticipation/text
+    sources   src/http
+
+  module transport
+    compiler  scala
+    sources   src/transport
+
+  module color
+    compiler  scala
+    sources   src/color
+
+  module log
+    compiler  scala
+    include   anticipation/text
+    sources   src/log
+
+  module opaque
+    compiler  scala
+    sources   src/opaque
+
+  module path
+    compiler  scala
+    include   anticipation/text
+    sources   src/path
+
+  module print
+    compiler  scala
+    include   anticipation/text
+    sources   src/print
+
+  module time
+    compiler  scala
+    sources   src/time
+
+  module all
+    compiler  scala
+    include anticipation/css
+    include anticipation/html
+    include anticipation/text
+    include anticipation/http
+    include anticipation/path
+    include anticipation/time
+    include anticipation/url
+    include anticipation/color
+
+  stream latest
+    lifetime 7
+    guarantee functionality
+
+  stream stable
+    lifetime 180
+    guarantee source
+
+##
+code=H4sIAAAAAAAAA1WQzW6CUBCF9zzF5IagpuFH8KINwU1t04XGB5Au4P4IkQsUvdUmrPpEfbI+QwdITLubmZM558vhMTFf97tn12Epy4Urdf\
+vpXlRDIokKH3YSNbE5ScRhsYpo5C88hXMwzisFZaorfG0Br38lT/18fQ+3iaFjchQXp3dzMl2UnEQHsCUQUxJ467qpYHmNWwOb+lqVdcqL6gimJ\
+palTrxowW5Q5bhOr2gE9vsebNS7jum2BPu8hcQw9WzdG1oWy1XN4eE2+HeduBUXmM/AX7tcfLiVLsvoHviUC3bq03YbCnl6zqGWMLgcUJ8qTjFt\
+BPXXiXF3QGjUzlqNIblIOdgs8P/FzAjEENAwXPJMho9hOmfBMs2oz6nH53JJA+5nfQEj4kiVGD3Xdqi1B3vpW3McJBoohto8YvwCkFcY9LsBAAA=
+eval "$(echo $code | base64 -d | gzip -d)"

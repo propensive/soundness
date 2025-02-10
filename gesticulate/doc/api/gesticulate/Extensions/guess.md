@@ -1,0 +1,1 @@
+attempts to guess a file's media type from its file extension
