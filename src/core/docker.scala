@@ -17,6 +17,22 @@
 package embarcadero
 
 import anticipation.*
+import coaxial.*
+import contingency.*
+import eucalyptus.*
+import galilei.*
+import gossamer.*
+import jacinta.*
+import nettlesome.*
+import nomenclature.*
+import serpentine.*
+import spectacular.*
+import telekinesis.*
+import turbulence.*
+
+import jsonPrinters.indented
+
+import logging.silent
 
 case class ContainerImage(id: Text)
 
@@ -25,4 +41,10 @@ case class Container(id: Text)
 case class DockerEngine(port: Int)
 
 @main
-def run(): Unit = ()
+def run(): Unit =
+  import internetAccess.enabled
+  import strategies.throwUnsafely
+  val response = unsafely(DomainSocket(% / n"var" / n"run" / n"docker.sock")).at(t"/images/json").fetch()
+  import hieroglyph.*, charEncoders.utf8
+  println(response)
+  println(response.receive[Json].show)
