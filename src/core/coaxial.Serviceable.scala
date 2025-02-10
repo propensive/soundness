@@ -24,7 +24,6 @@ import rudiments.*
 import turbulence.*
 import vacuous.*
 
-import java.io as ji
 import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
