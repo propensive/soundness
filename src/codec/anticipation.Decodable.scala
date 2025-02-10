@@ -19,14 +19,14 @@ package anticipation
 import prepositional.*
 
 object Decodable:
-  given Bytes is Decodable in Bytes = (value, omit) => value
+  given Bytes is Decodable in Bytes = identity(_)
 
 trait Decodable:
   inline def decodable: this.type = this
   type Self
   type Format
 
-  def decode(value: Format, omit: Boolean): Self
+  def decode(value: Format): Self
 
   def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Format =
-    (value, omit) => lambda(decodable.decode(value, omit))
+    value => lambda(decodable.decode(value))
