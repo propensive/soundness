@@ -81,7 +81,7 @@ extension (bytes: Bytes)
     bytes.mutable(using Unsafe).map { byte => String.format("\\u%04x", byte.toInt).nn }
     . mkString.tt
 
-  def text(using decoder: CharDecoder): Text = decoder.decode(bytes)
+  def text(using decoder: CharDecoder): Text = decoder.decoded(bytes)
 
   // Printable Unicode Encoding
   def pue: Text =
