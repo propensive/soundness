@@ -19,10 +19,9 @@ package ethereal
 import anticipation.*
 import gossamer.*
 import prepositional.*
-import spectacular.*
 
 object CliInput:
-  given decoder: Decoder[CliInput] = text => valueOf(text.lower.capitalize.s)
+  given decoder: CliInput is Decodable in Text = text => valueOf(text.lower.capitalize.s)
   given encodable: CliInput is Encodable in Text = _.toString.tt.lower
 
 enum CliInput:

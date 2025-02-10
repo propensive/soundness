@@ -19,20 +19,20 @@ package ethereal
 import anticipation.*
 import exoskeleton.*
 import galilei.*
+import guillotine.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 import serpentine.*
 
 import language.experimental.pureFunctions
 
 case class DaemonService[BusType <: Matchable]
-   (pid:     Pid,
+   (pid:        Pid,
     shutdown:   () => Unit,
     cliInput:   CliInput,
-    script:    Path on Linux,
+    script:     Path on Linux,
     deliver:    BusType => Unit,
-    bus:     Stream[BusType],
+    bus:        Stream[BusType],
     scriptName: Text)
 extends ShellContext:
 

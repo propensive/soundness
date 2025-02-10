@@ -178,6 +178,7 @@ def cli[BusType <: Matchable](using executive: Executive)
           DaemonEvent.Exit(line().decode[Pid])
 
         case t"i" =>
+          import Decoder.int
           val cliInput: CliInput = if line() == t"p" then CliInput.Pipe else CliInput.Terminal
           val pid: Pid = Pid(line().decode[Int])
           val script: Text = line()
@@ -236,6 +237,8 @@ def cli[BusType <: Matchable](using executive: Executive)
 
             lazy val color: ColorDepth =
               import workingDirectories.systemProperty
+              import Decoder.int
+
               if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
               else ColorDepth
                     (safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1))
@@ -289,6 +292,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.standard
+      import Decoder.int
       given Message is Loggable = Log.route(Syslog(t"ethereal"))
 
       val socket: jn.ServerSocket = jn.ServerSocket(0)

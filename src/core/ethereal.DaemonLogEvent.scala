@@ -18,8 +18,8 @@ package ethereal
 
 import anticipation.*
 import fulminate.*
+import guillotine.*
 import profanity.*
-import rudiments.*
 
 enum DaemonLogEvent:
   case WriteExecutable(location: Text)

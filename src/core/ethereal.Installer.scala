@@ -109,6 +109,7 @@ object Installer:
         if safely(scriptPath.decode[Path on Linux]) == service.script && !force
         then Result.AlreadyOnPath(command, service.script.text)
         else
+          import Decoder.int
           val payloadSize: Memory = Memory(Properties.ethereal.payloadSize[Int]())
           val jarSize: Memory = Memory(Properties.ethereal.jarSize[Int]())
           val scriptFile: Path on Linux = service.script

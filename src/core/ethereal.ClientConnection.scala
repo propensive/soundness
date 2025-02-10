@@ -18,6 +18,7 @@ package ethereal
 
 import anticipation.*
 import contingency.*
+import guillotine.*
 import parasite.*
 import profanity.*
 import rudiments.*
