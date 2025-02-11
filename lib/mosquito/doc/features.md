@@ -1,0 +1,5 @@
+- representation of Euclidean vectors and matrices
+- provides many common linear algebraic operations
+- vectors and matrices are generically-typed
+- linear algebraic operations abstract over arithmetic operations
+- results are dependently-typed on inputs
