@@ -1,0 +1,6 @@
+- Parses fragments of Scala code using the Scala compiler
+- Takes a string and returns a `List` of simple tokens
+- Tokens represent newlines, spaces and content, for easy transformation into other formats, like HTML
+- Content includes metadata to indicate its nature
+- Erroneous content may also be parsed
+- Parsing is fast; a short fragment will typically take a few milliseconds
