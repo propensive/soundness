@@ -1,0 +1,20 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target diuretic/test
+
+repo propensive/anticipation
+repo propensive/probably
+
+project diuretic
+  module core
+    compiler  scala
+    sources   src/core
+    include   anticipation/path anticipation/url anticipation/time
+  
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli diuretic/core
+    main      diuretic.Tests
+
