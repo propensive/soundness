@@ -1,0 +1,16 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/gastronomy
+repo propensive/probably
+target enigmatic/test
+
+project enigmatic
+  module core
+    sources src/core
+    include gastronomy/core
+
+  module test
+    sources   src/test
+    main      enigmatic.Tests
+    include   enigmatic/core probably/cli
+    coverage  enigmatic/core
