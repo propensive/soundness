@@ -1,0 +1,20 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target hyperbole/core
+
+repo propensive/harlequin
+repo propensive/escapade
+repo propensive/escritoire
+repo propensive/dendrology
+repo propensive/probably
+
+project hyperbole
+  module core
+    sources src/core
+    include harlequin/core escapade/core escritoire/core dendrology/tree hieroglyph/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli hyperbole/core
+    main      hyperbole.Tests
