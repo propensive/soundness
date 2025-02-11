@@ -1,0 +1,30 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target harlequin/all
+repo propensive/kaleidoscope
+repo propensive/escapade
+repo propensive/gossamer
+repo propensive/punctuation
+repo propensive/anthology
+
+project harlequin
+  module core
+    sources  src/core
+    include  gossamer/core anthology/scala
+
+  module ansi
+    sources  src/ansi
+    include  harlequin/core escapade/core
+
+  module md
+    sources  src/md
+    include  harlequin/core punctuation/html
+
+  module all
+    include  harlequin/md harlequin/ansi
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli harlequin/core
+    main      harlequin.Tests
