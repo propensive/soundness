@@ -1,0 +1,27 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/acyclicity
+repo propensive/probably
+
+target dendrology/all
+
+project dendrology
+  module tree
+    compiler  scala
+    sources   src/tree
+    include   gossamer/core
+  
+  module dag
+    compiler  scala
+    sources   src/dag
+    include   gossamer/core acyclicity/core
+
+  module all
+    include  dendrology/dag dendrology/tree
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   dendrology/tree probably/cli dendrology/dag
+    main      dendrology.Tests
