@@ -1,0 +1,21 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/kaleidoscope
+repo propensive/contingency
+repo propensive/larceny
+
+target hieroglyph/core
+
+project hieroglyph
+  module core
+    compiler  scala
+    sources   src/core
+    include   kaleidoscope/core
+  
+  module test
+    compiler  scala
+    sources   src/test
+    main      hieroglyph.Tests
+    include   hieroglyph/core probably/cli larceny/plugin
+    #coverage  hieroglyph/core
