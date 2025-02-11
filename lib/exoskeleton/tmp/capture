@@ -1,0 +1,42 @@
+#!/bin/sh
+
+SHELL_ID="$1"
+KEYS="$2"
+
+source "etc/$SHELL_ID.env"
+
+cleanup() {
+  tmux delete-buffer -b buf 2> /dev/null > /dev/null
+  tmux kill-session -t exoskeleton 2> /dev/null > /dev/null
+}
+
+trap cleanup INT
+
+tmux new-session -x100 -y50 -s exoskeleton -d "$SHELL_CMD"
+tmux send-keys "${SET_PROMPT}" Enter
+tmux send-keys "${SET_PATH}" Enter
+tmux send-keys "${INIT}" Enter
+tmux send-keys "clear ; tmux wait-for -S command-finished" Enter
+tmux wait-for command-finished
+tmux clear-history
+tmux send-keys "$KEYS"
+
+tmux capture-pane -b buf -S -
+OLD="$(tmux show-buffer -b buf)"
+NEW="$OLD"
+tmux send-keys $TABS
+let COUNT=0
+while [ "$OLD" = "$NEW" ]; do
+  tmux capture-pane -b buf -S -
+  NEW="$(tmux show-buffer -b buf)"
+  sleep 0.01
+  let COUNT++
+  if [ "$COUNT" = "100" ]; then
+    cleanup
+    echo "[timed out]"
+    exit 0
+  fi
+done
+echo "$(tmux show-buffer -b buf)"
+
+cleanup
