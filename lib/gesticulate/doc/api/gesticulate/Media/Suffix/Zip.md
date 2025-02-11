@@ -1,0 +1,1 @@
+represents the `+zip` media type suffix
