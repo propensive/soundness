@@ -1,0 +1,23 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/cardinality
+repo propensive/digression
+repo propensive/contextual
+repo propensive/hypotenuse
+repo propensive/probably
+
+target iridescence/core
+
+project iridescence
+  module core
+    compiler  scala
+    sources   src/core
+    include   contextual/core anticipation/color hypotenuse/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   iridescence/core probably/cli probably/tolerance
+    main      iridescence.Tests
+    #coverage  iridescence/core
