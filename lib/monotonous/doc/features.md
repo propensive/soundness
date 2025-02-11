@@ -1,0 +1,4 @@
+- provides a simple and general mechanism for serialization and deserialization
+- supports binary, quaternary, octal, hexadecimal, BASE-32 and BASE-64
+- allows custom alphabets to be used (with custom padding, where appropriate)
+- optionally permits "tolerant" deserialization of equivalent characters, e.g. `1` and `l`, or `A` and `a`
