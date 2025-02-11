@@ -36,8 +36,7 @@ object CharDecoder:
   def unapply(name: Text)(using TextSanitizer): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
-class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer)
-extends Decodable:
+class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer):
   type Self = Text
   type Format = Bytes
 
