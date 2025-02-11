@@ -1,0 +1,1 @@
+whether the direction of the edge is significant; `true` if the edge is directional
