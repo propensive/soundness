@@ -17,6 +17,7 @@
 package ethereal
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 

@@ -1,5 +1,5 @@
 /*
-    Coaxial, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Spectacular, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,21 +14,12 @@
     and limitations under the License.
 */
 
-package coaxial
+package distillate
 
 import anticipation.*
-import distillate.*
-import gossamer.*
-import hieroglyph.*
-import prepositional.*
+import fulminate.*
 
-trait Ingressive:
-  type Self
-  def deserialize(message: Bytes): Self
+import language.experimental.pureFunctions
 
-object Ingressive:
-  given bytes: Bytes is Ingressive = identity(_)
-  given text: CharDecoder => Text is Ingressive = _.text
-
-  given decoder: [MessageType: Decodable in Text] => CharDecoder => MessageType is Ingressive =
-    _.text.decode[MessageType]
+case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
+extends Error(m"$text is not a valid $specializable")

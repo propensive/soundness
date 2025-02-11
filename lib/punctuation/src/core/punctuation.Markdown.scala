@@ -20,6 +20,7 @@ import scala.annotation.tailrec
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*

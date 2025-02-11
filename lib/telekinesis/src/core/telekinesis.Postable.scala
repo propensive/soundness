@@ -18,6 +18,7 @@ package telekinesis
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gesticulate.*
 import gossamer.*

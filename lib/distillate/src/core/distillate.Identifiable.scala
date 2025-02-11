@@ -1,5 +1,5 @@
 /*
-    Coaxial, version [unreleased]. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Spectacular, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,21 +14,18 @@
     and limitations under the License.
 */
 
-package coaxial
+package distillate
 
 import anticipation.*
-import distillate.*
-import gossamer.*
-import hieroglyph.*
-import prepositional.*
 
-trait Ingressive:
+object Identifiable:
+  def apply[IdentType](encoder: Text => Text, decoder: Text => Text): IdentType is Identifiable =
+    new Identifiable:
+      type Self = IdentType
+      def encode(text: Text): Text = encoder(text)
+      def decode(text: Text): Text = decoder(text)
+
+trait Identifiable:
   type Self
-  def deserialize(message: Bytes): Self
-
-object Ingressive:
-  given bytes: Bytes is Ingressive = identity(_)
-  given text: CharDecoder => Text is Ingressive = _.text
-
-  given decoder: [MessageType: Decodable in Text] => CharDecoder => MessageType is Ingressive =
-    _.text.decode[MessageType]
+  def encode(text: Text): Text
+  def decode(text: Text): Text

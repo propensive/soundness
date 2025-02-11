@@ -22,7 +22,7 @@ export rudiments
     place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, as,
     Irrefutable, Extractable, As, ###,
-    Exit, Pid, Quickstart, unit, waive, twin, triple, is, matchable, give, pipe,
+    Exit, Quickstart, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
     WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
     ter, unwind, at, Indexable, yet, Bijection, bijection, segment, Segmentable, Digit,

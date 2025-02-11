@@ -18,6 +18,7 @@ package cellulose
 
 import anticipation.*
 import denominative.*
+import distillate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
