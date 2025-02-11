@@ -1,0 +1,16 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/probably
+repo propensive/galilei
+target guillotine/core
+
+project guillotine
+  module core
+    sources  src/core
+    include  contextual/core anticipation/log contingency/core turbulence/core gossamer/core
+
+  module test
+    sources  src/test
+    include  probably/cli guillotine/core galilei/core
+    main     guillotine.Tests
+    #coverage guillotine/core
