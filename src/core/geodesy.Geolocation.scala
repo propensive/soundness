@@ -18,6 +18,7 @@ package geodesy
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import kaleidoscope.*
 import prepositional.*
@@ -40,7 +41,6 @@ object Geolocation:
 
   given decoder: Tactic[GeolocationError] => Geolocation is Decodable in Text =
     case r"geo:$latitude(-?[0-9]+(\.[0-9]+)?),$longitude(-?[0-9]+(\.[0-9]+)?)$more(.*)" =>
-      import Decoder.double
       val location =
         unsafely(Location(latitude.decode[Double].deg, longitude.decode[Double].deg))
 
