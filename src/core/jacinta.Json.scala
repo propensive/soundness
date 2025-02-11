@@ -25,6 +25,7 @@ import scala.collection.mutable as scm
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import hieroglyph.*
 import merino.*
