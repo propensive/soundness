@@ -17,6 +17,7 @@
 package serpentine
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
