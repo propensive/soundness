@@ -1,5 +1,0 @@
-- implementation of an easier-to-use Y-combinator method, `fix` with a recursion helper method, `recur`
-- typesafe and mutation-safe reimplementations of several `String` operations
-- `String` extractors for primitive types
-- `unit`, `only`, `twin` and `triple` convenience methods to make some code patterns slightly more concise
-- a typesafe `str""` string interpolator where all substitutions must be `String`s

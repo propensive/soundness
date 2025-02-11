@@ -1,1 +1,0 @@
-UUIDs for Scala

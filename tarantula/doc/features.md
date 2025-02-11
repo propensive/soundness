@@ -1,4 +1,0 @@
-- simulate keypresses and mouse clicks in a web browser
-- automatically launch Chrome or Firefox programmatically
-- uses the standard WebDriver protocol
-- intuitive, but typesafe syntax

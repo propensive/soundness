@@ -1,4 +1,0 @@
-- bare-bones JSON parsing
-- provides a single `parse` method
-- produces "raw" output, mostly as primitive types
-- optimized for performance

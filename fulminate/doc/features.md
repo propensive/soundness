@@ -1,3 +1,0 @@
-- rich representation of user-facing messages, particularly for errors
-- demarcation of fixed and variable parts of a message
-- provides a general-purpose `Error` type for immutable exception objects

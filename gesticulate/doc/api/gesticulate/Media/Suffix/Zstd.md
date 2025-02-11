@@ -1,1 +1,0 @@
-represents the `+zstd` media type suffix

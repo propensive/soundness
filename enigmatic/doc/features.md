@@ -1,5 +1,0 @@
-- symmetric encryption with AES
-- asymmetric encryption/decryption using RSA
-- signing with DSA
-- AES, RSA and DSA key generation
-- calculation of HMACs for SHA-256, SHA-1 and MD5

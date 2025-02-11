@@ -1,1 +1,0 @@
-a class which defines how an interpolated string can be interpreted at compiletime and evaluated at runtime

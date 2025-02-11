@@ -1,1 +1,0 @@
-represents the `+fastinfoset` media type suffix

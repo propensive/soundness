@@ -1,1 +1,0 @@
-Scala-ble Vector Graphics

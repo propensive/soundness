@@ -1,6 +1,0 @@
-- statically-checked representations of Media Types (a.k.a. MIME types)
-- uses a `media""` string interpolator, e.g. `media"text/plain"`
-- checks media types against the official IANA list at compiletime
-- supports arbitrary custom `x-`-, `vnd.`- and `prs.`-prefixed types
-- checks main media type (e.g. `text` or `image`), and suffixes (e.g. `+gzip` or `+json`)
-- supports media type parameters such as `charset=UTF-8`

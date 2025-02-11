@@ -1,1 +1,0 @@
-a media subtype in the standard tree, which will be printed without a prefix

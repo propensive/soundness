@@ -1,1 +1,0 @@
-Typesafe internationalization for Scala

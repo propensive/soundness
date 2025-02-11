@@ -1,5 +1,0 @@
-- defines eight general-purpose supplementary type combinators
-- type supplements are introduced with common English prepositions
-- provides an everyday language for expressing type members
-- supplementary types are optional, which makes them versatile
-- exact interpretation of supplementary types is context-dependent

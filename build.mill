@@ -57,7 +57,7 @@ trait BaseScalaModule extends ScalaModule {
 }
 
 trait SoundnessModule extends Module {
-  def millSourcePath = super.millSourcePath / "src"
+  def millSourcePath = super.millSourcePath / ".." / "lib" / super.millSourcePath.last / "src"
 }
 
 trait SoundnessSubModule extends BaseScalaModule with PublishModule {

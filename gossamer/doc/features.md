@@ -1,5 +1,0 @@
-- reimplements common methods on `String` with more typesafe variants
-- provides an implementation of the Minimum Edit Distance algorithm
-- convenient converters to common encodings like URL encodings and Punycode
-- implements a stricter `t""` interpolator for strings
-- implements the `txt""` interpolator to ignore spurious whitespace in strings which flow onto multiple lines

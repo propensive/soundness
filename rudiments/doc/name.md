@@ -1,1 +1,0 @@
-The word _rudiment_ is defined as, "the principle which lies at the bottom of any development; an unfinished beginning", which is apt for a library whose purpose is to provide such common functionality that it might lie at the start of many other libraries.

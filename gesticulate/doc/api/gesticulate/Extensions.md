@@ -1,1 +1,0 @@
-an object containing the data necessary to guess a file's media type by its filename extension

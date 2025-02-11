@@ -1,1 +1,0 @@
-the type of each annotation, a subtype of `:scala.annotation.StaticAnnotation`

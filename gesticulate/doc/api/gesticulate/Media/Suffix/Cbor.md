@@ -1,1 +1,0 @@
-represents the `+cbor` media type suffix

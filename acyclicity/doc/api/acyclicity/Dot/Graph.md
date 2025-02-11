@@ -1,1 +1,0 @@
-represents an undirected graph in the DOT language, where edges are not directional (or are bidirectional)

@@ -1,5 +1,0 @@
-- structurally compare different values of the same type
-- provides a recursive structural breakdown of differences between product types
-- provides a diff (using Myers' algorithm) between sequence types with different elements
-- presents results as an immutable datatype which can be rendered as a tabular tree of differences
-- diff sequences can be customized for more meaningful output

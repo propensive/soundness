@@ -1,4 +1,0 @@
-- prints data using Unicode box-drawing characters
-- supports multiline cells
-- cell contents may be left, right or centrally aligned
-- compact display for tables which don't include multiline contents

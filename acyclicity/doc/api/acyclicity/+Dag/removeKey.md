@@ -1,1 +1,0 @@
-removes an element from the `:Dag`

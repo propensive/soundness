@@ -1,5 +1,0 @@
-- parse and represent XML in Scala
-- statically check XML in `x""` interpolators
-- substitute standard and custom types (provided by typeclasses) into XML
-- automatically derive typeclasses to convert case classes and product types to and from XML
-- safe dynamic interface for accessing nested fields

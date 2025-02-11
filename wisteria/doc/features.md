@@ -1,8 +1,0 @@
- - derives typeclasses for case classes, case objects, sealed traits and enumerations
- - offers a lightweight but typesafe syntax for writing derivations avoiding complex macro code
- - builds upon Scala 3's built-in generic derivation
- - works with recursive and mutually-recursive definitions
- - supports parameterized ADTs (GADTs), including those in recursive types
- - supports both consumer and producer typeclass interfaces
- - fast at compiletime
- - generates performant runtime code, without unnecessary runtime allocations

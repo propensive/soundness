@@ -1,1 +1,0 @@
-Typesafe vector algebra

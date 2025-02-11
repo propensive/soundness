@@ -1,4 +1,0 @@
-- Implements the CoDL spec for Scala
-- Read and write CoDL
-- Support for reading and writing both Binary CoDL formats
-- Convert between CoDL and case classes

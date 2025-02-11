@@ -1,1 +1,0 @@
-the main group of media types starting with `image/`

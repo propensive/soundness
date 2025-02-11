@@ -1,1 +1,0 @@
-The logo shows a stylized pollen cell, the canonical body used to illustrate Brownian (i.e. random) motion.

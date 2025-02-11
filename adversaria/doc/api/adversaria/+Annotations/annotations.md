@@ -1,1 +1,0 @@
-the sequence of annotations of type `:A`

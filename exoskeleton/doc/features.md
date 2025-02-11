@@ -1,6 +1,0 @@
-- POSIX-style parameter parsing
-- unified programmatic tab-completions for `bash`, `zsh` and `fish`
-- easy to specify conditional tab-completions
-- functional API for application entry points
-- simple stream access to POSIX interrupts (signals)
-- easy installation of completion scripts for each shell

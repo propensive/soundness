@@ -1,5 +1,0 @@
-- simple interface for creating and running tasks
-- supports platform or virtual threads
-- asynchronous tasks form an intuitive hierarchy
-- safe hierarchical cancellation
-- ready for capture checking for improved resource safety

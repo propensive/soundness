@@ -1,5 +1,0 @@
-- simple API for most common filesystem operations
-- read from and write to files on disk with a variety of different types
-- simple streaming to and from disk with `LazyList`s
-- employs `IArray[Byte]` for fast, random-access, immutable chunking of byte data
-- encoding-aware operations involving `String`s

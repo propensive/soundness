@@ -1,1 +1,0 @@
-reads the full list of media types in the standard tree as a `:Set[Text]`

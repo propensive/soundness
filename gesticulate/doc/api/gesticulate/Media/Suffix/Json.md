@@ -1,1 +1,0 @@
-represents the `+json` media type suffix

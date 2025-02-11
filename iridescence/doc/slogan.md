@@ -1,1 +1,0 @@
-Sophisticated representation of color

@@ -1,5 +1,0 @@
-- decodes Scala encodings in stack traces
-- disambiguates between objects and types in stack frames
-- syntax highlights stack traces
-- tabulates stack traces to make them easier to read
-- introduces a `Codepoint` contextual value containing the sourcefile and line

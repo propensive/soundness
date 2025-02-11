@@ -1,1 +1,0 @@
-an object providing the `highlight` method for parsing Scala syntax for rendering with syntax highlighting
