@@ -1,0 +1,22 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target bitumen/core
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/fulminate
+repo propensive/symbolism
+repo propensive/vacuous
+repo propensive/wisteria
+repo propensive/serpentine
+repo propensive/bifurcate
+
+project bitumen
+  module core
+    compiler  scala
+    sources   src/core
+    include   bifurcate/core
+    include   serpentine/core
+    include   gossamer/core
+    include   turbulence/core
+
