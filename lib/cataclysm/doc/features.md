@@ -1,0 +1,5 @@
+- typesafe DSL for CSS
+- model stylesheets in Scala
+- use typed expressions for CSS attribute values
+- integration with [Honeycomb](https://github.com/propensive/honeycomb/) and [Scintillate](https://github.com/propensive/scintillate/)
+- write CSS selectors as Scala expressions
