@@ -1,0 +1,1 @@
+Simple generically-derived cryptographic digestion
