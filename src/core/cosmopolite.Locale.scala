@@ -17,6 +17,7 @@
 package cosmopolite
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 
