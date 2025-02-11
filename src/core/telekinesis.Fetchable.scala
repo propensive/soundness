@@ -30,7 +30,7 @@ object Fetchable:
       type Target = Origin["http" | "https"]
 
       def target(httpUrl: UrlType): Origin["http" | "https"] = httpUrl.origin
-      def text(httpUrl: UrlType): Text = httpUrl.pathText
+      def text(httpUrl: UrlType): Text = httpUrl.requestTarget
 
       def hostname(httpUrl: UrlType): Hostname = httpUrl.host.or:
         panic(m"The HTTP URL does not have a hostname")

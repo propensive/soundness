@@ -17,6 +17,7 @@
 package telekinesis
 
 import anticipation.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import nettlesome.*
@@ -59,8 +60,8 @@ object Cookie:
 
       . compact.join(t"; ")
 
-    given Cookie.Value is Encodable in ResponseHeader.Value = cookie =>
-      ResponseHeader.SetCookie(cookie.show)
+    given Cookie.Value is Encodable in HttpHeader = cookie =>
+      HttpHeader("Set-Cookie", cookie.show)
 
     given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
       response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
