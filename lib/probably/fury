@@ -1,0 +1,35 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+repo propensive/eucalyptus
+repo propensive/escritoire
+repo propensive/chiaroscuro
+repo propensive/gossamer
+repo propensive/ambience
+repo propensive/eucalyptus
+repo propensive/wisteria
+repo propensive/diuretic
+
+target probably/test
+
+project probably
+  module core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core chiaroscuro/core ambience/core probably/coverage turbulence/core eucalyptus/core
+
+  module cli
+    compiler  scala
+    sources   src/cli
+    include   probably/core escritoire/core
+
+  module coverage
+    compiler  scala
+    sources   src/coverage
+    include   gossamer/core dendrology/tree digression/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli probably/core probably/coverage
+    main      probably.Tests
