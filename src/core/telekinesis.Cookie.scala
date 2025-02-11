@@ -1,0 +1,96 @@
+/*
+    Telekinesis, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
+
+    The primary distribution site is: https://propensive.com/
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this
+    file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the
+    License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
+    either express or implied. See the License for the specific language governing permissions
+    and limitations under the License.
+*/
+
+package telekinesis
+
+import anticipation.*
+import fulminate.*
+import gossamer.*
+import nettlesome.*
+import prepositional.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
+import telekinesis.*
+import vacuous.*
+
+import scala.compiletime.*
+
+import java.text as jt
+
+object Cookie:
+  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+
+  // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
+  def apply[ValueType: {Encodable in Text, Decodable in Text}](using DummyImplicit)
+     [DurationType: GenericDuration]
+     (name:    Text,
+      domain:   Optional[Hostname]     = Unset,
+      expiry:   Optional[DurationType] = Unset,
+      secure:   Boolean                = false,
+      httpOnly: Boolean                = false,
+      path:    Optional[Text]         = Unset) =
+
+    new Cookie[ValueType]
+         (name, domain, expiry.let(DurationType.milliseconds(_)), secure, httpOnly, path)
+
+  object Value:
+    given Value is Showable = cookie =>
+      List
+       (t"${cookie.name}=${cookie.value}",
+        cookie.expiry.let { expiry => t"Max-Age=$expiry" },
+        cookie.domain.let { domain => t"Domain=$domain" },
+        cookie.path.let { path => t"Path=$path" },
+        if cookie.secure then t"Secure" else Unset,
+        if cookie.httpOnly then t"HttpOnly" else Unset)
+
+      . compact.join(t"; ")
+
+    given Cookie.Value is Encodable in ResponseHeader.Value = cookie =>
+      ResponseHeader.SetCookie(cookie.show)
+
+    given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
+      response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
+
+    given List[Cookie.Value] is Decodable in Text = value =>
+      value.cut(t"; ").flatMap:
+        _.cut(t"=", 2) match
+          case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
+          case _                => Nil
+
+
+  case class Value
+     (name:     Text,
+      value:    Text,
+      domain:   Optional[Text] = Unset,
+      path:     Optional[Text] = Unset,
+      expiry:   Optional[Long] = Unset,
+      secure:   Boolean        = false,
+      httpOnly: Boolean        = false)
+
+case class Cookie[ValueType: {Encodable in Text, Decodable in Text}]
+   (name:     Text,
+    domain:   Optional[Hostname],
+    expiry:   Optional[Long],
+    secure:   Boolean,
+    httpOnly: Boolean,
+    path:     Optional[Text]):
+
+  def apply(value: ValueType): Cookie.Value =
+    Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
+
+  inline def apply()(using HttpRequest): Optional[ValueType] =
+    summon[HttpRequest].textCookies.at(name).let(_.decode)
