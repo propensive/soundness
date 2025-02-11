@@ -1,0 +1,15 @@
+
+
+repo propensive/probably
+
+target gesticulate/core
+
+project gesticulate
+  module core
+    sources src/core
+    include gossamer/core anticipation/html turbulence/core
+
+  module test
+    sources  src/test
+    include  probably/cli gesticulate/core
+    main     gesticulate.Tests
