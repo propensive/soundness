@@ -1,0 +1,6 @@
+- pattern match strings against regular expressions
+- regular expressions can be written inline in patterns, anywhere a string could match
+- direct extraction of capturing groups in patterns
+- typed extraction (into `List`s or [Vacuous](https://github.com/propensive/vacuous/) `Optional`s) of variable-length capturing groups
+- static checking of regular expression syntax
+- simpler "glob" syntax is also provided
