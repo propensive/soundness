@@ -1,0 +1,27 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+target nettlesome/url
+
+repo propensive/probably
+repo propensive/hypotenuse
+repo propensive/larceny
+repo propensive/escapade
+repo propensive/serpentine
+
+project nettlesome
+  module core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core hypotenuse/core
+
+  module url
+    compiler  scala
+    sources   src/url
+    include   escapade/core serpentine/core nettlesome/core anticipation/html nomenclature/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   nettlesome/core probably/cli larceny/plugin nettlesome/url nettlesome/email
+    main      nettlesome.Tests
+    # coverage  nettlesome/core
