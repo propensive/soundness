@@ -1,0 +1,91 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target anticipation/all
+
+repo propensive/probably
+repo propensive/symbolism
+
+project anticipation
+  module text
+    compiler  scala
+    include   symbolism/core
+    sources   src/text
+
+  module opaque
+    compiler  scala
+    sources   src/opaque
+
+  module css
+    compiler  scala
+    include   anticipation/text
+    sources   src/css
+
+  module url
+    compiler  scala
+    include   anticipation/text
+    sources   src/url
+
+  module html
+    compiler  scala
+    include   anticipation/text
+    sources   src/html
+
+  module print
+    compiler  scala
+    include   anticipation/text
+    sources   src/print
+
+  module http
+    compiler  scala
+    include   anticipation/text
+    sources   src/http
+
+  module codec
+    compiler  scala
+    include   prepositional/core
+    include   anticipation/text
+    sources   src/codec
+
+  module transport
+    compiler  scala
+    sources   src/transport
+
+  module color
+    compiler  scala
+    sources   src/color
+
+  module log
+    compiler  scala
+    include   anticipation/text
+    sources   src/log
+
+  module path
+    compiler  scala
+    include   anticipation/text
+    sources   src/path
+
+  module time
+    compiler  scala
+    sources   src/time
+
+  module all
+    include anticipation/css
+    include anticipation/html
+    include anticipation/text
+    include anticipation/http
+    include anticipation/path
+    include anticipation/log
+    include anticipation/time
+    include anticipation/print
+    include anticipation/url
+    include anticipation/color
+    include anticipation/transport
+    include anticipation/codec
+    include anticipation/opaque
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli anticipation/all
+    main      anticipation.Tests
