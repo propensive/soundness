@@ -1,3 +1,3 @@
 package soundness
 
-export distillate.{Decodable, decode}
+export distillate.{Decodable, decode, Enumerable, Identifiable, NumberError}
