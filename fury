@@ -1,0 +1,23 @@
+# This is a buildfile for Fury or Wrath.
+# More information is available at: https://github.com/propensive/wrath/
+
+target aviation/core
+
+repo propensive/probably
+repo propensive/hypotenuse
+repo propensive/kaleidoscope
+repo propensive/quantitative
+
+project aviation
+  module core
+    compiler  scala
+    include   quantitative/core
+    sources   src/core
+
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   aviation/core probably/cli
+    main      aviation.Tests
+    # coverage  aviation/core
