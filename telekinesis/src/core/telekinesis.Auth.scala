@@ -18,6 +18,7 @@ package telekinesis
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
 import kaleidoscope.*

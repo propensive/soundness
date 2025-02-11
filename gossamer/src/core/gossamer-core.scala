@@ -18,6 +18,7 @@ package gossamer
 
 import anticipation.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import hieroglyph.*
 import hypotenuse.*

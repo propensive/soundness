@@ -21,6 +21,7 @@ import scala.compiletime.*
 import anticipation.*
 import contingency.*
 import denominative.*
+import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*

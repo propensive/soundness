@@ -18,6 +18,7 @@ package nettlesome
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniform
@@ -128,9 +129,7 @@ object Nettlesome:
       given encodable: TcpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
       given decoder: (Tactic[NumberError], Tactic[PortError]) => TcpPort is Decodable in Text =
-        text =>
-          import Decoder.int
-          apply(text.decode[Int])
+        text => apply(text.decode[Int])
 
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
@@ -143,7 +142,7 @@ object Nettlesome:
       given encodable: UdpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
       given decoder: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
-        text => apply(Decoder.int.decoded(text))
+        text => apply(text.decode[Int])
 
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
@@ -186,7 +185,6 @@ object Nettlesome:
 
   def tcpPort(context: Expr[StringContext])(using Quotes): Expr[TcpPort] =
     val portNumber: Int =
-      import Decoder.int
       haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{TcpPort.unsafe(${Expr(portNumber)})}
@@ -194,7 +192,6 @@ object Nettlesome:
 
   def udpPort(context: Expr[StringContext])(using Quotes): Expr[UdpPort] =
     val portNumber: Int =
-      import Decoder.int
       haltingly(context.valueOrAbort.parts.head.tt.decode[Int])
 
     if 1 <= portNumber <= 65535 then '{UdpPort.unsafe(${Expr(portNumber)})}

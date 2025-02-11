@@ -35,6 +35,9 @@ object Communicable:
   given (quotes: Quotes) => quotes.reflect.Term is Communicable = term => Message(term.show)
   given [ExprType] => Quotes => Expr[ExprType] is Communicable = tpe => Message(tpe.show)
 
+  given specializable: Specializable is Communicable = value =>
+    Message(value.getClass.nn.getName.nn.split("\\.").nn.last.nn.dropRight(1).toLowerCase.nn.tt)
+
   given listMessage: List[Message] is Communicable =
     messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 

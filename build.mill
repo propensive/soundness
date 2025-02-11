@@ -492,6 +492,12 @@ object dissonance extends SoundnessModule {
   }
 }
 
+object distillate extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(contingency.core, digression.core, inimitable.core, wisteria.core)
+  }
+}
+
 object diuretic extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.path, anticipation.url, anticipation.time)
@@ -663,7 +669,7 @@ object gesticulate extends SoundnessModule {
 
 object gossamer extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core)
+    def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
   }
 
   object test extends ProbablyTestModule {

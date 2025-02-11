@@ -21,11 +21,11 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import guillotine.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 import vacuous.*
 
 trait EnvironmentVariable[AliasType <: Label, +VariableType] extends Pure:
@@ -103,9 +103,7 @@ object EnvironmentVariable extends EnvironmentVariable2:
     PathType(_)
 
   given sshAgentPid: Tactic[NumberError] => EnvironmentVariable["sshAgentPid", Pid] =
-    text =>
-      import Decoder.int
-      Pid(text.decode[Int])
+    text => Pid(text.decode[Int])
 
   given sshAuthSock: [PathType: Instantiable across Paths from Text]
   =>    EnvironmentVariable["sshAuthSock", PathType] =
