@@ -18,16 +18,14 @@ package telekinesis
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import rudiments.*
-import spectacular.*
 
 object HttpHeaderDecoder:
   given text: HttpHeaderDecoder[Text] = identity(_)
 
   given memory: Tactic[NumberError] => HttpHeaderDecoder[Memory] =
-    value =>
-      import Decoder.int
-      Memory(value.decode[Int])
+    value => Memory(value.decode[Int])
 
 trait HttpHeaderDecoder[ValueType]:
   def decode(text: Text): ValueType

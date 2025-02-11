@@ -18,6 +18,7 @@ package xylophone
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import prepositional.*
 import proscenium.*
 import wisteria.*

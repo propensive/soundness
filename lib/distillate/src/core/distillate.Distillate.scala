@@ -14,14 +14,14 @@
     and limitations under the License.
 */
 
-package spectacular
+package distillate
 
 import scala.quoted.*
 
 import anticipation.*
 import proscenium.*
 
-object Spectacular:
+object Distillate:
   def enumerable[EnumType <: reflect.Enum: Type](using Quotes): Expr[EnumType is Enumerable] =
     import quotes.reflect.*
 
@@ -35,6 +35,5 @@ object Spectacular:
             ${  companion.absolve match
                   case '{ $companion: companionType } =>
                     val ref = TypeRepr.of[companionType].typeSymbol.declaredMethod("values").head
-                    companion.asTerm.select(ref).asExprOf[Array[EnumType]]
-            }.asInstanceOf[IArray[EnumType]]
-    }
+                    companion.asTerm.select(ref).asExprOf[Array[EnumType]]  }
+            . asInstanceOf[IArray[EnumType]]  }

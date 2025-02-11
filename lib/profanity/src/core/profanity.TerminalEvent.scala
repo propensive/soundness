@@ -17,6 +17,7 @@
 package profanity
 
 import anticipation.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import prepositional.*

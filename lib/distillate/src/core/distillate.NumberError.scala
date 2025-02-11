@@ -1,5 +1,5 @@
 /*
-    Rudiments, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Spectacular, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,17 +14,12 @@
     and limitations under the License.
 */
 
-package rudiments
-
-import language.experimental.captureChecking
+package distillate
 
 import anticipation.*
 import fulminate.*
-import prepositional.*
 
-object Pid:
-  given Pid is Communicable = pid => Message(pid.toString.tt)
-  given Pid is Encodable in Text = _.toString.tt
+import language.experimental.pureFunctions
 
-case class Pid(value: Long):
-  override def toString(): String = "\u21af"+value
+case class NumberError(text: Text, specializable: Specializable)(using Diagnostics)
+extends Error(m"$text is not a valid $specializable")

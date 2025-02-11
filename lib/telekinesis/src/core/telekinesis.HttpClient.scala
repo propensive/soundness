@@ -58,10 +58,9 @@ object HttpClient:
       val url = httpRequest.on(origin)
 
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
-      //Log.fine(HttpEvent.Request(PostType.preview(httpRequest.body)))
 
       val request: jnh.HttpRequest.Builder =
-        jnh.HttpRequest.newBuilder().nn.uri(jn.URI(url.show.s)).nn
+        jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
 
       val body = httpRequest.body match
         case Stream()      =>
