@@ -1,0 +1,26 @@
+# This is a Wrath buildfile. More information is available at: https://github.com/propensive/wrath/
+
+target quantitative/units
+
+repo propensive/probably
+repo propensive/larceny
+repo propensive/hypotenuse
+
+project quantitative
+  module core
+    compiler  scala
+    sources   src/core
+    include   gossamer/core hypotenuse/core anticipation/opaque anticipation/time
+
+  module units
+    compiler  scala
+    sources   src/units
+    include   quantitative/core
+
+  module test
+    compiler  scala
+    sources   src/test
+    include   probably/cli quantitative/units larceny/plugin
+    main      quantitative.Tests
+
+
