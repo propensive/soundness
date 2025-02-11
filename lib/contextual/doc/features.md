@@ -1,0 +1,5 @@
+- user-defined string interpolators
+- introduce compiletime failures on invalid values, such as `url"htpt://example.com"`
+- compiletime behavior can be defined on _literal_ parts of a string
+- runtime behavior can be defined on literal and interpolated parts of a string
+- types of interpolated values can be context-dependent
