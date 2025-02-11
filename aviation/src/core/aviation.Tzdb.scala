@@ -18,6 +18,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import kaleidoscope.*
 import proscenium.*
@@ -83,7 +84,6 @@ object Tzdb:
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
     def parseDay(lineNo: Int, month: MonthName, str: Text): MonthDate =
-      import Decoder.int
       try throwErrors:
         if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.skip(4).s))
         else if str.skip(3).keep(2) == t">="
@@ -134,7 +134,6 @@ object Tzdb:
 
     def parseRule(lineNo: Int, args: List[Text]): Tzdb.Entry.Rule = args match
       case name :: from :: to :: _ :: month :: day :: time :: save :: letters :: _ =>
-        import Decoder.int
         try unsafely:
           val end = to match
             case t"max"  => Int.MaxValue

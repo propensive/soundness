@@ -1,5 +1,5 @@
 /*
-    Anticipation, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
+    Spectacular, version 0.26.0. Copyright 2025 Jon Pretty, Propensive OÜ.
 
     The primary distribution site is: https://propensive.com/
 
@@ -14,19 +14,18 @@
     and limitations under the License.
 */
 
-package anticipation
+package distillate
 
-import prepositional.*
+import anticipation.*
 
-object Decodable:
-  given [ValueType] => ValueType is Decodable in ValueType = identity(_)
+object Identifiable:
+  def apply[IdentType](encoder: Text => Text, decoder: Text => Text): IdentType is Identifiable =
+    new Identifiable:
+      type Self = IdentType
+      def encode(text: Text): Text = encoder(text)
+      def decode(text: Text): Text = decoder(text)
 
-trait Decodable:
-  inline def decodable: this.type = this
+trait Identifiable:
   type Self
-  type Format
-
-  def decoded(value: Format): Self
-
-  def map[SelfType2](lambda: Self => SelfType2): SelfType2 is Decodable in Format =
-    value => lambda(decodable.decoded(value))
+  def encode(text: Text): Text
+  def decode(text: Text): Text

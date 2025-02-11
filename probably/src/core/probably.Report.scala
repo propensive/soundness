@@ -22,6 +22,7 @@ import chiaroscuro.*
 import contingency.*
 import dendrology.*
 import digression.*
+import distillate.*
 import escapade.*
 import escritoire.*, tableStyles.default, columnAttenuation.ignore
 import fulminate.*
@@ -222,7 +223,6 @@ class Report(using Environment):
           if s.count < 2 then e"" else s.maxTime
       )
 
-    import Decoder.int
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
 
     val summaryLines = lines.summaries

@@ -23,10 +23,10 @@ import scala.compiletime.ops.string.*
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
 import vacuous.*
 
 trait SystemProperty[NameType <: String, PropertyType]:
@@ -62,8 +62,8 @@ object SystemProperty:
 
     _.cut(systemProperties(t"path.separator").or(t":")).to(List).map(PathType(_))
 
-  given fileSeparator: SystemProperty["file.separator", Char] = Decoder.char.decoded(_)
-  given pathSeparator: SystemProperty["path.separator", Char] = Decoder.char.decoded(_)
+  given fileSeparator: SystemProperty["file.separator", Char] = _.decode[Char]
+  given pathSeparator: SystemProperty["path.separator", Char] = _.decode[Char]
   given lineSeparator: SystemProperty["line.separator", Text] = identity(_)
 
   given userName: SystemProperty["user.name", Text] = identity(_)

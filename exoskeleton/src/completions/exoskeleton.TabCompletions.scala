@@ -19,6 +19,7 @@ package exoskeleton
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
 import anticipation.*, filesystemApi.serpentinePath
 import contingency.*
+import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.{where as _, *}

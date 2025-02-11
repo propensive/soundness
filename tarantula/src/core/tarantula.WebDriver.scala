@@ -18,6 +18,7 @@ package tarantula
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gesticulate.*
 import gossamer.*
 import hallucination.*

@@ -18,6 +18,7 @@ package cellulose
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import vacuous.*

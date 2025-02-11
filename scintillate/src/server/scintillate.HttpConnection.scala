@@ -18,6 +18,7 @@ package scintillate
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gossamer.*
 import nettlesome.*
 import proscenium.*

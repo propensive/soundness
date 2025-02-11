@@ -18,6 +18,7 @@ package enigmatic
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import gastronomy.*
 import gossamer.*
 import monotonous.*
