@@ -1,0 +1,4 @@
+- capture a TTY terminal's individual keypresses
+- interprets standard keys and control keys
+- simple interactive line editor supporting standard keypresses
+- simple interactive navigable menu
