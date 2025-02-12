@@ -35,10 +35,12 @@ class StreamOutputStream() extends ji.OutputStream:
   def write(int: Int): Unit = buffer.append(int.toByte)
 
   override def close(): Unit = flush().also(chunks.stop())
-  override def write(bytes: Array[Byte]): Unit = chunks.put(bytes.immutable(using Unsafe))
+
+  override def write(bytes: Array[Byte]): Unit =
+    flush() yet chunks.put(bytes.immutable(using Unsafe))
 
   override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
-    chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
+    flush() yet chunks.put(bytes.slice(offset, offset + length).immutable(using Unsafe))
 
   override def flush(): Unit = if !buffer.isEmpty then
     chunks.put(buffer.toArray.immutable(using Unsafe))
