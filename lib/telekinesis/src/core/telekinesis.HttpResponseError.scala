@@ -17,23 +17,17 @@
 package telekinesis
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
-import wisteria.*
+import fulminate.*
+import proscenium.*
 
-import language.dynamics
+object HttpResponseError:
+    enum Reason:
+      case Expectation(expected: Char, found: Char)
+      case Status(value: Text)
 
-object QueryEncoder extends ProductDerivation[QueryEncoder]:
-  inline def join[DerivationType <: Product: ProductReflection]: QueryEncoder[DerivationType] =
-    fields(_):
-      [FieldType] => field => context.params(field).prefix(label)
+    given Reason is Communicable =
+      case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
+      case Reason.Status(value)                => m"the HTTP status code $value was invalid"
 
-    . reduce(_.append(_))
-
-  given text: QueryEncoder[Text] = string => Params(List((t"", string)))
-  given int: QueryEncoder[Int] = int => Params(List((t"", int.show)))
-  given params: QueryEncoder[Params] = identity(_)
-  given map[MapType <: Map[Text, Text]]: QueryEncoder[MapType] = map => Params(map.to(List))
-
-trait QueryEncoder[ValueType]:
-  def params(value: ValueType): Params
+case class HttpResponseError(reason: HttpResponseError.Reason)(using Diagnostics)
+extends Error(m"could not parse HTTP response because $reason")

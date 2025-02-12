@@ -20,6 +20,6 @@ import telekinesis.*
 
 object Unfulfilled:
   given [ContentType: Servable] => Unfulfilled[ContentType] is Servable = unfulfilled =>
-    ContentType.serve(unfulfilled.content).copy(status = HttpStatus.InternalServerError)
+    ContentType.serve(unfulfilled.content).copy(status = Http.InternalServerError)
 
 case class Unfulfilled[ContentType](content: ContentType)

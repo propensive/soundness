@@ -47,4 +47,4 @@ object Acceptable:
 
 trait Acceptable:
   type Self
-  def accept(request: HttpRequest): Self
+  def accept(request: Http.Request): Self

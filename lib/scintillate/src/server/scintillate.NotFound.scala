@@ -20,6 +20,6 @@ import telekinesis.*
 
 object NotFound:
   given [ContentType: Servable] => NotFound[ContentType] is Servable = notFound =>
-    ContentType.serve(notFound.content).copy(status = HttpStatus.NotFound)
+    ContentType.serve(notFound.content).copy(status = Http.NotFound)
 
 case class NotFound[ContentType](content: ContentType)

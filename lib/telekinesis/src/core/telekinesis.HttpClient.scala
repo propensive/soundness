@@ -36,7 +36,7 @@ import language.dynamics
 
 trait HttpClient:
   type Target
-  def request(request: HttpRequest, target: Target): HttpResponse logs HttpEvent
+  def request(request: Http.Request, target: Target): Http.Response logs HttpEvent
 
 object HttpClient:
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
@@ -44,16 +44,15 @@ object HttpClient:
   given Tactic[StreamError] => HttpClient onto DomainSocket = new HttpClient:
     type Target = DomainSocket
 
-    def request(request: HttpRequest, socket: DomainSocket)
-    :     HttpResponse logs HttpEvent =
+    def request(request: Http.Request, socket: DomainSocket): Http.Response logs HttpEvent =
 
-      unsafely(HttpResponse.parse(socket.request(request)))
+      unsafely(Http.Response.parse(socket.request(request)))
 
   given Tactic[TcpError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
     type Target = Origin["http" | "https"]
 
-    def request(httpRequest: HttpRequest, origin: Origin["http" | "https"])
-    :     HttpResponse logs HttpEvent =
+    def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+    :     Http.Response logs HttpEvent =
 
       val url = httpRequest.on(origin)
 
@@ -86,7 +85,7 @@ object HttpClient:
       request.header("User-Agent", "Telekinesis/1.0.0")
 
       httpRequest.textHeaders.each:
-        case HttpHeader(key, value) => request.header(key.s, value.s)
+        case Http.Header(key, value) => request.header(key.s, value.s)
 
       val response: jnh.HttpResponse[ji.InputStream] =
         import TcpError.Reason.*, Ssl.Reason.*
@@ -107,10 +106,10 @@ object HttpClient:
             case error                                   => abort(TcpError(Unknown))
           case error: ji.IOException                  => abort(TcpError(Unknown))
 
-      val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse:
+      val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
         abort(TcpError(TcpError.Reason.Unknown))
 
-      val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-        (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
+      val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+        (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
 
-      HttpResponse(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))
+      Http.Response(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))

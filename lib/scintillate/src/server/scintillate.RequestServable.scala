@@ -21,5 +21,5 @@ import parasite.*
 import telekinesis.*
 
 trait RequestServable:
-  def listen(handle: (connection: HttpConnection) ?=> HttpResponse)(using Monitor, Codicil)
+  def listen(handle: (connection: HttpConnection) ?=> Http.Response)(using Monitor, Codicil)
   :     HttpService logs HttpServerEvent

@@ -21,9 +21,9 @@ import fulminate.*
 import nettlesome.*
 
 enum HttpEvent:
-  case Response(status: HttpStatus)
+  case Response(status: Http.Status)
   case Request(preview: Text)
-  case Send(method: Http.Method, url: HttpUrl, headers: Seq[HttpHeader])
+  case Send(method: Http.Method, url: HttpUrl, headers: Seq[Http.Header])
 
 object HttpEvent:
   given HttpEvent is Communicable =
