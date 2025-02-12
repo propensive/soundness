@@ -53,7 +53,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
 
     val httpRequest = HttpRequest
      (method      = request.getMethod.nn.show.decode[Http.Method],
-      version     = HttpVersion.parse(request.getProtocol.nn.tt),
+      version     = Http.Version.parse(request.getProtocol.nn.tt),
       host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       target      = target,
       body        = streamBody(request),

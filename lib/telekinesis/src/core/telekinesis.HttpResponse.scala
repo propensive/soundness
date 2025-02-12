@@ -76,7 +76,7 @@ object HttpResponse:
     expect('/')
     conduit.next()
     conduit.seek(' ')
-    val version: HttpVersion = HttpVersion.parse(Ascii(conduit.save()).show)
+    val version: Http.Version = Http.Version.parse(Ascii(conduit.save()).show)
     conduit.next()
     conduit.mark()
     if conduit.datum < '1' || conduit.datum > '5' then
@@ -137,7 +137,7 @@ object HttpResponse:
     HttpResponse(version, status, headers.reverse, body)
 
 case class HttpResponse
-   (version: HttpVersion, status: Http.Status, textHeaders: List[HttpHeader], body: Stream[Bytes]):
+   (version: Http.Version, status: Http.Status, textHeaders: List[HttpHeader], body: Stream[Bytes]):
 
   def successBody: Optional[Stream[Bytes]] =
     body.provided(status.category == Http.Status.Category.Successful)

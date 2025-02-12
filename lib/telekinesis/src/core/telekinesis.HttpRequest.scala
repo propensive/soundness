@@ -72,7 +72,7 @@ object HttpRequest:
       append(t" ")
       append(request.target)
       append(t" ")
-      append(HttpVersion.showable.text(request.version))
+      append(Http.Version.showable.text(request.version))
       newline()
       append(t"Host: ")
       append(request.host.show)
@@ -96,7 +96,7 @@ object HttpRequest:
 
 case class HttpRequest
    (method:      Http.Method,
-    version:     HttpVersion,
+    version:     Http.Version,
     host:        Hostname,
     target:      Text,
     textHeaders: List[HttpHeader],

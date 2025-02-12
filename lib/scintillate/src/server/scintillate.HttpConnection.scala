@@ -44,7 +44,7 @@ object HttpConnection:
 
       . to(List)
 
-    val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
+    val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 
     val host = unsafely:
        Hostname.parse:

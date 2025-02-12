@@ -25,7 +25,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import telekinesis.*
 import vacuous.*
 
 import scala.compiletime.*
