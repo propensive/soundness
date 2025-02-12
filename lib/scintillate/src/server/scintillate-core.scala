@@ -38,14 +38,14 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
   connection.headers.authorization match
     case List(Auth.Basic(username, password)) =>
       if validate(username, password) then response
-      else HttpResponse(1.1, HttpStatus.Forbidden, Nil, Stream())
+      else HttpResponse(1.1, Http.Forbidden, Nil, Stream())
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
 
       HttpResponse
        (1.1,
-        HttpStatus.Unauthorized,
+        Http.Unauthorized,
         List(HttpHeader(ResponseHeader.WwwAuthenticate.show, auth)),
         Stream())
 

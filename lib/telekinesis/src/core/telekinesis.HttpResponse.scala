@@ -45,7 +45,7 @@ extends Error(m"could not parse HTTP response because $reason")
 object HttpResponse:
   given readable: Tactic[HttpError] => HttpResponse is Readable by Bytes = response =>
     val body = response.status.category match
-      case HttpStatus.Category.Successful => response.body
+      case Http.Status.Category.Successful => response.body
 
       case _ =>
         raise(HttpError(response.status, response.textHeaders), response.body)
@@ -101,7 +101,7 @@ object HttpResponse:
     conduit.next()
     expect(' ')
 
-    val status = HttpStatus.unapply(code).optional.or:
+    val status = Http.Status.unapply(code).optional.or:
       abort(HttpResponseError(HttpResponseError.Reason.Status(code.toString.tt)))
 
     conduit.seek('\r')
@@ -137,10 +137,10 @@ object HttpResponse:
     HttpResponse(version, status, headers.reverse, body)
 
 case class HttpResponse
-   (version: HttpVersion, status: HttpStatus, textHeaders: List[HttpHeader], body: Stream[Bytes]):
+   (version: HttpVersion, status: Http.Status, textHeaders: List[HttpHeader], body: Stream[Bytes]):
 
   def successBody: Optional[Stream[Bytes]] =
-    body.provided(status.category == HttpStatus.Category.Successful)
+    body.provided(status.category == Http.Status.Category.Successful)
 
   def receive[BodyType: Receivable as receivable]: BodyType = receivable.read(this)
 

@@ -107,7 +107,7 @@ object HttpClient:
             case error                                   => abort(TcpError(Unknown))
           case error: ji.IOException                  => abort(TcpError(Unknown))
 
-      val status2: HttpStatus = HttpStatus.unapply(response.statusCode()).getOrElse:
+      val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
         abort(TcpError(TcpError.Reason.Unknown))
 
       val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:

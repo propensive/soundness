@@ -41,7 +41,7 @@ object Receivable:
     response.successBody.let(_.read[Bytes].utf8).let(ContentType(_)).lest:
       HttpError(response.status, response.textHeaders)
 
-  given httpStatus: HttpStatus is Receivable = _.status
+  given httpStatus: Http.Status is Receivable = _.status
 
 trait Receivable:
   type Self

@@ -29,13 +29,13 @@ object Servable:
      (lambda: ResponseType => Stream[Bytes])
   :     ResponseType is Servable = response =>
     val headers = List(HttpHeader(ResponseHeader.ContentType.header, mediaType(response).show))
-    HttpResponse(1.1, HttpStatus.Ok, headers, lambda(response))
+    HttpResponse(1.1, Http.Ok, headers, lambda(response))
 
   given content: Content is Servable:
     def serve(content: Content): HttpResponse =
       val headers = List(HttpHeader(ResponseHeader.ContentType.header, content.media.show))
 
-      HttpResponse(1.1, HttpStatus.Ok, headers, content.stream)
+      HttpResponse(1.1, Http.Ok, headers, content.stream)
 
   given bytes: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
   =>    ResponseType is Servable =
@@ -50,12 +50,12 @@ object Servable:
         val headers =
           List(HttpHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
 
-        HttpResponse(1.1, HttpStatus.Ok, headers, Stream(encodable.encode(value)))
+        HttpResponse(1.1, Http.Ok, headers, Stream(encodable.encode(value)))
       case given (ValueType is Readable by Bytes)       => value =>
         val headers =
           List(HttpHeader(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
 
-        HttpResponse(1.1, HttpStatus.Ok, headers, value.stream[Bytes])
+        HttpResponse(1.1, Http.Ok, headers, value.stream[Bytes])
 
 trait Servable:
   type Self

@@ -21,6 +21,6 @@ import fulminate.*
 
 import language.dynamics
 
-case class HttpError(status: HttpStatus, headers: List[HttpHeader])
+case class HttpError(status: Http.Status, headers: List[HttpHeader])
    (using Diagnostics)
 extends Error(m"the HTTP request failed with status $status")

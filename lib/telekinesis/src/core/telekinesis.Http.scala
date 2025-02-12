@@ -22,7 +22,9 @@ import fulminate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
+import vacuous.*
 
 import language.dynamics
 
@@ -68,3 +70,78 @@ object Http:
   case object Options extends Method(false)
   case object Trace extends Method(false)
   case object Patch extends Method(false)
+
+  object Status:
+    private lazy val all: Map[Int, Status] =
+      values.immutable(using Unsafe).bi.map(_.code -> _).to(Map)
+
+    def unapply(code: Int): Option[Status] = all.get(code)
+
+    given Status is Communicable = status => m"${status.code} (${status.description})"
+
+    enum Category:
+      case Informational, Successful, Redirection, ClientError, ServerError
+
+  enum Status(val code: Int, val description: Text):
+    case Continue                      extends Status(100, t"Continue")
+    case SwitchingProtocols            extends Status(101, t"Switching Protocols")
+    case EarlyHints                    extends Status(103, t"Early Hints")
+    case Ok                            extends Status(200, t"OK")
+    case Created                       extends Status(201, t"Created")
+    case Accepted                      extends Status(202, t"Accepted")
+    case NonAuthoritativeInformation   extends Status(203, t"Non-Authoritative Information")
+    case NoContent                     extends Status(204, t"No Content")
+    case ResetContent                  extends Status(205, t"Reset Content")
+    case PartialContent                extends Status(206, t"Partial Content")
+    case MultipleChoices               extends Status(300, t"Multiple Choices")
+    case MovedPermanently              extends Status(301, t"Moved Permanently")
+    case Found                         extends Status(302, t"Found")
+    case SeeOther                      extends Status(303, t"See Other")
+    case NotModified                   extends Status(304, t"Not Modified")
+    case TemporaryRedirect             extends Status(307, t"Temporary Redirect")
+    case PermanentRedirect             extends Status(308, t"Permanent Redirect")
+    case BadRequest                    extends Status(400, t"Bad Request")
+    case Unauthorized                  extends Status(401, t"Unauthorized")
+    case PaymentRequired               extends Status(402, t"Payment Required")
+    case Forbidden                     extends Status(403, t"Forbidden")
+    case NotFound                      extends Status(404, t"Not Found")
+    case MethodNotAllowed              extends Status(405, t"Method Not Allowed")
+    case NotAcceptable                 extends Status(406, t"Not Acceptable")
+    case ProxyAuthenticationRequired   extends Status(407, t"Proxy Authentication Required")
+    case RequestTimeout                extends Status(408, t"Request Timeout")
+    case Conflict                      extends Status(409, t"Conflict")
+    case Gone                          extends Status(410, t"Gone")
+    case LengthRequired                extends Status(411, t"Length Required")
+    case PreconditionFailed            extends Status(412, t"Precondition Failed")
+    case PayloadTooLarge               extends Status(413, t"Payload Too Large")
+    case UriTooLong                    extends Status(414, t"URI Too Long")
+    case UnsupportedMediaType          extends Status(415, t"Unsupported Media Type")
+    case RangeNotSatisfiable           extends Status(416, t"Range Not Satisfiable")
+    case ExpectationFailed             extends Status(417, t"Expectation Failed")
+    case UnprocessableEntity           extends Status(422, t"Unprocessable Entity")
+    case TooEarly                      extends Status(425, t"Too Early")
+    case UpgradeRequired               extends Status(426, t"Upgrade Required")
+    case PreconditionRequired          extends Status(428, t"Precondition Required")
+    case TooManyRequests               extends Status(429, t"Too Many Requests")
+    case RequestHeaderFieldsTooLarge   extends Status(431, t"Request Header Fields Too Large")
+    case UnavailableForLegalReasons    extends Status(451, t"Unavailable For Legal Reasons")
+    case InternalServerError           extends Status(500, t"Internal Server Error")
+    case NotImplemented                extends Status(501, t"Not Implemented")
+    case BadGateway                    extends Status(502, t"Bad Gateway")
+    case ServiceUnavailable            extends Status(503, t"Service Unavailable")
+    case GatewayTimeout                extends Status(504, t"Gateway Timeout")
+    case HttpVersionNotSupported       extends Status(505, t"HTTP Version Not Supported")
+    case VariantAlsoNegotiates         extends Status(506, t"Variant Also Negotiates")
+    case InsufficientStorage           extends Status(507, t"Insufficient Storage")
+    case LoopDetected                  extends Status(508, t"Loop Detected")
+    case NotExtended                   extends Status(510, t"Not Extended")
+    case NetworkAuthenticationRequired extends Status(511, t"Network Authentication Required")
+
+    def category: Category = (code/100).absolve match
+      case 1 => Http.Category.Informational
+      case 2 => Http.Category.Successful
+      case 3 => Http.Category.Redirection
+      case 4 => Http.Category.ClientError
+      case 5 => Http.Category.ServerError
+
+  export Status.*
