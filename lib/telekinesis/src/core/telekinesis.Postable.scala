@@ -32,12 +32,7 @@ import vacuous.*
 
 import language.dynamics
 
-trait FallbackPostable:
-  given [QueryType] => (serializer: QueryEncoder[QueryType]) => QueryType is Postable =
-    Postable(media"application/x-www-form-urlencoded", value =>
-        Stream(serializer.params(value).queryString.bytes(using charEncoders.utf8)))
-
-object Postable extends FallbackPostable:
+object Postable:
   def apply[ResponseType](mediaType0: MediaType, stream0: ResponseType => Stream[Bytes])
   :     ResponseType is Postable =
     new Postable:
