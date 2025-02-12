@@ -44,12 +44,12 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
 
-    val headers: List[HttpHeader] =
+    val headers: List[Http.Header] =
       request.getHeaderNames.nn.asScala.to(List).map: key =>
         key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
 
       . flatMap:
-          case (key, values) => values.map(HttpHeader(key, _))
+          case (key, values) => values.map(Http.Header(key, _))
 
     val httpRequest = Http.Request
      (method      = request.getMethod.nn.show.decode[Http.Method],
@@ -63,7 +63,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
       servletResponse.setStatus(response.status.code)
 
       response.textHeaders.each:
-        case HttpHeader(key, value) =>
+        case Http.Header(key, value) =>
           servletResponse.addHeader(key.s, value.s)
 
       val out = servletResponse.getOutputStream.nn

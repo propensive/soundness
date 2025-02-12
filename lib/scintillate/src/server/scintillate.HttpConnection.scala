@@ -36,11 +36,11 @@ object HttpConnection:
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
     val method = exchange.getRequestMethod.nn.show.decode[Http.Method]
 
-    val headers: List[HttpHeader] =
+    val headers: List[Http.Header] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
         pair.absolve match
           case (key, values) => values.map: value =>
-            HttpHeader(key, value.tt)
+            Http.Header(key, value.tt)
 
       . to(List)
 
@@ -74,13 +74,13 @@ object HttpConnection:
 
     def respond(response: Http.Response): Unit =
       response.textHeaders.each:
-        case HttpHeader(key, value) =>
+        case Http.Header(key, value) =>
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = response.body match
         case Stream()     => -1
         case Stream(data) => data.length
-        case _              => 0
+        case _            => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
 

@@ -27,7 +27,7 @@ object Redirect:
     new Redirect(location.generic, permanent)
 
   given redirect: Redirect is Servable = redirect =>
-    val headers = List(HttpHeader(ResponseHeader.Location.header, redirect.location))
+    val headers = List(Http.Header(ResponseHeader.Location.header, redirect.location))
     val status = if redirect.permanent then Http.MovedPermanently else Http.Found
     Http.Response(1.1, status, headers, Stream())
 

@@ -31,9 +31,9 @@ object Telekinesis:
   def expand
      (todo:   Seq[Expr[Any]],
       method: Optional[Expr[Http.Method]] = Unset,
-      done:   List[Expr[HttpHeader]]     = Nil)
+      done:   List[Expr[Http.Header]]     = Nil)
      (using Quotes)
-  :     (Optional[Expr[Http.Method]], Expr[Seq[HttpHeader]]) =
+  :     (Optional[Expr[Http.Method]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
@@ -47,7 +47,7 @@ object Telekinesis:
           TypeRepr.of[keyType].absolve match
             case ConstantType(StringConstant(key)) =>
               val header =
-                '{HttpHeader(${Expr(key)}.tt.uncamel.kebab, $capitate.encode($value))}
+                '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $capitate.encode($value))}
 
               expand(tail, method, header :: done)
 
@@ -70,7 +70,7 @@ object Telekinesis:
           val typeName = TypeRepr.of[valueType].show
           halt(m"the header $name cannot take a value of type $typeName")
 
-        val header = '{HttpHeader($key.tt.uncamel.kebab, $capitate.encode($value))}
+        val header = '{Http.Header($key.tt.uncamel.kebab, $capitate.encode($value))}
         expand(tail, method, header :: done)
 
       case '{ $value: valueType } +: tail =>
@@ -104,7 +104,7 @@ object Telekinesis:
             val host: Hostname = $submit.host
             val body = $postable.stream($payload)
             val path = $submit.originForm
-            val contentType = HttpHeader("content-type".tt, $postable.mediaType($payload).show)
+            val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
 
             val request =
               Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), body)

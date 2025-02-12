@@ -85,7 +85,7 @@ object HttpClient:
       request.header("User-Agent", "Telekinesis/1.0.0")
 
       httpRequest.textHeaders.each:
-        case HttpHeader(key, value) => request.header(key.s, value.s)
+        case Http.Header(key, value) => request.header(key.s, value.s)
 
       val response: jnh.HttpResponse[ji.InputStream] =
         import TcpError.Reason.*, Ssl.Reason.*
@@ -109,7 +109,7 @@ object HttpClient:
       val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
         abort(TcpError(TcpError.Reason.Unknown))
 
-      val headers2: List[HttpHeader] = response.headers.nn.map().nn.asScala.to(List).flatMap:
-        (key, values) => values.asScala.map { value => HttpHeader(key.tt, value.tt) }
+      val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
+        (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }
 
       Http.Response(1.1, status2, headers2, unsafely(response.body().nn.stream[Bytes]))

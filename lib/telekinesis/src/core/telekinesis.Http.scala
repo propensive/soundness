@@ -55,6 +55,8 @@ object Http:
 
   type Version = 0.9 | 1.0 | 1.1 | 2.0 | 3.0
 
+  case class Header(key: Text, value: Text)
+
   object Method:
     given formmethod: ("formmethod" is GenericHtmlAttribute[Method]):
       def name: Text = t"formmethod"
@@ -234,7 +236,7 @@ object Http:
       version:     Http.Version,
       host:        Hostname,
       target:      Text,
-      textHeaders: List[HttpHeader],
+      textHeaders: List[Http.Header],
       body:        Stream[Bytes]):
 
     def on[SchemeType <: "http" | "https"](origin: Origin[SchemeType]): HttpUrl =
@@ -310,7 +312,7 @@ object Http:
 
       body.stream
 
-    def apply[ServableType: Servable](servable: ServableType, headers: HttpHeader*): Response =
+    def apply[ServableType: Servable](servable: ServableType, headers: Http.Header*): Response =
 
       val response = ServableType.serve(servable)
       response.copy(textHeaders = headers.to(List) ++ response.textHeaders)
@@ -365,7 +367,7 @@ object Http:
       conduit.next()
       expect('\n')
 
-      def readHeaders(headers: List[HttpHeader]): List[HttpHeader] =
+      def readHeaders(headers: List[Http.Header]): List[Http.Header] =
         conduit.next()
         conduit.mark()
         if conduit.datum == '\r' then
@@ -384,7 +386,7 @@ object Http:
           val value = Ascii(conduit.save()).show
           conduit.next()
           expect('\n')
-          readHeaders(HttpHeader(header, value) :: headers)
+          readHeaders(Http.Header(header, value) :: headers)
 
       val headers = readHeaders(Nil)
 
@@ -394,7 +396,10 @@ object Http:
       Response(version, status, headers.reverse, body)
 
   case class Response
-     (version: Http.Version, status: Http.Status, textHeaders: List[HttpHeader], body: Stream[Bytes]):
+     (version:     Http.Version,
+      status:      Http.Status,
+      textHeaders: List[Http.Header],
+      body:        Stream[Bytes]):
 
     def successBody: Optional[Stream[Bytes]] =
       body.provided(status.category == Http.Status.Category.Successful)
@@ -409,6 +414,6 @@ object Http:
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
     @targetName("add")
-    infix def + [ValueType: Encodable in HttpHeader](value: ValueType): Response =
-      val header: HttpHeader = ValueType.encode(value)
+    infix def + [ValueType: Encodable in Http.Header](value: ValueType): Response =
+      val header: Http.Header = ValueType.encode(value)
       copy(textHeaders = header :: textHeaders)

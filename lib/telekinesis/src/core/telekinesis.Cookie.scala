@@ -59,11 +59,11 @@ object Cookie:
 
       . compact.join(t"; ")
 
-    given Cookie.Value is Encodable in HttpHeader = cookie =>
-      HttpHeader("Set-Cookie", cookie.show)
+    given Cookie.Value is Encodable in Http.Header = cookie =>
+      Http.Header("Set-Cookie", cookie.show)
 
     given Http.Response is Addable by Cookie.Value into Http.Response = (response, cookie) =>
-      response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
+      response.copy(textHeaders = Http.Header(t"set-cookie", cookie.show) :: response.textHeaders)
 
     given List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:
