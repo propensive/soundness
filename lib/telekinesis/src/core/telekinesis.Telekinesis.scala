@@ -31,9 +31,9 @@ object Telekinesis:
   def expand
      (todo:   Seq[Expr[Any]],
       method: Optional[Expr[Http.Method]] = Unset,
-      done:   List[Expr[HttpHeader]]     = Nil)
+      done:   List[Expr[Http.Header]]     = Nil)
      (using Quotes)
-  :     (Optional[Expr[Http.Method]], Expr[Seq[HttpHeader]]) =
+  :     (Optional[Expr[Http.Method]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
@@ -47,7 +47,7 @@ object Telekinesis:
           TypeRepr.of[keyType].absolve match
             case ConstantType(StringConstant(key)) =>
               val header =
-                '{HttpHeader(${Expr(key)}.tt.uncamel.kebab, $capitate.encode($value))}
+                '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $capitate.encode($value))}
 
               expand(tail, method, header :: done)
 
@@ -70,7 +70,7 @@ object Telekinesis:
           val typeName = TypeRepr.of[valueType].show
           halt(m"the header $name cannot take a value of type $typeName")
 
-        val header = '{HttpHeader($key.tt.uncamel.kebab, $capitate.encode($value))}
+        val header = '{Http.Header($key.tt.uncamel.kebab, $capitate.encode($value))}
         expand(tail, method, header :: done)
 
       case '{ $value: valueType } +: tail =>
@@ -88,7 +88,7 @@ object Telekinesis:
       postable: Expr[PayloadType is Postable],
       client:   Expr[HttpClient onto TargetType])
      (using Quotes)
-  :     Expr[HttpResponse] =
+  :     Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>
@@ -104,10 +104,10 @@ object Telekinesis:
             val host: Hostname = $submit.host
             val body = $postable.stream($payload)
             val path = $submit.originForm
-            val contentType = HttpHeader("content-type".tt, $postable.mediaType($payload).show)
+            val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
 
             val request =
-              HttpRequest($method, 1.1, host, path, contentType :: $headers.to(List), body)
+              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), body)
 
             $client.request(request, $submit.target)  }
 
@@ -118,7 +118,7 @@ object Telekinesis:
       loggable: Expr[HttpEvent is Loggable],
       client:   Expr[HttpClient onto TargetType])
      (using Quotes)
-  :     Expr[HttpResponse] =
+  :     Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>
@@ -132,6 +132,6 @@ object Telekinesis:
             given HttpEvent is Loggable = $loggable
 
             val path = $fetch.originForm
-            val request = HttpRequest($method, 1.1, $fetch.host, path, $headers.to(List), Stream())
+            val request = Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), Stream())
 
             $client.request(request, $fetch.target)  }

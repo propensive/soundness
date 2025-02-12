@@ -31,12 +31,12 @@ case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostnam
             loggable: HttpEvent is Loggable,
             postable: Unit is Postable,
             client:   HttpClient onto TargetType)
-  :     HttpResponse =
+  :     Http.Response =
 
     ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
 
   inline def applyDynamic[PayloadType](id: "apply")(inline headers: Any*)
      (using online: Online, loggable: HttpEvent is Loggable, client: HttpClient onto TargetType)
-  :     HttpResponse =
+  :     Http.Response =
 
     ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}

@@ -30,7 +30,7 @@ import vacuous.*
 
 import jakarta.servlet as js, js.http as jsh
 
-open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.HttpServlet:
+open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
@@ -44,26 +44,26 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
     val query = Optional(request.getQueryString).let(_.tt)
     val target = uri+query.let(t"?"+_).or(t"")
 
-    val headers: List[HttpHeader] =
+    val headers: List[Http.Header] =
       request.getHeaderNames.nn.asScala.to(List).map: key =>
         key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
 
       . flatMap:
-          case (key, values) => values.map(HttpHeader(key, _))
+          case (key, values) => values.map(Http.Header(key, _))
 
-    val httpRequest = HttpRequest
+    val httpRequest = Http.Request
      (method      = request.getMethod.nn.show.decode[Http.Method],
-      version     = HttpVersion.parse(request.getProtocol.nn.tt),
+      version     = Http.Version.parse(request.getProtocol.nn.tt),
       host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
       target      = target,
       body        = streamBody(request),
       textHeaders = headers)
 
-    def respond(response: HttpResponse): Unit =
+    def respond(response: Http.Response): Unit =
       servletResponse.setStatus(response.status.code)
 
       response.textHeaders.each:
-        case HttpHeader(key, value) =>
+        case Http.Header(key, value) =>
           servletResponse.addHeader(key.s, value.s)
 
       val out = servletResponse.getOutputStream.nn
