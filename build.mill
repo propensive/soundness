@@ -659,7 +659,7 @@ object geodesy extends SoundnessModule {
 
 object gesticulate extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core)
+    def moduleDeps = Seq(gossamer.core, anticipation.html, turbulence.core, zephyrine.core)
   }
 
   object test extends ProbablyTestModule {
@@ -1253,6 +1253,16 @@ object xylophone extends SoundnessModule {
 object yossarian extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(iridescence.core, contingency.core, kaleidoscope.core, gossamer.core, turbulence.core, denominative.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
+object zephyrine extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hieroglyph.core, hypotenuse.core)
   }
 
   object test extends ProbablyTestModule {

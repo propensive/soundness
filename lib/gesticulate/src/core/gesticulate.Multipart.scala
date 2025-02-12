@@ -25,6 +25,7 @@ import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import scala.reflect.*
 

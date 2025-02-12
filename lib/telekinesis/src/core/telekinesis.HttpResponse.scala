@@ -28,6 +28,7 @@ import proscenium.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object HttpResponseError:
   enum Reason:
