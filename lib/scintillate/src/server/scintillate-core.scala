@@ -30,7 +30,7 @@ import spectacular.*
 import telekinesis.*
 import vacuous.*
 
-def cookie(using request: HttpRequest)(key: Text): Optional[Text] = request.textCookies.at(key)
+def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpResponse)
    (using connection: HttpConnection)
@@ -50,7 +50,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => HttpR
         Stream())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
-inline def request: HttpRequest = compiletime.summonInline[HttpRequest]
+inline def request: Http.Request = compiletime.summonInline[Http.Request]
 
 given realm: Realm = realm"scintillate"
 
@@ -60,7 +60,7 @@ extension (value: Http.type)
   :     HttpService logs HttpServerEvent =
     summon[RequestServable].listen(handle)
 
-extension (request: HttpRequest)
+extension (request: Http.Request)
   def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)
 
   def path(using connection: HttpConnection)

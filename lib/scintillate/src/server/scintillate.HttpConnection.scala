@@ -59,7 +59,7 @@ object HttpConnection:
       if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
 
     val request =
-      HttpRequest
+      Http.Request
        (method      = method,
         version     = version,
         host        = host,
@@ -93,8 +93,8 @@ object HttpConnection:
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (request: HttpRequest, val tls: Boolean, val port: Int, val respond: HttpResponse => Unit)
-extends HttpRequest
+   (request: Http.Request, val tls: Boolean, val port: Int, val respond: HttpResponse => Unit)
+extends Http.Request
    (request.method,
     request.version,
     request.host,

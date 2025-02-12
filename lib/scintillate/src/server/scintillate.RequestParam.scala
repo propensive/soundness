@@ -28,10 +28,10 @@ object RequestParam:
     def serialize(value: RequestParam[?]): Text = value.key
 
 case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
-  def opt(using HttpRequest): Option[ParamType] =
-    summon[HttpRequest].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_).option)
+  def opt(using Http.Request): Option[ParamType] =
+    summon[Http.Request].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_).option)
 
-  def unapply(req: HttpRequest): Option[ParamType] = opt(using req)
+  def unapply(req: Http.Request): Option[ParamType] = opt(using req)
 
-  def apply()(using HttpRequest): ParamType raises ParamError =
+  def apply()(using Http.Request): ParamType raises ParamError =
     opt.getOrElse(abort(ParamError(key)))

@@ -51,7 +51,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       . flatMap:
           case (key, values) => values.map(HttpHeader(key, _))
 
-    val httpRequest = HttpRequest
+    val httpRequest = Http.Request
      (method      = request.getMethod.nn.show.decode[Http.Method],
       version     = Http.Version.parse(request.getProtocol.nn.tt),
       host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),

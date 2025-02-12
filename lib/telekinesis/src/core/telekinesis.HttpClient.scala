@@ -36,7 +36,7 @@ import language.dynamics
 
 trait HttpClient:
   type Target
-  def request(request: HttpRequest, target: Target): HttpResponse logs HttpEvent
+  def request(request: Http.Request, target: Target): HttpResponse logs HttpEvent
 
 object HttpClient:
   private lazy val client: jnh.HttpClient = jnh.HttpClient.newHttpClient().nn
@@ -44,7 +44,7 @@ object HttpClient:
   given Tactic[StreamError] => HttpClient onto DomainSocket = new HttpClient:
     type Target = DomainSocket
 
-    def request(request: HttpRequest, socket: DomainSocket)
+    def request(request: Http.Request, socket: DomainSocket)
     :     HttpResponse logs HttpEvent =
 
       unsafely(HttpResponse.parse(socket.request(request)))
@@ -52,7 +52,7 @@ object HttpClient:
   given Tactic[TcpError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
     type Target = Origin["http" | "https"]
 
-    def request(httpRequest: HttpRequest, origin: Origin["http" | "https"])
+    def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
     :     HttpResponse logs HttpEvent =
 
       val url = httpRequest.on(origin)
