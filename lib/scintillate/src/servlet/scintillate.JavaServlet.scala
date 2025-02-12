@@ -30,7 +30,7 @@ import vacuous.*
 
 import jakarta.servlet as js, js.http as jsh
 
-open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.HttpServlet:
+open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
     val in = request.getInputStream()
     val buffer = new Array[Byte](4096)
@@ -59,7 +59,7 @@ open class JavaServlet(handle: HttpConnection ?=> HttpResponse) extends jsh.Http
       body        = streamBody(request),
       textHeaders = headers)
 
-    def respond(response: HttpResponse): Unit =
+    def respond(response: Http.Response): Unit =
       servletResponse.setStatus(response.status.code)
 
       response.textHeaders.each:

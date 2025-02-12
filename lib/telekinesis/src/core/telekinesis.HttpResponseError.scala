@@ -14,8 +14,20 @@
     and limitations under the License.
 */
 
-package soundness
+package telekinesis
 
-export telekinesis.
-  { Auth, Cookie, Http, HttpError, HttpEvent, Capitate, TcpError, Receivable, Fetchable, Params,
-    HttpClient, Postable, HttpHeader, ResponseHeader, Servable, fetch, submit }
+import anticipation.*
+import fulminate.*
+import proscenium.*
+
+object HttpResponseError:
+    enum Reason:
+      case Expectation(expected: Char, found: Char)
+      case Status(value: Text)
+
+    given Reason is Communicable =
+      case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
+      case Reason.Status(value)                => m"the HTTP status code $value was invalid"
+
+case class HttpResponseError(reason: HttpResponseError.Reason)(using Diagnostics)
+extends Error(m"could not parse HTTP response because $reason")

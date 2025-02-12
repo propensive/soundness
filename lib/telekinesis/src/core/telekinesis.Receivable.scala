@@ -45,4 +45,4 @@ object Receivable:
 
 trait Receivable:
   type Self
-  def read(response: HttpResponse): Self
+  def read(response: Http.Response): Self

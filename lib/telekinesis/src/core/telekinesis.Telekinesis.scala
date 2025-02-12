@@ -88,7 +88,7 @@ object Telekinesis:
       postable: Expr[PayloadType is Postable],
       client:   Expr[HttpClient onto TargetType])
      (using Quotes)
-  :     Expr[HttpResponse] =
+  :     Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>
@@ -118,7 +118,7 @@ object Telekinesis:
       loggable: Expr[HttpEvent is Loggable],
       client:   Expr[HttpClient onto TargetType])
      (using Quotes)
-  :     Expr[HttpResponse] =
+  :     Expr[Http.Response] =
 
     headers.absolve match
       case Varargs(exprs) =>

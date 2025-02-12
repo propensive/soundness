@@ -72,7 +72,7 @@ object HttpConnection:
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
-    def respond(response: HttpResponse): Unit =
+    def respond(response: Http.Response): Unit =
       response.textHeaders.each:
         case HttpHeader(key, value) =>
           exchange.getResponseHeaders.nn.add(key.s, value.s)
@@ -93,7 +93,7 @@ object HttpConnection:
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (request: Http.Request, val tls: Boolean, val port: Int, val respond: HttpResponse => Unit)
+   (request: Http.Request, val tls: Boolean, val port: Int, val respond: Http.Response => Unit)
 extends Http.Request
    (request.method,
     request.version,

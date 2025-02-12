@@ -34,7 +34,7 @@ case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostna
             loggable: HttpEvent is Loggable,
             postable: PayloadType is Postable,
             client:   HttpClient onto TargetType)
-  :     HttpResponse =
+  :     Http.Response =
 
     ${
         Telekinesis.submit[TargetType, PayloadType]
@@ -45,7 +45,7 @@ case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostna
      (using online:   Online,
             loggable: HttpEvent is Loggable,
             client:   HttpClient onto TargetType)
-  :     HttpResponse =
+  :     Http.Response =
 
     ${
         Telekinesis.submit[TargetType, PayloadType]

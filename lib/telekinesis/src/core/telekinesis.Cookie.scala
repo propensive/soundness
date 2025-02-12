@@ -62,7 +62,7 @@ object Cookie:
     given Cookie.Value is Encodable in HttpHeader = cookie =>
       HttpHeader("Set-Cookie", cookie.show)
 
-    given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
+    given Http.Response is Addable by Cookie.Value into Http.Response = (response, cookie) =>
       response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
 
     given List[Cookie.Value] is Decodable in Text = value =>
