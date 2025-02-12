@@ -36,15 +36,15 @@ object HttpConnection:
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
     val method = exchange.getRequestMethod.nn.show.decode[Http.Method]
 
-    val headers: List[HttpHeader] =
+    val headers: List[Http.Header] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
         pair.absolve match
           case (key, values) => values.map: value =>
-            HttpHeader(key, value.tt)
+            Http.Header(key, value.tt)
 
       . to(List)
 
-    val version: HttpVersion = HttpVersion.parse(exchange.getProtocol.nn.tt)
+    val version: Http.Version = Http.Version.parse(exchange.getProtocol.nn.tt)
 
     val host = unsafely:
        Hostname.parse:
@@ -59,7 +59,7 @@ object HttpConnection:
       if len > 0 then buffer.slice(0, len).snapshot #:: stream() else Stream.empty
 
     val request =
-      HttpRequest
+      Http.Request
        (method      = method,
         version     = version,
         host        = host,
@@ -72,15 +72,15 @@ object HttpConnection:
     val port = Option(exchange.getRequestURI.nn.getPort).filter(_ > 0).getOrElse:
       exchange.getLocalAddress.nn.getPort
 
-    def respond(response: HttpResponse): Unit =
+    def respond(response: Http.Response): Unit =
       response.textHeaders.each:
-        case HttpHeader(key, value) =>
+        case Http.Header(key, value) =>
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
       val length = response.body match
         case Stream()     => -1
         case Stream(data) => data.length
-        case _              => 0
+        case _            => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
 
@@ -93,8 +93,8 @@ object HttpConnection:
     new HttpConnection(request, false, port, respond)
 
 class HttpConnection
-   (request: HttpRequest, val tls: Boolean, val port: Int, val respond: HttpResponse => Unit)
-extends HttpRequest
+   (request: Http.Request, val tls: Boolean, val port: Int, val respond: Http.Response => Unit)
+extends Http.Request
    (request.method,
     request.version,
     request.host,

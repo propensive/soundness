@@ -21,8 +21,8 @@ import spectacular.*
 import telekinesis.*
 
 enum HttpServerEvent:
-  case Received(request: HttpRequest)
-  case Processed(request: HttpRequest, duration: Long)
+  case Received(request: Http.Request)
+  case Processed(request: Http.Request, duration: Long)
 
 object HttpServerEvent:
   given HttpServerEvent is Communicable =

@@ -25,7 +25,6 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
-import telekinesis.*
 import vacuous.*
 
 import scala.compiletime.*
@@ -60,11 +59,11 @@ object Cookie:
 
       . compact.join(t"; ")
 
-    given Cookie.Value is Encodable in HttpHeader = cookie =>
-      HttpHeader("Set-Cookie", cookie.show)
+    given Cookie.Value is Encodable in Http.Header = cookie =>
+      Http.Header("Set-Cookie", cookie.show)
 
-    given HttpResponse is Addable by Cookie.Value into HttpResponse = (response, cookie) =>
-      response.copy(textHeaders = HttpHeader(t"set-cookie", cookie.show) :: response.textHeaders)
+    given Http.Response is Addable by Cookie.Value into Http.Response = (response, cookie) =>
+      response.copy(textHeaders = Http.Header(t"set-cookie", cookie.show) :: response.textHeaders)
 
     given List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:
@@ -93,5 +92,5 @@ case class Cookie[ValueType: {Encodable in Text, Decodable in Text}]
   def apply(value: ValueType): Cookie.Value =
     Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
 
-  inline def apply()(using HttpRequest): Optional[ValueType] =
-    summon[HttpRequest].textCookies.at(name).let(_.decode)
+  inline def apply()(using Http.Request): Optional[ValueType] =
+    summon[Http.Request].textCookies.at(name).let(_.decode)
