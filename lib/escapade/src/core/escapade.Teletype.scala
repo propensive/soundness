@@ -38,11 +38,19 @@ object Teletype:
     type Result = Teletype
     inline def add(left: Teletype, right: Teletype): Teletype = left.append(right)
 
-  given writableOut: Stdio => SimpleWritable[Out.type, Teletype] =
-    (_, output) => Out.print(output)
+  given out: Stdio => Out.type is Writable by Teletype = new Writable:
+    type Self = Out.type
+    type Operand = Teletype
 
-  given writableErr: Stdio => SimpleWritable[Err.type, Teletype] =
-    (_, output) => Err.print(output)
+    def write(target: Self, stream: Stream[Teletype]): Unit =
+      stream.flow(())(Out.print(head) yet write(target, tail))
+
+  given err: Stdio => Err.type is Writable by Teletype = new Writable:
+    type Self = Err.type
+    type Operand = Teletype
+
+    def write(target: Self, stream: Stream[Teletype]): Unit =
+        stream.flow(())(Err.print(head) yet write(target, tail))
 
   given Teletype is Textual:
     type Show[ValueType] = ValueType is Teletypeable
