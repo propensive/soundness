@@ -1,0 +1,8 @@
+#!/bin/bash
+
+for FILE in lib/*/src/*/*.scala
+do
+  echo "Updating header in $FILE"
+  cat etc/header.txt > .tmpfile
+  sed '/package/,$!d' "${FILE}" >> .tmpfile && mv .tmpfile "${FILE}"
+done
