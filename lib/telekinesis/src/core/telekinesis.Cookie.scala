@@ -77,7 +77,7 @@ object Cookie:
 
     given Http.Response is Addable by Cookie.Value into Http.Response = (response, cookie) =>
       val header = Http.Header(t"set-cookie", cookie.show)
-      Http.Response.of(response.status, header :: response.textHeaders, response.body)
+      Http.Response.make(response.status, header :: response.textHeaders, response.body)
 
     given List[Cookie.Value] is Decodable in Text = value =>
       value.cut(t"; ").flatMap:

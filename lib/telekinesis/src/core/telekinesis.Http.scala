@@ -325,6 +325,9 @@ object Http:
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
 
+      def apply(body: Stream[Bytes]): Response =
+        Response(1.1, status0.or(Ok), headers.to(List), body)
+
       def apply[BodyType: Servable](body: BodyType): Response =
         val response = BodyType.serve(body)
         Response
@@ -342,12 +345,7 @@ object Http:
 
       body.stream
 
-    // def apply[ServableType: Servable](servable: ServableType, headers: Http.Header*): Response =
-
-    //   val response = ServableType.serve(servable)
-    //   response.copy(textHeaders = headers.to(List) ++ response.textHeaders)
-
-    def of(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
+    def make(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
       new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Bytes]): Response raises HttpResponseError =

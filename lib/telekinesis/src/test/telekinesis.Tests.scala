@@ -45,7 +45,8 @@ object Tests extends Suite(t"Telekinesis tests"):
 
     suite(t"Response construction tests"):
       test(t"Create a new HTTP response"):
-        Http.Response(Http.Ok, contentType = media"application/json")
+        Http.Response(Http.Ok, contentType = media"application/json")(t"hello").tap: response =>
+          println(response)
 
       . assert()
 
