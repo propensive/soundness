@@ -42,11 +42,12 @@ import vacuous.*
 
 object Telekinesis:
   def expand
-     (todo:   Seq[Expr[Any]],
-      method: Optional[Expr[Http.Method]] = Unset,
-      done:   List[Expr[Http.Header]]     = Nil)
+     (todo:    Seq[Expr[Any]],
+      method:  Optional[Expr[Http.Method]]  = Unset,
+      status:  Optional[Expr[Http.Status]]  = Unset,
+      done:    List[Expr[Http.Header]]      = Nil)
      (using Quotes)
-  :     (Optional[Expr[Http.Method]], Expr[Seq[Http.Header]]) =
+  :     (Optional[Expr[Http.Method]], Optional[Expr[Http.Status]], Expr[Seq[Http.Header]]) =
     import quotes.reflect.*
 
     def unnamed[ValueType: Type](value: Expr[ValueType], tail: Seq[Expr[Any]]) =
@@ -56,22 +57,30 @@ object Telekinesis:
 
       . absolve
       . match
-        case '{ type keyType <: Label; $prefixable: (Prefixable { type Self = keyType }) } =>
-          TypeRepr.of[keyType].absolve match
-            case ConstantType(StringConstant(key)) =>
-              val header =
-                '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $prefixable.encode($value))}
+          case '{ type keyType <: Label; $prefixable: (Prefixable { type Self = keyType }) } =>
+            TypeRepr.of[keyType].absolve match
+              case ConstantType(StringConstant(key)) =>
+                val header =
+                  '{Http.Header(${Expr(key)}.tt.uncamel.kebab, $prefixable.encode($value))}
 
-              expand(tail, method, header :: done)
+                expand(tail, method, status, header :: done)
 
     todo.absolve match
       case '{ $method2: Http.Method } +: tail =>
         if method.present then halt(m"the request method can only be specified once")
-        expand(tail, method2, done)
+        expand(tail, method2, status, done)
 
       case '{ ("", $method2: Http.Method) } +: tail =>
         if method.present then halt(m"the request method can only be specified once")
-        expand(tail, method2, done)
+        expand(tail, method2, status, done)
+
+      case '{ $status2: Http.Status } +: tail =>
+        if status.present then halt(m"the HTTP status can only be specified once")
+        expand(tail, method, status2, done)
+
+      case '{ ("", $status2: Http.Status) } +: tail =>
+        if status.present then halt(m"the HTTP status can only be specified once")
+        expand(tail, method, status2, done)
 
       case '{ ("", $value: valueType) } +: tail =>
         unnamed[valueType](value, tail)
@@ -84,13 +93,13 @@ object Telekinesis:
           halt(m"the header $name cannot take a value of type $typeName")
 
         val header = '{Http.Header($key.tt.uncamel.kebab, $Prefixable.encode($value))}
-        expand(tail, method, header :: done)
+        expand(tail, method, status, header :: done)
 
       case '{ $value: valueType } +: tail =>
         unnamed[valueType](value, tail)
 
       case Seq() =>
-        (method, Expr.ofList(done.reverse))
+        (method, status, Expr.ofList(done.reverse))
 
   def submit[TargetType: Type, PayloadType: Type]
      (submit:   Expr[Submit[TargetType]],
@@ -105,7 +114,7 @@ object Telekinesis:
 
     headers.absolve match
       case Varargs(exprs) =>
-        val (method0, headers) = expand(exprs)
+        val (method0, _, headers) = expand(exprs)
 
         val method = method0 match
           case Unset                    => '{Http.Post}
@@ -135,7 +144,7 @@ object Telekinesis:
 
     headers.absolve match
       case Varargs(exprs) =>
-        val (method0, headers) = expand(exprs)
+        val (method0, _, headers) = expand(exprs)
 
         val method = method0 match
           case Unset                    => '{Http.Get}
@@ -148,3 +157,15 @@ object Telekinesis:
             val request = Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), Stream())
 
             $client.request(request, $fetch.target)  }
+
+  def response(headers: Expr[Seq[(Label, Any)] | Seq[Any]])(using Quotes)
+  :     Expr[Http.Response.Prototype] =
+
+    val (_, status, headers2) = headers.absolve match
+      case Varargs(exprs) => expand(exprs)
+
+    val status2: Expr[Optional[Http.Status]] = status match
+      case Unset                   => '{Unset}
+      case expr: Expr[Http.Status] => expr
+
+    '{Http.Response.Prototype($status2, $headers2)}
