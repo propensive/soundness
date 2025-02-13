@@ -35,16 +35,16 @@ import gossamer.*
 import telekinesis.*
 import vacuous.*
 
-object RequestParam:
-  given name: ("name" is GenericHtmlAttribute[RequestParam[?]]):
-    def name: Text = t"name"
-    def serialize(value: RequestParam[?]): Text = value.key
+// object RequestParam:
+//   given name: ("name" is GenericHtmlAttribute[RequestParam[?]]):
+//     def name: Text = t"name"
+//     def serialize(value: RequestParam[?]): Text = value.key
 
-case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
-  def opt(using Http.Request): Option[ParamType] =
-    summon[Http.Request].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_).option)
+// case class RequestParam[ParamType](key: Text)(using ParamReader[ParamType]):
+//   def opt(using Http.Request): Option[ParamType] =
+//     summon[Http.Request].params.get(key).flatMap(summon[ParamReader[ParamType]].read(_).option)
 
-  def unapply(req: Http.Request): Option[ParamType] = opt(using req)
+//   def unapply(req: Http.Request): Option[ParamType] = opt(using req)
 
-  def apply()(using Http.Request): ParamType raises ParamError =
-    opt.getOrElse(abort(ParamError(key)))
+//   def apply()(using Http.Request): ParamType raises ParamError =
+//     opt.getOrElse(abort(ParamError(key)))

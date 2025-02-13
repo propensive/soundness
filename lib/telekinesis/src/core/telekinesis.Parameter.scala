@@ -27,18 +27,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package telekinesis
 
-import anticipation.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
+import proscenium.*
 
-object ParamReader:
-  given [ParamType](using extractable: Text is Extractable into ParamType): ParamReader[ParamType] =
-    extractable.extract(_)
-
-  given ParamReader[Text] = identity(_)
-
-trait ParamReader[ParamType]:
-  def read(value: Text): Optional[ParamType]
+trait Parameter:
+  type Self <: Label
+  type Subject
