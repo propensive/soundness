@@ -203,7 +203,8 @@ object Http:
 
       ListMap[Text, Text](
         t"content"
-        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show).or(t"?"),
+        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
+           . or(t"?"),
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
         t"hostname" -> request.host.show,
@@ -303,8 +304,8 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using capitate: name.type is Capitate, decoder: capitate.Subject is Decodable in Text)
-      :     List[capitate.Subject] =
+         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
+      :     List[Prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -315,7 +316,26 @@ object Http:
         cookie.bi.map(_.name -> _.value)
       . to(Map)
 
-  object Response:
+  object Response extends Dynamic:
+    inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*): Prototype =
+      ${Telekinesis.response('headers)}
+
+    inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype =
+      ${Telekinesis.response('headers)}
+
+    case class Prototype(status0: Optional[Status], headers: Seq[Header]):
+
+      def apply(body: Stream[Bytes]): Response =
+        Response(1.1, status0.or(Ok), headers.to(List), body)
+
+      def apply[BodyType: Servable](body: BodyType): Response =
+        val response = BodyType.serve(body)
+        Response
+         (1.1,
+          status0.or(response.status),
+          headers.to(List) ++ response.textHeaders,
+          response.body)
+
     given readable: Tactic[HttpError] => Response is Readable by Bytes = response =>
       val body = response.status.category match
         case Http.Status.Category.Successful => response.body
@@ -325,10 +345,8 @@ object Http:
 
       body.stream
 
-    def apply[ServableType: Servable](servable: ServableType, headers: Http.Header*): Response =
-
-      val response = ServableType.serve(servable)
-      response.copy(textHeaders = headers.to(List) ++ response.textHeaders)
+    def make(status: Status, headers: List[Header], body: Stream[Bytes]): Response =
+      new Response(1.1, status, headers, body)
 
     def parse(stream: Stream[Bytes]): Response raises HttpResponseError =
       val conduit = Conduit(stream)
@@ -408,7 +426,7 @@ object Http:
 
       Response(version, status, headers.reverse, body)
 
-  case class Response
+  case class Response private
      (version:     Http.Version,
       status:      Http.Status,
       textHeaders: List[Http.Header],
@@ -421,8 +439,8 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using capitate: name.type is Capitate, decoder: capitate.Subject is Decodable in Text)
-      :     List[capitate.Subject] =
+         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
+      :     List[Prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
