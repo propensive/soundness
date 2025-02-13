@@ -34,10 +34,14 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
 
 import language.dynamics
 
 given Realm = realm"telekinesis"
+
+extension [ValueType: Encodable in Query](value: ValueType)
+  def query: Query = ValueType.encoded(value)
 
 extension [EndpointType: Fetchable](endpoint: EndpointType)
   def fetch: Http.Fetch[EndpointType.Target] =

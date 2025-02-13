@@ -34,19 +34,37 @@ package telekinesis
 
 import anticipation.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
+import wisteria.*
 
 import language.dynamics
 
 object Query extends Dynamic:
+  object QueryDerivation extends ProductDerivation[[Type] =>> Type is Encodable in Query]:
+    inline def join[DerivationType <: Product: ProductReflection]
+    :     DerivationType is Encodable in Query =
+
+      value =>
+        Query.of:
+          fields(value) { [FieldType] => field => context.encoded(field).prefix(label) }
+          . to(List)
+          . flatMap(_.values)
+
+  given text: [ValueType: Encodable in Text] => ValueType is Encodable in Query =
+    value => Query.of(value.encode)
 
   given Query is Showable = _.queryString
+
+  inline given [ProductType <: Product: ProductReflection] => ProductType is Encodable in Query =
+    QueryDerivation.join[ProductType]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
     ${Telekinesis.query('parameters)}
 
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
+  def of(parameter: Text): Query = new Query(List(t"" -> parameter))
 
 class Query private (val values: List[(Text, Text)]):
   def append(more: Query): Query = new Query(values ++ more.values)
@@ -56,7 +74,7 @@ class Query private (val values: List[(Text, Text)]):
     values.map { (key, value) => if key.length == 0 then str -> value else t"$str.$key" -> value }
 
   def queryString: Text =
-    values.map: (k, v) =>
-      if k.length == 0 then v.urlEncode else t"${k.urlEncode}=${v.urlEncode}"
+    values.map: (key, value) =>
+      if key.length == 0 then value.urlEncode else t"${key.urlEncode}=${value.urlEncode}"
 
     . join(t"&")
