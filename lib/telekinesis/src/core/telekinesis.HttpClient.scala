@@ -62,7 +62,7 @@ object HttpClient:
 
     def request(request: Http.Request, socket: DomainSocket): Http.Response logs HttpEvent =
 
-      unsafely(Http.Response.parse(socket.request(request)))
+      unsafely(Http.Response.parse(socket.transmit(request)))
 
   given Tactic[ConnectError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
     type Target = Origin["http" | "https"]

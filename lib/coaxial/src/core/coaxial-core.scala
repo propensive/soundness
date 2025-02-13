@@ -62,7 +62,7 @@ extension [SocketType: Bindable as bindable](socket: SocketType)
         safely(task.await())
 
 extension [EndpointType: Serviceable as serviceable](endpoint: EndpointType)
-  def request[MessageType: Transmissible](input: MessageType)
+  def transmit[MessageType: Transmissible](input: MessageType)
   :     Stream[Bytes] =
     val connection = serviceable.connect(endpoint)
 
