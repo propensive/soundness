@@ -105,7 +105,7 @@ object Telekinesis:
         (method, status, Expr.ofList(done.reverse))
 
   def submit[TargetType: Type, PayloadType: Type]
-     (submit:   Expr[Submit[TargetType]],
+     (submit:   Expr[Http.Submit[TargetType]],
       headers:  Expr[Seq[(Label, Any)] | Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
@@ -137,7 +137,7 @@ object Telekinesis:
             $client.request(request, $submit.target)  }
 
   def fetch[TargetType: Type]
-     (fetch:    Expr[Fetch[TargetType]],
+     (fetch:    Expr[Http.Fetch[TargetType]],
       headers:  Expr[Seq[Any]],
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],

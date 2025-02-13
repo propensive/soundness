@@ -452,3 +452,47 @@ object Http:
     infix def + [ValueType: Encodable in Http.Header](value: ValueType): Response =
       val header: Http.Header = ValueType.encode(value)
       copy(textHeaders = header :: textHeaders)
+
+  case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostname)
+  extends Dynamic:
+    inline def applyDynamicNamed[PayloadType]
+       (id: "apply")
+       (inline headers: (Label, Any)*)
+       (payload: PayloadType)
+       (using online:   Online,
+              loggable: HttpEvent is Loggable,
+              postable: PayloadType is Postable,
+              client:   HttpClient onto TargetType)
+    :     Http.Response =
+
+      ${
+          Telekinesis.submit[TargetType, PayloadType]
+           ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+
+    inline def applyDynamic[PayloadType: Postable as postable](id: "apply")(inline headers: Any*)
+       (payload: PayloadType)
+       (using online:   Online,
+              loggable: HttpEvent is Loggable,
+              client:   HttpClient onto TargetType)
+    :     Http.Response =
+
+      ${
+          Telekinesis.submit[TargetType, PayloadType]
+           ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+
+  case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostname) extends Dynamic:
+
+    inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
+       (using online:   Online,
+              loggable: HttpEvent is Loggable,
+              postable: Unit is Postable,
+              client:   HttpClient onto TargetType)
+    :     Http.Response =
+
+      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
+
+    inline def applyDynamic[PayloadType](id: "apply")(inline headers: Any*)
+       (using online: Online, loggable: HttpEvent is Loggable, client: HttpClient onto TargetType)
+    :     Http.Response =
+
+      ${Telekinesis.fetch('this, 'headers, 'online, 'loggable, 'client)}
