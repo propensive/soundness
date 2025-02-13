@@ -320,15 +320,16 @@ object Http:
       . to(Map)
 
   object Response extends Dynamic:
-    inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*): Prototype =
+    transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
+    :     Prototype | Response =
       ${Telekinesis.response('headers)}
 
-    inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype =
+    transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
       ${Telekinesis.response('headers)}
 
     case class Prototype(status0: Optional[Status], headers: Seq[Header]):
 
-      def apply(body: Stream[Bytes]): Response =
+      def apply(body: Stream[Bytes] = Stream()): Response =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
       def apply[BodyType: Servable](body: BodyType): Response =
