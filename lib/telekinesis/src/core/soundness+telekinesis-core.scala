@@ -33,5 +33,5 @@
 package soundness
 
 export telekinesis.
-  { Auth, Cookie, Http, HttpError, HttpEvent, Prefixable, TcpError, Receivable, Fetchable, Query,
-    HttpClient, Postable, Servable, fetch, submit, Parameter }
+  { Auth, Cookie, Http, HttpError, HttpEvent, Prefixable, ConnectError, Receivable, Fetchable,
+    Query, HttpClient, Postable, Servable, fetch, submit, Parameter }

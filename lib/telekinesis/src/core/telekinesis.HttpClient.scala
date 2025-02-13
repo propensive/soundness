@@ -64,7 +64,7 @@ object HttpClient:
 
       unsafely(Http.Response.parse(socket.request(request)))
 
-  given Tactic[TcpError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
+  given Tactic[ConnectError] => Online => HttpClient onto Origin["http" | "https"] = new HttpClient:
     type Target = Origin["http" | "https"]
 
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
@@ -104,26 +104,26 @@ object HttpClient:
         case Http.Header(key, value) => request.header(key.s, value.s)
 
       val response: jnh.HttpResponse[ji.InputStream] =
-        import TcpError.Reason.*, Ssl.Reason.*
+        import ConnectError.Reason.*, Ssl.Reason.*
 
         val client = HttpClient.client
 
         try client.send(request.build(), jnh.HttpResponse.BodyHandlers.ofInputStream()).nn catch
-          case error: jns.SSLHandshakeException       => abort(TcpError(Ssl(Handshake)))
-          case error: jns.SSLProtocolException        => abort(TcpError(Ssl(Protocol)))
-          case error: jns.SSLPeerUnverifiedException  => abort(TcpError(Ssl(Peer)))
-          case error: jns.SSLKeyException             => abort(TcpError(Ssl(Key)))
-          case error: jn.UnknownHostException         => abort(TcpError(Dns))
-          case error: jnh.HttpConnectTimeoutException => abort(TcpError(Timeout))
+          case error: jns.SSLHandshakeException       => abort(ConnectError(Ssl(Handshake)))
+          case error: jns.SSLProtocolException        => abort(ConnectError(Ssl(Protocol)))
+          case error: jns.SSLPeerUnverifiedException  => abort(ConnectError(Ssl(Peer)))
+          case error: jns.SSLKeyException             => abort(ConnectError(Ssl(Key)))
+          case error: jn.UnknownHostException         => abort(ConnectError(Dns))
+          case error: jnh.HttpConnectTimeoutException => abort(ConnectError(Timeout))
           case error: jn.ConnectException             => error.getMessage() match
-            case "Connection refused"                    => abort(TcpError(Refused))
-            case "Connection timed out"                  => abort(TcpError(Timeout))
-            case "HTTP connect timed out"                => abort(TcpError(Timeout))
-            case error                                   => abort(TcpError(Unknown))
-          case error: ji.IOException                  => abort(TcpError(Unknown))
+            case "Connection refused"                    => abort(ConnectError(Refused))
+            case "Connection timed out"                  => abort(ConnectError(Timeout))
+            case "HTTP connect timed out"                => abort(ConnectError(Timeout))
+            case error                                   => abort(ConnectError(Unknown))
+          case error: ji.IOException                  => abort(ConnectError(Unknown))
 
       val status2: Http.Status = Http.Status.unapply(response.statusCode()).getOrElse:
-        abort(TcpError(TcpError.Reason.Unknown))
+        abort(ConnectError(ConnectError.Reason.Unknown))
 
       val headers2: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
         (key, values) => values.asScala.map { value => Http.Header(key.tt, value.tt) }

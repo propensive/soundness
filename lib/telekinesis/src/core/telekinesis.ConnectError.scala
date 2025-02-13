@@ -34,7 +34,7 @@ package telekinesis
 
 import fulminate.*
 
-object TcpError:
+object ConnectError:
   enum Reason:
     case Dns
     case Refused
@@ -63,5 +63,5 @@ object TcpError:
       case Timeout     => m"the server did not respond within the time limit"
       case Unknown     => m"an unrecognized error occurred"
 
-case class TcpError(reason: TcpError.Reason)(using Diagnostics)
+case class ConnectError(reason: ConnectError.Reason)(using Diagnostics)
 extends Error(m"the TCP connection failed because $reason")
