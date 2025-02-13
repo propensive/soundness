@@ -105,7 +105,7 @@ object soundness extends ScalaModule {
         gossamer.core, inimitable.core, iridescence.core, kaleidoscope.core, mercator.core,
         nomenclature.core, parasite.core, rudiments.core, spectacular.core, symbolism.core,
         prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
-        typonym.core)
+        typonym.core, zephyrine.core)
     def scalaVersion = settings.scalaVersion
   }
 

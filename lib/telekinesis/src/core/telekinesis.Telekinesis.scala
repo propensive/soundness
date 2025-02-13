@@ -161,16 +161,25 @@ object Telekinesis:
 
             $client.request(request, $fetch.target)  }
 
-  def response(headers: Expr[Seq[Any]])(using Quotes): Expr[Http.Response.Prototype] =
+  def response(headers: Expr[Seq[Any]])(using Quotes)
+  :     Expr[Http.Response.Prototype | Http.Response] =
 
-    val (_, status, headers2) = headers.absolve match
-      case Varargs(exprs) => expand(exprs)
+    headers.absolve.match
+      case Varargs(exprs) => exprs.to(List).only:
+        case '{ $value: valueType } :: Nil =>
+          Expr.summon[(? >: valueType) is Servable].map { servable => '{$servable.serve($value)} }
+          . optional
 
-    val status2: Expr[Optional[Http.Status]] = status match
-      case Unset                   => '{Unset}
-      case expr: Expr[Http.Status] => expr
+    . or:
+        headers.absolve match
+          case Varargs(exprs) =>
+            val (_, status, headers2) = expand(exprs.to(List))
 
-    '{Http.Response.Prototype($status2, $headers2)}
+            val status2: Expr[Optional[Http.Status]] = status match
+              case Unset                   => '{Unset}
+              case expr: Expr[Http.Status] => expr
+
+            '{Http.Response.Prototype($status2, $headers2)}
 
   def query(values: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Query] =
     def recur(exprs: List[Expr[(Label, Any)]], done: List[Expr[(Text, Text)]] = Nil): Expr[Query] =

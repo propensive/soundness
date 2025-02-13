@@ -53,13 +53,12 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
 :     Http.Response raises AuthError =
   connection.headers.authorization match
     case List(Auth.Basic(username, password)) =>
-      if validate(username, password) then response
-      else Http.Response(Http.Forbidden)(Stream())
+      if validate(username, password) then response else Http.Response(Http.Forbidden)()
 
     case _ =>
       val auth = t"""Basic realm="$realm", charset="UTF-8""""
 
-      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)(Stream())
+      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)
 inline def request: Http.Request = compiletime.summonInline[Http.Request]
