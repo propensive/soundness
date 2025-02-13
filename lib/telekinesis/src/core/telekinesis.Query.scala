@@ -31,16 +31,26 @@ package telekinesis
 
 import anticipation.*
 import gossamer.*
+import proscenium.*
 import spectacular.*
 
 import language.dynamics
 
-case class Params(values: List[(Text, Text)]):
-  def append(more: Params): Params = Params(values ++ more.values)
+object Query extends Dynamic:
+
+  given Query is Showable = _.queryString
+
+  inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
+    ${Telekinesis.query('parameters)}
+
+  def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
+
+class Query private (val values: List[(Text, Text)]):
+  def append(more: Query): Query = new Query(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
 
-  def prefix(str: Text): Params = Params:
-    values.map { (k, v) => if k.length == 0 then str -> v else t"$str.$k" -> v }
+  def prefix(str: Text): Query = Query:
+    values.map { (key, value) => if key.length == 0 then str -> value else t"$str.$key" -> value }
 
   def queryString: Text =
     values.map: (k, v) =>
