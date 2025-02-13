@@ -71,19 +71,39 @@ object Tests extends Suite(t"Telekinesis tests"):
 
       . assert(_ == t"key=hello+world&param=24")
 
+      case class Person(name: Text, age: Int)
+      case class Couple(first: Person, second: Person)
+
       test(t"Construct a Query by generic derivation"):
-        case class Person(name: Text, age: Int)
         Person(t"Jack", 12).query.show
 
       . assert(_ == t"name=Jack&age=12")
 
+      test(t"Construct a Query by partial generic derivation"):
+        import queryParameters.allowArbitrary
+        Query(person = Person(t"Ken", 39)).show
+
+      . assert(_ == t"person.name=Ken&person.age=39")
+
       test(t"Construct a Query by nested generic derivation"):
-        case class Person(name: Text, age: Int)
-        case class Couple(first: Person, second: Person)
-        Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show.tap: couple =>
-          println("COUPLE: "+couple)
+        Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
 
       . assert(_ == t"first.name=Jack&first.age=12&second.name=Jill&second.age=11")
+
+      val query = Query.of(List
+                            (t"first.name"  -> t"Jack",
+                             t"first.age"   -> t"12",
+                             t"second.name" -> t"Jill",
+                             t"second.age"  -> t"11"))
+
+      test(t"Dereference a query")(query.second)
+      . assert(_ == Query.of(List(t"name" -> t"Jill", t"age"  -> t"11")))
+
+      test(t"Decode a query"):
+        summon[Couple is Decodable in Query].decoded(query)
+
+      . assert(_ == Couple(Person(t"Jack", 12), Person(t"Jill", 11)))
+
 
     suite(t"Fetching tests"):
 

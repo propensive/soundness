@@ -182,13 +182,16 @@ object Telekinesis:
             '{Http.Response.Prototype($status2, $headers2)}
 
   def query(values: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Query] =
-    def recur(exprs: List[Expr[(Label, Any)]], done: List[Expr[(Text, Text)]] = Nil): Expr[Query] =
+
+    def recur(exprs: List[Expr[(Label, Any)]], done: List[Expr[List[(Text, Text)]]] = Nil)
+    :     Expr[Query] =
+
       exprs match
         case '{ type keyType <: Label
                 ($key: keyType, $value: valueType) } :: tail =>
 
           Expr.summon[keyType is Parameter of (? >: valueType)].getOrElse:
-            Expr.summon[keyType is Parameter] match
+            Expr.summon[keyType is Parameter].absolve match
               case Some('{ $parametric: (Parameter { type Subject = subjectType }) }) =>
                 halt(m"""the parameter ${key.valueOrAbort} takes values of ${Type.of[subjectType]}
                          but the provided value had type ${Type.of[valueType]}""")
@@ -197,17 +200,17 @@ object Telekinesis:
                 halt(m"could not find a contextual Parametric value for ${key.valueOrAbort}")
 
 
-          val encodable = Expr.summon[valueType is Encodable in Text].getOrElse:
-            halt(m"""there is no contextual ${Type.of[Encodable]} instance for values
+          val encodable = Expr.summon[valueType is Encodable in Query].getOrElse:
+            halt(m"""there is no contextual ${Type.of[Encodable in Query]} instance for values
                      of ${Type.of[valueType]}""")
 
-          val parameter = '{  given valueType is Encodable in Text = $encodable
-                              ($key.tt, $value.encode)  }
+          val parameters = '{  given valueType is Encodable in Query = $encodable
+                               $value.encode.prefix($key.tt).values  }
 
-          recur(tail, parameter :: done)
+          recur(tail, parameters :: done)
 
         case _ =>
-          '{Query.of(${Expr.ofList(done.reverse)})}
+          '{Query.of(${Expr.ofList(done.reverse)}.flatten)}
 
     values.absolve match
       case Varargs(exprs) => recur(exprs.to(List))
