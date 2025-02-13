@@ -43,6 +43,6 @@ object Redirect:
   given redirect: Redirect is Servable = redirect =>
     val headers = List(Http.Header(t"location", redirect.location))
     val status = if redirect.permanent then Http.MovedPermanently else Http.Found
-    Http.Response(1.1, status, headers, Stream())
+    Http.Response(status, location = redirect.location)(Stream())
 
 case class Redirect(location: Text, permanent: Boolean = false)

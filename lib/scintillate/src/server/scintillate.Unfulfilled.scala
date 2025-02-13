@@ -33,6 +33,7 @@ import telekinesis.*
 
 object Unfulfilled:
   given [ContentType: Servable] => Unfulfilled[ContentType] is Servable = unfulfilled =>
-    ContentType.serve(unfulfilled.content).copy(status = Http.InternalServerError)
+    val response = ContentType.serve(unfulfilled.content)
+    Http.Response.make(Http.InternalServerError, response.textHeaders, response.body)
 
 case class Unfulfilled[ContentType](content: ContentType)
