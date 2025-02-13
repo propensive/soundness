@@ -71,6 +71,39 @@ object Tests extends Suite(t"Telekinesis tests"):
 
       . assert(_ == t"key=hello+world&param=24")
 
+      case class Person(name: Text, age: Int)
+      case class Couple(first: Person, second: Person)
+
+      test(t"Construct a Query by generic derivation"):
+        Person(t"Jack", 12).query.show
+
+      . assert(_ == t"name=Jack&age=12")
+
+      test(t"Construct a Query by partial generic derivation"):
+        import queryParameters.allowArbitrary
+        Query(person = Person(t"Ken", 39)).show
+
+      . assert(_ == t"person.name=Ken&person.age=39")
+
+      test(t"Construct a Query by nested generic derivation"):
+        Couple(Person(t"Jack", 12), Person(t"Jill", 11)).query.show
+
+      . assert(_ == t"first.name=Jack&first.age=12&second.name=Jill&second.age=11")
+
+      val query = Query.of(List
+                            (t"first.name"  -> t"Jack",
+                             t"first.age"   -> t"12",
+                             t"second.name" -> t"Jill",
+                             t"second.age"  -> t"11"))
+
+      test(t"Dereference a query")(query.second)
+      . assert(_ == Query.of(List(t"name" -> t"Jill", t"age"  -> t"11")))
+
+      test(t"Decode a query"):
+        summon[Couple is Decodable in Query].decoded(query)
+
+      . assert(_ == Couple(Person(t"Jack", 12), Person(t"Jill", 11)))
+
 
     suite(t"Fetching tests"):
 
@@ -122,95 +155,95 @@ object Tests extends Suite(t"Telekinesis tests"):
 
     suite(t"DNS Errors"):
       test(t"Nonexistent DNS"):
-        capture[TcpError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
+        capture[ConnectError](url"http://www.asorbkxoreuatoehudncak.com/".fetch())
         .tap(println(_))
 
-      . assert(_ == TcpError(TcpError.Reason.Dns))
+      . assert(_ == ConnectError(ConnectError.Reason.Dns))
 
     suite(t"badssl.com SSL certificate tests"):
-      import TcpError.Reason.*, TcpError.Reason.Ssl.Reason.*
+      import ConnectError.Reason.*, ConnectError.Reason.Ssl.Reason.*
 
       suite(t"Certificate Validation"):
         test(t"Expired SSL certificate"):
-          capture[TcpError](url"https://expired.badssl.com/".fetch())
+          capture[ConnectError](url"https://expired.badssl.com/".fetch())
 
-        . assert(_ == TcpError(Ssl(Handshake)))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(t"SSL certificate with wrong host"):
-          capture[TcpError](url"https://wrong.host.badssl.com/".fetch())
+          capture[ConnectError](url"https://wrong.host.badssl.com/".fetch())
 
-        . assert(_ == TcpError(Ssl(Handshake)))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(t"Self-signed certificate"):
-          capture[TcpError](url"https://self-signed.badssl.com/".fetch())
+          capture[ConnectError](url"https://self-signed.badssl.com/".fetch())
 
-        . assert(_ == TcpError(Ssl(Handshake)))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
         test(t"SSL certificate with untrusted root"):
-          capture[TcpError](url"https://untrusted-root.badssl.com/".fetch())
+          capture[ConnectError](url"https://untrusted-root.badssl.com/".fetch())
 
-        . assert(_ == TcpError(Ssl(Handshake)))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
       suite(t"Interception Certificates"):
-        test(t"superfish")(capture[TcpError](url"https://superfish.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"superfish")(capture[ConnectError](url"https://superfish.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"edellroot")(capture[TcpError](url"https://edellroot.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"edellroot")(capture[ConnectError](url"https://edellroot.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"dsdtestprovider")(capture[TcpError](url"https://dsdtestprovider.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"dsdtestprovider")(capture[ConnectError](url"https://dsdtestprovider.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"preact-cli")(capture[TcpError](url"https://preact-cli.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"preact-cli")(capture[ConnectError](url"https://preact-cli.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"webpack-dev-server")(capture[TcpError](url"https://webpack-dev-server.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"webpack-dev-server")(capture[ConnectError](url"https://webpack-dev-server.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
       suite(t"Broken cryptography"):
-        test(t"rc4")(capture[TcpError](url"https://rc4.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"rc4")(capture[ConnectError](url"https://rc4.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"rc4-md5")(capture[TcpError](url"https://rc4-md5.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"rc4-md5")(capture[ConnectError](url"https://rc4-md5.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"dh480")(capture[TcpError](url"https://dh480.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"dh480")(capture[ConnectError](url"https://dh480.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"dh512")(capture[TcpError](url"https://dh512.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"dh512")(capture[ConnectError](url"https://dh512.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"dh1024")(capture[TcpError](url"https://dh1024.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"dh1024")(capture[ConnectError](url"https://dh1024.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"null")(capture[TcpError](url"https://null.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"null")(capture[TcpError](url"https://null.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"null")(capture[ConnectError](url"https://null.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
       suite(t"Legacy cryptography"):
-        test(t"tls-v1-0")(capture[TcpError](url"https://tls-v1-0.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"tls-v1-0")(capture[ConnectError](url"https://tls-v1-0.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"tls-v1-1")(capture[TcpError](url"https://tls-v1-1.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"tls-v1-1")(capture[ConnectError](url"https://tls-v1-1.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"cbc")(capture[TcpError](url"https://cbc.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"cbc")(capture[ConnectError](url"https://cbc.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"3des")(capture[TcpError](url"https://3des.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"3des")(capture[ConnectError](url"https://3des.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"dh2048")(capture[TcpError](url"https://dh2048.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"dh2048")(capture[ConnectError](url"https://dh2048.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
       suite(t"Domain Security Policies"):
-        test(t"revoked")(capture[TcpError](url"https://revoked.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"revoked")(capture[ConnectError](url"https://revoked.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"pinning-test")(capture[TcpError](url"https://pinning-test.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"pinning-test")(capture[ConnectError](url"https://pinning-test.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))
 
-        test(t"no-sct")(capture[TcpError](url"https://no-sct.badssl.com/".fetch()))
-        . assert(_ == TcpError(Ssl(Handshake)))
+        test(t"no-sct")(capture[ConnectError](url"https://no-sct.badssl.com/".fetch()))
+        . assert(_ == ConnectError(Ssl(Handshake)))

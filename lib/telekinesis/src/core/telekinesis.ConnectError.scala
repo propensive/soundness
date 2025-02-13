@@ -32,37 +32,36 @@
                                                                                                   */
 package telekinesis
 
-import language.dynamics
+import fulminate.*
 
-import scala.quoted.*
+object ConnectError:
+  enum Reason:
+    case Dns
+    case Refused
+    case Ssl(reason: Ssl.Reason)
+    case Timeout
+    case Unknown
 
-import anticipation.*
-import nettlesome.*
-import prepositional.*
-import proscenium.*
+  object Reason:
+    object Ssl:
+      enum Reason:
+        case Handshake, Key, Peer, Protocol
 
-case class Submit[TargetType](originForm: Text, target: TargetType, host: Hostname) extends Dynamic:
-  inline def applyDynamicNamed[PayloadType]
-     (id: "apply")
-     (inline headers: (Label, Any)*)
-     (payload: PayloadType)
-     (using online:   Online,
-            loggable: HttpEvent is Loggable,
-            postable: PayloadType is Postable,
-            client:   HttpClient onto TargetType)
-  :     Http.Response =
+      object Reason:
+        given Reason is Communicable =
+          case Handshake => m"""the local and remote peer could not negotiate the desired level of
+                                security"""
+          case Key       => m"the SSL key was bad"
+          case Peer      => m"the remote peer's identity could not be verified"
+          case Protocol  => m"""the local or remote implementation of the SSL protocol did not
+                                behave as expected"""
 
-    ${
-        Telekinesis.submit[TargetType, PayloadType]
-         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+    given Reason is Communicable =
+      case Dns         => m"the server address could not be resolved by DNS"
+      case Refused     => m"the connection was refused"
+      case Ssl(reason) => m"the SSL/TLS layer could not be established because $reason"
+      case Timeout     => m"the server did not respond within the time limit"
+      case Unknown     => m"an unrecognized error occurred"
 
-  inline def applyDynamic[PayloadType: Postable as postable](id: "apply")(inline headers: Any*)
-     (payload: PayloadType)
-     (using online:   Online,
-            loggable: HttpEvent is Loggable,
-            client:   HttpClient onto TargetType)
-  :     Http.Response =
-
-    ${
-        Telekinesis.submit[TargetType, PayloadType]
-         ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
+case class ConnectError(reason: ConnectError.Reason)(using Diagnostics)
+extends Error(m"the TCP connection failed because $reason")

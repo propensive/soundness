@@ -34,16 +34,26 @@ package telekinesis
 
 import anticipation.*
 import fulminate.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
 
 import language.dynamics
 
 given Realm = realm"telekinesis"
 
+package queryParameters:
+  erased given allowArbitrary: [KeyType <: Label, ValueType] => KeyType is Parameter of ValueType =
+    ###
+
+extension [ValueType: Encodable in Query](value: ValueType)
+  def query: Query = ValueType.encoded(value)
+
 extension [EndpointType: Fetchable](endpoint: EndpointType)
-  def fetch: Fetch[EndpointType.Target] =
-    Fetch
+  def fetch: Http.Fetch[EndpointType.Target] =
+    Http.Fetch
      (EndpointType.text(endpoint), EndpointType.target(endpoint), EndpointType.hostname(endpoint))
 
-  def submit: Submit[EndpointType.Target] =
-    Submit
+  def submit: Http.Submit[EndpointType.Target] =
+    Http.Submit
      (EndpointType.text(endpoint), EndpointType.target(endpoint), EndpointType.hostname(endpoint))
