@@ -64,8 +64,12 @@ object Query extends Dynamic:
           construct:
             [FieldType] => decodable => decodable.decoded(value(label))
 
-  given textEncodable: [ValueType: Encodable in Text] => ValueType is Encodable in Query =
-    value => Query.of(value.encode)
+  inline given encodable: [ValueType] => ValueType is Encodable in Query = compiletime.summonFrom:
+    case given (ValueType is Encodable in Text) =>
+      value => Query.of(value.encode)
+
+    case given ProductReflection[ValueType & Product] =>
+      EncodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Encodable in Query]
 
   inline given textDecodable: [ValueType: Decodable in Text] => Tactic[QueryError]
   =>    ValueType is Decodable in Query =
@@ -81,11 +85,6 @@ object Query extends Dynamic:
           case _                  => abort(QueryError())
 
   given Query is Showable = _.queryString
-
-  inline given encodable: [ProductType <: Product: ProductReflection]
-  =>    ProductType is Encodable in Query =
-
-    EncodableDerivation.join[ProductType]
 
   inline given decodable: [ProductType <: Product: ProductReflection]
   =>    ProductType is Decodable in Query =
