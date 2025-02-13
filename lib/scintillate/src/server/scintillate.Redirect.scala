@@ -30,6 +30,7 @@
 package scintillate
 
 import anticipation.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import telekinesis.*
@@ -40,7 +41,7 @@ object Redirect:
     new Redirect(location.generic, permanent)
 
   given redirect: Redirect is Servable = redirect =>
-    val headers = List(Http.Header(ResponseHeader.Location.header, redirect.location))
+    val headers = List(Http.Header(t"location", redirect.location))
     val status = if redirect.permanent then Http.MovedPermanently else Http.Found
     Http.Response(1.1, status, headers, Stream())
 

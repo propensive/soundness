@@ -32,6 +32,7 @@ package telekinesis
 import anticipation.*
 import contingency.*
 import gesticulate.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
@@ -41,17 +42,19 @@ object Servable:
   def apply[ResponseType](mediaType: ResponseType => MediaType)
      (lambda: ResponseType => Stream[Bytes])
   :     ResponseType is Servable = response =>
-    val headers = List(Http.Header(ResponseHeader.ContentType.header, mediaType(response).show))
+
+    val headers = List(Http.Header(t"content-type", mediaType(response).show))
     Http.Response(1.1, Http.Ok, headers, lambda(response))
 
   given content: Content is Servable:
     def serve(content: Content): Http.Response =
-      val headers = List(Http.Header(ResponseHeader.ContentType.header, content.media.show))
+      val headers = List(Http.Header(t"content-type", content.media.show))
 
       Http.Response(1.1, Http.Ok, headers, content.stream)
 
   given bytes: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
   =>    ResponseType is Servable =
+
     Servable[ResponseType](value => unsafely(Media.parse(ResponseType.generic(value)(0)))): value =>
       ResponseType.generic(value)(1)
 
@@ -61,12 +64,12 @@ object Servable:
     scala.compiletime.summonFrom:
       case encodable: (ValueType is Encodable in Bytes) => value =>
         val headers =
-          List(Http.Header(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
+          List(Http.Header(t"content-type", ValueType.mediaType(value).show))
 
         Http.Response(1.1, Http.Ok, headers, Stream(encodable.encode(value)))
       case given (ValueType is Readable by Bytes)       => value =>
         val headers =
-          List(Http.Header(ResponseHeader.ContentType.header, ValueType.mediaType(value).show))
+          List(Http.Header(t"content-type", ValueType.mediaType(value).show))
 
         Http.Response(1.1, Http.Ok, headers, value.stream[Bytes])
 

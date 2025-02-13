@@ -31,6 +31,7 @@ package scintillate
 
 import anticipation.*
 import gesticulate.*
+import gossamer.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
@@ -44,6 +45,6 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
   final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
   :     Unit =
 
-    responder.addHeader(ResponseHeader.ContentType.header, mediaType.show)
+    responder.addHeader(t"content-type", mediaType.show)
     headers.each(responder.addHeader)
     responder.sendBody(status, stream(content))

@@ -59,7 +59,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
       Http.Response
        (1.1,
         Http.Unauthorized,
-        List(Http.Header(ResponseHeader.WwwAuthenticate.show, auth)),
+        List(Http.Header(t"www-authenticate", auth)),
         Stream())
 
 inline def param(key: Text): Optional[Text] = request.params.get(key).getOrElse(Unset)

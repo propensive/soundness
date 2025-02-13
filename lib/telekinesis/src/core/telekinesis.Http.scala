@@ -203,7 +203,8 @@ object Http:
 
       ListMap[Text, Text](
         t"content"
-        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show).or(t"?"),
+        -> safely(request.headers.contentType.prim.or(media"application/octet-stream").show)
+           . or(t"?"),
         t"method"   -> request.method.show,
         t"query"    -> request.query.show,
         t"hostname" -> request.host.show,
@@ -303,8 +304,8 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using capitate: name.type is Capitate, decoder: capitate.Subject is Decodable in Text)
-      :     List[capitate.Subject] =
+         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
+      :     List[Prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -421,8 +422,8 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using capitate: name.type is Capitate, decoder: capitate.Subject is Decodable in Text)
-      :     List[capitate.Subject] =
+         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
+      :     List[Prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
