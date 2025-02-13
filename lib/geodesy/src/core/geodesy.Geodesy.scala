@@ -61,6 +61,9 @@ object Geodesy:
 
     def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
 
+    def apply(north: Int, east: Int): Location =
+      fromRadians(Degrees(north/1000.0).radians, Degrees(east/1000.0).radians)
+
     @targetName("applyDegrees")
     def apply(latitude: Degrees, longitude: Degrees): Location =
       fromRadians(latitude.radians, longitude.radians)
