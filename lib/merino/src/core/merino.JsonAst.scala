@@ -407,7 +407,7 @@ object JsonAst:
       def parseNumber(first: Int, negative: Boolean): Double | Long | BigDecimal =
         var str: StringBuilder = StringBuilder((if negative then "-" else "")+first)
         var ch: Byte = 0
-        var decimalPoint: Boolean = false
+        var floating: Boolean = false
         continue = true
 
         try
@@ -415,24 +415,29 @@ object JsonAst:
             ch = current
             ch match
               case Period =>
-                decimalPoint = true
+                floating = true
                 str.append('.')
                 next()
 
-              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus |
-                  UpperE | LowerE | Period | Plus =>
+              case UpperE | LowerE =>
+                floating = true
+                str.append('e')
+                next()
+
+              case Num0 | Num1 | Num2 | Num3 | Num4 | Num5 | Num6 | Num7 | Num8 | Num9 | Minus
+                   | Plus =>
                 str.append(ch.toChar)
                 next()
 
               case _ =>
                 continue = false
 
-          if decimalPoint then java.lang.Double.parseDouble(str.toString)
+          if floating then java.lang.Double.parseDouble(str.toString)
           else java.lang.Long.parseLong(str.toString)
 
         catch
           case err: ArrayIndexOutOfBoundsException =>
-            if decimalPoint then java.lang.Double.parseDouble(str.toString)
+            if floating then java.lang.Double.parseDouble(str.toString)
             else java.lang.Long.parseLong(str.toString)
 
       def parseNumberOld(first: Long, negative: Boolean): Double | Long | BigDecimal =
