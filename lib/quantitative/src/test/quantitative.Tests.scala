@@ -59,7 +59,7 @@ object Tests extends Suite(t"Quantitative Tests"):
       .assert(_ == 0.5*Second/Metre)
 
       test(t"Divide a double by a quantity"):
-        1.0/(2.0*Metre/Second)
+        Quantity(1.0)/(2.0*Metre/Second)
       .assert(_ == 0.5*Second/Metre)
 
     suite(t"Compile errors"):
@@ -67,6 +67,23 @@ object Tests extends Suite(t"Quantitative Tests"):
         demilitarize:
           Metre + 2*Second
       .assert(_.nonEmpty)
+
+      test(t"Cannot specify a quantity with a double value"):
+        demilitarize:
+          val x: Quantity[Metres[1]] = 10.0
+      . assert(_.nonEmpty)
+
+      test(t"Specify a quantity"):
+        case class Speed(value: Quantity[Metres[1] & Hours[-1]])
+        Speed(10.0*Kilo(Metre)/Hour)
+
+      . assert()
+
+      test(t"Specify a quantity"):
+        case class Speed(value: Quantity[Metres[1] & Hours[-1]])
+        Speed(10.0*Kilo(Metre)/Hour)
+
+      . assert()
 
       test(t"Cannot subtract quantities of different units"):
         demilitarize:

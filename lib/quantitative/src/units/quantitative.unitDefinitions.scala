@@ -32,8 +32,6 @@
                                                                                                   */
 package quantitative
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import hypotenuse.*
 
@@ -54,9 +52,9 @@ val Emu = MetricUnit(10e-3*Ampere/(Metre*Metre))
 val Oersted = MetricUnit(79.577*Ampere/Metre)
 val Gilbert = MetricUnit(0.796*Ampere)
 val Darcy = MetricUnit(0.987e-12*Metre*Metre)
-val Kayser = MetricUnit(100/Second)
+val Kayser = MetricUnit(Quantity[Measure](100)/Second)
 
-val Hertz = MetricUnit(1.0/Second)
+val Hertz = MetricUnit(Quantity[Measure](1.0)/Second)
 val Newton = MetricUnit(Metre*Kilo(Gram)/(Second*Second))
 val Dyne = MetricUnit(10e-5*Newton)
 val Pascal = MetricUnit(Newton/(Metre*Metre))
@@ -81,7 +79,7 @@ val Gauss = MetricUnit(10e-4*Tesla)
 val Henry = MetricUnit(Weber/Ampere)
 val Lux = MetricUnit(Candela/(Metre*Metre))
 val Phot = MetricUnit(10e4*Lux)
-val Becquerel = MetricUnit(1.0/Second)
+val Becquerel = MetricUnit(Quantity[Measure](1.0)/Second)
 val Gray = MetricUnit(Joule/Kilo(Gram))
 val Sievert = MetricUnit(Joule/Kilo(Gram))
 val Katal = MetricUnit(Mole/Second)
@@ -127,5 +125,5 @@ package constants:
   val PlanckConstant = 6.62607015e-34*Metre*Metre*Kilo(Gram)/Second
   val GravitationalConstant = 6.67430e-11*Newton/Metre*Metre/Kilo(Gram)/Kilo(Gram)
   val ElementaryCharge = 1.602176634e-19*Coulomb
-  val AvogadroConstant = 6.02214076e23/Mole
+  val AvogadroConstant = Quantity[Measure](6.02214076e23)/Mole
   val BoltzmannConstant = 1.380649e-13*Joule/Kelvin
