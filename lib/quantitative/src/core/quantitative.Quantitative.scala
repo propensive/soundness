@@ -134,11 +134,8 @@ object Quantitative extends Quantitative2:
 
     inline def apply[UnitsType <: Measure](value: Double): Quantity[UnitsType] = value
 
-    given convertDouble: [UnitsType <: Measure] => Conversion[Double, Quantity[UnitsType]] =
-      Quantity(_)
-
-    given convertInt: [UnitsType <: Measure] => Conversion[Int, Quantity[UnitsType]] =
-      int => Quantity(int.toDouble)
+    given convertDouble: Conversion[Double, Quantity[Measure]] = Quantity[Measure](_)
+    given convertInt: Conversion[Int, Quantity[Measure]] = int => Quantity[Measure](int.toDouble)
 
     given commensurable: [UnitsType <: Measure, UnitsType2 <: Measure]
     =>    Quantity[UnitsType] is Commensurable:
