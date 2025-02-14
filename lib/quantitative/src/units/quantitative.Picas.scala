@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Picas[Power <: Nat] extends Units[Power, Length]
+trait Picas[Power <: Nat] extends Units[Power, Distance]
 
 object Picas:
   given UnitName[Picas[1]] = () => "pc".tt

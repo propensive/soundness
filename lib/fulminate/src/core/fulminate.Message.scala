@@ -99,7 +99,9 @@ case class Message(textParts: List[Text], subs: List[Message] = Nil):
       case line :: tail =>
         if line.forall(_.isWhitespace) then buf.append("\n") else
           if !buf.isEmpty then buf.append(" ")
-          buf.append(line.nn.trim.nn.replaceAll("\\s+", " "))
+
+          buf.append:
+            line.nn.replaceAll("^ *", "").nn.replaceAll(" *$", "").nn.replaceAll("\\s+", " ")
 
         recur(tail)
 

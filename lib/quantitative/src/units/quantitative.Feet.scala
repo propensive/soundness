@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Feet[Power <: Nat] extends Units[Power, Length]
+trait Feet[Power <: Nat] extends Units[Power, Distance]
 
 object Feet:
   given UnitName[Feet[1]] = () => "ft".tt

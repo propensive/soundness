@@ -36,7 +36,7 @@ import language.experimental.captureChecking
 
 trait Dimension
 
-erased trait Length extends Dimension
+erased trait Distance extends Dimension
 erased trait Mass extends Dimension
 erased trait Time extends Dimension
 erased trait Current extends Dimension

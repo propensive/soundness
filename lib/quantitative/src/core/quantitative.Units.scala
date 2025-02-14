@@ -36,7 +36,7 @@ import proscenium.*
 
 trait Units[PowerType <: Nat, DimensionType <: Dimension] extends Measure
 
-erased trait Metres[Power <: Nat] extends Units[Power, Length]
+erased trait Metres[Power <: Nat] extends Units[Power, Distance]
 erased trait Kilograms[Power <: Nat] extends Units[Power, Mass]
 erased trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
 erased trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]

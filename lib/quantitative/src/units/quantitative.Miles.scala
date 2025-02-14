@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Miles[Power <: Nat] extends Units[Power, Length]
+trait Miles[Power <: Nat] extends Units[Power, Distance]
 
 object Miles:
   given UnitName[Miles[1]] = () => "mi".tt
