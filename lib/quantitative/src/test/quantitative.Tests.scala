@@ -46,7 +46,7 @@ given decimalizer: Decimalizer = Decimalizer(3)
 object Tests extends Suite(t"Quantitative Tests"):
   def run(): Unit =
     suite(t"Arithmetic tests"):
-      test(t"Add two lengths"):
+      test(t"Add two distances"):
         Metre + Metre*2
       .assert(_ == Metre*3)
 
@@ -89,13 +89,13 @@ object Tests extends Suite(t"Quantitative Tests"):
         demilitarize:
           Metre - 2*Second
         .map(_.message)
-      .assert(_.contains(t"quantitative: the left operand represents length, but the right operand represents time; these are incompatible physical quantities"))
+      .assert(_.contains(t"quantitative: the left operand represents distance, but the right operand represents time; these are incompatible physical quantities"))
 
       test(t"Add two different units"):
         demilitarize:
           Second*2 + Metre*3
         .map(_.message)
-      .assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents length; these are incompatible physical quantities"))
+      .assert(_.contains(t"quantitative: the left operand represents time, but the right operand represents distance; these are incompatible physical quantities"))
 
       test(t"Units cancel out"):
         demilitarize:
@@ -121,19 +121,19 @@ object Tests extends Suite(t"Quantitative Tests"):
         demilitarize:
           2*Metre + 2*Joule
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents energy; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents energy; these are incompatible physical quantities"))
 
       test(t"Different dimensions are incomparable"):
         demilitarize:
           7*Metre >= 2*Kilo(Gram)
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents mass; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents mass; these are incompatible physical quantities"))
 
       test(t"Different powers of the same dimension are incomparable"):
         demilitarize:
           7*Metre >= 2*Metre*Metre
         .map(_.message)
-      .assert(_ == List("quantitative: the left operand represents length, but the right operand represents area; these are incompatible physical quantities"))
+      .assert(_ == List("quantitative: the left operand represents distance, but the right operand represents area; these are incompatible physical quantities"))
 
     suite(t"Automatic conversions"):
       test(t"Conversions are applied automatically to RHS in multiplication"):
@@ -292,7 +292,7 @@ object Tests extends Suite(t"Quantitative Tests"):
     suite(t"Quantity descriptions"):
       test(t"describe a base dimension"):
         Metre.dimension
-      .assert(_ == t"length")
+      .assert(_ == t"distance")
 
       test(t"describe a compound dimension"):
         (Metre/Second).dimension
@@ -306,11 +306,11 @@ object Tests extends Suite(t"Quantitative Tests"):
       case class Pts(value: Double)
       given Quantifiable[Pts, Inches[1]] = pts => (Inch*pts.value)/72
 
-      test(t"quantify a length"):
+      test(t"quantify a distance"):
         Pts(71).quantify < Inch
       .assert(_ == true)
 
-      test(t"quantify a length"):
+      test(t"quantify a distance"):
         Pts(73).quantify > Inch
       .assert(_ == true)
 

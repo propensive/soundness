@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Chains[Power <: Nat] extends Units[Power, Length]
+trait Chains[Power <: Nat] extends Units[Power, Distance]
 
 object Chains:
   given UnitName[Chains[1]] = () => "ch".tt

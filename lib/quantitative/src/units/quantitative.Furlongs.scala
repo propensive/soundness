@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Furlongs[Power <: Nat] extends Units[Power, Length]
+trait Furlongs[Power <: Nat] extends Units[Power, Distance]
 
 object Furlongs:
   given UnitName[Furlongs[1]] = () => "fur".tt

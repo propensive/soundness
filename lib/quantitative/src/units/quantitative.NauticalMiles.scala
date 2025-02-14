@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait NauticalMiles[Power <: Nat] extends Units[Power, Length]
+trait NauticalMiles[Power <: Nat] extends Units[Power, Distance]
 
 object NauticalMiles:
   given UnitName[NauticalMiles[1]] = () => "NM".tt

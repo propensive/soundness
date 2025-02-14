@@ -39,7 +39,7 @@ import proscenium.*
 trait PrincipalUnit[DimensionType <: Dimension, UnitType[_ <: Nat] <: Measure]()
 
 object PrincipalUnit:
-  given length: PrincipalUnit[Length, Metres]()
+  given distance: PrincipalUnit[Distance, Metres]()
   given mass: PrincipalUnit[Mass, Kilograms]()
   given time: PrincipalUnit[Time, Seconds]()
   given current: PrincipalUnit[Current, Amperes]()

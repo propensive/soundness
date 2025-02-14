@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Lightyears[Power <: Nat] extends Units[Power, Length]
+trait Lightyears[Power <: Nat] extends Units[Power, Distance]
 
 object Lightyears:
   given UnitName[Lightyears[1]] = () => "ly".tt

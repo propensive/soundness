@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Points[Power <: Nat] extends Units[Power, Length]
+trait Points[Power <: Nat] extends Units[Power, Distance]
 
 object Points:
   given UnitName[Points[1]] = () => "pt".tt

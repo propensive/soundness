@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Inches[Power <: Nat] extends Units[Power, Length]
+trait Inches[Power <: Nat] extends Units[Power, Distance]
 
 object Inches:
   given UnitName[Inches[1]] = () => "in".tt

@@ -42,7 +42,7 @@ erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label](
 
 object PhysicalQuantity:
   // base units
-  erased given length: PhysicalQuantity[Units[1, Length], "length"] = ###
+  erased given distance: PhysicalQuantity[Units[1, Distance], "distance"] = ###
   erased given mass: PhysicalQuantity[Units[1, Mass], "mass"] = ###
   erased given time: PhysicalQuantity[Units[1, Time], "time"] = ###
   erased given current: PhysicalQuantity[Units[1, Current], "current"] = ###
@@ -54,93 +54,93 @@ object PhysicalQuantity:
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
   type ElectricalConductivity =
-    Units[-3, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+    Units[-3, Distance] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
 
-  type Permittivity = Units[-3, Length] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
-  type ReactionRate = Units[-3, Length] & Units[-1, Time] & Units[1, AmountOfSubstance]
-  type MolarConcentration = Units[-3, Length] & Units[1, AmountOfSubstance]
-  type ElectricChargeDensity = Units[-3, Length] & Units[1, Time] & Units[1, Current]
-  type MassDensity = Units[-3, Length] & Units[1, Mass]
-  type Reluctance = Units[-2, Length] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
+  type Permittivity = Units[-3, Distance] & Units[-1, Mass] & Units[4, Time] & Units[2, Current]
+  type ReactionRate = Units[-3, Distance] & Units[-1, Time] & Units[1, AmountOfSubstance]
+  type MolarConcentration = Units[-3, Distance] & Units[1, AmountOfSubstance]
+  type ElectricChargeDensity = Units[-3, Distance] & Units[1, Time] & Units[1, Current]
+  type MassDensity = Units[-3, Distance] & Units[1, Mass]
+  type Reluctance = Units[-2, Distance] & Units[-1, Mass] & Units[2, Time] & Units[2, Current]
 
   type ElectricalConductance =
-    Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
+    Units[-2, Distance] & Units[-1, Mass] & Units[3, Time] & Units[2, Current]
 
   type ThermalResistance =
-    Units[-2, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+    Units[-2, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
 
-  type Capacitance = Units[-2, Length] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
-  type CurrentDensity = Units[-2, Length] & Units[1, Current]
-  type ElectricDisplacementField = Units[-2, Length] & Units[1, Time] & Units[1, Current]
-  type Illuminance = Units[-2, Length] & Units[1, Luminosity]
-  type AreaDensity = Units[-2, Length] & Units[1, Mass]
+  type Capacitance = Units[-2, Distance] & Units[-1, Mass] & Units[4, Time] & Units[1, Current]
+  type CurrentDensity = Units[-2, Distance] & Units[1, Current]
+  type ElectricDisplacementField = Units[-2, Distance] & Units[1, Time] & Units[1, Current]
+  type Illuminance = Units[-2, Distance] & Units[1, Luminosity]
+  type AreaDensity = Units[-2, Distance] & Units[1, Mass]
 
   type ThermalResistivity =
-    Units[-1, Length] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
+    Units[-1, Distance] & Units[-1, Mass] & Units[3, Time] & Units[1, Temperature]
 
-  type Magnetization = Units[-1, Length] & Units[1, Current]
-  type OpticalPower = Units[-1, Length]
-  type TempratureGradient = Units[-1, Length] & Units[1, Temperature]
-  type Pressure = Units[-1, Length] & Units[1, Mass] & Units[-2, Time]
-  type DynamicViscosity = Units[-1, Length] & Units[1, Mass] & Units[-1, Time]
-  type LinearDensity = Units[-1, Length] & Units[1, Mass]
+  type Magnetization = Units[-1, Distance] & Units[1, Current]
+  type OpticalPower = Units[-1, Distance]
+  type TempratureGradient = Units[-1, Distance] & Units[1, Temperature]
+  type Pressure = Units[-1, Distance] & Units[1, Mass] & Units[-2, Time]
+  type DynamicViscosity = Units[-1, Distance] & Units[1, Mass] & Units[-1, Time]
+  type LinearDensity = Units[-1, Distance] & Units[1, Mass]
   type Frequency = Units[-1, Time]
   type ElectricCharge = Units[1, Time] & Units[1, Current]
   type Radiance = Units[1, Mass] & Units[-3, Time]
   type MagneticFluxDensity = Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
   type SurfaceTension = Units[1, Mass] & Units[-2, Time]
   type Absement = Units[1, Mass] & Units[1, Time]
-  type Pop = Units[1, Length] & Units[-6, Time]
-  type Crackle = Units[1, Length] & Units[-5, Time]
-  type Jounce = Units[1, Length] & Units[-4, Time]
-  type Jerk = Units[1, Length] & Units[-3, Time]
-  type Acceleration = Units[1, Length] & Units[-2, Time]
-  type Velocity = Units[1, Length] & Units[-1, Time]
-  type ElectricDipoleMoment = Units[1, Length] & Units[1, Time] & Units[1, Current]
+  type Pop = Units[1, Distance] & Units[-6, Time]
+  type Crackle = Units[1, Distance] & Units[-5, Time]
+  type Jounce = Units[1, Distance] & Units[-4, Time]
+  type Jerk = Units[1, Distance] & Units[-3, Time]
+  type Acceleration = Units[1, Distance] & Units[-2, Time]
+  type Velocity = Units[1, Distance] & Units[-1, Time]
+  type ElectricDipoleMoment = Units[1, Distance] & Units[1, Time] & Units[1, Current]
 
   type ElectricFieldStrength =
-    Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+    Units[1, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
 
   type ThermalConductivity =
-    Units[1, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+    Units[1, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
 
-  type Permeability = Units[1, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
-  type Force = Units[1, Length] & Units[1, Mass] & Units[-2, Time]
-  type Momentum = Units[1, Length] & Units[1, Mass] & Units[-1, Time]
-  type AbsorbedDoseRate = Units[2, Length] & Units[-3, Time]
-  type SpecificHeatCapacity = Units[2, Length] & Units[-2, Time] & Units[-1, Temperature]
-  type SpecificEnergy = Units[2, Length] & Units[-2, Time]
-  type Area = Units[2, Length]
-  type MagneticMoment = Units[2, Length] & Units[1, Current]
-  type Impedance = Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+  type Permeability = Units[1, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  type Force = Units[1, Distance] & Units[1, Mass] & Units[-2, Time]
+  type Momentum = Units[1, Distance] & Units[1, Mass] & Units[-1, Time]
+  type AbsorbedDoseRate = Units[2, Distance] & Units[-3, Time]
+  type SpecificHeatCapacity = Units[2, Distance] & Units[-2, Time] & Units[-1, Temperature]
+  type SpecificEnergy = Units[2, Distance] & Units[-2, Time]
+  type Area = Units[2, Distance]
+  type MagneticMoment = Units[2, Distance] & Units[1, Current]
+  type Impedance = Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
   type ElectricalPotential =
-    Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
+    Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Current]
 
   type ThermalConductance =
-    Units[2, Length] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
+    Units[2, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-1, Temperature]
 
-  type Power = Units[2, Length] & Units[1, Mass] & Units[-3, Time]
-  type Inductance = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
-  type MagneticFlux = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
-  type Entropy = Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
+  type Power = Units[2, Distance] & Units[1, Mass] & Units[-3, Time]
+  type Inductance = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-2, Current]
+  type MagneticFlux = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Current]
+  type Entropy = Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature]
 
   type MolarEntropy =
-    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1,
+    Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, Temperature] & Units[-1,
         AmountOfSubstance]
 
   type ChemicalPotential =
-    Units[2, Length] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
+    Units[2, Distance] & Units[1, Mass] & Units[-2, Time] & Units[-1, AmountOfSubstance]
 
-  type Energy = Units[2, Length] & Units[1, Mass] & Units[-2, Time]
-  type Spin = Units[2, Length] & Units[1, Mass] & Units[-1, Time]
-  type MomentOfInertia = Units[2, Length] & Units[1, Mass]
-  type SpecificVolume = Units[3, Length] & Units[-1, Mass]
-  type VolumetricFlowRate = Units[3, Length] & Units[-1, Time]
-  type Volume = Units[3, Length]
+  type Energy = Units[2, Distance] & Units[1, Mass] & Units[-2, Time]
+  type Spin = Units[2, Distance] & Units[1, Mass] & Units[-1, Time]
+  type MomentOfInertia = Units[2, Distance] & Units[1, Mass]
+  type SpecificVolume = Units[3, Distance] & Units[-1, Mass]
+  type VolumetricFlowRate = Units[3, Distance] & Units[-1, Time]
+  type Volume = Units[3, Distance]
 
   type ElectricalResistivity =
-    Units[3, Length] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
+    Units[3, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
   erased given absement: PhysicalQuantity[Absement, "absement"] = ###
   erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###

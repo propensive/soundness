@@ -38,7 +38,7 @@ import anticipation.*
 import proscenium.*
 import rudiments.*
 
-trait Yards[Power <: Nat] extends Units[Power, Length]
+trait Yards[Power <: Nat] extends Units[Power, Distance]
 
 object Yards:
   given UnitName[Yards[1]] = () => "yd".tt
