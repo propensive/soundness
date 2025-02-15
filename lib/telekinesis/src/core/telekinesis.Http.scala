@@ -272,7 +272,7 @@ object Http:
 
       items.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
         elem.cut(t"=", 2) match
-          case List(key, value) => map.updated(key, safely(value).or(t"") :: map.getOrElse(key, Nil))
+          case List(key, value) => map.updated(key, safely(value).or(t"") :: map.at(key).or(Nil))
           case _                => map
 
     lazy val params: Map[Text, Text] =
@@ -307,8 +307,9 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
-      :     List[Prefixable.Subject] =
+         (using prefixable: name.type is Prefixable,
+                decoder:    prefixable.Subject is Decodable in Text)
+      :     List[prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -443,8 +444,9 @@ object Http:
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
-         (using Prefixable: name.type is Prefixable, decoder: Prefixable.Subject is Decodable in Text)
-      :     List[Prefixable.Subject] =
+         (using prefixable: name.type is Prefixable,
+                decoder:    prefixable.Subject is Decodable in Text)
+      :     List[prefixable.Subject] =
         val name2 = name.tt.uncamel.kebab.lower
         textHeaders.filter(_.key.lower == name2).map(_.value.decode)
 
@@ -480,7 +482,8 @@ object Http:
           Telekinesis.submit[TargetType, PayloadType]
            ('this, 'headers, 'online, 'loggable, 'payload, 'postable, 'client)  }
 
-  case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostname) extends Dynamic:
+  case class Fetch[TargetType](originForm: Text, target: TargetType, host: Hostname)
+    extends Dynamic:
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
        (using online:   Online,
