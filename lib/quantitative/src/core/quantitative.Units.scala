@@ -43,5 +43,3 @@ erased trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
 erased trait Amperes[Power <: Nat] extends Units[Power, Current]
 erased trait Kelvins[Power <: Nat] extends Units[Power, Temperature]
 erased trait Seconds[Power <: Nat] extends Units[Power, Time]
-
-erased trait Radians[Power <: Nat] extends Units[Power, Angle]

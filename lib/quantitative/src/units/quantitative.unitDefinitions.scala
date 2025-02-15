@@ -42,7 +42,6 @@ val Mole: MetricUnit[Moles[1]] = MetricUnit(1)
 val Ampere: MetricUnit[Amperes[1]] = MetricUnit(1)
 val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
 val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
-val Radian: MetricUnit[Radians[1]] = MetricUnit(1)
 
 val Galileo = MetricUnit(0.01*Metre/(Second*Second))
 val Biot = MetricUnit(10*Ampere)

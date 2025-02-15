@@ -42,4 +42,4 @@ trait Degrees[Power <: Nat] extends Units[Power, Angle]
 
 object Degrees:
   given UnitName[Degrees[1]] = () => "°".tt
-  erased given degreesPerRadian: Ratio[Degrees[1] & Radians[-1], 57.2957795131] = ###
+  erased given degreesPerRadian: Ratio[Degrees[1], 57.2957795131] = ###
