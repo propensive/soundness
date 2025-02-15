@@ -151,8 +151,10 @@ object Codl:
               go(focus = Proto(), peers = closed :: peers)
 
             case _ =>
-              go(focus = Proto
-                          (Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines))))
+              val proto =
+                Proto(Unset, extra = focus.extra.or(if lines == 0 then Unset else Extra(lines)))
+
+              go(focus = proto)
 
           case CodlToken.Indent =>
             if focus.key.absent then raise(CodlError(focus.line, focus.col, 1, IndentAfterComment))

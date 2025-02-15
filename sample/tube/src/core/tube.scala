@@ -25,7 +25,10 @@ import workingDirectories.daemonClient
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = ###
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
 given StationRow is Showable = _.name
-given Online => StationRow is Embeddable in HttpUrl by UrlFragment = row => UrlFragment(row.id.resolve.text)
+
+given Online => StationRow is Embeddable in HttpUrl by UrlFragment =
+  row => UrlFragment(row.id.resolve.text)
+
 given Decimalizer = Decimalizer(significantFigures = 2)
 val timezone = tz"Europe/London"
 type HoursAndMinutes = Count[(Hours[1], Minutes[1])]
@@ -83,7 +86,10 @@ def app(): Unit = cli:
         case Trip() :: _ =>
           val stations = Data.stations
           val start0: Optional[StationRow] = Start.select(stations.values)
-          val destination0: Optional[StationRow] = Destination.select(start0.lay(stations)(stations - _.id).values)
+
+          val destination0: Optional[StationRow] =
+            Destination.select(start0.lay(stations)(stations - _.id).values)
+
           val departure0: Optional[Text] = Departure[Text]()
 
           execute:
@@ -91,15 +97,21 @@ def app(): Unit = cli:
               case error: UserError => Out.println(error.message) yet Exit.Fail(1)
 
             . within:
-                val start = start0.or(abort(UserError(m"The $Start parameter has not been specified")))
-                val destination = destination0.or(abort(UserError(m"The $Destination parameter has not been specified")))
+                val start = start0.lest(UserError(m"The $Start parameter has not been specified"))
+
+                val destination =
+                  destination0.lest(UserError(m"The $Destination parameter has not been specified"))
 
                 val departure = departure0 match
                   case time@r"${As[Int](hh)}([0-2][0-9])[0-5][0-9]" if 0 <= hh < 24 => time
                   case _                                                            => t"0800"
 
-                Out.println(e"Searching for a journey from $Italic($start) to $Italic($destination)")
-                val summary = Output.render(Data.plan(start, destination, departure), start, destination)
+                Out.println:
+                  e"Searching for a journey from $Italic($start) to $Italic($destination)"
+
+                val summary =
+                  Output.render(Data.plan(start, destination, departure), start, destination)
+
                 daemon(safely(sh"say $summary".exec[Unit]()))
                 Exit.Ok
 
@@ -114,15 +126,19 @@ object Data:
     val sourceUrl = url"https://api.tfl.gov.uk/stationdata/tfl-stationdata-detailed.zip"
 
     tend:
-      case HttpError(status, _) => InitError(m"There was an HTTP $status error accessing $sourceUrl")
-      case TcpError(_)          => InitError(m"Couldn't establish a connection to the HTTP server")
-      case _: ZipError          => InitError(m"There was a problem with the ZIP file")
-      case error: NameError     => InitError(error.message)
-      case _: DsvError          => InitError(m"The CSV file was not in the right format")
-      case error: AsyncError    => InitError(error.message)
-      case PathError(_, _)      => InitError(m"The XDG cache home is not a valid path")
-      case error: IoError       => InitError(error.message)
-      case _: StreamError       => InitError(m"An error occurred when reading the cache file from disk")
+      case TcpError(_)       => InitError(m"Couldn't establish a connection to the HTTP server")
+      case _: ZipError       => InitError(m"There was a problem with the ZIP file")
+      case error: NameError  => InitError(error.message)
+      case _: DsvError       => InitError(m"The CSV file was not in the right format")
+      case error: AsyncError => InitError(error.message)
+      case PathError(_, _)   => InitError(m"The XDG cache home is not a valid path")
+      case error: IoError    => InitError(error.message)
+
+      case HttpError(status, _) =>
+        InitError(m"There was an HTTP $status error accessing $sourceUrl")
+
+      case _: StreamError =>
+        InitError(m"An error occurred when reading the cache file from disk")
 
     . within:
         cache.establish:
@@ -140,17 +156,26 @@ object Data:
 
           Dsv.parse(csv).rows.map(_.as[StationRow]).indexBy(_.id).bijection
 
-  def plan(start: StationRow, destination: StationRow, time: Text)(using Online): Plan raises UserError =
-    val sourceUrl = url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?mode=tube,elizabeth-line,dlr,overground&time=$time"
+  def plan(start: StationRow, destination: StationRow, time: Text)(using Online)
+  :     Plan raises UserError =
+
+    val modes = t"tube,elizabeth-line,dlr,overground"
+
+    val sourceUrl =
+      url"https://api.tfl.gov.uk/Journey/JourneyResults/$start/to/$destination/?mode=$modes&time=$time"
     given Optional[JsonPointer] is Communicable = _.lay(t"<unknown>")(_.show).communicate
 
     track[JsonPointer](UserError()):
-      case HttpError(status, _)            => accrual + m"Attempt to access $sourceUrl returned $status."
-      case TcpError(_)                     => accrual + m"Couldn't establish a connection to the HTTP server"
-      case JsonParseError(line, _, reason) => accrual + m"Could not parse JSON response: $reason at line $line"
-      case JsonError(reason)               => accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
-      case error: VariantError             => accrual + m"${error.message} at $focus from $sourceUrl"
-      case error: TimestampError           => accrual + m"${error.message} at $focus from $sourceUrl"
+      case HttpError(status, _)  => accrual + m"Attempt to access $sourceUrl returned $status."
+      case TcpError(_)           => accrual + m"Couldn't establish a connection to the HTTP server"
+      case error: VariantError   => accrual + m"${error.message} at $focus from $sourceUrl"
+      case error: TimestampError => accrual + m"${error.message} at $focus from $sourceUrl"
+
+      case JsonError(reason) =>
+        accrual + m"Unexpected JSON response from TfL: $reason at $focus when accessing $sourceUrl"
+
+      case JsonParseError(line, _, reason) =>
+        accrual + m"Could not parse JSON response: $reason at line $line"
 
     . within:
         Json.parse(sourceUrl.fetch(accept = media"application/json")).as[Plan]
@@ -169,12 +194,12 @@ object Output:
     if leg.open then e"${leg.color}(${u"left half block"}${u"right half block"})"
     else e"${Bg(leg.color)}(  )"
 
-  def render(plan: Plan, start: StationRow, destination: StationRow)(using Stdio): Text = Text.construct:
+  def render(plan: Plan, start: StationRow, end: StationRow)(using Stdio): Text = Text.construct:
     plan.journeys.each: journey =>
       val option = ordinal
       Out.println(e"$Underline(Option ${ordinal.n1}), ${journey.duration}")
       val startTitle = e"$Reverse( $Bold(${start.name.upper}) )"
-      val destinationTitle = e"$Reverse( $Bold(${destination.name.upper}) )"
+      val destinationTitle = e"$Reverse( $Bold(${end.name.upper}) )"
       val last = Ordinal.natural(journey.legs.length)
       def indent(ordinal: Ordinal, extra: Int): Text = t" "*(ordinal.n0*5 + 10 + extra)
 
@@ -184,12 +209,15 @@ object Output:
         leg.path.stopPoints.dropRight(1).each: stop =>
           val ln = line(leg)
           Out.println(e"${indent(legNo, 28)}$ln")
-          Out.println(e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  ${leg.color}($st)$ln")
+          Out.println:
+            e"${indent(legNo, 0)}${stop.shortName.fit(25, Bidi.Rtl)}  ${leg.color}($st)$ln"
+
           Out.println(e"${indent(legNo, 28)}$ln")
 
       journey.legs.prim.let: leg =>
         val ln = line(leg)
-        val step = t"Take the ${leg.instruction.detailed} at ${leg.departureTime.in(timezone).time}."
+        val departureTime = leg.departureTime.in(timezone).time
+        val step = t"Take the ${leg.instruction.detailed} at $departureTime."
         if option == Prim then appendln(step)
         Out.println(e"${indent(Prim, 28)}$ln  $Italic($step)")
         renderLeg(leg, Prim)
@@ -198,12 +226,16 @@ object Output:
         val ln0 = line(pair(0))
         val ln1 = line(pair(1))
         val interchange = pair(0).path.stopPoints.last.shortName
-        val step = t"At $interchange, change to the ${pair(1).instruction.detailed} at ${pair(1).departureTime.in(timezone).time}."
+        val info = pair(1).instruction.detailed
+        val changeTime = pair(1).departureTime.in(timezone).time
+        val step = t"At $interchange, change to the $info at $changeTime."
         if option == Prim then appendln(step)
         pair(0).path.stopPoints.lastOption.foreach: stop =>
           Out.println(e"${indent(ordinal, 26)}  $ln0")
           Out.println(e"${indent(ordinal, 26)}$tl$hl$ln0$hl$hl$hl$ln1$hl$tr")
-          Out.println(e"${indent(ordinal, 0)}${stop.shortName.fit(25, Bidi.Rtl)} $vl $ln0$dt$dt$dt$ln1 $vl  $Italic($step)")
+
+          val paddedName = stop.shortName.fit(25, Bidi.Rtl)
+          Out.println(e"${indent(ordinal, 0)}$paddedName $vl $ln0$dt$dt$dt$ln1 $vl  $Italic($step)")
           Out.println(e"${indent(ordinal, 26)}$bl$hl$ln0$hl$hl$hl$ln1$hl$br")
           Out.println(e"${indent(ordinal, 26)}       $ln1")
 
@@ -211,7 +243,9 @@ object Output:
 
         if ordinal + 1 == last then
           val ln = line(journey.legs.last)
-          val step = t"Arrive at ${destination.name} at ${journey.legs.last.arrivalTime.in(timezone).time}."
+          val arrivalTime = journey.legs.last.arrivalTime.in(timezone).time
+          val step = t"Arrive at ${end.name} at $arrivalTime."
+
           if option == Prim then appendln(step)
           Out.println(e"${indent(ordinal, 26)}       $ln  $Italic($step)")
 
@@ -224,7 +258,10 @@ object Output:
 
 
 case class InitError(detail: Message)(using Diagnostics) extends Error(detail)
-case class UserError(messages: Message*)(using Diagnostics) extends Error(messages.reverse.join(m"\n")):
+
+case class UserError(messages: Message*)(using Diagnostics)
+extends Error(messages.reverse.join(m"\n")):
+
   infix def + (message: Message): UserError = UserError(message +: messages*)
 
 case class StationRow(id: Name[Naptan], name: Text):
@@ -233,7 +270,14 @@ case class StationRow(id: Name[Naptan], name: Text):
 case class Plan(journeys: List[Journey])
 case class Journey(duration: HoursAndMinutes, legs: List[Leg])
 
-case class Leg(duration: HoursAndMinutes, path: LegPath, instruction: Instruction, routeOptions: List[RouteOption], departureTime: Timestamp, arrivalTime: Timestamp):
+case class Leg
+   (duration:      HoursAndMinutes,
+    path:          LegPath,
+    instruction:   Instruction,
+    routeOptions:  List[RouteOption],
+    departureTime: Timestamp,
+    arrivalTime:   Timestamp):
+
   def color: Rgb24 = routeOptions.map(_.lineIdentifier.let(_.id.color)).prim.or(webColors.Coral)
   def open: Boolean = routeOptions.map(_.lineIdentifier.let(_.id.open)).prim.or(false)
 
@@ -251,7 +295,8 @@ case class Stop(name: Text):
   def shortName: Text = name.sub(t" Underground Station", t"")
 
 enum TubeLine:
-  case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern, Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
+  case Bakerloo, Central, Circle, District, HammersmithCity, Jubilee, Metropolitan, Northern,
+       Piccadilly, Victoria, WaterlooCity, Elizabeth, Dlr, LondonOverground
 
   def open: Boolean = this match
     case Dlr | Elizabeth | LondonOverground => true

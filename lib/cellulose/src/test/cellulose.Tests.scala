@@ -388,7 +388,8 @@ object Tests extends Suite(t"CoDL tests"):
 
       test(t"Terminated content 2"):
         parseText(t"root\n  one two\n##\n")(1)
-      .assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(Stream())))
+
+      . assert(_ == Stream(Item(t"root", 0, 0), Indent, Item(t"one", 1, 2), Item(t"two", 1, 6), Outdent(1), Body(Stream())))
 
       test(t"Terminated content after child"):
         parseText(t"""|root
