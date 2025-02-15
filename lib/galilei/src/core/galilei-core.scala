@@ -270,7 +270,7 @@ extension [PlatformType <: Posix](path: Path on PlatformType)
     path.protect(Operation.Metadata):
       jnf.Files.getAttribute(path.javaPath, "unix:nlink", dereferenceSymlinks.options()*) match
         case count: Int => count
-        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported), 1)
+        case _          => raise(IoError(path, Operation.Metadata, Reason.Unsupported)) yet 1
 
 package filesystemOptions:
   object readAccess:

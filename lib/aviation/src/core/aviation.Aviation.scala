@@ -125,13 +125,13 @@ object Aviation:
           Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
         catch
           case error: NumberFormatException =>
-            raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
 
           case error: ju.NoSuchElementException =>
-            raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
+            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
 
       case cnt =>
-        raise(DateError(value), Date(using calendars.gregorian)(2000, MonthName(1), 1))
+        raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Day = calendar.getDay(date)

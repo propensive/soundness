@@ -160,7 +160,8 @@ object Markdown:
       Markdown[Markdown.Ast.Inline](xs*)
 
     case other =>
-      raise(MarkdownError(MarkdownError.Reason.BlockInsideInline), Markdown[Markdown.Ast.Inline]())
+      raise(MarkdownError(MarkdownError.Reason.BlockInsideInline))
+      Markdown[Markdown.Ast.Inline]()
 
   @tailrec
   private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
@@ -187,7 +188,7 @@ object Markdown:
   :     Text raises MarkdownError =
 
     Optional(node.getReferenceNode(root)).let(_.nn.getUrl.toString.show).or:
-      raise(MarkdownError(MarkdownError.Reason.BrokenImageRef), t"https://example.com/")
+      raise(MarkdownError(MarkdownError.Reason.BrokenImageRef)) yet t"https://example.com/"
 
   type PhrasingInput =
     cvfa.Emphasis | cvfa.StrongEmphasis | cvfa.Code | cvfa.HardLineBreak | cvfa.Image
@@ -260,9 +261,8 @@ object Markdown:
         case lvl@(1 | 2 | 3 | 4 | 5 | 6) => Heading(lvl, phraseChildren(root, node)*)
 
         case _ =>
-          raise
-           (MarkdownError(MarkdownError.Reason.BadHeadingLevel),
-            Heading(6, phraseChildren(root, node)*))
+          raise(MarkdownError(MarkdownError.Reason.BadHeadingLevel))
+          Heading(6, phraseChildren(root, node)*)
 
   def convert(root: cvfua.Document, node: cvfua.Node, noFormat: Boolean = false)
   :     Markdown.Ast.Node raises MarkdownError =
@@ -275,7 +275,7 @@ object Markdown:
       case node: PhrasingInput      => phrasing(root, node)
 
       case node: cvfua.Node =>
-        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode), Copy(t"?"))
+        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Copy(t"?")
 
       case node: cvfa.Reference =>
         Reference(node.getReference.toString.show, node.getUrl.toString.show)

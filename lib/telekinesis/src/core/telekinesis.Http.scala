@@ -346,7 +346,7 @@ object Http:
         case Http.Status.Category.Successful => response.body
 
         case _ =>
-          raise(HttpError(response.status, response.textHeaders), response.body)
+          raise(HttpError(response.status, response.textHeaders)) yet response.body
 
       body.stream
 

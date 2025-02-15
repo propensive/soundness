@@ -78,12 +78,6 @@ def raise[SuccessType, ErrorType <: Exception: Recoverable into SuccessType]
   tactic.record(error)
   ErrorType.recover(error(using tactic.diagnostics))
 
-def raise[SuccessType, ErrorType <: Exception: Tactic]
-   (error: Diagnostics ?=> ErrorType, ersatz: => SuccessType)
-:     SuccessType =
-  ErrorType.record(error)
-  ersatz
-
 def abort[SuccessType, ErrorType <: Exception: Tactic](error: Diagnostics ?=> ErrorType): Nothing =
   ErrorType.abort(error)
 

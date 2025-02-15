@@ -81,9 +81,8 @@ abstract class RomanCalendar() extends Calendar:
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
 
   def julianDay(year: Int, month: MonthName, day: Int): Date raises DateError =
-    if day < 1 || day > daysInMonth(month, year)
-    then raise
-     (DateError(t"$year-${month.numerical}-$day"),
-      Date(using calendars.julian)(2000, MonthName(1), 1))
+    if day < 1 || day > daysInMonth(month, year) then
+      raise(DateError(t"$year-${month.numerical}-$day"))
+      Date(using calendars.julian)(2000, MonthName(1), 1)
 
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)

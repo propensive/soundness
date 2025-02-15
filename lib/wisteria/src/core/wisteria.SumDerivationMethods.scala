@@ -186,8 +186,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
       case _ =>
         inline if fallible
-        then raise(VariantError[DerivationType](inputLabel), Unset)
-              (using summonInline[Tactic[VariantError]])
+        then
+          given Tactic[VariantError] = summonInline[Tactic[VariantError]]
+          raise(VariantError[DerivationType](inputLabel)) yet Unset
         else panic(m"Should be unreachable")
 
   private transparent inline def fold[DerivationType, VariantsType <: Tuple, LabelsType <: Tuple]
@@ -227,8 +228,9 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
       case _ =>
         inline if fallible
-        then raise(VariantError[DerivationType]("".tt), Unset)
-              (using summonInline[Tactic[VariantError]])
+        then
+          given Tactic[VariantError] = summonInline[Tactic[VariantError]]
+          raise(VariantError[DerivationType]("".tt)) yet Unset
         else panic(m"Should be unreachable")
 
   inline def split[DerivationType: SumReflection]: TypeclassType[DerivationType]

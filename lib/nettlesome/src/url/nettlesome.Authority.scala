@@ -58,10 +58,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange), 0)
+              raise(UrlError(value, colon + 1, PortRange)) yet 0
 
             case _ =>
-              raise(UrlError(value, colon + 1, Number), 0)
+              raise(UrlError(value, colon + 1, Number)) yet 0
 
           . pipe:
             Authority
@@ -76,10 +76,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange), 0)
+              raise(UrlError(value, colon + 1, PortRange)) yet 0
 
             case _ =>
-              raise(UrlError(value, colon + 1, Number), 0)
+              raise(UrlError(value, colon + 1, Number)) yet 0
 
           . pipe(Authority(Hostname.parse(value.before(colon)), Unset, _))
 

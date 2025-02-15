@@ -48,15 +48,15 @@ object Fqcn:
     val parts = IArray.from(name.s.split("\\.").nn.map(_.nn))
 
     parts.foreach: part =>
-      if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName), ())
+      if part.length == 0 then raise(FqcnError(name, FqcnError.Reason.EmptyName))
       if Digression.javaKeywords.has(part)
-      then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)), ())
+      then raise(FqcnError(name, FqcnError.Reason.JavaKeyword(part.tt)))
 
       part.foreach: char =>
-        if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)), ())
+        if !valid(char) then raise(FqcnError(name, FqcnError.Reason.InvalidChar(char)))
 
       if part.head >= '0' && part.head <= '9'
-      then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)), ())
+      then raise(FqcnError(name, FqcnError.Reason.InvalidStart(part.head)))
 
     new Fqcn(parts.map(_.tt))
 
