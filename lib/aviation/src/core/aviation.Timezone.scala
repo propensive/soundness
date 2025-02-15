@@ -36,6 +36,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import fulminate.*
+import rudiments.*
 
 import java.util as ju
 
@@ -48,7 +49,7 @@ object Timezone:
 
   def parse(name: Text)(using Tactic[TimezoneError]): Timezone =
     if ids.contains(name) then new Timezone(name)
-    else raise(TimezoneError(name), new Timezone(ids.head))
+    else raise(TimezoneError(name)) yet new Timezone(ids.head)
 
   object Tz extends Verifier[Timezone]:
     def verify(name: Text): Timezone =

@@ -58,8 +58,8 @@ object Diff:
               try string.split(",").nn.to(List) match
                 case List(start, end) => (start.nn.toInt - 1, end.nn.toInt)
                 case List(start)      => (start.nn.toInt - 1, start.nn.toInt)
-                case _                => raise(DiffError(line, head), (0, 0))
-              catch case err: NumberFormatException => raise(DiffError(line, head), (0, 0))
+                case _                => raise(DiffError(line, head)) yet (0, 0)
+              catch case err: NumberFormatException => raise(DiffError(line, head)) yet (0, 0)
 
             val pairs =
               head.s.split("[acd]").nn.to(List) match
@@ -71,7 +71,7 @@ object Diff:
                 recur(tail, line + 1, edits, pos, rpos, leftStart)
 
               case None =>
-                raise(DiffError(line, head), recur(tail, line + 1, edits, pos, rpos, 0))
+                raise(DiffError(line, head)) yet recur(tail, line + 1, edits, pos, rpos, 0)
 
         case _ =>
           Diff(edits.reverse*)

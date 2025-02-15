@@ -143,7 +143,7 @@ object Media:
     def parseSuffixes(suffixes: List[Text]): List[Suffix] =
       suffixes.map(_.lower.capitalize).flatMap: suffix =>
         try List(Suffix.valueOf(suffix.s)) catch IllegalArgumentException =>
-          raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix)), Nil)
+          raise(MediaTypeError(string, MediaTypeError.Reason.InvalidSuffix(suffix))) yet Nil
 
     def parseInit(str: Text): (Subtype, List[Suffix]) =
       val xs: List[Text] = str.cut(t"+").to(List)
@@ -155,22 +155,20 @@ object Media:
       case List(group, subtype) => parseGroup(group) *: parseInit(subtype)
 
       case _ =>
-        raise
-         (MediaTypeError(string, MediaTypeError.Reason.NotOneSlash),
-          Group.Text *: parseInit(string))
+        raise(MediaTypeError(string, MediaTypeError.Reason.NotOneSlash))
+        Group.Text *: parseInit(string)
 
     def parseGroup(str: Text): Group =
       try Group.valueOf(str.lower.capitalize.s) catch IllegalArgumentException =>
-        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup), Group.Text)
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidGroup)) yet Group.Text
 
     def parseSubtype(str: Text): Subtype =
       def notAllowed(char: Char): Boolean =
         char.isWhitespace || char.isControl || specials.contains(char)
 
       str.chars.find(notAllowed(_)).map: char =>
-        raise
-         (MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)),
-          Subtype.X(str.chars.filter(!notAllowed(_)).text))
+        raise(MediaTypeError(string, MediaTypeError.Reason.InvalidChar(char)))
+        Subtype.X(str.chars.filter(!notAllowed(_)).text)
 
       . getOrElse:
           if str.starts(t"vnd.") then Subtype.Vendor(str.skip(4))

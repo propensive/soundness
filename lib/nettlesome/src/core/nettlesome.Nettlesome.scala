@@ -94,11 +94,11 @@ object Nettlesome:
               bytes.map(_.decode[Int]).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
-                  then raise(IpAddressError(Ipv4ByteOutOfRange(byte)), 0.toByte)
+                  then raise(IpAddressError(Ipv4ByteOutOfRange(byte))) yet 0.toByte
 
                 Ipv4(bytes(0).toByte, bytes(1).toByte, bytes(2).toByte, bytes(3).toByte)
 
-        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length)), 0)
+        else raise(IpAddressError(Ipv4WrongNumberOfGroups(bytes.length))) yet 0
 
     object MacAddress:
       import MacAddressError.Reason.*
@@ -124,7 +124,7 @@ object Nettlesome:
             then raise(MacAddressError(WrongGroupLength(index, head.length)))
 
             val value = try Integer.parseInt(head.s, 16) catch case error: NumberFormatException =>
-              raise(MacAddressError(NotHex(index, head)), 0)
+              raise(MacAddressError(NotHex(index, head))) yet 0
 
             recur(tail, index + 1, (acc << 8) + value)
 
@@ -150,7 +150,8 @@ object Nettlesome:
       def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
 
       def apply(value: Int): TcpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort] else raise(PortError(), unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort]
+        else raise(PortError()) yet unsafe(1)
 
     object UdpPort:
       erased given underlying: Underlying[UdpPort, Int] = ###
@@ -163,7 +164,8 @@ object Nettlesome:
       def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
 
       def apply(value: Int): UdpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort] else raise(PortError(), unsafe(1))
+        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort]
+        else raise(PortError()) yet unsafe(1)
 
     extension (port: TcpPort | UdpPort)
       def number: Int = port
@@ -283,10 +285,10 @@ object Nettlesome:
           val groups = whole.cut(t":")
 
           if groups.length != 8
-          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length)), zeroes)
+          then raise(IpAddressError(Ipv6WrongNumberOfGroups(groups.length))) yet zeroes
           else groups.to(List)
 
         case _ =>
-          raise(IpAddressError(Ipv6MultipleDoubleColons), zeroes)
+          raise(IpAddressError(Ipv6MultipleDoubleColons)) yet zeroes
 
       Ipv6(pack(groups.take(4).map(parseGroup)), pack(groups.drop(4).map(parseGroup)))

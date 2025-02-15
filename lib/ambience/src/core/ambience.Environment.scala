@@ -63,4 +63,4 @@ object Environment extends Dynamic:
   :     VariableType =
 
     environment.variable(reader.defaultName).let(reader.read(_)).or:
-      raise(EnvironmentError(reader.defaultName), reader.read(Text("")))
+      raise(EnvironmentError(reader.defaultName)) yet reader.read(Text(""))

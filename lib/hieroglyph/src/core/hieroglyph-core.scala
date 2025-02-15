@@ -34,6 +34,7 @@ package hieroglyph
 
 import anticipation.*
 import contingency.*
+import rudiments.*
 import vacuous.*
 
 import language.experimental.pureFunctions
@@ -66,7 +67,7 @@ package charEncoders:
 
 package textSanitizers:
   given strict: Tactic[CharDecodeError] => TextSanitizer = (pos, encoding) =>
-    raise(CharDecodeError(pos, encoding), '?')
+    raise(CharDecodeError(pos, encoding)) yet '?'
 
   given skip: TextSanitizer = (pos, encoding) => Unset
   given substitute: TextSanitizer = (pos, encoding) => '?'

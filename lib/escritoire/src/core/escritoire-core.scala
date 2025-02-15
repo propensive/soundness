@@ -52,7 +52,7 @@ extension [ValueType](value: ValueType)
 
 package columnAttenuation:
   given fail: Tactic[TableError] => Attenuation =
-    (minimum, available) => raise(TableError(minimum, available), ())
+    (minimum, available) => raise(TableError(minimum, available))
 
   given ignore: Attenuation = (minimum, available) => ()
 

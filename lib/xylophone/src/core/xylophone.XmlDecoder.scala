@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
 import wisteria.*
 
 trait XmlDecoder[ValueType]:
@@ -48,7 +49,7 @@ trait XmlDecoder[ValueType]:
 object XmlDecoder extends Derivation[XmlDecoder]:
   given text(using Tactic[XmlReadError]): XmlDecoder[Text] = list =>
     val elements = childElements(list).collect { case XmlAst.Textual(text) => text }
-    if elements.length == 0 then raise(XmlReadError(), "".tt) else elements.head
+    if elements.length == 0 then raise(XmlReadError()) yet "".tt else elements.head
 
   given [ValueType: Decodable in Text]: XmlDecoder[ValueType] = value =>
     value.absolve match

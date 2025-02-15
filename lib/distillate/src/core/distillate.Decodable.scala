@@ -38,6 +38,7 @@ import denominative.*
 import digression.*
 import inimitable.*
 import prepositional.*
+import rudiments.*
 import wisteria.*
 import vacuous.*
 
@@ -46,36 +47,37 @@ object Decodable:
 
   given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Int), 0)
+      raise(NumberError(text, Int)) yet 0
 
   given fqcn: Tactic[FqcnError] => Fqcn is Decodable in Text = Fqcn(_)
   given uuid: Tactic[UuidError] => Uuid is Decodable in Text = Uuid.parse(_)
 
   given byte: Tactic[NumberError] => Byte is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Byte), 0)
+      raise(NumberError(text, Byte)) yet 0
 
-    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte), 0.toByte)
+    if int < Byte.MinValue || int > Byte.MaxValue then raise(NumberError(text, Byte)) yet 0.toByte
     else int.toByte
 
   given short: Tactic[NumberError] => Short is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Short), 0)
+      raise(NumberError(text, Short)) yet 0
 
-    if int < Short.MinValue || int > Short.MaxValue then raise(NumberError(text, Short), 0.toShort)
+    if int < Short.MinValue || int > Short.MaxValue
+    then raise(NumberError(text, Short)) yet 0.toShort
     else int.toShort
 
   given long: Tactic[NumberError] => Long is Decodable in Text = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Long), 0L)
+      raise(NumberError(text, Long)) yet 0L
 
   given double: Tactic[NumberError] => Double is Decodable in Text = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Double), 0.0)
+      raise(NumberError(text, Double)) yet 0.0
 
   given float: Tactic[NumberError] => Float is Decodable in Text = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-      raise(NumberError(text, Float), 0.0F)
+      raise(NumberError(text, Float)) yet 0.0F
 
   given char: Char is Decodable in Text = _.s(0)
 
@@ -85,7 +87,7 @@ object Decodable:
 
     EnumType.value(identifiable.decode(value)).or:
       val names = EnumType.values.to(List).map(EnumType.name(_)).map(EnumType.encode(_))
-      raise(VariantError(value, EnumType.name, names), EnumType.value(Prim).vouch)
+      raise(VariantError(value, EnumType.name, names)) yet EnumType.value(Prim).vouch
 
 trait Decodable:
   inline def decodable: this.type = this

@@ -55,14 +55,14 @@ object Octogenarian:
 
     def parse(text: Text)(using Tactic[GitRefError]): Text =
       text.cut(t"/").each: part =>
-        if part.starts(t".") || part.ends(t".") then raise(GitRefError(text), text)
-        if part.ends(t".lock") then raise(GitRefError(text), text)
-        if part.contains(t"@{") then raise(GitRefError(text), text)
-        if part.contains(t"..") then raise(GitRefError(text), text)
-        if part.length == 0 then raise(GitRefError(text), text)
+        if part.starts(t".") || part.ends(t".") then raise(GitRefError(text)) yet text
+        if part.ends(t".lock") then raise(GitRefError(text)) yet text
+        if part.contains(t"@{") then raise(GitRefError(text)) yet text
+        if part.contains(t"..") then raise(GitRefError(text)) yet text
+        if part.length == 0 then raise(GitRefError(text)) yet text
 
         for char <- List('*', '[', '\\', ' ', '^', '~', ':', '?')
-        do if part.contains(char) then raise(GitRefError(text), text)
+        do if part.contains(char) then raise(GitRefError(text)) yet text
 
       text
 
@@ -84,7 +84,7 @@ object Octogenarian:
   object CommitHash:
     def apply(text: Text)(using Tactic[GitRefError]): CommitHash = text match
       case r"[a-f0-9]{40}" => text
-      case _               => raise(GitRefError(text), text)
+      case _               => raise(GitRefError(text)) yet text
 
     def unsafe(text: Text): CommitHash = text
 

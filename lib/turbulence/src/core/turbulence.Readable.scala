@@ -84,7 +84,7 @@ object Readable:
         case int => int.toChar #:: recur(count + 1.b)
       catch case err: ji.IOException =>
         reader.close()
-        raise(StreamError(count), Stream())
+        raise(StreamError(count)) yet Stream()
 
     Stream.defer(recur(0L.b))
 
@@ -98,7 +98,7 @@ object Readable:
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case err: ji.IOException =>
           reader.close()
-          raise(StreamError(count), Stream())
+          raise(StreamError(count)) yet Stream()
 
       Stream.defer(recur(0L.b))
 
@@ -125,7 +125,7 @@ object Readable:
 
             array.immutable(using Unsafe) #:: recur(total + count)
 
-        catch case e: Exception => Stream(raise(StreamError(total.b), Bytes()))
+        catch case e: Exception => Stream(raise(StreamError(total.b)) yet Bytes())
 
       Stream.defer(recur(0))
 

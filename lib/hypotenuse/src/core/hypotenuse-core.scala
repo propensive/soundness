@@ -42,6 +42,7 @@ import scala.annotation.*
 import anticipation.*
 import contingency.*
 import prepositional.*
+import rudiments.*
 
 export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
@@ -447,35 +448,35 @@ package arithmeticOptions:
       type Wrap[ResultType] = ResultType raises DivisionError
 
       inline def divideU64(left: U64, right: U64): U64 raises DivisionError =
-        if Long(right.bits) == 0 then raise(DivisionError(), U64(0.bits))
+        if Long(right.bits) == 0 then raise(DivisionError()) yet U64(0.bits)
         else U64((Long(left.bits)/Long(right.bits)).bits)
 
       inline def divideS64(left: S64, right: S64): S64 raises DivisionError =
-        if right.long == 0 then raise(DivisionError(), S64(0.bits))
+        if right.long == 0 then raise(DivisionError()) yet S64(0.bits)
         else S64((left.long/right.long).bits)
 
       inline def divideU32(left: U32, right: U32): U32 raises DivisionError =
-        if right.long == 0 then raise(DivisionError(), U32(0.bits))
+        if right.long == 0 then raise(DivisionError()) yet U32(0.bits)
         else U32((Int(left.bits)/Int(right.bits)).bits)
 
       inline def divideS32(left: S32, right: S32): S32 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), S32(0.bits))
+        if right.int == 0 then raise(DivisionError()) yet S32(0.bits)
         else S32((left.int/right.int).bits)
 
       inline def divideU16(left: U16, right: U16): U16 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), U16(0.bits))
+        if right.int == 0 then raise(DivisionError()) yet U16(0.bits)
         else U16((Short(left.bits)/Short(right.bits)).toShort.bits)
 
       inline def divideS16(left: S16, right: S16): S16 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), S16(0.bits))
+        if right.int == 0 then raise(DivisionError()) yet S16(0.bits)
         else S16((left.short/right.short).toShort.bits)
 
       inline def divideU8(left: U8, right: U8): U8 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), U8(0.bits))
+        if right.int == 0 then raise(DivisionError()) yet U8(0.bits)
         else U8((left.byte/right.byte).toByte.bits)
 
       inline def divideS8(left: S8, right: S8): S8 raises DivisionError =
-        if right.int == 0 then raise(DivisionError(), S8(0.bits))
+        if right.int == 0 then raise(DivisionError()) yet S8(0.bits)
         else S8((left.byte/right.byte).toByte.bits)
 
   object overflow:
@@ -500,38 +501,38 @@ package arithmeticOptions:
         val result: B64 = (Long(left.bits) + Long(right.bits)).bits
 
         if U64((left.bits^result) & (right.bits^result)) < U64(0.bits)
-        then raise(OverflowError(), U64(result)) else U64(result)
+        then raise(OverflowError()) yet U64(result) else U64(result)
 
       inline def addS64(left: S64, right: S64): S64 raises OverflowError =
         val result: S64 = S64((left.long + right.long).bits)
-        if result < left || result < right then raise(OverflowError(), result) else result
+        if result < left || result < right then raise(OverflowError()) yet result else result
 
       inline def addU32(left: U32, right: U32): U32 raises OverflowError =
         val result: B32 = (Int(left.bits) + Int(right.bits)).bits
 
         if U32((left.bits^result) & (right.bits^result)) < U32(0.bits)
-        then raise(OverflowError(), U32(result)) else U32(result)
+        then raise(OverflowError()) yet U32(result) else U32(result)
 
       inline def addS32(left: S32, right: S32): S32 raises OverflowError =
         val result: S32 = S32((left.int + right.int).bits)
-        if result < left || result < right then raise(OverflowError(), result) else result
+        if result < left || result < right then raise(OverflowError()) yet result else result
 
       inline def addU16(left: U16, right: U16): U16 raises OverflowError =
         val result: B16 = (Short(left.bits) + Short(right.bits)).toShort.bits
 
         if U16((left.bits^result) & (right.bits^result)) < U16(0.toShort.bits)
-        then U16(raise(OverflowError(), result)) else U16(result)
+        then U16(raise(OverflowError()) yet result) else U16(result)
 
       inline def addS16(left: S16, right: S16): S16 raises OverflowError =
         val result: S16 = S16((left.short + right.short).toShort.bits)
-        if result < left || result < right then raise(OverflowError(), result) else result
+        if result < left || result < right then raise(OverflowError()) yet result else result
 
       inline def addU8(left: U8, right: U8): U8 raises OverflowError =
         val result: B8 = (left.short + right.short).toByte.bits
 
         if U8((left.bits^result) & (right.bits^result)) < U8(0.toByte.bits)
-        then U8(raise(OverflowError(), result)) else U8(result)
+        then U8(raise(OverflowError()) yet result) else U8(result)
 
       inline def addS8(left: S8, right: S8): S8 raises OverflowError =
         val result: S8 = S8((left.short + right.short).toByte.bits)
-        if result < left || result < right then raise(OverflowError(), result) else result
+        if result < left || result < right then raise(OverflowError()) yet result else result
