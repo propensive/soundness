@@ -82,5 +82,5 @@ extension [UnitsType <: Measure](quantity: into Quantity[UnitsType])
     root.root(quantity)
 
   inline def units: Map[Text, Int] = ${Quantitative.collectUnits[UnitsType]}
-  inline def render(using Decimalizer): Text = t"${quantity.value} ${Quantity.renderUnits(units)}"
+  inline def express(using Decimalizer): Text = t"${quantity.value} ${Quantity.expressUnits(units)}"
   inline def dimension: Text = ${Quantitative.describe[UnitsType]}

@@ -47,7 +47,7 @@ object Complex:
 
   inline given [UnitsType <: Measure] => Decimalizer => Complex[Quantity[UnitsType]] is Showable:
     def text(value: Complex[Quantity[UnitsType]]): Text =
-      t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.renderUnits(value.real.units)}"
+      t"${value.real.value} + ${value.imaginary.value}𝒾 ${Quantity.expressUnits(value.real.units)}"
 
   inline given addable: [ComponentType: Addable by ComponentType as addable]
   =>    Complex[ComponentType] is Addable by Complex[ComponentType] =
