@@ -52,8 +52,6 @@ object UnitName:
   given UnitName[Kelvins[1]] = () => t"K"
   given UnitName[Seconds[1]] = () => t"s"
 
-  given UnitName[Radians[1]] = () => t"rad"
-
   given UnitName[Kilograms[1]] with
     override def siPrefix: MetricPrefix = Kilo
     def name(): Text = t"g"

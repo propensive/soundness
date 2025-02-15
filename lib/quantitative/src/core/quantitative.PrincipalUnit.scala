@@ -46,5 +46,3 @@ object PrincipalUnit:
   given luminosity: PrincipalUnit[Luminosity, Candelas]()
   given temperature: PrincipalUnit[Temperature, Kelvins]()
   given amountOfSubstance: PrincipalUnit[AmountOfSubstance, Moles]()
-
-  given angle: PrincipalUnit[Angle, Radians]()

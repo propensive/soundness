@@ -42,4 +42,4 @@ trait ArcMinutes[Power <: Nat] extends Units[Power, Angle]
 
 object ArcMinutes:
   given UnitName[ArcMinutes[1]] = () => "'".tt
-  erased given degreesPerRadian: Ratio[ArcMinutes[1] & Radians[-1], 3437.74677078] = ###
+  erased given degreesPerRadian: Ratio[ArcMinutes[1], 3437.74677078] = ###
