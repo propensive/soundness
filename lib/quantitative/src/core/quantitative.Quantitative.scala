@@ -164,12 +164,12 @@ object Quantitative extends Quantitative2:
       def text(value: Quantity[UnitsType]): Text = fn(value)
 
     inline given [UnitsType <: Measure] => Decimalizer => Quantity[UnitsType] is Showable =
-      ShowableQuantity[UnitsType](_.render)
+      ShowableQuantity[UnitsType](_.express)
 
     inline given [UnitsType <: Measure] => Decimalizer => Quantity[UnitsType] is Inspectable =
-      InspectableQuantity[UnitsType](_.render)
+      InspectableQuantity[UnitsType](_.express)
 
-    def renderUnits(units: Map[Text, Int]): Text =
+    def expressUnits(units: Map[Text, Int]): Text =
       units.to(List).map: (unit, power) =>
         if power == 1 then unit
         else
