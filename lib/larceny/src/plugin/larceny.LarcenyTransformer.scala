@@ -49,6 +49,7 @@ class LarcenyTransformer() extends PluginPhase:
   override def transformUnit(tree: Tree)(using Context): Tree =
     import ast.untpd.*
     val classpath = ctx.settings.classpath.value
+    val language = ctx.settings.language.value
 
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
@@ -66,7 +67,7 @@ class LarcenyTransformer() extends PluginPhase:
     val source = String(ctx.compilationUnit.source.content)
 
     val errors: List[CompileError] =
-      Subcompiler.compile(ctx.settings.classpath.value, source, regions)
+      Subcompiler.compile(language, classpath, source, regions)
 
     object transformer extends UntypedTreeMap:
 
