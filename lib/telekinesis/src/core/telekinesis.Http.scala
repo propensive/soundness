@@ -127,6 +127,7 @@ object Http:
     case Continue                      extends Status(100, t"Continue")
     case SwitchingProtocols            extends Status(101, t"Switching Protocols")
     case EarlyHints                    extends Status(103, t"Early Hints")
+
     case Ok                            extends Status(200, t"OK")
     case Created                       extends Status(201, t"Created")
     case Accepted                      extends Status(202, t"Accepted")
@@ -134,6 +135,7 @@ object Http:
     case NoContent                     extends Status(204, t"No Content")
     case ResetContent                  extends Status(205, t"Reset Content")
     case PartialContent                extends Status(206, t"Partial Content")
+
     case MultipleChoices               extends Status(300, t"Multiple Choices")
     case MovedPermanently              extends Status(301, t"Moved Permanently")
     case Found                         extends Status(302, t"Found")
@@ -141,6 +143,7 @@ object Http:
     case NotModified                   extends Status(304, t"Not Modified")
     case TemporaryRedirect             extends Status(307, t"Temporary Redirect")
     case PermanentRedirect             extends Status(308, t"Permanent Redirect")
+
     case BadRequest                    extends Status(400, t"Bad Request")
     case Unauthorized                  extends Status(401, t"Unauthorized")
     case PaymentRequired               extends Status(402, t"Payment Required")
@@ -166,6 +169,7 @@ object Http:
     case TooManyRequests               extends Status(429, t"Too Many Requests")
     case RequestHeaderFieldsTooLarge   extends Status(431, t"Request Header Fields Too Large")
     case UnavailableForLegalReasons    extends Status(451, t"Unavailable For Legal Reasons")
+
     case InternalServerError           extends Status(500, t"Internal Server Error")
     case NotImplemented                extends Status(501, t"Not Implemented")
     case BadGateway                    extends Status(502, t"Bad Gateway")
@@ -199,10 +203,11 @@ object Http:
 
         . join(t"\n          ")
 
-      val params: Text = request.params.map:
-        case (k, v) => t"$k=\"$v\""
+      val params: Text =
+        request.parameters.query.values.map: (key, value) =>
+          t"$key = \"$value\""
 
-      . join(t"\n          ")
+        . join(t"\n          ")
 
       ListMap[Text, Text](
         t"content"
@@ -256,54 +261,38 @@ object Http:
       textHeaders: List[Http.Header],
       body:        Stream[Bytes]):
 
+    inline def request: this.type = this
+
     def on[SchemeType <: "http" | "https"](origin: Origin[SchemeType]): HttpUrl =
       Url[SchemeType](origin, target)
 
-    lazy val query: Text = target.s.indexOf('?') match
+    private lazy val queryText: Text = target.s.indexOf('?') match
       case -1    => t""
       case index => target.skip(index + 1)
+
+    lazy val query: Query = queryText.decode[Query]
 
     lazy val pathText: Text = target.s.indexOf('?') match
       case -1    => target
       case index => target.keep(index)
 
-    lazy val queryParams: Map[Text, List[Text]] =
-      val items = query.nn.show.cut(t"&")
+    object parameters extends Dynamic:
+      lazy val query: Query =
+        contentType.let(_.base.show) match
+          case t"application/x-www-form-urlencoded" =>
+            request.query ++ body.read[Bytes].utf8.decode[Query]
 
-      items.foldLeft(Map[Text, List[Text]]()): (map, elem) =>
-        elem.cut(t"=", 2) match
-          case List(key, value) => map.updated(key, safely(value).or(t"") :: map.at(key).or(Nil))
-          case _                => map
+          case _ =>
+            request.query
 
-    lazy val params: Map[Text, Text] =
-      queryParams.map:
-        case (k, vs) => k.urlDecode -> vs.prim.or(t"").urlDecode
+      def selectDynamic(label: Label)(using parameter: label.type is Parameter)
+         (using parameter.Subject is Decodable in Text)
+      :     Optional[parameter.Subject] =
+        query.at(label.tt).let: value =>
+          value.absolve match
+            case text: Text @unchecked       => text.decode[parameter.Subject]
+            case list: List[Text] @unchecked => list.prim.let(_.decode[parameter.Subject])
 
-      . to(Map) ++ method.match
-        case Http.Post | Http.Put =>
-          contentType.or(media"application/x-www-form-urlencoded").base.show match
-            case t"multipart/form-data" =>
-              mend:
-                case MultipartError(_) => Map()
-
-              . within:
-                  Multipart.parse(body.read[Bytes]).parts.filter(_.filename.absent).map: part =>
-                    import charDecoders.utf8
-                    import textSanitizers.strict
-                    part.name.or(t"") -> safely(part.body.read[Text]).or(t"")
-                  . to(Map)
-
-            case t"application/x-www-form-urlencoded" =>
-              body.stream.read[Bytes].utf8.cut(t"&").map(_.cut(t"=", 2).to(Seq) match
-                case Seq(key: Text)              => key.urlDecode.show -> t""
-                case Seq(key: Text, value: Text) => key.urlDecode.show -> value.urlDecode.show
-                case _                           => panic(m"key/value pair does not match")
-              ).to(Map)
-
-            case _ =>
-              Map()
-
-        case _ => Map()
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)

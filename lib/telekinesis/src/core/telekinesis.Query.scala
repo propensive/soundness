@@ -46,6 +46,17 @@ import vacuous.*
 import wisteria.*
 
 object Query extends Dynamic:
+  given encodable: Query is Encodable in Text =
+    _.values.map { (key, value) => t"${key.urlEncode}=${value.urlEncode}" }
+    . join(t"&")
+
+  given decodable: Query is Decodable in Text = text => Query.of:
+    text.cut(t"&").map: next =>
+      next.cut(t"=", 2) match
+        case List(key, value) => (key.urlDecode, value.urlDecode)
+        case List(key)        => (key.urlDecode, t"")
+        case _                => (t"", t"")
+
   object EncodableDerivation extends ProductDerivation[[Type] =>> Type is Encodable in Query]:
     inline def join[DerivationType <: Product: ProductReflection]
     :     DerivationType is Encodable in Query =
@@ -84,7 +95,7 @@ object Query extends Dynamic:
           case List((t"", value)) => value.decode
           case _                  => abort(QueryError())
 
-  given Query is Showable = _.queryString
+  given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
   inline given decodable: [ProductType <: Product: ProductReflection]
   =>    ProductType is Decodable in Query =
@@ -97,9 +108,12 @@ object Query extends Dynamic:
   def of(parameters: List[(Text, Text)]): Query = new Query(parameters)
   def of(parameter: Text): Query = new Query(List(t"" -> parameter))
 
-case class Query private (val values: List[(Text, Text)]) extends Dynamic:
+case class Query private (values: List[(Text, Text)]) extends Dynamic:
+  private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
   def append(more: Query): Query = new Query(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
+
+  def at(label: Text): Optional[Text | List[Text]] = map.getOrElse(label, Unset)
 
   @targetName("appendAll")
   infix def ++ (query: Query) = Query(values ++ query.values)
