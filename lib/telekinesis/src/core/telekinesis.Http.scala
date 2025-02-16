@@ -288,9 +288,10 @@ object Http:
       def selectDynamic(label: Label)(using parameter: label.type is Parameter)
          (using parameter.Subject is Decodable in Text)
       :     Optional[parameter.Subject] =
-        query.at(label.tt).let:
-          case text: Text @unchecked       => text.decode[parameter.Subject]
-          case list: List[Text] @unchecked => list.prim.let(_.decode[parameter.Subject])
+        query.at(label.tt).let: value =>
+          value.absolve match
+            case text: Text @unchecked       => text.decode[parameter.Subject]
+            case list: List[Text] @unchecked => list.prim.let(_.decode[parameter.Subject])
 
 
     object headers extends Dynamic:

@@ -33,10 +33,13 @@
 package telekinesis
 
 import anticipation.*
+import distillate.*
 import fulminate.*
+import nettlesome.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import vacuous.*
 
 import language.dynamics
 
@@ -57,3 +60,9 @@ extension [EndpointType: Fetchable](endpoint: EndpointType)
   def submit: Http.Submit[EndpointType.Target] =
     Http.Submit
      (EndpointType.text(endpoint), EndpointType.target(endpoint), EndpointType.hostname(endpoint))
+
+extension (url: HttpUrl)
+  @targetName("withQuery")
+  infix def ? (query: Query): HttpUrl =
+    val query2 = url.query.let(query ++ _.decode[Query]).or(query)
+    url.copy(query = query2.encode)
