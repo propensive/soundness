@@ -32,7 +32,7 @@
                                                                                                   */
 package larceny
 
-import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, Contexts.*
+import dotty.tools.*, dotc.*, util.*, reporting.*, core.*, config.Settings, Contexts.*
 
 import scala.util.chaining.*
 import scala.collection.mutable as scm
@@ -42,12 +42,13 @@ import language.adhocExtensions
 object Subcompiler:
   val Scala3: Compiler = new Compiler()
 
-  class CustomReporter() extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
+  class CustomReporter() extends Reporter, HideNonSensicalMessages:
     val errors: scm.ListBuffer[CompileError] = scm.ListBuffer()
 
     def doReport(diagnostic: Diagnostic)(using Context): Unit =
       try
-        val pos = diagnostic.pos
+        var pos = diagnostic.pos
+        while pos.outer != NoSourcePosition do pos = pos.outer
         val code = String(ctx.compilationUnit.source.content.slice(pos.start, pos.end))
         val offset = pos.point - pos.start
         val ordinal = diagnostic.msg.errorId.ordinal
@@ -56,10 +57,18 @@ object Subcompiler:
 
       catch case err: Throwable => ()
 
-  def compile(classpath: String, source: String): List[CompileError] =
-    compile(classpath, source, Set((0, source.length)))
+  def compile
+    (language: List[Settings.Setting.ChoiceWithHelp[String]], classpath: String, source: String)
+  :     List[CompileError] =
+    compile(language, classpath, source, Set((0, source.length)))
 
-  def compile(classpath: String, source: String, regions: Set[(Int, Int)]): List[CompileError] =
+  def compile
+     (language:  List[Settings.Setting.ChoiceWithHelp[String]],
+      classpath: String,
+      source:    String,
+      regions:   Set[(Int, Int)])
+  :     List[CompileError] =
+
     object driver extends Driver:
       val currentCtx: Context =
         val ctx = initCtx.fresh
@@ -77,6 +86,7 @@ object Subcompiler:
           given Context =
             ctx
             . setReporter(reporter)
+            . setSetting(ctx.settings.language, language)
             . setSetting(ctx.settings.classpath, classpath)
             . setSetting(ctx.settings.YstopBefore, List("genSJSIR"))
             . setSetting(ctx.settings.color, "never")
@@ -86,6 +96,7 @@ object Subcompiler:
             if !reporter.hasErrors then finish(Scala3, run)
 
           val newErrors = reporter.errors.to(List)
+          println(newErrors)
 
           def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
           :     List[CompileError] =
@@ -96,8 +107,10 @@ object Subcompiler:
                 else run(source, regions -- done, errors ::: newErrors)
 
               case error :: tail =>
+                println(regions)
                 regions.find { (start, end) => error.point >= start && error.point <= end }.match
                   case None =>
+                    println(s"No region found for error ${error.point}")
                     recompile(tail, done, source)
 
                   case Some(region@(from, to)) =>
