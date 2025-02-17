@@ -41,11 +41,12 @@ and to use that information to your advantage.
 Why write the code to handle a failure, if the source code has everything to show it's impossible?
 With Soundness, you don't have to.
 
-#### Checked Exceptions
+#### Safe Exceptions
 
 
 
 #### Maintenance/Continuity
+
 
 #### Null safety
 
