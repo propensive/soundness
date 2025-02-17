@@ -37,12 +37,9 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
-import rudiments.*
 import vacuous.*
 
 object Properties extends Dynamic:
-  given default(using Quickstart): SystemProperties = systemProperties.virtualMachine
-
   def apply[PropertyType](property: Text)
      (using properties:    SystemProperties,
             reader:      SystemProperty[String, PropertyType],

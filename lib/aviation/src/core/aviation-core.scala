@@ -36,7 +36,6 @@ import anticipation.*
 import distillate.*
 import fulminate.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 export Timing.{Instant, Duration}

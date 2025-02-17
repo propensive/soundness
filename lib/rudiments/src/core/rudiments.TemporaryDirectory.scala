@@ -37,9 +37,6 @@ import language.experimental.captureChecking
 import anticipation.*
 import prepositional.*
 
-object TemporaryDirectory:
-  given default: Quickstart => TemporaryDirectory = () => System.getProperty("java.io.tmpdir").nn.tt
-
 trait TemporaryDirectory:
   def directory(): Text
 

@@ -362,9 +362,6 @@ package temporaryDirectories:
     List("TMPDIR", "TMP", "TEMP").map(System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
       panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
 
-package quickstart:
-  erased given defaults: Quickstart = ###
-
 extension [ValueType: Countable](inline value: ValueType)
   inline def ult: Optional[Ordinal] =
     if ValueType.size(value) >= 1 then (ValueType.size(value) - 1).z else Unset

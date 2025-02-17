@@ -37,9 +37,6 @@ import language.experimental.captureChecking
 import anticipation.*
 import prepositional.*
 
-object WorkingDirectory:
-  given default(using Quickstart): WorkingDirectory = workingDirectories.systemProperty
-
   def apply[PathType: Abstractable across Paths into Text](path: PathType)
   :     WorkingDirectory =
     () => path.generic
