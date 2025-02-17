@@ -41,17 +41,19 @@ and to use that information to your advantage.
 Why write the code to handle a failure, if the source code has everything to show it's impossible?
 With Soundness, you don't have to.
 
-#### Checked Exceptions
+#### Safe Exceptions
 
 
 
 #### Maintenance/Continuity
 
+
 #### Null safety
 
 The curse of `null`, the _billion-dollar mistake_ is well known by anyone who has ever encountered
 a `NullPointerException`. In Soundness, `null` is unrepresentable and unnecessary, and Scala's type
-system enforces it. `NullPointerException`s don't happen, so you can forget about them.
+system enforces it. You won't see a `null` in Soundness code, and`NullPointerException`s rarely ever
+occur, so you can code without concern for them.
 
 #### Compositionality
 
@@ -94,19 +96,28 @@ nuance and expressiveness.
 #### Declarative Programming
 
 Declarative code is easier to reason about because it's independent of control flow. Its essential
-structure comes from scopes and contexts, and in Scala 3 it's possible with _contextual values_.
+structure arises from scopes and contexts, and in Scala 3 it's possible with _contextual values_.
 Declare a new `given` instance or import an existing one, and it's valid for the entire scope. And
 you decide whether that's just a method body, or your entire project—on a continuuum between local
 and global. There's less repetition, and your code is more maintainable.
 
-#### Decoupled
+#### Decoupled Integration
+
+Soundness is a vast ecosystem of small libraries, for many diverse applications. For specific needs,
+individual libraries can be selected à la carte, without introducing a complex graph of
+dependencies. Care has been taken to decouple libraries which aren't directly related, without
+compromising their integration. Soundness's typeclass-based approach has made it possible to avoid
+unnecessary dependencies through the careful specification of small interfaces.
+
+But Soundness also provides six bundles of libraries targetting different domains. These are `web`
+for web applications; `data` for data processing; `sci` for scientific applications; `cli` for
+command-line applications; `test` for testing; and, `tool` for tooling development. The `base`
+bundle provides a common set of fundamental libraries, and `all` includes everything.
 
 #### Polymorphic and Small
 
 For all the functionality it provides, Soundness's API is _tiny_. Instead of a multitude of similar
 methods and types, Soundness prefers fewer methods and fewer types, but each more versatile and
-composable.
-
-#### Generic derivation
-
-Often there's a
+composable. Types can be composed in a variety of ways, with the resultant type exhibiting
+the properties of its constituent parts in predictable ways, without introducing new types with new
+names—and potentially new properties. This is the elegance of modularity.
