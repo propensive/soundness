@@ -39,7 +39,7 @@ export rudiments
     cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, ###,
     Exit, unit, waive, twin, triple, is, matchable, give, pipe,
     tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
-    WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, Bond, binds, bound, prim, sec,
+    WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, prim, sec,
     ter, unwind, at, Indexable, yet, Bijection, bijection, segment, Segmentable, Digit,
     temporaryDirectory }
 

@@ -106,12 +106,6 @@ extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
 
-infix type binds[ResultType, TypeclassType <: Any { type Self }] =
-  Bond[TypeclassType] ?=> ResultType
-
-inline def bound[BoundType <: Any { type Self }: Bond]: BoundType.Value = BoundType.value
-inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
-
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
