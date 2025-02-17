@@ -115,11 +115,6 @@ inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[B
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
 
-extension (value: Any)
-  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
-    irrefutable.unapply(value)
-
-
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =
     iterable.flatMap(FilterType.unapply(_))

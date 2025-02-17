@@ -37,3 +37,7 @@ import prepositional.*
 extension [FormatType](value: FormatType)
   def decode[ResultType](using decodable: ResultType is Decodable in FormatType): ResultType =
     decodable.decoded(value)
+
+extension (value: Any)
+  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
+    irrefutable.unapply(value)
