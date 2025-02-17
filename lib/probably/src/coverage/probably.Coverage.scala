@@ -33,6 +33,7 @@
 package probably
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import proscenium.*
 import rudiments.*

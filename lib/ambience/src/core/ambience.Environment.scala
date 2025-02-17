@@ -45,8 +45,6 @@ trait Environment:
   def knownVariables: Set[Text] = Set()
 
 object Environment extends Dynamic:
-  given default: Quickstart => Environment = environments.virtualMachine
-
   def apply[VariableType](variable: Text)
      (using environment:     Environment,
             reader:        EnvironmentVariable[Label, VariableType],

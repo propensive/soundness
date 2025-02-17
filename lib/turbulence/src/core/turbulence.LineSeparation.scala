@@ -35,11 +35,8 @@ package turbulence
 import language.experimental.captureChecking
 
 import anticipation.*
-import rudiments.*
 
 object LineSeparation:
-  given default: Quickstart => LineSeparation = lineSeparation.adaptiveLinefeed
-
   inline def readByte
      (inline read: => Byte, next: => Unit, inline mkNewline: => Unit, inline put: Byte => Unit)
      (lineSeparators: LineSeparation)

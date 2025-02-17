@@ -37,9 +37,6 @@ import language.experimental.captureChecking
 import anticipation.*
 import prepositional.*
 
-object HomeDirectory:
-  given default: Quickstart => HomeDirectory = () => System.getProperty("user.home").nn.tt
-
 trait HomeDirectory:
   def directory(): Text
 

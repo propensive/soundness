@@ -30,23 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package distillate
 
-import language.experimental.into
+import anticipation.*
+import prepositional.*
 
-trait Bond[TypeclassType <: Any { type Self }]:
-  val typeclass: TypeclassType
-  val value: typeclass.Self
-  def apply(): typeclass.Self = value
-  type Value = value.type
+object Irrefutable:
+  given stringText: String is Irrefutable into Text = _.tt
 
-  def over[InputType, ResultType](lambda: TypeclassType ?=> typeclass.Self ?=> ResultType)
-  :     ResultType =
-    lambda(using typeclass)(using value)
+  given [ResultType] => (irrefutable: Text is Irrefutable into ResultType)
+  =>    String is Irrefutable into ResultType =
+    string => irrefutable.unapply(string.tt)
 
-object Bond:
-  inline given [TypeclassType <: Any { type Self }]
-  =>   (typeclass0: TypeclassType, value0: typeclass0.Self)
-  =>    Bond[TypeclassType]:
-    val typeclass: typeclass0.type = typeclass0
-    val value: typeclass.Self = value0
+  given textString: [TextType <: Text] => TextType is Irrefutable into String = _.s
+  given ident: [ResultType] => ResultType is Irrefutable into ResultType = identity(_)
+
+  given byteShort: Byte is Irrefutable into Short = _.toShort
+  given byteInt: Byte is Irrefutable into Int = _.toInt
+  given byteLong: Byte is Irrefutable into Long = _.toLong
+  given byteFloat: Byte is Irrefutable into Float = _.toFloat
+  given byteDouble: Byte is Irrefutable into Double = _.toDouble
+
+  given shortInt: Short is Irrefutable into Int = _.toInt
+  given shortLong: Short is Irrefutable into Long = _.toLong
+  given shortFloat: Short is Irrefutable into Float = _.toShort
+  given shortDouble: Short is Irrefutable into Double = _.toDouble
+  given intLong: Int is Irrefutable into Long = _.toLong
+  given intDoule: Int is Irrefutable into Double = _.toDouble
+  given floatDouble: Float is Irrefutable into Double = _.toDouble
+
+trait Irrefutable:
+  type Self
+  type Result
+  def unapply(value: Self): Result

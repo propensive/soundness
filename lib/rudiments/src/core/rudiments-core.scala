@@ -106,19 +106,8 @@ extension (inline context: StringContext)
   transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
 
-infix type binds[ResultType, TypeclassType <: Any { type Self }] =
-  Bond[TypeclassType] ?=> ResultType
-
-inline def bound[BoundType <: Any { type Self }: Bond]: BoundType.Value = BoundType.value
-inline def bond[TypeclassType <: Any { type Self }] = compiletime.summonInline[Bond[TypeclassType]]
-
 @targetName("erasedValue")
 erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
-
-extension (value: Any)
-  def as[ResultType](irrefutable: value.type is Irrefutable into ResultType): ResultType =
-    irrefutable.unapply(value)
-
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =
@@ -366,9 +355,6 @@ package temporaryDirectories:
   given environment: TemporaryDirectory = () =>
     List("TMPDIR", "TMP", "TEMP").map(System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt).or:
       panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set")
-
-package quickstart:
-  erased given defaults: Quickstart = ###
 
 extension [ValueType: Countable](inline value: ValueType)
   inline def ult: Optional[Ordinal] =
