@@ -9,7 +9,7 @@ refers to the first element of any sequence without the need to specify if the s
 is a distinct type. Thus, an `Int` such as `1`, `138` or `-12`, cannot be used where an `Ordinal` is expected,
 and an `Ordinal` cannot be used where an `Int` is expected.
 
-Conversions between `Int`s and `Ordinal`s may only 
+Conversions between `Int`s and `Ordinal`s may only
 
 The first ten `Ordinal` numbers have names, which arise from the first part of the sequence that begins,
 "primary", "secondary", "tertiary", etc.:
@@ -77,6 +77,5 @@ method.
 #### Iterating over `Interval`s
 
 An `Interval` is most useful as a way of specifying a range of `Ordinal` values because we want to perform some
-operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
-behave exactly as their familiar counterparts in Scala's standard collections library.
-
+operation iteratively using each of the values. Two methods are provided: `each` and `fuse`, which
+behave exactly as their familiar counterparts in [Rudiments](https://github.com/propensive/rudiments).

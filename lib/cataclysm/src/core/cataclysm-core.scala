@@ -36,6 +36,7 @@ import anticipation.*
 import fulminate.*
 import gossamer.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 
 given Realm = realm"cataclysm"
@@ -70,8 +71,8 @@ extension [SelectorType: Selectable](left: SelectorType)
 
 type Dimension = Length | Int
 
-def max(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"max", _))
-def min(head: Length, tail: Length*): Length = tail.foldLeft(head)(_.function(t"min", _))
+def max(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"max", next))
+def min(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"min", next))
 
 package pseudo:
   def dir(direction: Dir) = Selector.PseudoClass(t"dir(${direction.show.lower})")

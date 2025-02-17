@@ -60,8 +60,7 @@ case class Row(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
   def apply[ValueType: Decodable in Text](field: Text): Optional[ValueType] =
     columns.let(_.at(field)).let { index => data.at(index.z) }.let(ValueType.decoded(_))
 
-  override def hashCode: Int = data.indices.foldLeft(0): (aggregate, index) =>
-    aggregate*31 + data(index).hashCode
+  override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)
 
   override def equals(that: Any): Boolean = that.asMatchable match
     case row: Row =>

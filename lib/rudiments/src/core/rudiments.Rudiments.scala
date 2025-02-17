@@ -92,8 +92,7 @@ object Rudiments:
 
     val bits2 = bits.filter(_ != ' ')
 
-    val long: Long = bits2.foldLeft(0L): (acc, next) =>
-      (acc << 1) + (if next == '1' then 1 else 0)
+    val long: Long = bits2.fuse(0L)((state << 1) + (if next == '1' then 1 else 0))
 
     bits2.length match
       case 8  => Expr[Byte](long.toByte)

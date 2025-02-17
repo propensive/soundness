@@ -108,7 +108,7 @@ class Report(using Environment):
 
         val min: Long = buf.map(_.duration).min
         val max: Long = buf.map(_.duration).max
-        val avg: Long = buf.foldLeft(0L)(_ + _.duration)/buf.length
+        val avg: Long = buf.fuse(0L)(state + next.duration)/buf.length
 
         List(Summary(status, testId, buf.length, min, max, avg))
 
@@ -209,7 +209,7 @@ class Report(using Environment):
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
     given TextMetrics:
       private val eastAsian = textMetrics.eastAsianScripts
-      def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
+      def width(text: Text): Int = text.s.fuse(0)(state + width(next))
 
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1

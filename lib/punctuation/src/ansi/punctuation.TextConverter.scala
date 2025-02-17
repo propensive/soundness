@@ -74,19 +74,19 @@ open class TextConverter():
     . apply(1).reverse
 
   def convert(nodes: Seq[Markdown.Ast.Node], indent: Int): BodyText =
-    BodyText(blockify(nodes).foldLeft(List[TextBlock]()) {
-      case (acc, next) => next match
+    BodyText(blockify(nodes).fuse(List[TextBlock]()):
+      next match
         case Markdown.Ast.Block.Paragraph(children*) =>
-          acc :+ TextBlock(indent, children.map(phrasing).join)
+          state :+ TextBlock(indent, children.map(phrasing).join)
 
         case Markdown.Ast.Block.Heading(level, children*) =>
-          acc :+ heading(level, children)
+          state :+ heading(level, children)
 
         case Markdown.Ast.Block.Blockquote(children*) =>
-          acc ++ convert(children, indent + 1).blocks
+          state ++ convert(children, indent + 1).blocks
 
         case Markdown.Ast.Block.ThematicBreak() =>
-          acc :+ TextBlock(indent, e"---")
+          state :+ TextBlock(indent, e"---")
 
         case Markdown.Ast.Block.FencedCode(syntax, meta, value) =>
           if syntax == t"scala" then
@@ -107,20 +107,21 @@ open class TextConverter():
 
                 . join
 
-            acc :+ TextBlock(indent, highlightedLines.join(e"\n"))
-          else acc :+ TextBlock(indent, e"${foreground.BrightGreen}($value)")
+            state :+ TextBlock(indent, highlightedLines.join(e"\n"))
+          else state :+ TextBlock(indent, e"${foreground.BrightGreen}($value)")
 
         case Markdown.Ast.Block.BulletList(num, loose, _, items*) =>
-          acc :+ TextBlock(indent, items.zipWithIndex.map { case (item, idx) =>
+          state :+ TextBlock(indent, items.zipWithIndex.map: (item, idx) =>
             e"${num.lay(t"  » ") { n => t"${(n + idx).show.fit(3)}. " }}${item.toString.show}"
-          }.join(e"\n"))
+
+          . join(e"\n"))
 
         case Markdown.Ast.Block.Table(parts*) =>
-          acc :+ TextBlock(indent, e"[table]")
+          state :+ TextBlock(indent, e"[table]")
 
         case other =>
-          acc
-    }*)
+          state
+    *)
 
   // def tableParts(node: Markdown.Ast.TablePart): Seq[Item["thead" | "tbody"]] = node match
   //   case Markdown.Ast.TablePart.Head(rows*) => List(Thead(tableRows(true, rows)))

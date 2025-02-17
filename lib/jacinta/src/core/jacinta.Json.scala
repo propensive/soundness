@@ -217,9 +217,9 @@ object Json extends Json2, Dynamic:
     value =>
       val (keys, values) = value.root.obj
 
-      keys.indices.foldLeft(Map[Text, ElementType]()): (acc, index) =>
-        focus(prior.or(JsonPointer()) / keys(index).tt):
-          acc.updated(keys(index).tt, ElementType.decoded(Json.ast(values(index))))
+      keys.indices.fuse(Map[Text, ElementType]()):
+        focus(prior.or(JsonPointer()) / keys(next).tt):
+          state.updated(keys(next).tt, ElementType.decoded(Json.ast(values(next))))
 
   given jsonEncodableInText: Json is Encodable in Text = json => JsonPrinter.print(json.root, false)
 
@@ -278,7 +278,7 @@ class Json(rootValue: Any) extends Dynamic derives CanEqual:
       case value: Boolean    => value.hashCode
 
       case value: IArray[JsonAst] @unchecked =>
-        value.foldLeft(value.length.hashCode)(_*31^recur(_))
+        value.fuse(value.length.hashCode)(state*31^recur(next))
 
       case (keys, values) => keys.asMatchable.absolve match
         case keys: IArray[String] @unchecked => values.asMatchable.absolve match

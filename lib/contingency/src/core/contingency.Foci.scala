@@ -33,6 +33,7 @@
 package contingency
 
 import proscenium.*
+import rudiments.*
 import vacuous.*
 
 import scala.collection.mutable as scm
@@ -75,8 +76,7 @@ class TrackFoci[FocusType]() extends Foci[FocusType]:
   def fold[AccrualType](initial: AccrualType)
      (lambda: (Optional[FocusType], AccrualType) => Exception ~> AccrualType)
   :     AccrualType =
-    (0 until errors.length).foldLeft(initial): (accrual, index) =>
-      lambda(focuses(index), accrual)(errors(index))
+    (0 until errors.length).fuse(initial)(lambda(focuses(next), state)(errors(next)))
 
   def supplement(count: Int, transform: Optional[FocusType] => FocusType): Unit =
     for i <- (errors.length - count) until errors.length

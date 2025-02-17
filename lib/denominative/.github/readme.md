@@ -38,7 +38,7 @@ refers to the first element of any sequence without the need to specify if the s
 is a distinct type. Thus, an `Int` such as `1`, `138` or `-12`, cannot be used where an `Ordinal` is expected,
 and an `Ordinal` cannot be used where an `Int` is expected.
 
-Conversions between `Int`s and `Ordinal`s may only 
+Conversions between `Int`s and `Ordinal`s may only
 
 The first ten `Ordinal` numbers have names, which arise from the first part of the sequence that begins,
 "primary", "secondary", "tertiary", etc.:
@@ -106,8 +106,8 @@ method.
 #### Iterating over `Interval`s
 
 An `Interval` is most useful as a way of specifying a range of `Ordinal` values because we want to perform some
-operation iteratively using each of the values. Two methods are provided: `foreach` and `foldLeft`, which
-behave exactly as their familiar counterparts in Scala's standard collections library.
+operation iteratively using each of the values. Two methods are provided: `each` and `fuse`, which
+behave exactly as their familiar counterparts in [Rudiments](https://github.com/propensive/rudiments).
 
 
 
@@ -138,7 +138,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Denominative?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Denominative's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -155,7 +155,7 @@ answer to the question, "how can I try Denominative?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -217,4 +217,3 @@ by one".
 
 Denominative is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

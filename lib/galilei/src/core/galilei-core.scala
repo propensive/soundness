@@ -109,7 +109,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def size(): Memory raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
-    descendants.foldLeft(jnf.Files.size(path.javaPath).b)(_ + _.size())
+    descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
 
   def delete()(using deleteRecursively: DeleteRecursively on PlatformType)
   :     Path on PlatformType raises IoError =

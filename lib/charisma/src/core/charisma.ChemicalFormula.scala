@@ -35,6 +35,7 @@ package charisma
 import anticipation.*
 import gossamer.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 
 object ChemicalFormula:
@@ -50,7 +51,8 @@ case class ChemicalFormula(molecules: ListMap[Molecule, Int]) extends Formulable
   def formula: ChemicalFormula = this
 
   def atoms: Map[ChemicalElement, Int] =
-    molecules.foldLeft(Molecule.empty):
-      case (acc, (molecule, count)) => acc*(molecule**count)
+    molecules.fuse(Molecule.empty):
+      val (molecule, count) = next
+      state*(molecule**count)
 
     . elements

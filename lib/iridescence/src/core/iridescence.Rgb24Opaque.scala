@@ -58,8 +58,8 @@ object Rgb24Opaque:
     def asInt: Int = color
 
     def hex: Text =
-      List(red, green, blue).foldLeft("#"): (acc, c) =>
-        acc+(c.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
+      List(red, green, blue).fuse("#"):
+        state+(next.hex.pipe { s => if s.s.length < 2 then "0"+s else s })
 
       . tt
 
