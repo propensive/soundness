@@ -42,7 +42,6 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
       . assert(_ == Path("bar", "foo"))
 
-
       test(t"Create a one-element path"):
         % / "foo"
 
@@ -50,7 +49,6 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
       test(t"Ensure path has correct type"):
         val path: Path of ("bar", "foo") = % / "foo" / "bar"
-
       . assert()
 
       test(t"Badly-typed path produces error"):
@@ -64,8 +62,19 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
       . assert()
 
-
       test(t"Construct a path on Linux"):
         val path: Path on Linux = (% / "foo" / "baz").on[Linux]
 
       . assert()
+
+      test(t"Forbidden characters are forbidden"):
+        demilitarize:
+          val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
+
+      . assert(_.nonEmpty)
+
+      test(t"Autoconvert known `Path` to `Path on Linux`"):
+        def receive(path: into Path on Linux): Unit = ()
+        receive(% / "foo" / "bar")
+
+      .assert()

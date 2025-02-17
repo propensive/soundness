@@ -33,26 +33,44 @@
 package serpentine
 
 import scala.quoted.*
+import scala.compiletime.*
 
 import anticipation.*
+import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import proscenium.*
+import rudiments.*
+import symbolism.*
 
 object Navigable:
-  given [PathType <: Path] => PathType is Navigable by String = new Navigable:
-    type Self = PathType
-    type Operand = String
-    def navigate(name: String): Text = name.tt
+  given [StringType <: Label, PathType <: Path] => PathType is Navigable by StringType =
+    new Navigable:
+      type Self = PathType
+      type Operand = StringType
+      inline def follow(name: StringType): Text = name.tt
+
+object Admissible:
+  inline given [StringType <: Label, PlatformType: Nominative]
+  =>    StringType is Admissible on PlatformType =
+    Name.verify[StringType, PlatformType]
+    new Admissible:
+      type Self = StringType
+      type Platform = PlatformType
+
+
+trait Admissible:
+  type Self
+  type Platform
 
 trait Navigable:
   type Self
   type Operand
 
-  def navigate(name: Operand): Text
-
+  def follow(name: Operand): Text
 
 object Path:
   @targetName("Root")
@@ -68,45 +86,60 @@ object Path:
 
   given Path is Encodable in Text = _.descent.reverse.join(t"/", t"/", t"")
 
+  inline given [SubjectType, PlatformType]
+  => Conversion[Path of SubjectType, Path of SubjectType on PlatformType] =
+
+    _.on[PlatformType]
+
+given
+   [PlatformType,
+    SubjectType <: Tuple,
+    ChildType,
+    PathType <: Path on PlatformType of SubjectType]
+=>    (navigable: PathType is Navigable by ChildType)
+=>    PathType is Divisible by ChildType into (Path on PlatformType of (ChildType *: SubjectType)) =
+
+  new Divisible:
+    type Self = PathType
+    type Operand = ChildType
+    type Result = Path on PlatformType of (ChildType *: SubjectType)
+
+    def divide(path: PathType, child: ChildType): Result =
+      Path.of(navigable.follow(child) +: path.descent*)
+
+
 case class Path(descent: Text*):
   type Platform
   type Subject <: Tuple
 
-  // override def hashCode: Int = descent.hashCode
-
-  // override def equals(that: Any): Boolean = that match
-  //   case that: Path if that.descent == descent => true
-  //   case _ => false
-
-  // override def toString(): String = descent.reverse.mkString("/", "/", "")
-
-  @targetName("child")
-  inline infix def / [NameType, PlatformType <: Platform](name: NameType)
-     (using navigable: (Path on PlatformType) is Navigable by NameType)
-  :     Path on Platform of (name.type *: Subject) =
-
-    Path.of(navigable.navigate(name) +: descent*)
-
   inline def on[PlatformType]: Path of Subject on PlatformType =
-    ${Serpentine.onPlatform[PlatformType, Subject]('this)}
+    val navigables = summonAll[Tuple.Map[Subject, [Type] =>> Type is Admissible on PlatformType]]
+    this.asInstanceOf[Path of Subject on PlatformType]
+
+  inline def parent = inline erasedValue[Subject] match
+    case head *: tail => Path.of[Platform, tail.type](descent.tail*)
+    case EmptyTuple   => compiletime.error("Path has no parent")
+    case _            =>
+      given Tactic[PathError] = summonInline[Tactic[PathError]]
+      if descent.isEmpty
+      then raise(PathError(PathError.Reason.RootParent)) yet Path.of[Platform, Tuple](descent*)
+      else Path.of[Platform, Tuple](descent.tail*)
 
 export Path.`%`
 
+object Linux:
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  erased given Linux is Nominative under Rules = ###
 erased trait Linux
 erased trait Windows
 
+trait Root
+
 given Realm = Realm(t"serpentine")
 
-object Serpentine:
-  def onPlatform[PlatformType: Type, SubjectType <: Tuple: Type](path: Expr[Path])(using Quotes)
-  :     Expr[Path on PlatformType of SubjectType] =
-
-    import quotes.reflect.*
-
-    def check[SubjectType: Type]
-    Type.of[SubjectType] match
-      case '[head *: tail] =>
-        halt(m"Don't know ${TypeRepr.of[head]}")
+trait Filesystem:
+  type Self
+  def separator: Text
 
 
 
