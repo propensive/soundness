@@ -33,6 +33,7 @@
 package vicarious
 
 import proscenium.*
+import rudiments.*
 
 import scala.compiletime.*
 import scala.quoted.*
@@ -89,10 +90,10 @@ object Vicarious:
       val base =
         TypeRepr.of[Proxy].appliedTo(List(TypeRepr.of[KeyType], TypeRepr.of[ValueType], nat))
 
-      repr.typeSymbol.caseFields.foldLeft(base): (repr, field) =>
-        val label = if prefix == "" then field.name else prefix+"."+field.name
-        val fieldType: TypeRepr = field.info
-        Refinement(repr, field.name, recur(label, fieldType))
+      repr.typeSymbol.caseFields.fuse(base):
+        val label = if prefix == "" then next.name else prefix+"."+next.name
+        val fieldType: TypeRepr = next.info
+        Refinement(state, next.name, recur(label, fieldType))
 
     recur("", TypeRepr.of[KeyType]).asType.absolve match
       case '[type proxyType <: Proxy[KeyType, ValueType, 0]; proxyType] =>

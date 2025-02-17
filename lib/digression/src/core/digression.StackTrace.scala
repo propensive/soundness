@@ -32,8 +32,6 @@
                                                                                                   */
 package digression
 
-import language.experimental.captureChecking
-
 import anticipation.*
 import fulminate.*
 import proscenium.*
@@ -239,19 +237,23 @@ object StackTrace:
     val fullClass = s"${stack.component}.${stack.className}".tt
     val init = s"$fullClass: ${stack.message}".tt
 
-    val root = stack.frames.foldLeft(init):
-      case (msg, frame) =>
-        val obj = frame.method.className.s.endsWith("#")
-        val drop = if obj then 1 else 0
-        val file = ("\u00a0"*(fileWidth - frame.file.s.length))+frame.file
-        val dot = if obj then ".".tt else "#".tt
-        val className = frame.method.className.s.dropRight(drop)
-        val classPad = ("\u00a0"*(classWidth - className.length)).tt
-        val method = frame.method.method
-        val methodPad = ("\u00a0"*(methodWidth - method.s.length)).tt
-        val line = frame.line.let(_.toString.tt).or("?".tt)
+    val nbsp = "\u00a0".tt
 
-        s"$msg\n\n\u00a0\u00a0at\u00a0$classPad$className$dot$method$methodPad\u00a0$file:$line".tt
+    val root = stack.frames.fuse(init):
+      val obj = next.method.className.s.endsWith("#")
+      val drop = if obj then 1 else 0
+      val file = (nbsp*(fileWidth - next.file.s.length))+next.file
+      val dot = if obj then ".".tt else "#".tt
+      val className = next.method.className.s.dropRight(drop)
+      val classPad = (nbsp*(classWidth - className.length))
+      val method = next.method.method
+      val methodPad = (nbsp*(methodWidth - method.s.length))
+
+      val line = next.line match
+        case Unset => "?".tt
+        case value => value.toString.tt
+
+      s"$state\n\n${nbsp*2}at$nbsp$classPad$className$dot$method$methodPad$nbsp$file:$line".tt
 
     Message:
       stack.cause.lay(root): cause =>

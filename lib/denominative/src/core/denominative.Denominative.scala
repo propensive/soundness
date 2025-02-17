@@ -106,15 +106,15 @@ object Denominative:
         lambda(i)
         i = i.next
 
-    inline def foldLeft[ValueType](inline initial: ValueType)
-       (inline lambda: (ValueType, Ordinal) => ValueType)
+    inline def fuse[ValueType](inline initial: ValueType)
+       (inline lambda: (state: ValueType, next: Ordinal) ?=> ValueType)
     :     ValueType =
 
       var i: Ordinal = start
       var acc: ValueType = initial
 
       while i <= end do
-        acc = lambda(acc, i)
+        acc = lambda(using acc, i)
         i = i.next
       acc
 

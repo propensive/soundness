@@ -82,7 +82,7 @@ package textMetrics:
     def width(char: Char): Int = 1
 
   given eastAsianScripts: TextMetrics:
-    def width(text: Text): Int = text.s.foldLeft(0)(_ + width(_))
+    def width(text: Text): Int = text.s.fuse(0)(state + width(next))
     def width(char: Char): Int = char.metrics
 
 extension (char: Char)

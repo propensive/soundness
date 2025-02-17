@@ -379,7 +379,7 @@ object Eq extends ProductDerivation[Eq]:
       fields(left):
         [FieldType] => leftField =>
           context.equal(leftField, complement(right))
-      .foldLeft(true)(_ && _)
+      .fuse(true)(state && next)
 ```
 
 #### Producer Product Typeclasses
@@ -553,7 +553,7 @@ object Eq extends Derivation[Eq]:
     (left, right) =>
       fields(left):
         [FieldType] => left => context.equal(left, complement(right))
-      .foldLeft(true)(_ && _)
+      .fuse(true)(state && next)
 
   inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
     (left, right) =>

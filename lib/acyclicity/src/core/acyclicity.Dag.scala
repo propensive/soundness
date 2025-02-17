@@ -32,8 +32,6 @@
                                                                                                   */
 package acyclicity
 
-import language.experimental.captureChecking
-
 import scala.collection.mutable as scm
 
 import proscenium.*
@@ -72,7 +70,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def map[NodeType2](lambda: NodeType => NodeType2): Dag[NodeType2] =
     Dag(edgeMap.map { (k, v) => (lambda(k), v.map(lambda)) })
 
-  def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).foldLeft(this)(_.remove(_))
+  def subgraph(keep: Set[NodeType]): Dag[NodeType] = (keys &~ keep).fuse(this)(state.remove(next))
   def apply(key: NodeType): Set[NodeType] = edgeMap.getOrElse(key, Set())
   def descendants(key: NodeType): Dag[NodeType] = subgraph(reachable(key))
 
@@ -90,11 +88,11 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
 
   def has(key: NodeType): Boolean = edgeMap.contains(key)
 
-  def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) -> NodeType2)
+  def traversal[NodeType2](lambda: (Set[NodeType2], NodeType) => NodeType2)
   :     Map[NodeType, NodeType2] =
 
-    sorted.foldLeft(Map[NodeType, NodeType2]()):
-      (map, next) => map.updated(next, lambda(apply(next).map(map), next))
+    sorted.fuse(Map[NodeType, NodeType2]()):
+      state.updated(next, lambda(apply(next).map(state), next))
 
   @targetName("addAll")
   infix def ++(dag: Dag[NodeType]): Dag[NodeType] =
@@ -124,8 +122,7 @@ case class Dag[NodeType] private(edgeMap: Map[NodeType, Set[NodeType]] = Map()):
   def invert: Dag[NodeType] = Dag:
     edgeMap.foldLeft(Map[NodeType, Set[NodeType]]()):
       case (acc, (k, vs)) =>
-        vs.foldLeft(acc):
-          (acc2, v) => acc2.updated(v, acc2.get(v).fold(Set(k))(_ + k))
+        vs.fuse(acc)(state.updated(next, state.get(next).fold(Set(k))(_ + k)))
 
   def remove(elem: NodeType): Dag[NodeType] = Dag:
     (edgeMap - elem).view.mapValues:

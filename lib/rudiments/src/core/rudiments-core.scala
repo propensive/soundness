@@ -148,6 +148,16 @@ extension [ValueType](iterable: Iterable[ValueType])
       lambda(using ordinal)(value)
       ordinal += 1
 
+  inline def fuse[StateType](base: StateType)
+     (lambda: (state: StateType, next: ValueType) ?=> StateType)
+  :     StateType =
+
+    val iterator: Iterator[ValueType] = iterable.iterator
+    var state: StateType = base
+    while iterator.hasNext do state = lambda(using state, iterator.next)
+
+    state
+
   def sumBy[NumberType: Numeric](lambda: ValueType => NumberType): NumberType =
     var count = NumberType.zero
 
@@ -210,9 +220,7 @@ extension [KeyType, ValueType](map: Map[KeyType, ValueType])
   def collate(right: Map[KeyType, ValueType])(merge: (ValueType, ValueType) => ValueType)
   :       Map[KeyType, ValueType] =
 
-    right.foldLeft(map): (accumulator, keyValue) =>
-      accumulator.updated
-       (keyValue(0), accumulator.get(keyValue(0)).fold(keyValue(1))(merge(_, keyValue(1))))
+    right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
 
 extension [KeyType, ValueType](map: scm.Map[KeyType, ValueType])
   inline def establish(key: KeyType)(evaluate: => ValueType): ValueType =

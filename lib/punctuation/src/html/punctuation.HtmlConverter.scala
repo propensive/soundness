@@ -67,7 +67,7 @@ open class HtmlConverter(renderers: Renderer*):
     acc(1).reverse
 
   def convert(nodes: Seq[Markdown.Ast.Node]): Seq[Html[Flow]] =
-    blockify(nodes).foldLeft(List[Html[Flow]]())(_ ++ convertNode(_))
+    blockify(nodes).fuse(List[Html[Flow]]())(state ++ convertNode(next))
 
   def convertNode(node: Markdown.Ast.Block): Seq[Html[Flow]] = node match
     case Markdown.Ast.Block.Paragraph(children*)      => Seq(P(children.flatMap(phrasing)*))

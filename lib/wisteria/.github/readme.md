@@ -420,7 +420,7 @@ object Eq extends ProductDerivation[Eq]:
       fields(left):
         [FieldType] => leftField =>
           context.equal(leftField, complement(right))
-      .foldLeft(true)(_ && _)
+      .fuse(true)(state && next)
 ```
 
 #### Producer Product Typeclasses
@@ -594,7 +594,7 @@ object Eq extends Derivation[Eq]:
     (left, right) =>
       fields(left):
         [FieldType] => left => context.equal(left, complement(right))
-      .foldLeft(true)(_ && _)
+      .fuse(true)(state && next)
 
   inline def split[DerivationType: SumReflection]: Eq[DerivationType] =
     (left, right) =>
@@ -889,7 +889,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Wisteria?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Wisteria's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -906,7 +906,7 @@ answer to the question, "how can I try Wisteria?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -966,4 +966,3 @@ The logo shows a hazy, floral shape in pale colors.
 
 Wisteria is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

@@ -33,6 +33,7 @@
 package charisma
 
 import proscenium.*
+import rudiments.*
 import vacuous.*
 
 trait Molecular extends Formulable:
@@ -41,8 +42,8 @@ trait Molecular extends Formulable:
 
   @targetName("with")
   infix def * (moleculable: Molecular): Molecule =
-    val elements2 = moleculable.molecule.elements.foldLeft(molecule.elements): (acc, next) =>
-      acc.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
+    val elements2 = moleculable.molecule.elements.fuse(molecule.elements):
+      state.updated(next(0), molecule.elements.getOrElse(next(0), 0) + next(1))
 
     Molecule(elements2, molecule.charge + moleculable.molecule.charge)
 

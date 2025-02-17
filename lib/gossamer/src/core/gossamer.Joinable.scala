@@ -44,7 +44,7 @@ object Joinable:
     elements.each(buffer.append(_))
     buffer()
 
-  given Message is Joinable = _.foldLeft(m"")(_+_)
+  given Message is Joinable = _.fuse(m"")(state+next)
 
 trait Joinable:
   type Self
