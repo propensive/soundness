@@ -80,7 +80,7 @@ final case class Promise[ValueType]():
       case current             => current
 
   def fulfill(supplied: => ValueType): Unit raises AsyncError =
-    state.updateAndGet(completeIncomplete(supplied)).nn match
+    state.getAndUpdate(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
       case Incomplete(waiting) => ()
