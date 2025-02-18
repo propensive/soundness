@@ -67,62 +67,64 @@ trait Dispatcher:
             properties:  SystemProperties,
             directory:   TemporaryDirectory)
   :     Result[OutputType] raises CompilerError =
-   try
-    import strategies.throwUnsafely
-    val uuid = Uuid()
+    try
+      import strategies.throwUnsafely
+      val uuid = Uuid()
 
-    val references = new References()
+      val references = new References()
 
-    val (out, fn): (Path, Text => Text) =
-      if Dispatcher.cache.contains(codepoint) then
-        val settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
+      val (out, fn): (Path, Text => Text) =
+        if Dispatcher.cache.contains(codepoint) then
+          val settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
 
-        given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+          given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-        staging.withQuotes:
-          '{ (array: List[Json]) =>
-               ${  references.setRef('array)
-                   body(using references)  } }
+          staging.withQuotes:
+            '{ (array: List[Json]) =>
+                ${  references.setRef('array)
+                    body(using references)  } }
 
-        Dispatcher.cache(codepoint)
+          Dispatcher.cache(codepoint)
 
-      else
-        val out: Path on Linux = temporaryDirectory[Path on Linux] / Name(uuid.show)
-        val settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
+        else
+          val out: Path on Linux = temporaryDirectory[Path on Linux] / Name(uuid.show)
+          val settings: staging.Compiler.Settings =
+            staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
-        given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
+          given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-        val fn: Text => Text = staging.run:
-          val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
-            import Json.jsonEncodableInText
-            ${
-              references.setRef('array)
-              body(using references)
-            }.json.encode
-          }
+          val fn: Text => Text = staging.run:
+            val fromList: Expr[List[Json] => Text] = '{ (array: List[Json]) =>
+              import Json.jsonEncodableInText
+              ${
+                references.setRef('array)
+                body(using references)
+              }.json.encode
+            }
 
-          '{ text => $fromList(text.decode[Json].as[List[Json]]) }
+            '{ text => $fromList(text.decode[Json].as[List[Json]]) }
 
-        Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
-        (out, fn)
+          Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
+          (out, fn)
 
-    val classpath = classloaders.threadContext.classpath match
-      case classpath: LocalClasspath =>
-        LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
+      val classpath = classloaders.threadContext.classpath match
+        case classpath: LocalClasspath =>
+          LocalClasspath(classpath.entries :+ ClasspathEntry.Directory(out.encode))
 
-      case _ =>
-        val systemClasspath = Properties.java.`class`.path()
-        LocalClasspath:
-          ClasspathEntry.Directory(out.encode) :: systemClasspath.decode[LocalClasspath].entries
+        case _ =>
+          val systemClasspath = Properties.java.`class`.path()
+          LocalClasspath:
+            ClasspathEntry.Directory(out.encode) :: systemClasspath.decode[LocalClasspath].entries
 
-    invoke[OutputType]
-     (Dispatch
-       (out,
-        classpath, () => fn(references()).decode[Json].as[OutputType],
-        (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
-   catch case throwable: Throwable =>
-     println("Failed, somehow")
-     println(throwable)
-     ???
+      invoke[OutputType]
+       (Dispatch
+         (out,
+          classpath,
+          () => fn(references()).decode[Json].as[OutputType],
+          (fn: Text => Text) => fn(references()).decode[Json].as[OutputType]))
+
+    catch case throwable: Throwable =>
+      println("Failed, somehow")
+      println(throwable)
+      ???
