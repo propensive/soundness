@@ -40,7 +40,7 @@ import eucalyptus.*
 import guillotine.*
 import rudiments.*
 
-object remote extends JsonDispatcher:
+object remote extends Dispatcher:
   type Result[OutputType] = OutputType
 
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))

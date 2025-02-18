@@ -54,35 +54,49 @@ import scala.quoted.*
 object Dispatcher:
   private var cache: Map[Codepoint, (Path, Text => Text)] = Map()
 
+object Dispatchable:
+  given json: Dispatchable over Json:
+      def encoder[ValueType: Type](using Quotes): Expr[ValueType => Text] =
+        '{  (value: ValueType) => value.json.encode  }
+
+      inline def encode(value: List[Json]): Text = value.json.encode
+
+      def decoder(using Quotes): Expr[Text => List[Json]] =
+        '{  (text: Text) => unsafely(text.decode[Carrier].as[List[Json]])  }
+
+      inline def decode[ValueType](value: Text): ValueType =
+        unsafely(value.decode[Carrier].as[ValueType])
+
+trait Dispatchable:
+  type Carrier
+
+  def encoder[ValueType: Type](using Quotes): Expr[ValueType => Text]
+  def decoder(using Quotes): Expr[Text => List[Carrier]]
+  inline def encode(values: List[Carrier]): Text
+  inline def decode[ValueType](value: Text): ValueType
+
+
 trait Dispatcher:
   type Result[OutputType]
   protected def scalac: Scalac[?]
   protected def invoke[OutputType](dispatch: Dispatch[OutputType]): Result[OutputType]
 
-  type Carrier
-
-  def encoder[ValueType: Type](using Quotes): Expr[ValueType => Text]
-
-  def decoder(using Quotes): Expr[Text => List[Carrier]]
-
-  inline def encode(values: List[Carrier]): Text
-  inline def decode[ValueType](value: Text): ValueType
-
-  inline def dispatch[OutputType]
-     (body: References[Carrier] ?=> Quotes ?=> Expr[OutputType])
+  inline def dispatch[OutputType, CarrierType]
+     (body: References[CarrierType] ?=> Quotes ?=> Expr[OutputType])
      [ScalacVersionType <: Scalac.All]
      (using codepoint:   Codepoint,
             classloader: Classloader,
             properties:  SystemProperties,
-            directory:   TemporaryDirectory)
+            directory:   TemporaryDirectory,
+            dispatchable: Dispatchable over CarrierType)
   :     Result[OutputType] raises CompilerError =
     try
       import strategies.throwUnsafely
       val uuid = Uuid()
 
-      val references = new References[Carrier]()
+      val references = new References[CarrierType]()
 
-      val (out, fn): (Path, Text => Text) =
+      val (out, function): (Path, Text => Text) =
         if Dispatcher.cache.contains(codepoint) then
           val settings: staging.Compiler.Settings =
             staging.Compiler.Settings.make(None, scalac.commandLineArguments.map(_.s))
@@ -90,26 +104,27 @@ trait Dispatcher:
           given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
           staging.withQuotes:
-            '{ (array: List[Carrier]) => ${references.set('array) yet body(using references)} }
+            '{ (array: List[CarrierType]) => ${references.set('array) yet body(using references)} }
 
           Dispatcher.cache(codepoint)
 
         else
           val out: Path on Linux = temporaryDirectory[Path on Linux] / Name(uuid.show)
+
           val settings: staging.Compiler.Settings =
             staging.Compiler.Settings.make(Some(out.encode.s), scalac.commandLineArguments.map(_.s))
 
           given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-          val fn: Text => Text = staging.run:
-            val fromList: Expr[List[Carrier] => Text] =
-              '{  (array: List[Carrier]) =>
-                    ${encoder[OutputType]}(${references.set('array) yet body(using references)})  }
+          val function: Text => Text = staging.run:
+            val fromList: Expr[List[CarrierType] => Text] =
+              '{  (array: List[CarrierType]) =>
+                    ${dispatchable.encoder[OutputType]}(${references.set('array) yet body(using references)})  }
 
-            '{ text => $fromList($decoder(text)) }
+            '{ text => $fromList(${dispatchable.decoder}(text)) }
 
-          Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, fn))
-          (out, fn)
+          Dispatcher.cache = Dispatcher.cache.updated(codepoint, (out, function))
+          (out, function)
 
       val classpath = classloaders.threadContext.classpath match
         case classpath: LocalClasspath =>
@@ -124,23 +139,10 @@ trait Dispatcher:
        (Dispatch
          (out,
           classpath,
-          () => decode[OutputType](fn(encode(references()))),
-          (fn: Text => Text) => decode[OutputType](fn(encode(references())))))
+          () => dispatchable.decode[OutputType](function(dispatchable.encode(references()))),
+          (function: Text => Text) => dispatchable.decode[OutputType](function(dispatchable.encode(references())))))
 
     catch case throwable: Throwable =>
       println("Failed, somehow")
       throwable.printStackTrace()
       ???
-
-trait JsonDispatcher extends Dispatcher:
-  type Carrier = Json
-  def encoder[ValueType: Type](using Quotes): Expr[ValueType => Text] =
-    '{  (value: ValueType) => value.json.encode  }
-
-  inline def encode(value: List[Json]): Text = value.json.encode
-
-  def decoder(using Quotes): Expr[Text => List[Json]] =
-    '{  (text: Text) => unsafely(text.decode[Carrier].as[List[Json]])  }
-
-  inline def decode[ValueType](value: Text): ValueType =
-    unsafely(value.decode[Carrier].as[ValueType])
