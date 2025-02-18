@@ -291,6 +291,16 @@ object anticipation extends SoundnessModule {
   object test extends ProbablyTestModule
 }
 
+object austronesian extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(wisteria.core, distillate.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object aviation extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(quantitative.core)
