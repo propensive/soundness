@@ -3,6 +3,7 @@ package austronesian
 import anticipation.*
 import prepositional.*
 
-export Austronesian.Java
+export Austronesian.Stdlib
 
-extension [ValueType: Encodable in Java](value: ValueType) def java = ValueType.encoded(value)
+extension [ValueType: Encodable in Stdlib](value: ValueType)
+  def stdlib: Stdlib = ValueType.encoded(value)

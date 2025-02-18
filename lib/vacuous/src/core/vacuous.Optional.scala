@@ -60,7 +60,7 @@ extension [ValueType](optional: Optional[ValueType])(using Optionality[optional.
   inline def mask(predicate: ValueType => Boolean): Optional[ValueType] =
     optional.let { value => if predicate(value) then Unset else value }
 
-  def stdlib: ju.Optional[ValueType] =
+  def javaOptional: ju.Optional[ValueType] =
     optional.lay(ju.Optional.empty[ValueType].nn)(ju.Optional.of(_).nn)
 
   def presume(using default: Default[ValueType]): ValueType = optional.or(default())

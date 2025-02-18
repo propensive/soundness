@@ -10,39 +10,39 @@ import rudiments.*
 import wisteria.*
 
 object Austronesian2:
-  object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Java]:
+  object EncodableDerivation extends Derivation[[Type] =>> Type is Encodable in Stdlib]:
 
     inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Encodable in _root_.austronesian.Austronesian.Java =
+    :     DerivationType is Encodable in _root_.austronesian.Austronesian.Stdlib =
 
       fields(_):
         [FieldType] => _.encode
-      .asInstanceOf[Java]
+      .asInstanceOf[Stdlib]
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Java =
+    inline def split[DerivationType: SumReflection]: DerivationType is Encodable in Stdlib =
       variant(_):
         [VariantType <: DerivationType] => value =>
-          IArray.create[Java](2): array =>
-            array(0) = label.s.asInstanceOf[Java]
+          IArray.create[Stdlib](2): array =>
+            array(0) = label.s.asInstanceOf[Stdlib]
             array(1) = value.encode
 
-          . asInstanceOf[Java]
+          . asInstanceOf[Stdlib]
 
-  object DecodableDerivation extends Derivable[Decodable in Java]:
+  object DecodableDerivation extends Derivable[Decodable in Stdlib]:
     inline def join[DerivationType <: Product: ProductReflection]
-    :     DerivationType is Decodable in Java =
+    :     DerivationType is Decodable in Stdlib =
 
-      case array: Array[Java] =>
+      case array: Array[Stdlib] =>
         construct: [FieldType] =>
           _.decoded(array(index))
 
       case other =>
-        summonInline[Tactic[JavaError]].give(abort(JavaError()))
+        summonInline[Tactic[StdlibError]].give(abort(StdlibError()))
 
-    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Java =
-      case Array(label: String, java: Java) =>
+    inline def split[DerivationType: SumReflection]: DerivationType is Decodable in Stdlib =
+      case Array(label: String, stdlib: Stdlib) =>
         delegate(label): [VariantType <: DerivationType] =>
-          _.decoded(java)
+          _.decoded(stdlib)
 
       case other =>
-        summonInline[Tactic[JavaError]].give(abort(JavaError()))
+        summonInline[Tactic[StdlibError]].give(abort(StdlibError()))
