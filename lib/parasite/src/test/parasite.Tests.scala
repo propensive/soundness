@@ -32,9 +32,10 @@
                                                                                                   */
 package parasite
 
-import anticipation.*, timeInterfaces.long
+import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import gossamer.*
 import probably.*
 import proscenium.*
@@ -46,10 +47,12 @@ import strategies.throwUnsafely
 import threadModels.platform
 import asyncTermination.cancel
 
-given Interceptor = (path, error) =>
-  println(s"An async exception occurred in ${path.stack}:")
-  error.printStackTrace()
-  Mitigation.Escalate
+import errorDiagnostics.stackTraces
+
+// given Interceptor = (path, error) =>
+//   println(s"An async exception occurred in ${path.stack}:")
+//   error.printStackTrace()
+//   Mitigation.Escalate
 
 object Tests extends Suite(t"Parasite tests"):
 
