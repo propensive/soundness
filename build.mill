@@ -18,7 +18,6 @@ object settings {
     "-Wimplausible-patterns",
     "-Wsafe-init",
     "-Xmax-inlines", "100",
-    "-Yrequire-targetName",
     "-Ycc-new",
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
@@ -209,6 +208,16 @@ object adversaria extends SoundnessModule {
 object ambience extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(guillotine.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
+object anamnesis extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(rudiments.core)
   }
 
   object test extends ProbablyTestModule {
