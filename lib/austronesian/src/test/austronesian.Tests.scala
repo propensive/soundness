@@ -87,3 +87,15 @@ object Tests extends Suite(t"Austronesian tests"):
     test(t"Roundtrip a complex datatype"):
       unsafely(data.stdlib.decode[List[Something]])
     . assert(_ == data)
+
+
+
+
+    suite(t"Proxy testing"):
+      test(t"Invoke a Proxy method"):
+        import classloaders.system
+        o"austronesian.Example".run(t"hello")
+      .assert()
+
+      test(t"Invoke the macro"):
+        summon[Person is Restorable]
