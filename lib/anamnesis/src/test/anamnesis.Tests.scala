@@ -53,6 +53,7 @@ object Tests extends Suite(t"Anamnesis tests"):
 
     . assert(_ == Set())
 
+
     test(t"Can't insert a pencil onto a shelf"):
       demilitarize:
         top.insert(red)
