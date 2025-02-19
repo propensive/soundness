@@ -120,7 +120,7 @@ object soundness extends ScalaModule {
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
-        zeppelin.core, xylophone.core)
+        zeppelin.core, xylophone.core, anamnesis.core)
     def scalaVersion = settings.scalaVersion
   }
 
