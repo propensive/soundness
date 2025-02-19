@@ -34,9 +34,18 @@
 package austronesian
 
 import anticipation.*
+import hellenism.*
 import prepositional.*
 
 export Austronesian.Stdlib
 
 extension [ValueType: Encodable in Stdlib](value: ValueType)
   def stdlib: Stdlib = ValueType.encoded(value)
+
+extension (classloader: Classloader)
+  inline def isolate[ResultType](inline invoke: ResultType): ResultType =
+    ${Austronesian2.isolated('classloader, 'invoke)}
+
+extension (context: StringContext)
+  def o(): Proxy = Proxy(context.parts.head.tt, true)
+  def c(): Proxy = Proxy(context.parts.head.tt, false)
