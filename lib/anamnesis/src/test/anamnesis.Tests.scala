@@ -2,6 +2,7 @@ package anamnesis
 
 import soundness.*
 
+case class Cabinet(name: Text)
 case class Shelf(name: Text)
 case class Box(name: Text)
 case class Pencil(name: Text)
@@ -19,43 +20,47 @@ val blue = Pencil(t"blue")
 
 object Tests extends Suite(t"Anamnesis tests"):
   def run(): Unit =
-    given Database of (Shelf -< Box, Box -< Pencil) = Database()
+    given Database of (
+           Cabinet -< Shelf,
+                      Shelf -< Box,
+                               Box -< Pencil,
+                       Text >- Box) = Database()
 
     test(t"Database is initally empty"):
-      alpha.select[Pencil]
+      alpha.lookup[Pencil]
 
     . assert(_ == Set())
 
     test(t"Can add an item"):
-      alpha.insert(red)
+      alpha.assign(red)
 
     . assert()
 
     test(t"Table now contains item"):
-      alpha.select[Pencil]
+      alpha.lookup[Pencil]
 
     . assert(_ == Set(red))
 
     test(t"Can insert multiple items"):
-      alpha.insert(green)
-      alpha.select[Pencil]
+      alpha.assign(green)
+      alpha.lookup[Pencil]
 
     . assert(_ == Set(red, green))
 
     test(t"Can delete an item"):
-      alpha.delete(red)
-      alpha.select[Pencil]
+      alpha.unassign(red)
+      alpha.lookup[Pencil]
 
     . assert(_ == Set(green))
 
     test(t"Other values are unaffected"):
-      beta.select[Pencil]
+      beta.lookup[Pencil]
 
     . assert(_ == Set())
 
 
     test(t"Can't insert a pencil onto a shelf"):
       demilitarize:
-        top.insert(red)
+        top.assign(red)
 
     . assert(_.nonEmpty)

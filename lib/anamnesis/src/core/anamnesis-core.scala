@@ -1,24 +1,20 @@
 package anamnesis
 
-import scala.reflect.*
-
 infix type -< [LeftType, RightType] = Database.Relation[LeftType, RightType]
 infix type >- [LeftType, RightType] = Database.Relation[RightType, LeftType]
 
-extension [LeftType: ClassTag](left: LeftType)
-  def select[RightType: ClassTag](using db: Database[? <: LeftType -< RightType]): Set[RightType] =
-    db.select(left)
+extension [LeftType](left: LeftType)
 
-  def insert[RightType: ClassTag](right: RightType)(using db: Database[? <: LeftType -< RightType])
+  inline def assign[RightType](right: RightType)(using db: Database)
+     (using db.Has[LeftType -< RightType])
   :     Unit =
-    db.insert(left, right)
+    db.assign(left, right)
 
-  def delete[RightType: ClassTag](right: RightType)(using db: Database[? <: LeftType -< RightType])
+  inline def lookup[RightType](using db: Database)(using db.Has[LeftType -< RightType])
+  :     Set[RightType] =
+    db.lookup[LeftType, RightType](left)
+
+  inline def unassign[RightType](right: RightType)(using db: Database)
+     (using db.Has[LeftType -< RightType])
   :     Unit =
-
-    db.delete(left, right)
-
-  def delete()(using db: Database[? <: (LeftType -< ?)]): Unit = db.delete(left)
-
-def select[LeftType: ClassTag](using db: Database[? <: LeftType -< ?]): Set[LeftType] =
-  db.select[LeftType]()
+    db.unassign(left, right)
