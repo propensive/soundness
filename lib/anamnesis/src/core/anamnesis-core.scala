@@ -1,19 +1,26 @@
 package anamnesis
 
-import scala.reflect.*
+import contingency.*
+import prepositional.*
 
 infix type -< [LeftType, RightType] = Database.Relation[LeftType, RightType]
 infix type >- [LeftType, RightType] = Database.Relation[RightType, LeftType]
 
-extension [LeftType: ClassTag](left: LeftType)
-  def select[RightType: ClassTag](using db: Database[? <: LeftType -< RightType]): Set[RightType] =
-    db.select(left)
+extension [LeftType](using db: Database)(left: Ref of LeftType in db.type)
+  inline def unassign[RightType](right: Ref of RightType in db.type)
+     (using db.Has[LeftType -< RightType])
+  :     Unit raises DbError =
+    db.unassign(left, right)
 
-  def insert[RightType: ClassTag](right: RightType)(using db: Database[? <: LeftType -< RightType])
-  :     Unit =
-    db.insert(left, right)
+  inline def lookup[RightType](using db.Has[LeftType -< RightType])
+  :     Set[Ref of RightType in db.type] raises DbError =
+    db.lookup[LeftType, RightType](left)
 
-  def delete[RightType: ClassTag](right: RightType)(using db: Database[? <: LeftType -< RightType])
-  :     Unit =
+  inline def assign[RightType](right: Ref of RightType in db.type)
+     (using db.Has[LeftType -< RightType])
+  :     Unit raises DbError =
+      db.assign(left, right)
 
-    db.delete(left, right)
+extension [LeftType](using db: Database)(left: LeftType)
+  inline def store(): Ref of LeftType in db.type = db.store(left)
+  inline def ref(): Ref of LeftType in db.type raises DbError = db.ref(left)
