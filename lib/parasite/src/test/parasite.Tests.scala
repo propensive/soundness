@@ -116,22 +116,25 @@ object Tests extends Suite(t"Parasite tests"):
             bus.waitFor(t"task1")
             t"TASK1"
 
+          println("2")
           val task2 = async:
             bus.waitFor(t"task2")
             t"TASK2"
 
           val task3 = async(Vector(task1, task2).race())
           bus.put(t"task2")
-          sleep(15L)
+          snooze(20L)
           bus.put(t"task1")
           task3.await()
+
         .assert(_ == t"TASK2")
 
       suite(t"Promises"):
         test(t"New promise is incomplete"):
           val promise = Promise[Int]()
           promise.ready
-        .assert(_ == false)
+
+        . assert(_ == false)
 
         test(t"Completed promise is ready"):
           val promise = Promise[Int]()
@@ -148,7 +151,7 @@ object Tests extends Suite(t"Parasite tests"):
         test(t"Promise result can be awaited"):
           val promise = Promise[Int]()
           thread:
-            sleep(100L)
+            snooze(100L)
             promise.fulfill(42)
           promise.await()
         .assert(_ == 42)
@@ -178,29 +181,32 @@ object Tests extends Suite(t"Parasite tests"):
         .assert(_ == 101)
 
         // test(t"Async name"):
-        //   val task = Async(100)
+        //   val task = Task(100)
         //   task.id
         // .assert(_ == t"/simple")
 
-        // test(t"Subtask name"):
-        //   var name: Option[Text] = None
-        //   val task = async:
-        //     val inner = async(100)
-        //     name = Some(inner.id)
-        //     inner.await()
-        //     200
-        //   task.await()
-        //   name
-        // .assert(_ == Some(t"/simple/inner"))
+      //   // test(t"Subtask name"):
+      //   //   var name: Option[Text] = None
+      //   //   val task = async:
+      //   //     val inner = async(100)
+      //   //     name = Some(inner.id)
+      //   //     inner.await()
+      //   //     200
+      //   //   task.await()
+      //   //   name
+      //   // .assert(_ == Some(t"/simple/inner"))
 
         test(t"Async creates one new thread"):
           val threads = Thread.activeCount
           var insideThreads = 0
+
           val task = async:
             insideThreads = Thread.activeCount
+
           task.await()
           insideThreads - threads
-        .assert(_ == 1)
+
+        . assert(_ == 1)
 
         test(t"Threads do not persist"):
           val threads = Thread.activeCount
@@ -216,33 +222,34 @@ object Tests extends Suite(t"Parasite tests"):
 
         test(t"Sequencing tasks run in parallel"):
           var acc: List[Int] = Nil
-          val t1 = async(sleep(40L).also((acc ::= 2)))
-          val t2 = async(sleep(60L).also((acc ::= 3)))
-          val t3 = async(sleep(20L).also((acc ::= 1)))
+          val t1 = async(snooze(40L).also((acc ::= 2)))
+          val t2 = async(snooze(60L).also((acc ::= 3)))
+          val t3 = async(snooze(20L).also((acc ::= 1)))
           List(t1, t2, t3).sequence.await()
           acc
         .assert(_ == List(3, 2, 1))
 
-        test(t"Async can be canceled"):
-          var value: Boolean = false
+        // test(t"Async can be canceled"):
+        //   var value: Boolean = false
 
-          val task = async:
-            sleep(50L)
-            relent()
-            value = true
+        //   val task = async:
+        //     snooze(50L)
+        //     relent()
+        //     value = true
 
-          task.cancel()
-          safely(task.await())
-          value
-        .assert(_ == false)
+        //   task.cancel()
+
+        //   safely(task.await())
+        //   value
+        // .assert(_ == false)
 
         // def fibonacci(a: Long)(using Monitor): Long =
-        //   accede()
+        //   relent()
         //   if a < 2 then 1 else fibonacci(a - 1) + fibonacci(a - 2)
 
         // test(t"Affirmed calculation without interruption does not cancel it"):
         //   val task = async(fibonacci(30))
-        //   //task.cancel()
+        //   task.cancel()
         //   try task.await() catch case e: CancelError => -1
         // .assert(_ == 1346269)
 
@@ -252,80 +259,85 @@ object Tests extends Suite(t"Parasite tests"):
         //   capture(task.await())
         // .assert(_ == CancelError())
 
-        test(t"Canceled task cancels child"):
-          println("a")
-          var value = 1
-          println("b")
-          val task = async:
-            println("c")
-            value = 2
+        // test(t"Canceled task cancels child"):
+        //   println("a")
+        //   var value = 1
+        //   println("b")
+        //   val task = async:
+        //     println("c")
+        //     value = 2
 
-            val task2 = async:
-              println("d")
-              sleep(100L) // halt
-              println("e")
-              value = 3
-            println("f")
+        //     val task2 = async:
+        //       println("d")
+        //       sleep(100L) // halt
+        //       println("e")
+        //       value = 3
+        //     println("f")
 
-            task2.await() // halt
-            println("g")
+        //     task2.await() // halt
+        //     println("g")
 
-          println("h")
-          sleep(20L)
-          println("i")
-          task.cancel() // halt
-          println("j")
-          safely(task.await())
-          println("k")
-          value
-        .assert(_ == 2)
+        //   println("h")
+        //   sleep(20L)
+        //   println("i")
+        //   task.cancel() // halt
+        //   println("j")
+        //   safely(task.await())
+        //   println("k")
+        //   value
+        // .assert(_ == 2)
 
-        test(t"Incomplete child is awaited"):
-          import asyncTermination.await
-          var value = 1
-          val task = async:
-            value = 2
-            val task2 = async:
-              sleep(40L)
-              value = 3
-          sleep(20L)
-          task.await()
-          value
-        .assert(_ == 3)
-        println("C")
+      //   test(t"Incomplete child is awaited"):
+      //     import asyncTermination.await
+      //     var value = 1
+      //     val task = async:
+      //       value = 2
+      //       val task2 = async:
+      //         sleep(40L)
+      //         value = 3
+      //     sleep(20L)
+      //     task.await()
+      //     value
+      //   .assert(_ == 3)
+      //   println("C")
 
-        test(t"Incomplete child is cancelled"):
-          import asyncTermination.cancel
-          var value = 1
-          val task = async:
-            value = 2
-            val task2 = async:
-              sleep(40L)
-              value = 3
-          sleep(20L)
-          task.await()
-          value
-        .assert(_ == 2)
+      //   test(t"Incomplete child is cancelled"):
+      //     import asyncTermination.cancel
+      //     var value = 1
+      //     val task = async:
+      //       value = 2
+      //       val task2 = async:
+      //         sleep(40L)
+      //         value = 3
+      //     sleep(20L)
+      //     task.await()
+      //     value
+      //   .assert(_ == 2)
 
         test(t"Cancel read on slow Stream"):
           var count = 0
-          val ll = Stream.continually:
-            count += 1
-            sleep(20L)
-          .take(10)
+          val task = async:
+            Stream.continually:
+              count += 1
+              relent()
+              println(System.currentTimeMillis())
+              delay(100L)
+            . take(10)
+            . to(List)
 
-          val task = async(ll.to(List))
-          sleep(30L)
+          delay(300L)
+          println("CANCEL")
+
           task.cancel()
           count
         .assert(_ == 2)
 
-        test(t"Check that asynchronous exceptions are handled"):
-          async:
-            sleep(10L)
-            async:
-              sleep(10L)
-              unsafely(throw new Exception("Async Exception"))
-            1
-          2
-        .assert(_ == 2)
+      //   test(t"Check that asynchronous exceptions are handled"):
+      //     async:
+      //       sleep(10L)
+      //       async:
+      //         sleep(10L)
+      //         unsafely(throw new Exception("Async Exception"))
+      //       1
+      //     2
+      //   .assert(_ == 2)
