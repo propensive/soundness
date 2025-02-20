@@ -17,3 +17,8 @@ extension [LeftType: ClassTag](left: LeftType)
   :     Unit =
 
     db.delete(left, right)
+
+  def delete()(using db: Database[? <: (LeftType -< ?)]): Unit = db.delete(left)
+
+def select[LeftType: ClassTag](using db: Database[? <: LeftType -< ?]): Set[LeftType] =
+  db.select[LeftType]()

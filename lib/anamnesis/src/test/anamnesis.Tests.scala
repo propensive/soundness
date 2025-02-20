@@ -19,7 +19,7 @@ val blue = Pencil(t"blue")
 
 object Tests extends Suite(t"Anamnesis tests"):
   def run(): Unit =
-    given Database[Shelf -< Box & Box -< Pencil]()
+    given Database of (Shelf -< Box, Box -< Pencil) = Database()
 
     test(t"Database is initally empty"):
       alpha.select[Pencil]
