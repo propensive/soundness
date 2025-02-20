@@ -1,3 +1,3 @@
 package soundness
 
-export anamnesis.{Database, lookup, assign, unassign}
+export anamnesis.{Database, lookup, assign, unassign, store, ref, >-, -<}
