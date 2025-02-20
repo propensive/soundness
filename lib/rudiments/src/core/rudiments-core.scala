@@ -371,3 +371,27 @@ extension [ProductType <: Product: Mirror.ProductOf](product: ProductType)
 
 extension [TupleType <: Tuple](tuple: TupleType)
   def to[ProductType: Mirror.ProductOf]: ProductType = ProductType.fromProduct(tuple)
+
+extension (erased tuple: Tuple)
+  inline def keep[NatType <: Nat] = !![Tuple.Take[tuple.type, NatType]]
+  inline def skip[NatType <: Nat] = !![Tuple.Drop[tuple.type, NatType]]
+  inline def contains[ElementType]: Boolean = indexOf[ElementType] >= 0
+  inline def indexOf[ElementType]: Int = recurIndex[tuple.type, ElementType](0)
+
+  transparent inline def subtypes[Supertype]: Tuple =
+    recurSubtypes[tuple.type, Supertype, EmptyTuple]
+
+  private transparent inline def recurSubtypes[TupleType <: Tuple, Supertype, DoneType <: Tuple]
+  :     Tuple =
+
+    inline !![TupleType] match
+      case _: EmptyTuple            => !![Tuple.Reverse[DoneType]]
+      case _: (head *: tail)        => inline !![head] match
+        case _: Supertype             => recurSubtypes[tail, Supertype, head *: DoneType]
+        case _                        => recurSubtypes[tail, Supertype, DoneType]
+
+  private inline def recurIndex[TupleType <: Tuple, ElementType](index: Int): Int =
+    inline !![TupleType] match
+      case _: EmptyTuple            => -1
+      case _: (ElementType *: tail) => index
+      case _: (other *: tail)       => recurIndex[tail, ElementType](index + 1)
