@@ -48,7 +48,7 @@ object Timing:
   opaque type TaiInstant = Long
 
   object TaiInstant:
-    erased given underlying: Underlying[TaiInstant, Long] = ###
+    erased given underlying: Underlying[TaiInstant, Long] = !!
     given generic: Timing.TaiInstant is (Abstractable & Instantiable) across Instants into
                     Long from Long =
       new Abstractable with Instantiable:
@@ -64,7 +64,7 @@ object Timing:
     def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
       of(instant.generic)
 
-    erased given underlying: Underlying[Instant, Long] = ###
+    erased given underlying: Underlying[Instant, Long] = !!
     def of(millis: Long): Instant = millis
 
     given generic: Timing.Instant is (Abstractable & Instantiable) across Instants into Long from

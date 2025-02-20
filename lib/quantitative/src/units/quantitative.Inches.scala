@@ -42,4 +42,4 @@ trait Inches[Power <: Nat] extends Units[Power, Distance]
 
 object Inches:
   given UnitName[Inches[1]] = () => "in".tt
-  erased given inchesPerMetre: Ratio[Inches[-1] & Metres[1], 0.0254] = ###
+  erased given inchesPerMetre: Ratio[Inches[-1] & Metres[1], 0.0254] = !!

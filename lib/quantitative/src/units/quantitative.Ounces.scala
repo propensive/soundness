@@ -42,4 +42,4 @@ trait Ounces[Power <: Nat] extends Units[Power, Mass]
 
 object Ounces:
   given UnitName[Ounces[1]] = () => "oz".tt
-  erased given kilogramsPerOunce: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = ###
+  erased given kilogramsPerOunce: Ratio[Kilograms[1] & Ounces[-1], 0.0283495] = !!

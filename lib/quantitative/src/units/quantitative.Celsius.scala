@@ -45,4 +45,4 @@ object Celsius:
   def apply(value: Double): Quantity[Celsius[1]] = Quantity[Celsius[1]](value + offset)
   given UnitsOffset[Celsius[1]] = () => offset
   given UnitName[Celsius[1]] = () => "°C".tt
-  erased given celsiusPerKelvin: Ratio[Celsius[1] & Kelvins[-1], 1.0] = ###
+  erased given celsiusPerKelvin: Ratio[Celsius[1] & Kelvins[-1], 1.0] = !!

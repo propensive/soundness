@@ -42,4 +42,4 @@ trait ArcSeconds[Power <: Nat] extends Units[Power, Angle]
 
 object ArcSeconds:
   given UnitName[ArcSeconds[1]] = () => "\"".tt
-  erased given degreesPerRadian: Ratio[ArcSeconds[1], 206264.806247] = ###
+  erased given degreesPerRadian: Ratio[ArcSeconds[1], 206264.806247] = !!

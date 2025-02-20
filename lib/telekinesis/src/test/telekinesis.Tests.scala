@@ -65,8 +65,8 @@ object Tests extends Suite(t"Telekinesis tests"):
 
     suite(t"Response construction tests"):
       test(t"Construct a Query"):
-        erased given key: ("key" is Parameter of Text) = ###
-        erased given param: ("param" is Parameter of Int) = ###
+        erased given key: ("key" is Parameter of Text) = !!
+        erased given param: ("param" is Parameter of Int) = !!
         Query(key = t"hello world", param = 24).show
 
       . assert(_ == t"key=hello+world&param=24")

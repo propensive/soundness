@@ -78,7 +78,7 @@ object Aviation:
         halt(m"expected a literal double value")
 
   object Date:
-    erased given underlying: Underlying[Date, Int] = ###
+    erased given underlying: Underlying[Date, Int] = !!
     def of(day: Int): Date = day
 
     def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day)

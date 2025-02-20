@@ -38,7 +38,7 @@ import rudiments.*
 import scala.reflect.*
 
 object Pathlike:
-  erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = ###
+  erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = !!
 
 transparent trait Pathlike:
   type Platform

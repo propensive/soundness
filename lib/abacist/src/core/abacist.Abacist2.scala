@@ -46,7 +46,7 @@ object Abacist2:
   opaque type Count[UnitsType <: Tuple] = Long
 
   object Count:
-    erased given underlying: [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] = ###
+    erased given underlying: [UnitsType <: Tuple] => Underlying[Count[UnitsType], Long] = !!
     def fromLong[UnitsType <: Tuple](long: Long): Count[UnitsType] = long
     given integral: [UnitsType <: Tuple] => Integral[Count[UnitsType]] = summon[Integral[Long]]
 

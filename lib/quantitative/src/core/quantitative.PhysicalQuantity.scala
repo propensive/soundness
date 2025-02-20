@@ -42,14 +42,14 @@ erased trait PhysicalQuantity[DimensionType <: Units[?, ?], LabelType <: Label](
 
 object PhysicalQuantity:
   // base units
-  erased given distance: PhysicalQuantity[Units[1, Distance], "distance"] = ###
-  erased given mass: PhysicalQuantity[Units[1, Mass], "mass"] = ###
-  erased given time: PhysicalQuantity[Units[1, Time], "time"] = ###
-  erased given current: PhysicalQuantity[Units[1, Current], "current"] = ###
-  erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = ###
-  erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = ###
+  erased given distance: PhysicalQuantity[Units[1, Distance], "distance"] = !!
+  erased given mass: PhysicalQuantity[Units[1, Mass], "mass"] = !!
+  erased given time: PhysicalQuantity[Units[1, Time], "time"] = !!
+  erased given current: PhysicalQuantity[Units[1, Current], "current"] = !!
+  erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = !!
+  erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = !!
 
-  erased given angle: PhysicalQuantity[Units[1, Angle], "angle"] = ###
+  erased given angle: PhysicalQuantity[Units[1, Angle], "angle"] = !!
 
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
@@ -142,87 +142,87 @@ object PhysicalQuantity:
   type ElectricalResistivity =
     Units[3, Distance] & Units[1, Mass] & Units[-3, Time] & Units[-2, Current]
 
-  erased given absement: PhysicalQuantity[Absement, "absement"] = ###
-  erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = ###
-  erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = ###
-  erased given area: PhysicalQuantity[Area, "area"] = ###
-  erased given areaDensity: PhysicalQuantity[AreaDensity, "area density"] = ###
-  erased given capacitance: PhysicalQuantity[Capacitance, "capacitance"] = ###
-  erased given crackle: PhysicalQuantity[Crackle, "crackle"] = ###
-  erased given currentDensity: PhysicalQuantity[CurrentDensity, "current density"] = ###
-  erased given dynamicViscosity: PhysicalQuantity[DynamicViscosity, "dynamic viscosity"] = ###
-  erased given electricCharge: PhysicalQuantity[ElectricCharge, "electric charge"] = ###
-  erased given energy: PhysicalQuantity[Energy, "energy"] = ###
-  erased given entropy: PhysicalQuantity[Entropy, "entropy"] = ###
-  erased given force: PhysicalQuantity[Force, "force"] = ###
-  erased given frequency: PhysicalQuantity[Frequency, "frequency"] = ###
-  erased given substance: PhysicalQuantity[Units[1, AmountOfSubstance], "amount of substance"] = ###
-  erased given illuminance: PhysicalQuantity[Illuminance, "illuminance"] = ###
-  erased given impedance: PhysicalQuantity[Impedance, "impedance"] = ###
-  erased given inductance: PhysicalQuantity[Inductance, "inductance"] = ###
-  erased given jerk: PhysicalQuantity[Jerk, "jerk"] = ###
-  erased given jounce: PhysicalQuantity[Jounce, "jounce"] = ###
-  erased given linearDensity: PhysicalQuantity[LinearDensity, "linear density"] = ###
-  erased given magneticFlux: PhysicalQuantity[MagneticFlux, "magnetic flux"] = ###
-  erased given magneticMoment: PhysicalQuantity[MagneticMoment, "magnetic moment"] = ###
-  erased given magnetization: PhysicalQuantity[Magnetization, "magnetization"] = ###
-  erased given massDensity: PhysicalQuantity[MassDensity, "mass density"] = ###
-  erased given molarConcentration: PhysicalQuantity[MolarConcentration, "molar concentration"] = ###
-  erased given chemicalPotential: PhysicalQuantity[ChemicalPotential, "chemical potential"] = ###
-  erased given molarEntropy: PhysicalQuantity[MolarEntropy, "molar entropy"] = ###
-  erased given momentOfInertia: PhysicalQuantity[MomentOfInertia, "moment of inertia"] = ###
-  erased given momentum: PhysicalQuantity[Momentum, "momentum"] = ###
-  erased given opticalPower: PhysicalQuantity[OpticalPower, "optical power"] = ###
-  erased given permeability: PhysicalQuantity[Permeability, "permeability"] = ###
-  erased given permittivity: PhysicalQuantity[Permittivity, "permittivity"] = ###
-  erased given power: PhysicalQuantity[Power, "power"] = ###
-  erased given pressure: PhysicalQuantity[Pressure, "pressure"] = ###
-  erased given pop: PhysicalQuantity[Pop, "pop"] = ###
-  erased given radiance: PhysicalQuantity[Radiance, "radiance"] = ###
-  erased given reactionRate: PhysicalQuantity[ReactionRate, "reaction rate"] = ###
-  erased given reluctance: PhysicalQuantity[Reluctance, "reluctance"] = ###
-  erased given specificEnergy: PhysicalQuantity[SpecificEnergy, "specific energy"] = ###
-  erased given specificVolume: PhysicalQuantity[SpecificVolume, "specific volume"] = ###
-  erased given spin: PhysicalQuantity[Spin, "spin"] = ###
-  erased given surfaceTension: PhysicalQuantity[SurfaceTension, "surface tension"] = ###
-  erased given thermalConductance: PhysicalQuantity[ThermalConductance, "thermal conductance"] = ###
-  erased given thermalResistance: PhysicalQuantity[ThermalResistance, "thermal resistance"] = ###
-  erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] = ###
-  erased given velocity: PhysicalQuantity[Velocity, "velocity"] = ###
-  erased given volume: PhysicalQuantity[Volume, "volume"] = ###
+  erased given absement: PhysicalQuantity[Absement, "absement"] = !!
+  erased given absorbedDoseRate: PhysicalQuantity[AbsorbedDoseRate, "absorbed dose rate"] = !!
+  erased given acceleration: PhysicalQuantity[Acceleration, "acceleration"] = !!
+  erased given area: PhysicalQuantity[Area, "area"] = !!
+  erased given areaDensity: PhysicalQuantity[AreaDensity, "area density"] = !!
+  erased given capacitance: PhysicalQuantity[Capacitance, "capacitance"] = !!
+  erased given crackle: PhysicalQuantity[Crackle, "crackle"] = !!
+  erased given currentDensity: PhysicalQuantity[CurrentDensity, "current density"] = !!
+  erased given dynamicViscosity: PhysicalQuantity[DynamicViscosity, "dynamic viscosity"] = !!
+  erased given electricCharge: PhysicalQuantity[ElectricCharge, "electric charge"] = !!
+  erased given energy: PhysicalQuantity[Energy, "energy"] = !!
+  erased given entropy: PhysicalQuantity[Entropy, "entropy"] = !!
+  erased given force: PhysicalQuantity[Force, "force"] = !!
+  erased given frequency: PhysicalQuantity[Frequency, "frequency"] = !!
+  erased given substance: PhysicalQuantity[Units[1, AmountOfSubstance], "amount of substance"] = !!
+  erased given illuminance: PhysicalQuantity[Illuminance, "illuminance"] = !!
+  erased given impedance: PhysicalQuantity[Impedance, "impedance"] = !!
+  erased given inductance: PhysicalQuantity[Inductance, "inductance"] = !!
+  erased given jerk: PhysicalQuantity[Jerk, "jerk"] = !!
+  erased given jounce: PhysicalQuantity[Jounce, "jounce"] = !!
+  erased given linearDensity: PhysicalQuantity[LinearDensity, "linear density"] = !!
+  erased given magneticFlux: PhysicalQuantity[MagneticFlux, "magnetic flux"] = !!
+  erased given magneticMoment: PhysicalQuantity[MagneticMoment, "magnetic moment"] = !!
+  erased given magnetization: PhysicalQuantity[Magnetization, "magnetization"] = !!
+  erased given massDensity: PhysicalQuantity[MassDensity, "mass density"] = !!
+  erased given molarConcentration: PhysicalQuantity[MolarConcentration, "molar concentration"] = !!
+  erased given chemicalPotential: PhysicalQuantity[ChemicalPotential, "chemical potential"] = !!
+  erased given molarEntropy: PhysicalQuantity[MolarEntropy, "molar entropy"] = !!
+  erased given momentOfInertia: PhysicalQuantity[MomentOfInertia, "moment of inertia"] = !!
+  erased given momentum: PhysicalQuantity[Momentum, "momentum"] = !!
+  erased given opticalPower: PhysicalQuantity[OpticalPower, "optical power"] = !!
+  erased given permeability: PhysicalQuantity[Permeability, "permeability"] = !!
+  erased given permittivity: PhysicalQuantity[Permittivity, "permittivity"] = !!
+  erased given power: PhysicalQuantity[Power, "power"] = !!
+  erased given pressure: PhysicalQuantity[Pressure, "pressure"] = !!
+  erased given pop: PhysicalQuantity[Pop, "pop"] = !!
+  erased given radiance: PhysicalQuantity[Radiance, "radiance"] = !!
+  erased given reactionRate: PhysicalQuantity[ReactionRate, "reaction rate"] = !!
+  erased given reluctance: PhysicalQuantity[Reluctance, "reluctance"] = !!
+  erased given specificEnergy: PhysicalQuantity[SpecificEnergy, "specific energy"] = !!
+  erased given specificVolume: PhysicalQuantity[SpecificVolume, "specific volume"] = !!
+  erased given spin: PhysicalQuantity[Spin, "spin"] = !!
+  erased given surfaceTension: PhysicalQuantity[SurfaceTension, "surface tension"] = !!
+  erased given thermalConductance: PhysicalQuantity[ThermalConductance, "thermal conductance"] = !!
+  erased given thermalResistance: PhysicalQuantity[ThermalResistance, "thermal resistance"] = !!
+  erased given thermalResistivity: PhysicalQuantity[ThermalResistivity, "thermal resistivity"] = !!
+  erased given velocity: PhysicalQuantity[Velocity, "velocity"] = !!
+  erased given volume: PhysicalQuantity[Volume, "volume"] = !!
 
   erased given electricChargeDensity: PhysicalQuantity[ElectricChargeDensity,
-      "electric charge density"] = ###
+      "electric charge density"] = !!
 
   erased given electricDipoleMoment: PhysicalQuantity[ElectricDipoleMoment,
-      "electric dipole moment"] = ###
+      "electric dipole moment"] = !!
 
   erased given electricFieldStrength: PhysicalQuantity[ElectricFieldStrength,
-      "electric field strength"] = ###
+      "electric field strength"] = !!
 
   erased given electricalConductance: PhysicalQuantity[ElectricalConductance,
-      "electric conductance"] = ###
+      "electric conductance"] = !!
 
   erased given electricalConductivity: PhysicalQuantity[ElectricalConductivity,
-      "electric conductivity"] = ###
+      "electric conductivity"] = !!
 
   erased given electricalPotential: PhysicalQuantity[ElectricalPotential, "electric potential"] =
-    ###
+    !!
 
   erased given electricalResistivity: PhysicalQuantity[ElectricalResistivity,
-      "electric resistivity"] = ###
+      "electric resistivity"] = !!
 
   erased given magneticFluxDensity: PhysicalQuantity[MagneticFluxDensity, "magnetic flux density"] =
-    ###
+    !!
 
   erased given specificHeatCapacity: PhysicalQuantity[SpecificHeatCapacity,
-      "specific heat capacity"] = ###
+      "specific heat capacity"] = !!
 
   erased given thermalConductivity: PhysicalQuantity[ThermalConductivity, "thermal conductivity"] =
-    ###
+    !!
 
   erased given volumetricFlowRate: PhysicalQuantity[VolumetricFlowRate, "volumetric flow rate"] =
-    ###
+    !!
 
   erased given electricDisplacementField: PhysicalQuantity[ElectricDisplacementField,
-      "electric displacement field"] = ###
+      "electric displacement field"] = !!

@@ -41,7 +41,7 @@ object Rgb12Opaque:
   opaque type Rgb12 = Int
 
   object Rgb12:
-    given underlying: Underlying[Rgb12, Int] = ###
+    given underlying: Underlying[Rgb12, Int] = !!
     given Rgb12 is Chromatic = _.srgb.rgb24.asInt
 
     def apply(red: Int, green: Int, blue: Int): Rgb12 =

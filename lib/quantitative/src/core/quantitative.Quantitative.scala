@@ -62,7 +62,7 @@ object Quantitative extends Quantitative2:
 
   object MetricUnit:
     erased given underlying: [UnitsType <: Measure] => Underlying[MetricUnit[UnitsType], Double] =
-      ###
+      !!
 
     def apply[UnitsType <: Measure](value: Double): MetricUnit[UnitsType] = value
 
@@ -70,8 +70,8 @@ object Quantitative extends Quantitative2:
     def apply[UnitsType <: Measure](value: Quantity[UnitsType]): MetricUnit[UnitsType] = value
 
   object Quantity:
-    erased given underlying: [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] = ###
-    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = ###
+    erased given underlying: [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] = !!
+    erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = !!
 
     given genericDuration: Quantity[Seconds[1]] is GenericDuration =
       quantity => (quantity*1000.0).toLong
