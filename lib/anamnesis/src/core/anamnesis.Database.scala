@@ -1,7 +1,6 @@
 package anamnesis
 
 import contingency.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -12,8 +11,6 @@ object Database:
   inline def apply[RelationsType <: Tuple](): Database of RelationsType =
     val size = valueOf[Tuple.Size[RelationsType]]
     new Database(size).asInstanceOf[Database of RelationsType]
-
-case class DbError()(using Diagnostics) extends Error(m"Database error")
 
 class Database(size: Int):
   import Database.Relation
@@ -52,13 +49,13 @@ class Database(size: Int):
 
     . asInstanceOf[Ref of LeftType in this.type]
 
-  inline def ref[LeftType](left: LeftType): Ref of LeftType in this.type raises DbError =
-    references.at(left).or(abort(DbError())).asInstanceOf[Ref of LeftType in this.type]
+  inline def ref[LeftType](left: LeftType): Ref of LeftType in this.type raises DataError =
+    references.at(left).or(abort(DataError())).asInstanceOf[Ref of LeftType in this.type]
 
   inline def assign[LeftType, RightType]
      (left: Ref of LeftType in this.type, right: Ref of RightType in this.type)
      (using (LeftType -< RightType) <:< Tuple.Union[Subject])
-  :     Unit raises DbError =
+  :     Unit raises DataError =
 
     val relationIndex = !![Subject].indexOf[LeftType -< RightType]
     val relation = relate[LeftType, RightType]
@@ -70,13 +67,13 @@ class Database(size: Int):
     corelations(relationIndex) = corelation2
 
   inline def lookup[LeftType, RightType](left: Ref of LeftType in this.type)
-  :     Set[Ref of RightType in this.type] raises DbError =
+  :     Set[Ref of RightType in this.type] raises DataError =
     relate[LeftType, RightType].at(left).or(Set()).asInstanceOf[Set[Ref of RightType in this.type]]
 
   inline def unassign[LeftType, RightType]
      (left: Ref of LeftType in this.type, right: Ref of RightType in this.type)
      (using (LeftType -< RightType) <:< Tuple.Union[Subject])
-  :     Unit raises DbError =
+  :     Unit raises DataError =
 
     val relationIndex = !![Subject].indexOf[LeftType -< RightType]
     val relation = relate[LeftType, RightType]
