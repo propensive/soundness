@@ -116,7 +116,7 @@ extension [ResultType](tasks: Seq[Task[ResultType]])
 extension [ResultType](tasks: Iterable[Task[ResultType]])
   def race()(using Monitor, Codicil): ResultType raises AsyncError =
     val promise: Promise[ResultType] = Promise()
-    tasks.each(_.map(promise.offer(_)))
+    tasks.foreach(_.map(promise.offer(_)))
 
     promise.await()
 
