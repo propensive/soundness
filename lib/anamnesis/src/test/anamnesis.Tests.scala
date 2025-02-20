@@ -2,6 +2,8 @@ package anamnesis
 
 import soundness.*
 
+import strategies.throwUnsafely
+
 case class Cabinet(name: Text)
 case class Shelf(name: Text)
 case class Box(name: Text)
@@ -27,11 +29,13 @@ object Tests extends Suite(t"Anamnesis tests"):
                        Text >- Box) = Database()
 
     test(t"Database is initally empty"):
+      alpha.store()
       alpha.lookup[Pencil]
 
     . assert(_ == Set())
 
     test(t"Can add an item"):
+      red.store()
       alpha.assign(red)
 
     . assert()
@@ -42,6 +46,7 @@ object Tests extends Suite(t"Anamnesis tests"):
     . assert(_ == Set(red))
 
     test(t"Can insert multiple items"):
+      green.store()
       alpha.assign(green)
       alpha.lookup[Pencil]
 
@@ -54,6 +59,7 @@ object Tests extends Suite(t"Anamnesis tests"):
     . assert(_ == Set(green))
 
     test(t"Other values are unaffected"):
+      beta.store()
       beta.lookup[Pencil]
 
     . assert(_ == Set())

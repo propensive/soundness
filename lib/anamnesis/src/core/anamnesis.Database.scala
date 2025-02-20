@@ -1,5 +1,9 @@
 package anamnesis
 
+import scala.collection.mutable as scm
+
+import contingency.*
+import fulminate.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -11,64 +15,89 @@ object Database:
     val size = valueOf[Tuple.Size[RelationsType]]
     new Database(size).asInstanceOf[Database of RelationsType]
 
+case class DbError()(using Diagnostics) extends Error(m"Database error")
+
+object Anamnesis:
+  trait Referenceable:
+    type Format
+    type Subject
+
+  opaque type Ref <: Referenceable = Int & Referenceable
+
+  object Ref:
+    def apply[RefType](db: Database): Ref of RefType in db.type = db.allocate[RefType]()
+
+export Anamnesis.Ref
+
 class Database(size: Int):
   import Database.Relation
+
+  private var nextId: Int = 1
+
+  def allocate[RefType](): Ref of RefType in this.type =
+    nextId.asInstanceOf[Ref of RefType in this.type].also:
+      nextId += 1
+
   type Subject <: Tuple
   type AllRelations = Tuple.Union[Subject]
 
   type Has[RelationType <: Relation[?, ?]] = RelationType <:< AllRelations
 
-  private val relations: Array[Map[?, Set[?]]] = Array.fill(size)(Map())
-  private val corelations: Array[Map[?, ?]] = Array.fill(size)(Map())
+  private var references: Map[Any, Ref] = Map()
+  private var dereferences: Map[Ref, Any] = Map()
 
-  private inline def collectRelations[LeftType, TodoType <: Tuple]
-     (fn: [RightType] => Map[LeftType, Set[RightType]] => Unit, index: Int = 0)
-  :     Unit =
+  private val relations: Array[Map[Ref, Set[Ref]]] = Array.fill(size)(Map())
+  private val corelations: Array[Map[Ref, Ref]] = Array.fill(size)(Map())
 
-    inline !![TodoType] match
-      case _: EmptyTuple => ()
-      case _: (head *: tail) => inline !![head] match
-        case _: Relation[LeftType, right] =>
-          fn[right](relations(index).asInstanceOf[Map[LeftType, Set[right]]])
+  protected inline def relate[LeftType, RightType]: Map[Ref, Set[Ref]] =
+    relations(!![Subject].indexOf[LeftType -< RightType])
 
-        case _ =>
-          collectRelations[LeftType, tail](fn, index + 1)
+  protected inline def corelate[LeftType, RightType]: Map[Ref, Ref] =
+    corelations(!![Subject].indexOf[LeftType -< RightType])
 
-  inline def relate[LeftType, RightType]: Map[LeftType, Set[RightType]] =
-    val relationIndex = !![Subject].indexOf[LeftType -< RightType]
-    relations(relationIndex).asInstanceOf[Map[LeftType, Set[RightType]]]
+  inline def store[LeftType](left: LeftType): Ref of LeftType in this.type =
+    references.at(left).or:
+      allocate[LeftType]().tap: ref =>
+        this.synchronized:
+          references = references.updated(left, ref)
+          dereferences = dereferences.updated(ref, left)
 
-  inline def corelate[LeftType, RightType]: Map[RightType, LeftType] =
-    val relationIndex = !![Subject].indexOf[LeftType -< RightType]
-    corelations(relationIndex).asInstanceOf[Map[RightType, LeftType]]
-
+    . asInstanceOf[Ref of LeftType in this.type]
 
   inline def assign[LeftType, RightType](left: LeftType, right: RightType)
      (using (LeftType -< RightType) <:< Tuple.Union[Subject])
-  :     Unit =
+  :     Unit raises DbError =
+
+    val leftRef = references.at(left).or(abort(DbError()))
+    val rightRef = references.at(right).or(abort(DbError()))
 
     val relationIndex = !![Subject].indexOf[LeftType -< RightType]
     val relation = relate[LeftType, RightType]
     val corelation = corelate[LeftType, RightType]
 
-    val relation2 = relation.updated(left, relation.at(left).or(Set()) + right)
-    val corelation2 = corelation.updated(right, left)
+    val relation2 = relation.updated(leftRef, relation.at(leftRef).or(Set()) + rightRef)
+    val corelation2 = corelation.updated(rightRef, leftRef)
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2
 
-  inline def lookup[LeftType, RightType](left: LeftType): Set[RightType] =
-    relate[LeftType, RightType].at(left).or(Set())
+  inline def lookup[LeftType, RightType](left: LeftType): Set[RightType] raises DbError =
+    val leftRef = references.at(left).or(abort(DbError()))
+    val set: Set[Ref] = relate[LeftType, RightType].at(leftRef).or(Set())
+    set.map(dereferences(_).asInstanceOf[RightType])
 
   inline def unassign[LeftType, RightType](left: LeftType, right: RightType)
      (using (LeftType -< RightType) <:< Tuple.Union[Subject])
-  :     Unit =
+  :     Unit raises DbError =
+
+    val leftRef = references.at(left).or(abort(DbError()))
+    val rightRef = references.at(right).or(abort(DbError()))
 
     val relationIndex = !![Subject].indexOf[LeftType -< RightType]
     val relation = relate[LeftType, RightType]
     val corelation = corelate[LeftType, RightType]
 
-    val relation2 = relation.updated(left, relation.at(left).let(_ - right).or(Set()))
-    val corelation2 = corelation - right
+    val relation2: Map[Ref, Set[Ref]] = relation.updated(leftRef, relation.at(leftRef).let(_ - rightRef).or(Set()))
+    val corelation2 = corelation - rightRef
     relations(relationIndex) = relation2
     corelations(relationIndex) = corelation2
 
