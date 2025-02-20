@@ -46,4 +46,4 @@ package codlPrinters:
   given standard: CodlPrinter = CodlPrinter.standardPrinter
 
 package dynamicCodlAccess:
-  erased given enabled: DynamicCodlEnabler = ###
+  erased given enabled: DynamicCodlEnabler = !!

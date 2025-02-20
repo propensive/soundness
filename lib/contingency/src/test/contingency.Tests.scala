@@ -200,7 +200,7 @@ def simpleTest: Either[String, String] =
 //     .assert(_ == "string")
 
 //     test(t"accrual with a raise and an abort"):
-//       erased given ExpectationError[?] is Unchecked = ###
+//       erased given ExpectationError[?] is Unchecked = !!
 
 //       capture[GammaErrors]:
 //         accrue(GammaErrors()):
@@ -212,7 +212,7 @@ def simpleTest: Either[String, String] =
 //     .assert(_ == GammaErrors(List(GammaError(2), GammaError(1))))
 
 //     test(t"accrual with just an abort"):
-//       erased given ExpectationError[?] is Unchecked = ###
+//       erased given ExpectationError[?] is Unchecked = !!
 
 //       capture[GammaErrors]:
 //         accrue(GammaErrors()):

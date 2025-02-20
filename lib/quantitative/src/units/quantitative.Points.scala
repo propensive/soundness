@@ -42,4 +42,4 @@ trait Points[Power <: Nat] extends Units[Power, Distance]
 
 object Points:
   given UnitName[Points[1]] = () => "pt".tt
-  erased given pointsPerMetre: Ratio[Points[-1] & Metres[1], 3.5277777777777776E-4] = ###
+  erased given pointsPerMetre: Ratio[Points[-1] & Metres[1], 3.5277777777777776E-4] = !!

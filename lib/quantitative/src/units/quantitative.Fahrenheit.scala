@@ -45,4 +45,4 @@ object Fahrenheit:
   def apply(value: Double): Quantity[Fahrenheit[1]] = Quantity[Fahrenheit[1]](value + offset)
   given UnitsOffset[Fahrenheit[1]] = () => offset
   given UnitName[Fahrenheit[1]] = () => "°F".tt
-  erased given fahrenheitPerKelvin: Ratio[Fahrenheit[1] & Kelvins[-1], 1.8] = ###
+  erased given fahrenheitPerKelvin: Ratio[Fahrenheit[1] & Kelvins[-1], 1.8] = !!

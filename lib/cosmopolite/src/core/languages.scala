@@ -43,8 +43,8 @@ infix type -[LanguageType <: Language, CountryType <: Country] = Dialect[Languag
 
 erased trait Intercession[LanguageType <: Language, DialectsType <: Tuple]
 
-erased given Intercession[en, (en-US, en-GB, en-AU)] = ###
-erased given Intercession[fr, (fr-FR, fr-CA, fr-BE, fr-CH)] = ###
+erased given Intercession[en, (en-US, en-GB, en-AU)] = !!
+erased given Intercession[fr, (fr-FR, fr-CA, fr-BE, fr-CH)] = !!
 
 package countries:
   type AF = "AF" & Country

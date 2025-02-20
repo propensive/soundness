@@ -107,7 +107,7 @@ extension (inline context: StringContext)
   transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
 
 @targetName("erasedValue")
-erased def ###[ErasedType] : ErasedType = scala.compiletime.erasedValue
+erased def !![ErasedType] : ErasedType = scala.compiletime.erasedValue
 
 extension [ValueType <: Matchable](iterable: Iterable[ValueType])
   transparent inline def sift[FilterType <: ValueType: Typeable]: Iterable[FilterType] =

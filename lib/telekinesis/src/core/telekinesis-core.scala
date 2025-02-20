@@ -47,7 +47,7 @@ given Realm = realm"telekinesis"
 
 package queryParameters:
   erased given allowArbitrary: [KeyType <: Label, ValueType] => KeyType is Parameter of ValueType =
-    ###
+    !!
 
 extension [ValueType: Encodable in Query](value: ValueType)
   def query: Query = ValueType.encoded(value)

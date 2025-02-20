@@ -42,7 +42,7 @@ import rudiments.*
 import vacuous.*
 
 trait Interpolator[InputType, StateType, ResultType]:
-  given CanThrow[InterpolationError] = ###
+  given CanThrow[InterpolationError] = !!
   given Realm = realm"contextual"
 
   protected def initial: StateType

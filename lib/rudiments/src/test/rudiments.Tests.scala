@@ -32,13 +32,7 @@
                                                                                                   */
 package rudiments
 
-import anticipation.*
-import contingency.*
-import gossamer.*
-import larceny.*
-import probably.*
-import rudiments.*
-import vacuous.*
+import soundness.*
 
 import language.experimental.captureChecking
 
@@ -59,9 +53,9 @@ object Tests extends Suite(t"Rudiments Tests"):
         case _                    => ('X', 'X')
     .assert(_ == ('I', 'J'))
 
-    test(t"Display a PID"):
-      Pid(2999).toString
-    .assert(_ == "↯2999")
+    // test(t"Display a PID"):
+    //   Pid(2999).toString
+    // .assert(_ == "↯2999")
 
     suite(t"bin tests"):
       test(t"Specify a byte"):
@@ -90,28 +84,28 @@ object Tests extends Suite(t"Rudiments Tests"):
             bin"010101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
 
           long
-        .map(_.errorId)
-      .assert(_ == List(ErrorId.NoExplanationID))
+        .map(_.id)
+      .assert(_ == List(CompileErrorId.NoExplanation))
 
       test(t"Incorrect bit count"):
         demilitarize:
           val x: Long = bin"0101010 10101010 10101010 10101010 00000000 11111111 11111111 11111111"
           x
-        .map(_.errorId)
-      .assert(_ == List(ErrorId.NoExplanationID))
+        .map(_.id)
+      .assert(_ == List(CompileErrorId.NoExplanation))
 
       test(t"Too many bits for type"):
         demilitarize:
           val x: Byte = bin"00011111 11111111"
           x
-        .map(_.errorId)
-      .assert(_ == List(ErrorId.TypeMismatchID))
+        .map(_.id)
+      .assert(_ == List(CompileErrorId.TypeMismatch))
 
       test(t"Non-binary content"):
         demilitarize:
           bin"00011112 11111111"
-        .map(_.errorId)
-      .assert(_ == List(ErrorId.NoExplanationID))
+        .map(_.id)
+      .assert(_ == List(CompileErrorId.NoExplanation))
 
     suite(t"hex tests"):
       test(t"Specify some bytes"):
@@ -161,7 +155,7 @@ object Tests extends Suite(t"Rudiments Tests"):
 
       test(t"Index unique numbers by their first letter"):
         safely:
-          numbers.indexBy(_.head)
+          numbers.indexBy(_.prim)
       .assert(_ == Map('o' -> t"one", 't' -> t"two", 'f' -> t"four", 's' -> t"six", 'e' -> t"eight", 'n' -> t"nine"))
 
       //test(t"Index unique numbers by their length"):

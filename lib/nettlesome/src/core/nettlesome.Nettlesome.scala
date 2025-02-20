@@ -67,7 +67,7 @@ object Nettlesome:
       def text: Text = label
 
     object Ipv4:
-      erased given underlying: Underlying[Ipv4, Int] = ###
+      erased given underlying: Underlying[Ipv4, Int] = !!
 
       given Ipv4 is Showable = ip =>
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
@@ -102,7 +102,7 @@ object Nettlesome:
 
     object MacAddress:
       import MacAddressError.Reason.*
-      erased given underlying: Underlying[MacAddress, Long] = ###
+      erased given underlying: Underlying[MacAddress, Long] = !!
       given MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
       given decoder: Tactic[MacAddressError] => MacAddress is Decodable in Text = parse(_)
@@ -140,7 +140,7 @@ object Nettlesome:
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
     object TcpPort:
-      erased given underlying: Underlying[TcpPort, Int] = ###
+      erased given underlying: Underlying[TcpPort, Int] = !!
       given showable: TcpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: TcpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 
@@ -154,7 +154,7 @@ object Nettlesome:
         else raise(PortError()) yet unsafe(1)
 
     object UdpPort:
-      erased given underlying: Underlying[UdpPort, Int] = ###
+      erased given underlying: Underlying[UdpPort, Int] = !!
       given UdpPort is Showable = port => TextConversion.int.text(port.number)
       given encodable: UdpPort is Encodable in Text = port => TextConversion.int.text(port.number)
 

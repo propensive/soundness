@@ -42,4 +42,4 @@ trait Stones[Power <: Nat] extends Units[Power, Mass]
 
 object Stones:
   given UnitName[Stones[1]] = () => "st".tt
-  erased given kilogramsPerStone: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = ###
+  erased given kilogramsPerStone: Ratio[Kilograms[1] & Stones[-1], 6.35029318] = !!

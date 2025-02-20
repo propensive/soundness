@@ -42,4 +42,4 @@ trait Picas[Power <: Nat] extends Units[Power, Distance]
 
 object Picas:
   given UnitName[Picas[1]] = () => "pc".tt
-  erased given picasPerMetre: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = ###
+  erased given picasPerMetre: Ratio[Picas[-1] & Metres[1], 0.004233333333333333] = !!

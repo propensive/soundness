@@ -42,4 +42,4 @@ trait Chains[Power <: Nat] extends Units[Power, Distance]
 
 object Chains:
   given UnitName[Chains[1]] = () => "ch".tt
-  erased given metresPerChain: Ratio[Metres[1] & Chains[-1], 20.1168] = ###
+  erased given metresPerChain: Ratio[Metres[1] & Chains[-1], 20.1168] = !!

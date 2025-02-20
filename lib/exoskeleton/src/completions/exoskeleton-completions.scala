@@ -45,7 +45,7 @@ import vacuous.*
 def execute(block: Effectful ?=> CliInvocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
     case completion: CliCompletion => Execution(Exit.Ok)
-    case invocation: CliInvocation => Execution(block(using ###)(using invocation))
+    case invocation: CliInvocation => Execution(block(using !!)(using invocation))
 
 def explain(explanation: (prior: Optional[Text]) ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation)

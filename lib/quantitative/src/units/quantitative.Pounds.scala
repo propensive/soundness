@@ -42,4 +42,4 @@ trait Pounds[Power <: Nat] extends Units[Power, Mass]
 
 object Pounds:
   given UnitName[Pounds[1]] = () => "lb".tt
-  erased given kilogramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = ###
+  erased given kilogramsPerPound: Ratio[Kilograms[1] & Pounds[-1], 0.453592] = !!
