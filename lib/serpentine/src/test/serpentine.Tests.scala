@@ -30,9 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
+import soundness.*
 
-// abstract class Root(root: Text, separator0: Text, caseSensitivity0: Case)
-// extends Path(root, Nil, separator0, caseSensitivity0)
+object Tests extends Suite(t"Serpentine Benchmarks"):
+  def run(): Unit =
+    suite(t"Conjunctions"):
+      test(t"Create a two-element path"):
+        % / "foo" / "bar"
+
+      . assert(_ == Path("bar", "foo"))
+
+
+      test(t"Create a one-element path"):
+        % / "foo"
+
+      . assert(_ == Path("foo"))
+
+      test(t"Ensure path has correct type"):
+        val path: Path of ("bar", "foo") = % / "foo" / "bar"
+
+      . assert()
+
+      test(t"Badly-typed path produces error"):
+        demilitarize:
+          val path: Path of ("bar", "foo") = % / "foo" / "baz"
+
+      . assert(_.nonEmpty)
+
+      test(t"Specificity of path is not obligatory"):
+        val path: Path = % / "foo" / "baz"
+
+      . assert()
+
+
+      test(t"Construct a path on Linux"):
+        val path: Path on Linux = (% / "foo" / "baz").on[Linux]
+
+      . assert()

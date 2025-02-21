@@ -30,19 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+// package anticipation
 
-import prepositional.*
-import serpentine.*
+// import prepositional.*
+// import serpentine.*
 
-package filesystemApi:
-  given serpentinePath: [PlatformType: {Navigable, Radical}]
-  =>    (Path on PlatformType) is (Abstractable & Instantiable) across Paths from Text into Text =
-    new Abstractable with Instantiable:
-      type Self = Path on PlatformType
-      type Domain = Paths
-      type Source = Text
-      type Result = Text
+// package filesystemApi:
+//   given serpentinePath: [PlatformType: {Navigable, Radical}]
+//   =>    (Path on PlatformType) is (Abstractable & Instantiable) across Paths from Text into Text =
+//     new Abstractable with Instantiable:
+//       type Self = Path on PlatformType
+//       type Domain = Paths
+//       type Source = Text
+//       type Result = Text
 
-      def genericize(path: Path on PlatformType): Text = path.text
-      def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)
+//       def genericize(path: Path on PlatformType): Text = path.text
+//       def apply(text: Text): Path on PlatformType = Path.parse[PlatformType](text)

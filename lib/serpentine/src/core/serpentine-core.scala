@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+// package serpentine
 
-export Serpentine.{?, ^, /}
+// export Serpentine.{?, ^, /}
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+// extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
+//   def exists(): Boolean = substantiable.exists(value)
