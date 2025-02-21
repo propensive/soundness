@@ -572,6 +572,11 @@ object ethereal extends SoundnessModule {
     def moduleDeps = Seq(surveillance.core, eucalyptus.syslog, digression.core, hellenism.core, exoskeleton.core)
   }
 
+  object example extends SoundnessSubModule {
+    def moduleDeps = Seq(core, exoskeleton.completions)
+    override def finalMainClass: Target[String] = "ethereal.run"
+  }
+
   object test extends ProbablyTestModule {
     def moduleDeps = Seq(probably.cli, core)
   }
