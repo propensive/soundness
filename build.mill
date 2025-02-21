@@ -442,7 +442,7 @@ object anticipation extends SoundnessModule {
 
 object austronesian extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core)
+    def moduleDeps = Seq(wisteria.core, distillate.core, probably.core, hellenism.core)
   }
 
   object test extends ProbablyTestModule {
