@@ -96,7 +96,6 @@ object Subcompiler:
             if !reporter.hasErrors then finish(Scala3, run)
 
           val newErrors = reporter.errors.to(List)
-          println(newErrors)
 
           def recompile(todo: List[CompileError], done: Set[(Int, Int)], source: String)
           :     List[CompileError] =
@@ -107,10 +106,8 @@ object Subcompiler:
                 else run(source, regions -- done, errors ::: newErrors)
 
               case error :: tail =>
-                println(regions)
                 regions.find { (start, end) => error.point >= start && error.point <= end }.match
                   case None =>
-                    println(s"No region found for error ${error.point}")
                     recompile(tail, done, source)
 
                   case Some(region@(from, to)) =>
