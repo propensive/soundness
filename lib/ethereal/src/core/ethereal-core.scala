@@ -34,6 +34,7 @@ package ethereal
 
 import language.experimental.pureFunctions
 
+import scala.collection.concurrent as scc
 import ambience.*, systemProperties.virtualMachine
 import anticipation.*
 import contingency.*
@@ -42,7 +43,6 @@ import distillate.*
 import escapade.*
 import eucalyptus.*
 import exoskeleton.*
-import feudalism.*
 import fulminate.*
 import galilei.*
 import gossamer.*
@@ -142,14 +142,11 @@ def cli[BusType <: Matchable](using executive: Executive)
   val baseDir: Path on Linux = runtimeDir.or(stateHome) / Name(name)
   val portFile: Path on Linux = baseDir / n"port"
   val pidFile: Path on Linux = baseDir / n"pid"
-  val clients: Mutex[Map[Pid, ClientConnection[BusType]]] = Mutex(Map())
+  val clients: scc.TrieMap[Pid, ClientConnection[BusType]] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
 
   def client(pid: Pid): ClientConnection[BusType] =
-    val map = clients.replace: clients =>
-      if clients.has(pid) then clients else clients.updated(pid, ClientConnection(pid))
-
-    map(pid)
+    clients.getOrElseUpdate(pid, ClientConnection(pid))
 
   lazy val termination: Unit =
     portFile.wipe()
@@ -224,7 +221,7 @@ def cli[BusType <: Matchable](using executive: Executive)
 
           socket.getOutputStream.nn.write(exitStatus().show.bytes.mutable(using Unsafe))
           socket.close()
-          clients.replace(_ - pid)
+          clients.remove(pid)
           if terminatePid() == pid then termination
 
         case DaemonEvent.Stderr(pid) =>
@@ -262,7 +259,7 @@ def cli[BusType <: Matchable](using executive: Executive)
             Stdio
              (ji.PrintStream(socket.getOutputStream.nn), ji.PrintStream(lazyStderr), in, termcap)
 
-          def deliver(sourcePid: Pid, message: BusType): Unit = clients.use: clients =>
+          def deliver(sourcePid: Pid, message: BusType): Unit =
             clients.each: (pid, client) =>
               if sourcePid != pid then client.receive(message)
 

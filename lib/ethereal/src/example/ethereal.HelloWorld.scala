@@ -30,18 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package example
+package ethereal
 
 import soundness.*
 
-import executives.direct
+import executives.completions
 import parameterInterpretation.posix
-import threadModels.platform
+import threadModels.virtual
 import unhandledErrors.stackTrace
 
 @main
-def run(): Unit = cliService:
-  Exit.Ok
-
-@main
-def run2(): Unit = println("Testing")
+def run(): Unit = cli:
+  execute:
+    Out.println(t"Hello world")
+    Exit.Ok
