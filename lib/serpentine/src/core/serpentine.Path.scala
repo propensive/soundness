@@ -129,7 +129,8 @@ export Path.`%`
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-  erased given Linux is Nominative under Rules = ###
+  erased given Linux is Nominative under Rules = !!
+
 erased trait Linux
 erased trait Windows
 
