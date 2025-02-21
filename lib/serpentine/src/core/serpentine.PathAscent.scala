@@ -30,41 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+// package serpentine
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
-import proscenium.*
-import symbolism.*
+// import anticipation.*
+// import gossamer.*
+// import prepositional.*
+// import proscenium.*
+// import symbolism.*
 
-object PathAscent:
-  given [ElementType] => (Navigable by ElementType)
-  =>    PathAscent is Divisible by ElementType into (Relative by ElementType) =
-    new Divisible:
-      type Self = PathAscent
-      type Result = Relative by ElementType
-      type Operand = ElementType
+// object PathAscent:
+//   given [ElementType] => (Navigable by ElementType)
+//   =>    PathAscent is Divisible by ElementType into (Relative by ElementType) =
+//     new Divisible:
+//       type Self = PathAscent
+//       type Result = Relative by ElementType
+//       type Operand = ElementType
 
-      def divide(path: PathAscent, child: ElementType): Relative by ElementType =
-        Relative(path.ascent, List(child))
+//       def divide(path: PathAscent, child: ElementType): Relative by ElementType =
+//         Relative(path.ascent, List(child))
 
-  given [ElementType, RootType: Navigable by ElementType] => PathAscent is Encodable in Text =
-    pathAscent =>
-      if pathAscent.textDescent.isEmpty
-      then
-        if pathAscent.ascent == 0 then RootType.selfText
-        else List.fill(pathAscent.ascent)(RootType.parentElement).join(RootType.separator)
-      else
-        pathAscent
-        . textDescent
-        . reverse
-        . join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
+//   given [ElementType, RootType: Navigable by ElementType] => PathAscent is Encodable in Text =
+//     pathAscent =>
+//       if pathAscent.textDescent.isEmpty
+//       then
+//         if pathAscent.ascent == 0 then RootType.selfText
+//         else List.fill(pathAscent.ascent)(RootType.parentElement).join(RootType.separator)
+//       else
+//         pathAscent
+//         . textDescent
+//         . reverse
+//         . join(RootType.ascent*pathAscent.ascent, RootType.separator, t"")
 
-case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
-  type Operand = Nothing
+// case class PathAscent(ascent0: Int) extends Relative(ascent0, Nil, t"/"):
+//   type Operand = Nothing
 
-  @targetName("parent")
-  infix def / (parent: Serpentine.^.type): PathAscent = PathAscent(ascent + 1)
+//   @targetName("parent")
+//   infix def / (parent: Serpentine.^.type): PathAscent = PathAscent(ascent + 1)
 
-  override def parent: PathAscent = PathAscent(ascent + 1)
+//   override def parent: PathAscent = PathAscent(ascent + 1)
