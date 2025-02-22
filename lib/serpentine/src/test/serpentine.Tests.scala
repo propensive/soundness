@@ -30,19 +30,125 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package nettlesome
+package serpentine
 
-import anticipation.*
-import spectacular.*
+import soundness.*
 
-object Connectable:
-  given ipv4: Ipv4 is Connectable = _.show
-  given ipv6: Ipv6 is Connectable = _.show
-  given hostname: Hostname is Connectable = _.show
+given String is Encodable in Text = Text(_)
 
-trait Connectable:
-  type Self
-  def remote(remote: Self): Text
+object Tests extends Suite(t"Serpentine Benchmarks"):
+  def run(): Unit =
+    suite(t"Constructions"):
+      test(t"Create a two-element path"):
+        % / "foo" / "bar"
 
-  extension (self: Self)
-    infix def on [PortType](port: PortType): Endpoint[PortType] = Endpoint(remote(self), port)
+      . assert(_ == Path(t"/", t"bar", t"foo"))
+
+      test(t"Create a one-element path"):
+        % / "foo"
+
+      . assert(_ == Path(t"/", t"foo"))
+
+      test(t"Ensure path has correct type"):
+        val path: Path of ("bar", "foo") = % / "foo" / "bar"
+      . assert()
+
+      test(t"Badly-typed path produces error"):
+        demilitarize:
+          val path: Path of ("bar", "foo") = % / "foo" / "baz"
+
+      . assert(_.nonEmpty)
+
+      test(t"Specificity of path is not obligatory"):
+        val path: Path = % / "foo" / "baz"
+
+      . assert()
+
+      test(t"Construct a path on Linux"):
+        val path: Path on Linux = (% / "foo" / "baz").on[Linux]
+
+      . assert()
+
+      test(t"Construct a path with unknown label"):
+        val dir: Text = ""
+        val path = (% / dir / "baz")
+
+      . assert()
+
+      test(t"Construct a path with unknown label not permitted on Linux without Tactic"):
+        demilitarize:
+          val dir: Text = "dir"
+          val path = (% / dir / "baz").on[Linux]
+
+      . assert(_.length > 0)
+
+      test(t"Construct a path with unknown label is permitted on Linux with Tactic"):
+        demilitarize:
+          val dir: Text = "dir"
+          mend:
+            case NameError(_, _, _) => ()
+
+          . within:
+              val path = (% / dir / "baz").on[Linux]
+
+      . assert(_ == Nil)
+
+      test(t"Construct a path with a label of a bad type is not permitted"):
+        demilitarize:
+          var dir: Char = 'x'
+          mend:
+            case NameError(_, _, _) => ()
+
+          . within:
+              val path = (% / dir / "baz")
+
+      . assert(_.nonEmpty)
+
+      test(t"Forbidden characters are forbidden"):
+        demilitarize:
+          val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
+
+      . assert(_.nonEmpty)
+
+      test(t"Autoconvert known `Path` to `Path on Linux`"):
+        def receive(path: into Path on Linux): Unit = ()
+        receive(% / "foo" / "bar")
+
+      .assert()
+
+      test(t"Can't construct invalid path"):
+        demilitarize:
+          (Drive('D') / "Foo ")
+
+      . assert(_.nonEmpty)
+
+      test(t"Can construct invalid path on platformless path"):
+        val path = % / "./."
+
+      . assert()
+
+      test(t"Platformless path retains platformlessness"):
+        demilitarize:
+          val path = % / "foo"
+          summon[path.type <:< Path on Linux]
+      . assert(_.nonEmpty)
+
+      test(t"Platformed path retains platformedness"):
+        demilitarize:
+          val path = Drive('C') / "foo"
+          path: Int
+        . map(_.message)
+      .assert(_.head.tt.contains(t"Windows"))
+
+    suite(t"Serialization"):
+      test(t"Serialize simple Linux path"):
+        val path: Path on Linux = % / "foo"
+        path.encode
+
+      . assert(_ == t"/foo")
+
+      test(t"Serialize simple Windows path"):
+        val path: Path on Windows = (Drive('D') / "Foo")
+        path.encode
+
+      . assert(_ == t"D:\\Foo")

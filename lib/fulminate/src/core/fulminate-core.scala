@@ -47,7 +47,10 @@ package errorDiagnostics:
 
 def panic(message: Message): Nothing = throw Panic(message)
 
-def halt(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = null)(using Realm)
+def halt(using Quotes)
+   (message: Message,
+    pos: quotes.reflect.Position | Null = quotes.reflect.Position.ofMacroExpansion)
+   (using Realm)
 :     Nothing =
   import quotes.reflect.*
   import dotty.tools.dotc.config.Settings.Setting.value

@@ -71,6 +71,9 @@ object Nomenclature:
 
             check[tail](name)
 
+    inline def verify[NameType <: Label, PlatformType] =
+      ${Nomenclature2.parse[PlatformType, NameType]}
+
     inline def apply[PlatformType](name: Text)(using nominative: PlatformType is Nominative)
     :     Name[PlatformType] raises NameError =
 

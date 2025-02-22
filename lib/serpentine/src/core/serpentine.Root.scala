@@ -30,9 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+// package serpentine
 
-import anticipation.*
+// import anticipation.*
 
-abstract class Root(root: Text, separator0: Text, caseSensitivity0: Case)
-extends Path(root, Nil, separator0, caseSensitivity0)
+// abstract class Root(root: Text, separator0: Text, caseSensitivity0: Case)
+// extends Path(root, Nil, separator0, caseSensitivity0)
