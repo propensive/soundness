@@ -34,6 +34,8 @@ package serpentine
 
 import soundness.*
 
+given String is Encodable in Text = Text(_)
+
 object Tests extends Suite(t"Serpentine Benchmarks"):
   def run(): Unit =
     suite(t"Constructions"):
@@ -67,6 +69,41 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
       . assert()
 
+      test(t"Construct a path with unknown label"):
+        val dir: Text = ""
+        val path = (% / dir / "baz")
+
+      . assert()
+
+      test(t"Construct a path with unknown label not permitted on Linux without Tactic"):
+        demilitarize:
+          val dir: Text = "dir"
+          val path = (% / dir / "baz").on[Linux]
+
+      . assert(_.length > 0)
+
+      test(t"Construct a path with unknown label is permitted on Linux with Tactic"):
+        demilitarize:
+          val dir: Text = "dir"
+          mend:
+            case NameError(_, _, _) => ()
+
+          . within:
+              val path = (% / dir / "baz").on[Linux]
+
+      . assert(_ == Nil)
+
+      test(t"Construct a path with a label of a bad type is not permitted"):
+        demilitarize:
+          var dir: Char = 'x'
+          mend:
+            case NameError(_, _, _) => ()
+
+          . within:
+              val path = (% / dir / "baz")
+
+      . assert(_.nonEmpty)
+
       test(t"Forbidden characters are forbidden"):
         demilitarize:
           val path: Path on Linux = (% / "fo/o" / "baz").on[Linux]
@@ -79,6 +116,30 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
       .assert()
 
+      test(t"Can't construct invalid path"):
+        demilitarize:
+          (Drive('D') / "Foo ")
+
+      . assert(_.nonEmpty)
+
+      test(t"Can construct invalid path on platformless path"):
+        val path = % / "./."
+
+      . assert()
+
+      test(t"Platformless path retains platformlessness"):
+        demilitarize:
+          val path = % / "foo"
+          summon[path.type <:< Path on Linux]
+      . assert(_.nonEmpty)
+
+      test(t"Platformed path retains platformedness"):
+        demilitarize:
+          val path = Drive('C') / "foo"
+          path: Int
+        . map(_.message)
+      .assert(_.head.tt.contains(t"Windows"))
+
     suite(t"Serialization"):
       test(t"Serialize simple Linux path"):
         val path: Path on Linux = % / "foo"
@@ -87,7 +148,7 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
       . assert(_ == t"/foo")
 
       test(t"Serialize simple Windows path"):
-        val path: Path on Windows = Drive('D') / "Foo"
+        val path: Path on Windows = (Drive('D') / "Foo")
         path.encode
 
       . assert(_ == t"D:\\Foo")
