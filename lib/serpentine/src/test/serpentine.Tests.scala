@@ -36,16 +36,16 @@ import soundness.*
 
 object Tests extends Suite(t"Serpentine Benchmarks"):
   def run(): Unit =
-    suite(t"Conjunctions"):
+    suite(t"Constructions"):
       test(t"Create a two-element path"):
         % / "foo" / "bar"
 
-      . assert(_ == Path("bar", "foo"))
+      . assert(_ == Path(t"/", t"bar", t"foo"))
 
       test(t"Create a one-element path"):
         % / "foo"
 
-      . assert(_ == Path("foo"))
+      . assert(_ == Path(t"/", t"foo"))
 
       test(t"Ensure path has correct type"):
         val path: Path of ("bar", "foo") = % / "foo" / "bar"
@@ -78,3 +78,16 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         receive(% / "foo" / "bar")
 
       .assert()
+
+    suite(t"Serialization"):
+      test(t"Serialize simple Linux path"):
+        val path: Path on Linux = % / "foo"
+        path.encode
+
+      . assert(_ == t"/foo")
+
+      test(t"Serialize simple Windows path"):
+        val path: Path on Windows = Drive('D') / "Foo"
+        path.encode
+
+      . assert(_ == t"D:\\Foo")
