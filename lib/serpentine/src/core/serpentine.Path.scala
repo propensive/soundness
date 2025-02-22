@@ -32,26 +32,38 @@
                                                                                                   */
 package serpentine
 
-import scala.quoted.*
 import scala.compiletime.*
 
 import anticipation.*
 import contingency.*
-import distillate.*
 import fulminate.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import symbolism.*
 
 object Navigable:
-  given navigable: [StringType <: Label, PathType <: Path] => PathType is Navigable by StringType =
+  given label: [PlatformType, StringType <: Label, SubjectType <: Tuple, PathType <: Path]
+  =>    PathType is Navigable by StringType =
     new Navigable:
       type Self = PathType
       type Operand = StringType
-      inline def follow(name: StringType): Text = name.tt
+
+      def follow(name: StringType): Text = name.tt
+
+  given int: [PathType <: Path] => PathType is Navigable by Int = new Navigable:
+    type Self = PathType
+    type Operand = Int
+
+    def follow(name: Int): Text = name.toString.tt
+
+  given text: [TextType <: Text, PathType <: Path] => PathType is Navigable by TextType =
+    new Navigable:
+      type Self = PathType
+      type Operand = TextType
+
+      def follow(name: TextType): Text = name
 
 trait Navigable:
   type Self
@@ -60,22 +72,30 @@ trait Navigable:
   def follow(name: Operand): Text
 
 object Admissible:
+  def apply[SelfType, PlatformType](fn: Text => Unit)
+  :     SelfType is Admissible on PlatformType =
+    new Admissible:
+      type Self = SelfType
+      type Platform = PlatformType
+      def check(name: Text): Unit = fn(name)
+
+  inline given text: [TextType <: Text, PlatformType: Nominative] => Tactic[NameError]
+  =>    TextType is Admissible on PlatformType = Admissible(Name(_))
+
   inline given [StringType <: Label, PlatformType: Nominative]
   =>    StringType is Admissible on PlatformType =
-    Name.verify[StringType, PlatformType]
-    new Admissible:
-      type Self = StringType
-      type Platform = PlatformType
+    Admissible({ _ => Name.verify[StringType, PlatformType] })
 
 trait Admissible:
   type Self
   type Platform
 
+  def check(name: Text): Unit
+
 object Path:
   @targetName("Root")
   object % extends Path(t"/"):
     type Subject = EmptyTuple
-    type Platform = Linux
 
   def of[PlatformType, SubjectType <: Tuple](root: Text, descent: Text*)
   :     Path on PlatformType of SubjectType =
@@ -84,64 +104,74 @@ object Path:
       type Subject = SubjectType
       type Platform = PlatformType
 
-  given Path is Encodable in Text = path => path.descent.reverse.join(path.root, t"/", t"")
+  given [PlatformType: Filesystem] => Path on PlatformType is Encodable in Text =
+    path => path.descent.reverse.join(path.root, PlatformType.separator, t"")
+
+  private def conversion[FromType, ToType](fn: FromType => ToType) =
+    new Conversion[FromType, ToType]:
+      def apply(from: FromType): ToType = fn(from)
 
   inline given [SubjectType, PlatformType]
-  => Conversion[Path of SubjectType, Path of SubjectType on PlatformType] =
-
-    _.on[PlatformType]
-
-  given divisible: [PlatformType,
-                    SubjectType <: Tuple,
-                    ChildType,
-                    PathType <: Path on PlatformType of SubjectType]
-  =>    (navigable: PathType is Navigable by ChildType)
-  =>    PathType is Divisible by ChildType into (Path on PlatformType of (ChildType *: SubjectType)) =
-
-  new Divisible:
-    type Self = PathType
-    type Operand = ChildType
-    type Result = Path on PlatformType of (ChildType *: SubjectType)
-
-    def divide(path: PathType, child: ChildType): Result =
-      Path.of(path.root, navigable.follow(child) +: path.descent*)
-
+  =>    Conversion[Path of SubjectType, Path of SubjectType on PlatformType] =
+    conversion(_.on[PlatformType])
 
 case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
 
+  private inline def check[SubjectType, PlatformType](path: List[Text]): Unit =
+    inline !![SubjectType] match
+      case _: (head *: tail) =>
+        summonInline[head is Admissible on PlatformType].check(path.head)
+        check[tail, PlatformType](path.tail)
+
+      case EmptyTuple =>
+
   inline def on[PlatformType]: Path of Subject on PlatformType =
-    val navigables = summonAll[Tuple.Map[Subject, [Type] =>> Type is Admissible on PlatformType]]
+    check[Subject, PlatformType](descent.to(List))
+    // FIXME: need to check root
     this.asInstanceOf[Path of Subject on PlatformType]
 
-  inline def parent = inline erasedValue[Subject] match
+  inline def parent = inline !![Subject] match
     case head *: tail => Path.of[Platform, tail.type](root, descent.tail*)
     case EmptyTuple   => compiletime.error("Path has no parent")
-    case _            =>
+    case _ =>
       given Tactic[PathError] = summonInline[Tactic[PathError]]
-      if descent.isEmpty
-      then
+
+      if descent.isEmpty then
         raise(PathError(PathError.Reason.RootParent))
         Path.of[Platform, Tuple](root, descent*)
+
       else Path.of[Platform, Tuple](root, descent.tail*)
+
+  transparent inline def / (child: Any)(using navigable: Navigable by child.type)
+  :     Path of (child.type *: Subject) =
+    summonFrom:
+      case given (child.type is Admissible on Platform) =>
+        Path.of[Platform, child.type *: Subject](root, navigable.follow(child) +: descent*)
+      case _ =>
+        type Subject0 = Subject
+        new Path(root, navigable.follow(child) +: descent*):
+          type Subject = child.type *: Subject0
 
 export Path.`%`
 
-object Drive
+object Drive:
   def apply(letter: Char): Drive = new Drive(letter)
 
-class Drive(val letter: Char) extends Path(t"$letter:\\"):
-  type Subject = EmptyTuple
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows
-  override def hashCode = letter.hashCode
-
-  override def equals(any: Any): Boolean = any.asMatchable match
-    case drive: Drive => drive.letter == letter
-    case _            => false
 
 
 case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
+
+abstract class Root(name: Text) extends Path(name):
+  type Subject = EmptyTuple
+  override def hashCode = name.hashCode
+
+  override def equals(any: Any): Boolean = any.asMatchable match
+    case root: Root => root.root == name
+    case _          => false
 
 object Radical:
   given Tactic[RootError] => Drive is Radical:
@@ -153,7 +183,6 @@ object Radical:
     def encode(drive: Drive): Text = t"${drive.letter}:\\"
 
   given %.type is Radical:
-    type Platform = Linux
     def decode(text: Text): %.type = %
     def encode(root: %.type): Text = t"/"
 
@@ -163,22 +192,33 @@ trait Radical:
   def decode(text: Text): Self
   def encode(self: Self): Text
 
+erased trait Linux
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
   erased given Linux is Nominative under Rules = !!
 
-erased trait Linux
 erased trait Windows
 
 object Windows:
-  // FIXME
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
+    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
+    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
+    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
+
   erased given Windows is Nominative under Rules = !!
 
-trait Root
-
 given Realm = Realm(t"serpentine")
+
+object Filesystem:
+  given Windows is Filesystem:
+    def separator: Text = t"\\"
+
+  given Linux is Filesystem:
+    def separator: Text = t"/"
 
 trait Filesystem:
   type Self
