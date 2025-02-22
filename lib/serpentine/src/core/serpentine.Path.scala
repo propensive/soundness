@@ -47,11 +47,17 @@ import rudiments.*
 import symbolism.*
 
 object Navigable:
-  given [StringType <: Label, PathType <: Path] => PathType is Navigable by StringType =
+  given navigable: [StringType <: Label, PathType <: Path] => PathType is Navigable by StringType =
     new Navigable:
       type Self = PathType
       type Operand = StringType
       inline def follow(name: StringType): Text = name.tt
+
+trait Navigable:
+  type Self
+  type Operand
+
+  def follow(name: Operand): Text
 
 object Admissible:
   inline given [StringType <: Label, PlatformType: Nominative]
@@ -61,43 +67,36 @@ object Admissible:
       type Self = StringType
       type Platform = PlatformType
 
-
 trait Admissible:
   type Self
   type Platform
 
-trait Navigable:
-  type Self
-  type Operand
-
-  def follow(name: Operand): Text
-
 object Path:
   @targetName("Root")
-  object % extends Path():
+  object % extends Path(t"/"):
     type Subject = EmptyTuple
+    type Platform = Linux
 
-  def of[PlatformType, SubjectType <: Tuple](descent: Text*)
+  def of[PlatformType, SubjectType <: Tuple](root: Text, descent: Text*)
   :     Path on PlatformType of SubjectType =
 
-    new Path(descent*):
+    new Path(root, descent*):
       type Subject = SubjectType
       type Platform = PlatformType
 
-  given Path is Encodable in Text = _.descent.reverse.join(t"/", t"/", t"")
+  given Path is Encodable in Text = path => path.descent.reverse.join(path.root, t"/", t"")
 
   inline given [SubjectType, PlatformType]
   => Conversion[Path of SubjectType, Path of SubjectType on PlatformType] =
 
     _.on[PlatformType]
 
-given
-   [PlatformType,
-    SubjectType <: Tuple,
-    ChildType,
-    PathType <: Path on PlatformType of SubjectType]
-=>    (navigable: PathType is Navigable by ChildType)
-=>    PathType is Divisible by ChildType into (Path on PlatformType of (ChildType *: SubjectType)) =
+  given divisible: [PlatformType,
+                    SubjectType <: Tuple,
+                    ChildType,
+                    PathType <: Path on PlatformType of SubjectType]
+  =>    (navigable: PathType is Navigable by ChildType)
+  =>    PathType is Divisible by ChildType into (Path on PlatformType of (ChildType *: SubjectType)) =
 
   new Divisible:
     type Self = PathType
@@ -105,10 +104,10 @@ given
     type Result = Path on PlatformType of (ChildType *: SubjectType)
 
     def divide(path: PathType, child: ChildType): Result =
-      Path.of(navigable.follow(child) +: path.descent*)
+      Path.of(path.root, navigable.follow(child) +: path.descent*)
 
 
-case class Path(descent: Text*):
+case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
 
@@ -117,15 +116,53 @@ case class Path(descent: Text*):
     this.asInstanceOf[Path of Subject on PlatformType]
 
   inline def parent = inline erasedValue[Subject] match
-    case head *: tail => Path.of[Platform, tail.type](descent.tail*)
+    case head *: tail => Path.of[Platform, tail.type](root, descent.tail*)
     case EmptyTuple   => compiletime.error("Path has no parent")
     case _            =>
       given Tactic[PathError] = summonInline[Tactic[PathError]]
       if descent.isEmpty
-      then raise(PathError(PathError.Reason.RootParent)) yet Path.of[Platform, Tuple](descent*)
-      else Path.of[Platform, Tuple](descent.tail*)
+      then
+        raise(PathError(PathError.Reason.RootParent))
+        Path.of[Platform, Tuple](root, descent*)
+      else Path.of[Platform, Tuple](root, descent.tail*)
 
 export Path.`%`
+
+object Drive
+  def apply(letter: Char): Drive = new Drive(letter)
+
+class Drive(val letter: Char) extends Path(t"$letter:\\"):
+  type Subject = EmptyTuple
+  type Platform = Windows
+  override def hashCode = letter.hashCode
+
+  override def equals(any: Any): Boolean = any.asMatchable match
+    case drive: Drive => drive.letter == letter
+    case _            => false
+
+
+case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
+
+object Radical:
+  given Tactic[RootError] => Drive is Radical:
+    type Platform = Windows
+
+    def decode(text: Text): Drive = if text.length == 1 then Drive(text.s.charAt(0)) else
+      raise(RootError(text)) yet Drive('C')
+
+    def encode(drive: Drive): Text = t"${drive.letter}:\\"
+
+  given %.type is Radical:
+    type Platform = Linux
+    def decode(text: Text): %.type = %
+    def encode(root: %.type): Text = t"/"
+
+trait Radical:
+  type Platform
+  type Self
+  def decode(text: Text): Self
+  def encode(self: Self): Text
+
 
 object Linux:
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
@@ -133,6 +170,11 @@ object Linux:
 
 erased trait Linux
 erased trait Windows
+
+object Windows:
+  // FIXME
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  erased given Windows is Nominative under Rules = !!
 
 trait Root
 
