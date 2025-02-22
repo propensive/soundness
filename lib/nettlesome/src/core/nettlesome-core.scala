@@ -49,10 +49,6 @@ extension (inline context: StringContext)
   inline def tcp(): TcpPort = ${Nettlesome.tcpPort('context)}
   inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
 
-extension [RemoteType: Connectable](value: RemoteType)
-  infix def via [PortType](port: PortType): Endpoint[PortType] =
-    Endpoint(RemoteType.remote(value), port)
-
 extension [PortType](port: PortType)
   def serve[ProtocolType: Protocolic over PortType]
      (handler: ProtocolType.Request ?=> ProtocolType.Response)

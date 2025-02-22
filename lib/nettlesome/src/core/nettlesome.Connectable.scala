@@ -43,3 +43,6 @@ object Connectable:
 trait Connectable:
   type Self
   def remote(remote: Self): Text
+
+  extension (self: Self)
+    def via[PortType](port: PortType): Endpoint[PortType] = Endpoint(remote(self), port)
