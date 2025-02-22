@@ -30,8 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package nettlesome
 
-import parasite.*
-
-case class HttpService(port: Int, async: Task[Unit], cancel: () => Unit)
+case class Service(cancel: () => Unit)

@@ -37,6 +37,7 @@ import contingency.*
 import digression.*
 import parasite.*
 import proscenium.*
+import nettlesome.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
@@ -47,10 +48,10 @@ import scala.compiletime.*
 import java.net as jn
 import com.sun.net.httpserver as csnh
 
-case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServable:
+case class HttpServer(port: Int) extends RequestServable:
   def listen(handler: (connection: HttpConnection) ?=> Http.Response)
      (using Monitor, Codicil)
-  :     HttpService logs HttpServerEvent =
+  :     Service logs HttpServerEvent raises ServerError =
 
     def handle(exchange: csnh.HttpExchange | Null) =
       try
@@ -96,7 +97,7 @@ case class HttpServer(port: Int)(using Tactic[ServerError]) extends RequestServa
 
     val asyncTask = async(cancel.attend() yet server.stop(1))
 
-    HttpService(port, asyncTask, () => safely(cancel.fulfill(())))
+    Service(() => safely(cancel.fulfill(())))
 
   private def streamBody(exchange: csnh.HttpExchange): Stream[Bytes] =
     val in = exchange.getRequestBody.nn
