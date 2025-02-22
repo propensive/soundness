@@ -53,12 +53,18 @@ def run(): Unit =
   given Tactic[JsonError] = strategies.throwUnsafely
   given Tactic[CompilerError] = strategies.throwUnsafely
 
+  inline given [ValueType] => Quotes => (refs: References[Json])
+  =>    Conversion[ValueType, Expr[ValueType]] =
+    value =>
+      '{  import strategies.throwUnsafely
+          ${refs.array}(${ToExpr.IntToExpr(refs.allocate(value.json))})
+          . as[ValueType]  }
+
   def offset(input: Long): Text = remote.dispatch:
-    '{  t"${System.currentTimeMillis - ${System.currentTimeMillis.put}}"  }
+    '{  t"${System.currentTimeMillis - ${System.currentTimeMillis}}"  }
 
   def fn(message: Example): Example = remote.dispatch:
-    '{  import Decoder.long
-        Example(t"Time: ${System.currentTimeMillis - ${message.count.put}}", 9)  }
+    '{  Example(t"Time: ${System.currentTimeMillis - ${message.count}}", 9)  }
 
   println(fn(Example(t"hello", System.currentTimeMillis)))
   println(fn(Example(t"hello", System.currentTimeMillis)))
