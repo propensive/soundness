@@ -33,9 +33,11 @@
 package scintillate
 
 import anticipation.*
+import contingency.*
+import nettlesome.*
 import parasite.*
 import telekinesis.*
 
 trait RequestServable:
   def listen(handle: (connection: HttpConnection) ?=> Http.Response)(using Monitor, Codicil)
-  :     HttpService logs HttpServerEvent
+  :     Service logs HttpServerEvent raises ServerError

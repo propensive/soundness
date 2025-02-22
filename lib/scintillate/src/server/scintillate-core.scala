@@ -46,6 +46,20 @@ import spectacular.*
 import telekinesis.*
 import vacuous.*
 
+package httpServers:
+  given stdlib: (Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable)
+  =>    Http is Protocolic:
+
+    type Carrier = TcpPort
+    type Self = Http
+    type Server = Service
+    type Request = HttpConnection
+    type Response = Http.Response
+
+    def server(port: TcpPort)(lambda: Request ?=> Response): Service =
+      HttpServer(port.number).listen(lambda)
+
+
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
 
 def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
@@ -67,7 +81,7 @@ given realm: Realm = realm"scintillate"
 extension (value: Http.type)
   def listen(handle: (connection: HttpConnection) ?=> Http.Response)
      (using RequestServable, Monitor, Codicil)
-  :     HttpService logs HttpServerEvent =
+  :     Service logs HttpServerEvent raises ServerError =
     summon[RequestServable].listen(handle)
 
 extension (request: Http.Request)
