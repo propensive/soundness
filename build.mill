@@ -1244,6 +1244,15 @@ object vacuous extends SoundnessModule {
   }
 }
 
+object vexillology extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(hypotenuse.core, distillate.core)
+  }
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object vicarious extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(rudiments.core)
