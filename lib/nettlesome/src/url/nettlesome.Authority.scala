@@ -49,7 +49,7 @@ object Authority:
     t"${auth.userInfo.lay(t"")(_+t"@")}${auth.host}${auth.port.let(_.show).lay(t"")(t":"+_)}"
 
   def parse(value: Text): Authority raises HostnameError raises UrlError =
-    import UrlError.Expectation.*
+    import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 
     safely(value.where(_ == '@')).asMatchable match
       case Zerary(arobase) => safely(value.where(_ == ':', arobase + 1)).asMatchable match
@@ -58,10 +58,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange)) yet 0
+              raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
 
             case _ =>
-              raise(UrlError(value, colon + 1, Number)) yet 0
+              raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
           . pipe:
             Authority
@@ -76,10 +76,10 @@ object Authority:
             case port: Int if port >= 0 && port <= 65535 => port
 
             case port: Int =>
-              raise(UrlError(value, colon + 1, PortRange)) yet 0
+              raise(UrlError(value, colon + 1, Expected(PortRange))) yet 0
 
             case _ =>
-              raise(UrlError(value, colon + 1, Number)) yet 0
+              raise(UrlError(value, colon + 1, Expected(Number))) yet 0
 
           . pipe(Authority(Hostname.parse(value.before(colon)), Unset, _))
 
