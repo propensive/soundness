@@ -124,6 +124,10 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   :     ResultType =
     decodable.decoded(apply(label.tt))
 
+  def apply(): Optional[Text] = values match
+    case List((t"", value)) => value
+    case other              => Unset
+
   def apply(label: Text): Query =
     val prefix = label+t"."
     Query:
