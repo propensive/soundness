@@ -34,6 +34,6 @@ package telekinesis
 
 import proscenium.*
 
-trait Parameter:
+trait Parametric:
   type Self <: Label
   type Subject

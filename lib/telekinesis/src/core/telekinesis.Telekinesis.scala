@@ -190,9 +190,9 @@ object Telekinesis:
         case '{ type keyType <: Label
                 ($key: keyType, $value: valueType) } :: tail =>
 
-          Expr.summon[keyType is Parameter of (? >: valueType)].getOrElse:
-            Expr.summon[keyType is Parameter].absolve match
-              case Some('{ $parametric: (Parameter { type Subject = subjectType }) }) =>
+          Expr.summon[keyType is Parametric of (? >: valueType)].getOrElse:
+            Expr.summon[keyType is Parametric].absolve match
+              case Some('{ $parametric: (Parametric { type Subject = subjectType }) }) =>
                 halt(m"""the parameter ${key.valueOrAbort} takes values of ${Type.of[subjectType]}
                          but the provided value had type ${Type.of[valueType]}""")
 

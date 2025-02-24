@@ -80,7 +80,7 @@ object Tests extends Suite(t"Telekinesis tests"):
       . assert(_ == t"name=Jack&age=12")
 
       test(t"Construct a Query by partial generic derivation"):
-        import queryParameters.allowArbitrary
+        import queryParameters.arbitrary
         Query(person = Person(t"Ken", 39)).show
 
       . assert(_ == t"person.name=Ken&person.age=39")
@@ -108,16 +108,13 @@ object Tests extends Suite(t"Telekinesis tests"):
     suite(t"Fetching tests"):
 
       test(t"Fetch a URL"):
-        url"https://httpbin.org/post".submit
-         (Http.Post,
-          contentEncoding = enc"UTF-8",
-          accept          = media"application/json")
-         (t"Hello world")
-
+        url"https://httpbin.org/post"
+        . submit(Http.Post, contentEncoding = enc"UTF-8", accept = media"application/json")
+        . apply(t"Hello world")
         . tap: response =>
-          println(response)
-          unsafely:
-            println(response.receive[Text])
+            println(response)
+            unsafely:
+              println(response.receive[Text])
 
       . assert()
 
