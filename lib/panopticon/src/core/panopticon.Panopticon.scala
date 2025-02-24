@@ -52,7 +52,7 @@ object Panopticon:
 
   extension [FromType](initLens: InitLens[FromType])
     def apply[PathType <: Tuple, ToType]
-       (lambda: Target[FromType, EmptyTuple] => Target[ToType, PathType])
+       (lambda: Target[FromType, Zero] => Target[ToType, PathType])
     :     Lens[FromType, PathType, ToType] =
       0
 

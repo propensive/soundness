@@ -115,7 +115,7 @@ object Tests extends Suite(t"Panopticon tests"):
       lens.get(date)
     .assert(_ == 3)
 
-    // val orgName = new Lens[Organization, "name" *: EmptyTuple, String](_.name, (org, name) => org.copy(name = name))
+    // val orgName = new Lens[Organization, "name" *: Zero, String](_.name, (org, name) => org.copy(name = name))
 
     // test(t"Manual lens can access field"):
     //   orgName(org)

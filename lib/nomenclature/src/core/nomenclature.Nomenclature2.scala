@@ -47,7 +47,7 @@ object Nomenclature2:
     import quotes.reflect.*
 
     todo match
-      case Nil          => TypeRepr.of[EmptyTuple]
+      case Nil          => TypeRepr.of[Zero]
       case next :: todo => next.asType.absolve match
         case '[next] => build(todo).asType.absolve match
           case '[type tupleType <: Tuple; tupleType] => TypeRepr.of[next *: tupleType]

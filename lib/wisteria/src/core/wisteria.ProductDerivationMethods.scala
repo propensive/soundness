@@ -55,7 +55,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     type Labels = reflection.MirroredElemLabels
 
     reflection.fromProduct:
-      fold[DerivationType, Fields, Labels, Tuple](EmptyTuple, 0): accumulator =>
+      fold[DerivationType, Fields, Labels, Tuple](Zero, 0): accumulator =>
         [FieldType] => context ?=> lambda[FieldType](context) *: accumulator
 
       . reverse
@@ -80,7 +80,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
     type Labels = reflection.MirroredElemLabels
 
     val tuple: ConstructorType[Tuple] =
-      fold[DerivationType, Fields, Labels, ConstructorType[Tuple]](pure(EmptyTuple), 0):
+      fold[DerivationType, Fields, Labels, ConstructorType[Tuple]](pure(Zero), 0):
         accumulator =>
           [FieldType] => context ?=>
             bind(accumulator): accumulator2 =>
@@ -185,7 +185,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   :     ResultType =
 
     inline tuple match
-      case EmptyTuple => accumulator
+      case Zero => accumulator
 
       case tuple: (fieldType *: moreFieldsType) => tuple match
         case field *: moreFields => inline erasedValue[LabelsType] match
@@ -221,7 +221,7 @@ trait ProductDerivationMethods[TypeclassType[_]]:
   :     ResultType =
 
     inline erasedValue[FieldsType] match
-      case _: EmptyTuple => accumulator
+      case _: Zero => accumulator
 
       case _: (fieldType *: moreFieldsType) => inline erasedValue[LabelsType] match
         case _: (labelType *: moreLabelsType) => inline valueOf[labelType].asMatchable match

@@ -33,15 +33,14 @@
 package soundness
 
 export rudiments
-. { Memory, bin, hex, Hex, b, kib, mib, gib, tib, memory, sift, has,
-    interleave, each, all, sumBy, bi, tri, indexBy, longestTrain, mutable, immutable, snapshot,
-    place, upsert, collate, establish, plus, runs, runsBy, Cursor, cursor, precursor, postcursor,
-    cursorIndex, cursorOffset, curse, ult, create, javaInputStream, DecimalConverter, !!,
-    Exit, unit, waive, twin, triple, is, matchable, give, pipe, fuse,
-    tap, also, Counter, loop, Loop, &, tuple, to, WorkingDirectoryError, HomeDirectoryError,
-    WorkingDirectory, HomeDirectory, workingDirectory, homeDirectory, prim, sec,
-    ter, unwind, at, Indexable, yet, Bijection, bijection, segment, Segmentable, Digit,
-    temporaryDirectory }
+. { Memory, bin, hex, Hex, b, kib, mib, gib, tib, memory, sift, has, interleave, each, all, sumBy,
+    bi, tri, indexBy, longestTrain, mutable, immutable, snapshot, place, upsert, collate, establish,
+    plus, runs, runsBy, Cursor, cursor, precursor, postcursor, cursorIndex, cursorOffset, curse,
+    ult, create, javaInputStream, DecimalConverter, !!, Exit, unit, waive, twin, triple, is,
+    matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to,
+    WorkingDirectoryError, HomeDirectoryError, WorkingDirectory, HomeDirectory, workingDirectory,
+    homeDirectory, prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
+    Segmentable, Digit, temporaryDirectory }
 
 package workingDirectories:
   export rudiments.workingDirectories.{systemProperty, default}

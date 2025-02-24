@@ -49,7 +49,7 @@ object Mosquito:
 
     def take[ElementType](list: List[ElementType], size: Int)
     :     Optional[Vector[ElementType, size.type]] =
-      if size == 0 then EmptyTuple else list match
+      if size == 0 then Zero else list match
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
 
@@ -80,7 +80,7 @@ object Mosquito:
       (left(1)*right(2) - left(2)*right(1)) *:
           (left(2)*right(0) - left(0)*right(2)) *:
           (left(0)*right(1) - left(1)*right(0)) *:
-          EmptyTuple
+          Zero
 
   extension [SizeType <: Int, LeftType](left: Vector[LeftType, SizeType])
     def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
@@ -102,7 +102,7 @@ object Mosquito:
     def map[LeftType2](fn: LeftType => LeftType2): Vector[LeftType2, SizeType] =
       def recur(tuple: Tuple): Tuple = tuple match
         case head *: tail => fn(head.asInstanceOf[LeftType]) *: recur(tail)
-        case _            => EmptyTuple
+        case _            => Zero
 
       recur(left)
 
@@ -117,7 +117,7 @@ object Mosquito:
 
       def recur(tuple: Tuple): Tuple = tuple match
         case head *: tail => (head.asInstanceOf[LeftType]/magnitude) *: recur(tail)
-        case _            => EmptyTuple
+        case _            => Zero
 
       recur(left)
 
@@ -133,10 +133,10 @@ object Mosquito:
             *: recur(leftTail, rightTail)
 
           case _ =>
-            EmptyTuple
+            Zero
 
         case _ =>
-          EmptyTuple
+          Zero
 
       recur(left, right)
 
@@ -151,9 +151,10 @@ object Mosquito:
             (leftHead.asInstanceOf[LeftType] - rightHead.asInstanceOf[RightType])
             *: recur(leftTail, rightTail)
           case _ =>
-            EmptyTuple
+            Zero
+
         case _ =>
-          EmptyTuple
+          Zero
 
       recur(left, right)
 

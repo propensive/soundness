@@ -58,7 +58,7 @@ object Nomenclature:
 
     private inline def check[CheckType <: Matchable](name: Text): Unit raises NameError =
       inline erasedValue[CheckType] match
-        case _: EmptyTuple     => ()
+        case _: Zero           => ()
         case _: (head *: tail) => inline erasedValue[head & Matchable] match
           case _: Check[param] =>
             inline staticCompanion[head] match

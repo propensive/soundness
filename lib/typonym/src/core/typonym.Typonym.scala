@@ -34,6 +34,8 @@ package typonym
 
 import scala.quoted.*
 
+import proscenium.*
+
 object Typonym:
   private def untuple[TupleType <: Tuple: Type](using Quotes): List[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
@@ -89,7 +91,7 @@ object Typonym:
       case boolean: Boolean => ConstantType(BooleanConstant(boolean))
 
       case list: List[?] =>
-        val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[EmptyTuple]): (tuple, next) =>
+        val tuple = list.map(reflect).reverse.foldLeft(TypeRepr.of[Zero]): (tuple, next) =>
           tuple.asType.runtimeChecked match
             case '[type tupleType <: Tuple; tupleType] => next.asType.runtimeChecked match
               case '[nextType] => TypeRepr.of[nextType *: tupleType]

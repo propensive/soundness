@@ -38,6 +38,7 @@ import scala.compiletime.*
 import scala.quoted.*
 
 import anticipation.*
+import proscenium.*
 
 export Fulminate.Diagnostics
 
@@ -89,7 +90,7 @@ def warn(using Quotes)(message: Message, pos: quotes.reflect.Position | Null = n
   if pos == null then report.warning(text) else report.warning(text, pos)
 
 extension (inline context: StringContext)
-  transparent inline def m[ParamType](inline subs: ParamType = EmptyTuple): Message =
+  transparent inline def m[ParamType](inline subs: ParamType = Zero): Message =
     inline subs.asMatchable match
       case tuple: Tuple =>
         import unsafeExceptions.canThrowAny
