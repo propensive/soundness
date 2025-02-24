@@ -65,3 +65,10 @@ type Label = String & Singleton
 
 @targetName("partialFn")
 infix type ~> [-DomainType, +RangeType] = PartialFunction[DomainType, RangeType]
+
+export scala.EmptyTuple as Zero
+
+type Mono[ValueType] = ValueType *: Zero
+
+object Mono:
+  inline def apply[ValueType](value: ValueType): Mono[ValueType] = value *: Zero

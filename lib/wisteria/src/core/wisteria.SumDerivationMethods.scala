@@ -54,7 +54,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
   private transparent inline def all[VariantType, VariantTypes <: Tuple]: Boolean = summonFrom:
     case given (VariantType <:< Singleton) => inline erasedValue[VariantTypes] match
-      case _: EmptyTuple                     => true
+      case _: Zero                           => true
       case _: (variantType *: variantsType)  => all[variantType, variantsType]
     case _                                 => false
 
@@ -100,7 +100,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
           type VariantType = variantType & DerivationType
 
           if predicate(valueOf[labelType & String].tt)
-          then summonInline[Mirror.ProductOf[VariantType]].fromProduct(EmptyTuple)
+          then summonInline[Mirror.ProductOf[VariantType]].fromProduct(Zero)
           else singletonFold[DerivationType, variantsType, labelsType](predicate)
 
       case _  =>

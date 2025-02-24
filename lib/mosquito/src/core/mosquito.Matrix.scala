@@ -129,7 +129,7 @@ object Matrix:
      (using Tuple.Union
              [Tuple.Fold
                [rows.type,
-                EmptyTuple,
+                Zero,
                 [left, right] =>>
                   Tuple.Concat[left & Tuple, right & Tuple]] & Tuple] <:< ElementType,
             Columns =:= Tuple.Union[Tuple.Map[rows.type, [tuple] =>> Tuple.Size[tuple & Tuple]]],
