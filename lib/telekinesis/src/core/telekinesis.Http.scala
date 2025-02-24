@@ -204,9 +204,8 @@ object Http:
         . join(t"\n          ")
 
       val params: Text =
-        request.parameters.query.values.map: (key, value) =>
+        request.query.values.map: (key, value) =>
           t"$key = \"$value\""
-
         . join(t"\n          ")
 
       ListMap[Text, Text](
@@ -275,24 +274,6 @@ object Http:
     lazy val pathText: Text = target.s.indexOf('?') match
       case -1    => target
       case index => target.keep(index)
-
-    object parameters extends Dynamic:
-      lazy val query: Query =
-        contentType.let(_.base.show) match
-          case t"application/x-www-form-urlencoded" =>
-            request.query ++ body.read[Bytes].utf8.decode[Query]
-
-          case _ =>
-            request.query
-
-      def selectDynamic(label: Label)(using erased parameter: label.type is Parameter)
-         (using parameter.Subject is Decodable in Text)
-      :     Optional[parameter.Subject] =
-        query.at(label.tt).let: value =>
-          value.absolve match
-            case text: Text @unchecked       => text.decode[parameter.Subject]
-            case list: List[Text] @unchecked => list.prim.let(_.decode[parameter.Subject])
-
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)

@@ -73,7 +73,7 @@ object Query extends Dynamic:
 
         value =>
           construct:
-            [FieldType] => decodable => decodable.decoded(value(label))
+            [FieldType] => _.decoded(value(label))
 
   inline given encodable: [ValueType] => ValueType is Encodable in Query = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) =>
@@ -86,14 +86,10 @@ object Query extends Dynamic:
   =>    ValueType is Decodable in Query =
     compiletime.summonFrom:
       case given Default[ValueType] =>
-        _.values match
-          case List((t"", value)) => value.decode
-          case _                  => raise(QueryError()) yet default[ValueType]
+        _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
 
       case _ =>
-        _.values match
-          case List((t"", value)) => value.decode
-          case _                  => abort(QueryError())
+        _().lest(QueryError()).decode
 
   given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
@@ -113,12 +109,18 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   def append(more: Query): Query = new Query(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
 
-  def at(label: Text): Optional[Text | List[Text]] = map.getOrElse(label, Unset)
-
   @targetName("appendAll")
   infix def ++ (query: Query) = Query(values ++ query.values)
 
-  def selectDynamic(label: String): Query = apply(label.tt)
+  def selectDynamic[ResultType](label: String)
+     (using parametric: label.type is Parametric into ResultType,
+            decodable:  ResultType is Decodable in Query)
+  :     ResultType =
+    decodable.decoded(apply(label.tt))
+
+  def apply(): Optional[Text] = values match
+    case List((t"", value)) => value
+    case other              => Unset
 
   def apply(label: Text): Query =
     val prefix = label+t"."
