@@ -68,7 +68,7 @@ extends Root
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
-  given radical: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+  given radical: (Tactic[UrlError], Tactic[NameError])
   =>    HttpUrl is Radical from HttpUrl = new Radical:
     type Self = HttpUrl
     type Source = HttpUrl
@@ -77,7 +77,7 @@ object Url:
     def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
     def rootText(url: HttpUrl): Text = url.show
 
-  given navigable: (Tactic[UrlError], Tactic[HostnameError], Tactic[NameError])
+  given navigable: (Tactic[UrlError], Tactic[NameError])
   =>    HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
 
     type Operand = Name[HttpUrl]
@@ -94,7 +94,7 @@ object Url:
 
   given HttpUrl is Abstractable across Urls into Text = _.show
 
-  given (Tactic[UrlError], Tactic[HostnameError])
+  given (Tactic[UrlError])
   =>    HttpUrl is Instantiable across Urls from Text =
     Url.parse(_)
 
@@ -103,8 +103,7 @@ object Url:
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
-  given [SchemeType <: Label] => (Tactic[UrlError], Tactic[HostnameError])
-  =>    Url[SchemeType] is Decodable in Text =
+  given [SchemeType <: Label] => Tactic[UrlError] => Url[SchemeType] is Decodable in Text =
 
     parse(_)
 
@@ -153,8 +152,8 @@ object Url:
     def name: Text = t"manifest"
     def serialize(url: Url[SchemeType]): Text = url.show
 
-  def parse[SchemeType <: Label](value: Text)(using Tactic[UrlError], Tactic[HostnameError])
-  :     Url[SchemeType] =
+  def parse[SchemeType <: Label](value: Text)
+  :     Url[SchemeType] raises UrlError =
     import UrlError.Expectation.*
 
     safely(value.where(_ == ':')).asMatchable match
@@ -164,8 +163,16 @@ object Url:
 
         val (pathStart, auth) =
           if value.after(colon).keep(2) == t"//" then
-            val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
-            (authEnd, Authority.parse(value.segment((colon + 3) ~ authEnd.previous)))
+            tend:
+              case error@HostnameError(hostname, reason) =>
+                import error.diagnostics
+                UrlError(value, colon + 3, UrlError.Reason.BadHostname(hostname, reason))
+
+            . within:
+                val authEnd = safely(value.where(_ == '/', colon + 3)).or(Ult.of(value))
+                val hostname = value.segment((colon + 3) ~ authEnd.previous)
+                (authEnd, Authority.parse(hostname))
+
           else (colon + 1, Unset)
 
         safely(value.where(_ == '?', pathStart)).asMatchable match
@@ -197,4 +204,4 @@ object Url:
               Url(Origin(scheme, auth), value.from(pathStart), Unset, Unset)
 
       case _ =>
-        abort(UrlError(value, Ult.of(value), Colon))
+        abort(UrlError(value, Ult.of(value), UrlError.Reason.Expected(Colon)))

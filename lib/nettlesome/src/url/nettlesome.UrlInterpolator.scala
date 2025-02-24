@@ -59,7 +59,6 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
   def complete(value: Text): Url[Label] =
     try throwErrors(Url.parse(value)) catch
       case error: UrlError      => throw InterpolationError(error.message)
-      case error: HostnameError => throw InterpolationError(error.message)
 
   def initial: Text = t""
 
@@ -70,7 +69,6 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
 
       try throwErrors(Url.parse(state+port.show)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
-        case err: HostnameError => throw InterpolationError(Message(err.message.text))
 
       state+port.show
 
@@ -80,7 +78,6 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
-        case err: HostnameError => throw InterpolationError(Message(err.message.text))
 
       state+text.urlEncode
 
@@ -90,7 +87,6 @@ object UrlInterpolator extends contextual.Interpolator[UrlFragment, Text, Url[La
 
       try throwErrors(Url.parse(state+text.urlEncode)) catch
         case err: UrlError      => throw InterpolationError(Message(err.message.text))
-        case err: HostnameError => throw InterpolationError(Message(err.message.text))
 
       state+text
 

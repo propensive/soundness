@@ -36,10 +36,18 @@ import anticipation.*
 import denominative.*
 import fulminate.*
 
-case class UrlError(text: Text, offset: Ordinal, expected: UrlError.Expectation)(using Diagnostics)
-extends Error(m"the URL $text is not valid: expected $expected at ${offset.n0}")
+case class UrlError(text: Text, offset: Ordinal, reason: UrlError.Reason)(using Diagnostics)
+extends Error(m"the URL $text is not valid: $reason at ${offset.n0}")
 
 object UrlError:
+  given Reason is Communicable =
+    case Reason.Expected(expectation)         => m"$expectation was expected"
+    case Reason.BadHostname(hostname, reason) => m"$hostname was not valid because $reason"
+
+  enum Reason:
+    case Expected(expectation: Expectation)
+    case BadHostname(hostname: Text, reason: HostnameError.Reason)
+
   enum Expectation:
     case Colon, More, LowerCaseLetter, PortRange, Number
 
