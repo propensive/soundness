@@ -285,7 +285,7 @@ object Http:
           case _ =>
             request.query
 
-      def selectDynamic(label: Label)(using parameter: label.type is Parameter)
+      def selectDynamic(label: Label)(using erased parameter: label.type is Parameter)
          (using parameter.Subject is Decodable in Text)
       :     Optional[parameter.Subject] =
         query.at(label.tt).let: value =>
