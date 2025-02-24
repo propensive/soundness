@@ -291,9 +291,9 @@ object Http:
           case list: List[Text] @unchecked => list.prim.let(_.decode[ValueType])
 
       def selectDynamic(label: Label)(using erased parametric: label.type is Parametric)
-         (using parametric.Subject is Decodable in Text)
-      :     Optional[parametric.Subject] =
-        apply[parametric.Subject](label.tt)
+         (using parametric.Result is Decodable in Text)
+      :     Optional[parametric.Result] =
+        apply[parametric.Result](label.tt)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
