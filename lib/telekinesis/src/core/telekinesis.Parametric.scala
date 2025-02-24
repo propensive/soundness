@@ -36,4 +36,4 @@ import proscenium.*
 
 trait Parametric:
   type Self <: Label
-  type Subject
+  type Result

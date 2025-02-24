@@ -46,7 +46,7 @@ import language.dynamics
 given Realm = realm"telekinesis"
 
 package queryParameters:
-  erased given arbitrary: [KeyType <: Label, ValueType] => KeyType is Parametric of ValueType = !!
+  erased given arbitrary: [KeyType <: Label, ValueType] => KeyType is Parametric into ValueType = !!
 
 extension [ValueType: Encodable in Query](value: ValueType)
   def query: Query = ValueType.encoded(value)

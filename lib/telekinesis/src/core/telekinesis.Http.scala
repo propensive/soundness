@@ -204,9 +204,8 @@ object Http:
         . join(t"\n          ")
 
       val params: Text =
-        request.parameters.query.values.map: (key, value) =>
+        request.query.values.map: (key, value) =>
           t"$key = \"$value\""
-
         . join(t"\n          ")
 
       ListMap[Text, Text](
@@ -295,7 +294,6 @@ object Http:
          (using parametric.Subject is Decodable in Text)
       :     Optional[parametric.Subject] =
         apply[parametric.Subject](label.tt)
-
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)
