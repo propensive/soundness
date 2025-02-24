@@ -71,19 +71,42 @@ object Contingency:
 
     import quotes.reflect.*
 
+    object RepeatedParam:
+      def unapply(using quotes: Quotes)(param: quotes.reflect.Symbol)
+      :     Option[quotes.reflect.TypeRepr] =
+        import quotes.reflect.*
+        param.info match
+          case AnnotatedType(repr, Apply(Select(New(annotation), _), _))
+          if annotation.symbol == defn.RepeatedAnnot                  => Some(repr)
+          case _                                                      => None
+
     def exhaustive(pattern: Tree, patternType: TypeRepr): Boolean = pattern match
       case Wildcard()          => true
       case Typed(_, matchType) => patternType <:< matchType.tpe
       case Bind(_, pattern)    => exhaustive(pattern, patternType)
 
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
-        val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || halt(m"bad pattern")
+        val types = patternType.typeSymbol.caseFields
+
+        val repetition = types.filter { case RepeatedParam(_) => true }.nonEmpty
+
+        val isExhaustive = params.zip(types).all:
+          case (param, pattern@RepeatedParam(patternType)) => param match
+            case Bind(_, Typed(Ident("_*"), bound)) => true
+            case other                              => false
+
+          case (param, pattern) =>
+            exhaustive(param, pattern.info.typeSymbol.typeRef)
+
+        if isExhaustive then true else
+          if repetition
+          then halt(m"the pattern (which involves repeated parameters) is not exhaustive")
+          else halt(m"the pattern is not exhaustive")
 
       case Unapply(Select(target, method), _, params) =>
         // TODO: Check that extractor is exhaustive
         val types = patternType.typeSymbol.caseFields.map(_.info.typeSymbol.typeRef)
-        params.zip(types).all(exhaustive) || halt(m"bad pattern")
+        params.zip(types).all(exhaustive) || halt(m"this type of pattern is not recognized")
 
       case other =>
         halt(m"bad pattern")
