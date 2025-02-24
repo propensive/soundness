@@ -86,14 +86,10 @@ object Query extends Dynamic:
   =>    ValueType is Decodable in Query =
     compiletime.summonFrom:
       case given Default[ValueType] =>
-        _.values match
-          case List((t"", value)) => value.decode
-          case _                  => raise(QueryError()) yet default[ValueType]
+        _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
 
       case _ =>
-        _.values match
-          case List((t"", value)) => value.decode
-          case _                  => abort(QueryError())
+        _().lest(QueryError()).decode
 
   given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
