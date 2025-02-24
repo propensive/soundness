@@ -88,7 +88,9 @@ object Contingency:
       case TypedOrTest(Unapply(Select(target, method), _, params), _) =>
         val types = patternType.typeSymbol.caseFields
 
-        val repetition = types.filter { case RepeatedParam(_) => true }.nonEmpty
+        val repetition = types.exists:
+          case RepeatedParam(_) => true
+          case _                => false
 
         val isExhaustive = params.zip(types).all:
           case (param, pattern@RepeatedParam(patternType)) => param match
