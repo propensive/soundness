@@ -73,7 +73,7 @@ object Query extends Dynamic:
 
         value =>
           construct:
-            [FieldType] => decodable => decodable.decoded(value(label))
+            [FieldType] => _.decoded(value(label))
 
   inline given encodable: [ValueType] => ValueType is Encodable in Query = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) =>
@@ -108,8 +108,6 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))
   def append(more: Query): Query = new Query(values ++ more.values)
   def isEmpty: Boolean = values.isEmpty
-
-  def at(label: Text): Optional[Text | List[Text]] = map.getOrElse(label, Unset)
 
   @targetName("appendAll")
   infix def ++ (query: Query) = Query(values ++ query.values)
