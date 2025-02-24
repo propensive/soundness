@@ -1217,7 +1217,7 @@ object turbulence extends SoundnessModule {
 
 object typonym extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq()
+    def moduleDeps = Seq(proscenium.core)
   }
 
   object test extends ProbablyTestModule {
