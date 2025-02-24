@@ -59,13 +59,19 @@ class Conduit(input: Stream[Bytes]):
   private var clutch0: Boolean = clutch
 
   def block: Bytes = current
-  def datum: Byte = current(index.n0)
+  def datum: Int = try current(index.n0) catch case _: ArrayIndexOutOfBoundsException => -1
 
   def remainder: Stream[Bytes] = stream
 
   def next(): Boolean = step() match
     case Conduit.State.Clutch => cue() yet next()
     case state                => state != Conduit.State.Clutch
+
+  inline def expect(chars: Char*): Boolean =
+    var result = true
+    chars.each: char =>
+      if datum != char then next() else result = false
+    result
 
   def break(): Unit = if !clutch then
     val prefix = current.slice(0, index.n1)
