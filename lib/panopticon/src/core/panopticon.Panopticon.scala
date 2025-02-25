@@ -52,7 +52,7 @@ object Panopticon:
 
   extension [FromType](initLens: InitLens[FromType])
     def apply[PathType <: Tuple, ToType]
-       (lambda: Target[FromType, Zero] => Target[ToType, PathType])
+       (lambda: Aim[FromType, Zero] => Aim[ToType, PathType])
     :     Lens[FromType, PathType, ToType] =
       0
 
@@ -85,22 +85,22 @@ object Panopticon:
 
     import quotes.reflect.*
 
-    def select[TargetType: Type](path: List[String], expr: Expr[TargetType]): Expr[ToType] =
+    def select[AimType: Type](path: List[String], expr: Expr[AimType]): Expr[ToType] =
       path match
         case Nil          => expr.asExprOf[ToType]
         case next :: tail => ConstantType(StringConstant(next)).asType.absolve match
           case '[type nextType <: Label; nextType] =>
-            Expr.summon[Dereferencer[TargetType, nextType]] match
+            Expr.summon[Dereferencer[AimType, nextType]] match
               case Some('{ type fieldType
-                           $dereferencer: Dereferencer[TargetType, labelType]
+                           $dereferencer: Dereferencer[AimType, labelType]
                                            {  type FieldType = fieldType  } }) =>
                 select[fieldType](tail, '{$dereferencer.field($expr)})
 
               case _ =>
-                val targetSymbol = TypeRepr.of[TargetType].typeSymbol
+                val aimSymbol = TypeRepr.of[AimType].typeSymbol
 
-                expr.asTerm.select(targetSymbol.fieldMember(next)).asExpr.absolve match
-                  case '{$expr: targetType} => select[targetType](tail, expr)
+                expr.asTerm.select(aimSymbol.fieldMember(next)).asExpr.absolve match
+                  case '{$expr: aimType} => select[aimType](tail, expr)
 
     select[FromType](getPath[PathType](), value).asExprOf[ToType]
 
@@ -135,26 +135,26 @@ object Panopticon:
 
     rewrite(getPath[PathType](), value.asTerm).asExprOf[FromType]
 
-  def dereference[TargetType: Type, TupleType <: Tuple: Type](member: Expr[String])(using Quotes)
+  def dereference[AimType: Type, TupleType <: Tuple: Type](member: Expr[String])(using Quotes)
   :     Expr[Any] =
     import quotes.reflect.*
 
     val fieldName = member.valueOrAbort
     val fieldNameType = ConstantType(StringConstant(fieldName)).asType
-    val targetType = TypeRepr.of[TargetType]
+    val aimType = TypeRepr.of[AimType]
 
     fieldNameType.absolve match
       case '[type fieldNameType <: Label; fieldNameType] =>
-        Expr.summon[Dereferencer[TargetType, fieldNameType]] match
+        Expr.summon[Dereferencer[AimType, fieldNameType]] match
           case Some('{ type fieldType
-                       $dereferencer: Dereferencer[TargetType, labelType]
+                       $dereferencer: Dereferencer[AimType, labelType]
                                         { type FieldType = fieldType } }) =>
-            '{Target[fieldType, fieldNameType *: TupleType]()}
+            '{Aim[fieldType, fieldNameType *: TupleType]()}
 
           case _ =>
-            targetType.typeSymbol.caseFields.find(_.name == fieldName) match
+            aimType.typeSymbol.caseFields.find(_.name == fieldName) match
               case None =>
-                halt(m"the field $fieldName is not a member of ${targetType.show}")
+                halt(m"the field $fieldName is not a member of ${aimType.show}")
 
               case Some(symbol) => symbol.info.asType.absolve match
-                case '[returnType] => '{Target[returnType, fieldNameType *: TupleType]()}
+                case '[returnType] => '{Aim[returnType, fieldNameType *: TupleType]()}

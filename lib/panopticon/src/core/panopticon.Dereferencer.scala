@@ -34,6 +34,6 @@ package panopticon
 
 import proscenium.*
 
-trait Dereferencer[TargetType, LabelType <: Label]:
+trait Dereferencer[AimType, LabelType <: Label]:
   type FieldType
-  def field(target: TargetType): FieldType
+  def field(aim: AimType): FieldType
