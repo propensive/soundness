@@ -40,9 +40,9 @@ import language.experimental.into
 
 object Joinable:
   given [TextType: Textual] => TextType is Joinable = elements =>
-    val buffer = TextType.buffer(elements.sumBy(_.length))
-    elements.each(buffer.append(_))
-    buffer()
+    val builder = TextType.builder(elements.sumBy(_.length))
+    elements.each(builder.append(_))
+    builder()
 
   given Message is Joinable = _.fuse(m"")(state+next)
 

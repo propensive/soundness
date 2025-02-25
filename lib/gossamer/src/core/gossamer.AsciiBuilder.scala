@@ -35,18 +35,16 @@ package gossamer
 import rudiments.*
 import vacuous.*
 
-abstract class Buffer[TextType](size: Optional[Int] = Unset):
-  protected def put(text: TextType): Unit
-  protected def wipe(): Unit
-  protected def result(): TextType
+import scala.collection.mutable as scm
 
-  def append(text: TextType): this.type = this.also(put(text))
+class AsciiBuilder(size: Optional[Int] = Unset) extends Builder[Ascii](size):
+  private val buffer: scm.ArrayBuffer[Byte] =
+    scm.ArrayBuffer[Byte]().tap: buffer =>
+      size.let(buffer.sizeHint(_))
 
-  def build(block: this.type ?=> Unit): TextType =
-    block(using this)
-    apply()
+  protected def put(ascii: Ascii): Unit = ascii.bytes.each(buffer.append(_))
 
-  def apply(): TextType = result()
-  def clear(): this.type = this.also(wipe())
-  def empty: Boolean = length == 0
-  def length: Int
+  def put(char: Char): Unit = buffer.append(char.toByte)
+  protected def wipe(): Unit = buffer.clear()
+  protected def result(): Ascii = Ascii(buffer.toArray().immutable(using Unsafe))
+  def length: Int = buffer.length

@@ -57,22 +57,22 @@ import language.experimental.into
 
 export Gossamer.opaques.Ascii
 
-def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+def append[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
 :     Unit =
-  buffer.append(TextType.show(value))
+  builder.append(TextType.show(value))
 
-def appendln[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+def appendln[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
 :     Unit =
-  buffer.append(TextType.show(value))
-  buffer.append(TextType("\n".tt))
+  builder.append(TextType.show(value))
+  builder.append(TextType("\n".tt))
 
 extension (textObject: Text.type)
-  def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
-    val buffer = TextBuffer()
-    block(using buffer)
-    buffer()
+  def construct(block: (builder: TextBuilder) ?=> Unit): Text =
+    val builder = TextBuilder()
+    block(using builder)
+    builder()
 
   def ascii(bytes: Bytes): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
 
@@ -131,19 +131,19 @@ extension [TextType: Textual](text: TextType)
 
   def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): TextType =
     val breakText = TextType(break.toString.tt)
-    val buffer = TextType.buffer()
+    val builder = TextType.builder()
 
     @tailrec
     def recur(from: Ordinal = Prim, index: Ordinal = Sec): TextType =
         if index >= Ult.of(text) then
-          buffer.append(text.from(from))
-          buffer()
+          builder.append(text.from(from))
+          builder()
         else
           if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
           then recur(from, index + 1)
           else
-            buffer.append(text.segment(from ~ index.previous))
-            buffer.append(breakText)
+            builder.append(text.segment(from ~ index.previous))
+            builder.append(breakText)
             recur(index, index + 1)
 
     recur()
@@ -419,10 +419,10 @@ extension [TextType: Joinable](values: Iterable[TextType])
   def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
 
-extension (buf: StringBuilder)
-  def add(text: into Text): Unit = buf.append(text.s)
-  def add(char: Char): Unit = buf.append(char)
-  def text: Text = buf.toString.tt
+extension (builder: StringBuilder)
+  def add(text: into Text): Unit = builder.append(text.s)
+  def add(char: Char): Unit = builder.append(char)
+  def text: Text = builder.toString.tt
 
 package decimalFormatters:
   given java: DecimalConverter:

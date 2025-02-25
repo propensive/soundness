@@ -64,16 +64,16 @@ object Hostname:
       '{Hostname($labels*)}
 
   def parse(text: Text): Hostname raises HostnameError =
-    val buffer: TextBuffer = TextBuffer()
+    val builder: TextBuilder = TextBuilder()
 
     def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
       case '.' | Unset =>
-        val label = buffer()
+        val label = builder()
         if label.empty then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
         if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
         if label.starts(t"-") then raise(HostnameError(text, InitialDash(label)))
         val dnsLabels2 = DnsLabel(label) :: dnsLabels
-        buffer.clear()
+        builder.clear()
 
         if index <= Ult.of(text) then recur(index + 1, dnsLabels2) else
           if dnsLabels2.map(_.text.length + 1).sum > 254
@@ -83,7 +83,7 @@ object Hostname:
 
       case char: Char =>
         if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
-        then buffer.append(char.toString.tt)
+        then builder.append(char.toString.tt)
         else raise(HostnameError(text, InvalidChar(char)))
         recur(index + 1, dnsLabels)
 

@@ -65,7 +65,7 @@ object Gossamer:
         def length(ascii: Ascii): Int = ascii.size
         def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
         def unsafeChar(ascii: Ascii, index: Ordinal): Char = ascii(index.n0).toChar
-        def buffer(size: Optional[Int]): Buffer[Ascii] = AsciiBuffer(size)
+        def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
 
         def map(ascii: Ascii, lambda: Char => Char): Ascii = ascii.map: byte =>

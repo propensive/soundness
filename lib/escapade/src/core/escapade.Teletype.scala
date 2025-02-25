@@ -95,7 +95,7 @@ object Teletype:
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
     def show[ValueType: Teletypeable](value: ValueType) = value.teletype
-    def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
+    def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
 
   val empty: Teletype = Teletype(t"")
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
