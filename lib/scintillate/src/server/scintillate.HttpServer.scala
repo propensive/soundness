@@ -49,7 +49,7 @@ import java.net as jn
 import com.sun.net.httpserver as csnh
 
 case class HttpServer(port: Int) extends RequestServable:
-  def listen(handler: (connection: HttpConnection) ?=> Http.Response)
+  def handle(handler: (connection: HttpConnection) ?=> Http.Response)
      (using Monitor, Codicil)
   :     Service logs HttpServerEvent raises ServerError =
 

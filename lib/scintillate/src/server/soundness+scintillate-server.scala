@@ -33,7 +33,7 @@
 package soundness
 
 export scintillate .
-  { cookie, basicAuth, request, listen, path, Acceptable, HttpConnection, HttpServer,
+  { cookie, basicAuth, request, path, Acceptable, HttpConnection, HttpServer,
     HttpServerEvent, NotFound, Redirect, RequestServable, Responder, Retrievable,
     ServerError, Unfulfilled }
 
