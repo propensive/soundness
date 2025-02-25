@@ -75,7 +75,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     case workTree: Path => sh"--git-dir=$gitDir --work-tree=$workTree"
 
   @targetName("checkoutTag")
-  def checkout(tag: Tag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(tag: GitTag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     Unit logs GitEvent =
     sh"$git $repoOptions checkout $tag".exec[Exit]()
 
@@ -186,11 +186,11 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     :     ValueType logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
 
-  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Tag] logs GitEvent =
-    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(Tag.unsafe(_))
+  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
+    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
 
-  def tag(name: Tag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     Tag logs GitEvent =
+  def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+  :     GitTag logs GitEvent =
     sh"$git $repoOptions tag $name".exec[Exit]() match
       case Exit.Ok => name
       case failure       => abort(GitError(TagFailed))
