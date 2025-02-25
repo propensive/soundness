@@ -84,9 +84,6 @@ object Denominative:
       case Quin    => "quin".tt
       case Sen     => "sen".tt
       case Sept    => "sept".tt
-      case Oct     => "oct".tt
-      case Non     => "non".tt
-      case Den     => "den".tt
       case ordinal => ("Ordinal.natural("+ordinal+")").tt
 
   extension (interval: Interval)

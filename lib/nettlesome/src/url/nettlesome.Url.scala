@@ -74,7 +74,7 @@ object Url:
     type Source = HttpUrl
 
     def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
-    def rootLength(path: Text): Int = path.where(_ == '/', Oct).let(_.n0).or(path.length)
+    def rootLength(path: Text): Int = path.where(_ == '/', 7.z).let(_.n0).or(path.length)
     def rootText(url: HttpUrl): Text = url.show
 
   given navigable: (Tactic[UrlError], Tactic[NameError])
