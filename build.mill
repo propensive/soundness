@@ -393,7 +393,7 @@ object cardinality extends SoundnessModule {
 
 object cataclysm extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core)
+    def moduleDeps = Seq(gossamer.core, anticipation.css, anticipation.html, serpentine.core, anticipation.color, hypotenuse.core, quantitative.core)
   }
 
   object test extends ProbablyTestModule {

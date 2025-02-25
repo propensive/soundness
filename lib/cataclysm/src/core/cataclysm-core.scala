@@ -69,8 +69,6 @@ extension [SelectorType: Selectable](left: SelectorType)
   infix def ~~ [SelectorType2: Selectable](right: SelectorType2): Selector =
     SelectorType.selector(left) ~ SelectorType2.selector(right)
 
-type Dimension = Length | Int
-
 def max(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"max", next))
 def min(head: Length, tail: Length*): Length = tail.fuse(head)(state.function(t"min", next))
 
@@ -142,8 +140,6 @@ package pseudo:
   val onlyOfType = Selector.PseudoClass(t"only-of-type")
 
 extension (value: Double)
-  def sec: Duration = Duration.S(value)
-  def ms: Duration = Duration.Ms(value)
   def px: Length = Length.Px(value)
   def pt: Length = Length.Pt(value)
   def in: Length = Length.In(value)
