@@ -391,9 +391,6 @@ extension (text: into Text)
 
   inline def sub(from: Regex, to: into Text): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
 
-  def flatMap(lambda: Char => Text): Text =
-    String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))).tt
-
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt

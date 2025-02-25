@@ -45,8 +45,15 @@ extension [ValueType, FunctorType[_]](using functor: Functor[FunctorType])
     functor.map(value)(lambda)
 
 extension [ValueType, MonadType[_]](using monad: Monad[MonadType])(value: MonadType[ValueType])
-  def flatMap[ValueType2](lambda: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
+  def bind[ValueType2](lambda: ValueType => MonadType[ValueType2]): MonadType[ValueType2] =
     monad.flatMap(value)(lambda)
+
+extension (text: into Text)
+  def bind(lambda: Char => Text): Text =
+    val builder: StringBuilder = StringBuilder()
+    text.s.toCharArray.nn.foreach: char =>
+      builder.append(lambda(char).s)
+    builder.toString.tt
 
 extension [MonadType[_], CollectionType[ElemType] <: Iterable[ElemType], ElemType]
    (elems: CollectionType[MonadType[ElemType]])

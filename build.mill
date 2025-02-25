@@ -693,7 +693,7 @@ object gesticulate extends SoundnessModule {
 
 object gossamer extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
+    def moduleDeps = Seq(mercator.core, hieroglyph.core, contextual.core, spectacular.core, kaleidoscope.core, hypotenuse.core, distillate.core)
   }
 
   object test extends ProbablyTestModule {

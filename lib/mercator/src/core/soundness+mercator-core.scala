@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export mercator.{Functor, Identity, Monad, map, flatMap, sequence, traverse}
+export mercator.{Functor, Identity, Monad, map, bind, sequence, traverse}
