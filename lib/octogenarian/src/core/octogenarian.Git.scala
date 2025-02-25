@@ -95,7 +95,7 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
   inline def cloneCommit[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
-     (source: SourceType, targetPath: PathType, commit: CommitHash)
+     (source: SourceType, targetPath: PathType, commit: GitHash)
      (using Internet,
             (Path on Posix) is Decodable in Text,
             GitCommand,
@@ -135,7 +135,7 @@ object Git:
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
   private def uncheckedCloneCommit[PathType: Abstractable across Paths into Text]
-     (source: Text, targetPath: PathType, commit: CommitHash)
+     (source: Text, targetPath: PathType, commit: GitHash)
      (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
      (using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],

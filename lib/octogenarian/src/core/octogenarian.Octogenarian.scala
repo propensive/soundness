@@ -48,7 +48,7 @@ object Octogenarian:
   opaque type Refspec = Text
   opaque type GitTag <: Refspec = Text
   opaque type GitBranch <: Refspec = Text
-  opaque type CommitHash <: Refspec = Text
+  opaque type GitHash <: Refspec = Text
 
   object Refspec:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
@@ -81,12 +81,12 @@ object Octogenarian:
     given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
     given GitBranch is Showable = identity(_)
 
-  object CommitHash:
-    def apply(text: Text)(using Tactic[GitRefError]): CommitHash = text match
+  object GitHash:
+    def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
       case r"[a-f0-9]{40}" => text
       case _               => raise(GitRefError(text)) yet text
 
-    def unsafe(text: Text): CommitHash = text
+    def unsafe(text: Text): GitHash = text
 
-    given decoder: Tactic[GitRefError] => CommitHash is Decodable in Text = apply(_)
-    given CommitHash is Showable = identity(_)
+    given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
+    given GitHash is Showable = identity(_)
