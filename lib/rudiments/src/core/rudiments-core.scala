@@ -242,37 +242,7 @@ extension [ElemType](seq: Seq[ElemType])
 
     if seq.isEmpty then Nil else recur(lambda(seq.head), seq.tail, List(seq.head), Nil)
 
-inline def cursor[ElemType]
-   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-:       ElemType =
-
-  cursor.of(seq)
-
-inline def precursor[ElemType]
-   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-:       Optional[ElemType] =
-
-  cursor.of(seq, -1)
-
-inline def postcursor[ElemType]
-   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-:       Optional[ElemType] =
-
-  cursor.of(seq, 1)
-
-inline def cursorIndex(using inline cursor: Cursor.Cursor): Int = cursor.index
-
-inline def cursorOffset[ElemType](offset: Int)
-   (using inline seq: Cursor.CursorSeq[ElemType], inline cursor: Cursor.Cursor)
-:       Optional[ElemType] =
-  cursor.of(seq, offset)
-
 extension [ElemType](seq: IndexedSeq[ElemType])
-  transparent inline def curse[ElemType2]
-     (inline block: (Cursor.CursorSeq[ElemType], Cursor.Cursor) ?=> ElemType2)
-  :       IndexedSeq[ElemType2] =
-    Cursor.curse(seq)(block)
-
   transparent inline def has(index: Int): Boolean = index >= 0 && index < seq.length
 
 extension (iarray: IArray.type)
