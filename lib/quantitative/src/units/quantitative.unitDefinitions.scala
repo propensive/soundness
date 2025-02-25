@@ -90,7 +90,6 @@ val Mile = Quantity[Miles[1]](1.0)
 val Lightyear = Quantity[Lightyears[1]](1.0)
 val NauticalMile = Quantity[NauticalMiles[1]](1.0)
 val Furlong = Quantity[Furlongs[1]](1.0)
-val Chain = Quantity[Chains[1]](1.0)
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)
