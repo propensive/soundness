@@ -314,8 +314,8 @@ extension [TextType: Textual](text: TextType)
     TextType.map(text, char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscript: TextType = TextType.map(text, hieroglyph.subscript(_).or(' '))
-  inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
+  inline def subscripts: TextType = TextType.map(text, _.superscript.or(' '))
+  inline def superscripts: TextType = TextType.map(text, _.superscript.or(' '))
 
 package proximityMeasures:
   given jaroDistance: Proximity = (left, right) =>

@@ -939,7 +939,7 @@ object panopticon extends SoundnessModule {
 
 object parasite extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(digression.core, anticipation.time, feudalism.core)
+    def moduleDeps = Seq(digression.core, mercator.core, anticipation.time, feudalism.core)
   }
 
   object test extends ProbablyTestModule {
