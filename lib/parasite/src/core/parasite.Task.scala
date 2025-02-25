@@ -38,6 +38,7 @@ import language.experimental.into
 import anticipation.*
 import contingency.*
 import digression.*
+import mercator.*
 import vacuous.*
 
 object Task:
@@ -54,6 +55,17 @@ object Task:
       def daemon: Boolean = false
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
+  given (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
+    def bind[ValueType, ValueType2](value: Task[ValueType])(lambda: ValueType => Task[ValueType2])
+    :     Task[ValueType2] =
+      value.bind(lambda)
+
+    def point[ValueType](value: ValueType): Task[ValueType] = async(value)
+
+    def apply[ValueType, ValueType2](value: Task[ValueType])(lambda: ValueType -> ValueType2)
+    :     Task[ValueType2] =
+      value.map(lambda)
+
 trait Task[+ResultType]:
   def ready: Boolean
   def await(): ResultType raises AsyncError
@@ -62,7 +74,7 @@ trait Task[+ResultType]:
 
   def await[DurationType: GenericDuration](duration: DurationType): ResultType raises AsyncError
 
-  def flatMap[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
+  def bind[ResultType2](lambda: ResultType => Task[ResultType2])(using Monitor, Codicil)
   :     Task[ResultType2] raises AsyncError
 
   def map[ResultType2](lambda: ResultType => ResultType2)(using Monitor, Codicil)
