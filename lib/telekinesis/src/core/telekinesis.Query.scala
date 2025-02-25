@@ -34,6 +34,8 @@ package telekinesis
 
 import language.dynamics
 
+import scala.compiletime.*
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -75,28 +77,28 @@ object Query extends Dynamic:
           construct:
             [FieldType] => _.decoded(value(label))
 
-  inline given encodable: [ValueType] => ValueType is Encodable in Query = compiletime.summonFrom:
+  inline given encodable: [ValueType] => ValueType is Encodable in Query = summonFrom:
     case given (ValueType is Encodable in Text) =>
       value => Query.of(value.encode)
 
     case given ProductReflection[ValueType & Product] =>
       EncodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Encodable in Query]
 
-  inline given textDecodable: [ValueType: Decodable in Text] => Tactic[QueryError]
-  =>    ValueType is Decodable in Query =
-    compiletime.summonFrom:
-      case given Default[ValueType] =>
-        _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
-
-      case _ =>
-        _().lest(QueryError()).decode
-
   given Query is Showable = _.values.map { case (key, value) => t"$key = \"${value}\"" }.join(t", ")
 
-  inline given decodable: [ProductType <: Product: ProductReflection]
-  =>    ProductType is Decodable in Query =
+  inline given decodable: [ValueType] => ValueType is Decodable in Query =
+    summonFrom:
+      case given (ValueType is Decodable in Text) =>
+        given Tactic[QueryError] = summonInline[Tactic[QueryError]]
+        summonFrom:
+          case given Default[ValueType] =>
+            _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
 
-    DecodableDerivation.join[ProductType]
+          case _ =>
+            _().lest(QueryError()).decode
+
+      case given ProductReflection[ValueType & Product] =>
+        DecodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Decodable in Query]
 
   inline def applyDynamicNamed(method: "apply")(inline parameters: (Label, Any)*): Query =
     ${Telekinesis.query('parameters)}
@@ -117,6 +119,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
             decodable:  ResultType is Decodable in Query)
   :     ResultType =
     decodable.decoded(apply(label.tt))
+
+  def at[ValueType: Decodable in Text](name: Text): Optional[Text] = apply(name)().let(_.decode)
 
   def apply(): Optional[Text] = values match
     case List((t"", value)) => value

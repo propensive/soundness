@@ -269,7 +269,13 @@ object Http:
       case -1    => t""
       case index => target.skip(index + 1)
 
-    lazy val query: Query = queryText.decode[Query]
+    lazy val query: Query =
+      contentType.let(_.base.show) match
+        case t"application/x-www-form-urlencoded" =>
+          queryText.decode[Query] ++ body.read[Bytes].utf8.decode[Query]
+
+        case _ =>
+          queryText.decode[Query]
 
     lazy val pathText: Text = target.s.indexOf('?') match
       case -1    => target
