@@ -142,7 +142,7 @@ package pseudo:
 extension (value: Double)
   def px: Length = Length.Px(value)
   def pt: Length = Length.Pt(value)
-  def in: Length = Length.In(value)
+  def inches: Length = Length.In(value)
   def pc: Length = Length.Pc(value)
   def cm: Length = Length.Cm(value)
   def mm: Length = Length.Mm(value)
