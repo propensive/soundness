@@ -47,7 +47,7 @@ import GitError.Reason.*
 object Octogenarian:
   opaque type Refspec = Text
   opaque type GitTag <: Refspec = Text
-  opaque type Branch <: Refspec = Text
+  opaque type GitBranch <: Refspec = Text
   opaque type CommitHash <: Refspec = Text
 
   object Refspec:
@@ -75,11 +75,11 @@ object Octogenarian:
     given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
     given GitTag is Showable = identity(_)
 
-  object Branch:
-    def unsafe(text: Text): Branch = text
-    def apply(text: Text)(using Tactic[GitRefError]): Branch = Refspec.parse(text)
-    given decoder: Tactic[GitRefError] => Branch is Decodable in Text = apply(_)
-    given Branch is Showable = identity(_)
+  object GitBranch:
+    def unsafe(text: Text): GitBranch = text
+    def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
+    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
+    given GitBranch is Showable = identity(_)
 
   object CommitHash:
     def apply(text: Text)(using Tactic[GitRefError]): CommitHash = text match

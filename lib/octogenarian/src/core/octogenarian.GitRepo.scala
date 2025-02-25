@@ -80,7 +80,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     sh"$git $repoOptions checkout $tag".exec[Exit]()
 
   @targetName("checkoutBranch")
-  def checkout(branch: Branch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(branch: GitBranch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     Unit logs GitEvent =
     sh"$git $repoOptions checkout $branch".exec[Exit]()
 
@@ -99,7 +99,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
     sh"$git $repoOptions push".exec[Exit]()
 
-  def switch(branch: Branch)
+  def switch(branch: GitBranch)
      (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Unit logs GitEvent =
 
@@ -140,19 +140,19 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case failure       => abort(GitError(CommitFailed))
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     List[Branch] logs GitEvent =
+  :     List[GitBranch] logs GitEvent =
     sh"$git $repoOptions branch"
     . exec[Stream[Text]]()
     . map(_.skip(2))
     . to(List)
-    . map(Branch.unsafe(_))
+    . map(GitBranch.unsafe(_))
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Branch logs GitEvent =
-    Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
+  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): GitBranch logs GitEvent =
+    GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
 
-  def makeBranch(branch: Branch)
+  def makeBranch(branch: GitBranch)
      (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Unit logs GitEvent =
 
