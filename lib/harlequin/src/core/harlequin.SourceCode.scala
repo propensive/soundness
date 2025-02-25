@@ -32,6 +32,7 @@
                                                                                                   */
 package harlequin
 
+import anthology.*
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -51,6 +52,12 @@ case class SourceCode
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[SourceToken] = lines(line - offset)
+
+  def extract(range: CodeRange): SourceCode =
+    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+    if range.startLine != range.endLine
+    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
+    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
 
   def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
   :     SourceCode =
