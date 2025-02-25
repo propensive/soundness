@@ -62,6 +62,6 @@ extension [EndpointType: Fetchable](endpoint: EndpointType)
 
 extension (url: HttpUrl)
   @targetName("withQuery")
-  infix def ? (query: Query): HttpUrl =
+  def query(query: Query): HttpUrl =
     val query2 = url.query.let(query ++ _.decode[Query]).or(query)
     url.copy(query = query2.encode)
