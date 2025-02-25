@@ -43,18 +43,13 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import symbolism.*
 
 export Hypotenuse.{B8, B16, B32, B64, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64}
 
 extension (float: Float)
   @targetName("absFloat")
   inline def abs: Float = math.abs(float)
-
-  @targetName("sqrtFloat")
-  inline def sqrt: Float = math.sqrt(float).toFloat
-
-  @targetName("cbrtFloat")
-  inline def cbrt: Float = math.cbrt(float).toFloat
 
   @targetName("ceilingFloat")
   inline def ceiling: Float = math.ceil(float).toFloat
@@ -110,12 +105,6 @@ extension (double: Double)
 
   @targetName("absDouble")
   inline def abs: Double = math.abs(double)
-
-  @targetName("sqrtDouble")
-  inline def sqrt: Double = math.sqrt(double)
-
-  @targetName("cbrtDouble")
-  inline def cbrt: Double = math.cbrt(double)
 
   @targetName("ceilingDouble")
   inline def ceiling: Double = math.ceil(double)
@@ -371,7 +360,7 @@ def erf(value: Double): Double =
 final val π = math.Pi
 final val pi = math.Pi
 final val euler = math.E
-final val φ = (1.0 + 5.sqrt)/2.0
+final val φ = (1.0 + 5.0.sqrt)/2.0
 final val goldenRatio = φ
 
 inline def cos(f64: into F64): F64 = F64(math.cos(f64.double))
