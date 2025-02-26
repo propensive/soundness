@@ -140,6 +140,16 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         . map(_.message)
       .assert(_.head.tt.contains(t"Windows"))
 
+      test(t"Windows path can't be converted to Linux"):
+        demilitarize:
+          val path = (Drive('C') / "foo").on[Linux]
+      .assert(_.nonEmpty)
+
+      test(t"Linux path can't be converted to Windows"):
+        demilitarize:
+          val path = (% / "foo").on[Windows]
+      .assert(_.nonEmpty)
+
     suite(t"Serialization"):
       test(t"Serialize simple Linux path"):
         val path: Path on Linux = % / "foo"
