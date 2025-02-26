@@ -92,17 +92,28 @@ trait Admissible:
 
   def check(name: Text): Unit
 
+object RootAdmissible:
+  given ("" is RootAdmissible on Linux) = _ => ()
+
+trait RootAdmissible:
+  type Self
+  type Platform
+
+  def check(name: Text): Unit
+
 object Path:
   @targetName("Root")
   object % extends Path(t"/"):
     type Subject = EmptyTuple
+    type Constraint = ""
 
-  def of[PlatformType, SubjectType <: Tuple](root: Text, descent: Text*)
-  :     Path on PlatformType of SubjectType =
+  def of[PlatformType, RootType <: Label, SubjectType <: Tuple](root: Text, descent: Text*)
+  :     Path on PlatformType of SubjectType under RootType =
 
     new Path(root, descent*):
       type Subject = SubjectType
       type Platform = PlatformType
+      type Constraint = RootType
 
   given [PlatformType: Filesystem] => Path on PlatformType is Encodable in Text =
     path => path.descent.reverse.join(path.root, PlatformType.separator, t"")
@@ -111,13 +122,15 @@ object Path:
     new Conversion[FromType, ToType]:
       def apply(from: FromType): ToType = fn(from)
 
-  inline given [SubjectType, PlatformType]
-  =>    Conversion[Path of SubjectType, Path of SubjectType on PlatformType] =
+  inline given [SubjectType, RootType, PlatformType]
+  =>    Conversion
+         [Path of SubjectType under RootType, Path of SubjectType under RootType on PlatformType] =
     conversion(_.on[PlatformType])
 
 case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
+  type Constraint <: Label
 
   private inline def check[SubjectType, PlatformType](path: List[Text]): Unit =
     inline !![SubjectType] match
@@ -127,32 +140,35 @@ case class Path(root: Text, descent: Text*):
 
       case EmptyTuple =>
 
-  inline def on[PlatformType]: Path of Subject on PlatformType =
+  inline def on[PlatformType]: Path of Subject under Constraint on PlatformType =
     check[Subject, PlatformType](descent.to(List))
-    // FIXME: need to check root
-    this.asInstanceOf[Path of Subject on PlatformType]
+    summonInline[Constraint is RootAdmissible on PlatformType].check(root)
+    this.asInstanceOf[Path of Subject under Constraint on PlatformType]
 
   inline def parent = inline !![Subject] match
-    case head *: tail => Path.of[Platform, tail.type](root, descent.tail*)
+    case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
     case EmptyTuple   => compiletime.error("Path has no parent")
     case _ =>
       given Tactic[PathError] = summonInline[Tactic[PathError]]
 
       if descent.isEmpty then
         raise(PathError(PathError.Reason.RootParent))
-        Path.of[Platform, Tuple](root, descent*)
+        Path.of[Platform, Constraint, Tuple](root, descent*)
 
-      else Path.of[Platform, Tuple](root, descent.tail*)
+      else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
 
   transparent inline def / (child: Any)(using navigable: Navigable by child.type)
-  :     Path of (child.type *: Subject) =
+  :     Path of (child.type *: Subject) under Constraint =
     summonFrom:
       case given (child.type is Admissible on Platform) =>
-        Path.of[Platform, child.type *: Subject](root, navigable.follow(child) +: descent*)
+        Path.of[Platform, Constraint, child.type *: Subject]
+         (root, navigable.follow(child) +: descent*)
       case _ =>
         type Subject0 = Subject
+        type Constraint0 = Constraint
         new Path(root, navigable.follow(child) +: descent*):
           type Subject = child.type *: Subject0
+          type Constraint = Constraint0
 
 export Path.`%`
 
