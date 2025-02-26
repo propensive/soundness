@@ -77,18 +77,15 @@ extension (inline context: StringContext)
   transparent inline def u(): Char | Text = ${Hieroglyph.char('context)}
 
 package textMetrics:
-  given uniform: TextMetrics:
-    def width(text: Text): Int = text.s.length
-    def width(char: Char): Int = 1
-
-  given eastAsianScripts: TextMetrics:
-    def width(text: Text): Int = text.s.fuse(0)(state + width(next))
-    def width(char: Char): Int = char.metrics
+  given uniform: Char is Measurable = _ => 1
+  given eastAsianScripts: Char is Measurable = Unicode.eastAsianWidth(_).let(_.width).or(1)
 
 extension (char: Char)
-  def metrics: Int = Unicode.eastAsianWidth(char).let(_.width).or(1)
   def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)
   def subscript: Optional[Char] = Chars.subscript.applyOrElse(char, _ => Unset)
   def description: Optional[Text] = Unicode.name(char)
   def lower: Char = char.toLower
   def upper: Char = char.toUpper
+
+extension [ElementType: Measurable](element: ElementType)
+  def metrics: Int = ElementType.width(element)

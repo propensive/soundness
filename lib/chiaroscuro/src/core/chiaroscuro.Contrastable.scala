@@ -91,18 +91,18 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
+              else t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
 
             label -> Juxtaposition.Same(value.inspect)
 
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscript}" -> Juxtaposition.Different(t"—", value.inspect)
+            t" ⧸${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"—", value.inspect)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscript}⧸" -> Juxtaposition.Different(value.inspect, t"—")
+            t"${leftIndex.show.superscripts}⧸" -> Juxtaposition.Different(value.inspect, t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscript}⫽${rightIndex.show.subscript}"
+            val label = t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
 
             label -> leftValue.juxtapose(rightValue)
 

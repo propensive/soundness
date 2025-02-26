@@ -36,6 +36,10 @@ import language.experimental.captureChecking
 
 import anticipation.*
 
-trait TextMetrics:
-  def width(text: Text): Int
-  def width(char: Char): Int
+object Measurable:
+  given general: (measurable: Char is Measurable) => Text is Measurable =
+    _.s.toCharArray.nn.map(measurable.width(_)).sum
+
+trait Measurable:
+  type Self
+  def width(text: Self): Int

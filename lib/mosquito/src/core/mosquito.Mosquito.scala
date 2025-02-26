@@ -53,7 +53,7 @@ object Mosquito:
         case Nil          => Unset
         case head :: tail => take(tail, size - 1).let(head *: _)
 
-    given showable: [SizeType <: Int: ValueOf, ElemType: Showable] => TextMetrics
+    given showable: [SizeType <: Int: ValueOf, ElemType: Showable] => Text is Measurable
     =>    Vector[ElemType, SizeType] is Showable =
 
       vector =>

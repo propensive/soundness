@@ -271,20 +271,18 @@ extension [TextType: Textual](text: TextType)
 
     recur(Prim, 0)
 
-  def metrics(using metrics: TextMetrics) = metrics.width(TextType.text(text))
-
-  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
-    if text.metrics >= length then text else
-      val padding = TextType(char.toString.tt)*(length - text.metrics + 1)
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
+    if text.plain.metrics >= length then text else
+      val padding = TextType(char.toString.tt)*(length - text.plain.metrics + 1)
 
       bidi match
         case Ltr => TextType.concat(text, padding)
         case Rtl => TextType.concat(padding, text)
 
-  def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
-    text.pad((length + text.metrics)/2, char = char).pad(length, Rtl, char = char)
+  def center(length: Int, char: Char = ' ')(using Text is Measurable): TextType =
+    text.pad((length + text.plain.metrics)/2, char = char).pad(length, Rtl, char = char)
 
-  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
     bidi match
       case Ltr => text.pad(length, bidi, char).keep(length, Ltr)
       case Rtl => text.pad(length, bidi, char).keep(length, Rtl)
