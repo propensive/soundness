@@ -186,8 +186,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
       case _ =>
         inline if fallible
-        then
-          given Tactic[VariantError] = summonInline[Tactic[VariantError]]
+        then summonInline[Tactic[VariantError]].give:
           raise(VariantError[DerivationType](inputLabel)) yet Unset
         else panic(m"Should be unreachable")
 
@@ -228,8 +227,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
 
       case _ =>
         inline if fallible
-        then
-          given Tactic[VariantError] = summonInline[Tactic[VariantError]]
+        then summonInline[Tactic[VariantError]].give:
           raise(VariantError[DerivationType]("".tt)) yet Unset
         else panic(m"Should be unreachable")
 

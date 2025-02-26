@@ -89,13 +89,13 @@ object Query extends Dynamic:
   inline given decodable: [ValueType] => ValueType is Decodable in Query =
     summonFrom:
       case given (ValueType is Decodable in Text) =>
-        given Tactic[QueryError] = summonInline[Tactic[QueryError]]
-        summonFrom:
-          case given Default[ValueType] =>
-            _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
+        summonInline[Tactic[QueryError]].give:
+          summonFrom:
+            case given Default[ValueType] =>
+              _().let(_.decode).or(raise(QueryError()) yet default[ValueType])
 
-          case _ =>
-            _().lest(QueryError()).decode
+            case _ =>
+              _().lest(QueryError()).decode
 
       case given ProductReflection[ValueType & Product] =>
         DecodableDerivation.join[ValueType & Product].asInstanceOf[ValueType is Decodable in Query]
