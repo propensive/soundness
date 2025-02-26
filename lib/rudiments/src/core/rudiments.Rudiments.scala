@@ -34,8 +34,6 @@ package rudiments
 
 import language.experimental.captureChecking
 
-import scala.quoted.*
-
 import anticipation.*
 import fulminate.*
 import prepositional.*
@@ -77,54 +75,5 @@ object Rudiments:
     extension (left: Memory)
       def long: Long = left
       def text: Text = (left.toString+" bytes").tt
-
-  def bin(expr: Expr[StringContext])(using Quotes): Expr[AnyVal] =
-    import quotes.reflect.*
-    val bits = expr.valueOrAbort.parts.head
-
-    bits.indexWhere { ch => ch != '0' && ch != '1' && ch != ' ' }.match
-      case -1  => ()
-
-      case idx =>
-        val startPos = expr.asTerm.pos
-        val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-        halt(m"a binary value can only contain characters '0' or '1'", pos)
-
-    val bits2 = bits.filter(_ != ' ')
-
-    val long: Long = bits2.fuse(0L)((state << 1) + (if next == '1' then 1 else 0))
-
-    bits2.length match
-      case 8  => Expr[Byte](long.toByte)
-      case 16 => Expr[Short](long.toShort)
-      case 32 => Expr[Int](long.toInt)
-      case 64 => Expr[Long](long)
-      case _  => halt(m"a binary literal must be 8, 16, 32 or 64 bits long")
-
-  def hex(expr: Expr[StringContext])(using Quotes): Expr[IArray[Byte]] =
-    import quotes.reflect.*
-
-    val startPos = expr.asTerm.pos
-    val nibbles = expr.valueOrAbort.parts.head
-    val nibbles2 = nibbles.map(_.toLower)
-
-    nibbles2.indexWhere: char =>
-      !(char >= '0' && char <= '9') && !(char >= 'a' && char <= 'f') && char != ' ' && char != '\n'
-
-    . match
-        case -1  => ()
-
-        case idx =>
-          val pos = Position(startPos.sourceFile, startPos.start + idx, startPos.start + idx + 1)
-          halt(m"${nibbles(idx)} is not a valid hexadecimal character", pos)
-
-    val nibbles3 = nibbles2.filterNot { ch => ch == ' ' || ch == '\n' }
-
-    if nibbles3.length%2 != 0
-    then halt(m"a hexadecimal value must have an even number of digits", Position.ofMacroExpansion)
-
-    val bytes = nibbles3.grouped(2).map(Integer.parseInt(_, 16).toByte).to(List)
-
-    '{IArray.from(${Expr(bytes)})}
 
 export Rudiments.{Memory, Digit}

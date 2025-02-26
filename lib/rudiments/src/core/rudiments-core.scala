@@ -102,10 +102,6 @@ def loop(block: => Unit): Loop = Loop({ () => block })
 
 export Rudiments.&
 
-extension (inline context: StringContext)
-  transparent inline def bin(): AnyVal = ${Rudiments.bin('context)}
-  transparent inline def hex(): IArray[Byte] = ${Rudiments.hex('context)}
-
 @targetName("erasedValue")
 erased def !![ErasedType] : ErasedType = scala.compiletime.erasedValue
 
