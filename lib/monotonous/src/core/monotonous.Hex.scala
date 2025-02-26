@@ -32,4 +32,10 @@
                                                                                                   */
 package monotonous
 
+import anticipation.*
+
+object Hex:
+  def unapply(text: Text): Option[Int] =
+    try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
+
 erased trait Hex extends Serialization
