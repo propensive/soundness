@@ -94,10 +94,6 @@ extension (bytes: Bytes)
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
   def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
 
-  def hex: Text =
-    bytes.mutable(using Unsafe).map { byte => String.format("\\u%04x", byte.toInt).nn }
-    . mkString.tt
-
   def text(using decoder: CharDecoder): Text = decoder.decoded(bytes)
 
   // Printable Unicode Encoding
