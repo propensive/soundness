@@ -93,7 +93,8 @@ trait Admissible:
   def check(name: Text): Unit
 
 object RootAdmissible:
-  given ("" is RootAdmissible on Linux) = _ => ()
+  given (%.type is RootAdmissible on Linux) = _ => ()
+  given (%.type is RootAdmissible on MacOs) = _ => ()
 
 trait RootAdmissible:
   type Self
@@ -105,9 +106,9 @@ object Path:
   @targetName("Root")
   object % extends Path(t"/"):
     type Subject = EmptyTuple
-    type Constraint = ""
+    type Constraint = %.type
 
-  def of[PlatformType, RootType <: Label, SubjectType <: Tuple](root: Text, descent: Text*)
+  def of[PlatformType, RootType, SubjectType <: Tuple](root: Text, descent: Text*)
   :     Path on PlatformType of SubjectType under RootType =
 
     new Path(root, descent*):
@@ -116,7 +117,7 @@ object Path:
       type Constraint = RootType
 
   given [PlatformType: Filesystem] => Path on PlatformType is Encodable in Text =
-    path => path.descent.reverse.join(path.root, PlatformType.separator, t"")
+    path => path.descent.reverse.join(path.root, PlatformType.separator(), t"")
 
   private def conversion[FromType, ToType](fn: FromType => ToType) =
     new Conversion[FromType, ToType]:
@@ -130,7 +131,7 @@ object Path:
 case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
-  type Constraint <: Label
+  type Constraint
 
   private inline def check[SubjectType, PlatformType](path: List[Text]): Unit =
     inline !![SubjectType] match
@@ -144,6 +145,9 @@ case class Path(root: Text, descent: Text*):
     check[Subject, PlatformType](descent.to(List))
     summonInline[Constraint is RootAdmissible on PlatformType].check(root)
     this.asInstanceOf[Path of Subject under Constraint on PlatformType]
+
+  def graft[RootType: Radical on Platform](root: RootType): Path of Subject under root.type =
+    Path.of[Platform, root.type, Subject](RootType.encode(root), descent*)
 
   inline def parent = inline !![Subject] match
     case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
@@ -166,6 +170,7 @@ case class Path(root: Text, descent: Text*):
       case _ =>
         type Subject0 = Subject
         type Constraint0 = Constraint
+
         new Path(root, navigable.follow(child) +: descent*):
           type Subject = child.type *: Subject0
           type Constraint = Constraint0
@@ -227,18 +232,25 @@ object Windows:
 
   erased given Windows is Nominative under Rules = !!
 
+erased trait MacOs
+
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+    & MustNotEqual["Icon\r"] & MustNotContain[":"]
+
+  erased given MacOs is Nominative under Rules = !!
+
 given Realm = Realm(t"serpentine")
 
 object Filesystem:
-  given Windows is Filesystem:
-    def separator: Text = t"\\"
-
-  given Linux is Filesystem:
-    def separator: Text = t"/"
+  given Windows is Filesystem = () => t"\\"
+  given Linux is Filesystem = () => t"/"
+  given MacOs is Filesystem = () => t"/"
 
 trait Filesystem:
   type Self
-  def separator: Text
+  def separator(): Text
 
 
 
