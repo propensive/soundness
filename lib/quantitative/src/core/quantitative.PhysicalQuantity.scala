@@ -49,8 +49,6 @@ object PhysicalQuantity:
   erased given temperature: PhysicalQuantity[Units[1, Temperature], "temperature"] = !!
   erased given luminosity: PhysicalQuantity[Units[1, Luminosity], "luminosity"] = !!
 
-  erased given angle: PhysicalQuantity[Units[1, Angle], "angle"] = !!
-
   // derived units from https://en.wikipedia.org/wiki/List_of_physical_quantities
 
   type ElectricalConductivity =

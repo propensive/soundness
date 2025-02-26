@@ -90,7 +90,6 @@ val Mile = Quantity[Miles[1]](1.0)
 val Lightyear = Quantity[Lightyears[1]](1.0)
 val NauticalMile = Quantity[NauticalMiles[1]](1.0)
 val Furlong = Quantity[Furlongs[1]](1.0)
-val Chain = Quantity[Chains[1]](1.0)
 
 val Grain = Quantity[Grains[1]](1.0)
 val Ounce = Quantity[Ounces[1]](1.0)
@@ -111,10 +110,6 @@ val FluidOunce = Milli(Litre)*28.4130625
 val Pint = Milli(Litre)*568.26125
 val Quart = Milli(Litre)*1136.5225
 val Gallon = Milli(Litre)*4546.09
-
-val Degree = Quantity[Degrees[1]](1.0)
-val ArcMinute = Quantity[ArcMinutes[1]](1.0)
-val ArcSecond = Quantity[ArcSeconds[1]](1.0)
 
 package constants:
   val SpeedOfLightInVacuum = 299792458*Metre/Second

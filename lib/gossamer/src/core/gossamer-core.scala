@@ -57,22 +57,22 @@ import language.experimental.into
 
 export Gossamer.opaques.Ascii
 
-def append[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+def append[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
 :     Unit =
-  buffer.append(TextType.show(value))
+  builder.append(TextType.show(value))
 
-def appendln[TextType: Textual, ValueType](using buffer: Buffer[TextType])(value: ValueType)
+def appendln[TextType: Textual, ValueType](using builder: Builder[TextType])(value: ValueType)
    (using TextType.Show[ValueType])
 :     Unit =
-  buffer.append(TextType.show(value))
-  buffer.append(TextType("\n".tt))
+  builder.append(TextType.show(value))
+  builder.append(TextType("\n".tt))
 
 extension (textObject: Text.type)
-  def construct(block: (buffer: TextBuffer) ?=> Unit): Text =
-    val buffer = TextBuffer()
-    block(using buffer)
-    buffer()
+  def construct(block: (builder: TextBuilder) ?=> Unit): Text =
+    val builder = TextBuilder()
+    block(using builder)
+    builder()
 
   def ascii(bytes: Bytes): Text = new String(bytes.mutable(using Unsafe), "ASCII").tt
 
@@ -93,10 +93,6 @@ extension (bytes: Bytes)
   def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
   def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
-
-  def hex: Text =
-    bytes.mutable(using Unsafe).map { byte => String.format("\\u%04x", byte.toInt).nn }
-    . mkString.tt
 
   def text(using decoder: CharDecoder): Text = decoder.decoded(bytes)
 
@@ -131,19 +127,19 @@ extension [TextType: Textual](text: TextType)
 
   def broken(predicate: (Char, Char) => Boolean, break: Char = '\u200b'): TextType =
     val breakText = TextType(break.toString.tt)
-    val buffer = TextType.buffer()
+    val builder = TextType.builder()
 
     @tailrec
     def recur(from: Ordinal = Prim, index: Ordinal = Sec): TextType =
         if index >= Ult.of(text) then
-          buffer.append(text.from(from))
-          buffer()
+          builder.append(text.from(from))
+          builder()
         else
           if !predicate(TextType.unsafeChar(text, index - 1), TextType.unsafeChar(text, index))
           then recur(from, index + 1)
           else
-            buffer.append(text.segment(from ~ index.previous))
-            buffer.append(breakText)
+            builder.append(text.segment(from ~ index.previous))
+            builder.append(breakText)
             recur(index, index + 1)
 
     recur()
@@ -271,20 +267,18 @@ extension [TextType: Textual](text: TextType)
 
     recur(Prim, 0)
 
-  def metrics(using metrics: TextMetrics) = metrics.width(TextType.text(text))
-
-  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
-    if text.metrics >= length then text else
-      val padding = TextType(char.toString.tt)*(length - text.metrics + 1)
+  def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
+    if text.plain.metrics >= length then text else
+      val padding = TextType(char.toString.tt)*(length - text.plain.metrics + 1)
 
       bidi match
         case Ltr => TextType.concat(text, padding)
         case Rtl => TextType.concat(padding, text)
 
-  def center(length: Int, char: Char = ' ')(using TextMetrics): TextType =
-    text.pad((length + text.metrics)/2, char = char).pad(length, Rtl, char = char)
+  def center(length: Int, char: Char = ' ')(using Text is Measurable): TextType =
+    text.pad((length + text.plain.metrics)/2, char = char).pad(length, Rtl, char = char)
 
-  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using TextMetrics): TextType =
+  def fit(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): TextType =
     bidi match
       case Ltr => text.pad(length, bidi, char).keep(length, Ltr)
       case Rtl => text.pad(length, bidi, char).keep(length, Rtl)
@@ -314,8 +308,8 @@ extension [TextType: Textual](text: TextType)
     TextType.map(text, char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscript: TextType = TextType.map(text, hieroglyph.subscript(_).or(' '))
-  inline def superscript: TextType = TextType.map(text, hieroglyph.superscript(_).or(' '))
+  inline def subscripts: TextType = TextType.map(text, _.superscript.or(' '))
+  inline def superscripts: TextType = TextType.map(text, _.superscript.or(' '))
 
 package proximityMeasures:
   given jaroDistance: Proximity = (left, right) =>
@@ -391,9 +385,6 @@ extension (text: into Text)
 
   inline def sub(from: Regex, to: into Text): Text = text.s.replaceAll(from.pattern.s, to.s).nn.tt
 
-  def flatMap(lambda: Char => Text): Text =
-    String(text.s.toCharArray.nn.flatMap(lambda(_).s.toCharArray.nn.immutable(using Unsafe))).tt
-
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
@@ -422,10 +413,10 @@ extension [TextType: Joinable](values: Iterable[TextType])
   def join(left: TextType, separator: TextType, penultimate: TextType, right: TextType): TextType =
     Iterable(left, join(separator, penultimate), right).join
 
-extension (buf: StringBuilder)
-  def add(text: into Text): Unit = buf.append(text.s)
-  def add(char: Char): Unit = buf.append(char)
-  def text: Text = buf.toString.tt
+extension (builder: StringBuilder)
+  def add(text: into Text): Unit = builder.append(text.s)
+  def add(char: Char): Unit = builder.append(char)
+  def text: Text = builder.toString.tt
 
 package decimalFormatters:
   given java: DecimalConverter:

@@ -57,7 +57,7 @@ package httpServers:
     type Response = Http.Response
 
     def server(port: TcpPort)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number).listen(lambda)
+      HttpServer(port.number).handle(lambda)
 
 
 def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
@@ -77,12 +77,6 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
 inline def request: Http.Request = compiletime.summonInline[Http.Request]
 
 given realm: Realm = realm"scintillate"
-
-extension (value: Http.type)
-  def listen(handle: (connection: HttpConnection) ?=> Http.Response)
-     (using RequestServable, Monitor, Codicil)
-  :     Service logs HttpServerEvent raises ServerError =
-    summon[RequestServable].listen(handle)
 
 extension (request: Http.Request)
   def as[BodyType: Acceptable]: BodyType = BodyType.accept(request)

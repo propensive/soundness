@@ -46,9 +46,9 @@ import GitError.Reason.*
 
 object Octogenarian:
   opaque type Refspec = Text
-  opaque type Tag <: Refspec = Text
-  opaque type Branch <: Refspec = Text
-  opaque type CommitHash <: Refspec = Text
+  opaque type GitTag <: Refspec = Text
+  opaque type GitBranch <: Refspec = Text
+  opaque type GitHash <: Refspec = Text
 
   object Refspec:
     def head(n: Int = 0): Refspec = t"HEAD~$n"
@@ -69,24 +69,24 @@ object Octogenarian:
     given encodable: Refspec is Encodable in Text = identity(_)
     given Refspec is Showable = identity(_)
 
-  object Tag:
-    def unsafe(text: Text): Tag = text
-    def apply(text: Text)(using Tactic[GitRefError]): Tag = Refspec.parse(text)
-    given decoder: Tactic[GitRefError] => Tag is Decodable in Text = apply(_)
-    given Tag is Showable = identity(_)
+  object GitTag:
+    def unsafe(text: Text): GitTag = text
+    def apply(text: Text)(using Tactic[GitRefError]): GitTag = Refspec.parse(text)
+    given decoder: Tactic[GitRefError] => GitTag is Decodable in Text = apply(_)
+    given GitTag is Showable = identity(_)
 
-  object Branch:
-    def unsafe(text: Text): Branch = text
-    def apply(text: Text)(using Tactic[GitRefError]): Branch = Refspec.parse(text)
-    given decoder: Tactic[GitRefError] => Branch is Decodable in Text = apply(_)
-    given Branch is Showable = identity(_)
+  object GitBranch:
+    def unsafe(text: Text): GitBranch = text
+    def apply(text: Text)(using Tactic[GitRefError]): GitBranch = Refspec.parse(text)
+    given decoder: Tactic[GitRefError] => GitBranch is Decodable in Text = apply(_)
+    given GitBranch is Showable = identity(_)
 
-  object CommitHash:
-    def apply(text: Text)(using Tactic[GitRefError]): CommitHash = text match
+  object GitHash:
+    def apply(text: Text)(using Tactic[GitRefError]): GitHash = text match
       case r"[a-f0-9]{40}" => text
       case _               => raise(GitRefError(text)) yet text
 
-    def unsafe(text: Text): CommitHash = text
+    def unsafe(text: Text): GitHash = text
 
-    given decoder: Tactic[GitRefError] => CommitHash is Decodable in Text = apply(_)
-    given CommitHash is Showable = identity(_)
+    given decoder: Tactic[GitRefError] => GitHash is Decodable in Text = apply(_)
+    given GitHash is Showable = identity(_)

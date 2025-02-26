@@ -207,13 +207,11 @@ class Report(using Environment):
     def iterations: Teletype = if count == 0 then e"" else count.teletype
 
   def complete(coverage: Option[Coverage])(using Stdio): Unit =
-    given TextMetrics:
-      private val eastAsian = textMetrics.eastAsianScripts
-      def width(text: Text): Int = text.s.fuse(0)(state + width(next))
-
+    val metrics = textMetrics.eastAsianScripts
+    given Char is Measurable:
       def width(char: Char): Int = char match
         case '✓' | '✗' | '⎇' => 1
-        case _                => char.metrics
+        case _                => metrics.width(char)
 
     val table =
       val showStats = !lines.summaries.all(_.count < 2)
@@ -250,7 +248,7 @@ class Report(using Environment):
           val main = e"${if hits == 0 then Gray else ForestGreen}($hits)"
 
           if oldHits == 0 then main
-          else e"$Goldenrod(${oldHits.show.subscript}) $main"
+          else e"$Goldenrod(${oldHits.show.subscripts}) $main"
 
       val data = coverage.spec.groupBy(_.path).to(List).map: (path, branches) =>
         val hitCount: Int =

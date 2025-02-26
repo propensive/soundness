@@ -30,16 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package geodesy
 
-import language.experimental.captureChecking
+import hypotenuse.*
+import prepositional.*
+import symbolism.*
 
-import anticipation.*
-import proscenium.*
-import rudiments.*
+export Geodesy.{Location, Angle}
 
-trait ArcMinutes[Power <: Nat] extends Units[Power, Angle]
+val Degree = Angle(π/180.0)
+val ArcMinute = Degree/60.0
+val ArcSecond = ArcMinute/60.0
 
-object ArcMinutes:
-  given UnitName[ArcMinutes[1]] = () => "'".tt
-  erased given degreesPerRadian: Ratio[ArcMinutes[1], 3437.74677078] = !!
+extension (double: Double)
+  def rad: Angle = Angle(double)
+  def deg: Angle = Degree*double
+
+export CardinalWind.{North, South, East, West}
+export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}
+
+export HalfWind
+. { NorthNortheast, EastNortheast, EastSoutheast, SouthSoutheast, SouthSouthwest, WestSouthwest,
+    WestNorthwest, NorthNorthwest }
+
+package compassBearings:
+  given fourPointCompass: Compass[4] is Directional = Compass[4](_)
+  given eightPointCompass: Compass[8] is Directional = Compass[8](_)
+  given sixteenPointCompass: Compass[16] is Directional = Compass[16](_)
+  given fromNorth: Angle is Directional = identity(_)
+  given fromEast: Angle is Directional = radians => radians - Angle(math.Pi/2)

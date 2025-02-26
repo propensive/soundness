@@ -36,6 +36,7 @@ import anticipation.*
 import contextual.*
 import denominative.*
 import gossamer.*
+import mercator.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
@@ -77,7 +78,12 @@ object Teletype:
     def apply(text: Text): Teletype = Teletype(text)
 
     def map(text: Teletype, lambda: Char => Char): Teletype =
-      Teletype(Text(text.plain.s.map(lambda)), text.spans, text.insertions)
+      val array = text.plain.s.toCharArray.nn
+
+      array.indices.each: index =>
+        array(index) = lambda(array(index))
+
+      Teletype(new String(array).tt, text.spans, text.insertions)
 
     def segment(text: Teletype, interval: Interval): Teletype =
       text.dropChars(interval.start.n0).takeChars(interval.size)
@@ -89,7 +95,7 @@ object Teletype:
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
 
     def show[ValueType: Teletypeable](value: ValueType) = value.teletype
-    def buffer(size: Optional[Int] = Unset): TeletypeBuffer = TeletypeBuffer(size)
+    def builder(size: Optional[Int] = Unset): TeletypeBuilder = TeletypeBuilder(size)
 
   val empty: Teletype = Teletype(t"")
   given joinable: Teletype is Joinable = _.fold(empty)(_ + _)
@@ -123,7 +129,7 @@ case class Teletype
     spans:     TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
     insertions: TreeMap[Int, Text] = TreeMap()):
 
-  def explicit: Text = render(termcapDefinitions.xtermTrueColor).flatMap: char =>
+  def explicit: Text = render(termcapDefinitions.xtermTrueColor).bind: char =>
     if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")

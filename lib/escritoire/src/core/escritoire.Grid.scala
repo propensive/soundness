@@ -46,14 +46,14 @@ import scala.collection.immutable as sci
 import language.experimental.pureFunctions
 
 object Grid:
-  given [TextType: {Textual, Printable as printable}] => TextMetrics
+  given [TextType: {Textual, Printable as printable}] => (Text is Measurable)
   =>    Grid[TextType] is Printable =
     (layout, termcap) =>
       layout.render.map(printable.print(_, termcap)).join(t"\n")
 
 case class Grid[TextType](sections: List[TableSection[TextType]], style: TableStyle):
 
-  def render(using metrics: TextMetrics, textual: TextType is Textual): Stream[TextType] =
+  def render(using metrics: Text is Measurable, textual: TextType is Textual): Stream[TextType] =
     val pad = t" "*style.padding
     val leftEdge = Textual(t"${style.charset(top = style.sideLines, bottom = style.sideLines)}$pad")
 

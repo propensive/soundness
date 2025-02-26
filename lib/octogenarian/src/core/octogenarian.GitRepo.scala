@@ -75,17 +75,17 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     case workTree: Path => sh"--git-dir=$gitDir --work-tree=$workTree"
 
   @targetName("checkoutTag")
-  def checkout(tag: Tag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(tag: GitTag)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     Unit logs GitEvent =
     sh"$git $repoOptions checkout $tag".exec[Exit]()
 
   @targetName("checkoutBranch")
-  def checkout(branch: Branch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  def checkout(branch: GitBranch)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     Unit logs GitEvent =
     sh"$git $repoOptions checkout $branch".exec[Exit]()
 
-  @targetName("checkoutCommitHash")
-  def checkout(commit: CommitHash)(using GitCommand, WorkingDirectory, Tactic[ExecError])
+  @targetName("checkoutGitHash")
+  def checkout(commit: GitHash)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     Unit logs GitEvent =
     sh"$git $repoOptions checkout $commit".exec[Exit]()
 
@@ -99,7 +99,7 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
 
     sh"$git $repoOptions push".exec[Exit]()
 
-  def switch(branch: Branch)
+  def switch(branch: GitBranch)
      (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Unit logs GitEvent =
 
@@ -140,19 +140,19 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
       case failure       => abort(GitError(CommitFailed))
 
   def branches()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     List[Branch] logs GitEvent =
+  :     List[GitBranch] logs GitEvent =
     sh"$git $repoOptions branch"
     . exec[Stream[Text]]()
     . map(_.skip(2))
     . to(List)
-    . map(Branch.unsafe(_))
+    . map(GitBranch.unsafe(_))
 
   // FIXME: this uses an `Executor[String]` instead of an `Executor[Text]` because, for some
   // reason, the latter captures the `WorkingDirectory` parameter
-  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Branch logs GitEvent =
-    Branch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
+  def branch()(using GitCommand, WorkingDirectory, Tactic[ExecError]): GitBranch logs GitEvent =
+    GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt)
 
-  def makeBranch(branch: Branch)
+  def makeBranch(branch: GitBranch)
      (using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
   :     Unit logs GitEvent =
 
@@ -186,11 +186,11 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
     :     ValueType logs GitEvent =
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[ValueType]
 
-  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[Tag] logs GitEvent =
-    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(Tag.unsafe(_))
+  def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
+    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
 
-  def tag(name: Tag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
-  :     Tag logs GitEvent =
+  def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+  :     GitTag logs GitEvent =
     sh"$git $repoOptions tag $name".exec[Exit]() match
       case Exit.Ok => name
       case failure       => abort(GitError(TagFailed))
@@ -200,9 +200,9 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
     def recur
        (stream:    Stream[Text],
-        hash:     Optional[CommitHash] = Unset,
-        tree:     Optional[CommitHash] = Unset,
-        parents:   List[CommitHash]     = Nil,
+        hash:      Optional[GitHash] = Unset,
+        tree:      Optional[GitHash] = Unset,
+        parents:   List[GitHash]     = Nil,
         author:    Optional[Text]       = Unset,
         committer: Optional[Text]       = Unset,
         signature: List[Text]           = Nil,
@@ -236,13 +236,13 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
             recur(tail, hash, tree, parents, author, committer, signature, lines)
 
           case r"commit $hash(.{40})" =>
-            commit() #::: recur(tail, CommitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
+            commit() #::: recur(tail, GitHash.unsafe(hash), Unset, Nil, Unset, Unset, Nil, Nil)
 
           case r"tree $tree(.{40})" =>
-            recur(tail, hash, CommitHash.unsafe(tree), parents, author, committer, signature, lines)
+            recur(tail, hash, GitHash.unsafe(tree), parents, author, committer, signature, lines)
 
           case r"parent $parent(.{40})" =>
-            val parents2 = CommitHash.unsafe(parent) :: parents
+            val parents2 = GitHash.unsafe(parent) :: parents
             recur(tail, hash, tree, parents2, author, committer, signature, lines)
 
           case r"author $author(.*) $timestamp([0-9]+) $time(.....)" =>
@@ -270,8 +270,8 @@ case class GitRepo(gitDir: Path on Posix, workTree: Optional[Path on Posix] = Un
   def reflog(): Unit = ()
 
   def revParse(refspec: Refspec)(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :     CommitHash logs GitEvent =
-    CommitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
+  :     GitHash logs GitEvent =
+    GitHash.unsafe(sh"$git $repoOptions rev-parse $refspec".exec[Text]())
 
   def status(ignored: Boolean = false)(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :     List[GitPathStatus] logs GitEvent =

@@ -46,7 +46,7 @@ import language.experimental.pureFunctions
 
 object Tabulation:
   given [TextType: {Textual as textual, Printable as printable}]
-  =>   (TextMetrics, TableStyle, Attenuation)
+  =>   (Text is Measurable, TableStyle, Attenuation)
   =>    Tabulation[TextType] is Printable =
     (tabulation, termcap) =>
       tabulation.grid(termcap.width).render.map(printable.print(_, termcap)).join(t"\n")
@@ -59,7 +59,8 @@ abstract class Tabulation[TextType: ClassTag]():
   def rows: Seq[IArray[IArray[TextType]]]
   def dataLength: Int
 
-  def grid(width: Int)(using style: TableStyle, metrics: TextMetrics, textual: TextType is Textual)
+  def grid(width: Int)
+     (using style: TableStyle, metrics: Text is Measurable, textual: TextType is Textual)
      (using attenuation: Attenuation)
   :     Grid[TextType] =
 

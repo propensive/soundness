@@ -32,5 +32,7 @@
                                                                                                   */
 package savagery
 
+import geodesy.*
+
 object Circle:
-  def apply(center: Point, radius: Float): Ellipse = Ellipse(center, radius, radius, Degrees(0.0))
+  def apply(center: Point, radius: Float): Ellipse = Ellipse(center, radius, radius, Angle(0.0))

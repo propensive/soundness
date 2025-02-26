@@ -50,7 +50,7 @@ trait Textual extends Presentational, Countable, Segmentable:
   def concat(left: Self, right: Self): Self
   def unsafeChar(text: Self, index: Ordinal): Char
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
-  def buffer(size: Optional[Int] = Unset): Buffer[Self]
+  def builder(size: Optional[Int] = Unset): Builder[Self]
   def segment(text: Self, interval: Interval): Self
 
   extension (left: Self)

@@ -30,8 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package fulminate
+package geodesy
 
-trait Expressible:
+trait Directional:
   type Self
-  def express(): Message
+  def direction(angle: Angle): Self

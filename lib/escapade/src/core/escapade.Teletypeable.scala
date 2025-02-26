@@ -59,12 +59,12 @@ object Teletypeable:
 
   given [ValueType: Showable] => ValueType is Teletypeable = value => Teletype(value.show)
 
-  given TextMetrics => Exception is Teletypeable = exception =>
+  given (Text is Measurable) => Exception is Teletypeable = exception =>
     summon[StackTrace is Teletypeable].teletype(StackTrace(exception))
 
   given Error is Teletypeable = _.message.teletype
 
-  given TextMetrics => StackTrace is Teletypeable = stack =>
+  given (Text is Measurable) => StackTrace is Teletypeable = stack =>
     val methodWidth = stack.frames.map(_.method.method.length).maxOption.getOrElse(0)
     val classWidth = stack.frames.map(_.method.className.length).maxOption.getOrElse(0)
     val fileWidth = stack.frames.map(_.file.length).maxOption.getOrElse(0)
@@ -90,7 +90,7 @@ object Teletypeable:
     stack.cause.lay(root): cause =>
       e"$root\n${Fg(0xffffff)}(caused by:)\n$cause"
 
-  given TextMetrics => StackTrace.Frame is Teletypeable = frame =>
+  given (Text is Measurable) => StackTrace.Frame is Teletypeable = frame =>
     val className = e"${Fg(0xc61485)}(${frame.method.className.fit(40, Rtl)})"
     val method = e"${Fg(0xdb6f92)}(${frame.method.method.fit(40)})"
     val file = e"${Fg(0x5f9e9f)}(${frame.file.fit(18, Rtl)})"

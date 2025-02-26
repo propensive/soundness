@@ -34,8 +34,6 @@ package escapade
 
 import anticipation.*
 import gossamer.*
-import rudiments.*
-import vacuous.*
 
 object Ribbon:
   def apply[ColorType: Chromatic](colors: ColorType*): Ribbon = Ribbon(colors.map(Bg(_))*)
@@ -43,10 +41,12 @@ object Ribbon:
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
     import escapes.*
-    IArray.from(colors.zip(parts)).curse:
-      val (background, text) = cursor
-      val arrow = postcursor.lay(e"$Reset${background.fg}()"): (color, _) =>
-        e"${background.fg}($color())"
+    val array = IArray.from(colors.zip(parts))
+    array.indices.map: index =>
+      val (background, text) = array(index)
+
+      val arrow = if index >= array.length then e"$Reset${background.fg}()" else
+        e"${background.fg}(${array(index + 1)(0)}())"
 
       e"$background( ${background.highContrast}($text) )$arrow"
 

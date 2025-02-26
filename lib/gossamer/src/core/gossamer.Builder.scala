@@ -30,16 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package gossamer
 
-import language.experimental.captureChecking
-
-import anticipation.*
-import proscenium.*
 import rudiments.*
+import vacuous.*
 
-trait ArcSeconds[Power <: Nat] extends Units[Power, Angle]
+abstract class Builder[TextType](size: Optional[Int] = Unset):
+  protected def put(text: TextType): Unit
+  protected def wipe(): Unit
+  protected def result(): TextType
 
-object ArcSeconds:
-  given UnitName[ArcSeconds[1]] = () => "\"".tt
-  erased given degreesPerRadian: Ratio[ArcSeconds[1], 206264.806247] = !!
+  def append(text: TextType): this.type = this.also(put(text))
+
+  def build(block: this.type ?=> Unit): TextType =
+    block(using this)
+    apply()
+
+  def apply(): TextType = result()
+  def clear(): this.type = this.also(wipe())
+  def empty: Boolean = length == 0
+  def length: Int

@@ -48,7 +48,7 @@ enum Juxtaposition:
   case Collation(comparison: IArray[(Text, Juxtaposition)], left: Text, right: Text)
 
 object Juxtaposition:
-  given (calc: TextMetrics) => Juxtaposition is Teletypeable =
+  given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
     case Juxtaposition.Collation(cmp, l, r) =>
       import tableStyles.default
 

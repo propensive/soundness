@@ -37,9 +37,9 @@ import enigmatic.*
 import vacuous.*
 
 case class Commit
-   (commit:    CommitHash,
-    tree:     CommitHash,
-    parent:    List[CommitHash],
+   (commit:    GitHash,
+    tree:      GitHash,
+    parent:    List[GitHash],
     author:    Text,
     committer: Text,
     signature: Optional[Pem],

@@ -32,13 +32,14 @@
                                                                                                   */
 package soundness
 
-export gossamer.{Bidi, Buffer, Cuttable, Decimalizer, Interpolation, Joinable, Numerous,
-    Presentational, Pue, RangeError, TextBuffer, Textual, append, construct, fill, txt, t, utf8,
-    utf16, ascii, hex, text, pue, cut, pascal, camel, snake, kebab, length, populated, lower, upper,
-    plain, skip, keep, capitalize, uncapitalize, tail, init, empty, chars, snip, reverse, contains,
-    trim, where, upto, dropWhile, mapChars, count, metrics, pad, center, fit, uncamel, unkebab,
-    unsnake, starts, ends, tr, subscript, superscript, sub, flatMap, urlEncode, urlDecode, punycode,
-    bytes, sysBytes, proximity, join, add, words, lines, appendln, spaced, slices, seek, search}
+export gossamer .
+  { Bidi, Builder, Cuttable, Decimalizer, Interpolation, Joinable, Numerous, Presentational, Pue,
+    RangeError, TextBuilder, Textual, append, construct, fill, txt, t, utf8, utf16, ascii, text,
+    pue, cut, pascal, camel, snake, kebab, length, populated, lower, upper, plain, skip, keep,
+    capitalize, uncapitalize, tail, init, empty, chars, snip, reverse, contains, trim, where, upto,
+    dropWhile, mapChars, count, pad, center, fit, uncamel, unkebab, unsnake, starts, ends, tr,
+    subscripts, superscripts, sub, urlEncode, urlDecode, punycode, bytes, sysBytes, proximity, join,
+    add, words, lines, appendln, spaced, slices, seek, search, Ascii, AsciiBuilder }
 
 package decimalFormatters:
   export gossamer.decimalFormatters.java

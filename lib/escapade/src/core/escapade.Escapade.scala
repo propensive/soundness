@@ -76,7 +76,7 @@ object Escapade:
     val Underline = SetUnderline.next
     val SetStrike = Sept
     val Strike = SetStrike.next
-    val SetConcealed = Non
+    val SetConcealed = 8.z
     val Concealed = SetConcealed.next
     val SetForeground = Concealed.next
     val Foreground: Interval = SetForeground.subsequent(24)

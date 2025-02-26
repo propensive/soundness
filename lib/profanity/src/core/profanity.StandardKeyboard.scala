@@ -39,7 +39,6 @@ import gossamer.*
 import hypotenuse.*
 import parasite.*
 import proscenium.*
-import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -99,8 +98,10 @@ class StandardKeyboard()(using Monitor, Codicil) extends Keyboard:
             val continuation = rest.drop(content.length + 2)
 
             content.cut(t"/").to(List) match
-              case List(Hex(red), Hex(green), Hex(blue)) =>
-                TerminalInfo.BgColor(red, green, blue) #:: process(continuation)
+              case List(red, green, blue) =>
+                def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
+                TerminalInfo.BgColor(decimal(red), decimal(green), decimal(blue))
+                #:: process(continuation)
 
               case _ =>
                 process(continuation)

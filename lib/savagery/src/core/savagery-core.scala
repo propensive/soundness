@@ -38,4 +38,4 @@ extension (left: Float)
   @targetName("makeCoordinates")
   infix def ! (right: Float) = Point(left, right)
 
-export Savagery.{Degrees, SvgId}
+export Savagery.SvgId

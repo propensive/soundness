@@ -50,7 +50,7 @@ extension (inline context: StringContext)
   inline def udp(): UdpPort = ${Nettlesome.udpPort('context)}
 
 extension [RemoteType: Connectable](value: RemoteType)
-  infix def on [PortType](port: PortType): Endpoint[PortType] =
+  infix def via [PortType](port: PortType): Endpoint[PortType] =
     Endpoint(RemoteType.remote(value), port)
 
 extension [PortType](port: PortType)

@@ -100,37 +100,37 @@ object Dsv:
       index:    Ordinal                  = Prim,
       column:   Int                      = 0,
       cells:    Array[Text]              = new Array[Text](0),
-      buffer:   TextBuffer               = TextBuffer(),
+      builder:  TextBuilder              = TextBuilder(),
       state:    State                    = State.Fresh,
       headings: Optional[Map[Text, Int]] = Unset)
      (using format: DsvFormat, tactic: Tactic[DsvError])
   :     Stream[Row] =
 
     inline def putCell(): Array[Text] =
-      val cells2 = if cells.length <= column then cells :+ buffer() else
-        cells(column) = buffer()
+      val cells2 = if cells.length <= column then cells :+ builder() else
+        cells(column) = builder()
         cells
 
-      cells2.also(buffer.clear())
+      cells2.also(builder.clear())
 
     inline def advance() =
       val cells = putCell()
-      recur(content, index + 1, column + 1, cells, buffer, State.Fresh, headings)
+      recur(content, index + 1, column + 1, cells, builder, State.Fresh, headings)
 
     inline def next(char: Char): Stream[Row] =
-      buffer.put(char) yet recur(content, index + 1, column, cells, buffer, state, headings)
+      builder.put(char) yet recur(content, index + 1, column, cells, builder, state, headings)
 
     inline def quote(): Stream[Row] = state match
       case State.Fresh =>
-        if !buffer.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
-        recur(content, index + 1, column, cells, buffer, State.Quoted, headings)
+        if !builder.empty then raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
       case State.Quoted =>
-        recur(content, index + 1, column, cells, buffer, State.DoubleQuoted, headings)
+        recur(content, index + 1, column, cells, builder, State.DoubleQuoted, headings)
 
       case State.DoubleQuoted =>
-        buffer.put(format.Quote)
-        recur(content, index + 1, column, cells, buffer, State.Quoted, headings)
+        builder.put(format.Quote)
+        recur(content, index + 1, column, cells, builder, State.Quoted, headings)
 
     inline def fresh(): Array[Text] = new Array[Text](cells.length)
 
@@ -139,16 +139,16 @@ object Dsv:
 
       if format.header && headings.absent then
         val map: Map[Text, Int] = cells.to(List).zipWithIndex.to(Map)
-        recur(content, index + 1, 0, fresh(), buffer, State.Fresh, map)
+        recur(content, index + 1, 0, fresh(), builder, State.Fresh, map)
       else
         (column + 1).until(cells.length).each: index =>
           cells(index) = t""
 
         val row = Row(unsafely(cells.immutable), headings)
-        row #:: recur(content, index + 1, 0, fresh(), buffer, State.Fresh, headings)
+        row #:: recur(content, index + 1, 0, fresh(), builder, State.Fresh, headings)
 
-    content.flow(if column == 0 && buffer.empty then Stream() else putRow()):
-      if !head.has(index) then recur(tail, Prim, column, cells, buffer, state, headings) else
+    content.flow(if column == 0 && builder.empty then Stream() else putRow()):
+      if !head.has(index) then recur(tail, Prim, column, cells, builder, state, headings) else
         head.s.charAt(index.n0) match
           case format.Delimiter =>
             if state != State.Quoted then advance() else next(format.Delimiter)
@@ -157,11 +157,11 @@ object Dsv:
             quote()
 
           case '\n' | '\r' =>
-            if column == 0 && buffer.empty
-            then recur(content, index + 1, 0, cells, buffer, State.Fresh, headings)
+            if column == 0 && builder.empty
+            then recur(content, index + 1, 0, cells, builder, State.Fresh, headings)
             else if state != State.Quoted then putRow()
             else next(head.s.charAt(index.n0))
 
           case char =>
-            buffer.put(char)
-            recur(content, index + 1, column, cells, buffer, state, headings)
+            builder.put(char)
+            recur(content, index + 1, column, cells, builder, state, headings)

@@ -95,7 +95,7 @@ object Git:
       case error: IoError   => abort(GitError(InvalidRepoPath))
 
   inline def cloneCommit[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
-     (source: SourceType, targetPath: PathType, commit: CommitHash)
+     (source: SourceType, targetPath: PathType, commit: GitHash)
      (using Internet,
             (Path on Posix) is Decodable in Text,
             GitCommand,
@@ -115,9 +115,9 @@ object Git:
   inline def clone[SourceType <: Matchable, PathType: Abstractable across Paths into Text]
      (source:     SourceType,
       targetPath: PathType,
-      bare:       Boolean          = false,
-      branch:     Optional[Branch] = Unset,
-      recursive:  Boolean          = false)
+      bare:       Boolean             = false,
+      branch:     Optional[GitBranch] = Unset,
+      recursive:  Boolean             = false)
      (using Internet,
             WorkingDirectory,
             (Path on Posix) is Decodable in Text,
@@ -135,7 +135,7 @@ object Git:
     uncheckedClone(sourceText, targetPath, bare, branch, recursive)
 
   private def uncheckedCloneCommit[PathType: Abstractable across Paths into Text]
-     (source: Text, targetPath: PathType, commit: CommitHash)
+     (source: Text, targetPath: PathType, commit: GitHash)
      (using Internet, (Path on Posix) is Decodable in Text, GitCommand)
      (using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],
@@ -153,9 +153,9 @@ object Git:
   private def uncheckedClone[PathType: Abstractable across Paths into Text]
      (source:     Text,
       targetPath: PathType,
-      bare:       Boolean          = false,
-      branch:     Optional[Branch] = Unset,
-      recursive:  Boolean          = false)
+      bare:       Boolean             = false,
+      branch:     Optional[GitBranch] = Unset,
+      recursive:  Boolean             = false)
      (using Internet,
             WorkingDirectory,
             (Path on Posix) is Decodable in Text,

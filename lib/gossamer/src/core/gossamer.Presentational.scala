@@ -63,7 +63,7 @@ object Presentational:
     def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.s.indexOf(sub.s, start.n0).puncture(-1).let(Ordinal.zerary(_))
 
-    def buffer(size: Optional[Int]): Buffer[Text] = TextBuffer(size)
+    def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
 trait Presentational:

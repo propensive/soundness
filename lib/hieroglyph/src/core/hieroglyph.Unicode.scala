@@ -47,6 +47,10 @@ import java.io as ji
 object Unicode:
   import Hieroglyph.*
 
+  private object Hex:
+    def unapply(text: Text): Option[Int] =
+      try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
+
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] =
       code.s.only:

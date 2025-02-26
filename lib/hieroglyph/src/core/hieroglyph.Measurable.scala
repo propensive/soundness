@@ -30,29 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package rudiments
+package hieroglyph
 
 import language.experimental.captureChecking
 
-import vacuous.*
+import anticipation.*
 
-object Cursor:
-  opaque type Cursor = Int
-  opaque type CursorSeq[T] <: IndexedSeq[T] = IndexedSeq[T]
+object Measurable:
+  given general: (measurable: Char is Measurable) => Text is Measurable =
+    _.s.toCharArray.nn.map(measurable.width(_)).sum
 
-  extension (cursor: Cursor)
-    inline def index: Int = cursor
-
-    inline def of[ElemType](inline seq: CursorSeq[ElemType]): ElemType = seq(cursor.index)
-
-    inline def of[ElemType](inline seq: CursorSeq[ElemType], inline offset: Int)
-    :     Optional[ElemType] =
-      if (cursor.index + offset) >= 0 && (cursor.index + offset) < seq.length
-      then seq(cursor.index + offset)
-      else Unset
-
-  inline def curse[ElemType, ElemType2](seq: IndexedSeq[ElemType])
-     (inline block: (CursorSeq[ElemType], Cursor) ?=> ElemType2)
-  :       IndexedSeq[ElemType2] =
-
-    seq.indices.map { index => block(using seq, index) }
+trait Measurable:
+  type Self
+  def width(text: Self): Int

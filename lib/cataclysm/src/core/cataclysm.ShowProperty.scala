@@ -36,13 +36,14 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
+import quantitative.*
 import spectacular.*
 
 object ShowProperty:
   given ShowProperty[Length] = _.show
-  given ShowProperty[Duration] = _.show
+  given ShowProperty[Quantity[Seconds[1]]] = quantity => t"${quantity.value}s"
 
-  given ShowProperty[Dimension] =
+  given ShowProperty[Int | Length] =
     case length: Length => length.show
     case int: Int       => int.show
 

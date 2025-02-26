@@ -45,7 +45,7 @@ extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, T
 
     Lens.make()
 
-  inline def get(target: FromType): ToType = ${Panopticon.get[FromType, PathType, ToType]('target)}
+  inline def get(aim: FromType): ToType = ${Panopticon.get[FromType, PathType, ToType]('aim)}
 
-  inline def set(target: FromType, newValue: ToType): FromType =
-    ${Panopticon.set[FromType, PathType, ToType]('target, 'newValue)}
+  inline def set(aim: FromType, newValue: ToType): FromType =
+    ${Panopticon.set[FromType, PathType, ToType]('aim, 'newValue)}

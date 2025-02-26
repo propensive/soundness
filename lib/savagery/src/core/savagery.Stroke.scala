@@ -33,11 +33,14 @@
 package savagery
 
 import anticipation.*
-import gossamer.*, decimalFormatters.java
+import geodesy.*
+import gossamer.*
 import prepositional.*
 import proscenium.*
 import spectacular.*
 import vacuous.*
+
+import decimalFormatters.java
 
 enum Stroke:
   case Move(coords: Shift | Point)
@@ -50,7 +53,7 @@ enum Stroke:
   case Quadratic[PointType <: (Shift | Point)](ctrl1: Optional[PointType], point: PointType)
 
   case Arc
-     (rx: Float, ry: Float, angle: Degrees, largeArc: Boolean, sweep: Sweep, coords: Point | Shift)
+     (rx: Float, ry: Float, angle: Angle, largeArc: Boolean, sweep: Sweep, coords: Point | Shift)
 
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"
@@ -75,8 +78,10 @@ object Stroke:
 
       case Arc(rx, ry, angle, largeArc, sweep, point: Point) =>
         val clockwise = sweep == Sweep.Clockwise
-        t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $point"
+        val degrees = angle.degrees.show
+        t"A ${rx.toDouble} ${ry.toDouble} $degrees ${bit(largeArc)} ${bit(clockwise)} $point"
 
       case Arc(rx, ry, angle, largeArc, sweep, shift: Shift) =>
         val clockwise = sweep == Sweep.Clockwise
-        t"A ${rx.toDouble} ${ry.toDouble} ${angle.encode} ${bit(largeArc)} ${bit(clockwise)} $shift"
+        val degrees = angle.degrees.show
+        t"A ${rx.toDouble} ${ry.toDouble} $degrees ${bit(largeArc)} ${bit(clockwise)} $shift"

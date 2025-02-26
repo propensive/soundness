@@ -30,16 +30,77 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
-
-import language.experimental.captureChecking
+package savagery
 
 import anticipation.*
-import proscenium.*
-import rudiments.*
+import cataclysm.{Float as _, Length as _, *}
+import contingency.*
+import geodesy.*
+import gossamer.*
+import spectacular.*
+import vacuous.*
+import xylophone.*
 
-trait Degrees[Power <: Nat] extends Units[Power, Angle]
+sealed trait Figure:
+  val transforms: List[Transform] = Nil
 
-object Degrees:
-  given UnitName[Degrees[1]] = () => "°".tt
-  erased given degreesPerRadian: Ratio[Degrees[1], 57.2957795131] = !!
+case class Rectangle(position: Point, width: Float, height: Float) extends Figure:
+  def xml: Xml = unsafely:
+    Xml.parse:
+      given Float is Showable = _.toString.tt
+      t"""<rect x="${position.x} y="${position.y}" width="$width" height="$height"/>"""
+
+case class Outline
+   (ops:      List[Stroke]       = Nil,
+    style:    Optional[CssStyle] = Unset,
+    id:     Optional[SvgId]    = Unset,
+    transform: List[Transform]    = Nil)
+extends Figure:
+  import Stroke.*
+
+  def xml: Xml =
+    val d: Text = ops.reverse.map(_.encode).join(t" ")
+    // FIXME
+    unsafely(Xml.parse(t"""<path d="$d"/>"""))
+
+  def moveTo(point: Point): Outline = Outline(Move(point) :: ops)
+  def lineTo(point: Point): Outline = Outline(Draw(point) :: ops)
+  def move(vector: Shift): Outline = Outline(Move(vector) :: ops)
+  def line(vector: Shift): Outline = Outline(Draw(vector) :: ops)
+
+  def curve(ctrl1: Shift, ctrl2: Shift, point: Shift): Outline =
+    Outline(Cubic(ctrl1, ctrl2, point) :: ops)
+
+  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
+    Outline(Cubic(ctrl1, ctrl2, point) :: ops)
+
+  def curve(ctrl2: Shift, vector: Shift): Outline = Outline(Cubic(Unset, ctrl2, vector) :: ops)
+  def curveTo(ctrl2: Point, point: Point): Outline = Outline(Cubic(Unset, ctrl2, point) :: ops)
+
+  def quadCurve(ctrl1: Shift, vector: Shift): Outline = Outline(Quadratic(ctrl1, vector) :: ops)
+  def quadCurveTo(ctrl1: Point, point: Point): Outline = Outline(Quadratic(ctrl1, point) :: ops)
+
+  def quadCurve(vector: Shift): Outline = Outline(Quadratic(Unset, vector) :: ops)
+  def quadCurveTo(point: Point): Outline = Outline(Quadratic(Unset, point) :: ops)
+
+  def moveUp(value: Float): Outline = Outline(Move(Shift(value, 0.0)) :: ops)
+  def moveDown(value: Float): Outline = Outline(Move(Shift(-value, 0.0)) :: ops)
+  def moveLeft(value: Float): Outline = Outline(Move(Shift(0.0, -value)) :: ops)
+  def moveRight(value: Float): Outline = Outline(Move(Shift(0.0, value)) :: ops)
+
+  def lineUp(value: Float): Outline = Outline(Draw(Shift(value, 0.0)) :: ops)
+  def lineDown(value: Float): Outline = Outline(Draw(Shift(-value, 0.0)) :: ops)
+  def lineLeft(value: Float): Outline = Outline(Draw(Shift(0.0, -value)) :: ops)
+  def lineRight(value: Float): Outline = Outline(Draw(Shift(0.0, value)) :: ops)
+
+  def closed: Outline = Outline(Close :: ops)
+
+case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:
+  def circle: Boolean = xRadius == yRadius
+
+  def xml: Xml = unsafely:
+    Xml.parse:
+      given Float is Showable = _.toString.tt
+      if circle
+      then t"""<circle cx="${center.x}" cy="${center.y}" r="${xRadius}"/>"""
+      else t"""<ellipse cx="${center.x}" cy="${center.y}" rx="${xRadius}" ry="${yRadius}"/>"""
