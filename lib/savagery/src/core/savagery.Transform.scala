@@ -32,11 +32,12 @@
                                                                                                   */
 package savagery
 
+import geodesy.*
 import vacuous.*
 
 enum Transform:
   case Translate(vector: Shift)
   case Scale(x: Float, y: Optional[Float])
+  case Rotate(angle: Angle)
   case Matrix()
   case Skew()
-  case Rotate(angle: Degrees)

@@ -33,20 +33,13 @@
 package savagery
 
 import anticipation.*
-import prepositional.*
 import proscenium.*
 
 object Savagery:
-  opaque type Degrees = Double
   opaque type SvgId = Text
 
   object SvgId:
     def apply(id: Text): SvgId = id
-
-  object Degrees:
-    def apply(degrees: Double): Degrees = degrees
-
-    given encodable: Degrees is Encodable in Text = _.toString.tt
 
   extension (point: Point)
     @targetName("plus")

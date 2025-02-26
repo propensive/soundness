@@ -30,16 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package geodesy
 
-import language.experimental.captureChecking
-
-import anticipation.*
-import proscenium.*
-import rudiments.*
-
-trait ArcMinutes[Power <: Nat] extends Units[Power, Angle]
-
-object ArcMinutes:
-  given UnitName[ArcMinutes[1]] = () => "'".tt
-  erased given degreesPerRadian: Ratio[ArcMinutes[1], 3437.74677078] = !!
+trait Directional:
+  type Self
+  def direction(angle: Angle): Self

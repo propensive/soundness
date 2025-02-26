@@ -111,10 +111,6 @@ val Pint = Milli(Litre)*568.26125
 val Quart = Milli(Litre)*1136.5225
 val Gallon = Milli(Litre)*4546.09
 
-val Degree = Quantity[Degrees[1]](1.0)
-val ArcMinute = Quantity[ArcMinutes[1]](1.0)
-val ArcSecond = Quantity[ArcSeconds[1]](1.0)
-
 package constants:
   val SpeedOfLightInVacuum = 299792458*Metre/Second
   val MagneticConstant = 4*π*(10e-7)*Newton/(Ampere*Ampere)

@@ -35,6 +35,7 @@ package savagery
 import anticipation.*
 import cataclysm.{Float as _, Length as _, *}
 import contingency.*
+import geodesy.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
@@ -94,7 +95,7 @@ extends Figure:
 
   def closed: Outline = Outline(Close :: ops)
 
-case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Degrees) extends Figure:
+case class Ellipse(center: Point, xRadius: Float, yRadius: Float, angle: Angle) extends Figure:
   def circle: Boolean = xRadius == yRadius
 
   def xml: Xml = unsafely:

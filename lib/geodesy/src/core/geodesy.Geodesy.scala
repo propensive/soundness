@@ -44,58 +44,52 @@ object Geodesy:
   private given Decimalizer = Decimalizer(decimalPlaces = 6)
 
   opaque type Location = Long
-  opaque type Radians = Double
-  opaque type Degrees = Double
+  opaque type Angle = Double
 
   object Location:
     given Location is Showable = location =>
       t"${location.latitude.degrees},${location.longitude.degrees}"
 
-    private def fromRadians(latitude: Radians, longitude: Radians): Location =
+    private def fromAngle(latitude: Angle, longitude: Angle): Location =
       (encodeLatitude(latitude).toLong << 32) | (encodeLongitude(longitude) & 0xffffffffL)
 
-    private def encodeLatitude(latitude: Radians): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
+    private def encodeLatitude(latitude: Angle): Int = (latitude*2*Int.MaxValue/math.Pi).toInt
 
-    private def encodeLongitude(longitude: Radians): Int =
+    private def encodeLongitude(longitude: Angle): Int =
       ((longitude - math.Pi)*Int.MaxValue/math.Pi).toInt
 
-    def apply(latitude: Radians, longitude: Radians): Location = fromRadians(latitude, longitude)
+    def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
 
     def apply(north: Int, east: Int): Location =
-      fromRadians(Degrees(north/1000000.0).radians, Degrees(east/1000000.0).radians)
+      fromAngle(Degree*north/1000000.0, Degree*east/1000000.0)
 
-    @targetName("applyDegrees")
-    def apply(latitude: Degrees, longitude: Degrees): Location =
-      fromRadians(latitude.radians, longitude.radians)
-
-  object Radians:
+  object Angle:
     private val c = math.Pi*2
-    def apply(value: Double): Radians = value
+    def apply(value: Double): Angle = value
 
-    given addable: Radians is Addable by Radians into Radians =
+    given addable: Angle is Addable by Angle into Angle =
       (left, right) => (left + right)%(2*math.Pi)
 
-    given subtractable: Radians is Subtractable by Radians into Radians =
+    given subtractable: Angle is Subtractable by Angle into Angle =
       (left, right) => (2*math.Pi + left - right)%(2*math.Pi)
 
-  extension (radians: Radians)
-    def degrees: Degrees = radians*180/math.Pi
-    def value: Double = radians
+    given multiplicable: Angle is Multiplicable by Double into Angle =
+      (left, right) => (left*right)%(2*math.Pi)
 
-  object Degrees:
-    given Degrees is Showable = degrees => t"$degrees°"
-    def apply(value: Double): Degrees = value
+    given divisible: Angle is Divisible by Double into Angle =
+      (left, right) => (left/right)%(2*math.Pi)
 
-  extension (degrees: Degrees)
-    def radians: Radians = degrees*math.Pi/180
+    given multiplicable2: Double is Multiplicable by Angle into Angle =
+      (left, right) => (left*right)%(2*math.Pi)
 
-    @targetName("degreesValue")
-    def value: Double = degrees
+  extension (angle: Angle)
+    def degrees: Double = angle*180/math.Pi
+    def radians: Double = angle
 
   extension (left: Location)
-    def latitude: Radians = ((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*math.Pi
-    def longitude: Radians = (left & 0xffffffffL).toInt.toDouble/Int.MaxValue*math.Pi + math.Pi
-    def pair: (Radians, Radians) = (latitude, longitude)
+    def latitude: Angle = ((left >>> 32) & 0xffffffffL).toInt.toDouble/2/Int.MaxValue*math.Pi
+    def longitude: Angle = (left & 0xffffffffL).toInt.toDouble/Int.MaxValue*math.Pi + math.Pi
+    def pair: (Angle, Angle) = (latitude, longitude)
 
     def geohash(length: Int): Text =
 
@@ -134,16 +128,17 @@ object Geodesy:
         IArray.tabulate[Char](length): index =>
           "0123456789bcdefghjkmnpqrstuvwxyz".charAt((binary >> ((length - index - 1)*5)&31).toInt)
 
-    def surfaceDistance(right: Location): Radians =
+    def surfaceDistance(right: Location): Angle =
       val dLat = math.abs(left.latitude - right.latitude)
       val dLng = math.abs(left.longitude - right.longitude)
 
-      val a = math.pow(math.sin(dLat/2), 2) +
-          math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
+      val a =
+        math.pow(math.sin(dLat/2), 2)
+        + math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
 
       2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
-    def bearing[CompassType](right: Location)(using compass: Bearing[CompassType]): CompassType =
+    def bearing[CompassType: Directional](right: Location): CompassType =
       val dLng = math.abs(left.longitude - right.longitude)
 
       val result: Double =
@@ -152,4 +147,4 @@ object Geodesy:
           math.cos(left.latitude)*math.sin(right.latitude) -
               math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng))
 
-      compass.from(result.rad)
+      CompassType.direction(Angle(result))

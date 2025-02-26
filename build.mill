@@ -1092,7 +1092,7 @@ object rudiments extends SoundnessModule {
 
 object savagery extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core)
+    def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
   }
 
   object test extends ProbablyTestModule {

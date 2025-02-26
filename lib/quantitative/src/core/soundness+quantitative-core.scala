@@ -33,7 +33,7 @@
 package soundness
 
 export quantitative .
-  { Distance, Mass, Time, Current, Luminosity, Temperature, AmountOfSubstance, Angle,
+  { Distance, Mass, Time, Current, Luminosity, Temperature, AmountOfSubstance,
     PhysicalQuantity, Measure, Units, Metres, Kilograms, Candelas, Moles, Amperes, Kelvins, Seconds,
     UnitName, PrincipalUnit, SubstituteUnits, UnitsOffset, Quantity, MetricUnit,
     Quantifiable, invert, in, sqrt, cbrt, units, express, dimension, MetricPrefix, NoPrefix, Deka,

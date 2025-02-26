@@ -43,5 +43,3 @@ erased trait Current extends Dimension
 erased trait Luminosity extends Dimension
 erased trait Temperature extends Dimension
 erased trait AmountOfSubstance extends Dimension
-
-erased trait Angle extends Dimension
