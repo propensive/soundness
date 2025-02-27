@@ -129,7 +129,7 @@ extension [ValueType](iterator: Iterator[ValueType])
 extension [ValueType](iterable: Iterable[ValueType])
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
     var ordinal: Ordinal = Prim
-    iterable.foreach: value =>
+    iterable.iterator.foreach: value =>
       lambda(using ordinal)(value)
       ordinal += 1
 
