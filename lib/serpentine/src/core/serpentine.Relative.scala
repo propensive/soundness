@@ -30,18 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
-// import distillate.*
-// import gossamer.*
-// import prepositional.*
-// import proscenium.*
-// import spectacular.*
-// import symbolism.*
-// import vacuous.*
+import anticipation.*
+import contingency.*
+import prepositional.*
+import rudiments.*
 
-// import scala.compiletime.*
+import scala.compiletime.*, ops.int.*
+
+object Relative:
+  def of[PlatformType, AscentType <: Int, SubjectType <: Tuple](ascent: Int, descent: Text*)
+  :     Relative on PlatformType of SubjectType under AscentType =
+
+    new Relative(ascent, descent*):
+      type Subject = SubjectType
+      type Platform = PlatformType
+      type Constraint = AscentType
+
+case class Relative(ascent: Int, descent: Text*):
+  type Platform
+  type Subject <: Tuple
+  type Constraint <: Int
+
+  transparent inline def parent: Relative = inline !![Subject] match
+    case head *: tail => Relative.of[Platform, Constraint, tail.type](ascent, descent.tail*)
+    case EmptyTuple   => Relative.of[Platform, S[Constraint], EmptyTuple](ascent + 1)
+    case _ =>
+      given Tactic[PathError] = summonInline[Tactic[PathError]]
+
+      if descent.isEmpty then
+        raise(PathError(PathError.Reason.RootParent))
+        Relative.of[Platform, Constraint, Tuple](ascent, descent*)
+
+      else Relative.of[Platform, Constraint, Tuple](ascent, descent.tail*)
 
 // object Relative:
 //   given encodable: [RelativeType <: Relative] => (navigable: Navigable)

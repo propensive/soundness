@@ -30,13 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
-// import gossamer.*
-// import prepositional.*
-// import proscenium.*
-// import symbolism.*
+import anticipation.*
+import gossamer.*
+import prepositional.*
+import proscenium.*
+import symbolism.*
 
 // object PathAscent:
 //   given [ElementType] => (Navigable by ElementType)

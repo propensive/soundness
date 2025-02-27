@@ -32,7 +32,7 @@
                                                                                                   */
 package serpentine
 
-import scala.compiletime.*
+import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*
@@ -42,65 +42,6 @@ import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-
-object Navigable:
-  given label: [PlatformType, StringType <: Label, SubjectType <: Tuple, PathType <: Path]
-  =>    PathType is Navigable by StringType =
-    new Navigable:
-      type Self = PathType
-      type Operand = StringType
-
-      def follow(name: StringType): Text = name.tt
-
-  given int: [PathType <: Path] => PathType is Navigable by Int = new Navigable:
-    type Self = PathType
-    type Operand = Int
-
-    def follow(name: Int): Text = name.toString.tt
-
-  given text: [TextType <: Text, PathType <: Path] => PathType is Navigable by TextType =
-    new Navigable:
-      type Self = PathType
-      type Operand = TextType
-
-      def follow(name: TextType): Text = name
-
-trait Navigable:
-  type Self
-  type Operand
-
-  def follow(name: Operand): Text
-
-object Admissible:
-  def apply[SelfType, PlatformType](fn: Text => Unit)
-  :     SelfType is Admissible on PlatformType =
-    new Admissible:
-      type Self = SelfType
-      type Platform = PlatformType
-      def check(name: Text): Unit = fn(name)
-
-  inline given text: [TextType <: Text, PlatformType: Nominative] => Tactic[NameError]
-  =>    TextType is Admissible on PlatformType = Admissible(Name(_))
-
-  inline given [StringType <: Label, PlatformType: Nominative]
-  =>    StringType is Admissible on PlatformType =
-    Admissible({ _ => Name.verify[StringType, PlatformType] })
-
-trait Admissible:
-  type Self
-  type Platform
-
-  def check(name: Text): Unit
-
-object RootAdmissible:
-  given (%.type is RootAdmissible on Linux) = _ => ()
-  given (%.type is RootAdmissible on MacOs) = _ => ()
-
-trait RootAdmissible:
-  type Self
-  type Platform
-
-  def check(name: Text): Unit
 
 object Path:
   @targetName("Root")
@@ -149,7 +90,7 @@ case class Path(root: Text, descent: Text*):
   def graft[RootType: Radical on Platform](root: RootType): Path of Subject under root.type =
     Path.of[Platform, root.type, Subject](RootType.encode(root), descent*)
 
-  inline def parent = inline !![Subject] match
+  transparent inline def parent = inline !![Subject] match
     case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
     case EmptyTuple   => compiletime.error("Path has no parent")
     case _ =>
@@ -183,35 +124,7 @@ object Drive:
 class Drive(val letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows
 
-
 case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
-
-abstract class Root(name: Text) extends Path(name):
-  type Subject = EmptyTuple
-  override def hashCode = name.hashCode
-
-  override def equals(any: Any): Boolean = any.asMatchable match
-    case root: Root => root.root == name
-    case _          => false
-
-object Radical:
-  given Tactic[RootError] => Drive is Radical:
-    type Platform = Windows
-
-    def decode(text: Text): Drive = if text.length == 1 then Drive(text.s.charAt(0)) else
-      raise(RootError(text)) yet Drive('C')
-
-    def encode(drive: Drive): Text = t"${drive.letter}:\\"
-
-  given %.type is Radical:
-    def decode(text: Text): %.type = %
-    def encode(root: %.type): Text = t"/"
-
-trait Radical:
-  type Platform
-  type Self
-  def decode(text: Text): Self
-  def encode(self: Self): Text
 
 erased trait Linux
 
@@ -255,8 +168,6 @@ trait Filesystem:
 
 
 // object Path:
-//   given encodable: [PathType <: Path] => PathType is Encodable in Text = _.text
-
 //   given decoder: [PlatformType: {Navigable, Radical}]
 //   =>    (Path on PlatformType) is Decodable in Text =
 
@@ -363,28 +274,6 @@ trait Filesystem:
 //   :     Path on Platform raises PathError =
 //     parent.let(_ / name).lest(PathError(PathError.Reason.RootParent))
 
-//   def descent(using navigable: Platform is Navigable): List[navigable.Operand] =
-//     textDescent.reverse.map(navigable.element(_))
-
-//   def child(filename: Text)(using Unsafe): Path on Platform =
-//     Path.from(textRoot, filename :: textDescent, separator, caseSensitivity)
-
-//   override def toString(): String = text.s
-
-//   override def equals(that: Any): Boolean = that.asMatchable match
-//     case that: Path =>
-//       (textRoot == that.textRoot) && caseSensitivity.equal(textDescent, that.textDescent)
-
-//     case _ =>
-//       false
-
-//   override def hashCode: Int =
-//     separator.hashCode + textRoot.toString.hashCode*31 + caseSensitivity.hash(textDescent)
-
-//   def parent: Optional[Path on Platform] =
-//     if textDescent == Nil then Unset
-//     else Path.from(textRoot, textDescent.tail, separator, caseSensitivity)
-
 //   def ancestor(n: Int): Optional[Path on Platform] =
 //     def recur(n: Int, current: Optional[Path on Platform]): Optional[Path on Platform] =
 //       current.let: current =>
@@ -394,13 +283,6 @@ trait Filesystem:
 
 //   def ancestors: List[Path on Platform] =
 //     parent.let { parent => parent :: parent.ancestors }.or(Nil)
-
-//   transparent inline def on [PlatformType]: Path on PlatformType =
-//     inline erasedValue[PlatformType & Matchable] match
-//       case _: Platform => this.asInstanceOf[Path on PlatformType]
-//       case _ =>
-//         summonInline[PlatformType is Navigable].give:
-//           summonInline[PlatformType is Radical].give(Path.parse(text))
 
 //   def conjunction(right: Path on Platform): Path on Platform =
 //     val difference = depth - right.depth
