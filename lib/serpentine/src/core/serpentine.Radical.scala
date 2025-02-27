@@ -30,15 +30,28 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
-// import prepositional.*
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
 
-// trait Radical:
-//   type Self
-//   type Source <: Root on Self
+object Radical:
+  given Tactic[RootError] => Drive is Radical:
+    type Platform = Windows
 
-//   def rootLength(path: Text): Int
-//   def root(path: Text): Source
-//   def rootText(root: Source): Text
+    def decode(text: Text): Drive = if text.length == 1 then Drive(text.s.charAt(0)) else
+      raise(RootError(text)) yet Drive('C')
+
+    def encode(drive: Drive): Text = t"${drive.letter}:\\"
+
+  given %.type is Radical:
+    def decode(text: Text): %.type = %
+    def encode(root: %.type): Text = t"/"
+
+trait Radical:
+  type Platform
+  type Self
+  def decode(text: Text): Self
+  def encode(self: Self): Text

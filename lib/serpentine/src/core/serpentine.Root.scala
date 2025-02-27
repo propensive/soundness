@@ -30,9 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
+import scala.compiletime.*
 
-// abstract class Root(root: Text, separator0: Text, caseSensitivity0: Case)
-// extends Path(root, Nil, separator0, caseSensitivity0)
+import anticipation.*
+
+abstract class Root(name: Text) extends Path(name):
+  type Subject = EmptyTuple
+  override def hashCode = name.hashCode
+
+  override def equals(any: Any): Boolean = any.asMatchable match
+    case root: Root => root.root == name
+    case _          => false

@@ -30,21 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
-// import nomenclature.*
-// import prepositional.*
+import scala.compiletime.*, ops.int.*
 
-// trait Navigable extends Nominative:
-//   type Self
-//   type Operand
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import nomenclature.*
+import prepositional.*
+import proscenium.*
+import rudiments.*
 
-//   def element(element: Text): Operand
-//   protected def elementText(element: Operand): Text
-//   def separator: Text
-//   def selfText: Text
-//   def parentElement: Text
-//   def ascent: Text = parentElement+separator
-//   def caseSensitivity: Case
-//   def makeElement(element: Operand): Text = caseSensitivity(elementText(element))
+object Navigable:
+  given label: [PlatformType, StringType <: Label, SubjectType <: Tuple, PathType <: Path]
+  =>    PathType is Navigable by StringType =
+    new Navigable:
+      type Self = PathType
+      type Operand = StringType
+
+      def follow(name: StringType): Text = name.tt
+
+  given int: [PathType <: Path] => PathType is Navigable by Int = new Navigable:
+    type Self = PathType
+    type Operand = Int
+
+    def follow(name: Int): Text = name.toString.tt
+
+  given text: [TextType <: Text, PathType <: Path] => PathType is Navigable by TextType =
+    new Navigable:
+      type Self = PathType
+      type Operand = TextType
+
+      def follow(name: TextType): Text = name
+
+trait Navigable:
+  type Self
+  type Operand
+
+  def follow(name: Operand): Text
