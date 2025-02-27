@@ -30,19 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-// package serpentine
+package serpentine
 
-// import anticipation.*
-// import rudiments.*
+import anticipation.*
+import contingency.*
+import nomenclature.*
+import prepositional.*
+import proscenium.*
 
-// import scala.reflect.*
+object Admissible:
+  def apply[SelfType, PlatformType](fn: Text => Unit)
+  :     SelfType is Admissible on PlatformType =
+    new Admissible:
+      type Self = SelfType
+      type Platform = PlatformType
+      def check(name: Text): Unit = fn(name)
 
-// object Pathlike:
-//   erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = !!
+  inline given text: [TextType <: Text, PlatformType: Nominative] => Tactic[NameError]
+  =>    TextType is Admissible on PlatformType = Admissible(Name(_))
 
-// transparent trait Pathlike:
-//   type Platform
-//   def textDescent: List[Text]
-//   def separator: Text
+  inline given [StringType <: Label, PlatformType: Nominative]
+  =>    StringType is Admissible on PlatformType =
+    Admissible({ _ => Name.verify[StringType, PlatformType] })
 
-//   override def toString(): String = textDescent.reverse.mkString(separator.s)
+trait Admissible:
+  type Self
+  type Platform
+
+  def check(name: Text): Unit
+
+object RootAdmissible:
+  given (%.type is RootAdmissible on Linux) = _ => ()
+  given (%.type is RootAdmissible on MacOs) = _ => ()
+
+trait RootAdmissible:
+  type Self
+  type Platform
+
+  def check(name: Text): Unit
