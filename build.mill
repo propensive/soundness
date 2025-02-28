@@ -64,7 +64,6 @@ trait SoundnessSubModule extends BaseScalaModule with PublishModule {
   def resources = Task {
     Seq(PathRef(millSourcePath / ".." / ".." / "res"))
   }
-
   def sources = Task.Sources {
     Seq(PathRef(millSourcePath))
   }
@@ -95,10 +94,10 @@ trait ProbablyTestModule extends BaseScalaModule {
 trait RecursivePublishModule { self: BaseScalaModule =>
   def publishLocal(localIvyRepo: String = null): Command[Unit] = Task.Command {
     T.traverse(
-     this.moduleDeps.flatMap {
-      case m: RecursivePublishModule => m.moduleDeps
-      case m => Seq(m)
-     }.collect {
+      this.moduleDeps.flatMap {
+        case m: RecursivePublishModule => m.moduleDeps
+        case m => Seq(m)
+      }.collect {
         case m: PublishModule => m
       }
     )(module => module.publishLocal().t)()
