@@ -205,3 +205,9 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
           t"C:\\Windows\\System\\".decode[Path on Windows]
 
       . assert(_ == windowsSystem)
+
+      test(t"Can't decode a path without knowing platform"):
+        demilitarize:
+          t"C:\\Windows\\System\\".decode[Path]
+
+      . assert(_.nonEmpty)
