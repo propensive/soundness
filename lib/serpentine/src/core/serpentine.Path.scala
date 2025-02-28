@@ -36,6 +36,7 @@ import scala.compiletime.*, ops.int.*
 
 import anticipation.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gossamer.*
 import nomenclature.*
@@ -49,6 +50,15 @@ object Path:
     type Subject = EmptyTuple
     type Constraint = %.type
 
+  given decodable: [PlatformType: Filesystem, RootType]
+  =>    (radical: RootType is Radical on PlatformType)
+  =>    (Path on PlatformType) is Decodable in Text = text =>
+    val parts = text.skip(radical.length(text)).cut(PlatformType.separator)
+    val parts2 = if parts.last == t"" then parts.init else parts
+    val root = radical.encode(radical.decode(text))
+
+    Path.of(root, parts2.reverse*)
+
   def of[PlatformType, RootType, SubjectType <: Tuple](root: Text, descent: Text*)
   :     Path on PlatformType of SubjectType under RootType =
 
@@ -58,7 +68,7 @@ object Path:
       type Constraint = RootType
 
   given [PlatformType: Filesystem] => Path on PlatformType is Encodable in Text =
-    path => path.descent.reverse.join(path.root, PlatformType.separator(), t"")
+    path => path.descent.reverse.join(path.root, PlatformType.separator, t"")
 
   private def conversion[FromType, ToType](fn: FromType => ToType) =
     new Conversion[FromType, ToType]:
@@ -116,8 +126,6 @@ case class Path(root: Text, descent: Text*):
           type Subject = child.type *: Subject0
           type Constraint = Constraint0
 
-export Path.`%`
-
 object Drive:
   def apply(letter: Char): Drive = new Drive(letter)
 
@@ -163,7 +171,8 @@ object Filesystem:
 
 trait Filesystem:
   type Self
-  def separator(): Text
+  val separator: Text = makeSeparator()
+  def makeSeparator(): Text
 
 
 

@@ -167,3 +167,41 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         path.encode
 
       . assert(_ == t"D:\\Foo")
+
+
+    suite(t"Decoding"):
+      test(t"Decode a simple Linux path with a terminal slash"):
+        t"/home/work/".decode[Path on Linux]
+
+      . assert(_ == % / "home" / "work")
+
+      test(t"Decode a simple Linux path without a terminal slash"):
+        t"/home/work".decode[Path on Linux]
+
+      . assert(_ == % / "home" / "work")
+
+      test(t"Decode a simple Mac OS path without a terminal slash"):
+        unsafely:
+          t"/Users/Admin".decode[Path on MacOs]
+
+      . assert(_ == % / "Users" / "Admin")
+
+      test(t"Decode a simple Mac OS path with a terminal slash"):
+        unsafely:
+          t"/Users/Admin/".decode[Path on MacOs]
+
+      . assert(_ == % / "Users" / "Admin")
+
+      val windowsSystem: Path = Drive('C') / "Windows" / "System"
+
+      test(t"Decode a simple Windows path without a terminal slash"):
+        unsafely:
+          t"C:\\Windows\\System".decode[Path on Windows]
+
+      . assert(_ == windowsSystem)
+
+      test(t"Decode a simple Windows path with a terminal slash"):
+        unsafely:
+          t"C:\\Windows\\System\\".decode[Path on Windows]
+
+      . assert(_ == windowsSystem)
