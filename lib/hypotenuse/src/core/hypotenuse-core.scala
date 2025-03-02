@@ -98,6 +98,12 @@ extension (float: Float)
   @targetName("nanFloat")
   inline def nan: Boolean = float.isNaN
 
+  @targetName("successorFloat")
+  inline def successor: Float = Math.nextUp(float)
+
+  @targetName("predecessorFloat")
+  inline def predecessor: Float = Math.nextDown(float)
+
   @targetName("powerFloat")
   inline infix def ** (exponent: Double): Float = math.pow(float, exponent).toFloat
 
@@ -149,6 +155,12 @@ extension (double: Double)
 
   @targetName("nanDouble")
   inline def nan: Boolean = double.isNaN
+
+  @targetName("successorDouble")
+  inline def successor: Double = Math.nextUp(double)
+
+  @targetName("predecessorDouble")
+  inline def predecessor: Double = Math.nextDown(double)
 
   @targetName("powerDouble")
   inline infix def ** (exponent: Double): Double = math.pow(double, exponent)
