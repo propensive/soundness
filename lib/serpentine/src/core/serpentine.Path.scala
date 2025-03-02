@@ -126,6 +126,25 @@ case class Path(root: Text, descent: Text*):
           type Subject = child.type *: Subject0
           type Constraint = Constraint0
 
+object Relation:
+  object ^
+  object ? extends Relation(0)
+
+
+case class Relation(ascent: Int, descent: Text*):
+  type Platform
+  type Subject <: Tuple
+  type Constraint <: Int
+
+class Ascent(val ascent0: Int) extends Relation(ascent0):
+  type Subject = EmptyTuple
+  type Constraint = ascent0.type
+
+  def / (up: ^.type): Ascent =
+    type Constraint0 = Constraint
+    new Ascent(ascent0 + 1):
+      type Constraint = S[Constraint0]
+
 object Drive:
   def apply(letter: Char): Drive = new Drive(letter)
 
