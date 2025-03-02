@@ -155,7 +155,20 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
           val path = (% / "foo").on[Linux].on[MacOs]
       . assert(_.isEmpty)
 
-    suite(t"Serialization"):
+    suite(t"Relative paths"):
+      test(t"Create a relative path"):
+        val relative: Relation on Linux = ? / "foo"
+        relative
+
+      . assert(_ == Relation(0, List(t"foo")))
+
+      test(t"Create a relative path"):
+        val relative: Relation on Linux = ? / ^ / "foo"
+        path.encode
+
+      . assert(_ == Relation(1, List(t"foo")))
+
+    suite(t"Encoding"):
       test(t"Serialize simple Linux path"):
         val path: Path on Linux = % / "foo"
         path.encode
