@@ -1151,6 +1151,12 @@ object Hypotenuse:
     @targetName("nanF64")
     inline def nan: Boolean = double.isNaN
 
+    @targetName("successorF64")
+    inline def successor: F64 = Math.nextUp(double)
+
+    @targetName("predecessorF64")
+    inline def predecessor: F64 = Math.nextDown(double)
+
   extension (f32: F32)
     @targetName("floatF32")
     inline def float: Float = f32
@@ -1227,6 +1233,11 @@ object Hypotenuse:
     @targetName("nanF32")
     inline def nan: Boolean = float.isNaN
 
+    @targetName("successorF32")
+    inline def successor: F32 = Math.nextUp(float)
+
+    @targetName("predecessorF32")
+    inline def predecessor: F32 = Math.nextDown(float)
 
   extension (u64: U64)
     @targetName("bitsU64")

@@ -32,5 +32,15 @@
                                                                                                   */
 package geodesy
 
+import gossamer.*
+import spectacular.*
+
+object IntercardinalWind:
+  given IntercardinalWind is Showable =
+    case Northeast => t"↗"
+    case Southeast => t"↘"
+    case Southwest => t"↙"
+    case Northwest => t"↖"
+
 enum IntercardinalWind:
   case Northeast, Southeast, Southwest, Northwest
