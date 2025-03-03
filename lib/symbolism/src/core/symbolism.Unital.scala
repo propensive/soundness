@@ -30,8 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package symbolism
 
-export symbolism .
-  { Addable, Subtractable, Multiplicable, Divisible, Negatable, Rootable, sqrt, cbrt, Zeroic,
-    Unital }
+object Unital:
+  given Long is Unital = () => 1L
+  given Int is Unital = () => 1
+  given Short is Unital = () => 1.toShort
+  given Byte is Unital = () => 1.toByte
+  given Double is Unital = () => 1.0
+  given Float is Unital = () => 1.0f
+
+trait Unital:
+  type Self
+  protected def makeOne(): Self
+  def one: Self = makeOne()
