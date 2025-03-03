@@ -41,7 +41,7 @@ object LeapSeconds:
   // seconds, including those which have not yet been determined.
   //                            1972    1980    1988    1996    2004    2012    2020    2028   2035
   //                               ↓       ↓       ↓       ↓       ↓       ↓       ↓       ↓      ↓
-  private var june: Long     = bin"1000000001110100000011100100000000000000100100000000000000000000"
+  private var june:     Long = bin"1000000001110100000011100100000000000000100100000000000000000000"
   private var december: Long = bin"1111111100000001011000010010000001001000000010000000000000000000"
 
   def addLeapSecond(year: Int, midYear: Boolean): Unit =
@@ -56,8 +56,8 @@ object LeapSeconds:
     val decemberShift = n.min(127)/2
     val juneShift = decemberShift + n%2
 
-    10 + (if juneShift > 0 then ones(june >>> (64 - juneShift)) else 0) +
-        (if decemberShift > 0 then ones(december >>> (64 - decemberShift)) else 0)
+    10 + (if juneShift > 0 then ones(june >>> (64 - juneShift)) else 0)
+    + (if decemberShift > 0 then ones(december >>> (64 - decemberShift)) else 0)
 
   private inline val juneToDecember = 15897600000L
   private inline val firstLeapSecond = 94694400000L
