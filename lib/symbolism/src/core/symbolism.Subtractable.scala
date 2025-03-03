@@ -47,17 +47,10 @@ object Subtractable:
     def subtract(minuend: MinuendType, subtrahend: SubtrahendType): ResultType =
       lambda(minuend, subtrahend)
 
-  given Double is Subtractable by Double into Double = Subtractable:
-    (minuend, subtrahend) => minuend - subtrahend
-
-  given Float is Subtractable by Float into Float = Subtractable:
-    (minuend, subtrahend) => minuend - subtrahend
-
-  given Long is Subtractable by Long into Long = Subtractable:
-    (minuend, subtrahend) => minuend - subtrahend
-
-  given Int is Subtractable by Int into Int = Subtractable:
-    (minuend, subtrahend) => minuend - subtrahend
+  given Double is Subtractable by Double into Double = Subtractable(_ - _)
+  given Float is Subtractable by Float into Float = Subtractable(_ - _)
+  given Long is Subtractable by Long into Long = Subtractable(_ - _)
+  given Int is Subtractable by Int into Int = Subtractable(_ - _)
 
   given Short is Subtractable by Short into Short = Subtractable:
     (minuend, subtrahend) => (minuend - subtrahend).toShort
