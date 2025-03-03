@@ -33,116 +33,20 @@
 package aviation
 
 import anticipation.*
-import contingency.*
-import hypotenuse.*
 import prepositional.*
-import proscenium.*
-import quantitative.*
-import rudiments.*
-import symbolism.*
 
 import java.time as jt
 
-object Timing:
-  opaque type Instant = Long
-  opaque type TaiInstant = Long
+object Moment:
+  given generic: RomanCalendar => Moment is Abstractable across Instants into Long =
+    _.instant.generic
 
-  object TaiInstant:
-    erased given underlying: Underlying[TaiInstant, Long] = !!
-    given generic: Timing.TaiInstant is (Abstractable & Instantiable) across Instants into
-                    Long from Long =
-      new Abstractable with Instantiable:
-        type Self = Timing.TaiInstant
-        type Source = Long
-        type Result = Long
-        type Domain = Instants
-        def apply(long: Long): Timing.TaiInstant = long
-        def genericize(instant: Timing.TaiInstant): Long = instant
+case class Moment(date: Date, time: Clockface, timezone: Timezone):
+  def instant(using RomanCalendar): Instant =
+    val ldt =
+      jt.LocalDateTime.of
+       (date.year, date.month.numerical, date.day, time.hour, time.minute, time.second)
 
-  object InstantSubtractable:
-    given instant: Instant is InstantSubtractable into Duration = new InstantSubtractable:
-      type Self = Instant
-      type Result = Duration
-      def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+    Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
 
-    given duration: Duration is InstantSubtractable into Instant = new InstantSubtractable:
-      type Self = Duration
-      type Result = Instant
-      def subtract(left: Instant, right: Duration): Instant = left - (right.value*1000.0).toLong
-
-  trait InstantSubtractable:
-    type Self
-    type Result
-    def subtract(left: Instant, right: Self): Result
-
-  object Instant:
-    def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
-      of(instant.generic)
-
-    erased given underlying: Underlying[Instant, Long] = !!
-    def of(millis: Long): Instant = millis
-
-    given generic: Timing.Instant is (Abstractable & Instantiable) across Instants into Long from
-                    Long =
-      new Abstractable with Instantiable:
-        type Self = Timing.Instant
-        type Result = Long
-        type Source = Long
-        type Domain = Instants
-        def apply(long: Long): Timing.Instant = long
-        def genericize(instant: Timing.Instant): Long = instant
-
-    inline given orderable: Instant is Orderable:
-      inline def compare
-         (inline left: Instant,
-          inline right: Instant,
-          inline strict: Boolean,
-          inline greaterThan: Boolean)
-      :     Boolean =
-        if left.long == right.long then !strict else (left.long < right.long)^greaterThan
-
-    given ordering: Ordering[Instant] = Ordering.Long
-
-    given plus: Instant is Addable by Duration into Instant = new Addable:
-      type Self = Instant
-      type Operand = Duration
-      type Result = Instant
-      def add(instant: Instant, duration: Duration): Instant =
-        instant + (duration.value/1000.0).toLong
-
-    given minus: [OperandType: InstantSubtractable]
-    =>    Instant is Subtractable by OperandType into OperandType.Result =
-      OperandType.subtract(_, _)
-
-  type Duration = Quantity[Seconds[1]]
-
-  object Duration:
-    def of(millis: Long): Duration = Quantity(millis/1000.0)
-
-    given generic: Timing.Duration is (GenericDuration & SpecificDuration) =
-      new GenericDuration with SpecificDuration:
-        type Self = Timing.Duration
-        def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
-        def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
-
-  extension (instant: Instant)
-    @targetName("to")
-    infix def ~ (that: Instant): Period = Period(instant, that)
-
-    def tai: TaiInstant = LeapSeconds.tai(instant)
-
-    infix def in (using RomanCalendar)(timezone: Timezone): LocalTime =
-      val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
-
-      val date = zonedTime.getMonthValue.absolve match
-        case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
-
-      val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
-        case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
-
-      LocalTime(date, time, timezone)
-
-    def long: Long = instant
-
-  extension (duration: Duration)
-    def from(instant: Instant): Period = Period(instant, Instant.plus.add(instant, duration))
+  def timestamp: Timestamp = Timestamp(date, time)

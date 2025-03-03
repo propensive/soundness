@@ -32,30 +32,13 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
-import contextual.*
-import contingency.*
-import fulminate.*
-import rudiments.*
+import denominative.*
 
-import java.util as ju
-import java.time as jt
+object WeekNumbering:
+  given european: WeekNumbering = () => 0
+  given western: WeekNumbering = () => 1
 
-case class Timezone private(name: Text):
-  def stdlib: jt.ZoneId = jt.ZoneId.of(name.s).nn
-
-object Timezone:
-  private val ids: Set[Text] = ju.TimeZone.getAvailableIDs.nn.map(_.nn).map(Text(_)).to(Set)
-
-  def apply(name: Text)(using Tactic[TimezoneError]): Timezone = parse(name)
-
-  def parse(name: Text)(using Tactic[TimezoneError]): Timezone =
-    if ids.contains(name) then new Timezone(name)
-    else raise(TimezoneError(name)) yet new Timezone(ids.head)
-
-  object Tz extends Verifier[Timezone]:
-    def verify(name: Text): Timezone =
-      try throwErrors(Timezone.parse(name))
-      catch case err: TimezoneError =>
-        import errorDiagnostics.empty
-        throw InterpolationError(err.message)
+trait WeekNumbering:
+  protected def offset(): Int
+  def ordinal(weekday: Weekday): Ordinal = Ordinal.zerary((weekday.ordinal + offset())%7)
+  def weekday(ordinal: Ordinal): Weekday = Weekday.fromOrdinal((ordinal.n0 + 7 - offset())%7)
