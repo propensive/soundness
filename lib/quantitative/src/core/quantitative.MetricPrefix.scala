@@ -38,7 +38,7 @@ import hypotenuse.*
 
 class MetricPrefix(val name: String, val symbol: String, val exponent: Int, val base: 2 | 10):
   def apply[UnitsType <: Measure](unit: MetricUnit[UnitsType]): Quantity[UnitsType] =
-    Quantity(unit*Quantity(base**exponent))
+    Quantity((base**exponent)*unit.value)
 
 object NoPrefix extends MetricPrefix("", "", 0, 10)
 
