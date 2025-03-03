@@ -132,21 +132,21 @@ extension [ValueType](iterable: Iterable[ValueType])
     inline compiletime.summonInline[ValueType is Addable by ValueType] match
       case addable: (ValueType is Addable by ValueType into ValueType) =>
         iterable.foldLeft(zeroic.zero)(addable.add)
+
       case _ =>
-        compiletime.error("No Addable instance found")
+        compiletime.error("No suitable Addable instance found")
 
-  def mean
-     (using addable:   ValueType is Addable by ValueType into ValueType,
-            zeroic:    ValueType is Zeroic,
-            divisible: ValueType is Divisible by Int)
+  inline def mean(using zeroic: ValueType is Zeroic, divisible: ValueType is Divisible by Int)
   :     divisible.Result =
-      iterable.total/iterable.size
+    iterable.total/iterable.size
 
-  def product
-     (using multiplicable: ValueType is Multiplicable by ValueType into ValueType,
-            unitary:       ValueType is Unitary)
-  :     ValueType =
-    iterable.foldLeft(unitary.one)(multiplicable.multiply)
+  inline def product(using unital: ValueType is Unital): ValueType =
+    inline compiletime.summonInline[ValueType is Multiplicable by ValueType] match
+      case multiplicable: (ValueType is Multiplicable by ValueType into ValueType) =>
+        iterable.foldLeft(unital.one)(multiplicable.multiply)
+
+      case _ =>
+        compiletime.error("No suitable Multiplicable instance found")
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
     var ordinal: Ordinal = Prim
