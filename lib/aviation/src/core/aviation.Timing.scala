@@ -59,6 +59,21 @@ object Timing:
         def apply(long: Long): Timing.TaiInstant = long
         def genericize(instant: Timing.TaiInstant): Long = instant
 
+  object InstantSubtractable:
+    given instant: Instant is InstantSubtractable into Duration = new InstantSubtractable:
+      type Self = Instant
+      type Result = Duration
+      def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+
+    given duration: Duration is InstantSubtractable into Instant = new InstantSubtractable:
+      type Self = Duration
+      type Result = Instant
+      def subtract(left: Instant, right: Duration): Instant = left - (right.value*1000.0).toLong
+
+  trait InstantSubtractable:
+    type Self
+    type Result
+    def subtract(left: Instant, right: Self): Result
 
   object Instant:
     def apply[InstantType: Abstractable across Instants into Long](instant: InstantType): Instant =
@@ -84,22 +99,20 @@ object Timing:
           inline strict: Boolean,
           inline greaterThan: Boolean)
       :     Boolean =
-        if left == right then !strict else (left < right)^greaterThan
+        if left.long == right.long then !strict else (left.long < right.long)^greaterThan
 
     given ordering: Ordering[Instant] = Ordering.Long
 
     given plus: Instant is Addable by Duration into Instant = new Addable:
       type Self = Instant
-      type Result = Instant
       type Operand = Duration
+      type Result = Instant
       def add(instant: Instant, duration: Duration): Instant =
         instant + (duration.value/1000.0).toLong
 
-    given minus: Instant is Subtractable by Instant into Duration = new Subtractable:
-      type Self = Instant
-      type Result = Duration
-      type Operand = Instant
-      def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
+    given minus: [OperandType: InstantSubtractable]
+    =>    Instant is Subtractable by OperandType into OperandType.Result =
+      OperandType.subtract(_, _)
 
   type Duration = Quantity[Seconds[1]]
 

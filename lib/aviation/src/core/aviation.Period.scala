@@ -32,5 +32,17 @@
                                                                                                   */
 package aviation
 
-case class Period(from: Instant, to: Instant):
-  def duration: Duration = to - from
+import hypotenuse.*
+import vacuous.*
+
+case class Period(start: Instant, finish: Instant):
+  def duration = finish - start
+
+  def intersect(period: Period): Optional[Period] =
+    val start2 = period.start.max(start)
+    val finish2 = period.finish.min(finish)
+    if start2 >= finish2 then Unset else Period(start2, finish2)
+
+  def union(period: Period): Set[Period] =
+    if intersect(period).absent then Set(this, period)
+    else Set(Period(start.min(period.start), finish.max(period.finish)))
