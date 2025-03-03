@@ -38,8 +38,11 @@ import distillate.*
 import fulminate.*
 import kaleidoscope.*
 import prepositional.*
+import rudiments.*
 
 import errorDiagnostics.stackTraces
+
+import java.time as jt
 
 object Timestamp:
   import calendars.gregorian
@@ -61,8 +64,15 @@ object Timestamp:
               Base60(second.decode[Int])))
 
       case value =>
-        raise(TimestampError(value))
-        Timestamp(2000-Jan-1, Clockface(0, 0, 0))
+        raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
 
 case class Timestamp(date: Date, time: Clockface):
   def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
+
+  def stdlib(using RomanCalendar): jt.LocalDateTime =
+    jt.LocalDateTime.of
+     (date.year, date.month.ordinal, date.day, time.hour, time.minute, time.second)
+    . nn
+
+  def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
+    Instant(stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
