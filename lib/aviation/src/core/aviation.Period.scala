@@ -36,7 +36,7 @@ import hypotenuse.*
 import vacuous.*
 
 case class Period(start: Instant, finish: Instant):
-  def duration = finish - start
+  def duration: Duration = finish - start
 
   def intersect(period: Period): Optional[Period] =
     val start2 = period.start.max(start)
