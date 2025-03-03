@@ -1,6 +1,7 @@
 package build
 
 import mill._
+import mill.api.Result
 import scalalib._
 import publish._
 import os.Path
@@ -63,7 +64,6 @@ trait SoundnessSubModule extends BaseScalaModule with PublishModule {
   def resources = Task {
     Seq(PathRef(millSourcePath / ".." / ".." / "res"))
   }
-
   def sources = Task.Sources {
     Seq(PathRef(millSourcePath))
   }
@@ -91,13 +91,26 @@ trait ProbablyTestModule extends BaseScalaModule {
   )
 }
 
-// ------------------------ GROUPS ------------------------
+trait RecursivePublishModule { self: BaseScalaModule =>
+  def publishLocal(localIvyRepo: String = null): Command[Unit] = Task.Command {
+    T.traverse(
+      this.moduleDeps.flatMap {
+        case m: RecursivePublishModule => m.moduleDeps
+        case m => Seq(m)
+      }.collect {
+        case m: PublishModule => m
+      }
+    )(module => module.publishLocal().t)()
+    Result.Success(())
+  }
+}
 
+// ------------------------ GROUPS ------------------------
 object soundness extends ScalaModule {
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
-  object base extends BaseScalaModule with PublishModule {
+  object base extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(ambience.core, aviation.core, contextual.core,
         contingency.core, denominative.core, digression.core, diuretic.core, feudalism.core,
         fulminate.core, hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core,
@@ -105,55 +118,47 @@ object soundness extends ScalaModule {
         nomenclature.core, parasite.core, rudiments.core, spectacular.core, symbolism.core,
         prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
         typonym.core, zephyrine.core)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object cli extends BaseScalaModule with PublishModule {
+  object cli extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(burdock.core, dendrology.tree, dendrology.dag, exoskeleton.completions,
         escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi, eucalyptus.syslog,
         guillotine.core, escapade.core, imperial.core, profanity.core, surveillance.core,
         punctuation.ansi)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object data extends BaseScalaModule with PublishModule {
+  object data extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
         gastronomy.core, chiaroscuro.core, merino.core, jacinta.core, monotonous.core,
         panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core,
         zeppelin.core, xylophone.core, anamnesis.core)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object sci extends BaseScalaModule with PublishModule {
+  object sci extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(abacist.core, acyclicity.core, baroque.core, cardinality.core,
         charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
         quantitative.core)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object test extends BaseScalaModule with PublishModule {
+  object test extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
         superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object tool extends BaseScalaModule with PublishModule {
+  object tool extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(anthology.core, harlequin.core, hellenism.core, hyperbole.core,
         octogenarian.core, revolution.core, umbrageous.plugin, anthology.java)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object web extends BaseScalaModule with PublishModule {
+  object web extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
         honeycomb.core, nettlesome.core, nettlesome.url, hallucination.core, phoenicia.core,
         punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
         telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html)
-    def scalaVersion = settings.scalaVersion
   }
 
-  object all extends BaseScalaModule with PublishModule {
+  object all extends BaseScalaModule with RecursivePublishModule {
     def moduleDeps = Seq(base, cli, data, sci, test, tool, web)
-    def scalaVersion = settings.scalaVersion
   }
 }
 

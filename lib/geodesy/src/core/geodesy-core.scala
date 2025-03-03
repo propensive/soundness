@@ -49,8 +49,8 @@ extension (double: Double)
 export CardinalWind.{North, South, East, West}
 export IntercardinalWind.{Northeast, Southeast, Southwest, Northwest}
 
-export HalfWind
-. { NorthNortheast, EastNortheast, EastSoutheast, SouthSoutheast, SouthSouthwest, WestSouthwest,
+export HalfWind .
+  { NorthNortheast, EastNortheast, EastSoutheast, SouthSoutheast, SouthSouthwest, WestSouthwest,
     WestNorthwest, NorthNorthwest }
 
 package compassBearings:

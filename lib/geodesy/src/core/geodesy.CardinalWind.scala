@@ -32,5 +32,15 @@
                                                                                                   */
 package geodesy
 
+import gossamer.*
+import spectacular.*
+
+object CardinalWind:
+  given CardinalWind is Showable =
+    case North => t"↑"
+    case East  => t"→"
+    case South => t"↓"
+    case West  => t"←"
+
 enum CardinalWind:
   case North, East, South, West
