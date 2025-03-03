@@ -40,17 +40,17 @@ import vacuous.*
 
 export Aviation2.{Instant, Duration}
 export Aviation.Date
-export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
+export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
 
 package calendars:
   given julian: RomanCalendar:
-    def leapYear(year: Year): Boolean = year%4 == 0
+    def leapYear(year: YearUnit): Boolean = year%4 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4
 
   given gregorian: RomanCalendar:
-    def leapYear(year: Year): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
+    def leapYear(year: YearUnit): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
 def now()(using clock: Clock): Instant = clock()

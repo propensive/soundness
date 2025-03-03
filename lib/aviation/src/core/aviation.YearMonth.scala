@@ -38,7 +38,7 @@ import fulminate.*
 import symbolism.*
 import vacuous.*
 
-case class YearMonth(year: Int, month: MonthName):
+case class YearMonth(year: Int, month: Month):
   import scala.compiletime.ops.int.*
 
 object YearMonth:

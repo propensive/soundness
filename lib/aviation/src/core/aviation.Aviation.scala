@@ -81,7 +81,7 @@ object Aviation:
     erased given underlying: Underlying[Date, Int] = !!
     def of(day: Int): Date = day
 
-    def apply(using cal: Calendar)(year: cal.Year, month: cal.Month, day: cal.Day)
+    def apply(using cal: Calendar)(year: cal.YearUnit, month: cal.MonthUnit, day: cal.DayUnit)
     :     Date raises DateError =
       cal.julianDay(year, month, day)
 
@@ -122,21 +122,21 @@ object Aviation:
       case y :: m :: d :: Nil =>
         try
           import calendars.gregorian
-          Date(y.s.toInt, MonthName(m.s.toInt), d.s.toInt)
+          Date(y.s.toInt, Month(m.s.toInt), d.s.toInt)
         catch
           case error: NumberFormatException =>
-            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
+            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
 
           case error: ju.NoSuchElementException =>
-            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
+            raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
 
       case cnt =>
-        raise(DateError(value)) yet Date(using calendars.gregorian)(2000, MonthName(1), 1)
+        raise(DateError(value)) yet Date(using calendars.gregorian)(2000, Month(1), 1)
 
   extension (date: Date)
-    def day(using calendar: Calendar): calendar.Day = calendar.getDay(date)
-    def month(using calendar: Calendar): calendar.Month = calendar.getMonth(date)
-    def year(using calendar: Calendar): calendar.Year = calendar.getYear(date)
+    def day(using calendar: Calendar): calendar.DayUnit = calendar.getDay(date)
+    def month(using calendar: Calendar): calendar.MonthUnit = calendar.getMonth(date)
+    def year(using calendar: Calendar): calendar.YearUnit = calendar.getYear(date)
 
     def yearDay(using calendar: Calendar): Int =
       date - calendar.zerothDayOfYear(calendar.getYear(date))

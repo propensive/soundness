@@ -96,10 +96,10 @@ case class Timespan
    (override val years:  Int,
     override val months: Int,
     override val days:   Int,
-    hours:            Int,
-    minutes:          Int,
-    seconds:          Int)
-extends DiurnalTimespan, TemporalTimespan:
+    hours:               Int,
+    minutes:             Int,
+    seconds:             Int)
+extends DiurnalTimespan:
   def simplify(using timeSys: TimeSystem[StandardTime]): Timespan = timeSys.simplify(this)
 
   @targetName("times")

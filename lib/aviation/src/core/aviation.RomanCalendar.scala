@@ -41,27 +41,29 @@ import spectacular.*
 import vacuous.*
 
 abstract class RomanCalendar() extends Calendar:
-  type Year = Int
-  type Month = MonthName
-  type Day = Int
+  type YearUnit = Int
+  type MonthUnit = Month
+  type DayUnit = Int
 
-  def leapYear(year: Year): Boolean
+  def leapYear(year: YearUnit): Boolean
 
-  def daysInMonth(month: Month, year: Year): Int = month match
+  def daysInMonth(month: MonthUnit, year: YearUnit): Int = month match
     case Jan | Mar | May | Jul | Aug | Oct | Dec => 31
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
 
   def add(date: Date, period: Timespan): Date =
     val monthTotal = getMonth(date).ordinal + period.months
-    val month2 = MonthName.fromOrdinal(monthTotal%12)
+    val month2 = Month.fromOrdinal(monthTotal%12)
     val year2 = getYear(date) + period.years + monthTotal/12
 
     safely(julianDay(year2, month2, getDay(date)).addDays(period.days)).vouch
 
   def leapYearsSinceEpoch(year: Int): Int
-  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
-  def zerothDayOfYear(year: Year): Date = Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
+  def daysInYear(year: YearUnit): Int = if leapYear(year) then 366 else 365
+
+  def zerothDayOfYear(year: YearUnit): Date =
+    Date.of(year*365 + leapYearsSinceEpoch(year) + 1721059)
 
   def getYear(date: Date): Int =
     def recur(year: Int): Int =
@@ -70,19 +72,19 @@ abstract class RomanCalendar() extends Calendar:
 
     recur(((date.julianDay - 1721059)/366).toInt)
 
-  def getMonth(date: Date): MonthName =
+  def getMonth(date: Date): Month =
     val year = getYear(date)
     val ly = leapYear(year)
-    MonthName.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
+    Month.values.takeWhile(_.offset(ly) < date.yearDay(using this)).last
 
   def getDay(date: Date): Int =
     val year = getYear(date)
     val month = getMonth(date)
     date.julianDay - zerothDayOfYear(year).julianDay - month.offset(leapYear(year))
 
-  def julianDay(year: Int, month: MonthName, day: Int): Date raises DateError =
+  def julianDay(year: Int, month: Month, day: Int): Date raises DateError =
     if day < 1 || day > daysInMonth(month, year) then
       raise(DateError(t"$year-${month.numerical}-$day"))
-      Date(using calendars.julian)(2000, MonthName(1), 1)
+      Date(using calendars.julian)(2000, Month(1), 1)
 
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day)

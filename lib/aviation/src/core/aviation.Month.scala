@@ -32,7 +32,40 @@
                                                                                                   */
 package aviation
 
-trait TemporalTimespan:
-  def hours: Int
-  def minutes: Int
-  def seconds: Int
+import anticipation.*
+import gossamer.*
+import symbolism.*
+
+object Month:
+  def apply(i: Int): Month = Month.fromOrdinal(i - 1)
+
+  def unapply(value: Text): Option[Month] =
+    try Some(Month.valueOf(value.lower.capitalize.s))
+    catch case err: IllegalArgumentException => None
+
+  def unapply(value: Int): Option[Month] =
+    if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
+
+  given monthOfYear: Int is Subtractable:
+    type Result = YearMonth
+    type Operand = Month
+    def subtract(year: Int, month: Month) = new YearMonth(year, month)
+
+enum Month:
+  case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
+
+  def numerical: Int = ordinal + 1
+
+  def offset(leapYear: Boolean): Int = (if leapYear && ordinal > 1 then 1 else 0) + this.match
+    case Jan => 0
+    case Feb => 31
+    case Mar => 59
+    case Apr => 90
+    case May => 120
+    case Jun => 151
+    case Jul => 181
+    case Aug => 212
+    case Sep => 243
+    case Oct => 273
+    case Nov => 304
+    case Dec => 334
