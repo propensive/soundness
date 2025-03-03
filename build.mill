@@ -774,6 +774,10 @@ object serpentine extends Library:
   object core extends Component(gossamer.core, nomenclature.core, ambience.core)
   object test extends Tests(core)
 
+object sinister extends Library:
+  object core extends Component(enigmatic.core, telekinesis.core, jacinta.core, hallucination.core, honeycomb.core)
+  object test extends Tests(core)
+
 object spectacular extends Library:
   object core extends Component(rudiments.core, stenography.core, inimitable.core, contingency.core, wisteria.core, digression.core)
   object test extends Tests(core)
