@@ -38,7 +38,7 @@ import fulminate.*
 import prepositional.*
 import vacuous.*
 
-export Timing.{Instant, Duration}
+export Aviation2.{Instant, Duration}
 export Aviation.Date
 export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 

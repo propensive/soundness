@@ -36,17 +36,17 @@ import aviation.*
 import prepositional.*
 
 package instantApi:
-  given aviationInstant: Timing.Instant is (Abstractable & Instantiable) across Instants into
+  given aviationInstant: Aviation2.Instant is (Abstractable & Instantiable) across Instants into
                           Long from Long =
     new Abstractable with Instantiable:
-      type Self = Timing.Instant
+      type Self = Aviation2.Instant
       type Source = Long
       type Result = Long
       type Domain = Instants
-      export Timing.Instant.generic.{genericize, apply}
+      export Aviation2.Instant.generic.{genericize, apply}
 
 package durationApi:
-  given aviationDuration: Timing.Duration is GenericDuration & SpecificDuration =
+  given aviationDuration: Aviation2.Duration is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
-      type Self = Timing.Duration
-      export Timing.Duration.generic.{duration, milliseconds}
+      type Self = Aviation2.Duration
+      export Aviation2.Duration.generic.{duration, milliseconds}

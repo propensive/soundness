@@ -48,3 +48,5 @@ case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
        (date.year, date.month.numerical, date.day, time.hour, time.minute, time.second)
 
     Instant.of(ldt.nn.atZone(jt.ZoneId.of(timezone.name.s)).nn.toInstant.nn.toEpochMilli)
+
+  def timestamp: Timestamp = Timestamp(date, time)

@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import java.time as jt
+
 import anticipation.*
 import contingency.*
 import hypotenuse.*
@@ -41,23 +43,21 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 
-import java.time as jt
-
-object Timing:
+object Aviation2:
   opaque type Instant = Long
   opaque type TaiInstant = Long
 
   object TaiInstant:
     erased given underlying: Underlying[TaiInstant, Long] = !!
-    given generic: Timing.TaiInstant is (Abstractable & Instantiable) across Instants into
+    given generic: Aviation2.TaiInstant is (Abstractable & Instantiable) across Instants into
                     Long from Long =
       new Abstractable with Instantiable:
-        type Self = Timing.TaiInstant
+        type Self = Aviation2.TaiInstant
         type Source = Long
         type Result = Long
         type Domain = Instants
-        def apply(long: Long): Timing.TaiInstant = long
-        def genericize(instant: Timing.TaiInstant): Long = instant
+        def apply(long: Long): Aviation2.TaiInstant = long
+        def genericize(instant: Aviation2.TaiInstant): Long = instant
 
   object InstantSubtractable:
     given instant: Instant is InstantSubtractable into Duration = new InstantSubtractable:
@@ -82,15 +82,15 @@ object Timing:
     erased given underlying: Underlying[Instant, Long] = !!
     def of(millis: Long): Instant = millis
 
-    given generic: Timing.Instant is (Abstractable & Instantiable) across Instants into Long from
+    given generic: Aviation2.Instant is (Abstractable & Instantiable) across Instants into Long from
                     Long =
       new Abstractable with Instantiable:
-        type Self = Timing.Instant
+        type Self = Aviation2.Instant
         type Result = Long
         type Source = Long
         type Domain = Instants
-        def apply(long: Long): Timing.Instant = long
-        def genericize(instant: Timing.Instant): Long = instant
+        def apply(long: Long): Aviation2.Instant = long
+        def genericize(instant: Aviation2.Instant): Long = instant
 
     inline given orderable: Instant is Orderable:
       inline def compare
@@ -119,11 +119,11 @@ object Timing:
   object Duration:
     def of(millis: Long): Duration = Quantity(millis/1000.0)
 
-    given generic: Timing.Duration is (GenericDuration & SpecificDuration) =
+    given generic: Aviation2.Duration is (GenericDuration & SpecificDuration) =
       new GenericDuration with SpecificDuration:
-        type Self = Timing.Duration
-        def duration(milliseconds: Long): Timing.Duration = Quantity(milliseconds.toDouble)
-        def milliseconds(duration: Timing.Duration): Long = (duration.value*1000).toLong
+        type Self = Aviation2.Duration
+        def duration(milliseconds: Long): Aviation2.Duration = Quantity(milliseconds.toDouble)
+        def milliseconds(duration: Aviation2.Duration): Long = (duration.value*1000).toLong
 
   extension (instant: Instant)
     @targetName("to")
@@ -141,6 +141,9 @@ object Timing:
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
 
       LocalTime(date, time, timezone)
+
+    def timestamp(using calendar: RomanCalendar, timezone: Timezone): Timestamp =
+      in(timezone).timestamp
 
     def long: Long = instant
 
