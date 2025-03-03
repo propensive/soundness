@@ -39,7 +39,7 @@ export rudiments .
     triple, is, matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to,
     WorkingDirectoryError, HomeDirectoryError, WorkingDirectory, HomeDirectory, workingDirectory,
     homeDirectory, prim, sec, ter, unwind, at, Indexable, yet, Bijection, bijection, segment,
-    Segmentable, Digit, temporaryDirectory }
+    Segmentable, Digit, temporaryDirectory, total, product, mean }
 
 package workingDirectories:
   export rudiments.workingDirectories.{systemProperty, default}

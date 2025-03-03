@@ -46,6 +46,7 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import proscenium.*
+import symbolism.*
 import vacuous.*
 
 def fixpoint[ValueType](initial: ValueType)
@@ -127,6 +128,26 @@ extension [ValueType](iterator: Iterator[ValueType])
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
+  inline def total(using zeroic: ValueType is Zeroic): ValueType =
+    inline compiletime.summonInline[ValueType is Addable by ValueType] match
+      case addable: (ValueType is Addable by ValueType into ValueType) =>
+        iterable.foldLeft(zeroic.zero)(addable.add)
+      case _ =>
+        compiletime.error("No Addable instance found")
+
+  def mean
+     (using addable:   ValueType is Addable by ValueType into ValueType,
+            zeroic:    ValueType is Zeroic,
+            divisible: ValueType is Divisible by Int)
+  :     divisible.Result =
+      iterable.total/iterable.size
+
+  def product
+     (using multiplicable: ValueType is Multiplicable by ValueType into ValueType,
+            unitary:       ValueType is Unitary)
+  :     ValueType =
+    iterable.foldLeft(unitary.one)(multiplicable.multiply)
+
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
     var ordinal: Ordinal = Prim
     iterable.iterator.foreach: value =>

@@ -72,11 +72,12 @@ object Quantitative extends Quantitative2:
   object Quantity:
     erased given underlying: [UnitsType <: Measure] => Underlying[Quantity[UnitsType], Double] = !!
     erased given [UnitsType <: Measure]: CanEqual[Quantity[UnitsType], Quantity[UnitsType]] = !!
+    given [UnitsType <: Measure] => Quantity[UnitsType] is Zeroic = () => Quantity(0.0)
+    given numeric: [UnitsType <: Measure] => Numeric[Quantity[UnitsType]] = summon[Numeric[Double]]
 
     given genericDuration: Quantity[Seconds[1]] is GenericDuration =
       quantity => (quantity*1000.0).toLong
 
-    given numeric: [UnitsType <: Measure] => Numeric[Quantity[UnitsType]] = summon[Numeric[Double]]
 
     given specificDuration: Quantity[Seconds[1]] is SpecificDuration =
       long => Quantity(long/1000.0)

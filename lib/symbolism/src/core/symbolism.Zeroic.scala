@@ -30,8 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package symbolism
 
-export symbolism .
-  { Addable, Subtractable, Multiplicable, Divisible, Negatable, Rootable, sqrt, cbrt, Zeroic,
-    Unital }
+object Zeroic:
+  given Long is Zeroic = () => 0L
+  given Int is Zeroic = () => 0
+  given Short is Zeroic = () => 0.toShort
+  given Byte is Zeroic = () => 0.toByte
+  given Double is Zeroic = () => 0.0
+  given Float is Zeroic = () => 0.0f
+  given String is Zeroic = () => ""
+
+trait Zeroic:
+  type Self
+  protected def makeZero(): Self
+  def zero: Self = makeZero()
