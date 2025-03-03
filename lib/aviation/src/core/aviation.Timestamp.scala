@@ -67,7 +67,7 @@ object Timestamp:
         raise(TimestampError(value)) yet Timestamp(2000-Jan-1, Clockface(0, 0, 0))
 
 case class Timestamp(date: Date, time: Clockface):
-  def in(timezone: Timezone): LocalTime = LocalTime(date, time, timezone)
+  def in(timezone: Timezone): Moment = Moment(date, time, timezone)
 
   def stdlib(using RomanCalendar): jt.LocalDateTime =
     jt.LocalDateTime.of

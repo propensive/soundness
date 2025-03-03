@@ -131,7 +131,7 @@ object Aviation2:
 
     def tai: TaiInstant = LeapSeconds.tai(instant)
 
-    infix def in (using RomanCalendar)(timezone: Timezone): LocalTime =
+    infix def in (using RomanCalendar)(timezone: Timezone): Moment =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
 
       val date = zonedTime.getMonthValue.absolve match
@@ -140,7 +140,7 @@ object Aviation2:
       val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
 
-      LocalTime(date, time, timezone)
+      Moment(date, time, timezone)
 
     def timestamp(using calendar: RomanCalendar, timezone: Timezone): Timestamp =
       in(timezone).timestamp

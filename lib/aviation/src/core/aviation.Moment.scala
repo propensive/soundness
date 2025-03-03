@@ -37,11 +37,11 @@ import prepositional.*
 
 import java.time as jt
 
-object LocalTime:
-  given generic: RomanCalendar => LocalTime is Abstractable across Instants into Long =
+object Moment:
+  given generic: RomanCalendar => Moment is Abstractable across Instants into Long =
     _.instant.generic
 
-case class LocalTime(date: Date, time: Clockface, timezone: Timezone):
+case class Moment(date: Date, time: Clockface, timezone: Timezone):
   def instant(using RomanCalendar): Instant =
     val ldt =
       jt.LocalDateTime.of
