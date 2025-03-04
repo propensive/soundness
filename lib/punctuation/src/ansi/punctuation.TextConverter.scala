@@ -146,7 +146,7 @@ open class TextConverter():
       case Emphasis(children*)     => e"$Italic(${text(children)})"
       case Strong(children*)       => e"$Bold(${text(children)})"
       case SourceCode(code)        => e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
-      case Copy(text)              => e"$text"
+      case Prose(text)             => e"$text"
       case BulletList(_, _, _, _*) => e""
       case Reference(_, _)         => e""
       case ThematicBreak()         => e""
@@ -172,7 +172,7 @@ open class TextConverter():
     case Markdown.Ast.Inline.LineBreak                => e"\n"
     case Markdown.Ast.Inline.Emphasis(children*)      => e"$Italic(${children.map(phrasing).join})"
     case Markdown.Ast.Inline.Strong(children*)        => e"$Bold(${children.map(phrasing).join})"
-    case Markdown.Ast.Inline.Copy(str)                => e"${str.sub(t"\n", t" ")}"
+    case Markdown.Ast.Inline.Prose(str)               => e"${str.sub(t"\n", t" ")}"
 
     case Markdown.Ast.Inline.SourceCode(code) =>
       e"${webColors.YellowGreen}(${Bg(Srgb(0, 0.1, 0))}($code))"
