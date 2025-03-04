@@ -65,6 +65,11 @@ object HtmlAttribute:
 
   given accesskey: ("accesskey" is HtmlAttribute[Char]) = _.show
   given action: ("action" is HtmlAttribute[Text]) = identity(_)
+
+  given action2: [UrlType: Abstractable across Urls into Text]
+  =>    ("action" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given allowfullscreen: ("allowfullscreen" is HtmlAttribute[Boolean]) = _ => Unset
   given allowpaymentrequest: ("allowpaymentrequest" is HtmlAttribute[Boolean]) = _ => Unset
   given alt: ("alt" is HtmlAttribute[Text]) = identity(_)
@@ -78,6 +83,9 @@ object HtmlAttribute:
   given checkedBoolean: ("checked" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given cite: ("cite" is HtmlAttribute[Text]) = identity(_)
 
+  given cite2: [UrlType: Abstractable across Urls into Text] => ("cite" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given `class`: ("class" is HtmlAttribute[List[CssClass]]):
     override def rename: Optional[Text] = t"class"
     def convert(value: List[CssClass]): Text = value.map(_.name).join(t" ")
@@ -88,6 +96,11 @@ object HtmlAttribute:
 
   given code: ("code" is HtmlAttribute[Text]) = identity(_) // MediaError
   given codebase: ("codebase" is HtmlAttribute[Text]) = identity(_)
+
+  given codebase2: [UrlType: Abstractable across Urls into Text]
+  =>    ("codebase" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given cols: ("cols" is HtmlAttribute[Int]) = _.show
   given colspan: ("colspan" is HtmlAttribute[Int]) = _.show
   given content: ("content" is HtmlAttribute[Text]) = identity(_)
@@ -99,6 +112,10 @@ object HtmlAttribute:
   given coords: ("coords" is HtmlAttribute[Seq[Double]]) = _.map(_.toString.show).join(t",")
   given crossorigin: ("crossorigin" is HtmlAttribute[Crossorigin]) = _.show
   given data: ("data" is HtmlAttribute[Text]) = identity(_)
+
+  given data2: [UrlType: Abstractable across Urls into Text] => ("data" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given datetime: ("datetime" is HtmlAttribute[Text]) = identity(_) // To be provided by Aviation
   given default: ("default" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given defer: ("defer" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
@@ -131,6 +148,11 @@ object HtmlAttribute:
 
   given form: ("form" is HtmlAttribute[DomId]) = _.name
   given formaction: ("formaction" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
+
+  given formaction2: [UrlType: Abstractable across Urls into Text]
+  =>    ("formaction" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given formenctype: ("formenctype" is HtmlAttribute[Text]) = identity(_)
   given formmethod: ("formmethod" is HtmlAttribute[Method]) = _.show
   given formnovalidate: ("formnovalidate" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
@@ -163,6 +185,11 @@ object HtmlAttribute:
   given loop: ("loop" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given low: ("low" is HtmlAttribute[Double]) = _.toString.tt
   given manifest: ("manifest" is HtmlAttribute[Text]) = identity(_) // Provided by Scintillate
+
+  given manifest2: [UrlType: Abstractable across Urls into Text]
+  =>    ("manifest" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given max: ("max" is HtmlAttribute[Double | Int]) = _.toString.show
   given maxlength: ("maxlength" is HtmlAttribute[Int]) = _.show
   given minlength: ("minlength" is HtmlAttribute[Int]) = _.show
@@ -185,6 +212,11 @@ object HtmlAttribute:
   given placeholder: ("placeholder" is HtmlAttribute[Text]) = identity(_)
   given playsinline: ("playsinline" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given poster: ("poster" is HtmlAttribute[Text]) = identity(_)
+
+  given poster2: [UrlType: Abstractable across Urls into Text]
+  =>    ("poster" is HtmlAttribute[UrlType]) =
+    _.generic
+
   given preload: ("preload" is HtmlAttribute[Preload]) = _.show
   given readonly: ("readonly" is HtmlAttribute[Boolean]) = if _ then Unset else NotShown
   given referrerpolicy: ("referrerpolicy" is HtmlAttribute[Text]) = identity(_)
@@ -207,6 +239,9 @@ object HtmlAttribute:
 
   given src2: [PathType: Abstractable across Paths into Text]
   =>    ("src" is HtmlAttribute[PathType]) =
+    _.generic
+
+  given src3: [UrlType: Abstractable across Urls into Text] => ("src" is HtmlAttribute[UrlType]) =
     _.generic
 
   given srcdoc: ("srcdoc" is HtmlAttribute[Html[?]]) = _.show

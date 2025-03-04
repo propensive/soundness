@@ -92,10 +92,9 @@ object Url:
     def elementText(element: Name[HttpUrl]): Text = element.text
     def caseSensitivity: Case = Case.Sensitive
 
-  given HttpUrl is Abstractable across Urls into Text = _.show
+  given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
 
-  given (Tactic[UrlError])
-  =>    HttpUrl is Instantiable across Urls from Text =
+  given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
     Url.parse(_)
 
   given showable: [SchemeType <: Label] => Url[SchemeType] is Showable = url =>
@@ -114,43 +113,6 @@ object Url:
 
   given communicable: [SchemeType <: Label] => Url[SchemeType] is Communicable =
     url => Message(url.show)
-
-  given action: [SchemeType <: Label] => ("action" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"action"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given codebale: [SchemeType <: Label] => ("codebase" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"codebase"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given cite: [SchemeType <: Label] => ("cite" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"cite"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given data: [SchemeType <: Label] => ("data" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"data"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given formaction: [SchemeType <: Label]
-  =>    ("formaction" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"formaction"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given poster: [SchemeType <: Label] => ("poster" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"poster"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given src: [SchemeType <: Label] => ("src" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"src"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given href: [SchemeType <: Label] => ("href" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"href"
-    def serialize(url: Url[SchemeType]): Text = url.show
-
-  given manifest: [SchemeType <: Label] => ("manifest" is GenericHtmlAttribute[Url[SchemeType]]):
-    def name: Text = t"manifest"
-    def serialize(url: Url[SchemeType]): Text = url.show
 
   def parse[SchemeType <: Label](value: Text)
   :     Url[SchemeType] raises UrlError =
