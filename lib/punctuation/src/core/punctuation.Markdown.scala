@@ -100,7 +100,7 @@ object Markdown:
       case Image(alt: Text, src: Text)
       case SourceCode(value: Text)
       case Strong(children: Inline*)
-      case Copy(string: Text)
+      case Prose(string: Text)
       case Weblink(location: Text, children: Inline*)
 
       def serialize(buf: StringBuilder): Unit = this match
@@ -132,7 +132,7 @@ object Markdown:
           children.each(_.serialize(buf))
           buf.add('*')
 
-        case Copy(text) =>
+        case Prose(text) =>
           buf.add(text)
 
         case Weblink(location, children*) =>
@@ -164,15 +164,15 @@ object Markdown:
       Markdown[Markdown.Ast.Inline]()
 
   @tailrec
-  private def coalesce[MdType >: Copy <: Markdown.Ast.Inline]
+  private def coalesce[MdType >: Prose <: Markdown.Ast.Inline]
      (xs: List[MdType], done: List[MdType] = Nil)
   :     List[MdType] =
 
     xs match
-      case Nil                             => done.reverse
-      case Copy(str) :: Copy(str2) :: tail => coalesce(Copy(t"$str$str2") :: tail, done)
-      case Copy(str) :: tail               => coalesce(tail, Copy(format(str)) :: done)
-      case head :: tail                    => coalesce(tail, head :: done)
+      case Nil                               => done.reverse
+      case Prose(str) :: Prose(str2) :: tail => coalesce(Prose(t"$str$str2") :: tail, done)
+      case Prose(str) :: tail                => coalesce(tail, Prose(format(str)) :: done)
+      case head :: tail                      => coalesce(tail, head :: done)
 
 
   def format(str: Text): Text =
@@ -215,7 +215,7 @@ object Markdown:
      (root: cvfua.Document, node: PhrasingInput)
   :     Markdown.Ast.Inline raises MarkdownError = node match
     case node: cvfa.Emphasis       => Emphasis(phraseChildren(root, node)*)
-    case node: cvfa.SoftLineBreak  => Copy(t"\n")
+    case node: cvfa.SoftLineBreak  => Prose(t"\n")
     case node: cvfa.StrongEmphasis => Strong(phraseChildren(root, node)*)
     case node: cvfa.Code           => SourceCode(node.getText.toString.show)
     case node: cvfa.HardLineBreak  => LineBreak
@@ -228,8 +228,8 @@ object Markdown:
                                        (resolveReference(root, node), phraseChildren(root, node)*)
     case node: cvfa.MailLink       => Weblink
                                        (node.getText.toString.show,
-                                        Copy(s"mailto:${node.getText.nn}".tt))
-    case node: cvfa.Text           => Copy(format(node.getChars.toString.show))
+                                        Prose(s"mailto:${node.getText.nn}".tt))
+    case node: cvfa.Text           => Prose(format(node.getChars.toString.show))
 
   type FlowInput = cvfa.BlockQuote | cvfa.BulletList | cvfa.CodeBlock | cvfa.FencedCodeBlock |
       cvfa.ThematicBreak | cvfa.Paragraph | cvfa.IndentedCodeBlock | cvfa.Heading | cvfa.OrderedList
@@ -268,14 +268,14 @@ object Markdown:
   :     Markdown.Ast.Node raises MarkdownError =
     node match
       case node: cvfa.HardLineBreak => LineBreak
-      case node: cvfa.SoftLineBreak => Copy(t"\n")
+      case node: cvfa.SoftLineBreak => Prose(t"\n")
       case node: cvfa.ThematicBreak => ThematicBreak()
       case node: tables.TableBlock  => Table(table(root, node)*)
       case node: FlowInput          => flow(root, node)
       case node: PhrasingInput      => phrasing(root, node)
 
       case node: cvfua.Node =>
-        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Copy(t"?")
+        raise(MarkdownError(MarkdownError.Reason.UnexpectedNode)) yet Prose(t"?")
 
       case node: cvfa.Reference =>
         Reference(node.getReference.toString.show, node.getUrl.toString.show)
