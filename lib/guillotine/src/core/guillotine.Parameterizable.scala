@@ -40,10 +40,6 @@ import anticipation.*
 import prepositional.*
 
 object Parameterizable:
-  given [ValueType: Encodable in Text] => ValueType is Parameterizable:
-    type Self = ValueType
-    def show(value: ValueType): Text = value.encode
-
   given [PathType: Abstractable across Paths into Text] => PathType is Parameterizable =
     _.generic
 
