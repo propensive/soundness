@@ -73,7 +73,7 @@ object Tzdb:
     val lines: Stream[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
       val stream2 = stream.or:
-        abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
+        abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
       Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
       . to(Stream)

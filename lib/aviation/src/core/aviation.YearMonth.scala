@@ -32,11 +32,8 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import contingency.*
-import fulminate.*
 import symbolism.*
-import vacuous.*
 
 case class YearMonth(year: Int, month: Month):
   import scala.compiletime.ops.int.*
@@ -47,5 +44,4 @@ object YearMonth:
     type Operand = Int
 
     def subtract(yearMonth: YearMonth, day: Int): Date =
-      safely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day))
-      . vouch
+      unsafely(calendars.gregorian.julianDay(yearMonth.year, yearMonth.month, day))

@@ -45,9 +45,7 @@ object TzdbError:
     case Reason.BadZoneInfo(line)       => m"bad zone information: ${line.join(t"[", t"   ", t"]")}"
     case Reason.BadName(name)           => m"the name $name is not valid"
     case Reason.UnparsableDate          => m"the date could not be parsed"
-
-    case Reason.ZoneFileMissing(name) =>
-      m"the zone file $name could not be found on the classpath"
+    case Reason.NoTzdbFile(name)        => m"the zonefile $name could not be found on the classpath"
 
   enum Reason:
     case CouldNotParseTime(time: Text)
@@ -57,7 +55,7 @@ object TzdbError:
     case UnparsableDate
     case BadZoneInfo(line: List[Text])
     case BadName(name: Text)
-    case ZoneFileMissing(name: Text)
+    case NoTzdbFile(name: Text)
 
 case class TzdbError(reason: TzdbError.Reason, line: Int)(using Diagnostics)
 extends Error(m"the timezone could not be parsed at line $line: $reason")
