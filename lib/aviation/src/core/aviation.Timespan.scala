@@ -37,17 +37,17 @@ import proscenium.*
 import symbolism.*
 
 object Timespan:
-  given genericDuration: Timespan & FixedDuration is GenericDuration & SpecificDuration =
+  given genericDuration: Timespan is GenericDuration & SpecificDuration =
     new GenericDuration with SpecificDuration:
-      type Self = Timespan & FixedDuration
-      def duration(milliseconds: Long): Timespan & FixedDuration =
+      type Self = Timespan
+      def duration(milliseconds: Long): Timespan =
         val hours: Int = (milliseconds/3600000L).toInt
         val minutes: Int = ((milliseconds%3600000L)/60000L).toInt
         val seconds: Int = ((milliseconds%60000L)/1000L).toInt
 
-        new Timespan(0, 0, 0, hours, minutes, seconds) with FixedDuration
+        new Timespan(0, 0, 0, hours, minutes, seconds)
 
-      def milliseconds(period: Timespan & FixedDuration): Long =
+      def milliseconds(period: Timespan): Long =
         period.hours*3600000L + period.minutes*60000L + period.seconds*1000L
 
   def apply(denomination: StandardTime, n: Int): Timespan = denomination.absolve match
@@ -61,13 +61,13 @@ object Timespan:
   def fixed
      (denomination: StandardTime.Second.type | StandardTime.Minute.type | StandardTime.Hour.type,
       n: Int)
-  :     Timespan & FixedDuration =
+  :     Timespan =
     denomination match
-      case StandardTime.Hour   => new Timespan(0, 0, 0, n, 0, 0) with FixedDuration
-      case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0) with FixedDuration
-      case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n) with FixedDuration
+      case StandardTime.Hour   => new Timespan(0, 0, 0, n, 0, 0)
+      case StandardTime.Minute => new Timespan(0, 0, 0, 0, n, 0)
+      case StandardTime.Second => new Timespan(0, 0, 0, 0, 0, n)
 
-  given plus: TimeSystem[StandardTime] => Timespan is Addable:
+  given plus: Chronology[StandardTime] => Timespan is Addable:
     type Result = Timespan
     type Operand = Timespan
     def add(left: Timespan, right: Timespan): Timespan =
@@ -79,7 +79,7 @@ object Timespan:
         left.minutes + right.minutes,
         left.seconds + right.seconds)
 
-  given minus: TimeSystem[StandardTime] => Timespan is Subtractable:
+  given minus: Chronology[StandardTime] => Timespan is Subtractable:
     type Result = Timespan
     type Operand = Timespan
 
@@ -92,15 +92,8 @@ object Timespan:
         left.minutes - right.minutes,
         left.seconds - right.seconds)
 
-case class Timespan
-   (override val years:  Int,
-    override val months: Int,
-    override val days:   Int,
-    hours:               Int,
-    minutes:             Int,
-    seconds:             Int)
-extends DiurnalTimespan:
-  def simplify(using timeSys: TimeSystem[StandardTime]): Timespan = timeSys.simplify(this)
+case class Timespan(years: Int, months: Int, days: Int, hours: Int, minutes: Int, seconds: Int):
+  def simplify(using chronology: Chronology[StandardTime]): Timespan = chronology.simplify(this)
 
   @targetName("times")
   infix def * (n: Int): Timespan =

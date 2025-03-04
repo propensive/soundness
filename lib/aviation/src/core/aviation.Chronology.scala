@@ -32,5 +32,34 @@
                                                                                                   */
 package aviation
 
-enum StandardTime:
-  case Second, Minute, Hour, Day, Week, Month, Year
+object Chronology:
+  enum AmbiguousTimes:
+    case Throw, Dilate, PreferEarlier, PreferLater
+
+  enum MonthArithmetic:
+    case Scale, Overcount, Fixed
+
+  enum LeapDayArithmetic:
+    case Throw, PreferFeb28, PreferMar1
+
+  given Chronology[StandardTime]:
+    override def simplify(timespan: Timespan): Timespan =
+      val timespan2 = if timespan.seconds < 60 then timespan else
+        val adjust = timespan.seconds/60
+        timespan + adjust.minutes - (adjust*60).seconds
+
+      val timespan3 = if timespan2.minutes < 60 then timespan2 else
+        val adjust = timespan2.minutes/60
+        timespan2 + adjust.hours - (adjust*60).minutes
+
+      val result = if timespan3.months < 12 then timespan3 else
+        val adjust = timespan3.months/12
+        timespan3 + adjust.years - (adjust*12).months
+
+      result
+
+open class Chronology[DenominationType]():
+  def ambiguousTimes: Chronology.AmbiguousTimes = Chronology.AmbiguousTimes.Dilate
+  def monthArithmetic: Chronology.MonthArithmetic = Chronology.MonthArithmetic.Scale
+  def leapDayArithmetic: Chronology.LeapDayArithmetic = Chronology.LeapDayArithmetic.PreferFeb28
+  def simplify(timespan: Timespan): Timespan = timespan
