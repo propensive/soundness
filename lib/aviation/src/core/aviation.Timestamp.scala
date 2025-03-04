@@ -57,7 +57,7 @@ object Timestamp:
         . within:
             Timestamp
              (Date(year.decode[Int],
-              MonthName(month.decode[Int]),
+              Month(month.decode[Int]),
               day.decode[Int]),
               Clockface(Base24(hour.decode[Int]),
               Base60(minute.decode[Int]),

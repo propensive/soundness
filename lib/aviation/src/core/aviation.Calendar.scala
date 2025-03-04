@@ -35,14 +35,14 @@ package aviation
 import contingency.*
 
 trait Calendar:
-  type Day
-  type Month
-  type Year
+  type DayUnit
+  type MonthUnit
+  type YearUnit
 
-  def daysInYear(year: Year): Int
-  def getYear(date: Date): Year
-  def getMonth(date: Date): Month
-  def getDay(date: Date): Day
-  def zerothDayOfYear(year: Year): Date
-  def julianDay(year: Year, month: Month, day: Day): Date raises DateError
+  def daysInYear(year: YearUnit): Int
+  def getYear(date: Date): YearUnit
+  def getMonth(date: Date): MonthUnit
+  def getDay(date: Date): DayUnit
+  def zerothDayOfYear(year: YearUnit): Date
+  def julianDay(year: YearUnit, month: MonthUnit, day: DayUnit): Date raises DateError
   def add(date: Date, period: Timespan): Date

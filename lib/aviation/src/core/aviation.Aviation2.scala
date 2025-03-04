@@ -135,7 +135,7 @@ object Aviation2:
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
 
       val date = zonedTime.getMonthValue.absolve match
-        case MonthName(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
+        case Month(month) => unsafely(Date(zonedTime.getYear, month, zonedTime.getDayOfMonth))
 
       val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)

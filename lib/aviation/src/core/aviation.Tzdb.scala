@@ -51,29 +51,29 @@ object Tzdb:
     case Rule
        (name:    Text,
         from:    Int,
-        end:    Int,
+        end:     Int,
         change:  MonthDate,
         time:    Time,
         save:    Duration,
         letters: Option[Text])
 
-    case Leap(year: Int, month: MonthName, day: Int, time: Time, addition: Boolean)
+    case Leap(year: Int, month: Month, day: Int, time: Time, addition: Boolean)
     case Zone(area: Text, location: Option[Text], info: Trie[ZoneInfo])
     case Link(from: Text, to: Text)
 
   case class ZoneInfo(stdoff: Duration, rules: Text, format: Text => Text, until: Option[Text])
 
   enum MonthDate:
-    case Last(month: MonthName, day: Weekday)
-    case Exact(month: MonthName, day: Int)
-    case After(month: MonthName, day: Weekday, date: Int)
-    case Before(month: MonthName, day: Weekday, date: Int)
+    case Last(month: Month, day: Weekday)
+    case Exact(month: Month, day: Int)
+    case After(month: Month, day: Weekday, date: Int)
+    case Before(month: Month, day: Weekday, date: Int)
 
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     val lines: Stream[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
       val stream2 = stream.or:
-        abort(TzdbError(TzdbError.Reason.ZoneFileMissing(name), 0))
+        abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
       Source.fromInputStream(stream2).getLines.map(Text(_)).map(_.cut(t"\t").head.lower)
       . to(Stream)
@@ -98,7 +98,7 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.CouldNotParseTime(other.show), lineNo))
 
-    def parseDay(lineNo: Int, month: MonthName, str: Text): MonthDate =
+    def parseDay(lineNo: Int, month: Month, str: Text): MonthDate =
       try throwErrors:
         if str.starts(t"last") then MonthDate.Last(month, Weekday.valueOf(str.skip(4).s))
         else if str.skip(3).keep(2) == t">="
@@ -116,7 +116,7 @@ object Tzdb:
       case other =>
         abort(TzdbError(TzdbError.Reason.UnexpectedRule, lineNo))
 
-    def parseMonth(str: Text) = MonthName.valueOf(str.s)
+    def parseMonth(str: Text) = Month.valueOf(str.s)
 
     def parseZone(lineNo: Int, args: List[Text]): Tzdb.Entry.Zone = args match
       case name :: rest =>

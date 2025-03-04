@@ -32,5 +32,5 @@
                                                                                                   */
 package aviation
 
-enum StandardTime extends Denomination:
+enum StandardTime:
   case Second, Minute, Hour, Day, Week, Month, Year

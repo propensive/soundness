@@ -40,17 +40,17 @@ import vacuous.*
 
 export Aviation2.{Instant, Duration}
 export Aviation.Date
-export MonthName.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
+export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
 
 package calendars:
   given julian: RomanCalendar:
-    def leapYear(year: Year): Boolean = year%4 == 0
+    def leapYear(year: YearUnit): Boolean = year%4 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4
 
   given gregorian: RomanCalendar:
-    def leapYear(year: Year): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
+    def leapYear(year: YearUnit): Boolean = year%4 == 0 && year%100 != 0 || year%400 == 0
     def leapYearsSinceEpoch(year: Int): Int = year/4 - year/100 + year/400 + 1
 
 def now()(using clock: Clock): Instant = clock()
@@ -78,18 +78,18 @@ extension (one: 1)
   def month: Timespan = Timespan(StandardTime.Month, 1)
   def week: Timespan = Timespan(StandardTime.Week, 1)
   def day: Timespan = Timespan(StandardTime.Day, 1)
-  def hour: Timespan & FixedDuration = Timespan.fixed(StandardTime.Hour, 1)
-  def minute: Timespan & FixedDuration = Timespan.fixed(StandardTime.Minute, 1)
-  def second: Timespan & FixedDuration = Timespan.fixed(StandardTime.Second, 1)
+  def hour: Timespan = Timespan.fixed(StandardTime.Hour, 1)
+  def minute: Timespan = Timespan.fixed(StandardTime.Minute, 1)
+  def second: Timespan = Timespan.fixed(StandardTime.Second, 1)
 
 extension (int: Int)
   def years: Timespan = Timespan(StandardTime.Year, int)
   def months: Timespan = Timespan(StandardTime.Month, int)
   def weeks: Timespan = Timespan(StandardTime.Week, int)
   def days: Timespan = Timespan(StandardTime.Day, int)
-  def hours: Timespan & FixedDuration = Timespan.fixed(StandardTime.Hour, int)
-  def minutes: Timespan & FixedDuration = Timespan.fixed(StandardTime.Minute, int)
-  def seconds: Timespan & FixedDuration = Timespan.fixed(StandardTime.Second, int)
+  def hours: Timespan = Timespan.fixed(StandardTime.Hour, int)
+  def minutes: Timespan = Timespan.fixed(StandardTime.Minute, int)
+  def seconds: Timespan = Timespan.fixed(StandardTime.Second, int)
 
 extension (inline context: StringContext)
   inline def tz(): Timezone = ${Timezone.Tz.expand('context)}

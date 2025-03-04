@@ -36,22 +36,22 @@ import anticipation.*
 import gossamer.*
 import symbolism.*
 
-object MonthName:
-  def apply(i: Int): MonthName = MonthName.fromOrdinal(i - 1)
+object Month:
+  def apply(i: Int): Month = Month.fromOrdinal(i - 1)
 
-  def unapply(value: Text): Option[MonthName] =
-    try Some(MonthName.valueOf(value.lower.capitalize.s))
+  def unapply(value: Text): Option[Month] =
+    try Some(Month.valueOf(value.lower.capitalize.s))
     catch case err: IllegalArgumentException => None
 
-  def unapply(value: Int): Option[MonthName] =
+  def unapply(value: Int): Option[Month] =
     if value < 1 || value > 12 then None else Some(fromOrdinal(value - 1))
 
   given monthOfYear: Int is Subtractable:
     type Result = YearMonth
-    type Operand = MonthName
-    def subtract(year: Int, month: MonthName) = new YearMonth(year, month)
+    type Operand = Month
+    def subtract(year: Int, month: Month) = new YearMonth(year, month)
 
-enum MonthName:
+enum Month:
   case Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
 
   def numerical: Int = ordinal + 1
