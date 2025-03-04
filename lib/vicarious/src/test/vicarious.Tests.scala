@@ -32,38 +32,28 @@
                                                                                                   */
 package vicarious
 
-import proscenium.*
-import vacuous.*
+import soundness.*
 
-import language.dynamics
+case class Country(name: Text, population: Int, leader: Person)
+case class Person(name: Text, age: Int)
 
-case class Catalog[KeyType, ValueType: ClassTag](values: IArray[ValueType]):
-  def size: Int = values.length
+val france = Country(t"France", 68_290_000, Person(t"Emmanuel Macron", 47))
 
-  inline def apply(accessor: (`*`: Proxy[KeyType, ValueType, 0]) ?=> Proxy[KeyType, ValueType, ?])
-  :     ValueType =
-    values(accessor(using Proxy()).id.vouch)
+object Tests extends Suite(t"Vicarious tests"):
+  def run(): Unit =
+    test(t"Catalog size"):
+      val cat = catalog(france):
+        [FieldType] => field => field.toString.tt
 
-  def map[ValueType2: ClassTag](lambda: ValueType => ValueType2): Catalog[KeyType, ValueType2] =
-    Catalog(values.map(lambda))
+      cat.size
 
-  def tie[ResultType](using proxy: Proxy[KeyType, ValueType, 0])
-     (lambda: (catalog: this.type, `*`: proxy.type) ?=> ResultType)
-  :     ResultType =
-    lambda(using this, proxy)
+    .assert(_ == 5)
 
-  def braid[ValueType2: ClassTag](right: Catalog[KeyType, ValueType2])[ResultType: ClassTag]
-     (lambda: (ValueType, ValueType2) => ResultType)
-  :     Catalog[KeyType, ResultType] =
-    Catalog(IArray.tabulate(values.length) { index => lambda(values(index), right.values(index)) })
+    test(t"Access element"):
+      val cat: Catalog[Country, Text] = catalog(france):
+        [FieldType] => field => field.toString.tt
 
-extension [KeyType, ValueType: ClassTag](catalog: Catalog[KeyType, ValueType])
-  def brush(using proxy: Proxy[KeyType, ValueType, Nat])
-     (lambda: (`*`: proxy.type) ?=> Proxy[KeyType, ValueType, Nat] ~> ValueType)
-  :     Catalog[KeyType, ValueType] =
+      cat.map:
+        case *.leader => "Hello"
 
-    val partialFunction = lambda(using proxy)
-
-    Catalog(IArray.tabulate(catalog.size): index =>
-      partialFunction.applyOrElse
-       (Proxy[KeyType, ValueType, index.type](), _ => catalog.values(index)))
+    .assert(_ == t"France")
