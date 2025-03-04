@@ -34,14 +34,11 @@ package guillotine
 
 import language.experimental.pureFunctions
 
-import compiletime.summonFrom
-
 import anticipation.*
 import prepositional.*
 
 object Parameterizable:
-  given [PathType: Abstractable across Paths into Text] => PathType is Parameterizable =
-    _.generic
+  given [PathType: Encodable in Text] => PathType is Parameterizable = _.encode
 
 trait Parameterizable:
   type Self

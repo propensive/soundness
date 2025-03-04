@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import distillate.*
 import gossamer.*
+import guillotine.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
@@ -67,6 +68,7 @@ object Octogenarian:
       text
 
     given encodable: Refspec is Encodable in Text = identity(_)
+    given parameterizable: Refspec is Parameterizable = identity(_)
     given Refspec is Showable = identity(_)
 
   object GitTag:
