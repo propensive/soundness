@@ -128,20 +128,20 @@ extension [ValueType](iterator: Iterator[ValueType])
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
-  inline def total(using zeroic:   ValueType is Zeroic,
-                         addable:  ValueType is Addable by ValueType,
-                         equality: addable.Result =:= ValueType)
+  def total(using zeroic:   ValueType is Zeroic,
+                  addable:  ValueType is Addable by ValueType,
+                  equality: addable.Result =:= ValueType)
   :    ValueType =
     iterable.foldLeft(zeroic.zero)(addable.add)
 
-  inline def mean(using zeroic:    ValueType is Zeroic,
-                        addable:   ValueType is Addable by ValueType,
-                        equality:  addable.Result =:= ValueType,
-                        divisible: ValueType is Divisible by Double)
+  def mean(using zeroic:    ValueType is Zeroic,
+                 addable:   ValueType is Addable by ValueType,
+                 equality:  addable.Result =:= ValueType,
+                 divisible: ValueType is Divisible by Double)
   :     divisible.Result =
     iterable.total/iterable.size
 
-  inline def variance
+  def variance
      (using zeroic:        ValueType is Zeroic,
             addable:       ValueType is Addable by ValueType,
             equality:      addable.Result =:= ValueType,
@@ -156,7 +156,7 @@ extension [ValueType](iterable: Iterable[ValueType])
     val mean: divisible.Result = iterable.mean
     iterable.map(_ - mean).map { value => value*value }.total/iterable.size
 
-  inline def standardDeviation
+  def standardDeviation
      (using zeroic:        ValueType is Zeroic,
             addable:       ValueType is Addable by ValueType,
             equality:      addable.Result =:= ValueType,
@@ -172,7 +172,7 @@ extension [ValueType](iterable: Iterable[ValueType])
     val mean: divisible.Result = iterable.mean
     (iterable.map(_ - mean).map { value => value*value }.total/iterable.size).sqrt
 
-  inline def product
+  def product
      (using unital:        ValueType is Unital,
             multiplicable: ValueType is Multiplicable by ValueType,
             equality:      multiplicable.Result =:= ValueType)
