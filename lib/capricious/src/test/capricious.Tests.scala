@@ -32,9 +32,38 @@
                                                                                                   */
 package capricious
 
-import gossamer.*
-import probably.*
+import soundness.*
+
+import randomization.seeded
+given Seed = Seed(1L)
 
 object Tests extends Suite(t"Capricious Tests"):
   def run(): Unit =
-    ()
+    suite(t"Distributions"):
+      test(t"Normal distribution mean"):
+        stochastic:
+          given Distribution = Gaussian(0.0, 1.0)
+          List.fill(10000)(arbitrary[Double]())
+
+      . assert(_.mean === 0.0 +/- 0.02)
+
+      test(t"Normal distribution standard deviation"):
+        stochastic:
+          given Distribution = Gaussian(0.0, 2.0)
+          List.fill(10000)(arbitrary[Double]())
+
+      . assert(_.standardDeviation === 2.0 +/- 0.05)
+
+      test(t"Gamma distribution mean"):
+        stochastic:
+          given distribution: Gamma = Gamma.approximate(100, 10)
+          List.fill(100000)(arbitrary[Double]())
+
+      . assert(_.mean === 100.0 +/- 0.1)
+
+      test(t"Gamma distribution standard deviation"):
+        stochastic:
+          given distribution: Gamma = Gamma.approximate(100, 10)
+          List.fill(100000)(arbitrary[Double]())
+
+      . assert(_.standardDeviation === 10.0 +/- 0.1)

@@ -33,4 +33,4 @@
 package probably
 
 case class Tolerance(value: Double, tolerance: Double):
-  def covers(right: Double): Boolean = value >= (value - tolerance) && value <= (value + tolerance)
+  def covers(right: Double): Boolean = right >= (value - tolerance) && right <= (value + tolerance)
