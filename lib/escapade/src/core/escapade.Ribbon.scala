@@ -45,7 +45,7 @@ case class Ribbon(colors: Bg*):
     array.indices.map: index =>
       val (background, text) = array(index)
 
-      val arrow = if index >= array.length then e"$Reset${background.fg}()" else
+      val arrow = if index >= (array.length - 1) then e"$Reset${background.fg}()" else
         e"${background.fg}(${array(index + 1)(0)}())"
 
       e"$background( ${background.highContrast}($text) )$arrow"
