@@ -278,35 +278,34 @@ extension (stream: Stream[Bytes])
   def decompress[CompressionType <: CompressionAlgorithm: Compression]: Stream[Bytes] =
     summon[Compression].decompress(stream)
 
-  def shred(mean: Double, variance: Double)(using Randomization): Stream[Bytes] =
-    stochastic:
-      given Distribution = Gamma.approximate(mean, variance)
+  def shred(mean: Double, variance: Double)(using Random): Stream[Bytes] =
+    given gamma: Distribution = Gamma.approximate(mean, variance)
 
-      def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
+    def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
-      def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
-      :     Stream[Bytes] =
+    def recur(stream: Stream[Bytes], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    :     Stream[Bytes] =
 
-        stream match
-          case source #:: more =>
-            val ready = source.length - sourcePos
-            val free = dest.length - destPos
+      stream match
+        case source #:: more =>
+          val ready = source.length - sourcePos
+          val free = dest.length - destPos
 
-            if ready < free then
-              System.arraycopy(source, sourcePos, dest, destPos, ready)
-              recur(more, 0, dest, destPos + ready)
-            else if free < ready then
-              System.arraycopy(source, sourcePos, dest, destPos, free)
-              dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
-            else // free == ready
-              System.arraycopy(source, sourcePos, dest, destPos, free)
-              dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
+          if ready < free then
+            System.arraycopy(source, sourcePos, dest, destPos, ready)
+            recur(more, 0, dest, destPos + ready)
+          else if free < ready then
+            System.arraycopy(source, sourcePos, dest, destPos, free)
+            dest.immutable(using Unsafe) #:: recur(stream, sourcePos + free, newArray(), 0)
+          else // free == ready
+            System.arraycopy(source, sourcePos, dest, destPos, free)
+            dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
-          case _ =>
-            if destPos == 0 then Stream()
-            else Stream(dest.slice(0, destPos).immutable(using Unsafe))
+        case _ =>
+          if destPos == 0 then Stream()
+          else Stream(dest.slice(0, destPos).immutable(using Unsafe))
 
-      recur(stream, 0, newArray(), 0)
+    recur(stream, 0, newArray(), 0)
 
   def chunked(size: Int, zeroPadding: Boolean = false): Stream[Bytes] =
     def newArray(): Array[Byte] = new Array[Byte](size)
