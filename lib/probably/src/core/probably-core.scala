@@ -54,6 +54,11 @@ extension [LeftType](left: LeftType)
   :     Boolean =
     checkable.check(left, right)
 
+  infix def !== [RightType](right: RightType)
+     (using checkable: LeftType is Checkable against RightType)
+  :     Boolean =
+    !checkable.check(left, right)
+
 extension (value: Double)
   @targetName("plusOrMinus")
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
