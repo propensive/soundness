@@ -41,4 +41,4 @@ case class Gaussian(mean: Double = 0.0, standardDeviation: Double = 1.0) extends
     val u0 = randomDistributions.uniformUnitInterval.transform(random)
     val u1 = randomDistributions.uniformUnitInterval.transform(random)
 
-    (-ln(u0).sqrt*cos(2*π*u1)*2*standardDeviation + mean).double
+    ((ln(u0)*(-2.0)).sqrt*cos(2*π*u1)*standardDeviation + mean).double

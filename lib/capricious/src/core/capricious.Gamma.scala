@@ -33,25 +33,38 @@
 package capricious
 
 import hypotenuse.*
+import symbolism.*
 
 import language.experimental.genericNumberLiterals
+import scala.annotation.tailrec
 
 object Gamma:
-  def approximate(mean: Double, variance: Double): Gamma =
+  def approximate(mean: Double, standardDeviation: Double): Gamma =
+    val variance = standardDeviation**2
     val scale: Double = variance/mean
-    val shape: Int = (mean/scale + 0.5).toInt
+    val shape: Double = (mean**2)/variance
     Gamma(shape, scale)
 
-case class Gamma(shape: Int, scale: Double) extends Distribution:
+case class Gamma(shape: Double, scale: Double) extends Distribution:
   def mean: F64 = F64(shape*scale)
-  def variance: F64 = mean*scale
+  def variance: F64 = shape*scale*scale
   def variationCoefficient: F64 = F64(shape) ** -0.5
   def skewness: F64 = variationCoefficient*2.0
 
   def transform(random: Random): Double =
-    def accumulate(sum: Double, count: Int): Double =
-      if count == 0 then sum*scale else
-        val gaussian = randomDistributions.gaussian.transform(random)
-        accumulate(sum + gaussian*gaussian, count - 1)
+    val shape2 = shape - 1.0/3.0
+    val factor = 1.0/(9*shape2).sqrt
 
-    accumulate(0.0, shape)
+    @tailrec
+    def recur(): Double =
+      val x = randomDistributions.gaussian.transform(random)
+      val value = 1.0 + factor*x
+      if value <= 0 then recur() else
+        val value2 = value**3
+        val u = random.unitInterval()
+
+        if u < (1 - 0.0331*(x**4)) || ln(u) < (0.5*x*x + shape2*(1 - value2 + ln(value2).double))
+        then shape2*value2
+        else recur()
+
+    recur()*scale
