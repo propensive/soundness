@@ -142,6 +142,11 @@ class Conduit(input: Stream[Bytes]):
     done = done0
     clutch = clutch0
 
+  def take(count: Int): Bytes =
+    mark()
+    skip(count)
+    save()
+
   inline def lookahead[ResultType](inline action: => ResultType): ResultType =
     mark()
     try action finally revert()
