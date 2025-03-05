@@ -895,7 +895,7 @@ object mosquito extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, quantitative.units, core)
   }
 }
 
