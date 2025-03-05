@@ -952,6 +952,16 @@ object parasite extends SoundnessModule {
   }
 }
 
+object perihelion extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(telekinesis.core, scintillate.server, gastronomy.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object phoenicia extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(hypotenuse.core, turbulence.core, quantitative.core, polaris.core)
