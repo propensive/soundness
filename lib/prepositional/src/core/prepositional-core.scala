@@ -41,6 +41,7 @@ infix type of [Type <: { type Subject }, SubjectType] = Type { type Subject = Su
 infix type on [Type <: { type Platform }, PlatformType] = Type { type Platform = PlatformType }
 infix type onto [Type <: { type Target }, TargetType] = Type { type Target = TargetType }
 infix type over [Type <: { type Carrier }, CarrierType] = Type { type Carrier = CarrierType }
+infix type against [Type <: { type Contrast }, ContrastType] = Type { type Contrast = ContrastType }
 
 infix type under [Type <: { type Constraint }, ConstraintType] =
   Type { type Constraint = ConstraintType }
