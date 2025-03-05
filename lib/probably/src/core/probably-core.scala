@@ -36,6 +36,7 @@ import anticipation.*
 import digression.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import proscenium.*
 import spectacular.*
 
@@ -47,10 +48,15 @@ export Baseline.Compare.{Min, Mean, Max}
 export Baseline.Metric.{BySpeed, ByTime}
 export Baseline.Mode.{Arithmetic, Geometric}
 
+extension [LeftType](left: LeftType)
+  infix def === [RightType](right: RightType)
+     (using checkable: LeftType is Checkable against RightType)
+  :     Boolean =
+    checkable.check(left, right)
+
 extension (value: Double)
   @targetName("plusOrMinus")
   infix def +/- (tolerance: Double): Tolerance = Tolerance(value, tolerance)
-  infix def meets (tolerance: Tolerance): Boolean = tolerance.covers(value)
 
 def test[ReportType](name: Text)(using suite: Testable, codepoint: Codepoint): TestId =
   TestId(name, suite, codepoint)

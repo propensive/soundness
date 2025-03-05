@@ -42,6 +42,24 @@ import scala.collection.mutable as scm
 
 object Tests extends Suite(t"Turbulence tests"):
   def run(): Unit =
+
+    suite(t"Shredding"):
+      given Seed = Seed(1L)
+      import randomization.seeded
+      val bytes: Bytes = Bytes.fill(1000)(_.toByte)
+      val stream: Stream[Bytes] = Stream(bytes)
+      val shredded: Iterable[Stream[Bytes]] = (0 until 100).map: index =>
+        stream.shred(10.0, 10.0)
+
+      shredded.each: stream =>
+        test(t"correct length after shredding"):
+          stream.reduce(_ ++ _).length
+        . assert(_ == 1000)
+
+        test(t"correct content after shredding"):
+          stream.reduce(_ ++ _)
+        . assert(_ === bytes)
+
     suite(t"Streaming Unicode tests"):
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
 

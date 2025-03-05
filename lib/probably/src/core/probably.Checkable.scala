@@ -30,6 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export prepositional.{by, from, in, into, of, on, onto, over, under, against}
+import prepositional.*
+
+object Checkable:
+  given [LeftType, RightType] => IArray[LeftType] is Checkable against IArray[RightType] =
+    _.sameElements(_)
+
+  given Double is Checkable against Tolerance = (double, tolerance) => tolerance.covers(double)
+
+trait Checkable:
+  type Self
+  type Contrast
+
+  def check(left: Self, right: Contrast): Boolean
