@@ -32,15 +32,11 @@
                                                                                                   */
 package turbulence
 
-import anticipation.*
-import contingency.*, strategies.throwUnsafely
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, badEncodingHandlers.strict
-import parasite.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
+import soundness.*
+
+import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
+import threadModels.platform
+import strategies.throwUnsafely
 
 import scala.collection.mutable as scm
 
@@ -50,13 +46,13 @@ object Tests extends Suite(t"Turbulence tests"):
       val ascii = IArray(t"", t"a", t"ab", t"abc", t"abcd")
 
       val strings = for
-        asc0 <- Array(t"", t"a", t"ab", t"abc") // 4 combinations
-        cp2  <- Array(t"", t"£")                // 8
-        asc1 <- Array(t"", t"a", t"ab", t"abc") // 32
-        cp3  <- Array(t"", t"€")                // 64
-        asc2 <- Array(t"", t"a", t"ab", t"abc") // 256
-        cp4  <- Array(t"")//, t"𐍈")                // 512
-        asc3 <- Array(t"", t"a", t"ab", t"abc") // 2048
+        asc0 <- List(t"", t"a", t"ab", t"abc") // 4 combinations
+        cp2  <- List(t"", t"£")                // 8
+        asc1 <- List(t"", t"a", t"ab", t"abc") // 32
+        cp3  <- List(t"", t"€")                // 64
+        asc2 <- List(t"", t"a", t"ab", t"abc") // 256
+        cp4  <- List(t"")//, t"𐍈")                // 512
+        asc3 <- List(t"", t"a", t"ab", t"abc") // 2048
       yield asc0+cp2+asc1+cp3+asc2+cp4
 
       for
@@ -80,18 +76,18 @@ object Tests extends Suite(t"Turbulence tests"):
     val qbfBytes = qbf.bytes
 
     object Ref:
-      given Readable[Ref, Text] = ref => Stream(t"abc", t"def")
-      given Readable[Ref, Bytes] = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref is Readable by Text = ref => Stream(t"abc", t"def")
+      given Ref is Readable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
 
     case class Ref()
 
     object Ref2:
-      given Readable[Ref2, Text] = ref => Stream(t"abc", t"def")
+      given Ref2 is Readable by Text = ref => Stream(t"abc", t"def")
 
     case class Ref2()
 
     object Ref3:
-      given Readable[Ref3, Bytes] = ref => Stream(t"abc".bytes, t"def".bytes)
+      given Ref3 is Readable by Bytes = ref => Stream(t"abc".bytes, t"def".bytes)
 
     case class Ref3()
 
@@ -175,11 +171,11 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object GeneralStore:
-        given Writable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
+        given GeneralStore is Writable by Bytes = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
 
-        given Writable[GeneralStore, Text] = (store, texts) => texts.each: text =>
+        given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
           text.bytes.each: byte =>
             store.arrayBuffer.append(byte)
 
@@ -188,7 +184,7 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
       object ByteStore:
-        given Writable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
+        given ByteStore is Writable by Bytes = (store, stream) => stream.each: bytes =>
           bytes.each: byte =>
             store.arrayBuffer.append(byte)
 
@@ -197,7 +193,7 @@ object Tests extends Suite(t"Turbulence tests"):
         def apply(): Text = text
 
       object TextStore:
-        given Writable[TextStore, Text] = (store, texts) => texts.each: text =>
+        given TextStore is Writable by Text = (store, texts) => texts.each: text =>
           store.text = store.text + text
 
       test(t"Write Text to some reference with Text and Bytes instances"):
@@ -272,37 +268,37 @@ object Tests extends Suite(t"Turbulence tests"):
         store()
       .assert(_ == qbf)
 
-    suite(t"Appending tests"):
+    // suite(t"Appending tests"):
 
-      class GeneralStore():
-        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+    //   class GeneralStore():
+    //     val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+    //     def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
-      object GeneralStore:
-        given Appendable[GeneralStore, Bytes] = (store, stream) => stream.each: bytes =>
-          bytes.each: byte =>
-            store.arrayBuffer.append(byte)
+    //   object GeneralStore:
+    //     given GeneralStore is Writable by Bytes = (store, stream) => stream.each: bytes =>
+    //       bytes.each: byte =>
+    //         store.arrayBuffer.append(byte)
 
-        given Appendable[GeneralStore, Text] = (store, texts) => texts.each: text =>
-          text.bytes.each: byte =>
-            store.arrayBuffer.append(byte)
+    //     given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
+    //       text.bytes.each: byte =>
+    //         store.arrayBuffer.append(byte)
 
-      class ByteStore():
-        val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-        def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
+    //   class ByteStore():
+    //     val arrayBuffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+    //     def apply(): Text = String(arrayBuffer.toArray, "UTF-8").tt
 
-      object ByteStore:
-        given Appendable[ByteStore, Bytes] = (store, stream) => stream.each: bytes =>
-          bytes.each: byte =>
-            store.arrayBuffer.append(byte)
+    //   object ByteStore:
+    //     given ByteStore is Writable by Bytes = (store, stream) => stream.each: bytes =>
+    //       bytes.each: byte =>
+    //         Eof(store.arrayBuffer).write(byte)
 
-      class TextStore():
-        var text: Text = t""
-        def apply(): Text = text
+    //   class TextStore():
+    //     var text: Text = t""
+    //     def apply(): Text = text
 
-      object TextStore:
-        given Appendable[TextStore, Text] = (store, texts) => texts.each: text =>
-          store.text = store.text + text
+    //   object TextStore:
+    //     given TextStore is Writable by Text = (store, texts) => texts.each: text =>
+    //       store.text = store.text + text
 
       // test(t"Append Text to some reference with Text and Bytes instances"):
       //   val store = GeneralStore()
