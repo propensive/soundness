@@ -103,7 +103,7 @@ object Multipart:
             conduit.next() && conduit.datum == '\n' && boundary.forall: char =>
               conduit.next() && conduit.datum == char
           then
-            conduit.breakBefore()
+            conduit.truncate()
             Stream(conduit.block).also:
               conduit.skip(boundary.length + 3)
           else body()

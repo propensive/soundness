@@ -68,7 +68,7 @@ class Conduit(input0: Stream[Bytes]):
     case Conduit.State.Clutch => cue() yet next()
     case state                => state != Conduit.State.Clutch
 
-  def break(): Unit = if !clutch then
+  final def break(): Unit = if !clutch then
     val prefix = current.slice(0, index.n1)
     clutch = true
 
@@ -78,7 +78,7 @@ class Conduit(input0: Stream[Bytes]):
       val stream0 = stream
       stream = suffix #:: stream0
 
-  def truncate(): Unit = if !clutch then
+  final def truncate(): Unit = if !clutch then
     val prefix = current.slice(0, index.n0)
     val suffix = current.drop(index.n0)
     clutch = true
@@ -86,7 +86,7 @@ class Conduit(input0: Stream[Bytes]):
     val stream0 = stream
     stream = suffix #:: stream0
 
-  def save(): Bytes =
+  final def save(): Bytes =
     val rnd = math.random()
     val length = (done + index) - (done0 + index0)
     IArray.create(length): array =>
@@ -113,7 +113,8 @@ class Conduit(input0: Stream[Bytes]):
   @tailrec
   final def skip(count: Int): Unit = if count > 0 then next() yet skip(count - 1)
 
-  def step(): Conduit.State =
+  @tailrec
+  final def step(): Conduit.State =
     if clutch then
       if stream.isEmpty then Conduit.State.End else
         clutch = false
@@ -125,7 +126,7 @@ class Conduit(input0: Stream[Bytes]):
         Conduit.State.Clutch
       else Conduit.State.Data
 
-  def cue(): Unit =
+  final def cue(): Unit =
     if !stream.isEmpty then
       done += current.length
       current = stream.head
@@ -134,25 +135,25 @@ class Conduit(input0: Stream[Bytes]):
       index = Prim - 1
       clutch = false
 
-  def mark(): Unit =
+  final def mark(): Unit =
     current0 = current
     stream0 = stream
     index0 = index
     done0 = done
     clutch0 = clutch
 
-  def revert(): Unit =
+  final def revert(): Unit =
     current = current0
     stream = stream0
     index = index0
     done = done0
     clutch = clutch0
 
-  def take(count: Int): Bytes =
+  final def take(count: Int): Bytes =
     mark()
     skip(count)
     save()
 
-  inline def lookahead[ResultType](inline action: => ResultType): ResultType =
+  final inline def lookahead[ResultType](inline action: => ResultType): ResultType =
     mark()
     try action finally revert()
