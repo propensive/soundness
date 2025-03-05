@@ -46,22 +46,28 @@ object Divisible:
 
     def divide(dividend: DividendType, divisor: DivisorType): ResultType = lambda(dividend, divisor)
 
-  given Double is Divisible by Double into Double = Divisible:
+  given double: Double is Divisible by Double into Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given Float is Divisible by Float into Float = Divisible:
+  given double2: Double is Divisible by Int into Double = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given Long is Divisible by Long into Long = Divisible:
+  given float: Float is Divisible by Float into Float = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given Int is Divisible by Int into Int = Divisible:
+  given float2: Float is Divisible by Int into Float = Divisible:
     (dividend, divisor) => dividend/divisor
 
-  given Short is Divisible by Short into Short = Divisible:
+  given long: Long is Divisible by Long into Long = Divisible:
+    (dividend, divisor) => dividend/divisor
+
+  given int: Int is Divisible by Int into Int = Divisible:
+    (dividend, divisor) => dividend/divisor
+
+  given short: Short is Divisible by Short into Short = Divisible:
     (dividend, divisor) => (dividend/divisor).toShort
 
-  given Byte is Divisible by Byte into Byte = Divisible:
+  given byte: Byte is Divisible by Byte into Byte = Divisible:
     (dividend, divisor) => (dividend/divisor).toByte
 
 

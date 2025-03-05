@@ -128,25 +128,56 @@ extension [ValueType](iterator: Iterator[ValueType])
   inline def all(predicate: ValueType => Boolean): Boolean = iterator.forall(predicate)
 
 extension [ValueType](iterable: Iterable[ValueType])
-  inline def total(using zeroic: ValueType is Zeroic): ValueType =
-    inline compiletime.summonInline[ValueType is Addable by ValueType] match
-      case addable: (ValueType is Addable by ValueType into ValueType) =>
-        iterable.foldLeft(zeroic.zero)(addable.add)
+  def total(using zeroic:   ValueType is Zeroic,
+                  addable:  ValueType is Addable by ValueType,
+                  equality: addable.Result =:= ValueType)
+  :    ValueType =
+    iterable.foldLeft(zeroic.zero)(addable.add)
 
-      case _ =>
-        compiletime.error("No suitable Addable instance found")
-
-  inline def mean(using zeroic: ValueType is Zeroic, divisible: ValueType is Divisible by Int)
+  def mean(using zeroic:    ValueType is Zeroic,
+                 addable:   ValueType is Addable by ValueType,
+                 equality:  addable.Result =:= ValueType,
+                 divisible: ValueType is Divisible by Double)
   :     divisible.Result =
     iterable.total/iterable.size
 
-  inline def product(using unital: ValueType is Unital): ValueType =
-    inline compiletime.summonInline[ValueType is Multiplicable by ValueType] match
-      case multiplicable: (ValueType is Multiplicable by ValueType into ValueType) =>
-        iterable.foldLeft(unital.one)(multiplicable.multiply)
+  def variance
+     (using zeroic:        ValueType is Zeroic,
+            addable:       ValueType is Addable by ValueType,
+            equality:      addable.Result =:= ValueType,
+            divisible:     ValueType is Divisible by Double,
+            subtractable:  ValueType is Subtractable by divisible.Result,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality2:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double)
+  :     divisible2.Result =
+    val mean: divisible.Result = iterable.mean
+    iterable.map(_ - mean).map { value => value*value }.total/iterable.size
 
-      case _ =>
-        compiletime.error("No suitable Multiplicable instance found")
+  def standardDeviation
+     (using zeroic:        ValueType is Zeroic,
+            addable:       ValueType is Addable by ValueType,
+            equality:      addable.Result =:= ValueType,
+            divisible:     ValueType is Divisible by Double,
+            subtractable:  ValueType is Subtractable by divisible.Result,
+            multiplicable: subtractable.Result is Multiplicable by subtractable.Result,
+            addable2:      multiplicable.Result is Addable by multiplicable.Result,
+            zeroic2:       multiplicable.Result is Zeroic,
+            equality2:     addable2.Result =:= multiplicable.Result,
+            divisible2:    multiplicable.Result is Divisible by Double,
+            rootable:      divisible2.Result is Rootable[2])
+  :     rootable.Result =
+    val mean: divisible.Result = iterable.mean
+    (iterable.map(_ - mean).map { value => value*value }.total/iterable.size).sqrt
+
+  def product
+     (using unital:        ValueType is Unital,
+            multiplicable: ValueType is Multiplicable by ValueType,
+            equality:      multiplicable.Result =:= ValueType)
+  :     ValueType =
+    iterable.foldLeft(unital.one)(multiplicable.multiply)
 
   transparent inline def each(lambda: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
     var ordinal: Ordinal = Prim
