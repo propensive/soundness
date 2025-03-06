@@ -103,5 +103,4 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
   override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
     try handle(request, response) catch
       case error: Throwable =>
-        println("An error occurred while processing a request: "+error)
         error.printStackTrace(System.out)

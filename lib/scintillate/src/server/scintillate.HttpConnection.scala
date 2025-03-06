@@ -41,6 +41,7 @@ import proscenium.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
+import turbulence.*
 import vacuous.*
 
 import com.sun.net.httpserver as csnh
@@ -67,7 +68,8 @@ object HttpConnection:
          Optional(uri.getHost).let(_.tt).or:
            exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
 
-    val in = exchange.getRequestBody.nn
+    lazy val in = exchange.getRequestBody.nn
+
     val buffer = new Array[Byte](65536)
 
     def stream(): Stream[Bytes] =
@@ -80,7 +82,7 @@ object HttpConnection:
         version     = version,
         host        = host,
         target      = target,
-        body        = stream(),
+        body        = () => stream(),
         textHeaders = headers)
 
     Log.fine(HttpServerEvent.Received(request))
@@ -89,17 +91,18 @@ object HttpConnection:
       exchange.getLocalAddress.nn.getPort
 
     def respond(response: Http.Response): Unit =
+      var chunked = false
       response.textHeaders.each:
         case Http.Header(key, value) =>
+          if key.lower == t"transfer-encoding" && value.lower == t"chunked" then chunked = true
           exchange.getResponseHeaders.nn.add(key.s, value.s)
 
-      val length = response.body match
+      val length = if chunked then 0 else response.body match
         case Stream()     => -1
         case Stream(data) => data.length
         case _            => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
-
       val responseBody = exchange.getResponseBody.nn
 
       response.body.map(_.mutable(using Unsafe)).each(responseBody.write(_))
