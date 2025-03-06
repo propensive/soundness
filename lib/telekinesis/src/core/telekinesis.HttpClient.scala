@@ -77,7 +77,7 @@ object HttpClient:
       val request: jnh.HttpRequest.Builder =
         jnh.HttpRequest.newBuilder().nn.uri(jn.URI.create(url.show.s)).nn
 
-      val body = httpRequest.body match
+      lazy val body = httpRequest.body() match
         case Stream()      =>
           jnh.HttpRequest.BodyPublishers.noBody.nn
 
