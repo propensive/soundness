@@ -74,7 +74,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         version     = Http.Version.parse(request.getProtocol.nn.tt),
         host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
         target      = target,
-        body        = streamBody(request),
+        body        = () => streamBody(request),
         textHeaders = headers)
 
     def respond(response: Http.Response): Unit =
