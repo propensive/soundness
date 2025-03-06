@@ -30,79 +30,57 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package perihelion
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import gossamer.*
-import nettlesome.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import telekinesis.*
-import turbulence.*
+import hypotenuse.*
 import vacuous.*
 
-import jakarta.servlet as js, js.http as jsh
 
-open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
-  protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
-    val in = request.getInputStream()
-    val buffer = new Array[Byte](4096)
+object Frame:
+  def apply(bytes: Bytes, offset: Int = 0): Frame = ???
 
-    Readable.inputStream.stream(request.getInputStream.nn)
+enum Frame(payload: Bytes):
+  case Continuation(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Text(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Binary(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Ping(payload: Bytes) extends Frame(payload)
+  case Pong(payload: Bytes) extends Frame(payload)
+  case Close(code: Int) extends Frame(Bytes())
 
-  protected def makeConnection
-     (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
-  :     HttpConnection raises StreamError =
-    val uri = request.getRequestURI.nn.tt
-    val query = Optional(request.getQueryString).let(_.tt)
-    val target = uri+query.let(t"?"+_).or(t"")
+  private def mask: Optional[Bytes] = Unset
 
-    val headers: List[Http.Header] =
-      request.getHeaderNames.nn.asScala.to(List).map: key =>
-        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+  def length = payload.length
 
-      . flatMap:
-          case (key, values) => values.map(Http.Header(key, _))
+  private def byte0: Byte = this match
+    case Continuation(fin, _) => if fin then bin"10000000" else bin"00000000"
+    case Text(fin, _)         => if fin then bin"10000001" else bin"00000001"
+    case Binary(fin, _)       => if fin then bin"10000010" else bin"00000010"
+    case Close(_)             => bin"00001000"
+    case Ping(_)              => bin"00001001"
+    case Pong(_)              => bin"00001010"
 
-    val httpRequest = Http.Request
-     (method      = request.getMethod.nn.show.decode[Http.Method],
-      version     = Http.Version.parse(request.getProtocol.nn.tt),
-      host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
-      target      = target,
-      body        = streamBody(request),
-      textHeaders = headers)
+  private def lengthByte: Byte = payload.length match
+    case length if length <= 125   => length.toByte
+    case length if length <= 65535 => 126
+    case _                         => 127
 
-    def respond(response: Http.Response): Unit =
-      servletResponse.setStatus(response.status.code)
+  private def headerLength = lengthByte match
+    case 126 => 4
+    case 127 => 10
+    case _   => 2
 
-      response.textHeaders.each:
-        case Http.Header(key, value) =>
-          servletResponse.addHeader(key.s, value.s)
+  private def byte1: Byte =
+    ((if mask.present then bin"10000000" else bin"00000000") | lengthByte).toByte
 
-      val out = servletResponse.getOutputStream.nn
+  def header: Bytes = headerLength match
+    case 2 => Bytes(byte0, byte1)
+    case 4 => Bytes(byte0, byte1, (length >> 8).toByte, length.toByte)
+    case _ =>
+      val byte6 = (length >> 24).toByte
+      val byte7 = (length >> 16).toByte
+      val byte8 = (length >> 8).toByte
+      val byte9 = length.toByte
+      Bytes(byte0, byte1, 0, 0, 0, 0, byte6, byte7, byte8, byte9)
 
-      response.body match
-        case Stream()     => servletResponse.addHeader("content-length", "0")
-        case Stream(data) => servletResponse.addHeader("content-length", data.length.show.s)
-                               out.write(data.mutable(using Unsafe))
-        case body           => servletResponse.addHeader("transfer-encoding", "chunked")
-                               body.map(_.mutable(using Unsafe)).each(out.write(_))
-
-      out.close()
-
-    new HttpConnection(httpRequest, false, request.getServerPort, respond)
-
-  def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    unsafely:
-      val connection = makeConnection(request, response)
-      connection.respond(handle(using connection))
-
-  override def service
-     (request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null)
-  :     Unit =
-    if request != null && response != null then try handle(request, response) catch
-      case error: Throwable =>
-        error.printStackTrace(System.out)
+  def bytes: Bytes = header ++ payload

@@ -30,79 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package perihelion
 
 import anticipation.*
-import contingency.*
-import distillate.*
+import fulminate.*
+import gastronomy.*
 import gossamer.*
-import nettlesome.*
+import hypotenuse.*
+import monotonous.*
+import parasite.*
+import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-import jakarta.servlet as js, js.http as jsh
+import alphabets.base64.standard
 
-open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
-  protected def streamBody(request: jsh.HttpServletRequest): Stream[Bytes] raises StreamError =
-    val in = request.getInputStream()
-    val buffer = new Array[Byte](4096)
+object Websocket:
+  val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  enum Opcode:
+    case Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
+         Ping, Pong
 
-    Readable.inputStream.stream(request.getInputStream.nn)
+  given servable: [ResultType] => Websocket[ResultType] is Servable:
+    def serve(websocket: Websocket[ResultType]): Http.Response =
+      given prefix: ("secWebsocketAccept" is Prefixable of Text) = identity(_)
+      given prefix2: ("secWebsocketVersion" is Prefixable of Int) = _.toString.tt
 
-  protected def makeConnection
-     (request: jsh.HttpServletRequest, servletResponse: jsh.HttpServletResponse)
-  :     HttpConnection raises StreamError =
-    val uri = request.getRequestURI.nn.tt
-    val query = Optional(request.getQueryString).let(_.tt)
-    val target = uri+query.let(t"?"+_).or(t"")
+      Http.Response
+       (Http.SwitchingProtocols,
+        secWebsocketAccept  = (websocket.key+Websocket.magic).digest[Sha1].serialize[Base64].keep(28),
+        secWebsocketVersion = 13,
+        transferEncoding    = TransferEncoding.Chunked,
+        connection          = t"Upgrade",
+        upgrade             = t"websocket")
+       (websocket.spool.stream.map(_.bytes))
 
-    val headers: List[Http.Header] =
-      request.getHeaderNames.nn.asScala.to(List).map: key =>
-        key.tt.lower -> request.getHeaders(key).nn.asScala.to(List).map(_.tt)
+class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)(using Monitor, Codicil):
+  given prefix3: ("secWebsocketKey" is Prefixable of Text) = identity(_)
+  val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
+  private val spool: Spool[Frame] = Spool()
 
-      . flatMap:
-          case (key, values) => values.map(Http.Header(key, _))
+  val task: Task[ResultType] = async(handle(events()))
 
-    val httpRequest = Http.Request
-     (method      = request.getMethod.nn.show.decode[Http.Method],
-      version     = Http.Version.parse(request.getProtocol.nn.tt),
-      host        = unsafely(Hostname.parse(request.getServerName.nn.tt)),
-      target      = target,
-      body        = streamBody(request),
-      textHeaders = headers)
+  def unmask(bytes: Bytes, mask: Bytes): Bytes = Bytes.fill(bytes.length): index =>
+    (bytes(index)^mask(index%4)).toByte
 
-    def respond(response: Http.Response): Unit =
-      servletResponse.setStatus(response.status.code)
+  def events(): Stream[Frame] =
+    lazy val conduit: Conduit = Conduit(request.body())
 
-      response.textHeaders.each:
-        case Http.Header(key, value) =>
-          servletResponse.addHeader(key.s, value.s)
+    def recur(): Stream[Frame] =
+      val head = conduit.datum
+      val fin = (head & 128) == 128
+      val opcode = Websocket.Opcode.fromOrdinal(head & 16)
+      conduit.next()
 
-      val out = servletResponse.getOutputStream.nn
+      val length = (conduit.datum&bin"01111111") match
+        case 127   => B64(conduit.take(8)).s64.long.toInt
+        case 126   => B16(conduit.take(2)).s16.int
+        case count => count
 
-      response.body match
-        case Stream()     => servletResponse.addHeader("content-length", "0")
-        case Stream(data) => servletResponse.addHeader("content-length", data.length.show.s)
-                               out.write(data.mutable(using Unsafe))
-        case body           => servletResponse.addHeader("transfer-encoding", "chunked")
-                               body.map(_.mutable(using Unsafe)).each(out.write(_))
+      val mask = conduit.take(4)
+      val payload = unmask(conduit.take(length), mask)
 
-      out.close()
+      opcode match
+        case Websocket.Opcode.Continuation =>
+          Frame.Continuation(fin, payload) #:: recur()
+        case Websocket.Opcode.Text         =>
+          Frame.Text(fin, payload) #:: recur()
+        case Websocket.Opcode.Binary       =>
+          Frame.Binary(fin, payload) #:: recur()
+        case Websocket.Opcode.Ping         =>
+          spool.put(Frame.Pong(payload))
+          recur()
+        case Websocket.Opcode.Pong         =>
+          recur()
+        case Websocket.Opcode.Close        =>
+          spool.put(Frame.Close(1000))
+          spool.stop()
+          Stream()
 
-    new HttpConnection(httpRequest, false, request.getServerPort, respond)
-
-  def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    unsafely:
-      val connection = makeConnection(request, response)
-      connection.respond(handle(using connection))
-
-  override def service
-     (request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null)
-  :     Unit =
-    if request != null && response != null then try handle(request, response) catch
-      case error: Throwable =>
-        error.printStackTrace(System.out)
+    recur()

@@ -194,7 +194,7 @@ object Http:
   object Request:
     given Request is Showable = request =>
       val bodySample: Text =
-        try request.body.stream.read[Bytes].utf8 catch
+        try request.body().read[Bytes].utf8 catch
           case err: StreamError  => t"[-/-]"
 
       val headers: Text =
@@ -236,7 +236,7 @@ object Http:
         append(request.host.show)
         newline()
 
-        request.body match
+        request.body() match
           case Stream()     => append(t"Content-Length: 0")
           case Stream(data) => append(t"Content-Length: ${data.length}")
           case _            => append(t"Transfer-Encoding: chunked")
@@ -250,7 +250,7 @@ object Http:
         newline()
         newline()
 
-      text.bytes #:: request.body
+      text.bytes #:: request.body()
 
   case class Request
      (method:      Http.Method,
@@ -258,7 +258,7 @@ object Http:
       host:        Hostname,
       target:      Text,
       textHeaders: List[Http.Header],
-      body:        Stream[Bytes]):
+      body:        () => Stream[Bytes]):
 
     inline def request: this.type = this
 
@@ -272,7 +272,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body.read[Bytes].utf8.decode[Query]
+          queryText.decode[Query] ++ body().read[Bytes].utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
