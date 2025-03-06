@@ -107,5 +107,4 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
   :     Unit =
     if request != null && response != null then try handle(request, response) catch
       case error: Throwable =>
-        println("An error occurred while processing a request: "+error)
         error.printStackTrace(System.out)

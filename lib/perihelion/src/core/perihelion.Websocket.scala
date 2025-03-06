@@ -30,37 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package perihelion
 
 import anticipation.*
-import contingency.*
 import fulminate.*
-import gesticulate.*
+import gastronomy.*
 import gossamer.*
+import hypotenuse.*
+import monotonous.*
+import parasite.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-import errorDiagnostics.stackTraces
+import alphabets.base64.standard
 
+object Websocket:
+  val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
+  enum Opcode:
+    case Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
+         Ping, Pong
 
-object Acceptable:
-  given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
-    tend:
-      case _: MediumError => MultipartError(MultipartError.Reason.Medium)
+  given servable: [ResultType] => Websocket[ResultType] is Servable:
+    def serve(websocket: Websocket[ResultType]): Http.Response =
+      given prefix: ("secWebsocketAccept" is Prefixable of Text) = identity(_)
+      given prefix2: ("secWebsocketVersion" is Prefixable of Int) = _.toString.tt
 
-    . within:
-        val contentType = request.headers.contentType.prim.or:
-          abort(MultipartError(MultipartError.Reason.Medium))
+      Http.Response
+       (Http.SwitchingProtocols,
+        secWebsocketAccept  = (websocket.key+Websocket.magic).digest[Sha1].serialize[Base64].keep(28),
+        secWebsocketVersion = 13,
+        transferEncoding    = TransferEncoding.Chunked,
+        connection          = t"Upgrade",
+        upgrade             = t"websocket")
+       (websocket.spool.stream.map(_.bytes))
 
-        if contentType.base == media"multipart/form-data" then
-          val boundary = contentType.at(t"boundary").or:
-            abort(MultipartError(MultipartError.Reason.Medium))
+class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)(using Monitor, Codicil):
+  given prefix3: ("secWebsocketKey" is Prefixable of Text) = identity(_)
+  val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
+  private val spool: Spool[Frame] = Spool()
 
-          Multipart.parse(request.body(), boundary)
-        else abort(MultipartError(MultipartError.Reason.Medium))
+  val task: Task[ResultType] = async(handle(events()))
 
-trait Acceptable:
-  type Self
-  def accept(request: Http.Request): Self
+  def unmask(bytes: Bytes, mask: Bytes): Bytes = Bytes.fill(bytes.length): index =>
+    (bytes(index)^mask(index%4)).toByte
+
+  def events(): Stream[Frame] =
+    lazy val conduit: Conduit = Conduit(request.body())
+
+    def recur(): Stream[Frame] =
+      val head = conduit.datum
+      val fin = (head & 128) == 128
+      val opcode = Websocket.Opcode.fromOrdinal(head & 16)
+      conduit.next()
+
+      val length = (conduit.datum&bin"01111111") match
+        case 127   => B64(conduit.take(8)).s64.long.toInt
+        case 126   => B16(conduit.take(2)).s16.int
+        case count => count
+
+      val mask = conduit.take(4)
+      val payload = unmask(conduit.take(length), mask)
+
+      opcode match
+        case Websocket.Opcode.Continuation =>
+          Frame.Continuation(fin, payload) #:: recur()
+        case Websocket.Opcode.Text         =>
+          Frame.Text(fin, payload) #:: recur()
+        case Websocket.Opcode.Binary       =>
+          Frame.Binary(fin, payload) #:: recur()
+        case Websocket.Opcode.Ping         =>
+          spool.put(Frame.Pong(payload))
+          recur()
+        case Websocket.Opcode.Pong         =>
+          recur()
+        case Websocket.Opcode.Close        =>
+          spool.put(Frame.Close(1000))
+          spool.stop()
+          Stream()
+
+    recur()

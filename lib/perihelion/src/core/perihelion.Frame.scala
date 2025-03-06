@@ -30,37 +30,57 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package perihelion
 
 import anticipation.*
-import contingency.*
-import fulminate.*
-import gesticulate.*
-import gossamer.*
-import rudiments.*
-import telekinesis.*
-import turbulence.*
+import hypotenuse.*
 import vacuous.*
 
-import errorDiagnostics.stackTraces
 
+object Frame:
+  def apply(bytes: Bytes, offset: Int = 0): Frame = ???
 
-object Acceptable:
-  given multipart: Tactic[MultipartError] => Multipart is Acceptable = request =>
-    tend:
-      case _: MediumError => MultipartError(MultipartError.Reason.Medium)
+enum Frame(payload: Bytes):
+  case Continuation(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Text(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Binary(fin: Boolean, payload: Bytes) extends Frame(payload)
+  case Ping(payload: Bytes) extends Frame(payload)
+  case Pong(payload: Bytes) extends Frame(payload)
+  case Close(code: Int) extends Frame(Bytes())
 
-    . within:
-        val contentType = request.headers.contentType.prim.or:
-          abort(MultipartError(MultipartError.Reason.Medium))
+  private def mask: Optional[Bytes] = Unset
 
-        if contentType.base == media"multipart/form-data" then
-          val boundary = contentType.at(t"boundary").or:
-            abort(MultipartError(MultipartError.Reason.Medium))
+  def length = payload.length
 
-          Multipart.parse(request.body(), boundary)
-        else abort(MultipartError(MultipartError.Reason.Medium))
+  private def byte0: Byte = this match
+    case Continuation(fin, _) => if fin then bin"10000000" else bin"00000000"
+    case Text(fin, _)         => if fin then bin"10000001" else bin"00000001"
+    case Binary(fin, _)       => if fin then bin"10000010" else bin"00000010"
+    case Close(_)             => bin"00001000"
+    case Ping(_)              => bin"00001001"
+    case Pong(_)              => bin"00001010"
 
-trait Acceptable:
-  type Self
-  def accept(request: Http.Request): Self
+  private def lengthByte: Byte = payload.length match
+    case length if length <= 125   => length.toByte
+    case length if length <= 65535 => 126
+    case _                         => 127
+
+  private def headerLength = lengthByte match
+    case 126 => 4
+    case 127 => 10
+    case _   => 2
+
+  private def byte1: Byte =
+    ((if mask.present then bin"10000000" else bin"00000000") | lengthByte).toByte
+
+  def header: Bytes = headerLength match
+    case 2 => Bytes(byte0, byte1)
+    case 4 => Bytes(byte0, byte1, (length >> 8).toByte, length.toByte)
+    case _ =>
+      val byte6 = (length >> 24).toByte
+      val byte7 = (length >> 16).toByte
+      val byte8 = (length >> 8).toByte
+      val byte9 = length.toByte
+      Bytes(byte0, byte1, 0, 0, 0, 0, byte6, byte7, byte8, byte9)
+
+  def bytes: Bytes = header ++ payload

@@ -132,7 +132,7 @@ object Telekinesis:
             val contentType = Http.Header("content-type".tt, $postable.medium($payload).show)
 
             val request =
-              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), body)
+              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
 
             $client.request(request, $submit.target)  }
 
@@ -157,7 +157,9 @@ object Telekinesis:
             given loggable0: HttpEvent is Loggable = $loggable
 
             val path = $fetch.originForm
-            val request = Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), Stream())
+
+            val request =
+              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
 
             $client.request(request, $fetch.target)  }
 
