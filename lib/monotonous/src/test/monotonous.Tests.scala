@@ -32,17 +32,16 @@
                                                                                                   */
 package monotonous
 
-import anticipation.*
-import capricious.*, randomization.seeded, randomization.lengths.uniformUpto100000
-import contingency.*
-import gossamer.*
-import probably.*
-import proscenium.*
-import rudiments.*
-import spectacular.*
-import turbulence.*
+import soundness.*
 
 import scala.compiletime.*
+
+import randomization.seeded, randomization.sizes.uniformUpto100000
+import charEncoders.ascii
+import strategies.throwUnsafely
+import alphabets.hex.lowerCase
+
+given Seed = Seed(1L)
 
 object Tests extends Suite(t"Monotonous tests"):
 
@@ -54,21 +53,14 @@ object Tests extends Suite(t"Monotonous tests"):
   val stream = Stream(Bytes(1), Bytes(2, 3), Bytes(4, 5, 6), Bytes(7, 8, 9, 10),
       Bytes(11, 12, 13, 14, 15), Bytes(16, 17, 18, 19, 20, 21), Bytes(22, 23, 24, 25, 26, 27, 28))
 
-  def shred(text: Text) =
-    Stream
-     (text.slice(0, 5),
-      text.slice(5, 17),
-      text.slice(17, 43))
-
-  def run(): Unit =
+  def run(): Unit = stochastic:
 
     suite(t"Streaming tests"):
       test(t"Streaming BASE32"):
-        import strategies.throwUnsafely
-        import alphabets.hex.lowerCase
         val text: Text = allNumbers.serialize
-        println(shred(text).to(List).inspect)
-        val result = shred(text).deserialize.toList
+        val shredded = Stream(text.bytes).shred(6, 9).map(_.utf8)
+        println(shredded.to(List).inspect)
+        val result = shredded.deserialize.toList
         println(result.reduce(_ ++ _).to(List).inspect)
         result.reduce(_ ++ _).to(List)
       .assert(_ == allNumbers.to(List))
