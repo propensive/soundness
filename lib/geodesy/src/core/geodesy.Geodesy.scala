@@ -61,7 +61,7 @@ object Geodesy:
     def apply(latitude: Angle, longitude: Angle): Location = fromAngle(latitude, longitude)
 
     def apply(north: Int, east: Int): Location =
-      fromAngle(Degree*north/1000000.0, Degree*east/1000000.0)
+      fromAngle(Degree*north/1000000.0, Degree*((360.0 + east/1000000.0)%360.0))
 
   object Angle:
     private val c = math.Pi*2
