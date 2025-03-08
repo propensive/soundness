@@ -115,8 +115,8 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
   infix def ++ (query: Query) = Query(values ++ query.values)
 
   def selectDynamic[ResultType](label: String)
-     (using parametric: label.type is Parametric into ResultType,
-            decodable:  ResultType is Decodable in Query)
+     (using erased (label.type is Parametric into ResultType))
+     (using decodable: ResultType is Decodable in Query)
   :     ResultType =
     decodable.decoded(apply(label.tt))
 
