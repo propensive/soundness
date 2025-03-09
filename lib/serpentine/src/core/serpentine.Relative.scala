@@ -39,31 +39,31 @@ import rudiments.*
 
 import scala.compiletime.*, ops.int.*
 
-object Relative:
-  def of[PlatformType, AscentType <: Int, SubjectType <: Tuple](ascent: Int, descent: Text*)
-  :     Relative on PlatformType of SubjectType under AscentType =
+// object Relative:
+//   def of[PlatformType, AscentType <: Int, SubjectType <: Tuple](ascent: Int, descent: Text*)
+//   :     Relative on PlatformType of SubjectType under AscentType =
 
-    new Relative(ascent, descent*):
-      type Subject = SubjectType
-      type Platform = PlatformType
-      type Constraint = AscentType
+//     new Relative(ascent, descent*):
+//       type Subject = SubjectType
+//       type Platform = PlatformType
+//       type Constraint = AscentType
 
-case class Relative(ascent: Int, descent: Text*):
-  type Platform
-  type Subject <: Tuple
-  type Constraint <: Int
+// case class Relative(ascent: Int, descent: Text*):
+//   type Platform
+//   type Subject <: Tuple
+//   type Constraint <: Int
 
-  transparent inline def parent: Relative = inline !![Subject] match
-    case head *: tail => Relative.of[Platform, Constraint, tail.type](ascent, descent.tail*)
-    case EmptyTuple   => Relative.of[Platform, S[Constraint], EmptyTuple](ascent + 1)
-    case _ =>
-      given Tactic[PathError] = summonInline[Tactic[PathError]]
+//   transparent inline def parent: Relative = inline !![Subject] match
+//     case head *: tail => Relative.of[Platform, Constraint, tail.type](ascent, descent.tail*)
+//     case EmptyTuple   => Relative.of[Platform, S[Constraint], EmptyTuple](ascent + 1)
+//     case _ =>
+//       given Tactic[PathError] = summonInline[Tactic[PathError]]
 
-      if descent.isEmpty then
-        raise(PathError(PathError.Reason.RootParent))
-        Relative.of[Platform, Constraint, Tuple](ascent, descent*)
+//       if descent.isEmpty then
+//         raise(PathError(PathError.Reason.RootParent))
+//         Relative.of[Platform, Constraint, Tuple](ascent, descent*)
 
-      else Relative.of[Platform, Constraint, Tuple](ascent, descent.tail*)
+//       else Relative.of[Platform, Constraint, Tuple](ascent, descent.tail*)
 
 // object Relative:
 //   given encodable: [RelativeType <: Relative] => (navigable: Navigable)
