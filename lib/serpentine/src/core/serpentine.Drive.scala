@@ -32,10 +32,10 @@
                                                                                                   */
 package serpentine
 
-// export Serpentine.{?, ^, /}
+import gossamer.*
 
-export Path.`%`
-export Relative.{`^`, `?`}
+object Drive:
+  def apply(letter: Char): Drive = new Drive(letter)
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
+  type Platform = Windows

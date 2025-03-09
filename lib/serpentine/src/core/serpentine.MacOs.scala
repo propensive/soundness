@@ -32,10 +32,15 @@
                                                                                                   */
 package serpentine
 
-// export Serpentine.{?, ^, /}
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-export Path.`%`
-export Relative.{`^`, `?`}
+erased trait MacOs
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+    & MustNotEqual["Icon\r"] & MustNotContain[":"]
+
+  erased given MacOs is Nominative under Rules = !!

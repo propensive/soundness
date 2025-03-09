@@ -32,10 +32,19 @@
                                                                                                   */
 package serpentine
 
-// export Serpentine.{?, ^, /}
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-export Path.`%`
-export Relative.{`^`, `?`}
+erased trait Windows
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+object Windows:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
+    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
+    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
+    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
+
+  erased given Windows is Nominative under Rules = !!

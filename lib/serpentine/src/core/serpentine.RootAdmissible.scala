@@ -33,16 +33,14 @@
 package serpentine
 
 import anticipation.*
-import rudiments.*
+import prepositional.*
 
-import scala.reflect.*
+object RootAdmissible:
+  given (%.type is RootAdmissible on Linux) = _ => ()
+  given (%.type is RootAdmissible on MacOs) = _ => ()
 
-object Pathlike:
-  erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = !!
-
-transparent trait Pathlike:
+trait RootAdmissible:
+  type Self
   type Platform
-  def textDescent: List[Text]
-  def separator: Text
 
-  override def toString(): String = textDescent.reverse.mkString(separator.s)
+  def check(name: Text): Unit

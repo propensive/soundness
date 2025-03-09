@@ -32,10 +32,12 @@
                                                                                                   */
 package serpentine
 
-// export Serpentine.{?, ^, /}
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-export Path.`%`
-export Relative.{`^`, `?`}
+erased trait Linux
 
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
+object Linux:
+  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+  erased given Linux is Nominative under Rules = !!
