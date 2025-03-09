@@ -157,28 +157,28 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
 
     suite(t"Relative paths"):
       test(t"Create a relative path"):
-        val relative: Relation of Mono["foo"] = ? / "foo"
+        val relative: Relative of Mono["foo"] = ? / "foo"
         relative
 
-      . assert(_ == Relation(0, List(t"foo")))
+      . assert(_ == Relative(0, List(t"foo")))
 
       test(t"Create a deeper relative path"):
-        val relative: Relation of ("bar", "foo") = ? / "foo" / "bar"
+        val relative: Relative of ("bar", "foo") = ? / "foo" / "bar"
         relative
 
-      . assert(_ == Relation(0, List(t"bar", t"foo")))
+      . assert(_ == Relative(0, List(t"bar", t"foo")))
 
       test(t"Create a relative path with ascent"):
-        val relative: Relation of Mono["foo"] under 1 = ? / ^ / "foo"
+        val relative: Relative of Mono["foo"] under 1 = ? / ^ / "foo"
         relative
 
-      . assert(_ == Relation(1, List(t"foo")))
+      . assert(_ == Relative(1, List(t"foo")))
 
       test(t"Create a relative path with double ascent"):
-        val relative: Relation of Mono["foo"] under 2 = ? / ^ / ^ / "foo"
+        val relative: Relative of Mono["foo"] under 2 = ? / ^ / ^ / "foo"
         relative
 
-      . assert(_ == Relation(2, List(t"foo")))
+      . assert(_ == Relative(2, List(t"foo")))
 
     suite(t"Encoding"):
       test(t"Serialize simple Linux path"):
@@ -194,37 +194,37 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
       . assert(_ == t"D:\\Foo")
 
       test(t"Encode a relative path"):
-        val relative: Relation on Linux = ? / ^ / "foo"
+        val relative: Relative on Linux = ? / ^ / "foo"
         relative.encode
 
       . assert(_ == t"../foo")
 
       test(t"Encode a relative path with double ascent"):
-        val relative: Relation on Linux = ? / ^ / ^ / "foo"
+        val relative: Relative on Linux = ? / ^ / ^ / "foo"
         relative.encode
 
       . assert(_ == t"../../foo")
 
       test(t"Encode a peer"):
-        val relative: Relation on Linux = ? / "foo"
+        val relative: Relative on Linux = ? / "foo"
         relative.encode
 
       . assert(_ == t"foo")
 
       test(t"Encode a relative path on Windows"):
-        val relative: Relation on Windows = ? / ^ / "foo"
+        val relative: Relative on Windows = ? / ^ / "foo"
         relative.encode
 
       . assert(_ == t"..\\foo")
 
       test(t"Encode a relative path with double ascent on Windows"):
-        val relative: Relation on Windows = ? / ^ / ^ / "foo"
+        val relative: Relative on Windows = ? / ^ / ^ / "foo"
         relative.encode
 
       . assert(_ == t"..\\..\\foo")
 
       test(t"Encode a peer on Windows"):
-        val relative: Relation on Windows = ? / "foo"
+        val relative: Relative on Windows = ? / "foo"
         relative.encode
 
       . assert(_ == t"foo")
@@ -273,30 +273,30 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
       . assert(_.nonEmpty)
 
       test(t"Decode a simple relative path"):
-        t"foo".decode[Relation on Linux]
+        t"foo".decode[Relative on Linux]
       . assert(_ == ? / "foo")
 
       test(t"Decode a deeper relative path"):
-        t"foo/bar".decode[Relation on Linux]
+        t"foo/bar".decode[Relative on Linux]
       . assert(_ == ? / "foo" / "bar")
 
       test(t"Decode a relative path with ascent"):
-        t"../foo/bar".decode[Relation on Linux]
+        t"../foo/bar".decode[Relative on Linux]
       . assert(_ == ? / ^ / "foo" / "bar")
 
       test(t"Decode a relative path self-reference"):
-        t".".decode[Relation on Linux]
+        t".".decode[Relative on Linux]
       . assert(_ == ?)
 
       test(t"Decode a relative path with greater ascent"):
-        t"../../foo/bar".decode[Relation on Linux]
+        t"../../foo/bar".decode[Relative on Linux]
       . assert(_ == ? / ^ / ^ / "foo" / "bar")
 
       test(t"Decode a relative path with greater ascent on Windows"):
-        t"..\\..\\foo\\bar".decode[Relation on Windows]
+        t"..\\..\\foo\\bar".decode[Relative on Windows]
       . assert(_ == ? / ^ / ^ / "foo" / "bar")
 
       test(t"Cannot decode a relative path without knowing platform"):
         demilitarize:
-          t"..\\..\\foo\\bar".decode[Relation]
+          t"..\\..\\foo\\bar".decode[Relative]
       . assert(_.nonEmpty)
