@@ -37,12 +37,12 @@ import scala.compiletime.*, ops.int.*
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+
+given Realm = Realm(t"serpentine")
 
 object Path:
   @targetName("Root")
@@ -50,7 +50,7 @@ object Path:
     type Subject = EmptyTuple
     type Constraint = %.type
 
-  given decodable: [PlatformType: Filesystem, RootType]
+  given decodable: [PlatformType: System, RootType]
   =>    (radical: RootType is Radical on PlatformType)
   =>    (Path on PlatformType) is Decodable in Text = text =>
     val parts = text.skip(radical.length(text)).cut(PlatformType.separator)
@@ -67,7 +67,7 @@ object Path:
       type Platform = PlatformType
       type Constraint = RootType
 
-  given [PlatformType: Filesystem] => Path on PlatformType is Encodable in Text =
+  given [PlatformType: System] => Path on PlatformType is Encodable in Text =
     path => path.descent.reverse.join(path.root, PlatformType.separator, t"")
 
   private def conversion[FromType, ToType](fn: FromType => ToType) =
@@ -125,75 +125,6 @@ case class Path(root: Text, descent: Text*):
         new Path(root, navigable.follow(child) +: descent*):
           type Subject = child.type *: Subject0
           type Constraint = Constraint0
-
-object Relation:
-  object ^
-  object ? extends Relation(0)
-
-
-case class Relation(ascent: Int, descent: Text*):
-  type Platform
-  type Subject <: Tuple
-  type Constraint <: Int
-
-class Ascent(val ascent0: Int) extends Relation(ascent0):
-  type Subject = EmptyTuple
-  type Constraint = ascent0.type
-
-  def / (up: ^.type): Ascent =
-    type Constraint0 = Constraint
-    new Ascent(ascent0 + 1):
-      type Constraint = S[Constraint0]
-
-object Drive:
-  def apply(letter: Char): Drive = new Drive(letter)
-
-class Drive(val letter: Char) extends Root(t"$letter:\\"):
-  type Platform = Windows
-
-case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
-
-erased trait Linux
-
-object Linux:
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-  erased given Linux is Nominative under Rules = !!
-
-erased trait Windows
-
-object Windows:
-  type Rules =
-    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
-    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
-    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
-    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
-    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
-    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
-
-  erased given Windows is Nominative under Rules = !!
-
-erased trait MacOs
-
-object MacOs:
-  type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-    & MustNotEqual["Icon\r"] & MustNotContain[":"]
-
-  erased given MacOs is Nominative under Rules = !!
-
-given Realm = Realm(t"serpentine")
-
-object Filesystem:
-  given Windows is Filesystem = () => t"\\"
-  given Linux is Filesystem = () => t"/"
-  given MacOs is Filesystem = () => t"/"
-
-trait Filesystem:
-  type Self
-  val separator: Text = makeSeparator()
-  def makeSeparator(): Text
-
-
 
 // object Path:
 //   given decoder: [PlatformType: {Navigable, Radical}]
