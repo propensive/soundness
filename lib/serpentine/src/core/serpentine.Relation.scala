@@ -100,6 +100,8 @@ case class Relation(ascent: Int, descent: List[Text] = Nil):
   type Subject <: Tuple
   type Constraint <: Int
 
+  def delta: Int = descent.length - ascent
+
   private inline def check[SubjectType, PlatformType](path: List[Text]): Unit =
     inline !![SubjectType] match
       case _: (head *: tail) =>
