@@ -37,7 +37,7 @@ import scala.compiletime.*, ops.int.*
 import prepositional.*
 import proscenium.*
 
-class Ascent(val ascent0: Int) extends Relation(ascent0):
+class Ascent(val ascent0: Int) extends Relative(ascent0):
   type Subject = EmptyTuple
 
   @targetName("child")
