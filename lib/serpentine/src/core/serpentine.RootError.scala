@@ -35,13 +35,7 @@ package serpentine
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
-import contingency.*
-import distillate.*
 import fulminate.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
 import proscenium.*
-import rudiments.*
 
 case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")
