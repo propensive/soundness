@@ -37,22 +37,26 @@ import gossamer.*
 
 object System:
   given Windows is System:
+    type UniqueRoot = false
     val separator: Text = t"\\"
     val self: Text = t"."
     val parent: Text = t".."
 
   given Linux is System:
+    type UniqueRoot = true
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
 
   given MacOs is System:
+    type UniqueRoot = true
     val separator: Text = t"/"
     val self: Text = t"."
     val parent: Text = t".."
 
 trait System:
   type Self
+  type UniqueRoot <: Boolean
   val separator: Text
   val self: Text
   val parent: Text

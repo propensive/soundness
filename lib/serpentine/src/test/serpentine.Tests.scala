@@ -300,3 +300,29 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         demilitarize:
           t"..\\..\\foo\\bar".decode[Relative]
       . assert(_.nonEmpty)
+
+
+    suite(t"Conjunction tests"):
+      test(t"Conjunction of two Linux paths"):
+        val path1: Path on Linux = % / "home" / "work" / "data"
+        val path2: Path on Linux = % / "home" / "data" / "work"
+        path1.conjunction(path2)
+      . assert(_ == % / "home")
+
+      test(t"Conjunction of two different Linux paths"):
+        val path1: Path on Linux = % / "home" / "work" / "data"
+        val path2: Path on Linux = % / "home" / "work" / "more"
+        path1.conjunction(path2)
+      . assert(_ == % / "home" / "work")
+
+      test(t"Typelevel conjunction"):
+        val path1: Path of ("data", "work", "home") on Linux = % / "home" / "work" / "data"
+        val path2: Path of ("more", "work", "home") on Linux = % / "home" / "work" / "more"
+        val result: Path of ("work" , "home") = path1.conjunction(path2)
+      . assert()
+
+      test(t"Different typelevel conjunction of two unplatformed Linux paths"):
+        val path1 = % / "home" / "work" / "data" / "foo" / "bar"
+        val path2 = % / "home" / "more"
+        val result: Path of Mono["home"] = path1.conjunction(path2)
+      . assert()
