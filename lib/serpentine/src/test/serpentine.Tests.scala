@@ -271,3 +271,32 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
           t"C:\\Windows\\System\\".decode[Path]
 
       . assert(_.nonEmpty)
+
+      test(t"Decode a simple relative path"):
+        t"foo".decode[Relation on Linux]
+      . assert(_ == ? / "foo")
+
+      test(t"Decode a deeper relative path"):
+        t"foo/bar".decode[Relation on Linux]
+      . assert(_ == ? / "foo" / "bar")
+
+      test(t"Decode a relative path with ascent"):
+        t"../foo/bar".decode[Relation on Linux]
+      . assert(_ == ? / ^ / "foo" / "bar")
+
+      test(t"Decode a relative path self-reference"):
+        t".".decode[Relation on Linux]
+      . assert(_ == ?)
+
+      test(t"Decode a relative path with greater ascent"):
+        t"../../foo/bar".decode[Relation on Linux]
+      . assert(_ == ? / ^ / ^ / "foo" / "bar")
+
+      test(t"Decode a relative path with greater ascent on Windows"):
+        t"..\\..\\foo\\bar".decode[Relation on Windows]
+      . assert(_ == ? / ^ / ^ / "foo" / "bar")
+
+      test(t"Cannot decode a relative path without knowing platform"):
+        demilitarize:
+          t"..\\..\\foo\\bar".decode[Relation]
+      . assert(_.nonEmpty)

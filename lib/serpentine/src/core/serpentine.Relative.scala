@@ -66,25 +66,6 @@ import scala.compiletime.*, ops.int.*
 //       else Relative.of[Platform, Constraint, Tuple](ascent, descent.tail*)
 
 // object Relative:
-//   given encodable: [RelativeType <: Relative] => (navigable: Navigable)
-//   =>    RelativeType is Encodable in Text = relative =>
-//     if relative.textDescent.isEmpty then
-//       if relative.ascent == 0 then navigable.selfText
-//       else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
-//     else
-//       relative
-//       . textDescent
-//       . reverse
-//       . join(navigable.ascent*relative.ascent, navigable.separator, t"")
-
-//   given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
-//     encodable.encode(_)
-
-//   given decoder: [ElementType] => (Navigable by ElementType)
-//   =>    (Relative by ElementType) is Decodable in Text =
-
-//     parse(_)
-
 //   def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
 //   :     Relative by ElementType =
 //     def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
@@ -101,15 +82,6 @@ import scala.compiletime.*, ops.int.*
 
 //     if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
 
-//   def apply[ElementType](using navigable: Navigable by ElementType)
-//      (ascent0: Int, descent0: List[ElementType])
-//   :     Relative by ElementType =
-//     Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
-
-//   private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
-//   :     Relative by ElementType =
-//     new Relative(ascent0, descent0, separator):
-//       type Operand = ElementType
 
 //   given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
 //           (Relative by ElementType) =
@@ -131,16 +103,3 @@ import scala.compiletime.*, ops.int.*
 //   def parent: Relative =
 //     if textDescent.isEmpty then Relative.from(ascent + 1, Nil, separator)
 //     else Relative.from(ascent, textDescent.tail, separator)
-
-//   override def equals(that: Any): Boolean = that.asMatchable match
-//     case that: Relative => that.ascent == ascent && that.textDescent == textDescent
-//     case _              => false
-
-//   override def hashCode: Int = ascent*31 + textDescent.hashCode
-
-//   def on[PlatformType: Navigable]: Relative by PlatformType.Operand =
-//     Relative.parse(Relative.encodable.encode(this))
-
-//   @targetName("child")
-//   infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
-//     Relative.from(ascent, navigable.makeElement(element) :: textDescent, separator)
