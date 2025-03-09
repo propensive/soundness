@@ -32,24 +32,15 @@
                                                                                                   */
 package serpentine
 
-// import contingency.*
-// import prepositional.*
-import proscenium.*
-// import vacuous.*
+import anticipation.*
+import prepositional.*
 
-object Serpentine:
-  @targetName("Parent")
-  object ^
+object RootAdmissible:
+  given (%.type is RootAdmissible on Linux) = _ => ()
+  given (%.type is RootAdmissible on MacOs) = _ => ()
 
-  // @targetName("RelativeRoot")
-  // val `?` = PathAscent(0)
+trait RootAdmissible:
+  type Self
+  type Platform
 
-  // @targetName("Slash")
-  // object `/`:
-  //   def unapply[PlatformType <: AnyRef & Matchable: {Navigable, Radical}, ElementType]
-  //      (path: Path on PlatformType)
-  //   :     Option[(Path on PlatformType, PlatformType.Operand)] =
-  //     path.textDescent match
-  //       case Nil          => None
-  //       case head :: Nil  => Some((PlatformType.root(path.textRoot), PlatformType.element(head)))
-  //       case head :: tail => Some((unsafely(path.parent.vouch), PlatformType.element(head)))
+  def check(name: Text): Unit

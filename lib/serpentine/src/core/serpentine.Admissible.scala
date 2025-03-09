@@ -58,13 +58,3 @@ trait Admissible:
   type Platform
 
   def check(name: Text): Unit
-
-object RootAdmissible:
-  given (%.type is RootAdmissible on Linux) = _ => ()
-  given (%.type is RootAdmissible on MacOs) = _ => ()
-
-trait RootAdmissible:
-  type Self
-  type Platform
-
-  def check(name: Text): Unit

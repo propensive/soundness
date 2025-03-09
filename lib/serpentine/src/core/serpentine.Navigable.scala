@@ -32,16 +32,9 @@
                                                                                                   */
 package serpentine
 
-import scala.compiletime.*, ops.int.*
-
 import anticipation.*
-import contingency.*
-import fulminate.*
-import gossamer.*
-import nomenclature.*
 import prepositional.*
 import proscenium.*
-import rudiments.*
 
 object Navigable:
   given label: [PlatformType, StringType <: Label, SubjectType <: Tuple, PathType <: Path]
