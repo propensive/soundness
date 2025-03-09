@@ -35,6 +35,7 @@ package serpentine
 import scala.compiletime.*, ops.int.*
 
 import anticipation.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
@@ -65,6 +66,17 @@ object Relation:
   private def conversion[FromType, ToType](fn: FromType => ToType) =
     new Conversion[FromType, ToType]:
       def apply(from: FromType): ToType = fn(from)
+
+  given decodable: [PlatformType: System]
+  =>    (Relation on PlatformType) is Decodable in Text = text =>
+    if text == PlatformType.self then ? else
+      text.cut(PlatformType.separator).pipe: parts =>
+        (if parts.last == t"" then parts.init else parts).pipe: parts =>
+          (if parts.head == PlatformType.self then parts.tail else parts).pipe: parts =>
+            val ascent = parts.takeWhile(_ == PlatformType.parent).length
+            val descent = parts.drop(ascent).reverse
+
+            Relation(ascent, descent*)
 
   inline given [SubjectType, AscentType <: Int, PlatformType]
   =>    Conversion
@@ -99,6 +111,13 @@ case class Relation(ascent: Int, descent: List[Text] = Nil):
   inline def on[PlatformType]: Relation of Subject under Constraint on PlatformType =
     check[Subject, PlatformType](descent.to(List))
     this.asInstanceOf[Relation of Subject under Constraint on PlatformType]
+
+  transparent inline def parent = inline !![Subject] match
+    case head *: tail => Relation[Platform, tail.type, Constraint](ascent, descent.tail*)
+    case EmptyTuple   => Relation[Platform, Zero, S[Constraint]](ascent)
+    case _ =>
+      if descent.isEmpty then Relation[Platform, Subject, S[Constraint]](ascent + 1)
+      else Relation[Platform, Subject, Constraint](ascent, descent.tail*)
 
   transparent inline def / (child: Any)(using navigable: Navigable by child.type)
   :     Relation of (child.type *: Subject) under Constraint =
