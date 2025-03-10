@@ -91,7 +91,7 @@ object Nettlesome:
               IpAddressError(Ipv4ByteNotNumeric(text))
 
           . within:
-              bytes.map(_.decode[Int]).pipe: bytes =>
+              bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
                   then raise(IpAddressError(Ipv4ByteOutOfRange(byte))) yet 0.toByte
