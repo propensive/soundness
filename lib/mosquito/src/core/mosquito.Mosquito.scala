@@ -77,12 +77,13 @@ object Mosquito:
               subtraction:    multiplication.Result is Subtractable by multiplication.Result)
     :     Vector[addition.Result, 3] =
 
-      (left(1)*right(2) - left(2)*right(1)) *:
-          (left(2)*right(0) - left(0)*right(2)) *:
-          (left(0)*right(1) - left(1)*right(0)) *:
+      (left.element(1)*right.element(2) - left.element(2)*right.element(1)) *:
+          (left.element(2)*right.element(0) - left.element(0)*right.element(2)) *:
+          (left.element(0)*right.element(1) - left.element(1)*right.element(0)) *:
           Zero
 
   extension [SizeType <: Int, LeftType](left: Vector[LeftType, SizeType])
+    def element(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
     def apply(index: Int): LeftType = left.toArray(index).asInstanceOf[LeftType]
     def list: List[LeftType] = left.toList.asInstanceOf[List[LeftType]]
     def iarray: IArray[LeftType] = left.toIArray.asInstanceOf[IArray[LeftType]]
@@ -95,9 +96,9 @@ object Mosquito:
     :     LeftType =
 
       def recur(sum: multiplicable.Result, i: Int): LeftType =
-        if i == 0 then sum.sqrt else recur(sum + left(i)*left(i), i - 1)
+        if i == 0 then sum.sqrt else recur(sum + left.element(i)*left.element(i), i - 1)
 
-      recur(left(0)*left(0), size - 1)
+      recur(left.element(0)*left.element(0), size - 1)
 
     def map[LeftType2](fn: LeftType => LeftType2): Vector[LeftType2, SizeType] =
       def recur(tuple: Tuple): Tuple = tuple match
@@ -179,10 +180,10 @@ object Mosquito:
     :     multiply.Result =
 
       def recur(index: Int, sum: multiply.Result): multiply.Result =
-        if index < 0 then sum else recur(index - 1, sum + left(index)*right(index))
+        if index < 0 then sum else recur(index - 1, sum + left.element(index)*right.element(index))
 
       val start = size.value - 1
-      recur(start - 1, left(start)*right(start))
+      recur(start - 1, left.element(start)*right.element(start))
 
 extension [ElementType](list: List[ElementType])
   def slide(size: Int): Stream[Vector[ElementType, size.type]] = list match
