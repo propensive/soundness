@@ -301,6 +301,38 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
           t"..\\..\\foo\\bar".decode[Relative]
       . assert(_.nonEmpty)
 
+    suite(t"Compiletime tests"):
+      test(t"Specific path has known elements"):
+        val path = % / "foo" / "bar"
+        path.knownElements
+
+      . assert(identity)
+
+      test(t"Specific path on platform has known elements"):
+        val path = % / "foo" / "bar"
+        path.on[Linux].knownElements
+
+      . assert(identity)
+
+      test(t"Specific path auto-converted to platform does not have known elements"):
+        val path: Path on Linux = % / "foo" / "bar"
+        path.knownElements
+
+      . assert(!_)
+
+      test(t"Path with variable does not have known elements"):
+        var user: Text = t"user"
+        val path = % / "home" / user
+        path.knownElements
+
+      . assert(!_)
+
+      test(t"Path with variable still has known element types"):
+        def user: Text = t"user"
+        val path = % / user
+        path.knownElementTypes
+
+      . assert(identity)
 
     suite(t"Conjunction tests"):
       test(t"Conjunction of two Linux paths"):
@@ -326,3 +358,48 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         val path2 = % / "home" / "more"
         val result: Path of Mono["home"] = path1.conjunction(path2)
       . assert()
+
+    suite(t"Relative tests"):
+      test(t"Calculate simple relative path"):
+        val path1 = % / "home" / "work" / "data" / "foo"
+        val path2 = % / "home" / "more"
+        path2.relativeTo(path1)
+
+      . assert(_ == ? / ^ / ^ / ^ / "more")
+
+      test(t"Calculate simple relative path in reverse"):
+        val path1 = % / "home" / "work" / "data" / "foo"
+        val path2 = % / "home" / "more"
+        path1.relativeTo(path2)
+
+      . assert(_ == ? / ^ / "work" / "data" / "foo")
+
+      test(t"Calculate simple relative path on platform"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path2 = (% / "home" / "more").on[Linux]
+        path2.relativeTo(path1)
+
+      . assert(_ == ? / ^ / ^ / ^ / "more")
+
+      test(t"Calculate simple relative path on platform in reverse"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path2 = (% / "home" / "more").on[Linux]
+        path1.relativeTo(path2)
+
+      . assert(_ == ? / ^ / "work" / "data" / "foo")
+
+      test(t"Calculate simple relative path on platform statically"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path2 = (% / "home" / "more").on[Linux]
+        val path3: Relative of ("foo", "data", "work") under 1 = path1.relativeTo(path2)
+        path3
+
+      . assert(_ == ? / ^ / "work" / "data" / "foo")
+
+      test(t"Calculate simple relative path in reverse, statically"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val path2 = (% / "home" / "more").on[Linux]
+        val path3: Relative of Mono["more"] under 3 = path2.relativeTo(path1)
+        path3
+
+      . assert(_ == ? / ^ / ^ / ^ / "more")

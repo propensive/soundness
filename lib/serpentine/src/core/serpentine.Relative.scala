@@ -56,10 +56,10 @@ object Relative:
       type Subject = SubjectType
       type Constraint = ConstraintType
 
-  def apply[PlatformType, SubjectType <: Tuple, ConstraintType <: Int](ascent: Int, descent: Text*)
-  : Relative of SubjectType on PlatformType under ConstraintType =
+  def apply[SystemType, SubjectType <: Tuple, ConstraintType <: Int](ascent: Int, descent: Text*)
+  : Relative of SubjectType on SystemType under ConstraintType =
     new Relative(ascent, descent.to(List)):
-      type Platform = PlatformType
+      type Platform = SystemType
       type Subject = SubjectType
       type Constraint = ConstraintType
 
@@ -67,33 +67,33 @@ object Relative:
     new Conversion[FromType, ToType]:
       def apply(from: FromType): ToType = fn(from)
 
-  given decodable: [PlatformType: System]
-  =>    (Relative on PlatformType) is Decodable in Text = text =>
-    if text == PlatformType.self then ? else
-      text.cut(PlatformType.separator).pipe: parts =>
+  given decodable: [SystemType: System]
+  =>    (Relative on SystemType) is Decodable in Text = text =>
+    if text == SystemType.self then ? else
+      text.cut(SystemType.separator).pipe: parts =>
         (if parts.last == t"" then parts.init else parts).pipe: parts =>
-          (if parts.head == PlatformType.self then parts.tail else parts).pipe: parts =>
-            val ascent = parts.takeWhile(_ == PlatformType.parent).length
+          (if parts.head == SystemType.self then parts.tail else parts).pipe: parts =>
+            val ascent = parts.takeWhile(_ == SystemType.parent).length
             val descent = parts.drop(ascent).reverse
 
             Relative(ascent, descent*)
 
-  inline given [SubjectType, AscentType <: Int, PlatformType]
+  inline given [SubjectType, AscentType <: Int, SystemType]
   =>    Conversion
          [Relative of SubjectType under AscentType,
-          Relative of SubjectType under AscentType on PlatformType] =
-    conversion(_.on[PlatformType])
+          Relative of SubjectType under AscentType on SystemType] =
+    conversion(_.on[SystemType])
 
-  given [PlatformType: System] => Relative on PlatformType is Encodable in Text = relative =>
+  given [SystemType: System] => Relative on SystemType is Encodable in Text = relative =>
     if relative.descent.isEmpty then
-      if relative.ascent == 0 then PlatformType.self
-      else List.fill(relative.ascent)(PlatformType.parent).join(PlatformType.separator)
+      if relative.ascent == 0 then SystemType.self
+      else List.fill(relative.ascent)(SystemType.parent).join(SystemType.separator)
     else
-      val ascender = PlatformType.parent+PlatformType.separator
+      val ascender = SystemType.parent+SystemType.separator
       relative
       . descent
       . reverse
-      . join(ascender*relative.ascent, PlatformType.separator, t"")
+      . join(ascender*relative.ascent, SystemType.separator, t"")
 
 case class Relative(ascent: Int, descent: List[Text] = Nil):
   type Platform
@@ -102,17 +102,17 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
 
   def delta: Int = descent.length - ascent
 
-  private inline def check[SubjectType, PlatformType](path: List[Text]): Unit =
+  private inline def check[SubjectType, SystemType](path: List[Text]): Unit =
     inline !![SubjectType] match
       case _: (head *: tail) =>
-        summonInline[head is Admissible on PlatformType].check(path.head)
-        check[tail, PlatformType](path.tail)
+        summonInline[head is Admissible on SystemType].check(path.head)
+        check[tail, SystemType](path.tail)
 
       case EmptyTuple =>
 
-  inline def on[PlatformType]: Relative of Subject under Constraint on PlatformType =
-    check[Subject, PlatformType](descent.to(List))
-    this.asInstanceOf[Relative of Subject under Constraint on PlatformType]
+  inline def on[SystemType]: Relative of Subject under Constraint on SystemType =
+    check[Subject, SystemType](descent.to(List))
+    this.asInstanceOf[Relative of Subject under Constraint on SystemType]
 
   transparent inline def parent = inline !![Subject] match
     case head *: tail => Relative[Platform, tail.type, Constraint](ascent, descent.tail*)
@@ -121,7 +121,7 @@ case class Relative(ascent: Int, descent: List[Text] = Nil):
       if descent.isEmpty then Relative[Platform, Subject, S[Constraint]](ascent + 1)
       else Relative[Platform, Subject, Constraint](ascent, descent.tail*)
 
-  transparent inline def / (child: Any)(using navigable: Navigable by child.type)
+  transparent inline def / [ChildType](child: ChildType)(using navigable: child.type is Navigable)
   :     Relative of (child.type *: Subject) under Constraint =
     summonFrom:
       case given (child.type is Admissible on Platform) =>

@@ -35,7 +35,6 @@ package serpentine
 import anticipation.*
 import contingency.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 
 object Radical:
