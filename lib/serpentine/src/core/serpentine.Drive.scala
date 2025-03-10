@@ -30,18 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import anticipation.*
-import contingency.*
 import gossamer.*
-import nomenclature.*
 import prepositional.*
-import serpentine.*
-import spectacular.*
 
-object WindowsDrive:
-  export Windows.navigable
+object Drive:
+  def apply(letter: Char): Drive = new Drive(letter)
 
-case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\", Case.Preserving):
+  given Drive is Submissible on Windows = _ => ()
+
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows

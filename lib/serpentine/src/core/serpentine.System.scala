@@ -33,16 +33,30 @@
 package serpentine
 
 import anticipation.*
-import rudiments.*
+import gossamer.*
 
-import scala.reflect.*
+object System:
+  given Windows is System:
+    type UniqueRoot = false
+    val separator: Text = t"\\"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-object Pathlike:
-  erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = !!
+  given Linux is System:
+    type UniqueRoot = true
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-transparent trait Pathlike:
-  type Platform
-  def textDescent: List[Text]
-  def separator: Text
+  given MacOs is System:
+    type UniqueRoot = true
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-  override def toString(): String = textDescent.reverse.mkString(separator.s)
+trait System:
+  type Self
+  type UniqueRoot <: Boolean
+  val separator: Text
+  val self: Text
+  val parent: Text

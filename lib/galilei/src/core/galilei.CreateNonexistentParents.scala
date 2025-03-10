@@ -36,5 +36,5 @@ import prepositional.*
 import serpentine.*
 
 trait CreateNonexistentParents:
-  type Platform <: Filesystem
+  type Platform <: System
   def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType

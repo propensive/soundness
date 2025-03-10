@@ -30,51 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
 import anticipation.*
 import contingency.*
-import denominative.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import vacuous.*
+import proscenium.*
 
-object Linux:
-  object Root
+object Admissible:
+  def apply[SelfType, SystemType](fn: Text => Unit)
+  :     SelfType is Admissible on SystemType =
+    new Admissible:
+      type Self = SelfType
+      type Platform = SystemType
+      def check(name: Text): Unit = fn(name)
 
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Linux
+  inline given text: [TextType <: Text, SystemType: Nominative] => Tactic[NameError]
+  =>    TextType is Admissible on SystemType = Admissible(Name(_))
 
-  object RootSingleton extends Root()
+  inline given [StringType <: Label, SystemType: Nominative]
+  =>    StringType is Admissible on SystemType =
+    Admissible({ _ => Name.verify[StringType, SystemType] })
 
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+trait Admissible:
+  type Self
+  type Platform
 
-  given radical: Tactic[PathError] => Linux is Radical from Root =
-    new Radical:
-      type Self = Linux
-      type Source = Root
-
-      def rootLength(path: Text): Int = 1
-      def rootText(root: Source): Text = t"/"
-
-      def root(path: Text): Source =
-        if path.at(Prim) == '/' then %
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
-
-  given navigable: Tactic[NameError] => Linux is Navigable by Name[Linux] under Rules =
-    new Navigable:
-      type Self = Linux
-      type Operand = Name[Linux]
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-      def element(element: Text): Name[Linux] = Name(element)
-      def elementText(element: Name[Linux]): Text = element.text
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Linux extends Posix
+  def check(name: Text): Unit

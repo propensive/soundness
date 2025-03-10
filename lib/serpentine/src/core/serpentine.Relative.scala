@@ -32,93 +32,123 @@
                                                                                                   */
 package serpentine
 
+import scala.compiletime.*, ops.int.*
+
 import anticipation.*
 import distillate.*
 import gossamer.*
 import prepositional.*
 import proscenium.*
-import spectacular.*
-import symbolism.*
-import vacuous.*
-
-import scala.compiletime.*
+import rudiments.*
 
 object Relative:
-  given encodable: [RelativeType <: Relative] => (navigable: Navigable)
-  =>    RelativeType is Encodable in Text = relative =>
-    if relative.textDescent.isEmpty then
-      if relative.ascent == 0 then navigable.selfText
-      else List.fill(relative.ascent)(navigable.parentElement).join(navigable.separator)
+  @targetName("Up")
+  object ^
+
+  @targetName("Self")
+  object ? extends Ascent(0):
+    type Subject = Zero
+    type Constraint = 0
+
+  def of[SubjectType <: Tuple, ConstraintType <: Int](ascent: Int, descent: Text*)
+  : Relative of SubjectType under ConstraintType =
+    new Relative(ascent, descent.to(List)):
+      type Subject = SubjectType
+      type Constraint = ConstraintType
+
+  def apply[SystemType, SubjectType <: Tuple, ConstraintType <: Int](ascent: Int, descent: Text*)
+  : Relative of SubjectType on SystemType under ConstraintType =
+    new Relative(ascent, descent.to(List)):
+      type Platform = SystemType
+      type Subject = SubjectType
+      type Constraint = ConstraintType
+
+  private def conversion[FromType, ToType](fn: FromType => ToType) =
+    new Conversion[FromType, ToType]:
+      def apply(from: FromType): ToType = fn(from)
+
+  given decodable: [SystemType: System]
+  =>    (Relative on SystemType) is Decodable in Text = text =>
+    if text == SystemType.self then ? else
+      text.cut(SystemType.separator).pipe: parts =>
+        (if parts.last == t"" then parts.init else parts).pipe: parts =>
+          (if parts.head == SystemType.self then parts.tail else parts).pipe: parts =>
+            val ascent = parts.takeWhile(_ == SystemType.parent).length
+            val descent = parts.drop(ascent).reverse
+
+            Relative(ascent, descent*)
+
+  inline given [SubjectType, AscentType <: Int, SystemType]
+  =>    Conversion
+         [Relative of SubjectType under AscentType,
+          Relative of SubjectType under AscentType on SystemType] =
+    conversion(_.on[SystemType])
+
+  given [SystemType: System] => Relative on SystemType is Encodable in Text = relative =>
+    if relative.descent.isEmpty then
+      if relative.ascent == 0 then SystemType.self
+      else List.fill(relative.ascent)(SystemType.parent).join(SystemType.separator)
     else
+      val ascender = SystemType.parent+SystemType.separator
       relative
-      . textDescent
+      . descent
       . reverse
-      . join(navigable.ascent*relative.ascent, navigable.separator, t"")
+      . join(ascender*relative.ascent, SystemType.separator, t"")
 
-  given [ElementType, RootType: Navigable by ElementType] => (Relative by ElementType) is Showable =
-    encodable.encode(_)
+case class Relative(ascent: Int, descent: List[Text] = Nil):
+  type Platform
+  type Subject <: Tuple
+  type Constraint <: Int
 
-  given decoder: [ElementType] => (Navigable by ElementType)
-  =>    (Relative by ElementType) is Decodable in Text =
+  def delta: Int = descent.length - ascent
 
-    parse(_)
+  private inline def check[SubjectType, SystemType](path: List[Text]): Unit =
+    inline !![SubjectType] match
+      case _: (head *: tail) =>
+        summonInline[head is Admissible on SystemType].check(path.head)
+        check[tail, SystemType](path.tail)
 
-  def parse[ElementType](using navigable: Navigable by ElementType)(text: Text)
-  :     Relative by ElementType =
-    def recur(start: Int, ascent: Int, elements: List[ElementType]): Relative by ElementType =
-      if start >= text.length then Relative(ascent, elements)
-      else
-        val end = text.s.indexOf(navigable.separator.s, start).puncture(-1).or(text.length)
-        val element = text.s.substring(start, end).nn.tt
-        val start2 = end + navigable.separator.length
+      case EmptyTuple =>
 
-        if element == navigable.parentElement then
-          if elements.isEmpty then recur(start2, ascent + 1, Nil)
-          else recur(start2, ascent, elements.tail)
-        else recur(start2, ascent, navigable.element(element) :: elements)
+  inline def on[SystemType]: Relative of Subject under Constraint on SystemType =
+    check[Subject, SystemType](descent.to(List))
+    this.asInstanceOf[Relative of Subject under Constraint on SystemType]
 
-    if text == navigable.selfText then Relative(0, Nil) else recur(0, 0, Nil)
+  transparent inline def parent = inline !![Subject] match
+    case head *: tail => Relative[Platform, tail.type, Constraint](ascent, descent.tail*)
+    case EmptyTuple   => Relative[Platform, Zero, S[Constraint]](ascent)
+    case _ =>
+      if descent.isEmpty then Relative[Platform, Subject, S[Constraint]](ascent + 1)
+      else Relative[Platform, Subject, Constraint](ascent, descent.tail*)
 
-  def apply[ElementType](using navigable: Navigable by ElementType)
-     (ascent0: Int, descent0: List[ElementType])
-  :     Relative by ElementType =
-    Relative.from[ElementType](ascent0, descent0.map(navigable.makeElement(_)), navigable.separator)
+  transparent inline def / [ChildType](child: ChildType)(using navigable: child.type is Navigable)
+  :     Relative of (child.type *: Subject) under Constraint =
+    summonFrom:
+      case given (child.type is Admissible on Platform) =>
+        Relative[Platform, child.type *: Subject, Constraint]
+         (ascent, navigable.follow(child) +: descent*)
 
-  private def from[ElementType](ascent0: Int, descent0: List[Text], separator: Text)
-  :     Relative by ElementType =
-    new Relative(ascent0, descent0, separator):
-      type Operand = ElementType
+      case _ =>
+        type Subject0 = Subject
+        type Constraint0 = Constraint
 
-  given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
-          (Relative by ElementType) =
-    (left, right) =>
-      def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
-        if ascent2 > 0 then
-          if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
-          else recur(ascent, descent.tail, ascent - 1)
-        else Relative.from(ascent, right.textDescent ++ descent, left.separator)
+        Relative.of[child.type *: Subject0, Constraint0]
+         (ascent, navigable.follow(child) :: descent*)
 
-      recur(left.ascent, left.textDescent, right.ascent)
+// case class Relative(ascent: Int, descent: Text*):
+//   type Platform
+//   type Subject <: Tuple
+//   type Constraint <: Int
 
-abstract class Relative(val ascent: Int, val textDescent: List[Text], val separator: Text)
-extends Pathlike:
-  type Operand
+// object Relative:
 
-  def delta: Int = textDescent.length - ascent
+//   given [ElementType] => (Relative by ElementType) is Addable by (Relative by ElementType) into
+//           (Relative by ElementType) =
+//     (left, right) =>
+//       def recur(ascent: Int, descent: List[Text], ascent2: Int): Relative by ElementType =
+//         if ascent2 > 0 then
+//           if descent.isEmpty then recur(ascent + 1, Nil, ascent - 1)
+//           else recur(ascent, descent.tail, ascent - 1)
+//         else Relative.from(ascent, right.textDescent ++ descent, left.separator)
 
-  def parent: Relative =
-    if textDescent.isEmpty then Relative.from(ascent + 1, Nil, separator)
-    else Relative.from(ascent, textDescent.tail, separator)
-
-  override def equals(that: Any): Boolean = that.asMatchable match
-    case that: Relative => that.ascent == ascent && that.textDescent == textDescent
-    case _              => false
-
-  override def hashCode: Int = ascent*31 + textDescent.hashCode
-
-  def on[PlatformType: Navigable]: Relative by PlatformType.Operand =
-    Relative.parse(Relative.encodable.encode(this))
-
-  @targetName("child")
-  infix def / (element: Operand)(using navigable: Navigable by Operand): Relative by Operand =
-    Relative.from(ascent, navigable.makeElement(element) :: textDescent, separator)
+//       recur(left.ascent, left.textDescent, right.ascent)
