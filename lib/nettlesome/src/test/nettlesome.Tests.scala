@@ -33,9 +33,7 @@
 package nettlesome
 
 import soundness.*
-import denominative.z
 import fulminate.errorDiagnostics.stackTraces
-
 import strategies.throwUnsafely
 
 object Tests extends Suite(t"Nettlesome tests"):
@@ -48,18 +46,18 @@ object Tests extends Suite(t"Nettlesome tests"):
           remoteCall()
       .assert()
 
-      /*test(t"Check remote call is not callable without `Internet`"):
-        val result = demilitarize:
-          remoteCall()
-        .map(_.id)
-        println(result)
-        result
-      .assert(_ == List(CompileErrorId.MissingImplicitArgument))*/
+      // TODO: fix
+      // test(t"Check remote call is not callable without `Internet`"):
+      //   val result = demilitarize:
+      //     remoteCall()
+      //   .map(_.id)
+      //   println(result)
+      //   result
+      // .assert(_ == List(CompileErrorId.MissingImplicitArgument))
 
 
     suite(t"IPv4 tests"):
       test(t"Parse in IPv4 address"):
-        println("same test")
         Ipv4.parse(t"1.2.3.4")
       .assert(_ == Ipv4(1, 2, 3, 4))
 
@@ -112,17 +110,17 @@ object Tests extends Suite(t"Nettlesome tests"):
         Ipv6(8, 0, 0, 0, 0, 0, 0, 0).show
       .assert(_ == t"8::")
 
-      // test(t"Parse IPv4 address at compiletime"):
-      //   ip"122.0.0.1"
-      // .assert(_ == Ipv4(122, 0, 0, 1))
+      test(t"Parse IPv4 address at compiletime"):
+        ip"122.0.0.1"
+      .assert(_ == Ipv4(122, 0, 0, 1))
 
       test(t"Parse an IPv6 address at compiletime"):
         ip"2001:db8::1:1:1:1"
       .assert(_ == Ipv6(0x2001, 0xdb8, 0, 0, 0x1, 0x1, 0x1, 0x1))
 
-      // test(t"Create and show a subnet"):
-      //   (ip"255.123.143.0".subnet(12)).show
-      // .assert(_ == t"255.112.0.0/12")
+      test(t"Create and show a subnet"):
+        (ip"255.123.143.0".subnet(12)).show
+      .assert(_ == t"255.112.0.0/12")
 
       test(t"Parse an IPv6 containing capital letters"):
         Ipv6.parse(t"2001:DB8::1:1:1:1:1")
@@ -280,9 +278,9 @@ object Tests extends Suite(t"Nettlesome tests"):
         email"test@example.com"
       .assert(_ == EmailAddress.parse(t"test@example.com"))
 
-      // test(t"Create an IPv4 email address at compiletime"):
-      //   email"test@[192.168.0.1]"
-      // .assert(_ == EmailAddress.parse(t"test@[192.168.0.1]"))
+      test(t"Create an IPv4 email address at compiletime"):
+        email"test@[192.168.0.1]"
+      .assert(_ == EmailAddress.parse(t"test@[192.168.0.1]"))
 
       test(t"Create an IPv6 email address at compiletime"):
         email"test@[IPv6:1234::6789]"
@@ -344,8 +342,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       test(t"Authority with invalid port fails"):
         capture(Authority.parse(t"username@example.com:no"))
       .matches:
-        case UrlError(_, position, UrlError.Expectation.Number) if position == 21.z =>
-
+        case UrlError(_, position, UrlError.Reason.Expected(UrlError.Expectation.Number)) if position == 21.z =>
 
       test(t"Parse full URL"):
         Url.parse(t"http://user:pw@example.com:8080/path/to/location?query=1#ref")
@@ -356,9 +353,19 @@ object Tests extends Suite(t"Nettlesome tests"):
         Url.parse(t"https://example.com/foo")
       .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/foo"))
 
+      test(t"Parse url with fragment"):
+        val result = Url.parse(t"https://example.com/#id")
+        println(s"result: ${result}")
+        result
+      .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/", Unset, t"id"))
+
       test(t"Show simple URL"):
         Url.parse(t"http://example.com/foo").show
       .assert(_ == t"http://example.com/foo")
+
+      test(t"show url with fragment"):
+        Url.parse(t"https://example.com/#id").show
+      .assert(_ == t"https://example.com/#id")
 
       test(t"Parse full URL at compiletime"):
         url"http://user:pw@example.com:8080/path/to/location?query=1#ref"
@@ -386,6 +393,7 @@ object Tests extends Suite(t"Nettlesome tests"):
         url"http://user:pw@example.com/$message"
       .assert(_ == Url(Origin(Scheme(t"http"), Authority(example.com, t"user:pw")), t"/Hello world!"))
 
+      // TODO: fix
       // test(t"Relative path is unescaped"):
       //   val message: Text = t"Hello world!"
       //   url"http://user:pw@example.com/$message/foo".path
