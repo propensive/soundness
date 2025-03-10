@@ -23,6 +23,7 @@ object settings {
     "-Yno-flexible-types",
     "-Yexplicit-nulls",
     "-Ycheck-all-patmat",
+    "-explain-cyclic",
     "-language:experimental.clauseInterleaving",
     "-language:experimental.modularity",
     "-language:experimental.genericNumberLiterals",

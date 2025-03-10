@@ -38,7 +38,7 @@ export hypotenuse .
     exponent, increment, decrement, round, scalb, signum, ulp, bits, rawBits, finite, infinite, nan,
     **, mantissa, long, int, short, octal, hex, base32, binary, %%, \, apply, erf, π, pi, euler, φ,
     goldenRatio, cos, acos, cosh, sin, asin, sinh, tan, atan, hyp, exp, expm1, ln, log10, log1p, <,
-    <=, >, >= }
+    <=, >, >=, bin }
 
 package arithmeticOptions:
   export hypotenuse.arithmeticOptions.{division, overflow}
