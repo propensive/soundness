@@ -241,6 +241,12 @@ case class Path(root: Text, descent: Text*):
         Path.unplatformed[Constraint, child.type *: Subject]
          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
+  transparent inline def + (relative: Relative): Path =
+    type Base = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], relative.Constraint]]
+    type Subject2 = Tuple.Concat[relative.Subject, Base]
+    Path.of[Platform, Constraint, Subject2]
+     (root, relative.descent ++ descent.drop(relative.ascent)*)
+
 // object Path:
 //   given addable: [SystemType: Navigable] => Tactic[PathError]
 //   =>    (Path on SystemType) is Addable by (Relative by SystemType.Operand) into
