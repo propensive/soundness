@@ -354,9 +354,7 @@ object Tests extends Suite(t"Nettlesome tests"):
       .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/foo"))
 
       test(t"Parse url with fragment"):
-        val result = Url.parse(t"https://example.com/#id")
-        println(s"result: ${result}")
-        result
+        Url.parse(t"https://example.com/#id")
       .assert(_ == Url(Origin(Scheme.Https, Authority(example.com)), t"/", Unset, t"id"))
 
       test(t"Show simple URL"):
