@@ -51,7 +51,7 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Makable:
-  given [PlatformType <: Filesystem]
+  given [PlatformType <: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         tactic:                   Tactic[IoError])
@@ -85,7 +85,7 @@ object Makable:
             channel.bind(address)
             Socket(channel)
 
-  given file: [PlatformType <: Filesystem]
+  given file: [PlatformType <: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         tactic:                   Tactic[IoError])
@@ -100,7 +100,7 @@ object Makable:
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
 
-  given fifo: [PlatformType <: Filesystem]
+  given fifo: [PlatformType <: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         working:                  WorkingDirectory,
@@ -129,5 +129,5 @@ object Makable:
 trait Makable:
   type Self
   type Result
-  type Platform <: Filesystem
+  type Platform <: System
   def make(path: Path on Platform): Result

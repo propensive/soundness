@@ -34,3 +34,5 @@ package serpentine
 
 export Path.`%`
 export Relative.{`^`, `?`}
+
+type Posix = MacOs | Linux

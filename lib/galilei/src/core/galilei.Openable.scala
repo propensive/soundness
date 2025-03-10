@@ -43,7 +43,7 @@ import java.nio.channels as jnc
 import java.nio.file as jnf
 
 object Openable:
-  given [PlatformType <: Filesystem]
+  given [PlatformType <: System]
   =>   (read:        ReadAccess,
         write:       WriteAccess,
         dereference: DereferenceSymlinks,
