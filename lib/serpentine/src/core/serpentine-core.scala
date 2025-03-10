@@ -32,10 +32,5 @@
                                                                                                   */
 package serpentine
 
-// export Serpentine.{?, ^, /}
-
 export Path.`%`
 export Relative.{`^`, `?`}
-
-extension [ValueType](value: ValueType)(using substantiable: ValueType is Substantiable)
-  def exists(): Boolean = substantiable.exists(value)
