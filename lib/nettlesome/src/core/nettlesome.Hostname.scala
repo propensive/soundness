@@ -52,7 +52,7 @@ object Hostname:
 
   given Hostname is Showable = _.dnsLabels.map(_.show).join(t".")
 
-  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = haltingly:
+  def expand(context: Expr[StringContext])(using Quotes): Expr[Hostname] = abortive:
     Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
   given toExpr: ToExpr[Hostname]:

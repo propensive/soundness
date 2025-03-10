@@ -130,7 +130,7 @@ def amalgamate[ErrorType <: Exception](using erased Void)[SuccessType]
   boundary: label ?=>
     block(using AmalgamateTactic(label))
 
-def haltingly[ErrorType <: Error](using Quotes, Realm)[SuccessType]
+def abortive[ErrorType <: Error](using Quotes, Realm)[SuccessType]
    (block: Diagnostics ?=> HaltTactic[ErrorType, SuccessType] ?=> SuccessType)
 :     SuccessType =
 
