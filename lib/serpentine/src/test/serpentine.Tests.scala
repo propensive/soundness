@@ -403,3 +403,28 @@ object Tests extends Suite(t"Serpentine Benchmarks"):
         path3
 
       . assert(_ == ? / ^ / ^ / ^ / "more")
+
+      test(t"Add relative parent"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        path1 + (? / ^)
+
+      . assert(_ == % / "home" / "work" / "data")
+
+      test(t"Add relative grandparent"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        path1 + (? / ^ / ^)
+
+      . assert(_ == % / "home" / "work")
+
+      test(t"Add relative cousin"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        path1 + (? / ^ / ^ / "baz" / "quux")
+
+      . assert(_ == % / "home" / "work" / "baz" / "quux")
+
+      test(t"Add relative cousin, statically"):
+        val path1 = (% / "home" / "work" / "data" / "foo").on[Linux]
+        val p2: Path of ("quux", "baz", "work", "home") = path1 + (? / ^ / ^ / "baz" / "quux")
+        p2
+
+      . assert(_ == % / "home" / "work" / "baz" / "quux")
