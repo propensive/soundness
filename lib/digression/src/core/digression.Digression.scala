@@ -56,4 +56,4 @@ object Digression:
       "const", "float", "native", "super", "while")
 
   def fqcn(context: Expr[StringContext])(using Quotes): Expr[Fqcn] =
-    haltingly('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
+    abortive('{new Fqcn(${Expr(Fqcn(context.valueOrAbort.parts.head.tt).parts)})})
