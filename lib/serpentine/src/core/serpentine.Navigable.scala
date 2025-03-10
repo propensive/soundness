@@ -37,29 +37,18 @@ import prepositional.*
 import proscenium.*
 
 object Navigable:
-  given label: [PlatformType, StringType <: Label, SubjectType <: Tuple, PathType <: Path]
-  =>    PathType is Navigable by StringType =
-    new Navigable:
-      type Self = PathType
-      type Operand = StringType
+  given label: [StringType <: Label] => StringType is Navigable = new Navigable:
+    type Self = StringType
+    def follow(name: StringType): Text = name.tt
 
-      def follow(name: StringType): Text = name.tt
-
-  given int: [PathType <: Path] => PathType is Navigable by Int = new Navigable:
-    type Self = PathType
-    type Operand = Int
-
+  given int: Int is Navigable = new Navigable:
+    type Self = Int
     def follow(name: Int): Text = name.toString.tt
 
-  given text: [TextType <: Text, PathType <: Path] => PathType is Navigable by TextType =
-    new Navigable:
-      type Self = PathType
-      type Operand = TextType
-
-      def follow(name: TextType): Text = name
+  given text: [TextType <: Text] => TextType is Navigable:
+    type Self = TextType
+    def follow(name: TextType): Text = name
 
 trait Navigable:
   type Self
-  type Operand
-
-  def follow(name: Operand): Text
+  def follow(name: Self): Text

@@ -34,4 +34,5 @@ package serpentine
 
 trait Substantiable:
   type Self
-  def exists(value: Self): Boolean
+  def existance(value: Self): Boolean
+  extension (value: Self) def exists(): Boolean = existance(value)

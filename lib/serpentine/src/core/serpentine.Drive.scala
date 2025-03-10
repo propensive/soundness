@@ -33,9 +33,12 @@
 package serpentine
 
 import gossamer.*
+import prepositional.*
 
 object Drive:
   def apply(letter: Char): Drive = new Drive(letter)
+
+  given Drive is Submissible on Windows = _ => ()
 
 class Drive(val letter: Char) extends Root(t"$letter:\\"):
   type Platform = Windows

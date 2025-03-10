@@ -35,11 +35,11 @@ package serpentine
 import anticipation.*
 import prepositional.*
 
-object RootAdmissible:
-  given (%.type is RootAdmissible on Linux) = _ => ()
-  given (%.type is RootAdmissible on MacOs) = _ => ()
+object Submissible:
+  given (%.type is Submissible on Linux) = _ => ()
+  given (%.type is Submissible on MacOs) = _ => ()
 
-trait RootAdmissible:
+trait Submissible:
   type Self
   type Platform
 
