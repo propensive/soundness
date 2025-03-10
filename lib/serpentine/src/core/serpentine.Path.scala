@@ -105,42 +105,40 @@ case class Path(root: Text, descent: Text*):
 
   transparent inline def conjunction(right: Path): Optional[Path] =
     summonFrom:
-      case platform: (Platform is System) => inline !![platform.UniqueRoot] match
-        case _: true  => certainConjunction(right)
-        case _: false => conjunction2(right)
+      case platform: (Platform is System) =>
+        inline if !![platform.UniqueRoot] then certain(right) else determine(right)
 
-      case _ => conjunction2(right)
+      case _ =>
+        determine(right)
 
-
-  transparent inline def conjunction2(right: Path): Optional[Path] = summonFrom:
+  protected transparent inline def determine(right: Path): Optional[Path] = summonFrom:
     case given ValueOf[Constraint] => summonFrom:
       case given ValueOf[right.Constraint] => summonFrom:
-        case given (Constraint =:= right.Constraint) => certainConjunction(right)
+        case given (Constraint =:= right.Constraint) => certain(right)
         case _                                       => Unset
-      case _ => if root != right.root then Unset else certainConjunction(right)
-    case _ => if root != right.root then Unset else certainConjunction(right)
+      case _ => if root != right.root then Unset else certain(right)
+    case _ => if root != right.root then Unset else certain(right)
 
-  transparent inline def certainConjunction(right: Path): Path =
+  protected transparent inline def count[LeftType <: Tuple, RightType <: Tuple]: Int = summonFrom:
+    case _: (Tuple.Last[LeftType] =:= Tuple.Last[RightType]) =>
+      1 + count[Tuple.Init[LeftType], Tuple.Init[RightType]]
+
+    case _ =>
+      0
+
+  protected transparent inline def certain(right: Path): Path =
     inline !![right.Subject] match
       case _: Zero => Path.of[Platform, Constraint, Zero](root)
       case _: (head *: tail) => inline !![Subject] match
         case _: Zero => Path.of[Platform, Constraint, Zero](root)
         case _: (head2 *: tail2) =>
-          inline val count = staticConjunction[head *: tail, head2 *: tail2]
-          type Subject2 = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], count.type]]
-          Path.of[Platform, Constraint, Subject2](root, descent.takeRight(count)*)
-        case _ => dynamicConjunction(right)
-      case _ => dynamicConjunction(right)
+          inline val n = count[head *: tail, head2 *: tail2]
+          type Subject2 = Tuple.Reverse[Tuple.Take[Tuple.Reverse[Subject], n.type]]
+          Path.of[Platform, Constraint, Subject2](root, descent.takeRight(n)*)
+        case _ => calculate(right)
+      case _ => calculate(right)
 
-  transparent inline def staticConjunction[LeftType <: Tuple, RightType <: Tuple]: Int =
-    summonFrom:
-      case _: (Tuple.Last[LeftType] =:= Tuple.Last[RightType]) =>
-        1 + staticConjunction[Tuple.Init[LeftType], Tuple.Init[RightType]]
-
-      case _ =>
-        0
-
-  def dynamicConjunction(right: Path): Path =
+  protected def calculate(right: Path): Path =
     val difference = depth - right.depth
     val left0 = descent.drop(difference).to(List)
     val right0 = right.descent.drop(-difference).to(List)
