@@ -100,8 +100,10 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
       val connection = makeConnection(request, response)
       connection.respond(handle(using connection))
 
-  override def service(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    try handle(request, response) catch
+  override def service
+     (request: jsh.HttpServletRequest | Null, response: jsh.HttpServletResponse | Null)
+  :     Unit =
+    if request != null && response != null then try handle(request, response) catch
       case error: Throwable =>
         println("An error occurred while processing a request: "+error)
         error.printStackTrace(System.out)

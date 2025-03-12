@@ -39,8 +39,6 @@ import spectacular.*
 import vacuous.*
 import wisteria.*
 
-import scala.deriving.*
-
 trait CodlEncoder[ValueType]:
   def encode(value: ValueType): List[IArray[CodlNode]]
   def schema: CodlSchema

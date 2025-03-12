@@ -39,7 +39,6 @@ import rudiments.*
 import spectacular.*
 import symbolism.*
 
-import scala.quoted.*
 import scala.compiletime.*, ops.int.*
 
 object Abacist2:

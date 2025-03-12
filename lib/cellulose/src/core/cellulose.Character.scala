@@ -40,7 +40,6 @@ import kaleidoscope.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import vacuous.*
 
 opaque type Character = Long

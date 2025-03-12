@@ -37,7 +37,6 @@ import contingency.*
 import guillotine.*
 import parasite.*
 import prepositional.*
-import proscenium.*
 import rudiments.*
 import turbulence.*
 import vacuous.*

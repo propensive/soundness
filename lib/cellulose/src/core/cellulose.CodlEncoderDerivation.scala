@@ -37,8 +37,6 @@ import rudiments.*
 import vacuous.*
 import wisteria.*
 
-import scala.deriving.*
-
 object CodlEncoderDerivation extends ProductDerivation[CodlEncoder]:
   inline def join[DerivationType <: Product: ProductReflection]: CodlEncoder[DerivationType] =
     val mapping: Map[Text, Text] = compiletime.summonFrom:

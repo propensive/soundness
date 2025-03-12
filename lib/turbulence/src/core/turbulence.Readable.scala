@@ -41,7 +41,6 @@ import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 object Readable:
