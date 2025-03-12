@@ -68,30 +68,6 @@ extends Root
 object Url:
   type Rules = MustMatch["[A-Za-z0-9_.~-]*"]
 
-  given radical: (Tactic[UrlError], Tactic[NameError])
-  =>    HttpUrl is Radical from HttpUrl = new Radical:
-    type Self = HttpUrl
-    type Source = HttpUrl
-
-    def root(path: Text): HttpUrl = Url.parse(path.keep(rootLength(path)))
-    def rootLength(path: Text): Int = path.where(_ == '/', 7.z).let(_.n0).or(path.length)
-    def rootText(url: HttpUrl): Text = url.show
-
-  given navigable: (Tactic[UrlError], Tactic[NameError])
-  =>    HttpUrl is Navigable by Name[HttpUrl] under Rules = new Navigable:
-
-    type Operand = Name[HttpUrl]
-    type Self = HttpUrl
-    type Constraint = Rules
-
-    val separator: Text = t"/"
-    val parentElement: Text = t".."
-    val selfText: Text = t"."
-
-    def element(element: Text): Name[HttpUrl] = Name(element)
-    def elementText(element: Name[HttpUrl]): Text = element.text
-    def caseSensitivity: Case = Case.Sensitive
-
   given abstractable: HttpUrl is Abstractable across Urls into Text = _.show
 
   given instantiable: (Tactic[UrlError]) => HttpUrl is Instantiable across Urls from Text =
@@ -102,10 +78,7 @@ object Url:
     val rest = t"${url.query.lay(t"")(t"?"+_)}${url.fragment.lay(t"")(t"#"+_)}"
     t"${url.scheme}:$auth${url.pathText}$rest"
 
-  given [SchemeType <: Label] => Tactic[UrlError] => Url[SchemeType] is Decodable in Text =
-
-    parse(_)
-
+  given [SchemeType <: Label] => Tactic[UrlError] => Url[SchemeType] is Decodable in Text = parse(_)
   given [SchemeType <: Label] => Url[SchemeType] is Encodable in Text = _.show
 
   given teletype: [SchemeType <: Label] => Url[SchemeType] is Teletypeable =
