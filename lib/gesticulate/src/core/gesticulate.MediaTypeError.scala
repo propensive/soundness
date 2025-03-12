@@ -43,7 +43,7 @@ import vacuous.*
 import language.dynamics
 //import language.experimental.captureChecking
 
-object MediaTypeError:
+object MediumError:
   enum Reason:
     case NotOneSlash, MissingParam, InvalidGroup
     case InvalidChar(char: Char)
@@ -57,5 +57,5 @@ object MediaTypeError:
       case InvalidChar(c)   => txt"the character '$c' is not allowed"
       case InvalidSuffix(s) => txt"the suffix '$s' is not recognized"
 
-case class MediaTypeError(value: Text, reason: MediaTypeError.Reason)(using Diagnostics)
+case class MediumError(value: Text, reason: MediumError.Reason)(using Diagnostics)
 extends Error(m"the value $value is not a valid media type; ${reason.message}")

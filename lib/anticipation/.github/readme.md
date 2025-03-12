@@ -134,7 +134,7 @@ for the given attribute. The `GenericHtmlAttribute` typeclass, parameterised on
 the singleton literal type of the attribute name, and the value type, allows
 libraries to make their types usable in such HTML libraries.
 [Gesticulate](https://github.com/propensive/gesticulate/) makes
-`gesticulate.MediaType`s usable for `formenctype`, `enctype`, `media` and
+`gesticulate.Medium`s usable for `formenctype`, `enctype`, `media` and
 `type` attributes. [Scintillate](https://github.com/propensive/scintillate/)
 allows `scintillate.RequestParam` instances to be used for the `name` parameter
 of inputs in a form. [Cataclysm](https://github.com/propensive/cataclysm/)
@@ -214,7 +214,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Anticipation?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Anticipation's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -231,7 +231,7 @@ answer to the question, "how can I try Anticipation?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -292,4 +292,3 @@ The logo shows a simple floral pattern.
 
 Anticipation is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

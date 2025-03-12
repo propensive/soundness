@@ -38,9 +38,9 @@ import gossamer.*
 import language.experimental.captureChecking
 
 object Extensions:
-  def guess(ext: Text): MediaType = mediaTypes.getOrElse(ext, media"application/octet-stream")
+  def guess(ext: Text): Medium = mediums.getOrElse(ext, media"application/octet-stream")
 
-  val mediaTypes: Map[Text, MediaType] = Map
+  val mediums: Map[Text, Medium] = Map
    (t"aac"    -> media"audio/aac",
     t"abw"    -> media"application/x-abiword",
     t"arc"    -> media"application/x-freearc",

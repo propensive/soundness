@@ -40,7 +40,7 @@ import rudiments.*
 import spectacular.*
 import telekinesis.*
 
-trait Retrievable(val mediaType: MediaType) extends Servable:
+trait Retrievable(val medium: Medium) extends Servable:
   type Self
 
   def stream(response: Self): Stream[Bytes]
@@ -48,6 +48,6 @@ trait Retrievable(val mediaType: MediaType) extends Servable:
   final def process(content: Self, status: Int, headers: Map[Text, Text], responder: Responder)
   :     Unit =
 
-    responder.addHeader(t"content-type", mediaType.show)
+    responder.addHeader(t"content-type", medium.show)
     headers.each(responder.addHeader)
     responder.sendBody(status, stream(content))

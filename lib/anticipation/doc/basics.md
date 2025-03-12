@@ -96,7 +96,7 @@ for the given attribute. The `GenericHtmlAttribute` typeclass, parameterised on
 the singleton literal type of the attribute name, and the value type, allows
 libraries to make their types usable in such HTML libraries.
 [Gesticulate](https://github.com/propensive/gesticulate/) makes
-`gesticulate.MediaType`s usable for `formenctype`, `enctype`, `media` and
+`gesticulate.Medium`s usable for `formenctype`, `enctype`, `media` and
 `type` attributes. [Scintillate](https://github.com/propensive/scintillate/)
 allows `scintillate.RequestParam` instances to be used for the `name` parameter
 of inputs in a form. [Cataclysm](https://github.com/propensive/cataclysm/)
@@ -143,7 +143,3 @@ and [Telekinesis](https://github.com/propensive/telekinesis/).
 [Diuretic](https://github.com/propensive/diuretic/) provides instances for
 `java.net.URL` and Telekinesis provides an instance for its own
 `telekinesis.Url` type.
-
-
-
-

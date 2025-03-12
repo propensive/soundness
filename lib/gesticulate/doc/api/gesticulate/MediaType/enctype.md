@@ -1,1 +1,1 @@
-contextual evidence to allow `:MediaType` instances to be used as the `enctype` parameter in HTML
+contextual evidence to allow `:Medium` instances to be used as the `enctype` parameter in HTML

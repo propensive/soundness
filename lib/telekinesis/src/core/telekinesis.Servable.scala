@@ -42,11 +42,11 @@ import spectacular.*
 import turbulence.*
 
 object Servable:
-  def apply[ResponseType](mediaType: ResponseType => MediaType)
+  def apply[ResponseType](medium: ResponseType => Medium)
      (lambda: ResponseType => Stream[Bytes])
   :     ResponseType is Servable = response =>
 
-    val headers = List(Http.Header(t"content-type", mediaType(response).show))
+    val headers = List(Http.Header(t"content-type", medium(response).show))
     Http.Response.make(Http.Ok, headers, lambda(response))
 
   given content: Content is Servable:
@@ -67,12 +67,12 @@ object Servable:
     scala.compiletime.summonFrom:
       case encodable: (ValueType is Encodable in Bytes) => value =>
         val headers =
-          List(Http.Header(t"content-type", ValueType.mediaType(value).show))
+          List(Http.Header(t"content-type", ValueType.medium(value).show))
 
         Http.Response.make(Http.Ok, headers, Stream(encodable.encode(value)))
       case given (ValueType is Readable by Bytes)       => value =>
         val headers =
-          List(Http.Header(t"content-type", ValueType.mediaType(value).show))
+          List(Http.Header(t"content-type", ValueType.medium(value).show))
 
         Http.Response.make(Http.Ok, headers, value.stream[Bytes])
 

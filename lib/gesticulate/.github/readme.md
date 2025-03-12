@@ -31,14 +31,14 @@ unrepresentable, which is contravened when media types are represented by string
 
 ## Getting Started
 
-### `MediaType`
+### `Medium`
 
 All terms and types are defined in the `gesticulate` package:
 ```scala
 import gesticulate.*
 ```
 
-Gesticulate primarily provides the `MediaType` type, consisting of:
+Gesticulate primarily provides the `Medium` type, consisting of:
  - a main "type" (called `group` to avoid a conflict with Scala's `type` keyword)
  - a subtype
  - a list of suffixes
@@ -66,7 +66,7 @@ The media type for XHTML, encoded as `UTF-8`, which would normally be written as
 ```scala
 import gossamer.t
 
-val mediaType = MediaType(
+val medium = Medium(
   group = Media.Group.Application,
   subtype = Media.Subtype.Standard(t"xhtml"),
   suffixes = List(Media.Suffix.Xml),
@@ -75,9 +75,9 @@ val mediaType = MediaType(
 ```
 
 However, this may be expressed as, `media"application/xhtml+xml; charset=UTF-8"`, and Gesticulate
-will statically parse, check and destructure the type into the `MediaType` instance above.
+will statically parse, check and destructure the type into the `Medium` instance above.
 
-`MediaType` reimplements `toString` to render a media type as a `String`, and additionally provides
+`Medium` reimplements `toString` to render a media type as a `String`, and additionally provides
 the method `basic` to provide the media type with any parameters removed. This may be useful in
 some comparisons.
 
@@ -92,8 +92,8 @@ parameters.
 
 ### Parsing
 
-Media types may be parsed using `MediaType.parse(string)` which returns a `MediaType` or throws an
-`InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
+Media types may be parsed using `Medium.parse(string)` which returns a `Medium` or throws an
+`InvalidMediumError`. The `InvalidMediumError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
 
 
@@ -127,7 +127,7 @@ experimentation. They are provided only for the necessity of providing _some_
 answer to the question, "how can I try Gesticulate?".
 
 1. *Copy the sources into your own project*
-   
+
    Read the `fury` file in the repository root to understand Gesticulate's build
    structure, dependencies and source location; the file format should be short
    and quite intuitive. Copy the sources into a source directory in your own
@@ -144,7 +144,7 @@ answer to the question, "how can I try Gesticulate?".
    file in the project directory, and produce a collection of JAR files which can
    be added to a classpath, by compiling the project and all of its dependencies,
    including the Scala compiler itself.
-   
+
    Download the latest version of
    [`wrath`](https://github.com/propensive/wrath/releases/latest), make it
    executable, and add it to your path, for example by copying it to
@@ -204,4 +204,3 @@ The logo shows a simple fast-forward symbol, familiar from playing many kinds of
 
 Gesticulate is copyright &copy; 2025 Jon Pretty & Propensive O&Uuml;, and
 is made available under the [Apache 2.0 License](/license.md).
-

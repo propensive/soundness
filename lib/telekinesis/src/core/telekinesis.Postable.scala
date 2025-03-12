@@ -49,11 +49,11 @@ import vacuous.*
 import language.dynamics
 
 object Postable:
-  def apply[ResponseType](mediaType0: MediaType, stream0: ResponseType => Stream[Bytes])
+  def apply[ResponseType](medium0: Medium, stream0: ResponseType => Stream[Bytes])
   :     ResponseType is Postable =
     new Postable:
       type Self = ResponseType
-      def mediaType(response: ResponseType): MediaType = mediaType0
+      def medium(response: ResponseType): Medium = medium0
       def stream(response: ResponseType): Stream[Bytes] = stream0(response)
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -72,18 +72,18 @@ object Postable:
     Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.bytes))
 
   given dataStream: [ResponseType: Abstractable across HttpStreams into HttpStreams.Content]
-  =>    Tactic[MediaTypeError]
+  =>    Tactic[MediumError]
   =>    ResponseType is Postable =
 
     new Postable:
       type Self = ResponseType
 
-      def mediaType(content: ResponseType): MediaType = content.generic(0).decode[MediaType]
+      def medium(content: ResponseType): Medium = content.generic(0).decode[Medium]
       def stream(content: ResponseType): Stream[Bytes] = content.generic(1)
 
 trait Postable:
   type Self
-  def mediaType(content: Self): MediaType
+  def medium(content: Self): Medium
   def stream(content: Self): Stream[Bytes]
 
   def preview(value: Self): Text = stream(value).prim.lay(t""): bytes =>

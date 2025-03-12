@@ -45,7 +45,7 @@ import vacuous.*
 import language.dynamics
 //import language.experimental.captureChecking
 
-case class MediaType
+case class Medium
    (group:     Media.Group,
     subtype:    Media.Subtype,
     suffixes:   List[Media.Suffix] = Nil,
@@ -54,36 +54,36 @@ extends Dynamic:
 
   private def suffixString: Text = suffixes.map { s => t"+${s.name}" }.join
   def basic: Text = t"${group.name}/${subtype.name}$suffixString"
-  def base: MediaType = MediaType(group, subtype, suffixes)
+  def base: Medium = Medium(group, subtype, suffixes)
 
   def at(name: Text): Optional[Text] = parameters.where(_(0) == name).let(_(1))
 
-  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): MediaType =
+  def applyDynamicNamed(apply: "apply")(kvs: (String, Text)*): Medium =
     copy(parameters = parameters ::: kvs.map(_.show -> _).to(List))
 
-object MediaType:
-  given MediaType is Inspectable = mt => t"""media"${mt}""""
+object Medium:
+  given Medium is Inspectable = mt => t"""media"${mt}""""
 
-  given showable: MediaType is Showable =
+  given showable: Medium is Showable =
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
-  given MediaType is Encodable in Text = _.show
-  given Tactic[MediaTypeError] => MediaType is Decodable in Text = Media.parse(_)
+  given Medium is Encodable in Text = _.show
+  given Tactic[MediumError] => Medium is Decodable in Text = Media.parse(_)
 
-  given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
+  given formenctype: ("formenctype" is GenericHtmlAttribute[Medium]):
     def name: Text = t"formenctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    def serialize(medium: Medium): Text = medium.show
 
-  given media: ("media" is GenericHtmlAttribute[MediaType]):
+  given media: ("media" is GenericHtmlAttribute[Medium]):
     def name: Text = t"media"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    def serialize(medium: Medium): Text = medium.show
 
-  given enctype: ("enctype" is GenericHtmlAttribute[MediaType]):
+  given enctype: ("enctype" is GenericHtmlAttribute[Medium]):
     def name: Text = t"enctype"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    def serialize(medium: Medium): Text = medium.show
 
-  given htype: ("htype" is GenericHtmlAttribute[MediaType]):
+  given htype: ("htype" is GenericHtmlAttribute[Medium]):
     def name: Text = t"type"
-    def serialize(mediaType: MediaType): Text = mediaType.show
+    def serialize(medium: Medium): Text = medium.show
 
-  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
+  def unapply(value: Text): Option[Medium] = safely(Some(Media.parse(value))).or(None)
