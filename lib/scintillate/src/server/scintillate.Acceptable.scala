@@ -48,18 +48,18 @@ import errorDiagnostics.stackTraces
 object Acceptable:
   given Tactic[MultipartError] => Multipart is Acceptable = request =>
     tend:
-      case _: MediaTypeError => MultipartError(MultipartError.Reason.MediaType)
+      case _: MediumError => MultipartError(MultipartError.Reason.Medium)
 
     . within:
         val contentType = request.headers.contentType.prim.or:
-          abort(MultipartError(MultipartError.Reason.MediaType))
+          abort(MultipartError(MultipartError.Reason.Medium))
 
         if contentType.base == media"multipart/form-data" then
           val boundary = contentType.at(t"boundary").or:
-            abort(MultipartError(MultipartError.Reason.MediaType))
+            abort(MultipartError(MultipartError.Reason.Medium))
 
           Multipart.parse(request.body, boundary)
-        else abort(MultipartError(MultipartError.Reason.MediaType))
+        else abort(MultipartError(MultipartError.Reason.Medium))
 
 trait Acceptable:
   type Self

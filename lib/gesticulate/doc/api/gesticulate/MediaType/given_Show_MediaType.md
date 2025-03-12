@@ -1,1 +1,1 @@
-`:Show` typeclass for displaying a `:MediaType` instance as a `:Text`
+`:Show` typeclass for displaying a `:Medium` instance as a `:Text`

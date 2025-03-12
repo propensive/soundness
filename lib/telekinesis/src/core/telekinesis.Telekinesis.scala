@@ -129,7 +129,7 @@ object Telekinesis:
             val host: Hostname = $submit.host
             val body = $postable.stream($payload)
             val path = $submit.originForm
-            val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
+            val contentType = Http.Header("content-type".tt, $postable.medium($payload).show)
 
             val request =
               Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), body)

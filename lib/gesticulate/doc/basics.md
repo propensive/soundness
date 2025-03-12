@@ -1,11 +1,11 @@
-### `MediaType`
+### `Medium`
 
 All terms and types are defined in the `gesticulate` package:
 ```scala
 import gesticulate.*
 ```
 
-Gesticulate primarily provides the `MediaType` type, consisting of:
+Gesticulate primarily provides the `Medium` type, consisting of:
  - a main "type" (called `group` to avoid a conflict with Scala's `type` keyword)
  - a subtype
  - a list of suffixes
@@ -33,7 +33,7 @@ The media type for XHTML, encoded as `UTF-8`, which would normally be written as
 ```scala
 import gossamer.t
 
-val mediaType = MediaType(
+val medium = Medium(
   group = Media.Group.Application,
   subtype = Media.Subtype.Standard(t"xhtml"),
   suffixes = List(Media.Suffix.Xml),
@@ -42,9 +42,9 @@ val mediaType = MediaType(
 ```
 
 However, this may be expressed as, `media"application/xhtml+xml; charset=UTF-8"`, and Gesticulate
-will statically parse, check and destructure the type into the `MediaType` instance above.
+will statically parse, check and destructure the type into the `Medium` instance above.
 
-`MediaType` reimplements `toString` to render a media type as a `String`, and additionally provides
+`Medium` reimplements `toString` to render a media type as a `String`, and additionally provides
 the method `basic` to provide the media type with any parameters removed. This may be useful in
 some comparisons.
 
@@ -59,9 +59,6 @@ parameters.
 
 ### Parsing
 
-Media types may be parsed using `MediaType.parse(string)` which returns a `MediaType` or throws an
-`InvalidMediaTypeError`. The `InvalidMediaTypeError.Nature` type encodes different varieties of
+Media types may be parsed using `Medium.parse(string)` which returns a `Medium` or throws an
+`InvalidMediumError`. The `InvalidMediumError.Nature` type encodes different varieties of
 parsing failure, should it be useful to distinguish between these.
-
-
-

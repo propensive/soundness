@@ -55,14 +55,14 @@ object Tests extends Suite(t"Gesticulate tests"):
 
     test(t"parse full media type"):
       Media.parse(t"application/json")
-    .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
+    .assert(_ == Medium(Media.Group.Application, Media.Subtype.Standard(t"json")))
 
     test(t"parse full media type with parameter"):
       Media.parse(t"application/json; charset=UTF-8")
-    .assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
+    .assert(_ == Medium(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
 
     test(t"invalid media type"):
       capture(Media.parse(t"applicationjson"))
-    .assert(_ == MediaTypeError(t"applicationjson",
-        MediaTypeError.Reason.NotOneSlash))
+    .assert(_ == MediumError(t"applicationjson",
+        MediumError.Reason.NotOneSlash))

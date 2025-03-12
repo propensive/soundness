@@ -35,4 +35,4 @@ package gesticulate
 import anticipation.*
 import proscenium.*
 
-case class Content(media: MediaType, stream: Stream[Bytes])
+case class Content(media: Medium, stream: Stream[Bytes])

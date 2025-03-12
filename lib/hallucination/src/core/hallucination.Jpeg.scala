@@ -38,4 +38,4 @@ import gesticulate.*
 erased trait Jpeg extends ImageFormat
 
 object Jpeg extends ImageCodec[Jpeg]("JPEG".tt):
-  def mediaType = media"image/jpeg"
+  def medium = media"image/jpeg"
