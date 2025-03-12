@@ -61,16 +61,16 @@ object Stdio:
 
   object MuteOutputStream extends ji.OutputStream:
     def write(byte: Int): Unit = ()
-    override def write(array: Array[Byte]): Unit = ()
-    override def write(array: Array[Byte], offset: Int, length: Int): Unit = ()
+    override def write(array: Array[Byte] | Null): Unit = ()
+    override def write(array: Array[Byte] | Null, offset: Int, length: Int): Unit = ()
     override def close(): Unit = ()
 
   lazy val MutePrintStream = ji.PrintStream(MuteOutputStream)
 
   object MuteInputStream extends ji.InputStream:
     def read(): Int = -1
-    override def read(array: Array[Byte]): Int = 0
-    override def read(array: Array[Byte], offset: Int, length: Int): Int = 0
+    override def read(array: Array[Byte] | Null): Int = 0
+    override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int = 0
     override def reset(): Unit = ()
     override def close(): Unit = ()
     override def available(): Int = 0

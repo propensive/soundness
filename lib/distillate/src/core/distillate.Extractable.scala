@@ -75,58 +75,58 @@ object Extractable:
     if v.s == "true" then true else if v.s == "false" then false else Unset
 
   given shortByte: [ShortType <: Short] => ShortType is Extractable into Byte =
-    short => short.toByte.unless(_.toInt != short)
+    short => short.toByte.unless(value.toInt != short)
 
   given intByte: [IntType <: Int] => IntType is Extractable into Byte =
-    int => int.toByte.unless(_.toInt != int)
+    int => int.toByte.unless(value.toInt != int)
 
   given intShort: [IntType <: Int] => IntType is Extractable into Short =
-    int => int.toShort.unless(_.toInt != int)
+    int => int.toShort.unless(value.toInt != int)
 
   given intFloat: [IntType <: Int] => IntType is Extractable into Float =
-    int => int.toFloat.unless(_.toInt != int)
+    int => int.toFloat.unless(value.toInt != int)
 
   given longByte: [LongType <: Long] => LongType is Extractable into Byte =
-    long => long.toByte.unless(_.toLong != long)
+    long => long.toByte.unless(value.toLong != long)
 
   given longShort: [LongType <: Long] => LongType is Extractable into Short =
-    long => long.toShort.unless(_.toLong != long)
+    long => long.toShort.unless(value.toLong != long)
 
   given longInt: [LongType <: Long] => LongType is Extractable into Int =
-    long => long.toInt.unless(_.toLong != long)
+    long => long.toInt.unless(value.toLong != long)
 
   given longFloat: [LongType <: Long] => LongType is Extractable into Float =
-    long => long.toFloat.unless(_.toLong != long)
+    long => long.toFloat.unless(value.toLong != long)
 
   given longDouble: [LongType <: Long] => LongType is Extractable into Double =
-    long => long.toDouble.unless(_.toLong != long)
+    long => long.toDouble.unless(value.toLong != long)
 
   given floatByte: [FloatType <: Float] => FloatType is Extractable into Byte =
-    float => float.toByte.unless(_.toFloat != float)
+    float => float.toByte.unless(value.toFloat != float)
 
   given floatShort: [FloatType <: Float] => FloatType is Extractable into Short =
-    float => float.toShort.unless(_.toFloat != float)
+    float => float.toShort.unless(value.toFloat != float)
 
   given floatInt: [FloatType <: Float] => FloatType is Extractable into Int =
-    float => float.toInt.unless(_.toFloat != float)
+    float => float.toInt.unless(value.toFloat != float)
 
   given floatLong: [FloatType <: Float] => FloatType is Extractable into Long =
-    float => float.toLong.unless(_.toFloat != float)
+    float => float.toLong.unless(value.toFloat != float)
 
   given doubleByte: [DoubleType <: Double] => DoubleType is Extractable into Byte =
-    double => double.toByte.unless(_.toDouble != double)
+    double => double.toByte.unless(value.toDouble != double)
 
   given doubleShort: [DoubleType <: Double] => DoubleType is Extractable into Short =
-    double => double.toShort.unless(_.toDouble != double)
+    double => double.toShort.unless(value.toDouble != double)
 
   given doubleInt: [DoubleType <: Double] => DoubleType is Extractable into Int =
-    double => double.toInt.unless(_.toDouble != double)
+    double => double.toInt.unless(value.toDouble != double)
 
   given doubleLong: [DoubleType <: Double] => DoubleType is Extractable into Long =
-    double => double.toLong.unless(_.toDouble != double)
+    double => double.toLong.unless(value.toDouble != double)
 
   given doubleFloat: [DoubleType <: Double] => DoubleType is Extractable into Float =
-    double => double.toFloat.unless(_.toDouble != double)
+    double => double.toFloat.unless(value.toDouble != double)
 
   given valueOf: [EnumType <: Enum: Mirror.SumOf as mirror, TextType <: Text]
   =>    TextType is Extractable into EnumType =

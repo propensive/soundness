@@ -238,9 +238,9 @@ def cli[BusType <: Matchable](using executive: Executive)
             else new ji.OutputStream():
               private lazy val wrapped = connection.stderr.await()
               def write(i: Int): Unit = wrapped.write(i)
-              override def write(bytes: Array[Byte]): Unit = wrapped.write(bytes)
+              override def write(bytes: Array[Byte] | Null): Unit = wrapped.write(bytes)
 
-              override def write(bytes: Array[Byte], offset: Int, length: Int): Unit =
+              override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
                 wrapped.write(bytes, offset, length)
 
           given environment: Environment = LazyEnvironment(env)

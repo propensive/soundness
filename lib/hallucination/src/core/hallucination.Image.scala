@@ -39,7 +39,6 @@ import iridescence.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import spectacular.*
 import turbulence.*
 
 import java.awt.image as jai

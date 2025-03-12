@@ -35,7 +35,6 @@ package cellulose
 import anticipation.*
 import contingency.*
 import rudiments.*
-import vacuous.*
 
 class CodlFieldReader[ValueType](lambda: Text => ValueType)
 extends CodlDecoder[ValueType]:

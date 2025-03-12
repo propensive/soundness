@@ -45,7 +45,6 @@ import parasite.*, asyncTermination.await
 import prepositional.*
 import proscenium.*
 import rudiments.*
-import symbolism.*
 import vacuous.*
 
 extension [ValueType](value: ValueType)
@@ -362,7 +361,7 @@ extension (stream: Stream[Bytes])
 
     def read(): Int = if available() == 0 then -1 else (focus(offset) & 0xff).also(offset += 1)
 
-    override def read(array: Array[Byte], arrayOffset: Int, length: Int): Int =
+    override def read(array: Array[Byte] | Null, arrayOffset: Int, length: Int): Int =
       if length == 0 then 0 else
         val count = length.min(available())
 

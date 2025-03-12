@@ -182,7 +182,7 @@ object Http:
     case NotExtended                   extends Status(510, t"Not Extended")
     case NetworkAuthenticationRequired extends Status(511, t"Network Authentication Required")
 
-    def category: Category = (code/100).absolve match
+    def category: Status.Category = (code/100).absolve match
       case 1 => Http.Category.Informational
       case 2 => Http.Category.Successful
       case 3 => Http.Category.Redirection
@@ -414,7 +414,7 @@ object Http:
       body:        Stream[Bytes]):
 
     def successBody: Optional[Stream[Bytes]] =
-      body.provided(status.category == Http.Status.Category.Successful)
+      body.unless(status.category != Http.Status.Category.Successful)
 
     def receive[BodyType: Receivable as receivable]: BodyType = receivable.read(this)
 

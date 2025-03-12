@@ -69,25 +69,26 @@ case class Javac(options: List[JavacOption]):
 
     val diagnostics = new jt.DiagnosticListener[jt.JavaFileObject]:
 
-      def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject]): Unit =
-        val importance = diagnostic.getKind match
-          case jt.Diagnostic.Kind.ERROR             => Importance.Error
-          case jt.Diagnostic.Kind.WARNING           => Importance.Warning
-          case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
-          case _                                    => Importance.Info
+      def report(diagnostic: jt.Diagnostic[? <: jt.JavaFileObject] | Null): Unit =
+        if diagnostic != null then
+          val importance = diagnostic.getKind match
+            case jt.Diagnostic.Kind.ERROR             => Importance.Error
+            case jt.Diagnostic.Kind.WARNING           => Importance.Warning
+            case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
+            case _                                    => Importance.Info
 
-        val codeRange: Optional[CodeRange] =
-          if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
-            CodeRange
-             (diagnostic.getLineNumber.toInt,
-              diagnostic.getColumnNumber.toInt,
-              diagnostic.getLineNumber.toInt,
-              (diagnostic.getColumnNumber + diagnostic.getEndPosition
-               - diagnostic.getPosition).toInt)
+          val codeRange: Optional[CodeRange] =
+            if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
+              CodeRange
+               (diagnostic.getLineNumber.toInt,
+                diagnostic.getColumnNumber.toInt,
+                diagnostic.getLineNumber.toInt,
+                (diagnostic.getColumnNumber + diagnostic.getEndPosition
+                 - diagnostic.getPosition).toInt)
 
-        process.put:
-          Notice
-           (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
+          process.put:
+            Notice
+             (importance, "name".tt, diagnostic.getMessage(ju.Locale.getDefault()).nn.tt, codeRange)
 
     val options = List(t"-classpath", classpath(), t"-d", out.generic)
     val javaSources = sources.map(JavaSource(_, _)).asJava

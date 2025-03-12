@@ -58,11 +58,8 @@ extension [ValueType](value: ValueType)
   def only[ValueType2](partial: PartialFunction[ValueType, ValueType2]): Optional[ValueType2] =
     (partial.orElse { _ => Unset })(value)
 
-  def unless(predicate: => Boolean) = if predicate then Unset else value
-  def unless(predicate: ValueType => Boolean) = if predicate(value) then Unset else value
-
-  def provided(predicate: => Boolean) = if predicate then value else Unset
-  def provided(predicate: ValueType => Boolean) = if predicate(value) then value else Unset
+  def unless(predicate: (value: ValueType) ?=> Boolean) =
+    if predicate(using value) then Unset else value
 
 extension [ValueType](java: ju.Optional[ValueType])
   def optional: Optional[ValueType] = if java.isEmpty then Unset else java.get.nn

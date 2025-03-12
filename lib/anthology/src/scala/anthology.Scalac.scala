@@ -79,16 +79,24 @@ case class Scalac[VersionType <: Scalac.All](options: List[ScalacOption[VersionT
 
     object ProgressApi extends dtdsi.ProgressCallback:
       private var last: Int = -1
-      override def informUnitStarting(stage: String, unit: dtd.CompilationUnit): Unit = ()
+      override def informUnitStarting
+         (stage: String | Null, unit: dtd.CompilationUnit | Null)
+      :     Unit =
+        ()
 
-      override def progress(current: Int, total: Int, currentStage: String, nextStage: String)
+      override def progress
+         (current:      Int,
+          total:        Int,
+          currentStage: String | Null,
+          nextStage:    String | Null)
       :     Boolean =
 
         val int = (100.0*current/total).toInt
 
         if int > last then
           last = int
-          scalacProcess.put(CompileProgress(last/100.0, currentStage.tt))
+          scalacProcess.put
+           (CompileProgress(last/100.0, if currentStage == null then t"null" else currentStage.tt))
 
         scalacProcess.continue
 
