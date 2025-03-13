@@ -32,17 +32,11 @@
                                                                                                   */
 package wisteria
 
-import anticipation.*
-import contingency.*
-import rudiments.*
-import vacuous.*
+import soundness.*
 
 import scala.util.Try
 import scala.deriving.Mirror.ProductOf
 import scala.deriving.Mirror.SumOf
-
-//object Month:
-  //given Presentation[Month] = _.toString.tt
 
 object SumOnly extends SumDerivation[SumOnly]:
 
@@ -111,16 +105,15 @@ object Readable extends Derivation[Readable]:
   given boolean: Readable[Boolean] = _ == "yes".tt
 
   inline def join[DerivationType <: Product: ProductReflection]: Readable[DerivationType] = text =>
-    IArray.from(text.s.split(",")).pipe:
+    text.s.split(",").nn.to(List).map(_.nn).pipe:
       array =>
         construct:
           [FieldType] =>
             readable =>
-              if index < array.length then readable.read(array(index).tt) else default().or:
-                ???
+              if index < array.length then readable.read(array(index).tt) else default().or(???)
 
   inline def split[DerivationType: SumReflection]: Readable[DerivationType] = text =>
-    text.s.split(":").to(List).map(_.tt) match
+    text.s.split(":").nn.to(List).map(_.nn.tt) match
       case List(variant, text2) => delegate(variant):
         [VariantType <: DerivationType] =>
           context => context.read(text2)
@@ -128,7 +121,8 @@ object Readable extends Derivation[Readable]:
 trait Readable[ValueType]:
   def read(text: Text): ValueType
 
-extension (text: Text) def read[ValueType](using readable: Readable[ValueType]): ValueType = readable.read(text)
+extension (text: Text)
+  def read[ValueType](using readable: Readable[ValueType]): ValueType = readable.read(text)
 
 trait Eq[ValueType]:
   def equal(left: ValueType, right: ValueType): Boolean
@@ -160,11 +154,10 @@ object Eq extends Derivation[Eq]:
           complement(right).lay(false): rightValue =>
             leftValue === rightValue
 
-trait Parser[ValueType] {
+trait Parser[ValueType]:
   def parse(s: String): Option[ValueType]
-}
 
-object Parser extends ProductDerivation[Parser] {
+object Parser extends ProductDerivation[Parser]:
   given Parser[Int] with
     def parse(s: String): Option[Int] = s.toIntOption
 
@@ -180,19 +173,16 @@ object Parser extends ProductDerivation[Parser] {
           if index < inputArr.length then context.parse(inputArr(index))
           else None
       )
-}
 
 case class ParserTestCaseClass(intValue: Int, booleanValue: Boolean)
 
-trait Show[T] {
+trait Show[T]:
   def show(value: T): String
-}
 
-extension[T: Show](value: T) {
+extension[T: Show](value: T)
   def show: String = summon[Show[T]].show(value)
-}
 
-object Show extends Derivation[Show] {
+object Show extends Derivation[Show]:
 
   inline def join[DerivationType <: Product: ProductReflection]: Show[DerivationType] = value =>
     typeName.s
@@ -204,7 +194,6 @@ object Show extends Derivation[Show] {
           variant => typeName.s+"."+variant.show
     else
       compiletime.error("cannot derive Show for adt")
-}
 
 enum Simple:
   case First
@@ -215,72 +204,69 @@ enum Adt:
   case First
   case Second(a: Boolean)
 
-trait Producer[ValueType] {
+trait Producer[ValueType]:
   def produce(s: String): Option[ValueType]
-}
-object Producer extends Derivation[Producer] {
 
+object Producer extends Derivation[Producer]:
   inline def join[DerivationType <: Product: ProductOf]: Producer[DerivationType] = ???
 
   inline def split[DerivationType: SumOf]: Producer[DerivationType] = input =>
-    inline if choice then
-      Some(singleton(input))
-    else compiletime.error("not a choice")
-}
+    inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
 
-@main
-def main(): Unit =
-  val george = Person("George Washington".tt, 61, true)
-  val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)
-  println(ronald.present)
-  println((ronald, george).present)
-  println(Date(15, Month.Feb, 1985).present)
-  val time: Temporal = Date(15, Month.Jan, 1983)
-  println(time.present)
-  println("Jimmy Carter,99,yes".tt.read[Person].present)
+object Tests extends Suite(t"Wisteria tests"):
+  def run(): Unit =
+    val george = Person("George Washington".tt, 61, true)
+    val ronald = User(Person("Ronald Reagan".tt, 51, true), "ronald@whitehouse.gov".tt)
+    println(ronald.present)
+    println((ronald, george).present)
+    println(Date(15, Month.Feb, 1985).present)
+    val time: Temporal = Date(15, Month.Jan, 1983)
+    println(time.present)
+    println("Jimmy Carter,99,yes".tt.read[Person].present)
 
 
-  import Tree.*
-  println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
+    import Tree.*
+    println(Branch(4, Branch(1, Leaf, Branch(2, Leaf, Leaf)), Leaf).present)
 
-  given Tactic[VariantError] = strategies.throwUnsafely
+    given Tactic[VariantError] = strategies.throwUnsafely
 
-  println("President:Richard Nixon,37".tt.read[Human].present)
+    println("President:Richard Nixon,37".tt.read[Human].present)
 
-  println("hello".tt === "hElLo".tt)
-  println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 99))
-  println(President("jimmy carter2".tt, 99) === President("JIMMY CARTER".tt, 99))
-  println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 100))
-  val array1 = IArray("jimmy".tt, "gerry".tt, "ronald".tt)
-  val array2 = IArray("Jimmy".tt, "Gerry".tt, "Ronald".tt)
-  println(array1 === array2)
+    println("hello".tt === "hElLo".tt)
+    println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 99))
+    println(President("jimmy carter2".tt, 99) === President("JIMMY CARTER".tt, 99))
+    println(President("jimmy carter".tt, 99) === President("JIMMY CARTER".tt, 100))
+    val array1 = IArray("jimmy".tt, "gerry".tt, "ronald".tt)
+    val array2 = IArray("Jimmy".tt, "Gerry".tt, "Ronald".tt)
+    println(array1 === array2)
 
-  val human1 = "President:Richard Nixon,37".tt.read[Human]
-  val human2 = "President:George Washington".tt.read[President]
-  println("with default "+human2.present)
-  val human3 = "Person:george washington,1,yes".tt.read[Human]
-  println(human1 === human2)
-  println(human2 === human3)
-  val human4 = Try("Broken:george washington,1,yes".tt.read[Human])
-  println(human4.isFailure)
-  println(human4.failed.get.getMessage())
-  val animal = "Carnivore:Wolf".tt.read[Animal]
-  println("with default "+animal.present)
+    val human1 = "President:Richard Nixon,37".tt.read[Human]
+    val human2 = "President:George Washington".tt.read[President]
+    println("with default "+human2.present)
+    val human3 = "Person:george washington,1,yes".tt.read[Human]
+    println(human1 === human2)
+    println(human2 === human3)
+    val human4 = Try("Broken:george washington,1,yes".tt.read[Human])
+    println(human4.isFailure)
+    println(human4.failed.get.getMessage())
+    val animal = "Carnivore:Wolf".tt.read[Animal]
+    println("with default "+animal.present)
 
-  println("withContext:")
-  val parserForTest = summon[Parser[ParserTestCaseClass]]
-  val successfulParse = parserForTest.parse("120,false")
-  println(successfulParse.exists(_.intValue == 120))
-  println(successfulParse.exists(_.booleanValue == false))
-  println(parserForTest.parse("error").isEmpty)
+    println("withContext:")
+    val parserForTest = summon[Parser[ParserTestCaseClass]]
+    val successfulParse = parserForTest.parse("120,false")
+    println(successfulParse.exists(_.intValue == 120))
+    println(successfulParse.exists(_.booleanValue == false))
+    println(parserForTest.parse("error").isEmpty)
 
-  println("isSimpleSum")
-  val showForSimple = summon[Show[Simple]]
-  println(showForSimple.show(Simple.Second))
-  // TODO: use check if not compiles
-  // val compilationError = summon[Show[Adt]]
+    println("isSimpleSum")
+    val showForSimple = summon[Show[Simple]]
+    println(showForSimple.show(Simple.Second))
+    // TODO: use check if not compiles
+    // val compilationError = summon[Show[Adt]]
 
-  println("choice + singletonValue")
-  val producer = summon[Producer[Simple]]
-  println(producer.produce("Third"))
-  println(Try(producer.produce("Secondd")))
+    println("choice + singletonValue")
+    demilitarize:
+      val producer = summon[Producer[Simple]]
+      println(producer.produce("Third"))
+      println(Try(producer.produce("Secondd")))
