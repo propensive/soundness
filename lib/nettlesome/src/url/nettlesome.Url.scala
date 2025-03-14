@@ -54,10 +54,7 @@ case class Url[+SchemeType <: Label]
    (origin:    Origin[SchemeType],
     pathText:  Text,
     query:     Optional[Text]      = Unset,
-    fragment:  Optional[Text]      = Unset)
-extends Root
-         (t"${origin.scheme.name}://${origin.authority.lay(t"")(_.show)}$pathText", t"/",
-          Case.Sensitive):
+    fragment:  Optional[Text]      = Unset):
   type Platform = HttpUrl
 
   def scheme: Scheme[SchemeType] = origin.scheme

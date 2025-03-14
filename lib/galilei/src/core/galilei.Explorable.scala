@@ -32,9 +32,42 @@
                                                                                                   */
 package galilei
 
-import prepositional.*
-import serpentine.*
+import java.nio.file as jnf
 
-trait CreateNonexistentParents:
-  type Platform
-  def apply[ResultType](path: Path on Platform)(operation: => ResultType): ResultType
+import anticipation.*
+import contingency.*
+import distillate.*
+import prepositional.*
+import proscenium.*
+import serpentine.*
+import spectacular.*
+
+object Explorable:
+  given Linux is Explorable:
+    def children(path: Path on Linux): Stream[Path on Linux] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Linux])
+      . to(Stream)
+
+  given Windows is Explorable:
+    def children(path: Path on Windows): Stream[Path on Windows] =
+      given Tactic[RootError] = strategies.throwUnsafely
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on Windows])
+      . to(Stream)
+
+  given MacOs is Explorable:
+    def children(path: Path on MacOs): Stream[Path on MacOs] =
+      jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
+      . iterator().nn
+      . asScala
+      . map(_.toString.tt.decode[Path on MacOs])
+      . to(Stream)
+
+trait Explorable:
+  type Self
+  def children(path: Path on Self): Stream[Path on Self]

@@ -41,6 +41,7 @@ import prepositional.*
 import proscenium.*
 import rudiments.*
 import serpentine.*
+import spectacular.*
 
 import scala.jdk.StreamConverters.*
 
@@ -51,7 +52,7 @@ import java.nio.channels as jnc
 import language.experimental.pureFunctions
 
 object Makable:
-  given [PlatformType <: System]
+  given [PlatformType: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         tactic:                   Tactic[IoError])
@@ -64,10 +65,10 @@ object Makable:
       def make(path: Path on Platform): Path on Platform =
         createNonexistentParents(path):
           overwritePreexisting(path):
-            jnf.Files.createDirectory(path.javaPath)
+            jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
             path
 
-  given socket: [PlatformType <: Posix]
+  given socket: [PlatformType <: Posix: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         tactic:                   Tactic[IoError])
@@ -85,7 +86,7 @@ object Makable:
             channel.bind(address)
             Socket(channel)
 
-  given file: [PlatformType <: System]
+  given file: [PlatformType: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         tactic:                   Tactic[IoError])
@@ -100,7 +101,7 @@ object Makable:
           overwritePreexisting(path):
             jnf.Files.createFile(path.javaPath)
 
-  given fifo: [PlatformType <: System]
+  given fifo: [PlatformType: System]
   =>   (createNonexistentParents: CreateNonexistentParents on PlatformType,
         overwritePreexisting:     OverwritePreexisting on PlatformType,
         working:                  WorkingDirectory,
@@ -129,5 +130,5 @@ object Makable:
 trait Makable:
   type Self
   type Result
-  type Platform <: System
+  type Platform
   def make(path: Path on Platform): Result
