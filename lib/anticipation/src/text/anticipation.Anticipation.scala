@@ -48,6 +48,7 @@ object Anticipation:
   object Text:
     def apply(string: String): Text = string
     def apply(chars: IArray[Char]): Text = String(chars.asInstanceOf[Array[Char]])
+    def apply(bytes: IArray[Byte]): Text = String(bytes.asInstanceOf[Array[Byte]], "ASCII")
 
     extension (text: Text) inline def s: String = text
 
