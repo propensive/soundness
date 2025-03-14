@@ -44,7 +44,7 @@ import scala.jdk.StreamConverters.*
 import language.experimental.pureFunctions
 
 object Symlink extends UnixEntry, WindowsEntry:
-  given [PlatformType <: System] => Symlink[PlatformType] is Inspectable =
-    symlink => t"symlink:${symlink.path.text}"
+  given [PlatformType: System] => Symlink[PlatformType] is Inspectable =
+    symlink => t"symlink:${symlink.path}"
 
-case class Symlink[PlatformType <: System](path: Path on PlatformType)
+case class Symlink[PlatformType](path: Path on PlatformType)

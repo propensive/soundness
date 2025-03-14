@@ -37,13 +37,14 @@ import contingency.*
 import prepositional.*
 import proscenium.*
 import serpentine.*
+import spectacular.*
 import turbulence.*
 
 import java.nio.channels as jnc
 import java.nio.file as jnf
 
 object Openable:
-  given [PlatformType <: System]
+  given [PlatformType: System]
   =>   (read:        ReadAccess,
         write:       WriteAccess,
         dereference: DereferenceSymlinks,
@@ -69,7 +70,7 @@ object Openable:
         then options.filter(_ != jnfsoo.READ)
         else options
 
-      path.protect(IoError.Operation.Open)(jnc.FileChannel.open(path.javaPath, options2*).nn)
+      path.protect(IoError.Operation.Open)(jnc.FileChannel.open(jnf.Path.of(path.show.s), options2*).nn)
 
     def handle(channel: jnc.FileChannel): Handle =
       Handle

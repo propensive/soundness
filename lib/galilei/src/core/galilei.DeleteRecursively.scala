@@ -36,5 +36,5 @@ import prepositional.*
 import serpentine.*
 
 trait DeleteRecursively:
-  type Platform <: System
+  type Platform
   def conditionally[ResultType](path: Path on Platform)(operation: => ResultType): ResultType

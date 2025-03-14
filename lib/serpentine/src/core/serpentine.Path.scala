@@ -85,12 +85,12 @@ object Path:
       type Platform = SystemType
       type Constraint = RootType
 
-  given [SystemType: System] => Path on SystemType is Encodable in Text =
+  given encodable: [SystemType: System] => Path on SystemType is Encodable in Text =
     path => path.descent.reverse.join(path.root, SystemType.separator, t"")
 
-  given [SystemType: System] => Path on SystemType is Showable = _.encode
+  given showable: [SystemType: System] => Path on SystemType is Showable = _.encode
 
-  given [SystemType: System] => Path on SystemType is Communicable =
+  given communicable: [SystemType: System] => Path on SystemType is Communicable =
     path => Message(path.encode)
 
   given generic: [SystemType: System]
@@ -110,6 +110,8 @@ case class Path(root: Text, descent: Text*):
   type Platform
   type Subject <: Tuple
   type Constraint
+
+  def name: Text = descent.prim.or(root)
 
   transparent inline def knownElementTypes: Boolean = inline !![Subject] match
     case _: Zero           => true
@@ -137,7 +139,7 @@ case class Path(root: Text, descent: Text*):
         summonInline[head is Admissible on SystemType].check(path.head)
         check[tail, SystemType](path.tail)
 
-      case EmptyTuple =>
+      case _ =>
 
   inline def on[SystemType]: Path of Subject under Constraint on SystemType =
     check[Subject, SystemType](descent.to(List))
@@ -215,23 +217,29 @@ case class Path(root: Text, descent: Text*):
 
     recur(left0, right0, 0, 0)
 
-  transparent inline def parent = inline !![Subject] match
-    case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
-    case EmptyTuple   => compiletime.error("Path has no parent")
-    case _ =>
-      given Tactic[PathError] = summonInline[Tactic[PathError]]
+  transparent inline def parent: Optional[Path on Platform under Constraint] =
+    inline !![Subject] match
+      case head *: tail => Path.of[Platform, Constraint, tail.type](root, descent.tail*)
+      case EmptyTuple   => compiletime.error("Path has no parent")
+      case _ =>
+        given Tactic[PathError] = summonInline[Tactic[PathError]]
 
-      if descent.isEmpty then
-        raise(PathError(PathError.Reason.RootParent))
-        Path.of[Platform, Constraint, Tuple](root, descent*)
+        if descent.isEmpty then
+          raise(PathError(PathError.Reason.RootParent))
+          Path.of[Platform, Constraint, Tuple](root, descent*)
 
-      else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
+        else Path.of[Platform, Constraint, Tuple](root, descent.tail*)
 
   inline def ancestors: List[Path on Platform under Constraint] =
     parent.let { parent => parent :: parent.ancestors }.or(Nil)
 
-  @targetName("child")
-  transparent inline def / (child: Any): Path of (child.type *: Subject) under Constraint =
+
+  def child(value: Text)(using Unsafe): Path on Platform under Constraint =
+    Path.of[Platform, Constraint, Text *: Subject](root, value +: descent*)
+
+  @targetName("slash")
+  transparent inline def / (child: Any)
+  :     Path of (child.type *: Subject) on Platform under Constraint =
     summonFrom:
       case given (child.type is Admissible on Platform) =>
         Path.of[Platform, Constraint, child.type *: Subject]
@@ -239,6 +247,17 @@ case class Path(root: Text, descent: Text*):
 
       case _ =>
         Path.unplatformed[Constraint, child.type *: Subject]
+         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+
+  transparent inline def peer(child: Any)(using child.type is Admissible on Platform)
+  :     Path on Platform under Constraint =
+    inline !![Subject] match
+      case _: (head *: tail) =>
+        Path.of[Platform, Constraint, child.type *: tail]
+         (root, summonInline[child.type is Navigable].follow(child) +: descent*)
+
+      case _ =>
+        Path.of[Platform, Constraint, Tuple]
          (root, summonInline[child.type is Navigable].follow(child) +: descent*)
 
   transparent inline def + (relative: Relative): Path =

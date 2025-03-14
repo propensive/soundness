@@ -67,4 +67,4 @@ object IoError:
 
 case class IoError(path: Path, operation: IoError.Operation, reason: IoError.Reason)
    (using Diagnostics)
-extends Error(m"the $operation operation on $path failed because $reason")
+extends Error(m"the $operation operation on ${path.toString} failed because $reason")

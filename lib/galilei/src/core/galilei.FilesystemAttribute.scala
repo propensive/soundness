@@ -36,16 +36,17 @@ import java.nio.file as jnf
 
 import prepositional.*
 import serpentine.*
+import spectacular.*
 
 object FilesystemAttribute:
-  class Readable[PlatformType <: System](path: Path on PlatformType):
-    def apply(): Boolean = jnf.Files.isReadable(path.javaPath)
+  class Readable[PlatformType: System](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isReadable(jnf.Path.of(path.show.s).nn)
     def update(value: Boolean): Unit = path.javaFile.setReadable(value)
 
-  class Writable[PlatformType <: System](path: Path on PlatformType):
-    def apply(): Boolean = jnf.Files.isWritable(path.javaPath)
+  class Writable[PlatformType: System](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isWritable(jnf.Path.of(path.show.s).nn)
     def update(value: Boolean): Unit = path.javaFile.setWritable(value)
 
-  class Executable[PlatformType <: Posix](path: Path on PlatformType):
-    def apply(): Boolean = jnf.Files.isExecutable(path.javaPath)
+  class Executable[PlatformType <: Posix: System](path: Path on PlatformType):
+    def apply(): Boolean = jnf.Files.isExecutable(jnf.Path.of(path.show.s).nn)
     def update(value: Boolean): Unit = path.javaFile.setExecutable(value)

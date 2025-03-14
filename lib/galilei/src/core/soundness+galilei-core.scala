@@ -37,7 +37,7 @@ export galilei
     DereferenceSymlinks, Entry, FilesystemAttribute, Handle, IoError, IoEvent, MoveAtomically,
     Openable, OverwritePreexisting, ReadAccess, Socket, Symlink, TraversalOrder, Volume,
     WriteAccess, WriteSynchronously, C, D, open, javaPath, javaFile, children, descendants, size,
-    delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, renameTo, moveTo, moveInto,
+    delete, wipe, volume, hardLinkTo, entry, copyTo, copyInto, /*renameTo, */moveTo, moveInto,
     symlinkTo, symlinkInto, modified, accessed, readable, writable, hidden, touch, make, created,
     executable, hardLinks }
 
