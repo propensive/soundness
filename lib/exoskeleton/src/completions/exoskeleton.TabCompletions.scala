@@ -33,7 +33,7 @@
 package exoskeleton
 
 import ambience.*, environments.virtualMachine, systemProperties.virtualMachine
-import anticipation.*, filesystemApi.serpentinePath
+import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -53,7 +53,6 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import pathNavigation.posix
 
 object TabCompletions:
   def install(force: Boolean = false)(using service: ShellContext)
@@ -67,7 +66,7 @@ object TabCompletions:
         val scriptPath = sh"sh -c 'command -v ${service.scriptName}'".exec[Text]()
         val command: Text = service.scriptName
 
-        if !force && safely(scriptPath.decode[Path on Posix]) != service.script
+        if !force && safely(scriptPath.decode[Path on Linux]) != service.script
         then TabCompletionsInstallation.CommandNotOnPath(service.scriptName)
         else
           val zsh: TabCompletionsInstallation.InstallResult =
@@ -79,7 +78,7 @@ object TabCompletions:
 
               val dirs =
                 dirNames.filter(_.trim != t"").map: dir =>
-                  safely(dir.decode[Path on Posix])
+                  safely(dir.decode[Path on Linux])
                 . compact
 
               install(Shell.Zsh, command, Name(t"_$command"), dirs)
@@ -91,9 +90,9 @@ object TabCompletions:
               install
                (Shell.Bash,
                 command,
-                Name[Posix](command),
-                List(Xdg.dataDirs.last / n"bash-completion" / n"completions",
-                Xdg.dataHome / n"bash-completion" / n"completions"))
+                Name[Linux](command),
+                List(Xdg.dataDirs.last / "bash-completion" / "completions",
+                Xdg.dataHome / "bash-completion" / "completions"))
 
           val fish: TabCompletionsInstallation.InstallResult =
             if sh"sh -c 'command -v fish'".exec[Exit]() != Exit.Ok
@@ -101,14 +100,14 @@ object TabCompletions:
             else install
                   (Shell.Fish,
                     command,
-                    Name[Posix](t"$command.fish"),
+                    Name[Linux](t"$command.fish"),
                     List
-                     (Xdg.dataDirs.last / n"fish" / n"vendor_completions.d",
-                      Xdg.configHome / n"fish" / n"completions"))
+                     (Xdg.dataDirs.last / "fish" / "vendor_completions.d",
+                      Xdg.configHome / "fish" / "completions"))
 
           TabCompletionsInstallation.Shells(zsh, bash, fish)
 
-  def install(shell: Shell, command: Text, scriptName: Name[Posix], dirs: List[Path on Posix])
+  def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
      (using Effectful, Diagnostics)
   :     TabCompletionsInstallation.InstallResult raises InstallError logs CliEvent =
 

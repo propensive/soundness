@@ -30,9 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
 trait Substantiable:
   type Self
-  def existance(value: Self): Boolean
-  extension (value: Self) def exists(): Boolean = existance(value)
+  def existence(value: Self): Boolean

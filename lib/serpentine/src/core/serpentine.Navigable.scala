@@ -33,6 +33,7 @@
 package serpentine
 
 import anticipation.*
+import nomenclature.*
 import prepositional.*
 import proscenium.*
 
@@ -48,6 +49,10 @@ object Navigable:
   given text: [TextType <: Text] => TextType is Navigable:
     type Self = TextType
     def follow(name: TextType): Text = name
+
+  given name: [PlatformType, NameType <: Name[PlatformType]] => NameType is Navigable:
+    type Self = NameType
+    def follow(name: NameType): Text = name.text
 
 trait Navigable:
   type Self
