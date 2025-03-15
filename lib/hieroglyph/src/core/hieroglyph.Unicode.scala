@@ -51,6 +51,15 @@ object Unicode:
     def unapply(text: Text): Option[Int] =
       try Some(Integer.parseInt(text.s, 16)) catch case err: NumberFormatException => None
 
+  private val smallCapsAlphabet: String = "ᴀʙᴄᴅᴇꜰɢʜɪᴊᴋʟᴍɴᴏᴘǫʀsᴛᴜᴠᴡxʏᴢ"
+
+  def smallCaps(text: Text): Text =
+    text.s.map:
+      case char if char >= 'a' && char <= 'z' => smallCapsAlphabet(char - 'a')
+      case char                               => char
+
+    . tt
+
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] =
       code.s.only:

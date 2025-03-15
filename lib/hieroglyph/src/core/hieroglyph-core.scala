@@ -34,6 +34,7 @@ package hieroglyph
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import rudiments.*
 import vacuous.*
 
@@ -41,6 +42,12 @@ import language.experimental.pureFunctions
 
 extension (encoding: Encoding { type CanEncode = true }) def encoder: CharEncoder =
   CharEncoder(encoding)
+
+extension (char: Char)
+  def whitespace: Boolean = Character.isWhitespace(char)
+  def control: Boolean = Character.isISOControl(char)
+  def printable: Boolean = !control && !whitespace
+  def name: Optional[Text] = Unicode.name(char)
 
 package charDecoders:
   given utf8: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
@@ -71,6 +78,11 @@ package textSanitizers:
 
   given skip: TextSanitizer = (pos, encoding) => Unset
   given substitute: TextSanitizer = (pos, encoding) => '?'
+
+package communication:
+  given unicodeCharNames: Char is Communicable = char => Message:
+    val name = char.name.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
+    if char.printable then s"$name [$char]".tt else name
 
 extension (inline context: StringContext)
   transparent inline def enc(): Encoding = ${Hieroglyph.encoding('context)}
