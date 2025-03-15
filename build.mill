@@ -1104,6 +1104,16 @@ object rudiments extends SoundnessModule {
   }
 }
 
+object satirical extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(gossamer.core, turbulence.core, zephyrine.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object savagery extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(cataclysm.core, xylophone.core, quantitative.core, iridescence.core, geodesy.core)
