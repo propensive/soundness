@@ -30,18 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
+
+import scala.compiletime.*, ops.int.*
 
 import anticipation.*
-import contingency.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
-import serpentine.*
-import spectacular.*
+import fulminate.*
+import proscenium.*
 
-object DosDrive:
-  export Dos.navigable
-
-case class DosDrive(letter: Char) extends Root(t"$letter:\\", t"\\", Case.Upper):
-  type Platform = Dos
+case class RootError(root: Text)(using Diagnostics) extends Error(m"$root is not a valid root")

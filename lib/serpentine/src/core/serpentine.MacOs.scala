@@ -30,48 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import java.nio.file as jnf
-
-import anticipation.*
-import contingency.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
-import proscenium.*
-import serpentine.*
+import rudiments.*
 
-erased trait Filesystem
+erased trait MacOs
 
-object Filesystem:
-  type Rules = MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
-      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-      MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-      MustNotMatch["(?i)(CON|PRN|AUX|NUL|COM[0-9]|LPT[0-9])(\\.[^.]+)?"] & MustNotEqual["."] &
-      MustNotEqual[".."] & MustNotEqual[""]
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+    & MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  given [FilesystemType <: Filesystem] => (Path on FilesystemType) is Substantiable =
-    path => jnf.Files.exists(path.javaPath)
-
-  given radical: Tactic[PathError]
-  =>    Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root =
-    val os = System.getProperty("os.name").nn.tt
-
-    val delegate =
-      if os.starts(t"Windows") then Windows.radical
-      else if os.starts(t"Mac") then MacOs.radical else Linux.radical
-
-    delegate.absolve match
-      case radical: (Filesystem is Radical from WindowsDrive | Linux.Root | MacOs.Root) => radical
-
-  given navigable: Tactic[NameError]
-  =>    Filesystem is Navigable by Name[Filesystem] under Rules =
-    val os = System.getProperty("os.name").nn.tt
-
-    val delegate =
-      if os.starts(t"Windows") then Windows.navigable
-      else if os.starts(t"Mac") then MacOs.navigable else Linux.navigable
-
-    delegate.absolve match
-      case navigable: (Filesystem is Navigable by Name[Filesystem] under Rules) => navigable
+  erased given MacOs is Nominative under Rules = !!

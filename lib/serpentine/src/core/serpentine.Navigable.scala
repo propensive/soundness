@@ -35,16 +35,25 @@ package serpentine
 import anticipation.*
 import nomenclature.*
 import prepositional.*
+import proscenium.*
 
-trait Navigable extends Nominative:
+object Navigable:
+  given label: [StringType <: Label] => StringType is Navigable = new Navigable:
+    type Self = StringType
+    def follow(name: StringType): Text = name.tt
+
+  given int: Int is Navigable = new Navigable:
+    type Self = Int
+    def follow(name: Int): Text = name.toString.tt
+
+  given text: [TextType <: Text] => TextType is Navigable:
+    type Self = TextType
+    def follow(name: TextType): Text = name
+
+  given name: [PlatformType, NameType <: Name[PlatformType]] => NameType is Navigable:
+    type Self = NameType
+    def follow(name: NameType): Text = name.text
+
+trait Navigable:
   type Self
-  type Operand
-
-  def element(element: Text): Operand
-  protected def elementText(element: Operand): Text
-  def separator: Text
-  def selfText: Text
-  def parentElement: Text
-  def ascent: Text = parentElement+separator
-  def caseSensitivity: Case
-  def makeElement(element: Operand): Text = caseSensitivity(elementText(element))
+  def follow(name: Self): Text

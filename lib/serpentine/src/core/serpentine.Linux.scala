@@ -30,51 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
-import serpentine.*
-import vacuous.*
+
+erased trait Linux
 
 object Linux:
-  object Root
-
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Linux
-
-  object RootSingleton extends Root()
-
   type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-
-  given radical: Tactic[PathError] => Linux is Radical from Root =
-    new Radical:
-      type Self = Linux
-      type Source = Root
-
-      def rootLength(path: Text): Int = 1
-      def rootText(root: Source): Text = t"/"
-
-      def root(path: Text): Source =
-        if path.at(Prim) == '/' then %
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet %
-
-  given navigable: Tactic[NameError] => Linux is Navigable by Name[Linux] under Rules =
-    new Navigable:
-      type Self = Linux
-      type Operand = Name[Linux]
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-      def element(element: Text): Name[Linux] = Name(element)
-      def elementText(element: Name[Linux]): Text = element.text
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Linux extends Posix
+  erased given Linux is Nominative under Rules = !!
