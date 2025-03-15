@@ -55,6 +55,8 @@ final val C: Drive = Drive('C')
 final val D: Drive = Drive('D')
 
 
+extension [ValueType: Substantiable](value: ValueType)
+  def exists(): Boolean = ValueType.existence(value)
 
 extension [ValueType: Openable](value: ValueType)
   def open[ResultType]

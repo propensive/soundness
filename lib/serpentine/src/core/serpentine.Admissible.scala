@@ -39,8 +39,7 @@ import prepositional.*
 import proscenium.*
 
 object Admissible:
-  def apply[SelfType, SystemType](fn: Text => Unit)
-  :     SelfType is Admissible on SystemType =
+  def apply[SelfType, SystemType](fn: Text => Unit): SelfType is Admissible on SystemType =
     new Admissible:
       type Self = SelfType
       type Platform = SystemType
@@ -52,6 +51,8 @@ object Admissible:
   inline given [StringType <: Label, SystemType: Nominative]
   =>    StringType is Admissible on SystemType =
     Admissible({ _ => Name.verify[StringType, SystemType] })
+
+  given name: [PlatformType] => Name[PlatformType] is Admissible on PlatformType = _ => ()
 
 trait Admissible:
   type Self
