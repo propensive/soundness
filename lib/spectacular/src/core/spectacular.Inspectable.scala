@@ -61,6 +61,7 @@ object Inspectable extends Inspectable2:
     case given (ValueType is Encodable in Text) => _.encode
     case given (ValueType is Showable)          => _.show
     case given Reflection[ValueType]            => Derivation.derived[ValueType].text(_)
+    case _                                      => value => ("“"+value+"”").tt
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt

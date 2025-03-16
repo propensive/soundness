@@ -33,6 +33,7 @@
 package probably
 
 import anticipation.*
+import chiaroscuro.*
 import digression.*
 import fulminate.*
 import gossamer.*
@@ -131,5 +132,5 @@ package harnesses:
     private val delegate: Option[Harness] =
       Option(Runner.harnessThreadLocal.get()).map(_.nn).flatten
 
-    override def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
+    override def capture[ValueType: Decomposable](name: Text, value: ValueType): ValueType =
       delegate.map(_.capture[ValueType](name, value)).getOrElse(value)

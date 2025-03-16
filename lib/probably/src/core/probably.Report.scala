@@ -454,11 +454,16 @@ class Report(using Environment):
             showLegend()
 
           case Verdict.Detail.Compare(expected, observed, cmp) =>
-            val expected2: Teletype = e"$Italic($White($expected))"
-            val observed2: Teletype = e"$Italic($White($observed))"
-            val nl = if expected.contains(t"\n") || observed.contains(t"\n") then '\n' else ' '
-            Out.println(e"$Silver(Expected: $nl$expected2)")
-            Out.println(e"$Silver(Observed: $nl$observed2)")
+            def indent(text: Text): Text =
+              if text.contains(t"\n") then text.trim.cut(t"\n").join(t"\n│ ", t"\n│ ", t"\n")
+              else text
+
+            val expected2: Teletype = e"$Italic($Silver(${indent(expected)}))"
+            val observed2: Teletype = e"$Italic($Silver(${indent(observed)}))"
+
+            Out.println(e"$White(Expected:) $expected2")
+            Out.println(e"$White(Observed:) $observed2")
+
             Out.println(cmp.teletype)
 
           case Verdict.Detail.Captures(map) =>

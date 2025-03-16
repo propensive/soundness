@@ -50,6 +50,10 @@ trait Decomposable:
   def decompose(value: Self): Decomposition
 
 object Decomposable extends Derivable[Decomposable]:
+
+  def primitive[ValueType]: ValueType is Decomposable =
+    value => Decomposition.Primitive(t"", value.toString.tt, value)
+
   inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decomposable =
     value =>
       val map: Map[Text, Decomposition] =

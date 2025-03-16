@@ -116,15 +116,15 @@ object Contrastable:
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
 
-            label -> Juxtaposition.Same(value.let(_.text).or(t"?"))
+            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
           case Ins(rightIndex, value) =>
             t" ⧸${rightIndex.show.subscripts}"
-            -> Juxtaposition.Different(t"—", value.text)
+            -> Juxtaposition.Different(t"—", value.short)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}⧸"
-            -> Juxtaposition.Different(value.let(_.text).or(t"?"), t"—")
+            t"${leftIndex.show.superscripts}/ "
+            -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"

@@ -67,7 +67,13 @@ enum Decomposition:
     case Product(name, values, _) =>
       t"$name(${values.map { (key, value) => t"$key: ${value.text}" }.join(t", ")}"
 
-  def text =
+  def short: Text = this match
+    case Primitive(_, text, _) => text
+    case Sum(name, value, _)   => t"$name:${value.short}"
+    case Sequence(values, _)   => t"[..${values.length}..]"
+    case Product(name, _, _)   => name
+
+  def text: Text =
     Text.construct:
       multiline(0)
       builder.toString.tt
@@ -83,8 +89,8 @@ enum Decomposition:
           append(t"\n")
           append(space*indent)
 
-        append(t"$name.")
-        value.multiline(indent + 1, false)
+        append(t"$name╱")
+        value.multiline(indent, false)
 
       case Sequence(values, _) =>
         if newline then

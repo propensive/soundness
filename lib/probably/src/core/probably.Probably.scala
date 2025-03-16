@@ -71,22 +71,29 @@ object Probably:
 
     exp match
       case Some('{type testType >: TestType; $expr: testType}) =>
-        val inspectable: Expr[testType is Inspectable] =
-          Expr.summon[testType is Inspectable].getOrElse('{ _.toString.tt })
+        val decomposable: Expr[testType is Decomposable] =
+          Expr.summon[testType is Decomposable].get
 
         val contrast = Expr.summon[testType is Contrastable].getOrElse:
           halt(m"Can't contrast ${Type.of[testType]}")
 
         '{
           assertion[testType, TestType, ReportType, ResultType]
-           ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $inspectable)
+           ($runner, $test, $predicate, $action, $contrast, Some($expr), $inc, $inc2, $decomposable)
         }
 
       case _ =>
         '{
           assertion[TestType, TestType, ReportType, ResultType]
-           ($runner, $test, $predicate, $action, Contrastable.nothing[TestType], None, $inc, $inc2,
-                  _.toString.tt)
+           ($runner,
+            $test,
+            $predicate,
+            $action,
+            Contrastable.nothing[TestType],
+            None,
+            $inc,
+            $inc2,
+            Decomposable.primitive[TestType])
         }
 
   def check[TestType: Type, ReportType: Type]
@@ -124,15 +131,15 @@ object Probably:
   def succeed: Any => Boolean = (value: Any) => true
 
   def assertion[TestType, TestType2 <: TestType, ReportType, ResultType]
-     (runner:    Runner[ReportType],
-      test:      Test[TestType2],
-      predicate: TestType2 => Boolean,
-      result:    Trial[TestType2] => ResultType,
-      contrast:  TestType is Contrastable,
-      exp:       Option[TestType],
-      inc:       Inclusion[ReportType, Verdict],
-      inc2:      Inclusion[ReportType, Verdict.Detail],
-      display:   TestType is Inspectable)
+     (runner:       Runner[ReportType],
+      test:         Test[TestType2],
+      predicate:    TestType2 => Boolean,
+      result:       Trial[TestType2] => ResultType,
+      contrast:     TestType is Contrastable,
+      exp:          Option[TestType],
+      inc:          Inclusion[ReportType, Verdict],
+      inc2:         Inclusion[ReportType, Verdict.Detail],
+      decomposable: TestType is Decomposable)
   :     ResultType =
 
     runner.run(test).pipe: run =>
@@ -146,8 +153,13 @@ object Probably:
           try if predicate(value) then Verdict.Pass(duration) else
             exp match
               case Some(exp) =>
-                inc2.include(runner.report, test.id, Verdict.Detail.Compare(display.text(exp),
-                    display.text(value), contrast.contrast(exp, value)))
+                inc2.include
+                 (runner.report,
+                  test.id,
+                  Verdict.Detail.Compare
+                   (decomposable.decompose(exp).text,
+                    decomposable.decompose(value).text,
+                    contrast.contrast(exp, value)))
               case None =>
                 // inc2.include(runner.report, test.id, Verdict.Detail.Compare
                 //  (summon[Any is Contrastable].compare(value, 1)))
@@ -171,7 +183,7 @@ object Probably:
       case _ =>
         t"<unknown>"
 
-    val inspectable: Expr[TestType is Inspectable] =
-      Expr.summon[TestType is Inspectable].getOrElse('{ _.toString.tt })
+    val decomposable: Expr[TestType is Decomposable] =
+      Expr.summon[TestType is Decomposable].get
 
-    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $inspectable) }
+    '{ $test.capture(Text(${Expr[String](exprName.s)}), $expr)(using $decomposable) }
