@@ -35,26 +35,55 @@ package satirical
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
 
-case class World(name: Ident, members: List[Import | Export])
-case class Interface(name: Ident, members: List[Primitive | Func])
-case class Ident(words: List[Text])
-case class Package(namespace: Ident, name: Ident, version: Optional[Text])
+import communication.unicodeCharNames
+
+object World:
+  sealed trait Member
+
+case class World(name: Ident, members: List[World.Member] = Nil) extends Wit.Member
+
+object Interface:
+  sealed trait Member
+
+case class Interface(name: Ident, members: List[Interface.Member] = Nil) extends Wit.Member
+
+object Ident
+
+case class Ident(words: List[Text] = Nil)
+
+object Package
+
+case class Package
+   (namespace: Ident,
+    name:      Ident,
+    version:   Optional[Text]  = Unset,
+    members:   List[Interface] = Nil)
+extends Wit.Member
+
+object Func
 
 case class Func(name: Ident, params: List[Primitive], returnType: Optional[Primitive])
+extends Interface.Member
+
+object Use
 
 case class Use(namespace: Ident, ident: Ident)
-case class Import(ident: Ident)
-case class Export(ident: Ident)
 
-case class Wit(entries: (World | Interface | Package)*)
-enum Primitive:
+case class Import(ident: Ident) extends World.Member
+case class Export(ident: Ident) extends World.Member
+
+case class Wit(entries: List[Wit.Member])
+
+enum Primitive extends Interface.Member:
   case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
   case List(elements: Primitive)
   case Option(element: Primitive)
@@ -69,6 +98,10 @@ enum Primitive:
 extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))
 
 object Wit:
+  sealed trait Member
+
+  given Wit is Inspectable = Inspectable.derived
+
   given Wit is Aggregable by Bytes = parse(_)
 
   def parse(input: Stream[Bytes]): Wit =
@@ -144,9 +177,10 @@ object Wit:
 
     def packageDeclaration(): Package =
       val namespace = ident()
-      println(conduit.datum)
+      println("namespace = "+namespace)
       conduit.datum match
         case ':' =>
+          conduit.next()
           val name = ident()
           conduit.datum match
             case '@' =>
@@ -157,10 +191,9 @@ object Wit:
               whitespace()
               conduit.datum match
                 case ';' => Package(namespace, name, Unset)
-                case other => fail(m"unexpected character $other")
-        case other => fail(m"expected ':'")
+                case other => fail(m"unexpected character ${other.toChar} at ${conduit.ordinal.n0}")
 
-
+        case other => fail(m"expected ${':'}")
 
 
     def interfaceItems(members: List[Primitive | Func] = Nil): List[Primitive | Func] = Nil
@@ -182,4 +215,4 @@ object Wit:
         case _            => members.reverse
 
     whitespace()
-    Wit(topLevel()*)
+    Wit(topLevel())

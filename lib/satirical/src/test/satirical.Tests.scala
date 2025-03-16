@@ -33,27 +33,70 @@
 package satirical
 
 import soundness.*
+import chiaroscuro.Decomposable
 
 import charEncoders.utf8
 
+
 object Tests extends Suite(t"Satirical tests"):
   def run(): Unit =
+
+    test(t"A simple package declaration"):
+      t"package wasi:clocks;".read[Wit]
+    . assert(_ == Wit(List(Package(w"wasi", w"clocks"))))
+
+
+    println(Wit(List(Package(w"wasi", w"clocks"))).decompose)
+
+
+
+
+
+    test(t"A versioned package declaration"):
+      t"package wasi:clocks@1.2.0;".read[Wit]
+    . assert(_ == Wit(List(Package(w"wasi", w"clocks", t"1.2.0"))))
+
+    test(t"Two package declarations"):
+      t"""
+      package local:a {
+          interface foo {}
+      }
+
+      package local:b {
+          interface bar {}
+      }
+      """.read[Wit]
+    . assert(_ == Wit(List
+                   (Package(w"local", w"a", Unset, List(Interface(w"foo"))),
+                    Package(w"local", w"b", Unset, List(Interface(w"bar"))))))
+
+
     test(t"Parse empty world"):
       t"world example-world {   }".read[Wit]
-    . assert(_ == Wit(World(w"example-world", Nil)))
+    . assert(_ == Wit(List(World(w"example-world", Nil))))
 
     test(t"Parse empty interface"):
       t"interface example-interface {   }".read[Wit]
-    . assert(_ == Wit(Interface(w"example-interface", Nil)))
+    . assert(_ == Wit(List(Interface(w"example-interface", Nil))))
 
     test(t"Parse empty interface ignoring comment"):
-      t"// a comment\n // another\ninterface example-interface {   } ".read[Wit].tap(println)
-    . assert(_ == Wit(Interface(w"example-interface", Nil)))
+      t"""// a comment
+          // another
+          interface example-interface {   }
+      """.read[Wit].tap(println)
+    . assert(_ == Wit(List(Interface(w"example-interface", Nil))))
 
     test(t"Parse empty world and interface"):
-      t"interface eg-int {   }\nworld eg-world {}".read[Wit]
-    . assert(_ == Wit(Interface(w"eg-int", Nil), World(w"eg-world", Nil)))
+      t"""interface eg-int {   }
+          world eg-world {}
+      """.read[Wit]
+
+    . assert(_ == Wit(List(Interface(w"eg-int", Nil), World(w"eg-world", Nil))))
 
     test(t"Parse package"):
-      t"package namespace:name;\ninterface eg-int {   }\nworld eg-world {}".read[Wit]
-    . assert(_ == Wit(Interface(w"eg-int", Nil), World(w"eg-world", Nil)))
+      t"""package namespace:name;
+          interface eg-int {   }
+          world eg-world {}
+      """.read[Wit]
+
+    . assert(_ == Wit(List(Interface(w"eg-int", Nil), World(w"eg-world", Nil))))
