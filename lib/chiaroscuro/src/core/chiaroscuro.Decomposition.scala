@@ -30,27 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package spectacular
+package chiaroscuro
 
 import anticipation.*
+import denominative.*
+import dissonance.*
+import gossamer.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
 import rudiments.*
+import spectacular.*
+import vacuous.*
 import wisteria.*
 
 import scala.deriving.*
+import scala.reflect.*
 
-import language.experimental.captureChecking
+object Decomposition:
+  def apply(optional: Optional[Decomposition]): Decomposition = optional.or:
+    Decomposition.Primitive(t"Unset", t"Unset", Unset)
 
-object InspectableDerivation extends Derivable[Inspectable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable =
-    value =>
-      fields(value):
-        [FieldType] => field =>
-          val text = context.text(field)
-          if tuple then text else s"$label:$text"
+enum Decomposition:
+  case Primitive(typeName: Text, value: Text, ref: Any)
+  case Product(name: Text, values: Map[Text, Decomposition], ref: Any)
+  case Sequence(values: IArray[Decomposition], ref: Any)
+  case Sum(name: Text, value: Decomposition, ref: Any)
 
-      . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+  def ref: Any
 
-  inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
-    variant(value):
-      [VariantType <: DerivationType] => variant =>
-        context.give(variant.inspect)
+  def text2: Text = this match
+    case Primitive(_, text, _) => text
+    case Sum(name, value, _)   => t"$name:${value.text}"
+    case Sequence(values, _)   => values.map(_.text).join(t"[", t", ", t"]")
+
+    case Product(name, values, _) =>
+      t"$name(${values.map { (key, value) => t"$key: ${value.text}" }.join(t", ")}"
+
+  def text =
+    Text.construct:
+      multiline(0)
+      builder.toString.tt
+
+  def multiline(indent: Int = 0, newline: Boolean = true)(using TextBuilder): Unit =
+    val space = t"  "
+    this match
+      case Primitive(typeName, text, _) =>
+        append(t"$text")
+
+      case Sum(name, value, _) =>
+        if newline then
+          append(t"\n")
+          append(space*indent)
+
+        append(t"$name.")
+        value.multiline(indent + 1, false)
+
+      case Sequence(values, _) =>
+        if newline then
+          append(t"\n")
+          append(space*indent)
+
+        val last = values.length
+
+        values.each: item =>
+          append(ordinal.n0.show)
+          append(t": ")
+          item.multiline(indent + 1, true)
+          if ordinal.n0 < last - 1 then
+            append(t"\n"+(space*indent))
+
+      case Product(name, values, _) =>
+        if newline then
+          append(t"\n")
+          append(space*indent)
+
+        append(t"$name:")
+        val last = values.size
+        append(t"\n"+(space*indent))
+
+        values.each: (key, value) =>
+          append(t"$space$key:")
+          value.multiline(indent + 2, true)
+          if ordinal.n0 < last - 1 then
+            append(t"\n"+(space*indent))

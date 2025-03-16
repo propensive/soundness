@@ -36,9 +36,19 @@ import anticipation.*
 import chiaroscuro.*
 import digression.*
 
-enum Details:
-  case Throws(stack: StackTrace)
-  case CheckThrows(stack: StackTrace)
-  case Captures(values: Map[Text, Text])
-  case Compare(expected: Text, found: Text, juxtaposition: Juxtaposition)
-  case Message(message: Text)
+object Verdict:
+  enum Detail:
+    case Throws(stack: StackTrace)
+    case CheckThrows(stack: StackTrace)
+    case Captures(values: Map[Text, Text])
+    case Compare(expected: Text, found: Text, juxtaposition: Juxtaposition)
+    case Message(message: Text)
+
+enum Verdict:
+  case Pass(duration: Long)
+  case Fail(duration: Long)
+  case Throws(exception: Exception, duration: Long)
+  case CheckThrows(exception: Exception, duration: Long)
+
+  val timestamp: Long = System.currentTimeMillis
+  def duration: Long

@@ -75,31 +75,31 @@ def suite[ReportType](name: Text)(using suite: Testable, runner: Runner[ReportTy
 extension [TestType](test: Test[TestType])
   inline def aspire[ReportType](inline predicate: TestType => Boolean)
      (using runner: Runner[ReportType],
-            inc: Inclusion[ReportType, Outcome],
-            inc2: Inclusion[ReportType, Details])
+            inc: Inclusion[ReportType, Verdict],
+            inc2: Inclusion[ReportType, Verdict.Detail])
       : Unit =
     ${Probably.aspire[TestType, ReportType]('test, 'runner, 'inc, 'inc2)}
 
   inline def assert[ReportType]
      (inline predicate: TestType => Boolean)
      (using runner:    Runner[ReportType],
-            inclusion:  Inclusion[ReportType, Outcome],
-            inclusion2: Inclusion[ReportType, Details])
+            inclusion:  Inclusion[ReportType, Verdict],
+            inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     Unit =
     ${Probably.assert[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def check[ReportType]
      (inline predicate: TestType => Boolean)
      (using runner:    Runner[ReportType],
-            inclusion:  Inclusion[ReportType, Outcome],
-            inclusion2: Inclusion[ReportType, Details])
+            inclusion:  Inclusion[ReportType, Verdict],
+            inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     TestType =
     ${Probably.check[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[ReportType]()
      (using runner:    Runner[ReportType],
-            inclusion:  Inclusion[ReportType, Outcome],
-            inclusion2: Inclusion[ReportType, Details])
+            inclusion:  Inclusion[ReportType, Verdict],
+            inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     Unit =
     ${
         Probably.assert[TestType, ReportType]
@@ -107,8 +107,8 @@ extension [TestType](test: Test[TestType])
 
   inline def check[ReportType]()
      (using runner:    Runner[ReportType],
-            inclusion:  Inclusion[ReportType, Outcome],
-            inclusion2: Inclusion[ReportType, Details])
+            inclusion:  Inclusion[ReportType, Verdict],
+            inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     TestType =
 
     ${
@@ -117,8 +117,8 @@ extension [TestType](test: Test[TestType])
 
   inline def matches[ReportType](inline pf: TestType ~> Any)
      (using runner: Runner[ReportType],
-            inc:    Inclusion[ReportType, Outcome],
-            inc2:   Inclusion[ReportType, Details])
+            inc:    Inclusion[ReportType, Verdict],
+            inc2:   Inclusion[ReportType, Verdict.Detail])
   :     Unit =
 
     assert[ReportType](pf.isDefinedAt(_))

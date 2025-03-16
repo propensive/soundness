@@ -30,13 +30,65 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package probably
+package chiaroscuro
 
-enum Outcome:
-  case Pass(duration: Long)
-  case Fail(duration: Long)
-  case Throws(exception: Exception, duration: Long)
-  case CheckThrows(exception: Exception, duration: Long)
+import anticipation.*
+import dissonance.*
+import gossamer.*
+import hieroglyph.*
+import prepositional.*
+import proscenium.*
+import spectacular.*
+import vacuous.*
+import wisteria.*
 
-  val timestamp: Long = System.currentTimeMillis
-  def duration: Long
+import scala.deriving.*
+import scala.reflect.*
+
+trait Decomposable:
+  type Self
+  def decompose(value: Self): Decomposition
+
+object Decomposable extends Derivable[Decomposable]:
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Decomposable =
+    value =>
+      val map: Map[Text, Decomposition] =
+        import derivationContext.relaxed
+        fields(value):
+          [FieldType] => field =>
+            val value =
+              context.let(_.decompose(field)).or(Decomposition.Primitive(typeName, t"?", field))
+
+            label -> value
+        . to(Map)
+
+      Decomposition.Product(typeName, map, value)
+
+  inline def split[DerivationType: SumReflection]: DerivationType is Decomposable =
+    value =>
+      import derivationContext.relaxed
+      variant(value):
+        [VariantType <: DerivationType] => variant =>
+          Decomposition.Sum
+           (typeName,
+            context.let(_.decompose(variant)).or:
+              Decomposition.Primitive(typeName, t"?", variant),
+            variant)
+
+  given text: Text is Decomposable = value => Decomposition.Primitive(t"Text", value, value)
+
+  given optional: [ValueType: Decomposable] => Optional[ValueType] is Decomposable = value =>
+    value.let: value =>
+      Decomposition.Sum(t"Optional", ValueType.decompose(value), value)
+    . or(Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", value), value))
+
+  given showable: [ValueType: Showable] => ValueType is Decomposable = value =>
+    Decomposition.Primitive(t"Showable", value.show, value)
+
+  given encodable: [ValueType: Encodable in Text] => ValueType is Decomposable = value =>
+    Decomposition.Primitive(t"Encodable", value.encode, value)
+
+  given collection: [CollectionType <: Iterable, ValueType: Decomposable]
+  => CollectionType[ValueType] is Decomposable =
+    collection =>
+      Decomposition.Sequence(IArray.from(collection.map(ValueType.decompose(_))), collection)

@@ -32,6 +32,8 @@
                                                                                                   */
 package spectacular
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import prepositional.*
 import proscenium.*
@@ -40,11 +42,25 @@ import vacuous.*
 import wisteria.*
 
 object Inspectable extends Inspectable2:
+  object Derivation extends Derivable[Inspectable]:
+    inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable =
+      value =>
+        fields(value):
+          [FieldType] => field =>
+            val text = context.text(field)
+            if tuple then text else s"$label:$text"
+
+        . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+
+    inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
+      variant(value):
+        [VariantType <: DerivationType] => variant =>
+          context.give(variant.inspect)
+
   inline given derived: [ValueType] => ValueType is Inspectable = compiletime.summonFrom:
     case given (ValueType is Encodable in Text) => _.encode
     case given (ValueType is Showable)          => _.show
-    case given Reflection[ValueType]            => InspectableDerivation.derived[ValueType].text(_)
-    case _                                      => value => s"⸉${value.toString.tt}⸊".tt
+    case given Reflection[ValueType]            => Derivation.derived[ValueType].text(_)
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
@@ -72,7 +88,6 @@ object Inspectable extends Inspectable2:
 
   given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
   given reflectEnum: reflect.Enum is Inspectable = _.toString.show
-  //given pid: Pid is Inspectable = pid => s"[PID:${pid.value}]".tt
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
     case '\n'                => "\\n".tt
@@ -110,6 +125,13 @@ object Inspectable extends Inspectable2:
       (subscript+value.inspect.s).tt
 
     . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌").tt
+
+  given arraySeq: [ElemType: Inspectable] => scm.ArraySeq[ElemType] is Inspectable = array =>
+    array.zipWithIndex.map: (value, index) =>
+      val subscript = index.toString.map { digit => (digit + 8272).toChar }.mkString
+      (subscript+value.inspect.s).tt
+
+    . mkString("⦋"+arrayPrefix(array.toString), "∣", "⦌ₛ").tt
 
   given stream: [ElemType: Inspectable] => Stream[ElemType] is Inspectable = stream =>
     def recur(stream: Stream[ElemType], todo: Int): Text =

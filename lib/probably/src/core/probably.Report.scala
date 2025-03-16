@@ -54,20 +54,22 @@ import vacuous.*
 import scala.collection.mutable as scm
 
 object Report:
-  given Inclusion[Report, Outcome] with
-    def include(report: Report, testId: TestId, outcome: Outcome): Report =
-      val report2 = report.addOutcome(testId, outcome)
-      outcome match
-        case Outcome.Pass(_) =>
+  given Inclusion[Report, Verdict]:
+    def include(report: Report, testId: TestId, verdict: Verdict): Report =
+      val report2 = report.addVerdict(testId, verdict)
+      verdict match
+        case Verdict.Pass(_) =>
           report2
-        case Outcome.Fail(_) =>
+        case Verdict.Fail(_) =>
           report2
-        case Outcome.Throws(error, _) =>
-          report2.addDetails(testId, Details.Throws(StackTrace(error)))
-        case Outcome.CheckThrows(error, _) =>
-          report2.addDetails(testId, Details.CheckThrows(StackTrace(error)))
 
-  given Inclusion[Report, Details] = _.addDetails(_, _)
+        case Verdict.Throws(error, _) =>
+          report2.addDetail(testId, Verdict.Detail.Throws(StackTrace(error)))
+
+        case Verdict.CheckThrows(error, _) =>
+          report2.addDetail(testId, Verdict.Detail.CheckThrows(StackTrace(error)))
+
+  given Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
 class Report(using Environment):
   var failure: Optional[(Throwable, Set[TestId])] = Unset
@@ -86,7 +88,7 @@ class Report(using Environment):
 
   enum ReportLine:
     case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
-    case Test(test: TestId, outcomes: scm.ArrayBuffer[Outcome] = scm.ArrayBuffer())
+    case Test(test: TestId, verdicts: scm.ArrayBuffer[Verdict] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
 
     def summaries: List[Summary] = this match
@@ -100,10 +102,10 @@ class Report(using Environment):
 
       case Test(testId, buf) =>
         val status =
-          if buf.all(_.is[Outcome.Pass]) then Status.Pass
-          else if buf.all(_.is[Outcome.Fail]) then Status.Fail
-          else if buf.all(_.is[Outcome.Throws]) then Status.Throws
-          else if buf.all(_.is[Outcome.CheckThrows]) then Status.CheckThrows
+          if buf.all(_.is[Verdict.Pass]) then Status.Pass
+          else if buf.all(_.is[Verdict.Fail]) then Status.Fail
+          else if buf.all(_.is[Verdict.Throws]) then Status.Throws
+          else if buf.all(_.is[Verdict.CheckThrows]) then Status.CheckThrows
           else Status.Mixed
 
         val min: Long = buf.map(_.duration).min
@@ -123,8 +125,9 @@ class Report(using Environment):
 
   private var coverage: Option[Coverage] = None
 
-  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Details]] =
-    scm.TreeMap[TestId, scm.ArrayBuffer[Details]]().withDefault(_ => scm.ArrayBuffer[Details]())
+  private val details: scm.SortedMap[TestId, scm.ArrayBuffer[Verdict.Detail]] =
+    scm.TreeMap[TestId, scm.ArrayBuffer[Verdict.Detail]]()
+    . withDefault(_ => scm.ArrayBuffer[Verdict.Detail]())
 
   def declareSuite(suite: Testable): Report = this.also:
     resolve(suite.parent).tests(suite.id) = ReportLine.Suite(suite)
@@ -135,13 +138,13 @@ class Report(using Environment):
     val benchmarks = resolve(testId.suite).tests
     benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
 
-  def addOutcome(testId: TestId, outcome: Outcome): Report = this.also:
+  def addVerdict(testId: TestId, verdict: Verdict): Report = this.also:
     val tests = resolve(testId.suite).tests
 
-    tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Outcome]())).absolve match
-      case ReportLine.Test(_, buf) => buf.append(outcome)
+    tests.getOrElseUpdate(testId, ReportLine.Test(testId, scm.ArrayBuffer[Verdict]())).absolve match
+      case ReportLine.Test(_, buf) => buf.append(verdict)
 
-  def addDetails(testId: TestId, info: Details): Report =
+  def addDetail(testId: TestId, info: Verdict.Detail): Report =
     this.also(details(testId) = details(testId).append(info))
 
   enum Status:
@@ -149,21 +152,21 @@ class Report(using Environment):
 
     def color: Rgb24 = this match
       case Pass        => rgb"#8abd00"
-      case Fail        => Tomato
+      case Fail        => rgb"#cc3333"
       case Throws      => DarkOrange
-      case CheckThrows => rgb"#dd40a0"
-      case Mixed       => rgb"#ddd700"
+      case CheckThrows => rgb"#cc0099"
+      case Mixed       => rgb"#ffd700"
       case Suite       => SlateBlue
       case Bench       => CadetBlue
 
     def symbol: Teletype = this match
-      case Pass        => e"${Bg(rgb"#8abd00")}( $Bold($Black(✓)) )"
-      case Fail        => e"${Bg(Tomato)}( $Bold($Black(✗)) )"
-      case Throws      => e"${Bg(DarkOrange)}( $Bold($Black(!)) )"
-      case CheckThrows => e"${Bg(rgb"#dd40a0")}( $Bold($Black(‼)) )"
-      case Mixed       => e"${Bg(rgb"#ddd700")}( $Bold($Black(?)) )"
+      case Pass        => e"${Bg(color)}( $Bold($Black(✓)) )"
+      case Fail        => e"${Bg(color)}( $Bold($Black(✗)) )"
+      case Throws      => e"${Bg(color)}( $Bold($Black(!)) )"
+      case CheckThrows => e"${Bg(color)}( $Bold($Black(‼)) )"
+      case Mixed       => e"${Bg(color)}( $Bold($Black(?)) )"
       case Suite       => e"   "
-      case Bench       => e"${Bg(CadetBlue)}( $Bold($Black(*)) )"
+      case Bench       => e"${Bg(color)}( $Bold($Black(*)) )"
 
     def describe: Teletype = this match
       case Pass        => e"Pass"
@@ -438,34 +441,34 @@ class Report(using Environment):
       info.each: details =>
         Out.println(t"")
         details match
-          case Details.Throws(err) =>
+          case Verdict.Detail.Throws(err) =>
             val name = e"$Italic($White(${err.component}.${err.className}))"
             Out.println(e"$Silver(An exception was thrown while running test:)")
             Out.println(err.crop(t"probably.Runner", t"run()").teletype)
             showLegend()
 
-          case Details.CheckThrows(err) =>
+          case Verdict.Detail.CheckThrows(err) =>
             val name = e"$Italic($White(${err.component}.${err.className}))"
             Out.println(e"$Silver(An exception was thrown while checking the test predicate:)")
-            Out.println(err.crop(t"probably.Outcome#", t"apply()").dropRight(1).teletype)
+            Out.println(err.crop(t"probably.Verdict#", t"apply()").dropRight(1).teletype)
             showLegend()
 
-          case Details.Compare(expected, found, cmp) =>
+          case Verdict.Detail.Compare(expected, observed, cmp) =>
             val expected2: Teletype = e"$Italic($White($expected))"
-            val found2: Teletype = e"$Italic($White($found))"
-            val nl = if expected.contains(t"\n") || found.contains(t"\n") then '\n' else ' '
-            val instead = e"but instead it returned$nl$found2$nl"
-            Out.println(e"$Silver(The test was expected to return$nl$expected2$nl$instead)")
+            val observed2: Teletype = e"$Italic($White($observed))"
+            val nl = if expected.contains(t"\n") || observed.contains(t"\n") then '\n' else ' '
+            Out.println(e"$Silver(Expected: $nl$expected2)")
+            Out.println(e"$Silver(Observed: $nl$observed2)")
             Out.println(cmp.teletype)
 
-          case Details.Captures(map) =>
+          case Verdict.Detail.Captures(map) =>
             Table[(Text, Text), Teletype]
              (Column(e"Expression", textAlign = TextAlignment.Right)(_(0)),
               Column(e"Value")(_(1)))
 
             . tabulate(map.to(List)).grid(140).render.each(Out.println(_))
 
-          case Details.Message(text) =>
+          case Verdict.Detail.Message(text) =>
             Out.println(text)
 
       Out.println()

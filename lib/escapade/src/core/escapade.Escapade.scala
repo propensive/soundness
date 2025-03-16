@@ -134,7 +134,7 @@ case class Teletype2(plain: Text, ansi: IArray[Escapade.AnsiStyle]):
     import Escapade.indexes.*
     Text.construct:
       def recur(current: AnsiStyle, index: Ordinal): Unit =
-        if index <= plain.ult.or(Prim - 1) then
+        if index.n0 < plain.length then
           val style = ansi(index.n0)
 
           if style.changed then

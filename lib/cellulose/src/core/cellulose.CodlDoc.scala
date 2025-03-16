@@ -58,8 +58,8 @@ object CodlDoc:
   //     def apply(left: CodlDoc, right: CodlDoc) =
   //       if left == right then Juxtaposition.Same(left.inspect) else
   //         val comparison = IArray.from:
-  //           (t"[schema]", left.schema.juxtapose(right.schema)) +:
-  //           (t"[margin]", left.margin.juxtapose(right.margin)) +:
+  //           (t"[schema]", left.schema.contrast(right.schema)) +:
+  //           (t"[margin]", left.margin.contrast(right.margin)) +:
   //           diff(left.children, right.children).rdiff(_.id == _.id).changes.map:
   //             case Par(_, _, v)      =>
   //               v.let(_.key).or(t"—") -> Juxtaposition.Same(v.let(_.inspect).toString.tt)
@@ -76,7 +76,7 @@ object CodlDoc:
   //                 if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—")
   //                 else t"${lv.let(_.key).or(t"—")}/${rv.let(_.key).or(t"—")}"
 
-  //               key -> lv.juxtapose(rv)
+  //               key -> lv.contrast(rv)
 
   //         Juxtaposition.Collation(comparison, t"", t"")
 

@@ -43,10 +43,10 @@ object Benchmark:
 case class Benchmark
    (total:     Long,
     count:     Int,
-    min:     Double,
+    min:       Double,
     mean:      Double,
-    max:     Double,
-    sd:      Double,
+    max:       Double,
+    sd:        Double,
     confidence: Benchmark.Percentiles,
     baseline:   Optional[Baseline]):
 

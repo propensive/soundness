@@ -119,7 +119,10 @@ extension [ValueType <: Matchable](iterable: Iterable[ValueType])
     iterable.zip(right).flatMap(Iterable(_, _))
 
 extension [ValueType](iterator: Iterator[ValueType])
-  transparent inline def each(predicate: (ordinal: Ordinal) ?=> ValueType => Unit): Unit =
+  transparent inline def each
+    (predicate: (ordinal: Ordinal) ?=> ValueType => Unit)
+  :     Unit =
+
     var ordinal: Ordinal = Prim
     iterator.foreach: value =>
       predicate(using ordinal)(value)

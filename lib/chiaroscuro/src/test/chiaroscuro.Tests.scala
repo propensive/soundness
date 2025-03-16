@@ -46,7 +46,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
   def run(): Unit =
     suite(t"RDiff tests"):
       test(t"Two identical, short Vectors"):
-        Vector(1, 2, 3).juxtapose(Vector(1, 2, 3))
+        Vector(1, 2, 3).contrast(Vector(1, 2, 3))
 
       . assert(_ == Same(t"⟨ 1 2 3 ⟩"))
 
@@ -91,7 +91,7 @@ object Tests extends Suite(t"Chiaroscuro tests"):
       test(t"recurse on similar list entries"):
         val xs = List(IdName(t"one", t"One"), IdName(t"two", t"Two"),  IdName(t"three", t"Three"), IdName(t"four", t"Four"))
         val ys = List(IdName(t"one", t"Ein"), IdName(t"two", t"Zwei"),  IdName(t"three", t"Three"), IdName(t"vier", t"Vier"))
-        val result = xs.juxtapose(ys)
+        val result = xs.contrast(ys)
         import hieroglyph.textMetrics.uniform
         import escapade.*
         import turbulence.*
