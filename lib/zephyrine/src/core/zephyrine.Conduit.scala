@@ -45,6 +45,9 @@ object Conduit:
   enum State:
     case Data, Clutch, End
 
+  case class Snapshot
+     (stream: Stream[Bytes], current: Bytes, index: Ordinal, done: Int, clutch: Boolean)
+
 class Conduit(input0: Stream[Bytes]):
   private val input: Stream[Bytes] = input0.filter(_.nonEmpty)
   private var stream: Stream[Bytes] = if input.isEmpty then Stream() else input.tail
@@ -61,6 +64,7 @@ class Conduit(input0: Stream[Bytes]):
 
   def block: Bytes = current
   def datum: Int = try current(index.n0) catch case _: ArrayIndexOutOfBoundsException => -1
+  def ordinal: Ordinal = index
 
   def remainder: Stream[Bytes] = stream
 
@@ -127,19 +131,18 @@ class Conduit(input0: Stream[Bytes]):
         step()
     else
       index += 1
-      if index > current.ult.or(Prim - 1) then
+      if index.n0 >= current.size then
         clutch = true
         Conduit.State.Clutch
       else Conduit.State.Data
 
-  final def cue(): Unit =
-    if !stream.isEmpty then
-      done += current.length
-      current = stream.head
-      val tail = stream.tail
-      stream = tail
-      index = Prim - 1
-      clutch = false
+  final def cue(): Unit = if !stream.isEmpty then
+    done += current.length
+    current = stream.head
+    val tail = stream.tail
+    stream = tail
+    index = Prim - 1
+    clutch = false
 
   final def mark(): Unit =
     current0 = current

@@ -78,7 +78,7 @@ object Juxtaposition:
 
       val table = Table[Row](
         Column(e"")(_.treeLine),
-        Column(e"Expected", textAlign = TextAlignment.Right)(_.left),
+        Column(e"Expected", textAlign = TextAlignment.Left)(_.left),
         Column(e"Found")(_.right),
         Column(e"Difference")(_.difference)
       )

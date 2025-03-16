@@ -36,21 +36,22 @@ import anticipation.*
 import dissonance.*
 import gossamer.*
 import hieroglyph.*
+import prepositional.*
 import proscenium.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 import wisteria.*
 
 import scala.deriving.*
+import scala.reflect.*
+import java.text.CollationKey
 
 trait Contrastable:
   type Self
-  def apply(left: Self, right: Self): Juxtaposition
+  def contrast(left: Self, right: Self): Juxtaposition
 
-object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable]:
-  def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
-    Juxtaposition.Same(left.inspect)
-
+object Contrastable:
   given int: Int is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
@@ -63,76 +64,77 @@ object Contrastable extends Derivation[[ValueType] =>> ValueType is Contrastable
       val sizeText = if size.isFinite then t"${if size > 0 then t"+" else t""}$size%" else t""
       Juxtaposition.Different(left.show, right.show, sizeText)
 
-  inline def general[ValueType]: ValueType is Contrastable = (left, right) =>
-    if left == right then Juxtaposition.Same(left.inspect)
-    else Juxtaposition.Different(left.inspect, right.inspect)
-
-  given Exception is Contrastable:
-    def apply(left: Exception, right: Exception): Juxtaposition =
-      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.inspect)
-      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.inspect)
-
-      if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
-      else Juxtaposition.Different(leftMsg, rightMsg)
-
   given Char is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show)
 
   given Text is Contrastable =
-    (left, right) => compareSeq[Char](left.chars, right.chars, left, right)
+    (left, right) =>
+      def decompose(chars: IArray[Char]): IArray[Decomposition] = chars.map: char =>
+        Decomposition.Primitive(t"Char", char.show, char)
+      compareSeq[Char](decompose(left.chars), decompose(right.chars), left, right)
 
-  def compareSeq[ValueType: Contrastable: Similarity]
-     (left: IndexedSeq[ValueType], right: IndexedSeq[ValueType], leftDebug: Text, rightDebug: Text)
+  inline def nothing[ValueType]: ValueType is Contrastable = (left, right) =>
+    compiletime.summonInline[ValueType is Decomposable].give:
+      Juxtaposition.Same(left.decompose.text)
+
+  given [ValueType: Decomposable] => ValueType is Contrastable = (left, right) =>
+    juxtaposition(left.decompose, right.decompose)
+
+  def juxtaposition(left: Decomposition, right: Decomposition): Juxtaposition =
+    if left.ref == right.ref then Juxtaposition.Same(left.text) else (left, right) match
+      case (Decomposition.Primitive(_, left, lRef), Decomposition.Primitive(_, right, rRef)) =>
+        Juxtaposition.Different(left, right)
+
+      case (Decomposition.Sequence(left, _), Decomposition.Sequence(right, _)) =>
+        compareSeq(left, right, t"", t"")
+
+      case (Decomposition.Product(_, left, _), Decomposition.Product(_, right, _)) =>
+        Juxtaposition.Collation
+         (IArray.from:
+            left.keys.map: key =>
+              key -> juxtaposition(left(key), right(key)),
+          t"",
+          t"")
+
+  given Exception is Contrastable:
+    def contrast(left: Exception, right: Exception): Juxtaposition =
+      val leftMsg = Option(left.getMessage).fold(t"null")(_.nn.tt)
+      val rightMsg = Option(right.getMessage).fold(t"null")(_.nn.tt)
+
+      if left.getClass == right.getClass && leftMsg == rightMsg then Juxtaposition.Same(leftMsg)
+      else Juxtaposition.Different(leftMsg, rightMsg)
+
+  def compareSeq[ValueType]
+     (left: IArray[Decomposition], right: IArray[Decomposition], leftDebug: Text, rightDebug: Text)
   :     Juxtaposition =
     if left == right then Juxtaposition.Same(leftDebug) else
       val comparison = IArray.from:
-        diff(left, right).rdiff(summon[Similarity[ValueType]].similar).changes.map:
+        diff(left, right).rdiff(_ == _).changes.map:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
               else t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
 
-            label -> Juxtaposition.Same(value.inspect)
+            label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
           case Ins(rightIndex, value) =>
-            t" ⧸${rightIndex.show.subscripts}" -> Juxtaposition.Different(t"—", value.inspect)
+            t" ⧸${rightIndex.show.subscripts}"
+            -> Juxtaposition.Different(t"—", value.short)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}⧸" -> Juxtaposition.Different(value.inspect, t"—")
+            t"${leftIndex.show.superscripts}/ "
+            -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
             val label = t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
 
-            label -> leftValue.juxtapose(rightValue)
+            label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(comparison, leftDebug, rightDebug)
 
-
-  given iarray: [ValueType: {Contrastable, Similarity}] => IArray[ValueType] is Contrastable:
-    def apply(left: IArray[ValueType], right: IArray[ValueType]): Juxtaposition =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
-
-  given list: [ValueType: {Contrastable, Similarity}] => List[ValueType] is Contrastable:
-    def apply(left: List[ValueType], right: List[ValueType]): Juxtaposition =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
-
-  given trie: [ValueType: {Contrastable, Similarity}] => Trie[ValueType] is Contrastable:
-    def apply(left: Trie[ValueType], right: Trie[ValueType]): Juxtaposition =
-      compareSeq[ValueType](left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
-
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Contrastable =
-    (left, right) =>
-      val elements = fields(left, true): [FieldType] =>
-        leftParam =>
-          if leftParam == complement(right) then (label, Juxtaposition.Same(leftParam.inspect))
-          else (label, context(leftParam, complement(right)))
-
-      Juxtaposition.Collation(elements, left.inspect, right.inspect)
-
-  inline def split[DerivationType: SumReflection]: DerivationType is Contrastable =
-    (left, right) =>
-      variant(left):
-        [VariantType <: DerivationType] => left =>
-          complement(right).let(left.juxtapose(_)).or:
-            Juxtaposition.Different(left.inspect, right.inspect)
+  // inline given collection: [CollectionType <: Iterable, ValueType: Contrastable]
+  // =>    CollectionType[ValueType] is Contrastable:
+  //   def apply(left: CollectionType[ValueType], right: CollectionType[ValueType]): Juxtaposition =
+  //     compareSeq[ValueType]
+  //      (left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)

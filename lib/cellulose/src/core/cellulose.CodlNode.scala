@@ -64,7 +64,7 @@ object CodlNode:
             v.let(_.key).or(t"—") -> Juxtaposition.Different(v.let(_.inspect).toString.tt, t"—")
 
           case Sub(_, v, lv, rv) =>
-            if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.juxtapose(rv)
+            if lv.let(_.key) == rv.let(_.key) then lv.let(_.key).or(t"—") -> lv.contrast(rv)
             else t"[key]" -> Juxtaposition.Different(lv.let(_.key).or(t"—"), rv.let(_.key).or(t"—"))
 
       Juxtaposition.Collation(comparison, left.key.or(t"—"), right.key.or(t"—"))

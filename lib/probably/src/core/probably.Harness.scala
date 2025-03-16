@@ -33,6 +33,7 @@
 package probably
 
 import anticipation.*
+import chiaroscuro.*
 import spectacular.*
 
 import scala.collection.mutable as scm
@@ -40,6 +41,6 @@ import scala.collection.mutable as scm
 open class Harness():
   private[probably] val captured: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
 
-  def capture[ValueType: Inspectable](name: Text, value: ValueType): ValueType =
-    captured.append(name -> value.inspect)
+  def capture[ValueType: Decomposable](name: Text, value: ValueType): ValueType =
+    captured.append(name -> value.decompose.inspect)
     value

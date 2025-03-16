@@ -30,27 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package spectacular
+package probably
 
 import anticipation.*
-import rudiments.*
-import wisteria.*
+import chiaroscuro.*
+import digression.*
 
-import scala.deriving.*
+object Verdict:
+  enum Detail:
+    case Throws(stack: StackTrace)
+    case CheckThrows(stack: StackTrace)
+    case Captures(values: Map[Text, Text])
+    case Compare(expected: Text, found: Text, juxtaposition: Juxtaposition)
+    case Message(message: Text)
 
-import language.experimental.captureChecking
+enum Verdict:
+  case Pass(duration: Long)
+  case Fail(duration: Long)
+  case Throws(exception: Exception, duration: Long)
+  case CheckThrows(exception: Exception, duration: Long)
 
-object InspectableDerivation extends Derivable[Inspectable]:
-  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Inspectable =
-    value =>
-      fields(value):
-        [FieldType] => field =>
-          val text = context.text(field)
-          if tuple then text else s"$label:$text"
-
-      . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
-
-  inline def split[DerivationType: SumReflection]: DerivationType is Inspectable = value =>
-    variant(value):
-      [VariantType <: DerivationType] => variant =>
-        context.give(variant.inspect)
+  val timestamp: Long = System.currentTimeMillis
+  def duration: Long

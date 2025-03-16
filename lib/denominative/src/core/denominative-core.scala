@@ -34,6 +34,8 @@ package denominative
 
 import scala.annotation.targetName
 
+import prepositional.*
+
 final val Prim: Ordinal = Ordinal.natural(1)
 final val Sec: Ordinal  = Ordinal.natural(2)
 final val Ter: Ordinal  = Ordinal.natural(3)
@@ -41,9 +43,6 @@ final val Quat: Ordinal = Ordinal.natural(4)
 final val Quin: Ordinal = Ordinal.natural(5)
 final val Sen: Ordinal  = Ordinal.natural(6)
 final val Sept: Ordinal = Ordinal.natural(7)
-// final val Oct: Ordinal  = Ordinal.natural(8)
-// final val Non: Ordinal  = Ordinal.natural(9)
-// final val Den: Ordinal  = Ordinal.natural(10)
 
 inline def Ult: Countback   = Countback(0)
 inline def Pen: Countback   = Countback(1)
