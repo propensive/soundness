@@ -38,12 +38,10 @@ import proscenium.*
 
 import language.dynamics
 
-type Html[+ChildType <: Label] = Node[ChildType] | Text | Int | HtmlXml
-
 object Html extends Node["html"]:
   def label: Text = t"html"
   def attributes: Attributes = Map()
-  def children: Seq[Html[?]] = Nil
+  def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
 
   def apply(head: Node["head"], body: Node["body"]): Element["html"] =
     Element(label.s, Map(), Seq(head, body))

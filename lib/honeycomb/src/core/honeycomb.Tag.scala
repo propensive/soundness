@@ -48,7 +48,7 @@ open case class Tag[+NameType <: Label, ChildType <: Label, AttributeType <: Lab
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
-  def children: Seq[Html[?]] = Nil
+  def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
   def label: Text = labelString.tt
 
   def preset(presetAttributes: (String, Text)*): Tag[NameType, ChildType, AttributeType] =
