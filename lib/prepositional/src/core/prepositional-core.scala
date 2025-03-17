@@ -32,6 +32,8 @@
                                                                                                   */
 package prepositional
 
+object Prepositional
+
 infix type across [Type <: { type Domain }, DomainType] = Type { type Domain = DomainType }
 infix type by [Type <: { type Operand }, OperandType] = Type { type Operand = OperandType }
 infix type from [Type <: { type Source }, SourceType] = Type { type Source = SourceType }

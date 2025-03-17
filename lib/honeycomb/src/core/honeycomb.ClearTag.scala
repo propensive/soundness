@@ -48,7 +48,7 @@ case class ClearTag[+NameType <: Label, ChildType <: Label, AttributeType <: Lab
 extends Node[NameType], Dynamic:
 
   def attributes: Attributes = Map()
-  def children: Seq[Html[?]] = Nil
+  def children: Seq[Node[?] | Text | Int | HtmlXml] = Nil
   def label: Text = labelString.tt
 
   inline def applyDynamicNamed(method: String)(inline attributes: (AttributeType, Any)*)

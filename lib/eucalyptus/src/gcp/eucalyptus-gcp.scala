@@ -41,6 +41,8 @@ import spectacular.*
 
 import jsonPrinters.minimal
 
+object EucalyptusGcp
+
 package logFormats:
   given googleCloudPlatform: Message is Inscribable in Text = (event, level, realm, timestamp) =>
     case class GcpLog(severity: Text, message: Text)

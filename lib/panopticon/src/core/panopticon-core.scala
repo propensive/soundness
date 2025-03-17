@@ -32,8 +32,4 @@
                                                                                                   */
 package panopticon
 
-import proscenium.*
-
-import scala.quoted.*
-
 export Panopticon.Lens

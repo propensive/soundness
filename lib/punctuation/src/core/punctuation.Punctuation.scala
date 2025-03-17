@@ -41,4 +41,4 @@ object Punctuation:
   :     Expr[Markdown[Markdown.Ast.Node]] =
     Md.Interpolator.expansion(context, parts) match
       case (Md.Input.Inline(_), result) => '{$result.asInstanceOf[InlineMd]}
-      case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Md]}
+      case (Md.Input.Block(_), result)  => '{$result.asInstanceOf[Markdown[Markdown.Ast.Block]]}

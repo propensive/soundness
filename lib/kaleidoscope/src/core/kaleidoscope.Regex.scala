@@ -353,12 +353,3 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
-
-def extract[ValueType](input: Text, start: Ordinal = Prim)
-   (lambda: Scanner ?=> PartialFunction[Text, ValueType]): Stream[ValueType] =
-  if start.n0 < input.s.length then
-    val scanner = Scanner(start.n0)
-    lambda(using scanner).lift(input) match
-      case Some(head) => head #:: extract(input, Ordinal.zerary(scanner.nextStart.or(0)))(lambda)
-      case _          => Stream()
-  else Stream()
