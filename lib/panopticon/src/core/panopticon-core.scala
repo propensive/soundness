@@ -37,15 +37,3 @@ import proscenium.*
 import scala.quoted.*
 
 export Panopticon.Lens
-
-extension [FromType, PathType <: Tuple, ToType](lens: Lens[FromType, PathType, ToType])
-  @targetName("append")
-  infix def ++ [ToType2, PathType2 <: Tuple](right: Lens[ToType, PathType2, ToType2])
-  :     Lens[FromType, Tuple.Concat[PathType, PathType2], ToType2] =
-
-    Lens.make()
-
-  inline def apply(aim: FromType): ToType = ${Panopticon.get[FromType, PathType, ToType]('aim)}
-
-  inline def update(aim: FromType, newValue: ToType): FromType =
-    ${Panopticon.set[FromType, PathType, ToType]('aim, 'newValue)}
