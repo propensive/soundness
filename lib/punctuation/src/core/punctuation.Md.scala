@@ -43,8 +43,6 @@ import scala.compiletime.*
 
 import errorDiagnostics.empty
 
-type Md = Markdown[Markdown.Ast.Block]
-
 object Md:
   enum Input:
     case Block(content: Text)
