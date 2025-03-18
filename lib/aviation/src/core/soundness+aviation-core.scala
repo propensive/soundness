@@ -38,7 +38,8 @@ export aviation .
     Tzdb, TzdbError, Weekday, YearMonth, now, today, TimeEvent, am, pm, year, month, week, day,
     hour, minute, second, years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
     Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec,
-    DateNumerics, DateSeparation, Endianness, YearFormat, Meridiem }
+    DateNumerics, DateSeparation, Endianness, YearFormat, Meridiem, TimeFormat, TimeSeparation,
+    TimeNumerics, TimeSpecificity }
 
 package calendars:
   export aviation.calendars.{gregorian, julian}
