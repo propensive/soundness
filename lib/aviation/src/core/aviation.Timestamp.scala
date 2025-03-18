@@ -39,6 +39,7 @@ import fulminate.*
 import kaleidoscope.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 
 import errorDiagnostics.stackTraces
 
@@ -46,6 +47,8 @@ import java.time as jt
 
 object Timestamp:
   import calendars.gregorian
+
+  given Timestamp is Showable = timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
 
   given Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
     text match
