@@ -35,7 +35,9 @@ package aviation
 import anticipation.*
 import distillate.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
+import spectacular.*
 import vacuous.*
 
 export Aviation2.{Instant, Duration}
@@ -43,6 +45,48 @@ export Aviation.Date
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 given realm: Realm = realm"aviation"
+
+package dateFormats:
+  private given RomanCalendar = calendars.gregorian
+
+  given european: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidth, separation.dot, yearFormats.full
+    Date.showable.text(_)
+
+  given american: Date is Showable =
+    import endianness.middleEndian, numerics.fixedWidth, separation.slash, yearFormats.full
+    Date.showable.text(_)
+
+  given unitedKingdom: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidth, separation.slash, yearFormats.full
+    Date.showable.text(_)
+
+  given southEastAsia: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidth, separation.hyphen, yearFormats.full
+    Date.showable.text(_)
+
+  given iso8601: Date is Showable =
+    import endianness.bigEndian, numerics.fixedWidth, separation.hyphen, yearFormats.full
+    Date.showable.text(_)
+
+  package endianness:
+    given bigEndian: Endianness = Endianness.BigEndian
+    given littleEndian: Endianness = Endianness.LittleEndian
+    given middleEndian: Endianness = Endianness.MiddleEndian
+
+  package numerics:
+    given fixedWidth: DateNumerics = DateNumerics.FixedWidth
+    given variableWidth: DateNumerics = DateNumerics.VariableWidth
+
+  package separation:
+    given slash: DateSeparation = () => t"/"
+    given hyphen: DateSeparation = () => t"-"
+    given dot: DateSeparation = () => t"."
+    given space: DateSeparation = () => t" "
+
+  package yearFormats:
+    given twoDigits: YearFormat = YearFormat.TwoDigitYear
+    given full: YearFormat = YearFormat.FullYear
 
 package calendars:
   given julian: RomanCalendar:
