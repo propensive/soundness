@@ -88,6 +88,91 @@ package dateFormats:
     given twoDigits: YearFormat = YearFormat.TwoDigitYear
     given full: YearFormat = YearFormat.FullYear
 
+package timeFormats:
+
+  given military: Clockface is Showable =
+    import hourCount.twentyFourHour, numerics.fixedWidth, separation.none, specificity.minutes
+    Clockface.showable.text(_)
+
+  given civilian: Clockface is Showable =
+    import hourCount.twelveHour, meridiems.upper, numerics.fixedWidth, separation.colon
+    import specificity.minutes
+
+    Clockface.showable.text(_)
+
+  given associatedPress: Clockface is Showable =
+    import hourCount.twelveHour, meridiems.lowerPunctuated, numerics.variableWidth, separation.colon
+    import specificity.minutes
+    Clockface.showable.text(_)
+
+  given french: Clockface is Showable =
+    import hourCount.twentyFourHour, numerics.fixedWidth, separation.french, specificity.minutes
+    Clockface.showable.text(_)
+
+  given iso8601: Clockface is Showable =
+    import hourCount.twentyFourHour, numerics.fixedWidth, separation.colon, specificity.seconds
+    Clockface.showable.text(_)
+
+  given ledger: Clockface is Showable =
+    import hourCount.twentyFourHour, numerics.fixedWidth, separation.dot, specificity.minutes
+    Clockface.showable.text(_)
+
+  given railway: Clockface is Showable =
+    import hourCount.twentyFourHour, numerics.fixedWidth, separation.colon, specificity.minutes
+    Clockface.showable.text(_)
+
+  package meridiems:
+    given upper: Meridiem is Showable =
+      case Meridiem.Am => t"AM"
+      case Meridiem.Pm => t"PM"
+
+    given lower: Meridiem is Showable =
+      case Meridiem.Am => t"am"
+      case Meridiem.Pm => t"pm"
+
+    given upperPunctuated: Meridiem is Showable =
+      case Meridiem.Am => t"A.M."
+      case Meridiem.Pm => t"P.M."
+
+    given lowerPunctuated: Meridiem is Showable =
+      case Meridiem.Am => t"a.m."
+      case Meridiem.Pm => t"p.m."
+
+  package hourCount:
+    given twelveHour: (Meridiem is Showable) => TimeFormat:
+      def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
+      def halfDay: Boolean = true
+      def seconds: Boolean = false
+
+    given twelveHourSeconds: (Meridiem is Showable) => TimeFormat:
+      def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
+      def halfDay: Boolean = true
+      def seconds: Boolean = false
+
+    given twentyFourHour: TimeFormat:
+      def postfix(meridiem: Meridiem): Text = t""
+      def halfDay: Boolean = false
+      def seconds: Boolean = false
+
+    given twentyFourHourSeconds: TimeFormat:
+      def postfix(meridiem: Meridiem): Text = t""
+      def halfDay: Boolean = false
+      def seconds: Boolean = true
+
+  package specificity:
+    given minutes: TimeSpecificity = TimeSpecificity.Minutes
+    given seconds: TimeSpecificity = TimeSpecificity.Seconds
+
+  package numerics:
+    given fixedWidth: TimeNumerics = TimeNumerics.FixedWidth
+    given variableWidth: TimeNumerics = TimeNumerics.VariableWidth
+
+  package separation:
+    given dot: TimeSeparation = () => t"."
+    given colon: TimeSeparation = () => t":"
+    given none: TimeSeparation = () => t""
+    given french: TimeSeparation = () => t"h"
+
 package calendars:
   given julian: RomanCalendar:
     def leapYear(year: YearUnit): Boolean = year%4 == 0
