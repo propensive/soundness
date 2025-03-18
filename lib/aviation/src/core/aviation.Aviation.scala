@@ -37,6 +37,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.*
 import hypotenuse.*
 import prepositional.*
 import proscenium.*
@@ -85,9 +86,32 @@ object Aviation:
     :     Date raises DateError =
       cal.julianDay(year, month, day)
 
-    given show: Date is Showable = d =>
-      given RomanCalendar = calendars.gregorian
-      t"${d.day.toString.show}-${d.month.show}-${d.year.toString.show}"
+    given showable: (Endianness, DateNumerics, DateSeparation, YearFormat) => Date is Showable =
+      date =>
+        import DateNumerics.*, Endianness.*, YearFormat.*
+        import textMetrics.uniform
+        given RomanCalendar = calendars.gregorian
+
+        def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
+
+        val year: Text = summon[YearFormat] match
+          case TwoDigitYear => pad(date.year)
+          case FullYear     => date.year.show
+
+        val month: Text = summon[DateNumerics] match
+          case FixedWidth    => pad(date.month.ordinal)
+          case VariableWidth => date.month.ordinal.show
+
+        val day: Text = summon[DateNumerics] match
+          case FixedWidth    => pad(date.day)
+          case VariableWidth => date.day.show
+
+        summon[Endianness].match
+          case Endianness.LittleEndian => List(day, month, year)
+          case Endianness.MiddleEndian => List(month, day, year)
+          case Endianness.BigEndian    => List(year, month, day)
+
+        . join(summon[DateSeparation].separator)
 
     given decoder: Tactic[DateError] => Date is Decodable in Text = parse(_)
 
