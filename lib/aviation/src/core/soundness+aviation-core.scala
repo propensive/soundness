@@ -38,7 +38,8 @@ export aviation .
     Tzdb, TzdbError, Weekday, YearMonth, now, today, TimeEvent, am, pm, year, month, week, day,
     hour, minute, second, years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
     Instant, Duration, Date, Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec,
-    DateNumerics, DateSeparation, Endianness, YearFormat }
+    DateNumerics, DateSeparation, Endianness, YearFormat, Meridiem, TimeFormat, TimeSeparation,
+    TimeNumerics, TimeSpecificity }
 
 package calendars:
   export aviation.calendars.{gregorian, julian}
@@ -57,3 +58,19 @@ package dateFormats:
 
   package yearFormats:
     export aviation.dateFormats.yearFormats.{full, twoDigits}
+
+package timeFormats:
+  export aviation.timeFormats .
+    { iso8601, military, civilian, associatedPress, french, railway, ledger }
+
+  package hourCount:
+    export aviation.timeFormats.hourCount.{twentyFourHour, twelveHour}
+
+  package meridiems:
+    export aviation.timeFormats.meridiems.{upper, lower, lowerPunctuated, upperPunctuated}
+
+  package numerics:
+    export aviation.timeFormats.numerics.{fixedWidth, variableWidth}
+
+  package separation:
+    export aviation.timeFormats.separation.{dot, colon, french, none}
