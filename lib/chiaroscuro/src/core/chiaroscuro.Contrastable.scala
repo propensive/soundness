@@ -51,7 +51,12 @@ trait Contrastable:
   type Self
   def contrast(left: Self, right: Self): Juxtaposition
 
-object Contrastable:
+trait Contrastable2:
+  given showable: [ValueType: Showable] => ValueType is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.show)
+    else Juxtaposition.Different(left.show, right.show)
+
+object Contrastable extends Contrastable2:
   given int: Int is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show, t"${math.abs(right - left)}")
@@ -96,6 +101,15 @@ object Contrastable:
               key -> juxtaposition(left(key), right(key)),
           t"",
           t"")
+
+      case (left, right) =>
+        def kind(value: Decomposition): Text = value match
+          case Decomposition.Primitive(_, _, _) => t"<primitive>"
+          case Decomposition.Sequence(_, _)     => t"<sequence>"
+          case Decomposition.Product(_, _, _)   => t"<product>"
+          case Decomposition.Sum(_, _, _)       => t"<sum>"
+
+        Juxtaposition.Different(kind(left), kind(right))
 
   given Exception is Contrastable:
     def contrast(left: Exception, right: Exception): Juxtaposition =

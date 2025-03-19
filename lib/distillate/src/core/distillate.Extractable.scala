@@ -36,12 +36,16 @@ import scala.deriving.*
 import scala.reflect.*
 
 import anticipation.*
+import contingency.*
 import prepositional.*
 import vacuous.*
 
-infix type isAbove[SelfType, TypeclassType] = TypeclassType { type Self <: SelfType }
-
 object Extractable:
+  given decodable: [TextType <: Text, MatchType]
+  =>    (decodable: Tactic[Exception] ?=> MatchType is Decodable in Text)
+  =>    TextType is Extractable into MatchType =
+     value => safely(decodable(using strategies.throwUnsafely).decoded(value))
+
   given optional: [MatchType: Extractable]
   =>    Optional[MatchType] is Extractable into MatchType.Result =
     value => value.let(MatchType.extract(_))
