@@ -48,3 +48,10 @@ object Tests extends Suite(t"Distillate Tests"):
         case _                       => email"something@else.com"
 
     . assert(_ == email"foo@bar.com")
+
+    test(t"Do not extract an invalid email address"):
+      t"foobar.com" match
+        case As[EmailAddress](email) => email
+        case _                       => email"something@else.com"
+
+    . assert(_ == email"something@else.com")
