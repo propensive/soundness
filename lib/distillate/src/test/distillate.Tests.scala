@@ -48,7 +48,7 @@ object Tests extends Suite(t"Distillate Tests"):
           List(first, second, third)
         case _ =>
           List(0, 0, 0)
-    . assert(_ == List(12, 12, 14))
+    . assert(_ == List(12, 13, 14))
 
     test(t"Extract three listed ints"):
       List(t"12", t"13", t"14") match
@@ -56,7 +56,7 @@ object Tests extends Suite(t"Distillate Tests"):
           (first, second, third)
         case _ =>
           (0, 0, 0)
-    . assert(_ == (12, 12, 14))
+    . assert(_ == (12, 13, 14))
 
     test(t"Extract an email address"):
       t"foo@bar.com" match
