@@ -519,6 +519,10 @@ object distillate extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(contingency.core, digression.core, inimitable.core, wisteria.core)
   }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core, nettlesome.url)
+  }
 }
 
 object diuretic extends SoundnessModule {

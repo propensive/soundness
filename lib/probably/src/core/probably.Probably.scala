@@ -72,7 +72,7 @@ object Probably:
     exp match
       case Some('{type testType >: TestType; $expr: testType}) =>
         val decomposable: Expr[testType is Decomposable] =
-          Expr.summon[testType is Decomposable].get
+          Expr.summon[testType is Decomposable].getOrElse('{Decomposable.primitive[testType]})
 
         val contrast = Expr.summon[testType is Contrastable].getOrElse:
           halt(m"Can't contrast ${Type.of[testType]}")
