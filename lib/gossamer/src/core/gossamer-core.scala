@@ -308,7 +308,7 @@ extension [TextType: Textual](text: TextType)
     TextType.map(text, char => if char == from then to else char)
 
   // Extension method is applied explicitly because it appears ambiguous otherwise
-  inline def subscripts: TextType = TextType.map(text, _.superscript.or(' '))
+  inline def subscripts: TextType = TextType.map(text, _.subscript.or(' '))
   inline def superscripts: TextType = TextType.map(text, _.superscript.or(' '))
 
 package proximityMeasures:

@@ -49,7 +49,7 @@ trait Decomposable:
   type Self
   def decompose(value: Self): Decomposition
 
-object Decomposable extends Derivable[Decomposable]:
+object Decomposable extends Derivable[Decomposable], Decomposable2:
 
   def primitive[ValueType]: ValueType is Decomposable =
     value => Decomposition.Primitive(t"", value.toString.tt, value)
@@ -83,16 +83,21 @@ object Decomposable extends Derivable[Decomposable]:
 
   given optional: [ValueType: Decomposable] => Optional[ValueType] is Decomposable = value =>
     value.let: value =>
-      Decomposition.Sum(t"Optional", ValueType.decompose(value), value)
+      Decomposition.Sum(t"Optional", value.decompose, value)
     . or(Decomposition.Sum(t"Optional", Decomposition.Primitive(t"Unset", t"∅", value), value))
 
-  given showable: [ValueType: Showable] => ValueType is Decomposable = value =>
-    Decomposition.Primitive(t"Showable", value.show, value)
+trait Decomposable2:
+  inline given textual: [ValueType] => ValueType is Decomposable = compiletime.summonFrom:
+    case given (ValueType is Showable) =>
+      value => Decomposition.Primitive(t"Showable", value.show, value)
 
-  given encodable: [ValueType: Encodable in Text] => ValueType is Decomposable = value =>
-    Decomposition.Primitive(t"Encodable", value.encode, value)
+    case given (ValueType is Encodable in Text) =>
+      value => Decomposition.Primitive(t"Encodable", value.encode, value)
+
+    case _ =>
+      value => Decomposition.Primitive(t"Any", value.toString.tt, value)
 
   given collection: [CollectionType <: Iterable, ValueType: Decomposable]
-  => CollectionType[ValueType] is Decomposable =
+  =>    CollectionType[ValueType] is Decomposable =
     collection =>
-      Decomposition.Sequence(IArray.from(collection.map(ValueType.decompose(_))), collection)
+      Decomposition.Sequence(IArray.from(collection.map(_.decompose)), collection)

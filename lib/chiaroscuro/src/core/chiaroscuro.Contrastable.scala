@@ -51,10 +51,15 @@ trait Contrastable:
   type Self
   def contrast(left: Self, right: Self): Juxtaposition
 
-trait Contrastable2:
+trait Contrastable2 extends Contrastable3:
   given showable: [ValueType: Showable] => ValueType is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show)
+
+trait Contrastable3:
+  given showable: [ValueType] => ValueType is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.toString.tt)
+    else Juxtaposition.Different(left.toString.tt, right.toString.tt)
 
 object Contrastable extends Contrastable2:
   given int: Int is Contrastable = (left, right) =>
@@ -128,7 +133,7 @@ object Contrastable extends Contrastable2:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
+              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
             label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
@@ -137,18 +142,12 @@ object Contrastable extends Contrastable2:
             -> Juxtaposition.Different(t"—", value.short)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}/ "
+            t"${leftIndex.show.superscripts}╱ "
             -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
+            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
             label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(comparison, leftDebug, rightDebug)
-
-  // inline given collection: [CollectionType <: Iterable, ValueType: Contrastable]
-  // =>    CollectionType[ValueType] is Contrastable:
-  //   def apply(left: CollectionType[ValueType], right: CollectionType[ValueType]): Juxtaposition =
-  //     compareSeq[ValueType]
-  //      (left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)

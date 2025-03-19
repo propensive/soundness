@@ -7,7 +7,7 @@ import publish._
 import os.Path
 
 object settings {
-  val scalaVersion = "3.6.4"
+  val scalaVersion = "3.6.1"
   //val scalaVersion = "3.7.0-RC1-bin-20250309-2f639e2-NIGHTLY"
   val scalaOptions = Seq(
     "-experimental",
