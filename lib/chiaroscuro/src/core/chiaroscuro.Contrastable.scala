@@ -51,10 +51,15 @@ trait Contrastable:
   type Self
   def contrast(left: Self, right: Self): Juxtaposition
 
-trait Contrastable2:
+trait Contrastable2 extends Contrastable3:
   given showable: [ValueType: Showable] => ValueType is Contrastable = (left, right) =>
     if left == right then Juxtaposition.Same(left.show)
     else Juxtaposition.Different(left.show, right.show)
+
+trait Contrastable3:
+  given showable: [ValueType] => ValueType is Contrastable = (left, right) =>
+    if left == right then Juxtaposition.Same(left.toString.tt)
+    else Juxtaposition.Different(left.toString.tt, right.toString.tt)
 
 object Contrastable extends Contrastable2:
   given int: Int is Contrastable = (left, right) =>
@@ -147,8 +152,8 @@ object Contrastable extends Contrastable2:
 
       Juxtaposition.Collation(comparison, leftDebug, rightDebug)
 
-  // inline given collection: [CollectionType <: Iterable, ValueType: Contrastable]
+  // inline given collection: [CollectionType <: IterableOnce, ValueType: {Contrastable, Decomposable}]
   // =>    CollectionType[ValueType] is Contrastable:
-  //   def apply(left: CollectionType[ValueType], right: CollectionType[ValueType]): Juxtaposition =
+  //   def contrast(left: CollectionType[ValueType], right: CollectionType[ValueType]): Juxtaposition =
   //     compareSeq[ValueType]
-  //      (left.to(IndexedSeq), right.to(IndexedSeq), left.inspect, right.inspect)
+  //      (IArray.from(left.map(_.decompose)), IArray.from(right.map(_.decompose)), left.toString.tt, right.toString.tt)
