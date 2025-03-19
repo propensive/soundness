@@ -151,9 +151,3 @@ object Contrastable extends Contrastable2:
             label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
       Juxtaposition.Collation(comparison, leftDebug, rightDebug)
-
-  // inline given collection: [CollectionType <: IterableOnce, ValueType: {Contrastable, Decomposable}]
-  // =>    CollectionType[ValueType] is Contrastable:
-  //   def contrast(left: CollectionType[ValueType], right: CollectionType[ValueType]): Juxtaposition =
-  //     compareSeq[ValueType]
-  //      (IArray.from(left.map(_.decompose)), IArray.from(right.map(_.decompose)), left.toString.tt, right.toString.tt)
