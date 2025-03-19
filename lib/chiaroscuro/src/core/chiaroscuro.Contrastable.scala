@@ -133,7 +133,7 @@ object Contrastable extends Contrastable2:
           case Par(leftIndex, rightIndex, value) =>
             val label =
               if leftIndex == rightIndex then leftIndex.show
-              else t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
+              else t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
             label -> Juxtaposition.Same(value.let(_.short).or(t"?"))
 
@@ -142,11 +142,11 @@ object Contrastable extends Contrastable2:
             -> Juxtaposition.Different(t"—", value.short)
 
           case Del(leftIndex, value) =>
-            t"${leftIndex.show.superscripts}/ "
+            t"${leftIndex.show.superscripts}╱ "
             -> Juxtaposition.Different(value.let(_.short).or(t"?"), t"—")
 
           case Sub(leftIndex, rightIndex, leftValue, rightValue) =>
-            val label = t"${leftIndex.show.superscripts}⫽${rightIndex.show.subscripts}"
+            val label = t"${leftIndex.show.superscripts}╱${rightIndex.show.subscripts}"
 
             label -> juxtaposition(Decomposition(leftValue), Decomposition(rightValue))
 
