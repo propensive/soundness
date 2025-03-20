@@ -153,8 +153,8 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
           case _     => panic(m"an unexpected POSIX mode value was returned")
 
   def copyTo(destination: Path on PlatformType)
-     (using overwritePreexisting:    OverwritePreexisting on PlatformType,
-            dereferenceSymlinks:     DereferenceSymlinks,
+     (using overwritePreexisting:     OverwritePreexisting on PlatformType,
+            dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on PlatformType)
   :     Path on PlatformType raises IoError =
 
@@ -168,7 +168,7 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
      (destination: Path on PlatformType)
      (using overwritePreexisting: OverwritePreexisting on PlatformType,
             dereferenceSymlinks:  DereferenceSymlinks,
-            substantiable: (Path on PlatformType) is Substantiable)
+            substantiable:        (Path on PlatformType) is Substantiable)
   :     Path on PlatformType raises IoError =
 
     given CreateNonexistentParents on PlatformType =
@@ -178,9 +178,9 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
 
   def renameTo
      (using navigable: PlatformType is Navigable,
-            overwritePreexisting:    OverwritePreexisting on PlatformType,
-            moveAtomically:        MoveAtomically,
-            dereferenceSymlinks:     DereferenceSymlinks,
+            overwritePreexisting:     OverwritePreexisting on PlatformType,
+            moveAtomically:           MoveAtomically,
+            dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on PlatformType)
      (name: (prior: navigable.Operand) ?=> navigable.Operand)
   :     Path on PlatformType raises IoError raises PathError =
@@ -190,9 +190,9 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
     path.moveTo(path.peer(name(using name0)))
 
   def moveTo(destination: Path on PlatformType)
-     (using overwritePreexisting:    OverwritePreexisting on PlatformType,
-            moveAtomically:        MoveAtomically,
-            dereferenceSymlinks:     DereferenceSymlinks,
+     (using overwritePreexisting:     OverwritePreexisting on PlatformType,
+            moveAtomically:           MoveAtomically,
+            dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on PlatformType)
   :     Path on PlatformType raises IoError =
 
@@ -207,8 +207,8 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def moveInto
      (destination: Path on PlatformType)
      (using overwritePreexisting: OverwritePreexisting on PlatformType,
-            moveAtomically:      MoveAtomically,
-            substantiable:     (Path on PlatformType) is Substantiable,
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on PlatformType) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks)
   :     Path on PlatformType raises IoError =
 
@@ -229,8 +229,8 @@ extension [PlatformType <: Filesystem](path: Path on PlatformType)
   def symlinkInto
      (destination: Path on PlatformType)
      (using overwritePreexisting: OverwritePreexisting on PlatformType,
-            moveAtomically:      MoveAtomically,
-            substantiable:     (Path on PlatformType) is Substantiable,
+            moveAtomically:       MoveAtomically,
+            substantiable:        (Path on PlatformType) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks)
   :     Path on PlatformType raises IoError =
 

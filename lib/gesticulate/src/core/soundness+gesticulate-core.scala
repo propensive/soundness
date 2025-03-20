@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export gesticulate .
-  { Extensions, Media, Medium, MediumError, media, Multipart, MultipartError, Part, Content }
+export gesticulate
+. { Extensions, Media, Medium, MediumError, media, Multipart, MultipartError, Part, Content }

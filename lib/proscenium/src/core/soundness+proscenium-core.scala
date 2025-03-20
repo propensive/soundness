@@ -39,8 +39,8 @@ export scala.collection.immutable.{Set, List, ListMap, Map, TreeSet, TreeMap}
 export scala.collection.concurrent.TrieMap
 
 export Predef
-. { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper,
-    shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, classOf, locally }
+. { nn, identity, summon, charWrapper, $conforms, ArrowAssoc, intWrapper, longWrapper, shortWrapper,
+    byteWrapper, valueOf, doubleWrapper, floatWrapper, classOf, locally }
 
 export scala.util.control.NonFatal
 

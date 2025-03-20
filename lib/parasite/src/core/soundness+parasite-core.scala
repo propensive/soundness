@@ -32,9 +32,10 @@
                                                                                                   */
 package soundness
 
-export parasite.{Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise, Task,
-    ThreadModel, Chain, Transgression, monitor, daemon, async, task, relent, cancel,
-    sleep, snooze, hibernate, delay, race, supervise, Tenacity, retry, Stale, trap}
+export parasite
+. { Codicil, Completion, AsyncError, Daemon, Hook, Monitor, Promise, Task, ThreadModel, Chain,
+    Transgression, monitor, daemon, async, task, relent, cancel, sleep, snooze, hibernate, delay,
+    race, supervise, Tenacity, retry, Stale, trap }
 
 package threadModels:
   export parasite.threadModels.{platform, virtual, adaptive}
@@ -46,5 +47,6 @@ package supervisors:
   export parasite.supervisors.global
 
 package retryTenacities:
-  export parasite.retryTenacities.{exponentialForever, exponentialFiveTimes, exponentialTenTimes,
-      fixedNoDelayForever, fixedNoDelayFiveTimes, fixedNoDelayTenTimes}
+  export parasite.retryTenacities
+  . { exponentialForever, exponentialFiveTimes, exponentialTenTimes, fixedNoDelayForever,
+      fixedNoDelayFiveTimes, fixedNoDelayTenTimes }

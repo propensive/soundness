@@ -57,7 +57,7 @@ object Codl:
   def parse[SourceType]
      (source:    SourceType,
       schema:    CodlSchema = CodlSchema.Free,
-      subs:     List[Data] = Nil,
+      subs:      List[Data] = Nil,
       fromStart: Boolean    = false)
      (using readable: SourceType is Readable by Text, aggregate: Tactic[CodlError])
   :     CodlDoc =

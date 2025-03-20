@@ -125,8 +125,8 @@ object Teletype:
     Teletype(text, TreeMap(CharSpan(0, text.s.length) -> transform))
 
 case class Teletype
-   (plain:     Text,
-    spans:     TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
+   (plain:      Text,
+    spans:      TreeMap[CharSpan, Ansi.Transform] = TreeMap(),
     insertions: TreeMap[Int, Text] = TreeMap()):
 
   def explicit: Text = render(termcapDefinitions.xtermTrueColor).bind: char =>

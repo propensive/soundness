@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export hieroglyph .
-  { Encoding, encoder, CharDecoder, CharEncoder, TextSanitizer, CharDecodeError, CharEncodeError,
+export hieroglyph
+. { Encoding, encoder, CharDecoder, CharEncoder, TextSanitizer, CharDecodeError, CharEncodeError,
     enc, Unicode, metrics, Measurable, Chars, superscript, subscript, u, description }
 
 package textSanitizers:

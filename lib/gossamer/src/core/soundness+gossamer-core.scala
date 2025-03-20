@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export gossamer .
-  { Bidi, Builder, Cuttable, Decimalizer, Interpolation, Joinable, Numerous, Presentational, Pue,
+export gossamer
+. { Bidi, Builder, Cuttable, Decimalizer, Interpolation, Joinable, Numerous, Presentational, Pue,
     RangeError, TextBuilder, Textual, append, construct, fill, txt, t, utf8, utf16, ascii, text,
     pue, cut, pascal, camel, snake, kebab, length, populated, lower, upper, plain, skip, keep,
     capitalize, uncapitalize, tail, init, empty, chars, snip, reverse, contains, trim, where, upto,

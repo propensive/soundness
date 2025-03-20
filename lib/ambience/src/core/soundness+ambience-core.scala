@@ -32,8 +32,9 @@
                                                                                                   */
 package soundness
 
-export ambience.{Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
-    SystemProperties, SystemProperty, SystemPropertyError, Xdg}
+export ambience
+. { Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
+    SystemProperties, SystemProperty, SystemPropertyError, Xdg }
 
 package systemProperties:
   export ambience.systemProperties.{empty, virtualMachine}

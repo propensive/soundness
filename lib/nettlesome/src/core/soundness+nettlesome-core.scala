@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export nettlesome .
-  { ip, mac, tcp, udp, via, internet, online, EmailAddress, EmailAddressError, Endpoint, Hostname,
+export nettlesome
+. { ip, mac, tcp, udp, via, internet, online, EmailAddress, EmailAddressError, Endpoint, Hostname,
     HostnameError, Internet, IpAddressError, LocalPart, MacAddressError, OfflineError, Online, Port,
     PortError, Connectable, serve, Service }
 

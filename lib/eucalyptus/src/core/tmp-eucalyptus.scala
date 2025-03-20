@@ -46,12 +46,12 @@ package eucalyptus
 //   given Realm = realm"eucalyptus"
 
 //   def record[MessageType: Type, TextType: Type]
-//       (level:       Expr[Level],
-//        message:     Expr[MessageType],
-//        log:         Expr[Log[TextType]],
-//        realm:       Expr[Realm],
+//       (level:          Expr[Level],
+//        message:        Expr[MessageType],
+//        log:            Expr[Log[TextType]],
+//        realm:          Expr[Realm],
 //        presentational: Expr[TextType is Presentational],
-//        show:        Expr[Any])
+//        show:           Expr[Any])
 //       (using Quotes)
 //   :     Expr[Unit] =
 
@@ -70,8 +70,8 @@ package eucalyptus
 //         catch case e: Exception => ()  }
 
 //   def route[TextType: Type]
-//       (routes:      Expr[PartialFunction[Entry[TextType], Any]],
-//        monitor:     Expr[Monitor],
+//       (routes:         Expr[PartialFunction[Entry[TextType], Any]],
+//        monitor:        Expr[Monitor],
 //        presentational: Expr[TextType is Presentational])
 //       (using Quotes)
 //   :     Expr[Log[TextType]] =

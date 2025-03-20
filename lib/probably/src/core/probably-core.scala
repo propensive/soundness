@@ -83,7 +83,7 @@ extension [TestType](test: Test[TestType])
 
   inline def assert[ReportType]
      (inline predicate: TestType => Boolean)
-     (using runner:    Runner[ReportType],
+     (using runner:     Runner[ReportType],
             inclusion:  Inclusion[ReportType, Verdict],
             inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     Unit =
@@ -91,14 +91,14 @@ extension [TestType](test: Test[TestType])
 
   inline def check[ReportType]
      (inline predicate: TestType => Boolean)
-     (using runner:    Runner[ReportType],
+     (using runner:     Runner[ReportType],
             inclusion:  Inclusion[ReportType, Verdict],
             inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     TestType =
     ${Probably.check[TestType, ReportType]('test, 'predicate, 'runner, 'inclusion, 'inclusion2)}
 
   inline def assert[ReportType]()
-     (using runner:    Runner[ReportType],
+     (using runner:     Runner[ReportType],
             inclusion:  Inclusion[ReportType, Verdict],
             inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     Unit =
@@ -107,7 +107,7 @@ extension [TestType](test: Test[TestType])
          ('test, '{Probably.succeed}, 'runner, 'inclusion, 'inclusion2) }
 
   inline def check[ReportType]()
-     (using runner:    Runner[ReportType],
+     (using runner:     Runner[ReportType],
             inclusion:  Inclusion[ReportType, Verdict],
             inclusion2: Inclusion[ReportType, Verdict.Detail])
   :     TestType =

@@ -63,7 +63,7 @@ sealed trait Executable:
 
   def apply()
      (using erased intelligible: Exec is Intelligible,
-                   working:     WorkingDirectory,
+                   working:      WorkingDirectory,
                    computable:   intelligible.Result is Computable)
   :     intelligible.Result logs ExecEvent raises ExecError =
 

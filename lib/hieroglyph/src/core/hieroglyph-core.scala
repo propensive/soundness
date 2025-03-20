@@ -81,7 +81,9 @@ package textSanitizers:
 
 package communication:
   given unicodeCharNames: Char is Communicable = char => Message:
-    val name = char.name.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
+    val name =
+      char.name.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
+
     if char.printable then s"$name [$char]".tt else name
 
 extension (inline context: StringContext)

@@ -174,8 +174,8 @@ object Mosquito:
 
     def dot[RightType](right: Vector[RightType, SizeType])
        (using multiply: LeftType is Multiplicable by RightType,
-              size:    ValueOf[SizeType],
-              addition:     multiply.Result is Addable by multiply.Result,
+              size:     ValueOf[SizeType],
+              addition: multiply.Result is Addable by multiply.Result,
               equality: addition.Result =:= multiply.Result)
     :     multiply.Result =
 

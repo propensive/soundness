@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export chiaroscuro . { Contrastable, Juxtaposition, Similarity, contrast, Decomposition, decompose }
+export chiaroscuro.{Contrastable, Juxtaposition, Similarity, contrast, Decomposition, decompose}

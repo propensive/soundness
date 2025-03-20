@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export aviation .
-  { Base24, Base60, Calendar, Clock, Clockface, DateError, Horology, Period, LeapSeconds, Moment,
+export aviation
+. { Base24, Base60, Calendar, Clock, Clockface, DateError, Horology, Period, LeapSeconds, Moment,
     Month, RomanCalendar, StandardTime, Timespan, Timestamp, Chronology, Timezone, TimezoneError,
     Tzdb, TzdbError, Weekday, YearMonth, now, today, TimeEvent, am, pm, year, month, week, day,
     hour, minute, second, years, months, weeks, days, hours, minutes, seconds, tz, TimestampError,
@@ -60,8 +60,8 @@ package dateFormats:
     export aviation.dateFormats.yearFormats.{full, twoDigits}
 
 package timeFormats:
-  export aviation.timeFormats .
-    { iso8601, military, civilian, associatedPress, french, railway, ledger }
+  export aviation.timeFormats
+  . { iso8601, military, civilian, associatedPress, french, railway, ledger }
 
   package hourCount:
     export aviation.timeFormats.hourCount.{twentyFourHour, twelveHour}

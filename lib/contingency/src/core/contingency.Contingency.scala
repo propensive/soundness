@@ -287,9 +287,9 @@ object Contingency:
     }
 
   def accrueWithin[AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type]
-     (accrue:     Expr[Accrue[AccrualType, ContextType]],
-      lambda:     Expr[ContextType[ResultType]],
-      tactic:     Expr[Tactic[AccrualType]],
+     (accrue:      Expr[Accrue[AccrualType, ContextType]],
+      lambda:      Expr[ContextType[ResultType]],
+      tactic:      Expr[Tactic[AccrualType]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
   :     Expr[ResultType] =
@@ -328,9 +328,9 @@ object Contingency:
 
   def trackWithin
      [AccrualType <: Exception: Type, ContextType[_]: Type, ResultType: Type, FocusType: Type]
-     (track:      Expr[Tracking[AccrualType, ContextType, FocusType]],
-      lambda:     Expr[Foci[FocusType] ?=> ContextType[ResultType]],
-      tactic:     Expr[Tactic[AccrualType]],
+     (track:       Expr[Tracking[AccrualType, ContextType, FocusType]],
+      lambda:      Expr[Foci[FocusType] ?=> ContextType[ResultType]],
+      tactic:      Expr[Tactic[AccrualType]],
       diagnostics: Expr[Diagnostics])
      (using Quotes)
   :     Expr[ResultType] =
