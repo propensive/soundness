@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export ethereal .
-  { ClientConnection, CliInput, DaemonEvent, DaemonLogEvent, DaemonService, Installer,
+export ethereal
+. { ClientConnection, CliInput, DaemonEvent, DaemonLogEvent, DaemonService, Installer,
     LazyEnvironment, StderrSupport, cli, service }
 
 package daemonConfig:

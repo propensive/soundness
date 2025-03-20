@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export exoskeleton .
-  { application, Application, CliInvocation, Effectful, Executive, InstallError, ShellContext,
+export exoskeleton
+. { application, Application, CliInvocation, Effectful, Executive, InstallError, ShellContext,
     UnhandledErrorHandler }
 
 package unhandledErrors:

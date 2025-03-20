@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export scintillate .
-  { cookie, basicAuth, request, path, Acceptable, HttpConnection, HttpServer, HttpServerEvent,
+export scintillate
+. { cookie, basicAuth, request, path, Acceptable, HttpConnection, HttpServer, HttpServerEvent,
     NotFound, Redirect, RequestServable, Responder, Retrievable, ServerError, Unfulfilled }
 
 package httpServers:

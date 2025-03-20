@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export rudiments .
-  { Memory, b, kib, mib, gib, tib, memory, sift, has, interleave, each, all, sumBy, bi, tri,
+export rudiments
+. { Memory, b, kib, mib, gib, tib, memory, sift, has, interleave, each, all, sumBy, bi, tri,
     indexBy, longestTrain, mutable, immutable, snapshot, place, upsert, collate, establish, plus,
     runs, runsBy, create, javaInputStream, DecimalConverter, !!, Exit, unit, waive, twin, triple,
     is, matchable, give, pipe, fuse, tap, also, Counter, loop, Loop, &, tuple, to,

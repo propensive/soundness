@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export gastronomy .
-  { Algorithm, Crc32, Digest, Digester, Digestible, Digestion, Feistel, HashFunction, Md5,
+export gastronomy
+. { Algorithm, Crc32, Digest, Digester, Digestible, Digestion, Feistel, HashFunction, Md5,
     MessageDigestion, Sha1, Sha2, Sha384, Sha512, digest, checksum }
 
 package hashFunctions:

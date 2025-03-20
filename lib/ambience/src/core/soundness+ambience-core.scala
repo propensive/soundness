@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export ambience .
-  { Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
+export ambience
+. { Environment, EnvironmentError, EnvironmentVariable, Properties, PropertyAccess,
     SystemProperties, SystemProperty, SystemPropertyError, Xdg }
 
 package systemProperties:

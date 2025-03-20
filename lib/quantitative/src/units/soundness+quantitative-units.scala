@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export quantitative .
-  { Galileo, Poise, Franklin, Biot, Debye, Erg, Dyne, Calorie, Langley, Phot, Stokes, Lambert, Emu,
+export quantitative
+. { Galileo, Poise, Franklin, Biot, Debye, Erg, Dyne, Calorie, Langley, Phot, Stokes, Lambert, Emu,
     Oersted, Maxwell, Gauss, Gilbert, Darcy, Barye, Kayser, Hertz, Newton, Pascal, Joule, Watt,
     Coulomb, Volt, Farad, Ohm, Siemens, Weber, Tesla, Henry, Lux, Becquerel, Gray, Sievert, Katal,
     Metre, Gram, Candela, Mole, Ampere, Kelvin, Second, Inch, Foot, Yard, Mile, Lightyear,
@@ -43,6 +43,6 @@ export quantitative .
     Ounces, Picas, Points, Pounds, Quarters, Rankines, SiderealDays, Stones, Tons, Yards }
 
 package constants:
-  export quantitative.constants .
-    { SpeedOfLightInVacuum, MagneticConstant, ElectricConstant, CharacteristicImpedanceOfVacuum,
+  export quantitative.constants
+  . { SpeedOfLightInVacuum, MagneticConstant, ElectricConstant, CharacteristicImpedanceOfVacuum,
       PlanckConstant, GravitationalConstant, ElementaryCharge, AvogadroConstant, BoltzmannConstant }

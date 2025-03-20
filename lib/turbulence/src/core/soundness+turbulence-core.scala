@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export turbulence .
-  { Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io, Line,
+export turbulence
+. { Aggregable, Compression, CompressionAlgorithm, Eof, Err, Spool, Gzip, In, Io, Line,
     LineSeparation, Multiplexer, Out, Pistol, Pulsar, Readable, Stdio, StreamError, Tap, Writable,
     Zlib, stream, read, writeTo, deduplicate, rate, multiplexWith, regulate, cluster, parallelMap,
     multiplex, multiplexer, defer, pulsar, gzip, gunzip, discard, compress, decompress, shred,
@@ -45,6 +45,6 @@ package stdioSources:
     export turbulence.stdioSources.virtualMachine.{ansi, textOnly}
 
 package lineSeparation:
-  export turbulence.lineSeparation .
-    { carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds, carriageReturnLinefeed,
+  export turbulence.lineSeparation
+  . { carriageReturn, strictCarriageReturn, linefeed, strictLinefeeds, carriageReturnLinefeed,
       adaptiveLinefeed, virtualMachine }

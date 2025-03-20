@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export cellulose .
-  { Arity, Bcodl, BcodlError, Character, Codl, CodlDecoder, CodlDoc, CodlEncoder, CodlError,
+export cellulose
+. { Arity, Bcodl, BcodlError, Character, Codl, CodlDecoder, CodlDoc, CodlEncoder, CodlError,
     CodlFieldReader, CodlFieldWriter, CodlNode, CodlPrinter, CodlReadError, CodlRelabelling,
     CodlSchema, CodlToken, Data, DynamicCodlEnabler, Indexed, Layout, Extra, MissingIndexValueError,
     MissingValueError, MultipleIdentifiersError, PositionReader, Printer, codl }

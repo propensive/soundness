@@ -32,6 +32,6 @@
                                                                                                   */
 package soundness
 
-export savagery .
-  { Circle, Shift, Segment, Stroke, Point, Figure, Stop, Svg, SvgDef, SvgDoc, Sweep, Transform,
+export savagery
+. { Circle, Shift, Segment, Stroke, Point, Figure, Stop, Svg, SvgDef, SvgDoc, Sweep, Transform,
     Rectangle, Outline, Ellipse }

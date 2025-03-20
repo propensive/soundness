@@ -32,8 +32,8 @@
                                                                                                   */
 package soundness
 
-export fulminate .
-  { Communicable, communicate, Error, Panic, panic, halt, warn, Message, m, realm, EscapeError,
+export fulminate
+. { Communicable, communicate, Error, Panic, panic, halt, warn, Message, m, realm, EscapeError,
     TextEscapes, Diagnostics }
 
 package errorDiagnostics:
