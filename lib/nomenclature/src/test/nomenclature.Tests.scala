@@ -37,6 +37,7 @@ import fulminate.*, errorDiagnostics.stackTraces
 import gossamer.*
 import prepositional.*
 import probably.*
+import rudiments.*
 import spectacular.*
 
 erased trait Id
@@ -44,10 +45,8 @@ erased trait Id2
 
 object Tests extends Suite(m"Nomenclature tests"):
   def run(): Unit =
-    given Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] as id =
-      Nominative()
-
-    given Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] as id2 = Nominative()
+    erased given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
+    erased given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!
 
     test(m"Create a successful new name"):
       Name[Id](t"hello!")
