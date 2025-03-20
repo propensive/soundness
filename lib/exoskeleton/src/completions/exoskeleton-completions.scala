@@ -56,11 +56,11 @@ package executives:
     type Return = Execution
 
     def invocation
-       (arguments:     Iterable[Text],
-        environment:     Environment,
+       (arguments:        Iterable[Text],
+        environment:      Environment,
         workingDirectory: WorkingDirectory,
-        stdio:         Stdio,
-        signals:       Spool[Signal])
+        stdio:            Stdio,
+        signals:          Spool[Signal])
        (using interpreter: CliInterpreter)
     :     Cli =
       arguments match

@@ -71,10 +71,10 @@ case class Flag
     flag == name || aliases.contains(flag)
 
   def apply[OperandType]()
-     (using cli:          Cli,
-            interpreter:    CliInterpreter,
+     (using cli:             Cli,
+            interpreter:     CliInterpreter,
             flagInterpreter: FlagInterpreter[OperandType],
-            suggestions:    Suggestions[OperandType] = Suggestions.noSuggestions)
+            suggestions:     Suggestions[OperandType] = Suggestions.noSuggestions)
   :     Optional[OperandType] =
 
     cli.register(this, suggestions)

@@ -50,8 +50,8 @@ object Suggestion:
     new Suggestion(text, description, hidden, incomplete, aliases)
 
 case class Suggestion
-   (text:     Text,
+   (text:        Text,
     description: Optional[Text | Teletype],
-    hidden:     Boolean,
+    hidden:      Boolean,
     incomplete:  Boolean,
-    aliases:    List[Text])
+    aliases:     List[Text])

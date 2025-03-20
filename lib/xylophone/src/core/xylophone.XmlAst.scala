@@ -54,7 +54,7 @@ object XmlAst:
 
 enum XmlAst:
   case Element
-     (name:      XmlName,
+     (name:       XmlName,
       children:   List[XmlAst],
       attributes: Map[XmlName, Text] = Map(),
       namespaces: List[Namespace]    = Nil)

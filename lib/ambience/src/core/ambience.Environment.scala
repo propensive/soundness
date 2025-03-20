@@ -46,8 +46,8 @@ trait Environment:
 
 object Environment extends Dynamic:
   def apply[VariableType](variable: Text)
-     (using environment:     Environment,
-            reader:        EnvironmentVariable[Label, VariableType],
+     (using environment:      Environment,
+            reader:           EnvironmentVariable[Label, VariableType],
             environmentError: Tactic[EnvironmentError])
   :     VariableType =
 

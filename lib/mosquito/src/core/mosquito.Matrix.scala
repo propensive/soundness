@@ -85,11 +85,11 @@ class Matrix[ElementType, RowsType <: Int, ColumnsType <: Int]
   def * [RightType, RightColumnsType <: Int: ValueOf]
      (right: Matrix[RightType, ColumnsType, RightColumnsType])
      (using multiplication: ElementType is Multiplicable by RightType,
-            addition:      multiplication.Result is Addable by multiplication.Result,
-            equality:      addition.Result =:= multiplication.Result,
-            rowValue:      ValueOf[RowsType],
+            addition:       multiplication.Result is Addable by multiplication.Result,
+            equality:       addition.Result =:= multiplication.Result,
+            rowValue:       ValueOf[RowsType],
             columnValue:    ValueOf[ColumnsType],
-            classTag:      ClassTag[multiplication.Result])
+            classTag:       ClassTag[multiplication.Result])
   :     Matrix[multiplication.Result, RowsType, RightColumnsType] =
 
     val columns2 = valueOf[RightColumnsType]

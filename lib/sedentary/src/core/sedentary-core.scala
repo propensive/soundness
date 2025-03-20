@@ -45,8 +45,8 @@ extension [TestType](test: Test[TestType])
       duration:   Optional[DurationType]          = Unset,
       warmup:     Optional[DurationType]          = Unset,
       baseline:   Optional[Baseline]              = Unset)
-     (using runner:        Runner[ReportType],
-            inc:           Inclusion[ReportType, Benchmark],
+     (using runner:           Runner[ReportType],
+            inc:              Inclusion[ReportType, Benchmark],
             specificDuration: DurationType is SpecificDuration = durationApi.javaLong,
             genericDuration:  DurationType is GenericDuration  = durationApi.javaLong)
   :     Unit =

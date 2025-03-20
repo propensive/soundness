@@ -57,8 +57,8 @@ trait Schema[DataType, RecordType <: Record in DataType]:
         Ref(TypeRepr.of[thisType].typeSymbol.companionModule).asExprOf[Schema[DataType, RecordType]]
 
     def refine
-       (value:      Expr[DataType],
-        fields:     List[(String, RecordField)],
+       (value:       Expr[DataType],
+        fields:      List[(String, RecordField)],
         refinedType: TypeRepr,
         caseDefs:    List[CaseDef] = List(CaseDef(Wildcard(), None, '{???}.asTerm)))
     :     (TypeRepr, List[CaseDef]) =

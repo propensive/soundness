@@ -41,8 +41,8 @@ import vacuous.*
 
 object Properties extends Dynamic:
   def apply[PropertyType](property: Text)
-     (using properties:    SystemProperties,
-            reader:      SystemProperty[String, PropertyType],
+     (using properties:     SystemProperties,
+            reader:         SystemProperty[String, PropertyType],
             systemProperty: Tactic[SystemPropertyError])
   :     PropertyType =
 

@@ -114,7 +114,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
                              (context: requirement.Optionality[TypeclassType[VariantType]],
                               label:   Text,
                               index:   Int & VariantIndex[VariantType]) ?=>
-                                 ResultType)
+                                        ResultType)
   :     ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -137,7 +137,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
                              (context: requirement.Optionality[TypeclassType[VariantType]],
                               label:   Text,
                               index:   Int & VariantIndex[VariantType]) ?=>
-                                 ResultType)
+                                        ResultType)
   :     ResultType =
 
     type Labels = reflection.MirroredElemLabels
@@ -160,7 +160,7 @@ trait SumDerivationMethods[TypeclassType[_]]:
                              (context: requirement.Optionality[TypeclassType[VariantType]],
                               label:   Text,
                               index:   Int & VariantIndex[VariantType]) ?=>
-                                 ResultType)
+                                        ResultType)
   :     Optional[ResultType] =
 
     inline erasedValue[VariantsType] match

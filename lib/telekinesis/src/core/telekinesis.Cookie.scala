@@ -53,7 +53,7 @@ object Cookie:
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
   def apply[ValueType: {Encodable in Text, Decodable in Text}](using DummyImplicit)
      [DurationType: GenericDuration]
-     (name:    Text,
+     (name:     Text,
       domain:   Optional[Hostname]     = Unset,
       expiry:   Optional[DurationType] = Unset,
       secure:   Boolean                = false,

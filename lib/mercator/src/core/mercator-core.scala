@@ -73,7 +73,7 @@ extension [CollectionType[ElemType] <: Iterable[ElemType], ElemType]
    (elems: CollectionType[ElemType])
 
   def traverse[ElemType2, MonadType[_]](lambda: ElemType => MonadType[ElemType2])
-     (using monad:    Monad[MonadType],
+     (using monad:     Monad[MonadType],
             buildFrom: BuildFrom[List[ElemType2], ElemType2, CollectionType[ElemType2]])
   :     MonadType[CollectionType[ElemType2]] =
 
