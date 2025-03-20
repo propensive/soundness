@@ -32,19 +32,10 @@
                                                                                                   */
 package jacinta
 
-import anticipation.*
-import contingency.*
-import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import prepositional.*
-import probably.*
-import rudiments.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
+import soundness.*
 
+import charEncoders.utf8
 import strategies.throwUnsafely
-
 import jsonPrinters.minimal
 
 case class Foo(x: Int, y: Text) derives CanEqual

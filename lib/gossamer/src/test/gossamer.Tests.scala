@@ -305,7 +305,7 @@ object Tests extends Suite(t"Gossamer Tests"):
       . assert(_ == List('H', 'e', 'l', 'l', 'o', ' ', 'w', 'o', 'r', 'l', 'd'))
 
       test(t"Flatmap a text"):
-        t"ABC".flatMap { c => t"${c}." }
+        t"ABC".bind { c => t"${c}." }
 
       . assert(_ == t"A.B.C.")
 
