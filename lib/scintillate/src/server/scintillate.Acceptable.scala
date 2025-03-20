@@ -58,7 +58,7 @@ object Acceptable:
           val boundary = contentType.at(t"boundary").or:
             abort(MultipartError(MultipartError.Reason.Medium))
 
-          Multipart.parse(request.body, boundary)
+          Multipart.parse(request.body(), boundary)
         else abort(MultipartError(MultipartError.Reason.Medium))
 
 trait Acceptable:
