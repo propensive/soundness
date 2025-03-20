@@ -30,18 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import anticipation.*
-import contingency.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
-import serpentine.*
-import spectacular.*
+import rudiments.*
 
-object WindowsDrive:
-  export Windows.navigable
+erased trait Dos
 
-case class WindowsDrive(letter: Char) extends Root(t"$letter:\\", t"\\", Case.Preserving):
-  type Platform = Windows
+object Dos:
+  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
+
+  erased given Dos is Nominative under Rules = !!

@@ -30,49 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import nomenclature.*
+import scala.compiletime.*, ops.int.*
+
 import prepositional.*
-import rudiments.*
-import serpentine.*
-import vacuous.*
+import proscenium.*
 
-object Posix:
-  abstract class Root() extends serpentine.Root(t"/", t"/", Case.Sensitive):
-    type Platform = Posix
+class Ascent(val ascent0: Int) extends Relative(ascent0):
+  type Subject = EmptyTuple
 
-  object RootSingleton extends Root()
-
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-
-  given radical: Tactic[PathError] => Posix is Radical from (Root on Posix) = new Radical:
-    type Self = Posix
-    type Source = Root on Posix
-
-    def rootLength(path: Text): Int = 1
-    def rootText(root: Source): Text = t"/"
-
-    def root(path: Text): Source =
-      if path.at(Prim) == '/' then Posix.RootSingleton
-      else raise(PathError(PathError.Reason.InvalidRoot, path)) yet Posix.RootSingleton
-
-  given navigable: Tactic[NameError] => Posix is Navigable by Name[Posix] under Rules =
-    new Navigable:
-      type Self = Posix
-      type Operand = Name[Posix]
-      type Constraint = Rules
-
-      val separator: Text = t"/"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-
-      def element(element: Text): Name[Posix] = Name(element)
-      def elementText(element: Name[Posix]): Text = element.text
-      def caseSensitivity: Case = Case.Sensitive
-
-erased trait Posix extends Filesystem
+  @targetName("child")
+  def / (up: ^.type): Ascent under S[Constraint] =
+    new Ascent(ascent0 + 1).asInstanceOf[Ascent under S[Constraint]]

@@ -32,17 +32,19 @@
                                                                                                   */
 package serpentine
 
-import anticipation.*
+import nomenclature.*
+import prepositional.*
 import rudiments.*
 
-import scala.reflect.*
+erased trait Windows
 
-object Pathlike:
-  erased given [PathType <: Pathlike] => TypeTest[Pathlike, PathType] = !!
+object Windows:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"]
+    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"]
+    & MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "]
+    & MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"]
+    & MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"]
+    & MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
 
-transparent trait Pathlike:
-  type Platform
-  def textDescent: List[Text]
-  def separator: Text
-
-  override def toString(): String = textDescent.reverse.mkString(separator.s)
+  erased given Windows is Nominative under Rules = !!

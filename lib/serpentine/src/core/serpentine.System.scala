@@ -30,51 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package serpentine
 
 import anticipation.*
-import contingency.*
-import denominative.*
 import gossamer.*
-import hieroglyph.*
-import hypotenuse.*
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import vacuous.*
 
-erased trait Dos extends Filesystem
+object System:
+  given Windows is System:
+    type UniqueRoot = false
+    val separator: Text = t"\\"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-object Dos:
-  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
+  given Linux is System:
+    type UniqueRoot = true
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-  given radical: Tactic[PathError] => Dos is Radical from DosDrive = new Radical:
-    type Self = Dos
-    type Source = DosDrive
+  given MacOs is System:
+    type UniqueRoot = true
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-    def rootLength(path: Text): Int = 3
-    def rootText(drive: Source): Text = t"${drive.letter}:\\"
-
-    def root(path: Text): DosDrive =
-      if path.length < 3
-      then raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
-      else unsafely(path.at(Prim).vouch).upper.pipe: letter =>
-        if path.segment(Sec ~ Ter) == t":\\" && 'A' <= letter <= 'Z' then DosDrive(letter)
-        else raise(PathError(PathError.Reason.InvalidRoot, path)) yet DosDrive('Z')
-
-
-  given navigable: Tactic[NameError] => Dos is Navigable by Name[Dos] under Rules =
-    new Navigable:
-      type Operand = Name[Dos]
-      type Self = Dos
-      type Constraint = Rules
-
-      val separator: Text = t"\\"
-      val parentElement: Text = t".."
-      val selfText: Text = t"."
-
-      def element(element: Text): Name[Dos] = Name(element)
-      def elementText(element: Name[Dos]): Text = element.text
-      def caseSensitivity: Case = Case.Upper
+trait System:
+  type Self
+  type UniqueRoot <: Boolean
+  val separator: Text
+  val self: Text
+  val parent: Text
