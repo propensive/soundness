@@ -35,10 +35,13 @@ package inimitable
 import anticipation.*
 import contingency.*
 import digression.*
+import fulminate.*
 import gossamer.*
 import larceny.*
 import probably.*
 import rudiments.*
+
+import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Inimitable Tests"):
   def run(): Unit =
