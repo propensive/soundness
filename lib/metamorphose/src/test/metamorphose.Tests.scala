@@ -36,7 +36,10 @@ import contingency.*, strategies.throwUnsafely
 import gossamer.*
 import language.experimental.genericNumberLiterals
 import probably.*
+import fulminate.*
 import rudiments.*
+
+import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Metamorphose tests"):
   def run(): Unit =
