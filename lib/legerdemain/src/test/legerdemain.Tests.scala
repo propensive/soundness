@@ -71,7 +71,6 @@ object Tests extends Suite(m"Legerdemain tests"):
       tcp"8082".serve[Http]:
         orchestrate[Organization]:
           case Submission.Complete(organization) =>
-            println("Got organization: "+organization.inspect)
             Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(H1(organization.inspect)))))
 
           case Submission.Incomplete(form) =>
@@ -88,5 +87,4 @@ object Tests extends Suite(m"Legerdemain tests"):
                   query.decode[Organization]
 
             val form = elicit[Organization](query, errors)
-            println(errors.errors)
             Http.Response(Http.Ok)(HtmlDoc(Html(Head(Title(t"Page")), Body(form))))
