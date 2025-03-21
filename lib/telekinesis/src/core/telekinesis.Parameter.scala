@@ -35,6 +35,7 @@ package telekinesis
 import anticipation.*
 import contingency.*
 import distillate.*
+import legerdemain.*
 import prepositional.*
 import vacuous.*
 

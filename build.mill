@@ -861,6 +861,16 @@ object larceny extends SoundnessModule {
   }
 }
 
+object legerdemain extends SoundnessModule {
+  object core extends SoundnessSubModule {
+    def moduleDeps = Seq(honeycomb.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
+}
+
 object mercator extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)
@@ -1246,7 +1256,7 @@ object tarantula extends SoundnessModule {
 
 object telekinesis extends SoundnessModule {
   object core extends SoundnessSubModule {
-    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url, coaxial.core)
+    def moduleDeps = Seq(monotonous.core, gesticulate.core, nettlesome.url, coaxial.core, legerdemain.core)
   }
 
   object test extends ProbablyTestModule {
