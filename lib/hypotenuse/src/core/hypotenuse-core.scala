@@ -107,6 +107,11 @@ extension (float: Float)
   @targetName("powerFloat")
   inline infix def ** (exponent: Double): Float = math.pow(float, exponent).toFloat
 
+  @targetName("floorModFloat")
+  inline infix def %% (right: Float): Float =
+    val remainder: Float = float%right
+    if remainder < 0.0f then remainder + right else remainder
+
 extension (double: Double)
   @targetName("mantissaDouble")
   inline def mantissa: B64 = bits & 0xfffffffffffffL.bits
@@ -164,6 +169,11 @@ extension (double: Double)
 
   @targetName("powerDouble")
   inline infix def ** (exponent: Double): Double = math.pow(double, exponent)
+
+  @targetName("floorModDouble")
+  inline infix def %% (right: Double): Double =
+    val remainder = double%right
+    if remainder < 0.0 then remainder + right else remainder
 
 extension (byte: Byte)
   @targetName("bitsByte")
