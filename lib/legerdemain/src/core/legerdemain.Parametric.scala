@@ -30,11 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package legerdemain
 
-export telekinesis
-. { Auth, Cookie, Http, HttpError, HttpEvent, Prefixable, ConnectError, Receivable, Fetchable,
-    HttpClient, Postable, Servable, fetch, submit, Parameter, query }
+import proscenium.*
 
-package queryParameters:
-  export telekinesis.queryParameters.arbitrary
+trait Parametric:
+  type Self <: Label
+  type Result

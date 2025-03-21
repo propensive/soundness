@@ -32,6 +32,8 @@
                                                                                                   */
 package telekinesis
 
+import language.dynamics
+
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -39,14 +41,15 @@ import fulminate.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
-import monotonous.*, alphabets.base256.alphanumericOrBraille
+import legerdemain.*
+import monotonous.*
 import prepositional.*
 import proscenium.*
 import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import language.dynamics
+import alphabets.base256.alphanumericOrBraille
 
 object Postable:
   def apply[ResponseType](medium0: Medium, stream0: ResponseType => Stream[Bytes])
