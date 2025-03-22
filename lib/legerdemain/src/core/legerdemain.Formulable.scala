@@ -30,7 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package legerdemain
 
-export legerdemain
-. { Query, QueryError, Parametric, Widget, Checkbox, Field, RadioGroup, Autocomplete }
+import anticipation.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import honeycomb.*
+import nomenclature.*
+import prepositional.*
+import vacuous.*
+import wisteria.*
+
+import html5.*
+
+object Formulable extends ProductDerivation[[Type] =>> Type is Formulable]:
+  given [ValueType] => (elicitable: ValueType is Elicitable)
+  =>    (renderable: elicitable.Operand is Renderable into Html[Flow])
+  =>    ValueType is Formulable:
+
+    def elements(prefix: Text, label: Text, value: ValueType): List[Html[Flow]] =
+      renderable.html(elicitable.widget(prefix, label, elicitable.input(value)))
+
+  inline def join[DerivationType <: Product: ProductReflection]: DerivationType is Formulable =
+    new Formulable:
+      type Self = DerivationType
+
+      def elements(prefix: Text, label0: Text, value: Self): List[Html[Flow]] =
+        val content: IArray[Html[Flow]] =
+          fields(value):
+            [FieldType] => field =>
+              context.elements(if prefix == t"" then label else t"$prefix.$label", label0, field)
+
+          . flatten
+
+        List(Fieldset(Legend(label0), content))
+
+trait Formulable:
+  type Self
+  def elements(prefix: Text, label: Text, value: Self): List[Html[Flow]]

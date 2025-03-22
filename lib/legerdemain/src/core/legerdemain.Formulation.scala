@@ -30,7 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package legerdemain
 
-export legerdemain
-. { Query, QueryError, Parametric, Widget, Checkbox, Field, RadioGroup, Autocomplete }
+import anticipation.*
+import distillate.*
+import fulminate.*
+import gossamer.*
+import honeycomb.*
+import nomenclature.*
+import prepositional.*
+import vacuous.*
+import wisteria.*
+
+import html5.*
+
+trait Formulation:
+  def form(content: List[Html[Flow]], action: Text): Html[Flow] =
+    Form(action = action, method = t"POST")(content*)
