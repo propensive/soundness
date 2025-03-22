@@ -76,17 +76,17 @@ object Tests extends Suite(m"Panopticon tests"):
 
     test(m"Can apply a simple lens to get a value"):
       val lens = Lens[Organization](_.leader)
-      lens.get(org)
+      lens(org)
     .assert(_ == leader)
 
     test(m"Can apply a lens to get a value"):
       val lens = Lens[Organization](_.leader.role.salary)
-      lens.get(org)
+      lens(org)
     .assert(_ == 120000)
 
     test(m"Can updatea value with a simple lens"):
       val lens = Lens[Role](_.salary)
-      val newRole: Role = lens.set(ceo, 100)
+      val newRole: Role = lens(ceo) = 100
       newRole.salary
     .assert(_ == 100)
 
@@ -95,7 +95,7 @@ object Tests extends Suite(m"Panopticon tests"):
 
     test(m"Can update a value with a deep lens"):
       val lens = Lens[Organization](_.leader.role.salary)
-      val newOrganization: Organization = lens.set(org, 1000)
+      val newOrganization: Organization = lens(org) = 1000
       newOrganization.leader.role.salary
     .assert(_ == 1000)
 
@@ -110,7 +110,7 @@ object Tests extends Suite(m"Panopticon tests"):
 
     test(m"Test non-case-class get"):
       val lens = Lens[Date](_.month)
-      lens.get(date)
+      lens(date)
     .assert(_ == 3)
 
     // val orgName = Lens[Organization, Mono["name"], String](_.name, (org, name) => org.copy(name = name))

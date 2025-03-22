@@ -330,7 +330,7 @@ object baroque extends SoundnessModule {
   }
 
   object test extends ProbablyTestModule {
-    def moduleDeps = Seq(probably.cli, core)
+    def moduleDeps = Seq(probably.cli, core, quantitative.units)
   }
 }
 
@@ -350,8 +350,13 @@ object burdock extends SoundnessModule {
       Seq(PathRef(millSourcePath / ".." / ".." / "src" / "boot"))
     }
   }
+
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core, hellenism.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
   }
 }
 
@@ -492,6 +497,10 @@ object dendrology extends SoundnessModule {
 object denominative extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(anticipation.text)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
   }
 }
 
@@ -1007,10 +1016,18 @@ object polyvinyl extends SoundnessModule {
 
 object prepositional extends SoundnessModule {
   object core extends SoundnessSubModule
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object proscenium extends SoundnessModule {
   object core extends SoundnessSubModule
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object probably extends SoundnessModule {
@@ -1025,6 +1042,10 @@ object probably extends SoundnessModule {
 
   object coverage extends SoundnessSubModule {
     def moduleDeps = Seq(gossamer.core, dendrology.tree, digression.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(cli)
   }
 }
 
@@ -1257,6 +1278,10 @@ object ulysses extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(gastronomy.core, cardinality.core, hypotenuse.core)
   }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
+  }
 }
 
 object umbrageous extends SoundnessModule {
@@ -1264,11 +1289,19 @@ object umbrageous extends SoundnessModule {
     def moduleDeps = Seq()
     def compileIvyDeps = Agg(ivy"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
   }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, plugin)
+  }
 }
 
 object vacuous extends SoundnessModule {
   object core extends SoundnessSubModule {
     def moduleDeps = Seq(fulminate.core)
+  }
+
+  object test extends ProbablyTestModule {
+    def moduleDeps = Seq(probably.cli, core)
   }
 }
 
@@ -1341,8 +1374,25 @@ object zeppelin extends SoundnessModule {
   }
 }
 
-object entry extends BaseScalaModule {
-  def moduleDeps = Seq(
-    wisteria.core
-  )
+object tests extends BaseScalaModule {
+  def moduleDeps = Seq(abacist.test, acyclicity.test, adversaria.test, ambience.test,
+    anamnesis.test, anthology.test, anticipation.test, austronesian.test, aviation.test,
+    baroque.test, bitumen.test, burdock.test, caesura.test, camouflage.test, capricious.test,
+    cardinality.test, cataclysm.test, cellulose.test, charisma.test, chiaroscuro.test, coaxial.test,
+    contextual.test, contingency.test, cosmopolite.test, dendrology.test, denominative.test,
+    digression.test, dissonance.test, distillate.test, diuretic.test, embarcadero.test,
+    enigmatic.test, escapade.test, escritoire.test, ethereal.test, eucalyptus.test,
+    exoskeleton.test, feudalism.test, fulminate.test, galilei.test, gastronomy.test, geodesy.test,
+    gesticulate.test, gossamer.test, guillotine.test, hallucination.test, harlequin.test,
+    hellenism.test, honeycomb.test, hieroglyph.test, hyperbole.test, hypotenuse.test, imperial.test,
+    inimitable.test, iridescence.test, jacinta.test, kaleidoscope.test, larceny.test, mercator.test,
+    merino.test, metamorphose.test, monotonous.test, mosquito.test, nettlesome.test,
+    nomenclature.test, octogenarian.test, panopticon.test, parasite.test, perihelion.test,
+    phoenicia.test, plutocrat.test, polaris.test, polyvinyl.test, prepositional.test,
+    proscenium.test, probably.test, profanity.test, punctuation.test, quantitative.test,
+    revolution.test, rudiments.test, satirical.test, savagery.test, scintillate.test,
+    sedentary.test, serpentine.test, spectacular.test, superlunary.test, surveillance.test,
+    symbolism.test, tarantula.test, telekinesis.test, turbulence.test, typonym.test, ulysses.test,
+    umbrageous.test, vacuous.test, vexillology.test, vicarious.test, wisteria.test, xylophone.test,
+    yossarian.test, zephyrine.test, zeppelin.test)
 }

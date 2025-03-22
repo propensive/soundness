@@ -33,11 +33,13 @@
 package gesticulate
 
 import contingency.*
+import fulminate.*
 import gossamer.*
 import probably.*
 import rudiments.*
 
 import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
 object Tests extends Suite(m"Gesticulate tests"):
   def run(): Unit =
