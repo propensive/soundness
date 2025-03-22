@@ -82,6 +82,12 @@ object Unicode:
   def eastAsianWidth(char: Char): Optional[EaWidth] =
     eastAsianWidths.minAfter(CharRange(char.toInt, char.toInt)).optional.let(_(1))
 
+  def visible(char: Char): Char = char match
+    case '\u007f'            => '␥'
+    case ' '                 => '␣'
+    case char if char <= ' ' => ('\u2400' + char).toChar
+    case char                => char
+
   def apply(name: Text): Optional[Char | Text] = unicodeData.at(name)
   def name(char: Char): Optional[Text] = unicodeNames.at(char)
 
