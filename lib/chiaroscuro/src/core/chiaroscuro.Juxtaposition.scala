@@ -68,43 +68,54 @@ object Juxtaposition:
   given (measurable: Text is Measurable) => Juxtaposition is Teletypeable =
     case Juxtaposition.Collation(comparison, _, _) =>
       import tableStyles.default
-      import webColors.{Black, Gray}
+      import webColors.{Black, Gray, White}
 
       val columns = 110
       val length = comparison.length
-      val topRule = e"\n$Gray(    ┬${(t"─"*(length.min(columns)))}┬)\n"
-      val midRule = e"$Gray(    ┼${(t"─"*(length.min(columns)))}┼)\n"
-      val bottomRule = e"$Gray(    ┴${(t"─"*(length%columns))}┴)\n"
+      val topRule = e"\n$Gray(────┬${(t"─"*(length.min(columns)))}┬────)\n"
+      val midRule = e"$Gray(────┼${(t"─"*(length.min(columns)))}┼────)\n"
+      val bottomRule = e"$Gray(────┴${(t"─"*(length%columns))}┴────)\n"
 
       val penultimateRule = if length%columns == 0 then midRule else
-        e"$Gray(    ┴${(t"─"*(length%columns))}┬${(t"─"*(columns - length%columns))}┴)\n"
+        e"$Gray(────┼${(t"─"*(length%columns))}┬${(t"─"*(columns - length%columns - 1))}┴────)\n"
 
       if comparison.all(_(1).singleChar) then
         var topSum = 0
         var bottomSum = 0
         def pad(value: Text): Char = Unicode.visible(value.at(Prim).or(' '))
 
-        comparison.grouped(columns).map: comparison =>
-          val observed = comparison.map:
-            case (_, Same(char))            => e"${Bg(rgb"#003399")}(${pad(char)})"
+        comparison.grouped(columns).zipWithIndex.map: (comparison2, index) =>
+          val first = index == 0
+          val last = index == comparison.length/columns
+
+          val observed = comparison2.map:
+            case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(char, _, _)) => e"${Bg(rgb"#003300")}(${pad(char)})"
             case _                          => e""
           . join
 
-          val expected = comparison.map:
-            case (_, Same(char))            => e"${Bg(rgb"#003399")}(${pad(char)})"
+          val expected = comparison2.map:
+            case (_, Same(char))            => e"${Bg(rgb"#111111")}(${rgb"#99ccff"}(${pad(char)}))"
             case (_, Different(_, char, _)) => e"${Bg(rgb"#660000")}(${pad(char)})"
             case _                          => e""
           . join
 
           val margin1 = topSum.show.superscripts.pad(4, Rtl, ' ')
           val margin2 = bottomSum.show.subscripts.pad(4, Rtl, ' ')
-          topSum += comparison.sumBy(_(1).leftWidth)
-          bottomSum += comparison.sumBy(_(1).rightWidth)
+          topSum += comparison2.sumBy(_(1).leftWidth)
+          bottomSum += comparison2.sumBy(_(1).rightWidth)
           val margin3 = topSum.show.superscripts.pad(4, Ltr, ' ')
           val margin4 = bottomSum.show.subscripts.pad(4, Ltr, ' ')
 
-          e"$Gray($margin1│)$observed$Gray(│$margin3)\n$Gray($margin2│)$expected$Gray(│$margin4)\n"
+          val leftEdge1 = if first then e"$White($margin1)│" else e"$margin1 "
+          val leftEdge2 = if first then e"$White($margin2)│" else e"$margin2 "
+          val rightEdge3 = if last then e"│$White($margin3)" else e" $margin3"
+          val rightEdge4 = if last then e"│$White($margin4)" else e" $margin4"
+
+          val line1 = e"$Gray($leftEdge1)$observed$Gray($rightEdge3)"
+          val line2 = e"$Gray($leftEdge2)$expected$Gray($rightEdge4)"
+
+          e"$line1\n$line2\n"
 
         . to(Iterable)
         . join(topRule, midRule, penultimateRule, bottomRule)
