@@ -34,6 +34,8 @@ package legerdemain
 
 import soundness.*
 
+import formulations.default
+
 case class Organization(leader: Person, name: Text)
 case class Person(name: Text, description: Text, male: Boolean)
 
@@ -42,9 +44,9 @@ object Tests extends Suite(t"Legerdemain tests"):
     println("Running Legerdemain tests...")
 
     test(t"Create a simple form"):
-      Person(t"John", t"A generic person", true).form(t"Sample form").show
+      Person(t"John", t"A generic person", true).form(t"Sample form", t"/").show
     .assert(_ == t"")
 
     test(t"Create a form from nested fields"):
-      Organization(Person(t"Paul", t"Generic", false), t"My org").form(t"Sample form").show
-    .assert(_ == t"")
+      Organization(Person(t"Paul", t"Generic", false), t"My org").form(t"Sample form", t"/").show
+    .assert(_ == t"<form><legend>Sample farm</legend></form>")

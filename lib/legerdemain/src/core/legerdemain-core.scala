@@ -46,8 +46,14 @@ import html5.*
 
 given Realm = realm"legerdemain"
 
-extension [ValueType: Formulable](value: ValueType)
-  def form(legend: Text): Html[Flow] = Form(ValueType.elements(t"", legend, value))
+extension [ValueType: Formulable](value: ValueType)(using formulation: Formulation)
+  def form(legend: Text, action: Text): Html[Flow] =
+    formulation.form(ValueType.elements(t"", legend, value), action, Method.Post)
+
+package formulations:
+  given default: Formulation:
+    def form(content: List[Html[Flow]], action: Text, method: Method): Html[Flow] =
+      Form(action = action, method = method)(content*)
 
 trait Widget:
   def name: Text
